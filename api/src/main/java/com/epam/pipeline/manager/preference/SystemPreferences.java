@@ -60,6 +60,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -290,6 +291,9 @@ public class SystemPreferences {
             new IntPreference("cluster.instance.hdd_extra_multi", 3, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_DOCKER_EXTRA_MULTI =
             new IntPreference("cluster.docker.extra_multi", 3, CLUSTER_GROUP, isGreaterThan(0));
+    public static final ObjectPreference<Set<String>> INSTANCE_COMPUTE_FAMILY_NAMES = new ObjectPreference<>(
+            "instance.compute.family.names", null, new TypeReference<Set<String>>() {}, CLUSTER_GROUP,
+            isNullOrValidJson(new TypeReference<Set<String>>() {}));
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",

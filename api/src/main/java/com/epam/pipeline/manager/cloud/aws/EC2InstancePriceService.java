@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.cluster.AwsPriceListReader;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -42,6 +44,7 @@ public class EC2InstancePriceService implements CloudInstancePriceService<AwsReg
     private static final int COLUMNS_LINE_INDEX = 5;
 
     private final EC2Helper ec2Helper;
+    private final PreferenceManager preferenceManager;
 
     @Override
     public CloudProvider getProvider() {
@@ -62,7 +65,9 @@ public class EC2InstancePriceService implements CloudInstancePriceService<AwsReg
                 }
                 skipLines--;
             }
-            return new AwsPriceListReader(region.getId()).readPriceCsv(reader);
+            return new AwsPriceListReader(region.getId(),
+                    preferenceManager.getPreference(SystemPreferences.INSTANCE_COMPUTE_FAMILY_NAMES))
+                    .readPriceCsv(reader);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             return Collections.emptyList();
