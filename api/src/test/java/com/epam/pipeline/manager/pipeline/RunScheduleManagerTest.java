@@ -95,18 +95,18 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testCreateRunSchedules() {
-        final List<RunSchedule> runSchedules =
-            runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
+        final List<RunSchedule> runSchedules = runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
                     Arrays.asList(testRunScheduleVO, testRunScheduleVO2));
-        runScheduleManager.createSchedules(runConfiguration.getId(), ScheduleType.RUN_CONFIGURATION,
-                Collections.singletonList(testRunScheduleVO3));
         runSchedules.forEach(this::loadAndAssertSchedule);
+
+        List<RunSchedule> configSchedules = runScheduleManager.createSchedules(runConfiguration.getId(),
+                ScheduleType.RUN_CONFIGURATION, Collections.singletonList(testRunScheduleVO3));
+        configSchedules.forEach(this::loadAndAssertSchedule);
+
     }
 
     @Test(expected = IllegalArgumentException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testCreateRunScheduleWithExistentCronExpression() {
         runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
                 Collections.singletonList(testRunScheduleVO));
@@ -131,7 +131,6 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testUpdateRunSchedules() {
         final List<RunSchedule> schedules =
             runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
@@ -153,7 +152,6 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testUpdateRunSchedulesWithIdenticalCron() {
         final List<RunSchedule> schedules =
             runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
@@ -175,7 +173,6 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testDeleteRunSchedules() {
         final List<RunSchedule> schedules =
             runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
@@ -188,7 +185,7 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void loadRunSchedule() {
+    public void loadRunScheduleByWrongId() {
         final RunSchedule runSchedule =
             runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
                     Collections.singletonList(testRunScheduleVO)).get(0);

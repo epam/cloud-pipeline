@@ -131,8 +131,8 @@ public class RunConfigurationManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public RunConfiguration delete(Long id) {
         RunConfiguration configuration = load(id);
-        runConfigurationDao.delete(id);
         runScheduleDao.deleteRunSchedules(id, ScheduleType.RUN_CONFIGURATION);
+        runConfigurationDao.delete(id);
         return configuration;
     }
 

@@ -28,6 +28,7 @@ public enum RunScheduledAction {
     static {
         idMap.put(PAUSE.id, PAUSE);
         idMap.put(RESUME.id, RESUME);
+        idMap.put(RUN.id, RUN);
     }
 
     RunScheduledAction(final long id) {
