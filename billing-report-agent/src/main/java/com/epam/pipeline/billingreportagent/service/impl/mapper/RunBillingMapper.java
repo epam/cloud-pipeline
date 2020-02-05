@@ -44,7 +44,7 @@ public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInf
                 .field(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_RUN.name())
                 .field("id", run.getId())
                 .field("resource_type", billingInfo.getResourceType())
-                .field("pipeline", run.getPipelineName())
+                .field("pipeline", run.getPipelineId())
                 .field("tool", run.getDockerImage())
                 .field("instance_type", run.getInstance().getNodeType())
                 .field("compute_type", billingInfo.getEntity().getRunType())

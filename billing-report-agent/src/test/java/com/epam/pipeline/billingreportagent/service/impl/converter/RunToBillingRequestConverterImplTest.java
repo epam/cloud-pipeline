@@ -46,13 +46,13 @@ import java.util.stream.Collectors;
 @SuppressWarnings("checkstyle:magicnumber")
 public class RunToBillingRequestConverterImplTest {
 
-    private static final long REGION_ID = 1;
+    private static final Long REGION_ID = 1L;
     private static final String NODE_TYPE = "nodetype.medium";
     private static final Long RUN_ID = 1L;
     private static final String USER_NAME = "TestUser";
     private static final String GROUP_1 = "TestGroup1";
     private static final String GROUP_2 = "TestGroup2";
-    private static final String PIPELINE_NAME = "TestPipeline";
+    private static final Long PIPELINE_ID = 1L;
     private static final String TOOL_IMAGE = "cp/tool:latest";
     private static final BigDecimal PRICE = BigDecimal.valueOf(4, 2);
     private static final List<String> USER_GROUPS = java.util.Arrays.asList(GROUP_1, GROUP_2);
@@ -117,7 +117,7 @@ public class RunToBillingRequestConverterImplTest {
 
     @Test
     public void testRunConverting() {
-        final PipelineRun run = TestUtils.createTestPipelineRun(RUN_ID, PIPELINE_NAME, TOOL_IMAGE, PRICE,
+        final PipelineRun run = TestUtils.createTestPipelineRun(RUN_ID, PIPELINE_ID, TOOL_IMAGE, PRICE,
                                                                 TestUtils.createTestInstance(REGION_ID, NODE_TYPE));
 
         final EntityContainer<PipelineRunWithType> runContainer =
@@ -138,7 +138,7 @@ public class RunToBillingRequestConverterImplTest {
         Assert.assertEquals(expectedIndex, billing.index());
         Assert.assertEquals(run.getId().intValue(), requestFieldsMap.get("id"));
         Assert.assertEquals(ResourceType.COMPUTE.toString(), requestFieldsMap.get("resource_type"));
-        Assert.assertEquals(run.getPipelineName(), requestFieldsMap.get("pipeline"));
+        Assert.assertEquals(run.getPipelineId().intValue(), requestFieldsMap.get("pipeline"));
         Assert.assertEquals(run.getDockerImage(), requestFieldsMap.get("tool"));
         Assert.assertEquals(run.getInstance().getNodeType(), requestFieldsMap.get("instance_type"));
         Assert.assertEquals(9600, requestFieldsMap.get("cost"));
