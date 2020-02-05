@@ -30,4 +30,5 @@ public class BillingChartInfo {
     private LocalDateTime periodStart;
     private LocalDateTime periodEnd;
     private Long cost;
+    private Long accumulatedCost;
 }
