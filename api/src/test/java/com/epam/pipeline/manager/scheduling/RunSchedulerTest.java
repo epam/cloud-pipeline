@@ -39,6 +39,7 @@ import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -51,14 +52,6 @@ import java.util.Collections;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @DirtiesContext
 @Transactional
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
@@ -66,13 +59,13 @@ public class RunSchedulerTest extends AbstractSpringTest {
 
     private static final Long RUN_ID = 1L;
     private static final long CONFIGURATION_ID = 2L;
-    private static final int TEST_PERIOD_DURATION = 1;
-    private static final int TEST_INVOCATION_PERIOD = 1;
+    private static final int TEST_PERIOD_DURATION = 10;
+    private static final int TEST_INVOCATION_PERIOD = 10;
 
     /**
      * This cron expression should correspond with {@link #TEST_INVOCATION_PERIOD}
      */
-    private static final String CRON_EXPRESSION = "* * * * * ?"; // to run every 10 seconds
+    private static final String CRON_EXPRESSION = "*/10 * * * * ?"; // to run every 10 seconds
     private static final TimeZone TIME_ZONE = TimeZone.getTimeZone("UTC");
     private static final String USER_OWNER = "OWNER";
 
@@ -114,12 +107,12 @@ public class RunSchedulerTest extends AbstractSpringTest {
         userVO.setUserName(USER_OWNER);
         userManager.createUser(userVO);
 
-        when(pipelineRunDao.loadPipelineRun(anyLong())).thenReturn(pipelineRun);
-        when(pipelineRunManager.loadPipelineRun(anyLong())).thenReturn(pipelineRun);
-        when(pipelineRunManager.pauseRun(anyLong(), anyBoolean())).thenReturn(pipelineRun);
-        when(configurationManager.load(anyLong())).thenReturn(runConfiguration);
-        when(jwtTokenGenerator.encodeToken(any(), any())).thenReturn("token");
-        when(jwtTokenVerifier.readClaims(any())).thenReturn(
+        Mockito.when(pipelineRunDao.loadPipelineRun(Mockito.anyLong())).thenReturn(pipelineRun);
+        Mockito.when(pipelineRunManager.loadPipelineRun(Mockito.anyLong())).thenReturn(pipelineRun);
+        Mockito.when(pipelineRunManager.pauseRun(Mockito.anyLong(), Mockito.anyBoolean())).thenReturn(pipelineRun);
+        Mockito.when(configurationManager.load(Mockito.anyLong())).thenReturn(runConfiguration);
+        Mockito.when(jwtTokenGenerator.encodeToken(Mockito.any(), Mockito.any())).thenReturn("token");
+        Mockito.when(jwtTokenVerifier.readClaims(Mockito.any())).thenReturn(
                 JwtTokenClaims.builder().userId("1").userName(USER_OWNER).roles(Collections.emptyList()).build());
     }
 
@@ -133,7 +126,7 @@ public class RunSchedulerTest extends AbstractSpringTest {
 
         TimeUnit.SECONDS.sleep(TEST_PERIOD_DURATION);
         final int numberOfInvocations = TEST_PERIOD_DURATION / TEST_INVOCATION_PERIOD;
-        verify(pipelineRunManager, times(numberOfInvocations)).pauseRun(RUN_ID, true);
+        Mockito.verify(pipelineRunManager, Mockito.times(numberOfInvocations)).pauseRun(RUN_ID, true);
     }
 
     @Test
@@ -149,8 +142,9 @@ public class RunSchedulerTest extends AbstractSpringTest {
 
         TimeUnit.SECONDS.sleep(TEST_PERIOD_DURATION);
         final int numberOfInvocations = TEST_PERIOD_DURATION / TEST_INVOCATION_PERIOD;
-        verify(pipelineRunManager, times(numberOfInvocations)).pauseRun(RUN_ID, true);
-        verify(configurationRunner, times(numberOfInvocations)).runConfiguration(any(), any(), any());
+        Mockito.verify(pipelineRunManager, Mockito.times(numberOfInvocations)).pauseRun(RUN_ID, true);
+        Mockito.verify(configurationRunner, Mockito.times(numberOfInvocations))
+                .runConfiguration(Mockito.any(), Mockito.any(), Mockito.any());
 
         runScheduler.unscheduleRunSchedule(runSchedule);
         runScheduler.unscheduleRunSchedule(confSchedule);
@@ -166,7 +160,8 @@ public class RunSchedulerTest extends AbstractSpringTest {
 
         TimeUnit.SECONDS.sleep(TEST_PERIOD_DURATION);
         final int numberOfInvocations = TEST_PERIOD_DURATION / TEST_INVOCATION_PERIOD;
-        verify(configurationRunner, times(numberOfInvocations)).runConfiguration(any(), any(), any());
+        Mockito.verify(configurationRunner, Mockito.times(numberOfInvocations))
+                .runConfiguration(Mockito.any(), Mockito.any(), Mockito.any());
 
         runScheduler.unscheduleRunSchedule(runSchedule);
     }
@@ -180,7 +175,8 @@ public class RunSchedulerTest extends AbstractSpringTest {
         runScheduler.scheduleRunSchedule(runSchedule);
 
         TimeUnit.SECONDS.sleep(TEST_PERIOD_DURATION);
-        verify(configurationRunner, never()).runConfiguration(any(), any(), any());
+        Mockito.verify(configurationRunner, Mockito.never())
+                .runConfiguration(Mockito.any(), Mockito.any(), Mockito.any());
 
         runScheduler.unscheduleRunSchedule(runSchedule);
     }
@@ -195,7 +191,7 @@ public class RunSchedulerTest extends AbstractSpringTest {
         runScheduler.unscheduleRunSchedule(runSchedule);
 
         TimeUnit.SECONDS.sleep(TEST_PERIOD_DURATION);
-        verify(pipelineRunManager, never()).pauseRun(RUN_ID, true);
+        Mockito.verify(pipelineRunManager, Mockito.never()).pauseRun(RUN_ID, true);
     }
 
     private RunSchedule getRunSchedule(final Long id, final Long runId, final ScheduleType type,

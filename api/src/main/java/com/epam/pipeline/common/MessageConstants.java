@@ -154,7 +154,7 @@ public final class MessageConstants {
     public static final String SCHEDULE_ACTION_IS_NOT_ALLOWED = "schedule.action.is.not.allowed";
     public static final String ERROR_RUN_SCHEDULE_NOT_FOUND = "error.run.schedule.not.found";
     public static final String ERROR_TIME_ZONE_IS_NOT_PROVIDED = "error.time.zone.is.not.provided";
-    public static final String ERROR_RUN_ID_NOT_CORRESPONDING = "error.run.id.not.corresponding";
+    public static final String ERROR_SCHEDULABLE_ID_NOT_CORRESPONDING = "error.schedulable.id.not.corresponding";
 
     // PodMonitor messages
     public static final String DEBUG_MONITOR_CHECK_RUNNING = "debug.monitor.check.running";

@@ -17,7 +17,6 @@
 package com.epam.pipeline.manager.scheduling;
 
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
-import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
@@ -48,7 +47,8 @@ public class RunScheduler {
 
     private static final String JOB_EXECUTION_THREADS = "5";
     private static final String MAX_CONCURRENT_JOB_FIRING_AT_ONCE = "2";
-    public static final String ID = " id: ";
+    private static final String ID = " id: ";
+    private static final long YEAR_SECONDS = 60 * 60 * 24 * 365L;
     private final Scheduler quartzScheduler;
 
     @Autowired
@@ -56,6 +56,9 @@ public class RunScheduler {
 
     @Autowired
     private UserManager userManager;
+
+    @Autowired
+    private ScheduleProviderManager scheduleProviderManager;
 
     @Autowired
     RunScheduler(final SchedulerFactoryBean schedulerFactoryBean) {
@@ -113,12 +116,11 @@ public class RunScheduler {
 
     private JobDetail jobDetail(final RunSchedule runSchedule) {
         JobDetailFactoryBean jobDetailFactory = new JobDetailFactoryBean();
-        jobDetailFactory.setJobClass(runSchedule.getType() == ScheduleType.PIPELINE_RUN
-                ? RunScheduleJob.class
-                : ConfigurationScheduleJob.class);
+        jobDetailFactory.setJobClass(scheduleProviderManager.getProvider(runSchedule.getType()).getScheduleJobClass());
         jobDetailFactory.getJobDataMap().put("SchedulableId", runSchedule.getSchedulableId());
         jobDetailFactory.getJobDataMap().put(
-                "UserToken", authManager.issueToken(userManager.loadUserContext(runSchedule.getUser()), null).getToken()
+                "UserToken",
+                authManager.issueToken(userManager.loadUserContext(runSchedule.getUser()), YEAR_SECONDS).getToken()
         );
         jobDetailFactory.getJobDataMap().put("Action", runSchedule.getAction().name());
         jobDetailFactory.setName(String.format("run_%s-%s", runSchedule.getSchedulableId(), runSchedule.getId()));
