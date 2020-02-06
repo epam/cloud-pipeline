@@ -41,7 +41,7 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
     }
 
     @Override
-    public Map<String, String> loadDetails(String entityIdentifier) {
+    public Map<String, String> loadDetails(final String entityIdentifier) {
         final Map<String, String> details = new HashMap<>();
         final AbstractDataStorage storage = dataStorageManager.loadByNameOrId(entityIdentifier);
         details.put(NAME, storage.getPath());

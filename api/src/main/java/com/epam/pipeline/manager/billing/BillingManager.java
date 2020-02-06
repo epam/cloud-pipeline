@@ -44,6 +44,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInter
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.bucket.histogram.ParsedDateHistogram;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.ParsedSimpleValue;
@@ -78,6 +79,7 @@ public class BillingManager {
     private static final String COST_FIELD = "cost";
     private static final String ACCUMULATED_COST = "accumulatedCost";
     private static final String USAGE_FIELD = "usage";
+    private static final String ID = "id";
     private static final String BILLING_DATE_FIELD = "created_date";
     private static final String HISTOGRAM_AGGREGATION_NAME = "hist_agg";
     private static final String ES_MONTHLY_DATE_REGEXP = "%d-%02d-*";
@@ -90,6 +92,7 @@ public class BillingManager {
     private final List<DateHistogramInterval> validIntervals;
     private final SumAggregationBuilder costAggregation;
     private final SumAggregationBuilder usageAggregation;
+    private final TermsAggregationBuilder idAggregation;
     private final Map<BillingGrouping, EntityBillingDetailsLoader> billingDetailsLoaders;
 
     @Autowired
@@ -113,6 +116,7 @@ public class BillingManager {
                                             DateHistogramInterval.YEAR);
         this.costAggregation = AggregationBuilders.sum(COST_FIELD).field(COST_FIELD);
         this.usageAggregation = AggregationBuilders.sum(USAGE_FIELD).field(USAGE_FIELD);
+        this.idAggregation = AggregationBuilders.terms(ID).field(ID);
         this.billingDetailsLoaders = billingDetailsLoaders.stream()
             .collect(Collectors.toMap(EntityBillingDetailsLoader::getGrouping,
                                       Function.identity()));
@@ -207,6 +211,7 @@ public class BillingManager {
                 .field(grouping.getCorrespondingField());
             fieldAgg.subAggregation(costAggregation);
             fieldAgg.subAggregation(usageAggregation);
+            fieldAgg.subAggregation(idAggregation);
             searchSource.aggregation(fieldAgg);
         }
         searchSource.aggregation(costAggregation);
@@ -268,6 +273,8 @@ public class BillingManager {
             final ParsedSum usageAggResult = aggregations.get(USAGE_FIELD);
             final long usageVal = new Double(usageAggResult.getValue()).longValue();
             groupingInfo.put(USAGE_FIELD, Long.toString(usageVal));
+            final ParsedStringTerms ids = aggregations.get(ID);
+            groupingInfo.put(ID, Integer.toString(ids.getBuckets().size()));
             try {
                 final EntityBillingDetailsLoader detailsLoader = billingDetailsLoaders.get(groupField);
                 if (detailsLoader != null) {
