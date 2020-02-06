@@ -203,6 +203,8 @@ public class RunScheduleManager {
                         messageHelper.getMessage(MessageConstants.SCHEDULE_ACTION_IS_NOT_ALLOWED,
                                 RunScheduledAction.RUN.name(), runScheduleVO.getAction()));
                 break;
+            default:
+                break;
         }
     }
 
@@ -226,6 +228,7 @@ public class RunScheduleManager {
                 break;
             default:
                 log.error(messageHelper.getMessage(MessageConstants.CRON_EXPRESSION_IDENTICAL));
+                break;
         }
 
     }

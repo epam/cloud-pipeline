@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.scheduling;
 
+import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.app.TestApplicationWithAclSecurity;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
@@ -29,7 +30,6 @@ import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -54,12 +54,15 @@ import java.util.concurrent.TimeUnit;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @DirtiesContext
 @Transactional
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
-public class RunSchedulerTest extends AbstractManagerTest {
+public class RunSchedulerTest extends AbstractSpringTest {
 
     private static final Long RUN_ID = 1L;
     private static final long CONFIGURATION_ID = 2L;
