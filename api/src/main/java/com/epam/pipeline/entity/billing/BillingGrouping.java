@@ -16,22 +16,37 @@
 
 package com.epam.pipeline.entity.billing;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
 public enum BillingGrouping {
+    RESOURCE_TYPE("resource_type"),
     RUN_INSTANCE_TYPE("instance_type"),
     RUN_COMPUTE_TYPE("compute_type"),
     PIPELINE("pipeline"),
     TOOL("tool"),
-    STORAGE("id"),
+    STORAGE("id", Collections.singletonMap("resource_type", Collections.singletonList("STORAGE"))),
     STORAGE_TYPE("storage_type"),
     USER("owner");
 
-    private String correspondingField;
+    private final String correspondingField;
+    private final Map<String, List<String>> requiredDefaultFilters;
 
-    BillingGrouping(String correspondingField) {
+    BillingGrouping(final String correspondingField) {
+        this(correspondingField, Collections.emptyMap());
+    }
+
+    BillingGrouping(final String correspondingField, final Map<String, List<String>> requiredDefaultFilters) {
         this.correspondingField = correspondingField;
+        this.requiredDefaultFilters = requiredDefaultFilters;
     }
 
     public String getCorrespondingField() {
         return correspondingField;
+    }
+
+    public Map<String, List<String>> getRequiredDefaultFilters() {
+        return requiredDefaultFilters;
     }
 }
