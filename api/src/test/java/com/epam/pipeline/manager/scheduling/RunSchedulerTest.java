@@ -18,7 +18,6 @@ package com.epam.pipeline.manager.scheduling;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.app.TestApplicationWithAclSecurity;
-import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
@@ -28,15 +27,13 @@ import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
-import com.epam.pipeline.entity.security.JwtTokenClaims;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.user.UserManager;
-import com.epam.pipeline.security.jwt.JwtTokenGenerator;
-import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -48,7 +45,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -75,14 +71,8 @@ public class RunSchedulerTest extends AbstractSpringTest {
     @Autowired
     private CloudRegionDao regionDao;
 
-    @Autowired
+    @MockBean
     private UserManager userManager;
-
-    @Autowired
-    private JwtTokenGenerator jwtTokenGenerator;
-
-    @Autowired
-    private JwtTokenVerifier jwtTokenVerifier;
 
     @MockBean
     private PipelineRunDao pipelineRunDao;
@@ -103,17 +93,11 @@ public class RunSchedulerTest extends AbstractSpringTest {
         final PipelineRun pipelineRun = createPipelineRun(RUN_ID, RUN_ID);
         final RunConfiguration runConfiguration = createRunConfiguration();
 
-        PipelineUserVO userVO = new PipelineUserVO();
-        userVO.setUserName(USER_OWNER);
-        userManager.createUser(userVO);
-
         Mockito.when(pipelineRunDao.loadPipelineRun(Mockito.anyLong())).thenReturn(pipelineRun);
         Mockito.when(pipelineRunManager.loadPipelineRun(Mockito.anyLong())).thenReturn(pipelineRun);
         Mockito.when(pipelineRunManager.pauseRun(Mockito.anyLong(), Mockito.anyBoolean())).thenReturn(pipelineRun);
         Mockito.when(configurationManager.load(Mockito.anyLong())).thenReturn(runConfiguration);
-        Mockito.when(jwtTokenGenerator.encodeToken(Mockito.any(), Mockito.any())).thenReturn("token");
-        Mockito.when(jwtTokenVerifier.readClaims(Mockito.any())).thenReturn(
-                JwtTokenClaims.builder().userId("1").userName(USER_OWNER).roles(Collections.emptyList()).build());
+        Mockito.when(userManager.loadUserByName(Mockito.any())).thenReturn(new PipelineUser(USER_OWNER));
     }
 
     @Test

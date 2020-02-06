@@ -22,19 +22,16 @@ import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitie
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
-import com.epam.pipeline.entity.security.JwtRawToken;
-import com.epam.pipeline.entity.security.JwtTokenClaims;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
+import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
-import com.epam.pipeline.security.jwt.JwtTokenVerifier;
-import com.epam.pipeline.security.jwt.TokenVerificationException;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -55,7 +52,7 @@ public class ConfigurationScheduleJob implements Job {
     private MessageHelper messageHelper;
 
     @Autowired
-    private JwtTokenVerifier jwtTokenVerifier;
+    private UserManager userManager;
 
     @Override
     public void execute(final JobExecutionContext context) {
@@ -69,7 +66,7 @@ public class ConfigurationScheduleJob implements Job {
         if (action.equals(RunScheduledAction.RUN.name())) {
             log.debug("Execute a configuration with id: "+ configurationId);
 
-            setAuth(context.getMergedJobDataMap().getString("UserToken"));
+            setAuth(context.getMergedJobDataMap().getString("User"));
 
             configurationRunner.runConfiguration(null, configuration, null);
         } else {
@@ -78,18 +75,13 @@ public class ConfigurationScheduleJob implements Job {
         log.debug("Next job scheduled " + context.getNextFireTime());
     }
 
-    private void setAuth(final String userToken) {
-        Assert.notNull(userToken, "User token is not provided!");
-        final JwtRawToken jwtRawToken = new JwtRawToken(userToken);
-        try {
-            JwtTokenClaims claims = jwtTokenVerifier.readClaims(jwtRawToken.getToken());
-            UserContext userContext = new UserContext(jwtRawToken, claims);
-            SecurityContextHolder.getContext().setAuthentication(
-                    new JwtAuthenticationToken(userContext, userContext.getAuthorities())
-            );
-        } catch (TokenVerificationException e) {
-            throw new AuthenticationServiceException("Authentication error", e);
-        }
+    private void setAuth(final String userName) {
+        Assert.notNull(userName, "User is not provided!");
+        PipelineUser pipelineUser = userManager.loadUserByName(userName);
+        UserContext userContext = new UserContext(pipelineUser);
+        SecurityContextHolder.getContext().setAuthentication(
+                new JwtAuthenticationToken(userContext, userContext.getAuthorities())
+        );
     }
 
     private RunConfigurationWithEntitiesVO createConfigurationVOToRun(final Long configurationId) {
