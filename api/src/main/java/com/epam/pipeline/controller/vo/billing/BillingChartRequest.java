@@ -31,6 +31,6 @@ public class BillingChartRequest {
     private LocalDate to;
     private Map<String, List<String>> filters;
     private DateHistogramInterval interval;
-    private List<BillingGrouping> grouping;
+    private BillingGrouping grouping;
     private boolean loadDetails;
 }
