@@ -16,7 +16,9 @@
 
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
+import com.epam.pipeline.billingreportagent.model.ComputeType;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.model.ResourceType;
 import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
 import com.epam.pipeline.billingreportagent.service.impl.TestUtils;
@@ -35,6 +37,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -43,13 +46,13 @@ import java.util.stream.Collectors;
 @SuppressWarnings("checkstyle:magicnumber")
 public class RunToBillingRequestConverterImplTest {
 
-    private static final long REGION_ID = 1;
+    private static final Long REGION_ID = 1L;
     private static final String NODE_TYPE = "nodetype.medium";
     private static final Long RUN_ID = 1L;
     private static final String USER_NAME = "TestUser";
     private static final String GROUP_1 = "TestGroup1";
     private static final String GROUP_2 = "TestGroup2";
-    private static final String PIPELINE_NAME = "TestPipeline";
+    private static final Long PIPELINE_ID = 1L;
     private static final String TOOL_IMAGE = "cp/tool:latest";
     private static final BigDecimal PRICE = BigDecimal.valueOf(4, 2);
     private static final List<String> USER_GROUPS = java.util.Arrays.asList(GROUP_1, GROUP_2);
@@ -57,6 +60,7 @@ public class RunToBillingRequestConverterImplTest {
     private final PipelineUser testUser = PipelineUser.builder()
         .userName(USER_NAME)
         .groups(USER_GROUPS)
+        .attributes(Collections.emptyMap())
         .build();
 
     private final RunToBillingRequestConverter converter =
@@ -78,7 +82,8 @@ public class RunToBillingRequestConverterImplTest {
         statuses.add(new RunStatus(RUN_ID, TaskStatus.STOPPED, LocalDateTime.of(2019, 12, 4, 15, 0)));
         run.setRunStatuses(statuses);
 
-        final EntityContainer<PipelineRun> runContainer = EntityContainer.<PipelineRun>builder().entity(run).build();
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+            .entity(new PipelineRunWithType(run, ComputeType.CPU)).build();
         final Collection<PipelineRunBillingInfo> billings =
             converter.convertRunToBillings(runContainer,
                                            LocalDateTime.of(2019, 12, 1, 0, 0),
@@ -96,7 +101,8 @@ public class RunToBillingRequestConverterImplTest {
         final PipelineRun run = new PipelineRun();
         run.setId(RUN_ID);
         run.setPricePerHour(BigDecimal.valueOf(4, 2));
-        final EntityContainer<PipelineRun> runContainer = EntityContainer.<PipelineRun>builder().entity(run).build();
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+            .entity(new PipelineRunWithType(run, ComputeType.CPU)).build();
 
         final Collection<PipelineRunBillingInfo> billings =
             converter.convertRunToBillings(runContainer,
@@ -111,12 +117,12 @@ public class RunToBillingRequestConverterImplTest {
 
     @Test
     public void testRunConverting() {
-        final PipelineRun run = TestUtils.createTestPipelineRun(RUN_ID, PIPELINE_NAME, TOOL_IMAGE, PRICE,
+        final PipelineRun run = TestUtils.createTestPipelineRun(RUN_ID, PIPELINE_ID, TOOL_IMAGE, PRICE,
                                                                 TestUtils.createTestInstance(REGION_ID, NODE_TYPE));
 
-        final EntityContainer<PipelineRun> runContainer =
-            EntityContainer.<PipelineRun>builder()
-                .entity(run)
+        final EntityContainer<PipelineRunWithType> runContainer =
+            EntityContainer.<PipelineRunWithType>builder()
+                .entity(new PipelineRunWithType(run, ComputeType.CPU))
                 .owner(testUser)
                 .build();
 
@@ -132,7 +138,7 @@ public class RunToBillingRequestConverterImplTest {
         Assert.assertEquals(expectedIndex, billing.index());
         Assert.assertEquals(run.getId().intValue(), requestFieldsMap.get("id"));
         Assert.assertEquals(ResourceType.COMPUTE.toString(), requestFieldsMap.get("resource_type"));
-        Assert.assertEquals(run.getPipelineName(), requestFieldsMap.get("pipeline"));
+        Assert.assertEquals(run.getPipelineId().intValue(), requestFieldsMap.get("pipeline"));
         Assert.assertEquals(run.getDockerImage(), requestFieldsMap.get("tool"));
         Assert.assertEquals(run.getInstance().getNodeType(), requestFieldsMap.get("instance_type"));
         Assert.assertEquals(9600, requestFieldsMap.get("cost"));

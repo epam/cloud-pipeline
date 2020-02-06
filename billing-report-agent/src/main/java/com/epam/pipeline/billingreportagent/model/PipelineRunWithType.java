@@ -14,21 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.billing;
+package com.epam.pipeline.billingreportagent.model;
 
-import lombok.Builder;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import lombok.Value;
 
-import java.time.LocalDateTime;
-import java.util.Map;
-
 @Value
-@Builder
-public class BillingChartInfo {
+public class PipelineRunWithType {
 
-    private Map<String, String> groupingInfo;
-    private LocalDateTime periodStart;
-    private LocalDateTime periodEnd;
-    private Long cost;
-    private Long accumulatedCost;
+    private PipelineRun pipelineRun;
+    private ComputeType runType;
 }

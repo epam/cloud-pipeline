@@ -18,15 +18,17 @@ package com.epam.pipeline.billingreportagent.service.impl;
 
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
+import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.exception.PipelineResponseException;
 import com.epam.pipeline.utils.QueryUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -53,4 +55,11 @@ public class CloudPipelineAPIClient {
         return QueryUtils.execute(cloudPipelineAPI.loadAllDataStorages());
     }
 
+    public List<InstanceType> loadAllInstanceTypesForRegion(final Long regionId) {
+        try {
+            return QueryUtils.execute(cloudPipelineAPI.loadAllInstanceTypesForRegion(regionId));
+        } catch (PipelineResponseException e) {
+            return Collections.emptyList();
+        }
+    }
 }

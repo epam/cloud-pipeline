@@ -44,6 +44,8 @@ import org.elasticsearch.search.aggregations.bucket.histogram.ParsedDateHistogra
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
+import org.elasticsearch.search.aggregations.pipeline.ParsedSimpleValue;
+import org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,6 +74,7 @@ import java.util.stream.Stream;
 public class BillingManager {
 
     private static final String COST_FIELD = "cost";
+    private static final String ACCUMULATED_COST = "accumulatedCost";
     private static final String BILLING_DATE_FIELD = "created_date";
     private static final String HISTOGRAM_AGGREGATION_NAME = "hist_agg";
     private static final String ES_MONTHLY_DATE_REGEXP = "%d-%02d-*";
@@ -160,7 +163,8 @@ public class BillingManager {
             HISTOGRAM_AGGREGATION_NAME)
             .field(BILLING_DATE_FIELD)
             .dateHistogramInterval(interval)
-            .subAggregation(costAggregation);
+            .subAggregation(costAggregation)
+            .subAggregation(PipelineAggregatorBuilders.cumulativeSum(ACCUMULATED_COST, COST_FIELD));
 
         searchSource.aggregation(intervalAgg);
 
@@ -270,6 +274,9 @@ public class BillingManager {
         final ParsedSum sumAggResult = bucket.getAggregations().get(COST_FIELD);
         final long costVal = new Double(sumAggResult.getValue()).longValue();
         builder.cost(costVal);
+        final ParsedSimpleValue accumulatedSumAggResult = bucket.getAggregations().get(ACCUMULATED_COST);
+        final long accumulatedCostVal = new Double(accumulatedSumAggResult.getValueAsString()).longValue();
+        builder.accumulatedCost(accumulatedCostVal);
         final DateTime date = (DateTime) bucket.getKey();
         final LocalDate periodStart = LocalDate.of(date.getYear(), date.getMonthOfYear(), date.getDayOfMonth());
         builder.periodStart(periodStart.atStartOfDay());
