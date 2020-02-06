@@ -64,11 +64,11 @@ public final class TestUtils {
         return parser.map();
     }
 
-    public static PipelineRun createTestPipelineRun(final Long runId, final String pipeline, final String tool,
+    public static PipelineRun createTestPipelineRun(final Long runId, final Long pipelineId, final String tool,
                                                     final BigDecimal price, final RunInstance instance) {
         final PipelineRun run = new PipelineRun();
         run.setId(runId);
-        run.setPipelineName(pipeline);
+        run.setPipelineId(pipelineId);
         run.setDockerImage(tool);
         run.setPricePerHour(price);
         run.setInstance(instance);

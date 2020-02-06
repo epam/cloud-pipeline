@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -54,6 +55,7 @@ public class StorageBillingMapperTest {
     private final PipelineUser testUser = PipelineUser.builder()
         .userName(TEST_USER_NAME)
         .groups(TEST_GROUPS)
+        .attributes(Collections.emptyMap())
         .build();
 
     @Test
