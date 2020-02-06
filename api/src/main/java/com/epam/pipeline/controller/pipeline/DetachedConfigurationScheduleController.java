@@ -88,8 +88,8 @@ public class DetachedConfigurationScheduleController extends AbstractRestControl
     @DeleteMapping(value = CONFIGURATION_ID_PATH)
     @ResponseBody
     @ApiOperation(
-        value = "Deletes given detached configuration.",
-        notes = "Deletes given detached configuration.",
+        value = "Deletes given schedules of detached configuration.",
+        notes = "Deletes given schedules of detached configuration.",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<RunSchedule>> deleteRunSchedule(@PathVariable(value = ID) final Long configurationId,
@@ -100,8 +100,8 @@ public class DetachedConfigurationScheduleController extends AbstractRestControl
     @DeleteMapping(value = CONFIGURATION_ID_PATH + "/all")
     @ResponseBody
     @ApiOperation(
-        value = "Deletes all pipeline run's schedules.",
-        notes = "Deletes all pipeline run's schedules.",
+        value = "Deletes all pipeline configuration's schedules.",
+        notes = "Deletes all pipeline configuration's schedules.",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public void deleteAllRunSchedules(@PathVariable(value = ID) final Long configurationId) {
