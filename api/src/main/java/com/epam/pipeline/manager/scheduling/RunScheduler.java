@@ -21,8 +21,6 @@ import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
-import com.epam.pipeline.security.UserContext;
-import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.CronExpression;
 import org.quartz.JobDetail;

@@ -16,8 +16,9 @@
 
 package com.epam.pipeline.manager.pipeline;
 
-import com.epam.pipeline.AbstractSpringTest;
+import com.epam.pipeline.app.TestApplicationWithAclSecurity;
 import com.epam.pipeline.controller.vo.PipelineRunScheduleVO;
+import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.dao.configuration.RunConfigurationDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
@@ -31,11 +32,14 @@ import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.manager.user.UserManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Propagation;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
@@ -47,7 +51,8 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 
 @Transactional
-public class RunScheduleManagerTest extends AbstractSpringTest {
+@ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
+public class RunScheduleManagerTest extends AbstractManagerTest {
 
     private static final Long RUN_ID = 1L;
     private static final String CRON_EXPRESSION1 = "0 0 12 * * ?";
@@ -56,6 +61,7 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
     private static final String TEST_REPOSITORY = "///";
     private static final TimeZone TIME_ZONE = TimeZone.getTimeZone("UTC");
     private static final String TEST_PIPELINE_REPO_SSH = "git@test";
+    private static final String USER_OWNER = "OWNER";
 
     @Autowired
     private RunScheduleManager runScheduleManager;
@@ -71,6 +77,9 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
 
     @Autowired
     private RunConfigurationDao configurationDao;
+
+    @Autowired
+    private UserManager userManager;
 
     private PipelineRunScheduleVO testRunScheduleVO;
     private PipelineRunScheduleVO testRunScheduleVO2;
@@ -89,12 +98,18 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
         createPipelineRun(RUN_ID, testPipeline.getId());
         runConfiguration = createRunConfiguration();
 
+        PipelineUserVO userVO = new PipelineUserVO();
+        userVO.setUserName(USER_OWNER);
+        userManager.createUser(userVO);
+
         testRunScheduleVO = getRunScheduleVO(RunScheduledAction.PAUSE, CRON_EXPRESSION1);
         testRunScheduleVO2 = getRunScheduleVO(RunScheduledAction.RESUME, CRON_EXPRESSION2);
         testRunScheduleVO3 = getRunScheduleVO(RunScheduledAction.RUN, CRON_EXPRESSION2);
+
     }
 
     @Test
+    @WithMockUser(username = USER_OWNER)
     public void testCreateRunSchedules() {
         final List<RunSchedule> runSchedules = runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
                     Arrays.asList(testRunScheduleVO, testRunScheduleVO2));
@@ -107,6 +122,7 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
+    @WithMockUser(username = USER_OWNER)
     public void testCreateRunScheduleWithExistentCronExpression() {
         runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
                 Collections.singletonList(testRunScheduleVO));
@@ -116,6 +132,7 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
+    @WithMockUser(username = USER_OWNER)
     public void  createSchedulesWithIdenticalExpressions() {
         final PipelineRunScheduleVO runScheduleVO = getRunScheduleVO(RunScheduledAction.PAUSE, CRON_EXPRESSION1);
         final PipelineRunScheduleVO runScheduleVO2 = getRunScheduleVO(RunScheduledAction.RESUME, CRON_EXPRESSION1);
@@ -124,6 +141,7 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
+    @WithMockUser(username = USER_OWNER)
     public void  createSchedulesWithWrongAction() {
         final PipelineRunScheduleVO runScheduleVO = getRunScheduleVO(RunScheduledAction.RESUME, CRON_EXPRESSION1);
         runScheduleManager.createSchedules(RUN_ID, ScheduleType.RUN_CONFIGURATION,
@@ -131,6 +149,7 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
     }
 
     @Test
+    @WithMockUser(username = USER_OWNER)
     public void testUpdateRunSchedules() {
         final List<RunSchedule> schedules =
             runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
@@ -152,6 +171,7 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
     }
 
     @Test
+    @WithMockUser(username = USER_OWNER)
     public void testUpdateRunSchedulesWithIdenticalCron() {
         final List<RunSchedule> schedules =
             runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
@@ -173,6 +193,7 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
     }
 
     @Test
+    @WithMockUser(username = USER_OWNER)
     public void testDeleteRunSchedules() {
         final List<RunSchedule> schedules =
             runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
@@ -185,6 +206,7 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
+    @WithMockUser(username = USER_OWNER)
     public void loadRunScheduleByWrongId() {
         final RunSchedule runSchedule =
             runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
@@ -216,7 +238,7 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
 
         RunConfiguration configuration =
                 ObjectCreatorUtils.createConfiguration(TEST_NAME, null, null,
-                        "TEST_USER", Collections.singletonList(entry));
+                        USER_OWNER, Collections.singletonList(entry));
         return configurationDao.create(configuration);
     }
 
@@ -227,5 +249,6 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
         assertEquals(schedule.getType(), loadRunSchedule.getType());
         assertEquals(schedule.getCronExpression(), loadRunSchedule.getCronExpression());
         assertEquals(schedule.getAction(), loadRunSchedule.getAction());
+        assertEquals(schedule.getUser(), loadRunSchedule.getUser());
     }
 }

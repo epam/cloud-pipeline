@@ -16,7 +16,8 @@
 
 package com.epam.pipeline.manager.scheduling;
 
-import com.epam.pipeline.AbstractSpringTest;
+import com.epam.pipeline.app.TestApplicationWithAclSecurity;
+import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
@@ -26,46 +27,66 @@ import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.security.JwtTokenClaims;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
+import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.security.jwt.JwtTokenGenerator;
+import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
-public class RunSchedulerTest extends AbstractSpringTest {
+@DirtiesContext
+@Transactional
+@ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
+public class RunSchedulerTest extends AbstractManagerTest {
 
     private static final Long RUN_ID = 1L;
     private static final long CONFIGURATION_ID = 2L;
-    private static final int TEST_PERIOD_DURATION = 10;
-    private static final int TEST_INVOCATION_PERIOD = 10;
+    private static final int TEST_PERIOD_DURATION = 1;
+    private static final int TEST_INVOCATION_PERIOD = 1;
 
     /**
      * This cron expression should correspond with {@link #TEST_INVOCATION_PERIOD}
      */
-    private static final String CRON_EXPRESSION = "*/10 * * * * ?"; // to run every 10 seconds
+    private static final String CRON_EXPRESSION = "* * * * * ?"; // to run every 10 seconds
     private static final TimeZone TIME_ZONE = TimeZone.getTimeZone("UTC");
+    private static final String USER_OWNER = "OWNER";
 
     @Autowired
     private RunScheduler runScheduler;
 
     @Autowired
     private CloudRegionDao regionDao;
+
+    @Autowired
+    private UserManager userManager;
+
+    @Autowired
+    private JwtTokenGenerator jwtTokenGenerator;
+
+    @Autowired
+    private JwtTokenVerifier jwtTokenVerifier;
 
     @MockBean
     private PipelineRunDao pipelineRunDao;
@@ -86,13 +107,21 @@ public class RunSchedulerTest extends AbstractSpringTest {
         final PipelineRun pipelineRun = createPipelineRun(RUN_ID, RUN_ID);
         final RunConfiguration runConfiguration = createRunConfiguration();
 
+        PipelineUserVO userVO = new PipelineUserVO();
+        userVO.setUserName(USER_OWNER);
+        userManager.createUser(userVO);
+
         when(pipelineRunDao.loadPipelineRun(anyLong())).thenReturn(pipelineRun);
         when(pipelineRunManager.loadPipelineRun(anyLong())).thenReturn(pipelineRun);
         when(pipelineRunManager.pauseRun(anyLong(), anyBoolean())).thenReturn(pipelineRun);
         when(configurationManager.load(anyLong())).thenReturn(runConfiguration);
+        when(jwtTokenGenerator.encodeToken(any(), any())).thenReturn("token");
+        when(jwtTokenVerifier.readClaims(any())).thenReturn(
+                JwtTokenClaims.builder().userId("1").userName(USER_OWNER).roles(Collections.emptyList()).build());
     }
 
     @Test
+    @WithMockUser(username = USER_OWNER)
     public void testScheduleRunScheduleAndCheckJobExecution() throws InterruptedException {
         final RunSchedule runSchedule = getRunSchedule(RUN_ID, RUN_ID, ScheduleType.PIPELINE_RUN,
                 RunScheduledAction.PAUSE, CRON_EXPRESSION);
@@ -105,6 +134,7 @@ public class RunSchedulerTest extends AbstractSpringTest {
     }
 
     @Test
+    @WithMockUser(username = USER_OWNER)
     public void testScheduleForRunAndConfWithSameId() throws InterruptedException {
         final RunSchedule runSchedule = getRunSchedule(1L, RUN_ID, ScheduleType.PIPELINE_RUN,
                 RunScheduledAction.PAUSE, CRON_EXPRESSION);
@@ -124,6 +154,7 @@ public class RunSchedulerTest extends AbstractSpringTest {
     }
 
     @Test
+    @WithMockUser(username = USER_OWNER)
     public void testScheduleRunConfigurationScheduleAndCheckJobExecution() throws InterruptedException {
         final RunSchedule runSchedule = getRunSchedule(CONFIGURATION_ID, CONFIGURATION_ID,
                 ScheduleType.RUN_CONFIGURATION, RunScheduledAction.RUN, CRON_EXPRESSION);
@@ -138,6 +169,7 @@ public class RunSchedulerTest extends AbstractSpringTest {
     }
 
     @Test
+    @WithMockUser(username = USER_OWNER)
     public void testScheduleRunConfigurationWontExecuteWrongAction() throws InterruptedException {
         final RunSchedule runSchedule = getRunSchedule(CONFIGURATION_ID, CONFIGURATION_ID,
                 ScheduleType.RUN_CONFIGURATION, RunScheduledAction.RESUME, CRON_EXPRESSION);
@@ -151,6 +183,7 @@ public class RunSchedulerTest extends AbstractSpringTest {
     }
 
     @Test
+    @WithMockUser(username = USER_OWNER)
     public void testUnscheduleRunSchedule() throws InterruptedException {
         final RunSchedule runSchedule = getRunSchedule(RUN_ID, RUN_ID, ScheduleType.PIPELINE_RUN,
                 RunScheduledAction.PAUSE, CRON_EXPRESSION);
@@ -169,6 +202,7 @@ public class RunSchedulerTest extends AbstractSpringTest {
         runSchedule.setSchedulableId(runId);
         runSchedule.setType(type);
         runSchedule.setAction(action);
+        runSchedule.setUser(USER_OWNER);
         runSchedule.setCronExpression(cronExpression);
         runSchedule.setCreatedDate(DateUtils.now());
         runSchedule.setTimeZone(TIME_ZONE);

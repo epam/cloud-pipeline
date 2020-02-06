@@ -56,6 +56,7 @@ public class RunScheduleDaoTest extends AbstractSpringTest {
     private static final String TEST_NAME = "TEST";
     private static final String TEST_REPOSITORY = "///";
     private static final String TEST_PIPELINE_REPO_SSH = "git@test";
+    private static final String OWNER = "owner";
 
     @Autowired
     private RunScheduleDao runScheduleDao;
@@ -190,6 +191,7 @@ public class RunScheduleDaoTest extends AbstractSpringTest {
         runSchedule.setSchedulableId(runId);
         runSchedule.setAction(action);
         runSchedule.setType(type);
+        runSchedule.setUser(OWNER);
         runSchedule.setCronExpression(cronExpression);
         runSchedule.setCreatedDate(DateUtils.now());
         runSchedule.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -222,6 +224,7 @@ public class RunScheduleDaoTest extends AbstractSpringTest {
         assertEquals(schedule.getType(), loadRunSchedule.get().getType());
         assertEquals(schedule.getAction(), loadRunSchedule.get().getAction());
         assertEquals(schedule.getCronExpression(), loadRunSchedule.get().getCronExpression());
+        assertEquals(schedule.getUser(), loadRunSchedule.get().getUser());
     }
 
 }
