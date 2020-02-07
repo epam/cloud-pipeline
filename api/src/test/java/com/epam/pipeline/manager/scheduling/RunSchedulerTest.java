@@ -17,7 +17,6 @@
 package com.epam.pipeline.manager.scheduling;
 
 import com.epam.pipeline.AbstractSpringTest;
-import com.epam.pipeline.app.TestApplicationWithAclSecurity;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
@@ -40,17 +39,12 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-@DirtiesContext
 @Transactional
-@ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
 public class RunSchedulerTest extends AbstractSpringTest {
 
     private static final Long RUN_ID = 1L;
@@ -101,7 +95,6 @@ public class RunSchedulerTest extends AbstractSpringTest {
     }
 
     @Test
-    @WithMockUser(username = USER_OWNER)
     public void testScheduleRunScheduleAndCheckJobExecution() throws InterruptedException {
         final RunSchedule runSchedule = getRunSchedule(RUN_ID, RUN_ID, ScheduleType.PIPELINE_RUN,
                 RunScheduledAction.PAUSE, CRON_EXPRESSION);
@@ -114,7 +107,6 @@ public class RunSchedulerTest extends AbstractSpringTest {
     }
 
     @Test
-    @WithMockUser(username = USER_OWNER)
     public void testScheduleForRunAndConfWithSameId() throws InterruptedException {
         final RunSchedule runSchedule = getRunSchedule(1L, RUN_ID, ScheduleType.PIPELINE_RUN,
                 RunScheduledAction.PAUSE, CRON_EXPRESSION);
@@ -135,7 +127,6 @@ public class RunSchedulerTest extends AbstractSpringTest {
     }
 
     @Test
-    @WithMockUser(username = USER_OWNER)
     public void testScheduleRunConfigurationScheduleAndCheckJobExecution() throws InterruptedException {
         final RunSchedule runSchedule = getRunSchedule(CONFIGURATION_ID, CONFIGURATION_ID,
                 ScheduleType.RUN_CONFIGURATION, RunScheduledAction.RUN, CRON_EXPRESSION);
@@ -151,7 +142,6 @@ public class RunSchedulerTest extends AbstractSpringTest {
     }
 
     @Test
-    @WithMockUser(username = USER_OWNER)
     public void testScheduleRunConfigurationWontExecuteWrongAction() throws InterruptedException {
         final RunSchedule runSchedule = getRunSchedule(CONFIGURATION_ID, CONFIGURATION_ID,
                 ScheduleType.RUN_CONFIGURATION, RunScheduledAction.RESUME, CRON_EXPRESSION);
@@ -166,7 +156,6 @@ public class RunSchedulerTest extends AbstractSpringTest {
     }
 
     @Test
-    @WithMockUser(username = USER_OWNER)
     public void testUnscheduleRunSchedule() throws InterruptedException {
         final RunSchedule runSchedule = getRunSchedule(RUN_ID, RUN_ID, ScheduleType.PIPELINE_RUN,
                 RunScheduledAction.PAUSE, CRON_EXPRESSION);
