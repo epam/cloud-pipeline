@@ -16,21 +16,7 @@
 
 package com.epam.pipeline.entity.pipeline.run;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.util.Date;
-import java.util.TimeZone;
-
-@Data
-@NoArgsConstructor
-public class RunSchedule {
-    private Long id;
-    private RunScheduledAction action;
-    private Long schedulableId;
-    private ScheduleType type;
-    private String cronExpression;
-    private Date createdDate;
-    private TimeZone timeZone;
-    private String user;
+public enum ScheduleType {
+    PIPELINE_RUN,
+    RUN_CONFIGURATION
 }

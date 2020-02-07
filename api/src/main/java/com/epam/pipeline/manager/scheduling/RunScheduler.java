@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,14 +41,18 @@ import javax.annotation.PostConstruct;
 
 @Slf4j
 @Component
-public class PipelineRunScheduler {
+public class RunScheduler {
 
     private static final String JOB_EXECUTION_THREADS = "5";
     private static final String MAX_CONCURRENT_JOB_FIRING_AT_ONCE = "2";
+    private static final String ID = " id: ";
     private final Scheduler quartzScheduler;
 
     @Autowired
-    PipelineRunScheduler(final SchedulerFactoryBean schedulerFactoryBean) {
+    private ScheduleProviderManager scheduleProviderManager;
+
+    @Autowired
+    RunScheduler(final SchedulerFactoryBean schedulerFactoryBean) {
         final Properties quartsProperties = new Properties();
         quartsProperties.setProperty(SchedulerFactoryBean.PROP_THREAD_COUNT, JOB_EXECUTION_THREADS);
         quartsProperties.setProperty(StdSchedulerFactory.PROP_SCHED_MAX_BATCH_SIZE, MAX_CONCURRENT_JOB_FIRING_AT_ONCE);
@@ -68,42 +72,46 @@ public class PipelineRunScheduler {
 
     public void scheduleRunSchedule(final RunSchedule schedule) {
         try {
-            log.debug("Request received to schedule run ");
+            log.debug("Request received to schedule action: " + schedule.getAction() + " for "
+                    + schedule.getType() + ID + schedule.getSchedulableId());
             final JobDetail jobDetail = jobDetail(schedule);
 
             log.debug("Creating trigger for key " + jobDetail.getKey().getName() + " at date: " + DateUtils.now());
             final Trigger cronTrigger = createCronTrigger(schedule);
 
             final Date scheduledDate = quartzScheduler.scheduleJob(jobDetail, cronTrigger);
-            log.debug("Job for run: " + schedule.getRunId() + " scheduled successfully for date: " + scheduledDate);
+            log.debug("Job for: " + schedule.getType() + ID
+                    + schedule.getSchedulableId() + " scheduled successfully for date: " + scheduledDate);
         } catch (SchedulerException | ParseException e) {
-            log.error("SchedulerException while scheduling job for run " + schedule.getRunId() + " : " +
+            log.error("SchedulerException while scheduling job for run " + schedule.getSchedulableId() + " : " +
                       e.getMessage());
         }
     }
 
     public void unscheduleRunSchedule(final RunSchedule schedule) {
         try {
-            log.debug("Request received to unscheduling trigger for run " + schedule.getRunId());
+            log.debug("Request received to unscheduling trigger for: " + schedule.getType()
+                    + ID + schedule.getSchedulableId());
 
             final JobKey key = jobDetail(schedule).getKey();
 
             quartzScheduler.deleteJob(key);
 
-            log.debug("Schedule " + schedule.getCronExpression() + " for run " + schedule.getRunId() +
-                      " was revoked successfully.");
+            log.debug("Schedule " + schedule.getCronExpression() + " for "  + schedule.getType()
+                    + ID + schedule.getSchedulableId() + " was revoked successfully.");
         } catch (SchedulerException e) {
-            log.error("SchedulerException while unscheduling trigger for run " + schedule.getRunId() + " : " +
-                      e.getMessage());
+            log.error("SchedulerException while unscheduling trigger for "  + schedule.getType()
+                    + ID + schedule.getSchedulableId() + " : " + e.getMessage());
         }
     }
 
     private JobDetail jobDetail(final RunSchedule runSchedule) {
         JobDetailFactoryBean jobDetailFactory = new JobDetailFactoryBean();
-        jobDetailFactory.setJobClass(RunScheduleJob.class);
-        jobDetailFactory.getJobDataMap().put("RunId", runSchedule.getRunId());
+        jobDetailFactory.setJobClass(scheduleProviderManager.getProvider(runSchedule.getType()).getScheduleJobClass());
+        jobDetailFactory.getJobDataMap().put("SchedulableId", runSchedule.getSchedulableId());
+        jobDetailFactory.getJobDataMap().put("User", runSchedule.getUser());
         jobDetailFactory.getJobDataMap().put("Action", runSchedule.getAction().name());
-        jobDetailFactory.setName(String.format("run_%s-%s", runSchedule.getRunId(), runSchedule.getId()));
+        jobDetailFactory.setName(String.format("run_%s-%s", runSchedule.getSchedulableId(), runSchedule.getId()));
         jobDetailFactory.setDescription("Invoke run schedule job service...");
         jobDetailFactory.setDurability(true);
         jobDetailFactory.afterPropertiesSet();
