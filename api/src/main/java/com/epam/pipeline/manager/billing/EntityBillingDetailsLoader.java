@@ -14,23 +14,24 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.acl.billing;
+package com.epam.pipeline.manager.billing;
 
-import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
-import com.epam.pipeline.entity.billing.BillingChartInfo;
-import com.epam.pipeline.manager.billing.BillingManager;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import com.epam.pipeline.entity.billing.BillingGrouping;
 
-import java.util.List;
+import java.util.Map;
 
-@Service
-@RequiredArgsConstructor
-public class BillingApiService {
+public interface EntityBillingDetailsLoader {
 
-    private final BillingManager billingManager;
+    String OWNER = "owner";
 
-    public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {
-        return billingManager.getBillingChartInfo(request);
+    BillingGrouping getGrouping();
+
+    default String loadName(final String entityIdentifier) {
+        return entityIdentifier;
     }
+
+    Map<String, String> loadDetails(String entityIdentifier);
+
+    Map<String, String> getEmptyDetails();
+
 }

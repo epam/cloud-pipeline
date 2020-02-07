@@ -470,6 +470,14 @@ public final class MessageConstants {
     public static final String ERROR_GCP_INSTANCE_NOT_RUNNING = "error.gcp.instance.not.running";
     public static final String ERROR_GCP_INSTANCE_NOT_FOUND = "error.gcp.instance.not.found";
 
+    //Billing
+    public static final String ERROR_BILLING_FIELD_DATE_GROUPING_NOT_SUPPORTED =
+        "error.billing.date.field.grouping.not.supported";
+    public static final String INFO_BILLING_ENTITY_FOR_DETAILS_NOT_FOUND =
+        "error.billing.entity.for.grouping.not.found";
+    public static final String ERROR_BILLING_DETAILS_NOT_SUPPORTED = "error.billing.details.not.supported";
+    public static final String ERROR_BILLING_INTERVAL_NOT_SUPPORTED = "error.billing.interval.not.supported";
+
     private MessageConstants() {
         // no-op
     }
