@@ -34,10 +34,13 @@ import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.manager.scheduling.RunScheduler;
 import com.epam.pipeline.manager.user.UserManager;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
@@ -50,6 +53,7 @@ import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
 
 @DirtiesContext
 @Transactional
@@ -83,14 +87,18 @@ public class RunScheduleManagerTest extends AbstractManagerTest {
     @Autowired
     private UserManager userManager;
 
+    @MockBean
+    private RunScheduler runScheduler;
+
     private PipelineRunScheduleVO testRunScheduleVO;
     private PipelineRunScheduleVO testRunScheduleVO2;
     private PipelineRunScheduleVO testRunScheduleVO3;
     private RunConfiguration runConfiguration;
+    private Pipeline testPipeline;
 
     @Before
     public void setUp() {
-        Pipeline testPipeline = new Pipeline();
+        testPipeline = new Pipeline();
         testPipeline.setName(TEST_NAME);
         testPipeline.setRepository(TEST_REPOSITORY);
         testPipeline.setOwner(TEST_NAME);
@@ -120,6 +128,8 @@ public class RunScheduleManagerTest extends AbstractManagerTest {
         List<RunSchedule> configSchedules = runScheduleManager.createSchedules(runConfiguration.getId(),
                 ScheduleType.RUN_CONFIGURATION, Collections.singletonList(testRunScheduleVO3));
         configSchedules.forEach(this::loadAndAssertSchedule);
+
+        Mockito.verify(runScheduler, Mockito.times(3)).scheduleRunSchedule(any());
 
     }
 
@@ -170,6 +180,9 @@ public class RunScheduleManagerTest extends AbstractManagerTest {
         final List<RunSchedule> loadRunSchedule = runScheduleManager
                 .loadAllSchedulesBySchedulableId(RUN_ID, ScheduleType.PIPELINE_RUN);
         assertEquals(2, loadRunSchedule.size());
+        Mockito.verify(runScheduler, Mockito.times(2)).unscheduleRunSchedule(any());
+        // 2 for creation and 2 from update
+        Mockito.verify(runScheduler, Mockito.times(4)).scheduleRunSchedule(any());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -213,10 +226,45 @@ public class RunScheduleManagerTest extends AbstractManagerTest {
             runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
                     Arrays.asList(testRunScheduleVO, testRunScheduleVO2));
         final List<Long> ids = schedules.stream().map(RunSchedule::getId).collect(Collectors.toList());
+        Mockito.verify(runScheduler, Mockito.times(2)).scheduleRunSchedule(any());
+
+
         runScheduleManager.deleteSchedules(RUN_ID, ScheduleType.PIPELINE_RUN, ids);
         final List<RunSchedule> loadRunSchedule = runScheduleManager
                 .loadAllSchedulesBySchedulableId(RUN_ID, ScheduleType.PIPELINE_RUN);
         assertEquals(0, loadRunSchedule.size());
+        Mockito.verify(runScheduler, Mockito.times(2)).unscheduleRunSchedule(any());
+    }
+
+    @Test
+    @WithMockUser(username = USER_OWNER)
+    public void testDeleteAllRunSchedules() {
+        runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
+                        Arrays.asList(testRunScheduleVO, testRunScheduleVO2));
+        Mockito.verify(runScheduler, Mockito.times(2)).scheduleRunSchedule(any());
+
+        runScheduleManager.deleteSchedules(RUN_ID, ScheduleType.PIPELINE_RUN);
+        final List<RunSchedule> loadRunSchedule = runScheduleManager
+                .loadAllSchedulesBySchedulableId(RUN_ID, ScheduleType.PIPELINE_RUN);
+        assertEquals(0, loadRunSchedule.size());
+        Mockito.verify(runScheduler, Mockito.times(2)).unscheduleRunSchedule(any());
+
+    }
+
+    @Test
+    @WithMockUser(username = USER_OWNER)
+    public void testDeleteRunSchedulesForPipeline() {
+        runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
+                Arrays.asList(testRunScheduleVO, testRunScheduleVO2));
+        Mockito.verify(runScheduler, Mockito.times(2)).scheduleRunSchedule(any());
+
+        runScheduleManager.deleteSchedulesForRunByPipeline(testPipeline.getId());
+
+        final List<RunSchedule> loadRunSchedule = runScheduleManager
+                .loadAllSchedulesBySchedulableId(RUN_ID, ScheduleType.PIPELINE_RUN);
+        assertEquals(0, loadRunSchedule.size());
+        Mockito.verify(runScheduler, Mockito.times(2)).unscheduleRunSchedule(any());
+
     }
 
     @Test(expected = IllegalArgumentException.class)

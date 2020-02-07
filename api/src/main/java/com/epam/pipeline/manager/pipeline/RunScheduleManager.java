@@ -55,6 +55,7 @@ public class RunScheduleManager {
     private final MessageHelper messageHelper;
     private final AuthManager authManager;
     private final ScheduleProviderManager scheduleProviderManager;
+    private final PipelineRunManager runManager;
 
     @PostConstruct
     public void init() {
@@ -160,6 +161,7 @@ public class RunScheduleManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteSchedules(final Long schedulableId, final ScheduleType scheduleType) {
+        loadAllSchedulesBySchedulableId(schedulableId, scheduleType).forEach(scheduler::unscheduleRunSchedule);
         runScheduleDao.deleteRunSchedules(schedulableId, scheduleType);
     }
 
@@ -170,6 +172,10 @@ public class RunScheduleManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteSchedulesForRunByPipeline(final Long pipelineId) {
+        runManager.loadAllRunsByPipeline(pipelineId)
+                .stream()
+                .flatMap(run -> loadAllSchedulesBySchedulableId(run.getId(), ScheduleType.PIPELINE_RUN).stream())
+                .forEach(scheduler::unscheduleRunSchedule);
         runScheduleDao.deleteRunSchedulesForRunByPipeline(pipelineId);
     }
 
