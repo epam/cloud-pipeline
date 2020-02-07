@@ -22,8 +22,10 @@ import com.epam.pipeline.manager.user.UserManager;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,7 +33,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class UserBillingDetailsLoader implements EntityBillingDetailsLoader {
 
-    private static final String BILLING_CENTER = "billing center";
+    @Value("${billing.empty.report.value:unknown}")
+    private String emptyValue;
 
     @Autowired
     private final UserManager userManager;
@@ -46,8 +49,16 @@ public class UserBillingDetailsLoader implements EntityBillingDetailsLoader {
         final Map<String, String> details = new HashMap<>();
         final PipelineUser user = userManager.loadUserByName(entityIdentifier);
         if (user != null) {
-            details.put(BILLING_CENTER, MapUtils.emptyIfNull(user.getAttributes()).get("billingCenterKey"));
+            details.put(BillingGrouping.BILLING_CENTER.getCorrespondingField(),
+                        MapUtils.emptyIfNull(user.getAttributes()).getOrDefault("billingCenterKey", emptyValue));
+        } else {
+            details.putAll(getEmptyDetails());
         }
         return details;
+    }
+
+    @Override
+    public Map<String, String> getEmptyDetails() {
+        return Collections.singletonMap(BillingGrouping.BILLING_CENTER.getCorrespondingField(), emptyValue);
     }
 }

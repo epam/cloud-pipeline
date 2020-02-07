@@ -21,8 +21,10 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,6 +33,9 @@ import java.util.Map;
 public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
 
     private static final String PROVIDER = "provider";
+
+    @Value("${billing.empty.report.value:unknown}")
+    private String emptyValue;
 
     @Autowired
     private final DataStorageManager dataStorageManager;
@@ -41,11 +46,24 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
     }
 
     @Override
+    public String loadName(final String entityIdentifier) {
+        try {
+            return dataStorageManager.loadByNameOrId(entityIdentifier).getPath();
+        } catch (IllegalArgumentException e) {
+            return entityIdentifier;
+        }
+    }
+
+    @Override
     public Map<String, String> loadDetails(final String entityIdentifier) {
         final Map<String, String> details = new HashMap<>();
         final AbstractDataStorage storage = dataStorageManager.loadByNameOrId(entityIdentifier);
-        details.put(NAME, storage.getPath());
         details.put(PROVIDER, storage.getType().toString());
         return details;
+    }
+
+    @Override
+    public Map<String, String> getEmptyDetails() {
+        return Collections.singletonMap(PROVIDER, emptyValue);
     }
 }

@@ -23,9 +23,15 @@ import java.util.Map;
 public interface EntityBillingDetailsLoader {
 
     String OWNER = "owner";
-    String NAME = "name";
 
     BillingGrouping getGrouping();
 
+    default String loadName(final String entityIdentifier) {
+        return entityIdentifier;
+    }
+
     Map<String, String> loadDetails(String entityIdentifier);
+
+    Map<String, String> getEmptyDetails();
+
 }

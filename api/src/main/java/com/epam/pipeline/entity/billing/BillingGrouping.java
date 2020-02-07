@@ -21,25 +21,29 @@ import java.util.List;
 import java.util.Map;
 
 public enum BillingGrouping {
-    RESOURCE_TYPE("resource_type"),
-    RUN_INSTANCE_TYPE("instance_type"),
-    RUN_COMPUTE_TYPE("compute_type"),
-    PIPELINE("pipeline"),
-    TOOL("tool"),
-    STORAGE("id", Collections.singletonMap("resource_type", Collections.singletonList("STORAGE"))),
-    STORAGE_TYPE("storage_type"),
-    USER("owner");
+    RESOURCE_TYPE("resource_type", false),
+    RUN_INSTANCE_TYPE("instance_type", true),
+    RUN_COMPUTE_TYPE("compute_type", false),
+    PIPELINE("pipeline", true),
+    TOOL("tool", true),
+    STORAGE("id", Collections.singletonMap("resource_type", Collections.singletonList("STORAGE")), false),
+    STORAGE_TYPE("storage_type", false),
+    USER("owner", false),
+    BILLING_CENTER("biling_center", false);
 
     private final String correspondingField;
     private final Map<String, List<String>> requiredDefaultFilters;
+    private final boolean usageDetailsRequired;
 
-    BillingGrouping(final String correspondingField) {
-        this(correspondingField, Collections.emptyMap());
+    BillingGrouping(final String correspondingField, final boolean usageDetailsRequired) {
+        this(correspondingField, Collections.emptyMap(), usageDetailsRequired);
     }
 
-    BillingGrouping(final String correspondingField, final Map<String, List<String>> requiredDefaultFilters) {
+    BillingGrouping(final String correspondingField, final Map<String, List<String>> requiredDefaultFilters,
+                    final boolean usageDetailsRequired) {
         this.correspondingField = correspondingField;
         this.requiredDefaultFilters = requiredDefaultFilters;
+        this.usageDetailsRequired = usageDetailsRequired;
     }
 
     public String getCorrespondingField() {
@@ -48,5 +52,9 @@ public enum BillingGrouping {
 
     public Map<String, List<String>> getRequiredDefaultFilters() {
         return requiredDefaultFilters;
+    }
+
+    public boolean usageDetailsRequired() {
+        return usageDetailsRequired;
     }
 }

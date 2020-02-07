@@ -21,14 +21,19 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class PipelineBillingDetailsLoader implements EntityBillingDetailsLoader {
+
+    @Value("${billing.empty.report.value:unknown}")
+    private String emptyValue;
 
     @Autowired
     private final PipelineManager pipelineManager;
@@ -39,11 +44,24 @@ public class PipelineBillingDetailsLoader implements EntityBillingDetailsLoader 
     }
 
     @Override
+    public String loadName(final String entityIdentifier) {
+        try {
+            return pipelineManager.loadByNameOrId(entityIdentifier).getName();
+        } catch (IllegalArgumentException e) {
+            return entityIdentifier;
+        }
+    }
+
+    @Override
     public Map<String, String> loadDetails(final String entityIdentifier) {
         final Map<String, String> details = new HashMap<>();
         final Pipeline pipeline = pipelineManager.loadByNameOrId(entityIdentifier);
-        details.put(NAME, pipeline.getName());
         details.put(OWNER, pipeline.getOwner());
         return details;
+    }
+
+    @Override
+    public Map<String, String> getEmptyDetails() {
+        return Collections.singletonMap(OWNER, emptyValue);
     }
 }

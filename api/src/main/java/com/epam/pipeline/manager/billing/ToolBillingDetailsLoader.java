@@ -21,14 +21,19 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class ToolBillingDetailsLoader implements EntityBillingDetailsLoader {
+
+    @Value("${billing.empty.report.value:unknown}")
+    private String emptyValue;
 
     @Autowired
     private final ToolManager toolManager;
@@ -43,7 +48,11 @@ public class ToolBillingDetailsLoader implements EntityBillingDetailsLoader {
         final Map<String, String> details = new HashMap<>();
         final Tool tool = toolManager.loadByNameOrId(entityIdentifier);
         details.put(OWNER, tool.getOwner());
-        details.put(NAME, tool.getName());
         return details;
+    }
+
+    @Override
+    public Map<String, String> getEmptyDetails() {
+        return Collections.singletonMap(OWNER, emptyValue);
     }
 }
