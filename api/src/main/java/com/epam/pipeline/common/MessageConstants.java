@@ -152,6 +152,7 @@ public final class MessageConstants {
     public static final String CRON_EXPRESSION_IDENTICAL = "cron.expression.identical";
     public static final String SCHEDULE_ACTION_IS_NOT_PROVIDED = "schedule.action.is.not.provided";
     public static final String SCHEDULE_ACTION_IS_NOT_ALLOWED = "schedule.action.is.not.allowed";
+    public static final String SCHEDULE_ID_IS_NOT_PROVIDED = "schedule.id.is.not.provided";
     public static final String ERROR_RUN_SCHEDULE_NOT_FOUND = "error.run.schedule.not.found";
     public static final String ERROR_TIME_ZONE_IS_NOT_PROVIDED = "error.time.zone.is.not.provided";
     public static final String ERROR_SCHEDULABLE_ID_NOT_CORRESPONDING = "error.schedulable.id.not.corresponding";

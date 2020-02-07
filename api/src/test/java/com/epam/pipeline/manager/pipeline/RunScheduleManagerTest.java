@@ -172,6 +172,18 @@ public class RunScheduleManagerTest extends AbstractManagerTest {
         assertEquals(2, loadRunSchedule.size());
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    @WithMockUser(username = USER_OWNER)
+    public void testUpdateRunSchedulesFailsWithoutScheduleId() {
+        runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
+                        Collections.singletonList(testRunScheduleVO));
+
+        testRunScheduleVO.setCronExpression(CRON_EXPRESSION2);
+
+        runScheduleManager.updateSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
+                        Collections.singletonList(testRunScheduleVO));
+    }
+
     @Test
     @WithMockUser(username = USER_OWNER)
     public void testUpdateRunSchedulesWithIdenticalCron() {

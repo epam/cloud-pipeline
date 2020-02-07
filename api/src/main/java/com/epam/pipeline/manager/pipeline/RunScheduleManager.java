@@ -101,6 +101,8 @@ public class RunScheduleManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public List<RunSchedule> updateSchedules(final Long schedulableId, final ScheduleType scheduleType,
                                              final List<PipelineRunScheduleVO> runScheduleVOs) {
+        Assert.isTrue(runScheduleVOs.stream().noneMatch(runScheduleVO -> Objects.isNull(runScheduleVO.getScheduleId())),
+                messageHelper.getMessage(MessageConstants.SCHEDULE_ID_IS_NOT_PROVIDED));
         checkCronsAreUnique(runScheduleVOs);
         scheduleProviderManager.getProvider(scheduleType).verifySchedulable(schedulableId);
         final Map<Long, RunSchedule> loadedSchedules =
