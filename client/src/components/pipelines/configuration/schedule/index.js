@@ -61,11 +61,7 @@ class Schedule extends React.Component {
 
   reload = () => {
     const {configurationId, configurationSchedules} = this.props;
-    if (!this.schedule) {
-      this.schedule = configurationSchedules.getSchedule(configurationId);
-    } else {
-      this.schedule.invalidateCache();
-    }
+    this.schedule = configurationSchedules.getSchedule(configurationId);
     return this.schedule.fetchIfNeededOrWait();
   };
 
