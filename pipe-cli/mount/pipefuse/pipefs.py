@@ -220,13 +220,7 @@ class PipeFS(Operations):
 
     @syncronized
     def truncate(self, path, length, fh=None):
-        file_size = self.getattr(path)['st_size']
-        if file_size > 0 and length == 0:
-            self.create(path, self.mode)
-        elif length > file_size:
-            self.client.upload_range(fh, [], path, offset=(length - 1))
-        elif length != file_size:
-            raise FuseOSError(errno.ERANGE)
+        self.client.truncate(fh, path, length)
 
     @syncronized
     def flush(self, path, fh):

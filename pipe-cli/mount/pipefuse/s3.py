@@ -28,7 +28,8 @@ from botocore.session import get_session
 import fuseutils
 from fsclient import File, FileSystemClient
 from fuseutils import MB, GB
-from mpu import MultipartUpload, SplittingMultipartCopyUpload, ChunkedMultipartUpload
+from mpu import MultipartUpload, SplittingMultipartCopyUpload, ChunkedMultipartUpload, \
+    TruncatingMultipartCopyUpload
 
 _ANY_ERROR = Exception
 
@@ -113,6 +114,12 @@ class S3MultipartUpload(MultipartUpload):
 
 class S3Client(FileSystemClient):
 
+    _MIN_CHUNK = 1
+    _MAX_CHUNK = 10000
+    _MIN_PART_SIZE = 5 * MB
+    _MAX_PART_SIZE = 5 * GB
+    _SINGLE_UPLOAD_SIZE = 5 * MB
+
     def __init__(self, bucket, pipe, chunk_size):
         """
         AWS S3 API client for single bucket operations.
@@ -127,7 +134,6 @@ class S3Client(FileSystemClient):
         self._s3 = self._generate_s3_client(bucket, pipe)
         self._chunk_size = chunk_size
         self._delimiter = '/'
-        self._single_upload_size = 5 * MB
         self._mpus = {}
         self.root_path = '/'
 
@@ -300,10 +306,10 @@ class S3Client(FileSystemClient):
             if not mpu:
                 file_size = self.attrs(path).size
                 buf_size = len(buf)
-                if buf_size < self._single_upload_size and file_size < self._single_upload_size:
+                if buf_size < self._SINGLE_UPLOAD_SIZE and file_size < self._SINGLE_UPLOAD_SIZE:
                     self._upload_single_range(fh, buf, source_path, offset)
                 else:
-                    mpu = self._new_mpu(file_size, offset, source_path)
+                    mpu = self._new_mpu(source_path, file_size, offset)
                     self._mpus[path] = mpu
                     mpu.initiate()
                     mpu.upload_part(buf, offset)
@@ -315,11 +321,11 @@ class S3Client(FileSystemClient):
                 del self._mpus[path]
             raise
 
-    def _new_mpu(self, file_size, offset, source_path):
+    def _new_mpu(self, source_path, file_size, offset):
         mpu = S3MultipartUpload(source_path, offset, self.bucket, self._s3)
-        mpu = SplittingMultipartCopyUpload(mpu, min_part_size=5 * MB, max_part_size=5 * GB)
+        mpu = SplittingMultipartCopyUpload(mpu, min_part_size=self._MIN_PART_SIZE, max_part_size=self._MAX_PART_SIZE)
         mpu = ChunkedMultipartUpload(mpu, file_size, download_func=self._generate_region_download_function(source_path),
-                                     chunk_size=self._chunk_size, min_chunk=1, max_chunk=10000)
+                                     chunk_size=self._chunk_size, min_chunk=self._MIN_CHUNK, max_chunk=self._MAX_CHUNK)
         return mpu
 
     def _generate_region_download_function(self, path):
@@ -347,3 +353,26 @@ class S3Client(FileSystemClient):
                 raise
             finally:
                 del self._mpus[path]
+
+    def truncate(self, fh, path, length):
+        file_size = self.attrs(path).size
+        if not length:
+            self.upload(bytearray(), path)
+        elif file_size > length:
+            source_path = path.lstrip(self._delimiter)
+            mpu = self._new_truncating_mpu(source_path, length)
+            try:
+                mpu.initiate()
+                mpu.complete()
+            except _ANY_ERROR:
+                mpu.abort()
+                raise
+        elif file_size < length:
+            raise RuntimeError('S3 filesystem client doesn\'t support up truncate operation. '
+                               'Use some of the existing filesystem client decorators.')
+
+    def _new_truncating_mpu(self, source_path, length):
+        mpu = S3MultipartUpload(source_path, offset=0, bucket=self.bucket, s3=self._s3)
+        mpu = SplittingMultipartCopyUpload(mpu, min_part_size=self._MIN_PART_SIZE, max_part_size=self._MAX_PART_SIZE)
+        mpu = TruncatingMultipartCopyUpload(mpu, length=length, min_part_number=self._MIN_CHUNK)
+        return mpu

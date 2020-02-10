@@ -113,3 +113,73 @@ class FileSystemClient:
 
     def utimens(self, path, times=None):
         pass
+
+    def truncate(self, fh, path, length):
+        """
+        Truncates the given path to the given length.
+        The operation can be performed to either decrease or increase the path length.
+
+        :param fh: File handle.
+        :param path: Path to truncate.
+        :param length: Target size of the truncating path.
+        """
+        pass
+
+
+class FileSystemClientDecorator(FileSystemClient):
+
+    def __init__(self, inner):
+        """
+        File system client decorators base class.
+
+        :param inner: Decorating file system client.
+        """
+        self._inner = inner
+
+    def is_available(self):
+        return self._inner.is_available()
+
+    def is_read_only(self):
+        return self._inner.is_read_only()
+
+    def exists(self, path):
+        return self._inner.exists(path)
+
+    def attrs(self, path):
+        return self._inner.attrs(path)
+
+    def ls(self, path, depth=1):
+        return self._inner.ls(path, depth)
+
+    def upload(self, buf, path):
+        self._inner.upload(buf, path)
+
+    def delete(self, path):
+        self._inner.delete(path)
+
+    def mv(self, old_path, path):
+        self._inner.mv(old_path, path)
+
+    def mkdir(self, path):
+        self._inner.mkdir(path)
+
+    def rmdir(self, path):
+        self._inner.rmdir(path)
+
+    def download_range(self, fh, buf, path, offset=0, length=0):
+        self._inner.download_range(fh, buf, path, offset, length)
+
+    def upload_range(self, fh, buf, path, offset=0):
+        self._inner.upload_range(fh, buf, path, offset)
+
+    def flush(self, fh, path):
+        self._inner.flush(fh, path)
+
+    def truncate(self, fh, path, length):
+        self._inner.truncate(fh, path, length)
+
+    def __getattr__(self, name):
+        if hasattr(self._inner, name):
+            return getattr(self._inner, name)
+        else:
+            raise RuntimeError('File system client %s and its inner client %s don\'t have %s attribute.' % (type(self), type(self._inner), name))

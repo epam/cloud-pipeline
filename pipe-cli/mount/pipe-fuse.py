@@ -27,6 +27,9 @@ os.environ["FUSE_LIBRARY_PATH"] = libfuse_path
 from pipefuse.fuseutils import MB, GB
 from pipefuse.cache import CachingFileSystemClient
 from pipefuse.buff import BufferedFileSystemClient
+from pipefuse.trunc import CopyOnDownTruncateFileSystemClient, \
+    WriteNullsOnUpTruncateFileSystemClient, \
+    WriteLastNullOnUpTruncateFileSystemClient
 from pipefuse.api import CloudPipelineClient
 from pipefuse.webdav import CPWebDavClient
 from pipefuse.s3 import S3Client
@@ -40,8 +43,8 @@ _allowed_logging_levels_string = ', '.join(_allowed_logging_levels)
 _default_logging_level = logging.ERROR
 
 
-def start(mountpoint, webdav, bucket, buffer_size, chunk_size, cache_ttl, cache_size, default_mode, mount_options=None,
-          threads=False, monitoring_delay=600):
+def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size, cache_ttl, cache_size, default_mode,
+          mount_options=None, threads=False, monitoring_delay=600):
     if mount_options is None:
         mount_options = {}
     try:
@@ -71,6 +74,14 @@ def start(mountpoint, webdav, bucket, buffer_size, chunk_size, cache_ttl, cache_
         client = BufferedFileSystemClient(client, capacity=buffer_size)
     else:
         logging.info('Buffering is disabled.')
+    if trunc_buffer_size > 0:
+        if webdav:
+            client = CopyOnDownTruncateFileSystemClient(client, capacity=trunc_buffer_size)
+            client = WriteLastNullOnUpTruncateFileSystemClient(client)
+        else:
+            client = WriteNullsOnUpTruncateFileSystemClient(client, capacity=trunc_buffer_size)
+    else:
+        logging.info('Truncating support is disabled.')
     fs = PipeFS(client=client, lock=get_lock(threads, monitoring_delay=monitoring_delay), mode=int(default_mode, 8))
     FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=client.is_read_only(), **mount_options)
 
@@ -95,6 +106,8 @@ if __name__ == '__main__':
     parser.add_argument("-b", "--bucket", type=str, required=False, help="Bucket name")
     parser.add_argument("-f", "--buffer-size", type=int, required=False, default=512 * MB,
                         help="Writing buffer size for a single file")
+    parser.add_argument("-r", "--trunc-buffer-size", type=int, required=False, default=512 * MB,
+                        help="Truncating buffer size for a single file")
     parser.add_argument("-c", "--chunk-size", type=int, required=False, default=10 * MB,
                         help="Multipart upload chunk size. Can be also specified via "
                              "CP_PIPE_FUSE_CHUNK_SIZE environment variable.")
@@ -124,9 +137,9 @@ if __name__ == '__main__':
 
     try:
         start(args.mountpoint, webdav=args.webdav, bucket=args.bucket, buffer_size=args.buffer_size,
-              chunk_size=args.chunk_size, cache_ttl=args.cache_ttl, cache_size=args.cache_size, default_mode=args.mode,
-              mount_options=parse_mount_options(args.options), threads=args.threads,
-              monitoring_delay=args.monitoring_delay)
+              trunc_buffer_size=args.trunc_buffer_size, chunk_size=args.chunk_size, cache_ttl=args.cache_ttl,
+              cache_size=args.cache_size, default_mode=args.mode, mount_options=parse_mount_options(args.options),
+              threads=args.threads, monitoring_delay=args.monitoring_delay)
     except BaseException as e:
         logging.error('Unhandled error: %s' % e.message)
         sys.exit(1)

@@ -49,6 +49,31 @@ class MultipartUpload:
         pass
 
 
+class MultipartUploadDecorator(MultipartUpload):
+
+    def __init__(self, mpu):
+        self._mpu = mpu
+
+    @property
+    def path(self):
+        return self._mpu.path
+
+    def initiate(self):
+        self._mpu.initiate()
+
+    def upload_part(self, buf, offset=None, part_number=None):
+        self._mpu.upload_part(buf, offset, part_number)
+
+    def upload_copy_part(self, start, end, offset=None, part_number=None):
+        self._mpu.upload_copy_part(start, end, offset, part_number)
+
+    def complete(self):
+        self._mpu.complete()
+
+    def abort(self):
+        self._mpu.abort()
+
+
 class _PartialChunk:
 
     def __init__(self, offset, size):
@@ -81,7 +106,7 @@ class _PartialChunk:
         return self._buf[:self._interval.upper]
 
 
-class ChunkedMultipartUpload(MultipartUpload):
+class ChunkedMultipartUpload(MultipartUploadDecorator):
 
     def __init__(self, mpu, original_size, download_func, chunk_size, min_chunk, max_chunk):
         """
@@ -102,6 +127,7 @@ class ChunkedMultipartUpload(MultipartUpload):
         :param min_chunk: Minimum allowed chunk number.
         :param max_chunk: Maximum allowed chunk number.
         """
+        super(ChunkedMultipartUpload, self).__init__(mpu)
         self._mpu = mpu
         self._original_size = original_size
         self._download_func = download_func
@@ -110,13 +136,6 @@ class ChunkedMultipartUpload(MultipartUpload):
         self._partial_chunks = {}
         self._min_chunk = min_chunk
         self._max_chunk = max_chunk
-
-    @property
-    def path(self):
-        return self._mpu.path
-
-    def initiate(self):
-        self._mpu.initiate()
 
     def upload_part(self, buf, offset=None, part_number=None):
         chunk = self._resolve_chunk(offset)
@@ -160,9 +179,6 @@ class ChunkedMultipartUpload(MultipartUpload):
     def _chunk_offset(self, chunk):
         return (chunk - 1) * self._chunk_size
 
-    def upload_copy_part(self, start, end, offset=None, part_number=None):
-        self._mpu.upload_copy_part(start, end, offset, part_number)
-
     def complete(self):
         last_missing_chunk = 1
         for chunk in sorted(self._chunks):
@@ -184,11 +200,8 @@ class ChunkedMultipartUpload(MultipartUpload):
             self._mpu.upload_part(chunk, partial_chunk.offset, chunk_number)
         self._mpu.complete()
 
-    def abort(self):
-        self._mpu.abort()
 
-
-class SplittingMultipartCopyUpload(MultipartUpload):
+class SplittingMultipartCopyUpload(MultipartUploadDecorator):
 
     def __init__(self, mpu, min_part_size=5 * MB, max_part_size=5 * GB):
         """
@@ -201,19 +214,10 @@ class SplittingMultipartCopyUpload(MultipartUpload):
         :param min_part_size: Minimum upload part size.
         :param max_part_size: Maximum upload part size.
         """
+        super(SplittingMultipartCopyUpload, self).__init__(mpu)
         self._mpu = mpu
         self._min_part_size = min_part_size
         self._max_part_size = max_part_size
-
-    @property
-    def path(self):
-        return self._mpu.path
-
-    def initiate(self):
-        self._mpu.initiate()
-
-    def upload_part(self, buf, offset=None, part_number=None):
-        self._mpu.upload_part(buf, offset, part_number)
 
     def upload_copy_part(self, start, end, offset=None, part_number=None):
         copy_part_length = end - start
@@ -238,8 +242,24 @@ class SplittingMultipartCopyUpload(MultipartUpload):
         else:
             return min(self._max_part_size, remaining_length - self._min_part_size)
 
-    def complete(self):
-        self._mpu.complete()
 
-    def abort(self):
-        self._mpu.abort()
+class TruncatingMultipartCopyUpload(MultipartUploadDecorator):
+
+    def __init__(self, mpu, length, min_part_number=1):
+        """
+        Truncating multipart copy upload.
+
+        Truncates the file length to the given size which has to be smaller then the original one.
+
+        :param mpu: Wrapping multipart upload.
+        :param length: Target size of the truncating file.
+        :param min_part_number: Minimal allowed part number. Same as minimum allowed chunk number.
+        """
+        super(TruncatingMultipartCopyUpload, self).__init__(mpu)
+        self._mpu = mpu
+        self._length = length
+        self._min_part_number = min_part_number
+
+    def complete(self):
+        self._mpu.upload_copy_part(start=0, end=self._length, offset=0, part_number=self._min_part_number)
+        self._mpu.complete()
