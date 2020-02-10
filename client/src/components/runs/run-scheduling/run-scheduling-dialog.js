@@ -27,8 +27,19 @@ import styles from './run-scheduling.css';
 
 const actions = {
   pause: 'PAUSE',
-  resume: 'RESUME'
+  resume: 'RESUME',
+  run: 'RUN'
 };
+
+function getActionName (action) {
+  switch (action) {
+    case actions.pause: return 'Pause';
+    case actions.resume: return 'Resume';
+    case actions.run: return 'Run';
+    default:
+      return action;
+  }
+}
 
 //  every X days + time
 //  every [weekday] + time
@@ -36,11 +47,25 @@ const actions = {
 @observer
 export default class RunScheduleDialog extends React.Component {
   static propTypes = {
+    availableActions: PropTypes.arrayOf(PropTypes.oneOf([
+      actions.pause,
+      actions.resume,
+      actions.run
+    ])),
     rules: PropTypes.array,
     visible: PropTypes.bool,
     disabled: PropTypes.bool,
-    onSubmit: PropTypes.func
+    onSubmit: PropTypes.func,
+    onClose: PropTypes.func,
+    title: PropTypes.node,
   };
+
+  static defaultProps = {
+    availableActions: [actions.pause, actions.resume],
+    title: 'Maintenance'
+  };
+
+  static Actions = actions;
 
   state = {
     rules: [],
@@ -125,7 +150,11 @@ export default class RunScheduleDialog extends React.Component {
   };
 
   onAddRow = () => {
+    const {availableActions} = this.props;
     const {rules} = this.state;
+    const defaultAction = availableActions && availableActions.length > 0
+      ? availableActions[0]
+      : actions.pause;
     rules.push({
       schedule: {
         mode: ruleModes.daily,
@@ -135,7 +164,7 @@ export default class RunScheduleDialog extends React.Component {
           minutes: 0
         }
       },
-      action: actions.pause,
+      action: defaultAction,
       timeZone: moment.tz.guess()
     });
     this.setState({rules});
@@ -166,17 +195,24 @@ export default class RunScheduleDialog extends React.Component {
       rules[i].action = value;
       this.setState({rules});
     };
+    const {availableActions} = this.props;
+    if (!availableActions || availableActions.length < 2) {
+      return null;
+    }
     return (
       <div>
         <Select
-          disabled={removed}
+          disabled={removed || (availableActions && availableActions.length < 2)}
           onSelect={onActionChange}
           value={action}
           size="small"
-          style={{width: 80}}
+          style={{width: 80, marginRight: 15}}
         >
-          <Select.Option key={actions.pause}>Pause</Select.Option>
-          <Select.Option key={actions.resume}>Resume</Select.Option>
+          {
+            availableActions.map((action) => (
+              <Select.Option key={action}>{getActionName(action)}</Select.Option>
+            ))
+          }
         </Select>
       </div>
     );
@@ -203,7 +239,7 @@ export default class RunScheduleDialog extends React.Component {
           onSelect={onModeChange}
           value={schedule.mode}
           size="small"
-          style={{width: 80, marginLeft: 15}}
+          style={{width: 80, marginRight: 15}}
         >
           <Select.Option key={ruleModes.daily}>Daily</Select.Option>
           <Select.Option key={ruleModes.weekly}>Weekly</Select.Option>
@@ -223,7 +259,7 @@ export default class RunScheduleDialog extends React.Component {
       this.setState({rules});
     };
     return (
-      <div style={{flex: 1, marginLeft: 15}}>
+      <div style={{flex: 1, marginRight: 15}}>
         Every
         <InputNumber
           disabled={removed}
@@ -263,7 +299,7 @@ export default class RunScheduleDialog extends React.Component {
     const [validationError] = (validationErrors || []).filter(({index}) => index === i);
 
     return (
-      <div style={{flex: 1, marginLeft: 15}}>
+      <div style={{flex: 1, marginRight: 15}}>
         <Select
           disabled={removed}
           mode="multiple"
@@ -294,7 +330,7 @@ export default class RunScheduleDialog extends React.Component {
     };
     const format = 'HH:mm';
     return (
-      <div style={{marginLeft: 15}}>
+      <div style={{marginRight: 15}}>
         at
         <TimePicker
           disabled={removed}
@@ -370,7 +406,7 @@ export default class RunScheduleDialog extends React.Component {
                   shape="circle"
                   icon="delete"
                   size="small"
-                  style={{marginLeft: 15}}
+                  style={{marginRight: 15}}
                   type="danger"
                 />
               ) : (
@@ -379,7 +415,6 @@ export default class RunScheduleDialog extends React.Component {
                   shape="circle"
                   icon="reload"
                   size="small"
-                  style={{marginLeft: 15}}
                 />
               )
           }
@@ -391,12 +426,12 @@ export default class RunScheduleDialog extends React.Component {
   };
 
   render () {
-    const {onClose, visible} = this.props;
+    const {onClose, visible, title} = this.props;
     const {rules} = this.state;
 
     return (
       <Modal
-        title="Maintenance"
+        title={title}
         onCancel={onClose}
         onOk={this.onOkClicked}
         visible={visible}
