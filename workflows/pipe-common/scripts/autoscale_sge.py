@@ -568,8 +568,8 @@ class GridEngineScaleDownHandler:
             Logger.info('Enable additional worker with host=%s again.' % child_host)
             self.grid_engine.enable_host(child_host)
             return False
-        self._decrease_parallel_environment_slots(self.instance_cores)
         self._remove_host_from_grid_engine_configuration(child_host)
+        self._decrease_parallel_environment_slots(self.instance_cores)
         self._stop_pipeline(child_host)
         self._remove_host_from_hosts(child_host)
         self._remove_host_from_default_hostfile(child_host)
