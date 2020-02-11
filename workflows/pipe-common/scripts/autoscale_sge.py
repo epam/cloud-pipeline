@@ -95,8 +95,8 @@ class CmdExecutor:
         out, err = process.communicate()
         exit_code = process.wait()
         if exit_code != 0:
-            Logger.warn('Command \'%s\' execution has failed due to %s.' % (command, err))
-            raise ExecutionError('Command \'%s\' execution has failed due to %s.' % (command, err))
+            Logger.warn('Command \'%s\' execution has failed due to %s.' % (command, err.rstrip()))
+            raise ExecutionError('Command \'%s\' execution has failed due to %s.' % (command, err.rstrip()))
         return out
 
     def execute_to_lines(self, command):
