@@ -92,6 +92,12 @@ public class ToolGroup extends AbstractHierarchicalEntity {
 
     @Override
     public AbstractHierarchicalEntity copyView() {
-        return this;
+        final ToolGroup result = new ToolGroup(this.getId());
+        result.setRegistryId(this.getRegistryId());
+        result.setName(this.getName());
+        result.setDescription(this.getDescription());
+        result.setPrivateGroup(this.isPrivateGroup());
+        result.setParent(this.getParent());
+        return result;
     }
 }
