@@ -488,7 +488,7 @@ class GridEngineScaleUpHandler:
             return name
         else:
             error_msg = 'Worker with run_id=%s has no pod name specified.'
-            Logger.fail(error_msg)
+            Logger.warn(error_msg)
             raise ScalingError(error_msg)
 
     def _await_pod_initialization(self, run_id):
@@ -506,7 +506,7 @@ class GridEngineScaleUpHandler:
             attempts -= 1
             time.sleep(self.polling_delay)
         error_msg = 'Pod with run_id=%s hasn\'t started after %s seconds.' % (run_id, self.polling_timeout)
-        Logger.fail(error_msg)
+        Logger.warn(error_msg)
         raise ScalingError(error_msg)
 
     def _add_worker_to_master_hosts(self, pod):
@@ -527,7 +527,7 @@ class GridEngineScaleUpHandler:
             attempts -= 1
             time.sleep(self.polling_delay)
         error_msg = 'Additional worker hasn\'t been initialized after %s seconds.' % self.polling_timeout
-        Logger.fail(error_msg)
+        Logger.warn(error_msg)
         raise ScalingError(error_msg)
 
     def _increase_parallel_environment_slots(self, slots_to_append):
@@ -923,10 +923,10 @@ class GridEngineAutoscalingDaemon:
                 self.worker_validator.validate_hosts()
                 self.autoscaler.scale()
             except KeyboardInterrupt:
-                Logger.warn('Manual stop the autoscaler daemon.')
+                Logger.warn('Manual stop of the autoscaler daemon.')
                 break
             except Exception as e:
-                Logger.fail('Scaling step has failed due to %s.' % e)
+                Logger.warn('Scaling step has failed due to %s.' % e)
 
 
 def make_dirs(path):
