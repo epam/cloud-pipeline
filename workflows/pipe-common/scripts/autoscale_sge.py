@@ -158,6 +158,7 @@ class GridEngine:
     _REMOVE_HOST_FROM_HOST_GROUP = 'qconf -dattr hostgroup hostlist %s %s'
     _REMOVE_HOST_FROM_QUEUE_SETTINGS = 'qconf -purge queue slots %s@%s'
     _SHUTDOWN_HOST_EXECUTION_DAEMON = 'qconf -ke %s'
+    _REMOVE_HOST_FROM_ADMINISTRATIVE_HOSTS = 'qconf -dh %s'
     _QSTAT = 'qstat -u "*"'
     _QSTAT_DATETIME_FORMAT = '%m/%d/%Y %H:%M:%S'
     _QSTAT_COLUMNS = ['job-ID', 'prior', 'name', 'user', 'state', 'submit/start at', 'queue', 'slots', 'ja-task-ID']
@@ -280,7 +281,8 @@ class GridEngine:
         1. Shutdown host execution daemon.
         2. Removes host from queue settings.
         3. Removes host from host group.
-        4. Removes host from GE.
+        4. Removes host from administrative hosts.
+        5. Removes host from GE.
 
         :param host: Host to be removed.
         :param queue: Queue host is a part of.
@@ -291,6 +293,7 @@ class GridEngine:
         self._shutdown_execution_host(host, skip_on_failure=skip_on_failure)
         self._remove_host_from_queue_settings(host, queue, skip_on_failure=skip_on_failure)
         self._remove_host_from_host_group(host, hostgroup, skip_on_failure=skip_on_failure)
+        self._remove_host_from_administrative_hosts(host, skip_on_failure=skip_on_failure)
         self._remove_host_from_grid_engine(host, skip_on_failure=skip_on_failure)
 
     def _shutdown_execution_host(self, host, skip_on_failure):
@@ -322,6 +325,14 @@ class GridEngine:
             action=lambda: self.cmd_executor.execute(GridEngine._DELETE_HOST % host),
             msg='Remove host from GE.',
             error_msg='Removing host from GE has failed.',
+            skip_on_failure=skip_on_failure
+        )
+
+    def _remove_host_from_administrative_hosts(self, host, skip_on_failure):
+        self._perform_command(
+            action=lambda: self.cmd_executor.execute(GridEngine._REMOVE_HOST_FROM_ADMINISTRATIVE_HOSTS % host),
+            msg='Remove host from list of administrative hosts.',
+            error_msg='Removing host from list of administrative hosts has failed.',
             skip_on_failure=skip_on_failure
         )
 
