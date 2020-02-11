@@ -166,6 +166,8 @@ class GridEngine:
     _SHOW_EXECUTION_HOST = 'qconf -se %s'
     _KILL_JOBS = 'qdel %s'
     _FORCE_KILL_JOBS = 'qdel -f %s'
+    _SHOW_HOST_STATES = 'qstat -f | grep \'%s@%s\' | awk \'{print $6}\''
+    _BAD_HOST_STATES = ['u', 'E', 'd']
 
     def __init__(self, cmd_executor):
         self.cmd_executor = cmd_executor
@@ -332,18 +334,25 @@ class GridEngine:
             if not skip_on_failure:
                 raise RuntimeError(error_msg, e)
 
-    def is_valid(self, host):
+    def is_valid(self, host, queue=_MAIN_Q):
         """
-        Validates host in GE checking corresponding execution host availability.
+        Validates host in GE checking corresponding execution host availability and its states.
 
         :param host: Host to be checked.
-        :return: True if execution host exists.
+        :return: True if execution host is valid.
         """
         try:
             self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOST % host)
+            host_states = self.cmd_executor.execute(GridEngine._SHOW_HOST_STATES % (queue, host)).strip()
+            for host_state in host_states:
+                if host_state in self._BAD_HOST_STATES:
+                    Logger.warn('Execution host %s GE state is %s which makes host invalid.' % (host, host_states))
+                    return False
+            if host_states:
+                Logger.warn('Execution host %s GE state is not empty: %s.' % (host, host_states))
             return True
-        except RuntimeError:
-            Logger.warn('Execution host %s in GE wasn\'t found.' % host)
+        except RuntimeError as e:
+            Logger.warn('Execution host %s validation has failed in GE: %s' % (host, e))
             return False
 
     def kill_jobs(self, jobs, force=False):
