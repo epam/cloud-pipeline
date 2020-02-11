@@ -90,4 +90,35 @@ public class PipeRunCmdBuilderTest {
                 CMD_TEMPLATE);
         Assert.assertEquals(expectedResult, actualResult);
     }
+
+    @Test
+    public void shouldIgnoreInstanceCountOptionIf0() {
+        final PipelineStart pipelineStart = new PipelineStart();
+        pipelineStart.setPipelineId(1L);
+        pipelineStart.setNodeCount(0);
+
+        final PipeRunCmdStartVO pipeRunCmdStartVO = new PipeRunCmdStartVO();
+        pipeRunCmdStartVO.setPipelineStart(pipelineStart);
+
+        final PipeRunCmdBuilder pipeRunCmdBuilder = new PipeRunCmdBuilder(pipeRunCmdStartVO);
+        final String actualResult = pipeRunCmdBuilder
+                .name()
+                .config()
+                .runParameters()
+                .parameters()
+                .yes()
+                .instanceDisk()
+                .instanceType()
+                .dockerImage()
+                .cmdTemplate()
+                .timeout()
+                .quite()
+                .instanceCount()
+                .sync()
+                .priceType()
+                .regionId()
+                .parentNode()
+                .build();
+        Assert.assertEquals("pipe run -n 1 -pt spot", actualResult);
+    }
 }

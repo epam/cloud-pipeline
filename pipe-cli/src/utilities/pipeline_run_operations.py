@@ -69,6 +69,9 @@ class PipelineRunOperations(object):
 
         run_params_dict = dict([(k.strip('-'), v) for k, v in zip(run_params[::2], run_params[1::2])])
 
+        if instance_count == 0:
+            instance_count = None
+
         # Calculate instance_type and instance_count if only cores specified
         if not instance_count and cores:
             nodes_spec = ClusterManager.calculate_cluster_from_cores(cores, core_type=instance_type)

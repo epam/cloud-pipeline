@@ -61,7 +61,7 @@ public class DockerImageSelection implements AccessObject<DockerImageSelection> 
     public DockerImageSelection selectRegistry(final String registry) {
         sleep(1, SECONDS);
         if (get(REGISTRY).has(not(text(registry)))) {
-            hover(REGISTRY);
+            click(REGISTRY);
             get(REGISTRIES_LIST).find(button(registry)).shouldBe(visible).click();
         }
         return this;
@@ -70,7 +70,7 @@ public class DockerImageSelection implements AccessObject<DockerImageSelection> 
     public DockerImageSelection selectGroup(final String group) {
         sleep(1, SECONDS);
         if (get(GROUP).has(not(text(group)))) {
-            hover(GROUP);
+            click(GROUP);
             get(GROUPS_LIST).find(button(group)).shouldBe(visible).click();
         }
         return this;

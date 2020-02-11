@@ -342,10 +342,10 @@ class Timeline extends React.PureComponent {
 }
 
 Timeline.propTypes = {
-  from: PropTypes.number.isRequired,
+  from: PropTypes.number,
   maximum: PropTypes.number,
   minimum: PropTypes.number,
-  to: PropTypes.number.isRequired,
+  to: PropTypes.number,
   tickColor: PropTypes.string,
   fontColor: PropTypes.string,
   fontSize: PropTypes.number,

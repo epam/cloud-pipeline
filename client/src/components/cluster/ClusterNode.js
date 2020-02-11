@@ -23,14 +23,15 @@ import {ChartsData} from './charts';
 import {inject, observer} from 'mobx-react';
 import styles from './ClusterNode.css';
 import parentStyles from './Cluster.css';
-import {renderNodeLabels} from './renderers';
+import {renderNodeLabels as generateNodeLabels} from './renderers';
 import {PIPELINE_INFO_LABEL} from './node-roles';
 
-@inject((stores, {params}) => {
+@inject((stores, {params, location}) => {
+  const {from, to} = location?.query;
   return {
     name: params.nodeName,
     node: clusterNodes.getNode(params.nodeName),
-    chartsData: new ChartsData(params.nodeName)
+    chartsData: new ChartsData(params.nodeName, from, to)
   };
 })
 @observer
@@ -44,12 +45,14 @@ class ClusterNode extends Component {
     }
   };
 
-  render () {
-    const activeTab = this.props.router.location.pathname.split('/').slice(-1)[0];
-    let result = null;
+  renderError = () => {
     if (!this.props.node.pending && this.props.node.error) {
-      result = (
-        <div>
+      const activeTab = this.props.router.location.pathname.split('/').slice(-1)[0];
+      if (/^monitor$/i.test(activeTab)) {
+        return null;
+      }
+      return (
+        <div key="error">
           <br />
           <Alert
             message={`The node '${this.props.name}' was not found or was removed`}
@@ -57,45 +60,48 @@ class ClusterNode extends Component {
           />
         </div>
       );
-    } else {
-      result = [
-        <Row gutter={16} type="flex" className={styles.rowMenu} key="menu">
-          <Menu
-            mode="horizontal"
-            selectedKeys={[activeTab]}
-            className={styles.tabsMenu}>
-            <Menu.Item key="info">
-              <AdaptedLink
-                id="cluster-node-tab-info"
-                to={`/cluster/${this.props.name}/info`}
-                location={this.props.router.location}>General info</AdaptedLink>
-            </Menu.Item>
-            <Menu.Item key="jobs">
-              <AdaptedLink
-                id="cluster-node-tab-jobs"
-                to={`/cluster/${this.props.name}/jobs`}
-                location={this.props.router.location}>Jobs</AdaptedLink>
-            </Menu.Item>
-            <Menu.Item key="monitor">
-              <AdaptedLink
-                id="cluster-node-tab-monitor"
-                to={`/cluster/${this.props.name}/monitor`}
-                location={this.props.router.location}>Monitor</AdaptedLink>
-            </Menu.Item>
-          </Menu>
-        </Row>,
-        React.Children.map(this.props.children,
-          (child) => React.cloneElement(
-            child,
-            {
-              node: this.props.node,
-              chartsData: this.props.chartsData
-            }
-          )
-        )
-      ];
     }
+    return null;
+  };
 
+  renderMenu = () => {
+    if (this.props.node.pending || this.props.node.error) {
+      return null;
+    }
+    const activeTab = this.props.router.location.pathname.split('/').slice(-1)[0];
+    return (
+      <Row gutter={16} type="flex" className={styles.rowMenu} key="menu">
+        <Menu
+          mode="horizontal"
+          selectedKeys={[activeTab]}
+          className={styles.tabsMenu}>
+          <Menu.Item key="info">
+            <AdaptedLink
+              id="cluster-node-tab-info"
+              to={`/cluster/${this.props.name}/info`}
+              location={this.props.router.location}>General info</AdaptedLink>
+          </Menu.Item>
+          <Menu.Item key="jobs">
+            <AdaptedLink
+              id="cluster-node-tab-jobs"
+              to={`/cluster/${this.props.name}/jobs`}
+              location={this.props.router.location}>Jobs</AdaptedLink>
+          </Menu.Item>
+          <Menu.Item key="monitor">
+            <AdaptedLink
+              id="cluster-node-tab-monitor"
+              to={`/cluster/${this.props.name}/monitor`}
+              location={this.props.router.location}>Monitor</AdaptedLink>
+          </Menu.Item>
+        </Menu>
+      </Row>
+    );
+  };
+
+  renderNodeLabels = () => {
+    if (this.props.node.error) {
+      return null;
+    }
     const labels = Object.assign({}, this.props.node.value ? this.props.node.value.labels : {});
 
     if (this.props.node.value && this.props.node.value.pipelineRun) {
@@ -109,7 +115,7 @@ class ClusterNode extends Component {
       }
     }
 
-    const nodeLabels = renderNodeLabels(
+    return generateNodeLabels(
       labels,
       {
         className: parentStyles.nodeLabel,
@@ -121,7 +127,23 @@ class ClusterNode extends Component {
         location: this.props.router.location,
         pipelineRun: this.props.node.value ? this.props.node.value.pipelineRun : null
       });
+  };
 
+  render () {
+    const result = [
+      this.renderError(),
+      this.renderMenu(),
+      React.Children.map(this.props.children,
+        (child) => React.cloneElement(
+          child,
+          {
+            node: this.props.node,
+            chartsData: this.props.chartsData
+          }
+        )
+      )
+    ];
+    const nodeLabels = this.renderNodeLabels();
     return (
       <Card
         key={this.props.name}

@@ -48,6 +48,7 @@ import IssuesRenderer from '../../components/special/issues/utilities/IssueRende
 import NotificationRenderer from '../special/notifications/utilities/NotificationRenderer';
 import AppRouter from './AppRouter';
 import AllowedInstanceTypes from '../../models/utils/AllowedInstanceTypes';
+import configurationSchedules from '../../models/configurationSchedule/ConfigurationSchedules';
 import {Search} from '../../models/search';
 
 const routing = new RouterStore();
@@ -111,7 +112,8 @@ const Root = () =>
       myIssues,
       users,
       allowedInstanceTypes,
-      searchEngine
+      searchEngine,
+      configurationSchedules
     }}>
     <AppRouter />
   </Provider>;

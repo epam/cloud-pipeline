@@ -241,25 +241,36 @@ export default class ClusterNodePods extends Component {
       dataSource.push(pod);
     }
     return (
-      <Table className={styles.table}
-             columns={columns}
-             dataSource={dataSource}
-             rowKey="uid"
-             loading={isLoading}
-             pagination={{pageSize: 20}}
-             bordered={true}
-             rowClassName={(row, index) => index % 2 === 0 ? styles.tableRowEven : styles.tableRowOdd}
-             size="small"/>
+      <Table
+        className={styles.table}
+        columns={columns}
+        dataSource={dataSource}
+        rowKey="uid"
+        loading={isLoading}
+        pagination={{pageSize: 20}}
+        bordered
+        rowClassName={(row, index) => index % 2 === 0 ? styles.tableRowEven : styles.tableRowOdd}
+        size="small"
+      />
     );
   }
 
-  render() {
+  render () {
+    if (this.props.node.error) {
+      return null;
+    }
     if (!this.state.dataLoaded && this.props.node.pending) {
       return (<Row type="flex" justify="center"><Spin /></Row>);
     } else if (this.props.node.value && !this.props.node.value.pods) {
-      return (<Row><Alert message="The node doesn't contain non-terminated pods" type="info"/></Row>);
-    }
-    else {
+      return (
+        <Row>
+          <Alert
+            message="The node doesn't contain non-terminated pods"
+            type="info"
+          />
+        </Row>
+      );
+    } else {
       const node = this.props.node.value;
       const table = this.generateNonTerminatedPodsTable(node, this.props.node.pending);
       return (

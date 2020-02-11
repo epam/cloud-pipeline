@@ -18,7 +18,7 @@ package com.epam.pipeline.acl.billing;
 
 import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
-import com.epam.pipeline.manager.BillingManager;
+import com.epam.pipeline.manager.billing.BillingManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

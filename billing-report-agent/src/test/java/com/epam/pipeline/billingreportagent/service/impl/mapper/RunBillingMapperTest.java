@@ -16,7 +16,9 @@
 
 package com.epam.pipeline.billingreportagent.service.impl.mapper;
 
+import com.epam.pipeline.billingreportagent.model.ComputeType;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.model.ResourceType;
 import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
 import com.epam.pipeline.billingreportagent.service.impl.TestUtils;
@@ -30,22 +32,23 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public class RunBillingMapperTest {
 
-    private static final String TEST_PIPELINE = "TestPipeline";
+    private static final Long TEST_PIPELINE_ID = 1L;
     private static final String TEST_USER_NAME = "User";
     private static final String TEST_TOOL_IMAGE = "cp/tool:latest";
     private static final String TEST_NODE_TYPE = "nodetype.medium";
     private static final String TEST_GROUP_1 = "TestGroup1";
     private static final String TEST_GROUP_2 = "TestGroup2";
-    private static final long TEST_COST = 10;
-    private static final long TEST_RUN_ID = 1;
-    private static final long TEST_REGION_ID = 1;
+    private static final Long TEST_COST = 10L;
+    private static final Long TEST_RUN_ID = 1L;
+    private static final Long TEST_REGION_ID = 1L;
     private static final BigDecimal TEST_PRICE = BigDecimal.ONE;
-    private static final long TEST_USAGE_MINUTES = 600;
+    private static final Long TEST_USAGE_MINUTES = 600L;
     private static final List<String> TEST_GROUPS = Arrays.asList(TEST_GROUP_1, TEST_GROUP_2);
     private static final LocalDate TEST_DATE = LocalDate.now();
 
@@ -53,15 +56,16 @@ public class RunBillingMapperTest {
     private final PipelineUser testUser = PipelineUser.builder()
         .userName(TEST_USER_NAME)
         .groups(TEST_GROUPS)
+        .attributes(Collections.emptyMap())
         .build();
 
     @Test
     public void testRunMapperMap() throws IOException {
         final PipelineRun run =
-            TestUtils.createTestPipelineRun(TEST_RUN_ID, TEST_PIPELINE, TEST_TOOL_IMAGE, TEST_PRICE,
+            TestUtils.createTestPipelineRun(TEST_RUN_ID, TEST_PIPELINE_ID, TEST_TOOL_IMAGE, TEST_PRICE,
                                             TestUtils.createTestInstance(TEST_REGION_ID, TEST_NODE_TYPE));
         final PipelineRunBillingInfo billing = PipelineRunBillingInfo.builder()
-            .run(run)
+            .run(new PipelineRunWithType(run, ComputeType.CPU))
             .date(TEST_DATE)
             .cost(TEST_COST)
             .usageMinutes(TEST_USAGE_MINUTES)
@@ -76,15 +80,15 @@ public class RunBillingMapperTest {
 
         final Map<String, Object> mappedFields = TestUtils.getPuttedObject(mappedBilling);
 
-        Assert.assertEquals((int) TEST_RUN_ID, mappedFields.get("id"));
+        Assert.assertEquals(TEST_RUN_ID.intValue(), mappedFields.get("id"));
         Assert.assertEquals(ResourceType.COMPUTE.toString(), mappedFields.get("resource_type"));
-        Assert.assertEquals(TEST_PIPELINE, mappedFields.get("pipeline"));
+        Assert.assertEquals(TEST_PIPELINE_ID.intValue(), mappedFields.get("pipeline"));
         Assert.assertEquals(TEST_TOOL_IMAGE, mappedFields.get("tool"));
         Assert.assertEquals(TEST_NODE_TYPE, mappedFields.get("instance_type"));
-        Assert.assertEquals((int) TEST_COST, mappedFields.get("cost"));
-        Assert.assertEquals((int) TEST_USAGE_MINUTES, mappedFields.get("usage"));
+        Assert.assertEquals(TEST_COST.intValue(), mappedFields.get("cost"));
+        Assert.assertEquals(TEST_USAGE_MINUTES.intValue(), mappedFields.get("usage"));
         Assert.assertEquals(run.getPricePerHour().intValue(), mappedFields.get("run_price"));
-        Assert.assertEquals((int) TEST_REGION_ID, mappedFields.get("cloudRegionId"));
+        Assert.assertEquals(TEST_REGION_ID.intValue(), mappedFields.get("cloudRegionId"));
         Assert.assertEquals(TEST_USER_NAME, mappedFields.get("owner"));
         TestUtils.verifyStringArray(TEST_GROUPS, mappedFields.get("groups"));
     }

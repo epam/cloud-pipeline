@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,35 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.tool;
 
+import com.epam.pipeline.elasticsearchagent.model.ToolWithDescription;
 import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
-import com.epam.pipeline.elasticsearchagent.service.impl.converter.AbstractSecuredEntityLoaderImpl;
+import com.epam.pipeline.elasticsearchagent.service.impl.converter.AbstractCloudPipelineEntityLoader;
+import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ToolLoader extends AbstractSecuredEntityLoaderImpl<Tool> {
+public class ToolLoader extends AbstractCloudPipelineEntityLoader<ToolWithDescription> {
 
     public ToolLoader(final CloudPipelineAPIClient apiClient) {
         super(apiClient);
     }
 
     @Override
-    protected Tool fetchEntity(final Long id) {
-        return getApiClient().loadTool(String.valueOf(id));
+    protected ToolWithDescription fetchEntity(final Long id) {
+        final Tool tool = getApiClient().loadTool(String.valueOf(id));
+        final ToolDescription toolDescription = getApiClient().loadToolDescription(tool.getId());
+        return new ToolWithDescription(tool, toolDescription);
+    }
+
+    @Override
+    protected String getOwner(final ToolWithDescription entity) {
+        return entity.getTool().getOwner();
+    }
+
+    @Override
+    protected AclClass getAclClass(final ToolWithDescription entity) {
+        return entity.getTool().getAclClass();
     }
 }

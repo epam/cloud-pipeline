@@ -94,6 +94,7 @@ public class AwsStorageToRequestConverterTest {
     private final PipelineUser testUser = PipelineUser.builder()
         .userName(USER_NAME)
         .groups(USER_GROUPS)
+        .attributes(Collections.emptyMap())
         .build();
 
     private ElasticsearchServiceClient elasticsearchClient = Mockito.mock(ElasticsearchServiceClient.class);

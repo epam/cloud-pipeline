@@ -25,6 +25,7 @@ add_worker() {
     su -c /usr/sbin/munged -s /bin/bash munge
 
     cp /common/slurm.conf "$_SLURM_CONFIG_LOCATION"
+    cp /common/cgroup.conf "$_SLURM_CONFIG_LOCATION"
     mkdir /var/spool/slurmd
     chown slurm: /var/spool/slurmd
     chmod 755 /var/spool/slurmd

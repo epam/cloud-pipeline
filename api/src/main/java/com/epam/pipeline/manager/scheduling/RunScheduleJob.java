@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ public class RunScheduleJob implements Job {
     public void execute(final JobExecutionContext context) {
         log.debug("Job " + context.getJobDetail().getKey().getName() + " fired " + context.getFireTime());
 
-        final Long runId = context.getMergedJobDataMap().getLongValue("RunId");
+        final Long runId = context.getMergedJobDataMap().getLongValue("SchedulableId");
         final String action = context.getMergedJobDataMap().getString("Action");
         Assert.notNull(runId,
                        messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));

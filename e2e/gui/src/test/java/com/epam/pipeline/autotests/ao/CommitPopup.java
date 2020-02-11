@@ -63,7 +63,7 @@ public class CommitPopup extends PopupAO<CommitPopup, ConfirmationPopupAO<LogAO>
     public CommitPopup setRegistry(final String registry) {
         sleep(1, SECONDS);
         if (!get(REGISTRY).has(text(registry))) {
-            hover(REGISTRY);
+            click(REGISTRY);
             $(PipelineSelectors.visible(byClassName("selectors__navigation-dropdown-container")))
                     .find(button(registry)).shouldBe(visible).click();
         }
@@ -73,7 +73,7 @@ public class CommitPopup extends PopupAO<CommitPopup, ConfirmationPopupAO<LogAO>
     public CommitPopup setGroup(final String group) {
         sleep(1, SECONDS);
         if (!get(GROUP).has(text(group))) {
-            hover(GROUP);
+            click(GROUP);
             $(PipelineSelectors.visible(byClassName("selectors__navigation-dropdown-container")))
                     .find(button(group)).shouldBe(visible).click();
         }

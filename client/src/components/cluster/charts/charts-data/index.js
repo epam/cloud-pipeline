@@ -51,8 +51,11 @@ class ChartsData extends ChartData {
     }
   }
 
-  constructor (nodeName) {
-    super();
+  constructor (nodeName, from, to) {
+    const format = 'YYYY-MM-DD HH:mm:ss';
+    const instanceFrom = from ? moment.utc(decodeURIComponent(from), format).unix() : undefined;
+    const instanceTo = to ? moment.utc(decodeURIComponent(to), format).unix() : undefined;
+    super(nodeName, instanceFrom, instanceTo);
     this.nodeName = nodeName;
     this.initialize()
       .then(this.loadData);
@@ -62,15 +65,14 @@ class ChartsData extends ChartData {
   initialize = async () => {
     this.node = new NodeInstance(this.nodeName);
     await this.node.fetchIfNeededOrWait();
-    if (this.node.error) {
-      this.error = this.node.error;
-      return;
+    if (this.node.loaded) {
+      const {creationTimestamp, name} = this.node.value;
+      this.nodeName = name;
+      this.instanceFrom = this.instanceFrom ||
+        (creationTimestamp ? moment.utc(creationTimestamp).unix() : undefined);
     }
-    const {creationTimestamp, name} = this.node.value;
-    this.nodeName = name;
-    this.instanceFrom = moment.utc(creationTimestamp).unix();
-    this.instanceTo = moment.utc().unix();
-    this.from = this.instanceFrom;
+    this.instanceTo = this.instanceTo || moment.utc().unix();
+    this.from = this.instanceFrom || moment.utc().add(-1, 'week').unix();
     this.cpuUsage = new CPUUsageData(this.nodeName, this.instanceFrom, this.instanceTo);
     this.memoryUsage = new MemoryUsageData(this.nodeName, this.instanceFrom, this.instanceTo);
     this.networkUsage = new NetworkUsageData(this.nodeName, this.instanceFrom, this.instanceTo);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,13 @@
 
 package com.epam.pipeline.client.pipeline;
 
+import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -55,7 +57,6 @@ import retrofit2.http.Part;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 public interface CloudPipelineAPI {
@@ -74,6 +75,9 @@ public interface CloudPipelineAPI {
     String PATH = "path";
     String FROM = "from";
     String TO = "to";
+    String TOOL_ID = "toolId";
+    String REGION_ID = "regionId";
+
 
     @POST("run/{runId}/status")
     Call<Result<PipelineRun>> updateRunStatus(@Path(RUN_ID) Long runId,
@@ -167,6 +171,9 @@ public interface CloudPipelineAPI {
     @GET("toolGroup")
     Call<Result<ToolGroup>> loadToolGroup(@Query(ID) String toolGroupId);
 
+    @GET("tool/{toolId}/attributes ")
+    Call<Result<ToolDescription>> loadToolAttributes(@Path(TOOL_ID) Long toolId);
+
     @GET("dockerRegistry/{id}/load")
     Call<Result<DockerRegistry>> loadDockerRegistry(@Path(ID) Long dockerRegistryId);
 
@@ -202,4 +209,7 @@ public interface CloudPipelineAPI {
 
     @GET("run/activity")
     Call<Result<List<PipelineRun>>> loadRunsActivityStats(@Query(FROM) String from, @Query(TO) String to);
+
+    @GET("cluster/instance/loadAll")
+    Call<Result<List<InstanceType>>> loadAllInstanceTypesForRegion(@Query(REGION_ID) Long regionId);
 }

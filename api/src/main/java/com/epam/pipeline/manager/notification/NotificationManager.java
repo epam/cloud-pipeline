@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.notification;
 
+import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationGroup;
 import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 
 import java.time.LocalDateTime;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.notification.NotificationTimestamp;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -196,6 +198,14 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             return;
         }
 
+        final List<TaskStatus> runStatusesToReport = ListUtils.emptyIfNull(runStatusSettings.getStatusesToInform());
+        if (!CollectionUtils.isEmpty(runStatusesToReport) && !runStatusesToReport.contains(pipelineRun.getStatus())) {
+            LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION,
+                    pipelineRun.getStatus(),
+                    runStatusesToReport.stream().map(TaskStatus::name).collect(Collectors.joining(", "))));
+            return;
+        }
+
         NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(runStatusSettings.getTemplateId()));
         message.setTemplateParameters(PipelineRunMapper.map(pipelineRun, null));
@@ -225,7 +235,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             return;
         }
 
-        Assert.isTrue(NotificationSettings.NotificationGroup.IDLE_RUN == notificationType.getGroup(),
+        Assert.isTrue(NotificationGroup.IDLE_RUN == notificationType.getGroup(),
                       "Only IDLE_RUN group notification types are allowed");
 
         NotificationSettings idleRunSettings = notificationSettingsManager.load(notificationType);

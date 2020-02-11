@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,19 +19,24 @@ package com.epam.pipeline.billingreportagent.service;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 
-public interface EntityMapper<T> {
+public abstract class AbstractEntityMapper<T> {
 
-    XContentBuilder map(EntityContainer<T> doc);
+    @Value("${sync.billing.center.key}")
+    private String billingCenterKey;
 
-    default XContentBuilder buildUserContent(final PipelineUser user,
-                                             final XContentBuilder jsonBuilder) throws IOException {
+    public abstract XContentBuilder map(EntityContainer<T> doc);
+
+    protected XContentBuilder buildUserContent(final PipelineUser user,
+                                               final XContentBuilder jsonBuilder) throws IOException {
         if (user != null) {
             jsonBuilder
                     .field("owner", user.getUserName())
-                    .field("groups", user.getGroups());
+                    .field("groups", user.getGroups())
+                    .field("billing_center", user.getAttributes().get(billingCenterKey));
         }
         return jsonBuilder;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum RunScheduledAction {
-    PAUSE(0), RESUME(1);
+    PAUSE(0), RESUME(1), RUN(2);
 
     private final long id;
 
@@ -28,6 +28,7 @@ public enum RunScheduledAction {
     static {
         idMap.put(PAUSE.id, PAUSE);
         idMap.put(RESUME.id, RESUME);
+        idMap.put(RUN.id, RUN);
     }
 
     RunScheduledAction(final long id) {
