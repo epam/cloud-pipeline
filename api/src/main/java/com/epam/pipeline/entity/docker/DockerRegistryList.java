@@ -77,8 +77,8 @@ public class DockerRegistryList extends AbstractHierarchicalEntity {
     @SuppressWarnings("unchecked")
     @Override
     public DockerRegistryList copyView() {
-       return new DockerRegistryList(
-                this.getRegistries().stream().map(DockerRegistry::copyView).collect(Collectors.toList())
+        return new DockerRegistryList(
+            this.getRegistries().stream().map(DockerRegistry::copyView).collect(Collectors.toList())
         );
     }
 }

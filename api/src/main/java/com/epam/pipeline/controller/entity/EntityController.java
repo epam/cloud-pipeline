@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @Api(value = "Entities")
@@ -66,7 +67,7 @@ public class EntityController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<AbstractSecuredEntity>> loadEntities(@RequestBody AclSid aclSid) {
+    public Result<Map<AclClass, List<AbstractSecuredEntity>>> loadEntities(@RequestBody AclSid aclSid) {
         return Result.success(entityApiService.loadAvailable(aclSid));
     }
 }

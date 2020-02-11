@@ -16,28 +16,28 @@
 
 package com.epam.pipeline.manager;
 
-import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.AbstractHierarchicalEntity;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSid;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Slf4j
 @Service
 public class HierarchicalEntityManager {
-
-    @Autowired
-    private MessageHelper messageHelper;
 
     @Autowired
     private GrantPermissionManager permissionManager;
@@ -48,19 +48,24 @@ public class HierarchicalEntityManager {
     @Autowired
     private DockerRegistryManager registryManager;
 
-    public List<AbstractSecuredEntity> loadAvailable(final AclSid aclSid) {
+    public Map<AclClass, List<AbstractSecuredEntity>> loadAvailable(final AclSid aclSid) {
+        log.debug("Retrieving whole hierarchy of all available objects for SID: " + aclSid.getName());
         final List<AbstractHierarchicalEntity> allHierarchy =
                 Stream.of(folderManager.loadTree(), registryManager.loadAllRegistriesContent())
                         .peek(h -> permissionManager.filterTree(aclSid, h, AclPermission.READ))
                         .collect(Collectors.toList());
 
-        return flattenHierarchy(allHierarchy);
+        log.debug("Flatten trees to map by AclClass");
+        return flattenHierarchy(allHierarchy)
+                .stream()
+                .collect(Collectors.groupingBy(AbstractSecuredEntity::getAclClass));
     }
 
     private List<AbstractSecuredEntity> flattenHierarchy(
             final List<? extends AbstractHierarchicalEntity> allHierarchy) {
         final List<AbstractSecuredEntity> collector = new ArrayList<>();
         flattenHierarchy(allHierarchy, collector);
+        log.debug("Size of map with available objects: " + collector.size());
         return collector;
     }
 

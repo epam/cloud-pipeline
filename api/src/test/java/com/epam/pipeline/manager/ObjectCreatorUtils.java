@@ -58,6 +58,7 @@ public final class ObjectCreatorUtils {
     private static final String TEST_NAME = "TEST";
     private static final String TEST_POD_ID = "pod1";
     private static final String TEST_SERVICE_URL = "service_url";
+    public static final int TEST_DISK_SIZE = 100;
 
     private ObjectCreatorUtils() {
     }
@@ -307,7 +308,7 @@ public final class ObjectCreatorUtils {
         tool.setImage(image);
         tool.setToolGroupId(toolGroupId);
         tool.setCpu("100");
-        tool.setDisk(100);
+        tool.setDisk(TEST_DISK_SIZE);
         tool.setRam("100");
         return tool;
     }

@@ -55,6 +55,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+
+import static com.epam.pipeline.manager.ObjectCreatorUtils.*;
 
 @DirtiesContext
 @Transactional
@@ -120,39 +123,37 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
     @Test
     @WithMockUser(username = USER)
     public void testToolInheritPermissionsFromRegistry() {
-        DockerRegistry registry = registryManager.create(ObjectCreatorUtils.createDockerRegistryVO(TEST_NAME, USER, USER));
-        ToolGroup toolGroup = toolGroupManager.create(ObjectCreatorUtils.createToolGroup(TEST_NAME, registry.getId()));
-        toolManager.create(ObjectCreatorUtils.createTool(TEST_NAME, toolGroup.getId()), false);
+        DockerRegistry registry = registryManager.create(createDockerRegistryVO(TEST_NAME, USER, USER));
+        ToolGroup toolGroup = toolGroupManager.create(createToolGroup(TEST_NAME, registry.getId()));
+        toolManager.create(createTool(TEST_NAME, toolGroup.getId()), false);
         grantPermission(registry.getId(), AclClass.DOCKER_REGISTRY, USER2, true, AclPermission.READ.getMask());
 
-        List<AbstractSecuredEntity> entityList = hierarchicalEntityManager.loadAvailable(new AclSid(USER2, true));
-        Assert.assertEquals(3, entityList.size());
-        Assert.assertTrue(entityList.stream()
-                .filter(se -> se.getAclClass() == AclClass.TOOL)
-                .findFirst().map(se -> se.getMask() == AclPermission.READ.getMask()).get());
+        Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
+                .loadAvailable(new AclSid(USER2, true));
+        Assert.assertEquals(3, available.size());
+        Assert.assertEquals((int) available.get(AclClass.TOOL).get(0).getMask(), AclPermission.READ.getMask());
     }
 
     @Test
     @WithMockUser(username = USER)
     public void testIfOnlyToolAllowedGroupAndRegistryDontPresetInResult() {
-        DockerRegistry registry = registryManager.create(ObjectCreatorUtils.createDockerRegistryVO(TEST_NAME, USER, USER));
-        ToolGroup toolGroup = toolGroupManager.create(ObjectCreatorUtils.createToolGroup(TEST_NAME, registry.getId()));
-        Tool tool = toolManager.create(ObjectCreatorUtils.createTool(TEST_NAME, toolGroup.getId()), false);
+        DockerRegistry registry = registryManager.create(createDockerRegistryVO(TEST_NAME, USER, USER));
+        ToolGroup toolGroup = toolGroupManager.create(createToolGroup(TEST_NAME, registry.getId()));
+        Tool tool = toolManager.create(createTool(TEST_NAME, toolGroup.getId()), false);
         grantPermission(tool.getId(), AclClass.TOOL, USER2, true, AclPermission.READ.getMask());
 
-        List<AbstractSecuredEntity> entityList = hierarchicalEntityManager.loadAvailable(new AclSid(USER2, true));
-        Assert.assertEquals(1, entityList.size());
-        Assert.assertTrue(entityList.stream()
-                .filter(se -> se.getAclClass() == AclClass.TOOL)
-                .findFirst().map(se -> se.getMask() == AclPermission.READ.getMask()).get());
+        Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
+                .loadAvailable(new AclSid(USER2, true));
+        Assert.assertEquals(1, available.size());
+        Assert.assertEquals((int) available.get(AclClass.TOOL).get(0).getMask(), AclPermission.READ.getMask());
     }
 
     @Test
     @WithMockUser(username = USER)
     public void testLoadingByRoleSidWorks() {
-        DockerRegistry registry = registryManager.create(ObjectCreatorUtils.createDockerRegistryVO(TEST_NAME, USER, USER));
-        ToolGroup toolGroup = toolGroupManager.create(ObjectCreatorUtils.createToolGroup(TEST_NAME, registry.getId()));
-        Tool tool = toolManager.create(ObjectCreatorUtils.createTool(TEST_NAME, toolGroup.getId()), false);
+        DockerRegistry registry = registryManager.create(createDockerRegistryVO(TEST_NAME, USER, USER));
+        ToolGroup toolGroup = toolGroupManager.create(createToolGroup(TEST_NAME, registry.getId()));
+        Tool tool = toolManager.create(createTool(TEST_NAME, toolGroup.getId()), false);
         grantPermission(tool.getId(), AclClass.TOOL, DefaultRoles.ROLE_USER.getName(),
                 false, AclPermission.READ.getMask());
 
@@ -161,20 +162,18 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
         grantPermission(runConfiguration.getId(), AclClass.CONFIGURATION, DefaultRoles.ROLE_USER.getName(),
                 false, AclPermission.READ.getMask());
 
-        List<AbstractSecuredEntity> entityList = hierarchicalEntityManager.loadAvailable(
+        Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager.loadAvailable(
                 new AclSid(DefaultRoles.ROLE_USER.getName(), false));
-        Assert.assertEquals(2, entityList.size());
-        Assert.assertTrue(entityList.stream()
-                .filter(se -> se.getAclClass() == AclClass.TOOL)
-                .findFirst().map(se -> se.getMask() == AclPermission.READ.getMask()).get());
+        Assert.assertEquals(2, available.size());
+        Assert.assertEquals((int) available.get(AclClass.TOOL).get(0).getMask(), AclPermission.READ.getMask());
     }
 
     @Test
     @WithMockUser(username = USER)
     public void testLoadingByRoleSidWorksWhenLoadForUser() {
-        DockerRegistry registry = registryManager.create(ObjectCreatorUtils.createDockerRegistryVO(TEST_NAME, USER, USER));
-        ToolGroup toolGroup = toolGroupManager.create(ObjectCreatorUtils.createToolGroup(TEST_NAME, registry.getId()));
-        Tool tool = toolManager.create(ObjectCreatorUtils.createTool(TEST_NAME, toolGroup.getId()), false);
+        DockerRegistry registry = registryManager.create(createDockerRegistryVO(TEST_NAME, USER, USER));
+        ToolGroup toolGroup = toolGroupManager.create(createToolGroup(TEST_NAME, registry.getId()));
+        Tool tool = toolManager.create(createTool(TEST_NAME, toolGroup.getId()), false);
         grantPermission(tool.getId(), AclClass.TOOL, DefaultRoles.ROLE_USER.getName(),
                 false, AclPermission.READ.getMask());
 
@@ -183,11 +182,10 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
         grantPermission(runConfiguration.getId(), AclClass.CONFIGURATION, DefaultRoles.ROLE_USER.getName(),
                 false, AclPermission.READ.getMask());
 
-        List<AbstractSecuredEntity> entityList = hierarchicalEntityManager.loadAvailable(new AclSid(USER2, true));
-        Assert.assertEquals(2, entityList.size());
-        Assert.assertTrue(entityList.stream()
-                .filter(se -> se.getAclClass() == AclClass.TOOL)
-                .findFirst().map(se -> se.getMask() == AclPermission.READ.getMask()).get());
+        Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
+                .loadAvailable(new AclSid(USER2, true));
+        Assert.assertEquals(2, available.size());
+        Assert.assertEquals((int) available.get(AclClass.TOOL).get(0).getMask(), AclPermission.READ.getMask());
     }
 
     @Test
@@ -198,11 +196,10 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
 
         grantPermission(folder.getId(), AclClass.FOLDER, USER2, true, AclPermission.READ.getMask());
 
-        List<AbstractSecuredEntity> entityList = hierarchicalEntityManager.loadAvailable(new AclSid(USER2, true));
-        Assert.assertEquals(2, entityList.size());
-        Assert.assertTrue(entityList.stream()
-                .filter(se -> se.getAclClass() == AclClass.CONFIGURATION)
-                .findFirst().map(se -> se.getMask() == AclPermission.READ.getMask()).get());
+        Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
+                .loadAvailable(new AclSid(USER2, true));
+        Assert.assertEquals(2, available.size());
+        Assert.assertEquals((int) available.get(AclClass.CONFIGURATION).get(0).getMask(), AclPermission.READ.getMask());
     }
 
     @Test
@@ -213,20 +210,18 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
 
         grantPermission(folder.getId(), AclClass.FOLDER, USER2, true, AclPermission.READ.getMask());
 
-        List<AbstractSecuredEntity> entityList = hierarchicalEntityManager.loadAvailable(new AclSid(USER2, true));
-        Assert.assertEquals(2, entityList.size());
-        Assert.assertTrue(entityList.stream()
-                .filter(se -> se.getAclClass() == AclClass.CONFIGURATION)
-                .findFirst().map(se -> se.getMask() == AclPermission.READ.getMask()).get());
+        Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
+                .loadAvailable(new AclSid(USER2, true));
+        Assert.assertEquals(2, available.size());
+        Assert.assertEquals((int) available.get(AclClass.CONFIGURATION).get(0).getMask(), AclPermission.READ.getMask());
+
 
         grantPermission(runConfiguration.getId(), AclClass.CONFIGURATION, USER2, true,
                 ALL_PERMISSIONS);
 
-        entityList = hierarchicalEntityManager.loadAvailable(new AclSid(USER2, true));
-        Assert.assertEquals(2, entityList.size());
-        Assert.assertTrue(entityList.stream()
-                .filter(se -> se.getAclClass() == AclClass.CONFIGURATION)
-                .findFirst().map(se -> se.getMask() == ALL_PERMISSIONS_SIMPLE).get());
+        available = hierarchicalEntityManager.loadAvailable(new AclSid(USER2, true));
+        Assert.assertEquals(2, available.size());
+        Assert.assertEquals((int) available.get(AclClass.CONFIGURATION).get(0).getMask(), ALL_PERMISSIONS_SIMPLE);
     }
 
     @Test
@@ -239,12 +234,11 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
         grantPermission(runConfiguration.getId(), AclClass.CONFIGURATION, USER2, true,
                 ALL_PERMISSIONS);
 
-        List<AbstractSecuredEntity> entityList = hierarchicalEntityManager.loadAvailable(new AclSid(USER2, true));
+        Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
+                .loadAvailable(new AclSid(USER2, true));
         //folder should be filtered because it forbidden
-        Assert.assertEquals(1, entityList.size());
-        Assert.assertTrue(entityList.stream()
-                .filter(se -> se.getAclClass() == AclClass.CONFIGURATION)
-                .findFirst().map(se -> se.getMask() == ALL_PERMISSIONS_SIMPLE).get());
+        Assert.assertEquals(1, available.size());
+        Assert.assertEquals((int) available.get(AclClass.CONFIGURATION).get(0).getMask(), ALL_PERMISSIONS_SIMPLE);
     }
 
     @Test
@@ -257,12 +251,11 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
         grantPermission(runConfiguration.getId(), AclClass.CONFIGURATION, USER2, true,
                 AclPermission.NO_READ.getMask());
 
-        List<AbstractSecuredEntity> entityList = hierarchicalEntityManager.loadAvailable(new AclSid(USER2, true));
+        Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
+                .loadAvailable(new AclSid(USER2, true));
         //folder should be filtered because it forbidden
-        Assert.assertEquals(1, entityList.size());
-        Assert.assertTrue(entityList.stream()
-                .filter(se -> se.getAclClass() == AclClass.FOLDER)
-                .findFirst().map(se -> se.getMask() == ALL_PERMISSIONS_SIMPLE).get());
+        Assert.assertEquals(1, available.size());
+        Assert.assertEquals((int) available.get(AclClass.FOLDER).get(0).getMask(), ALL_PERMISSIONS_SIMPLE);
     }
 
     @Test
@@ -276,12 +269,11 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
         grantPermission(runConfiguration.getId(), AclClass.CONFIGURATION, USER2, true,
                 ALL_PERMISSIONS);
 
-        List<AbstractSecuredEntity> entityList = hierarchicalEntityManager.loadAvailable(new AclSid(USER2, true));
+        Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
+                .loadAvailable(new AclSid(USER2, true));
         //folder should be filtered because it forbidden
-        Assert.assertEquals(1, entityList.size());
-        Assert.assertTrue(entityList.stream()
-                .filter(se -> se.getAclClass() == AclClass.CONFIGURATION)
-                .findFirst().map(se -> se.getMask() == ALL_PERMISSIONS_SIMPLE).get());
+        Assert.assertEquals(1, available.size());
+        Assert.assertEquals((int) available.get(AclClass.CONFIGURATION).get(0).getMask(), ALL_PERMISSIONS_SIMPLE);
     }
 
     private void grantPermission(Long id, AclClass aclClass, String user, boolean principal, int mask) {
@@ -305,10 +297,10 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
         PipelineConfiguration pipelineConfiguration = new PipelineConfiguration();
         pipelineConfiguration.setCmdTemplate("sleep 10");
         RunConfigurationEntry entry =
-                ObjectCreatorUtils.createConfigEntry("entry", true, pipelineConfiguration);
+                createConfigEntry("entry", true, pipelineConfiguration);
 
         RunConfigurationVO configuration =
-                ObjectCreatorUtils.createRunConfigurationVO(name, null, parentId,
+                createRunConfigurationVO(name, null, parentId,
                         Collections.singletonList(entry));
         return configurationManager.create(configuration);
     }
