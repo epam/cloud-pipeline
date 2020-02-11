@@ -488,7 +488,7 @@ class GridEngineScaleUpHandler:
             return name
         else:
             error_msg = 'Worker with run_id=%s has no pod name specified.'
-            Logger.warn(error_msg)
+            Logger.warn(error_msg, crucial=True)
             raise ScalingError(error_msg)
 
     def _await_pod_initialization(self, run_id):
@@ -506,7 +506,7 @@ class GridEngineScaleUpHandler:
             attempts -= 1
             time.sleep(self.polling_delay)
         error_msg = 'Pod with run_id=%s hasn\'t started after %s seconds.' % (run_id, self.polling_timeout)
-        Logger.warn(error_msg)
+        Logger.warn(error_msg, crucial=True)
         raise ScalingError(error_msg)
 
     def _add_worker_to_master_hosts(self, pod):
@@ -527,7 +527,7 @@ class GridEngineScaleUpHandler:
             attempts -= 1
             time.sleep(self.polling_delay)
         error_msg = 'Additional worker hasn\'t been initialized after %s seconds.' % self.polling_timeout
-        Logger.warn(error_msg)
+        Logger.warn(error_msg, crucial=True)
         raise ScalingError(error_msg)
 
     def _increase_parallel_environment_slots(self, slots_to_append):
@@ -857,7 +857,7 @@ class GridEngineWorkerValidator:
             if (not self.grid_engine.is_valid(host)) or (not self._is_running(run_id)):
                 invalid_hosts.append((host, run_id))
         for host, run_id in invalid_hosts:
-            Logger.warn('Invalid additional host %s was found. It will be downscaled.' % host)
+            Logger.warn('Invalid additional host %s was found. It will be downscaled.' % host, crucial=True)
             self._try_stop_worker(run_id)
             self._try_disable_worker(host, run_id)
             self._try_kill_invalid_host_jobs(host)
@@ -926,7 +926,7 @@ class GridEngineAutoscalingDaemon:
                 Logger.warn('Manual stop of the autoscaler daemon.')
                 break
             except Exception as e:
-                Logger.warn('Scaling step has failed due to %s.' % e)
+                Logger.warn('Scaling step has failed due to %s.' % e, crucial=True)
 
 
 def make_dirs(path):
