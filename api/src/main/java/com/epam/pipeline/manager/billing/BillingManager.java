@@ -46,6 +46,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInter
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.bucket.histogram.ParsedDateHistogram;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
@@ -231,7 +232,8 @@ public class BillingManager {
                     return l1;
                 }));
             final AggregationBuilder fieldAgg = AggregationBuilders.terms(grouping.getCorrespondingField())
-                .field(grouping.getCorrespondingField());
+                .field(grouping.getCorrespondingField())
+                .order(Terms.Order.aggregation(COST_FIELD, false));
             fieldAgg.subAggregation(costAggregation);
             if (grouping.usageDetailsRequired()) {
                 fieldAgg.subAggregation(usageAggregation);
