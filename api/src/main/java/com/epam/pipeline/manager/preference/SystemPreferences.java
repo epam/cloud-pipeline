@@ -466,7 +466,7 @@ public class SystemPreferences {
      * Controls maximum timeout (in minutes), which a node can stay paused, before an action will be taken
      */
     public static final IntPreference SYSTEM_MAX_PAUSED_TIMEOUT_MINUTES =
-            new IntPreference("system.max.paused.timeout.minutes", 300, SYSTEM_GROUP, isGreaterThan(0));
+            new IntPreference("system.max.paused.timeout.minutes", 7 * 24 * 60, SYSTEM_GROUP, isGreaterThan(0));
 
     /**
      * A timeout to wait before an idle action will be taken
