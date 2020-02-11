@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -74,7 +75,9 @@ public interface CloudPipelineAPI {
     String PATH = "path";
     String FROM = "from";
     String TO = "to";
+    String TOOL_ID = "toolId";
     String REGION_ID = "regionId";
+
 
     @POST("run/{runId}/status")
     Call<Result<PipelineRun>> updateRunStatus(@Path(RUN_ID) Long runId,
@@ -167,6 +170,9 @@ public interface CloudPipelineAPI {
 
     @GET("toolGroup")
     Call<Result<ToolGroup>> loadToolGroup(@Query(ID) String toolGroupId);
+
+    @GET("tool/{toolId}/attributes ")
+    Call<Result<ToolDescription>> loadToolAttributes(@Path(TOOL_ID) Long toolId);
 
     @GET("dockerRegistry/{id}/load")
     Call<Result<DockerRegistry>> loadDockerRegistry(@Path(ID) Long dockerRegistryId);
