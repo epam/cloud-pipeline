@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,9 @@ package com.epam.pipeline.manager.cloud.aws;
 
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.region.CloudProvider;
-import lombok.RequiredArgsConstructor;
+import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -31,14 +32,23 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @Slf4j
-@RequiredArgsConstructor
 public class AWSPriceListReader {
 
     private final Long regionId;
+    private final Set<String> computeFamily;
+
+    public AWSPriceListReader(final Long regionId, final Set<String> computeFamily) {
+        this.regionId = regionId;
+        this.computeFamily = CollectionUtils.isEmpty(computeFamily) ?
+                Collections.singleton(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY) :
+                computeFamily;
+    }
+
 
     public List<InstanceOffer> readPriceCsv(BufferedReader reader) {
         try(CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT
@@ -68,7 +78,7 @@ public class AWSPriceListReader {
         offer.setInstanceType(record.get("instance type"));
         offer.setTenancy(record.get("tenancy"));
         offer.setOperatingSystem(record.get("operating system"));
-        offer.setProductFamily(record.get("product family"));
+        offer.setProductFamily(parseProductFamily(record.get("product family")));
         offer.setVolumeType(record.get("volume type"));
         offer.setVCPU(parseInteger(record.get("vcpu")));
         offer.setGpu(parseInteger(record.get("gpu")));
@@ -76,6 +86,13 @@ public class AWSPriceListReader {
         offer.setRegionId(regionId);
         parseMemoryValue(offer, record.get("memory"));
         return offer;
+    }
+
+    private String parseProductFamily(final String productFamily) {
+        if (computeFamily.contains(productFamily)) {
+            return CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY;
+        }
+        return productFamily;
     }
 
     private void parseMemoryValue(InstanceOffer offer, String memoryValue) {

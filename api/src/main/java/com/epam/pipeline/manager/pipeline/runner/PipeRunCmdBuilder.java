@@ -91,7 +91,11 @@ public class PipeRunCmdBuilder {
     }
 
     public PipeRunCmdBuilder instanceCount() {
-        buildObjectCmdArg("-ic", runVO.getNodeCount());
+        final Integer nodeCount = runVO.getNodeCount();
+        if (Objects.nonNull(nodeCount) && nodeCount == 0) {
+            return this;
+        }
+        buildObjectCmdArg("-ic", nodeCount);
         return this;
     }
 

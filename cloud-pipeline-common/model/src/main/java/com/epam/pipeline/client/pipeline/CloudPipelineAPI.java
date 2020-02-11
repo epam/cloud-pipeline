@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.client.pipeline;
 
+import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -75,6 +76,8 @@ public interface CloudPipelineAPI {
     String FROM = "from";
     String TO = "to";
     String TOOL_ID = "toolId";
+    String REGION_ID = "regionId";
+
 
     @POST("run/{runId}/status")
     Call<Result<PipelineRun>> updateRunStatus(@Path(RUN_ID) Long runId,
@@ -206,4 +209,7 @@ public interface CloudPipelineAPI {
 
     @GET("run/activity")
     Call<Result<List<PipelineRun>>> loadRunsActivityStats(@Query(FROM) String from, @Query(TO) String to);
+
+    @GET("cluster/instance/loadAll")
+    Call<Result<List<InstanceType>>> loadAllInstanceTypesForRegion(@Query(REGION_ID) Long regionId);
 }

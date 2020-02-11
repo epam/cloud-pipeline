@@ -24,6 +24,16 @@ import EmailPreview from './EmailPreview';
 import {Button, Checkbox, Col, Form, Icon, Input, Row, Select} from 'antd';
 import styles from './EditEmailNotification.css';
 
+const statuses = [
+  'SUCCESS',
+  'FAILURE',
+  'RUNNING',
+  'STOPPED',
+  'PAUSING',
+  'PAUSED',
+  'RESUMING'
+];
+
 @Form.create()
 @observer
 export default class EditEmailNotification extends React.Component {
@@ -78,9 +88,9 @@ export default class EditEmailNotification extends React.Component {
     const checkIntPropModified = (prop) => {
       return +this.props.template[prop] !== +this.props.form.getFieldValue(prop);
     };
-    const checkArrayPropModified = (prop) => {
+    const checkArrayPropModified = (prop, comparerFn = ((a, b) => a === b)) => {
       return !compareArrays((this.props.template[prop] || []).map(i => i),
-        this.props.form.getFieldValue(prop), (a, b) => +a === +b);
+        this.props.form.getFieldValue(prop), comparerFn);
     };
     return checkPropModified('enabled') ||
       checkPropModified('keepInformedAdmins') ||
@@ -89,7 +99,8 @@ export default class EditEmailNotification extends React.Component {
       checkPropModified('body', '') ||
       checkIntPropModified('threshold') ||
       checkIntPropModified('resendDelay') ||
-      checkArrayPropModified('informedUserIds');
+      checkArrayPropModified('informedUserIds', (a, b) => +a === +b) ||
+      checkArrayPropModified('statusesToInform');
   }
 
   handleSubmit = (e) => {
@@ -117,6 +128,7 @@ export default class EditEmailNotification extends React.Component {
     }
     const renderThresholdAndDelay = this.props.template.type === 'LONG_INIT' ||
       this.props.template.type === 'LONG_RUNNING';
+    const renderStatusesToInform = this.props.template.type === 'PIPELINE_RUN_STATUS';
     const {getFieldDecorator, resetFields} = this.props.form;
     return (
       <div style={{width: '100%', overflowY: 'auto'}}>
@@ -169,6 +181,34 @@ export default class EditEmailNotification extends React.Component {
                     return (
                       <Select.Option key={u.id} value={`${u.id}`}>
                         {u.userName}
+                      </Select.Option>
+                    );
+                  })
+                }
+              </Select>
+            )}
+          </Form.Item>
+          <Form.Item
+            style={{
+              marginBottom: 0,
+              display: renderStatusesToInform ? 'inherit' : 'none'
+            }}
+            label="Statuses to inform:"
+            className="edit-email-notification-statuses-to-inform-container">
+            {getFieldDecorator('statusesToInform', {
+              initialValue: (this.props.template.statusesToInform || []).map(s => s)
+            })(
+              <Select
+                size="small"
+                filterOption={
+                  (input, option) =>
+                    option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                mode="tags">
+                {
+                  statuses.map(s => {
+                    return (
+                      <Select.Option key={s} value={s}>
+                        {s}
                       </Select.Option>
                     );
                   })

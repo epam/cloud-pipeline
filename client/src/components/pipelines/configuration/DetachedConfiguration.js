@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import roleModel from '../../../utils/roleModel';
 import localization from '../../../utils/localization';
 import connect from '../../../utils/connect';
 import styles from './DetachedConfiguration.css';
+import Schedule from './schedule';
 import browserStyles from '../browser/Browser.css';
 import {ItemTypes} from '../model/treeStructureFunctions';
 
@@ -972,6 +973,9 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
             />
           </Col>
           <Col className={styles.actionButtons}>
+            <Schedule
+              configurationId={this.props.configurationId}
+            />
             <Button onClick={this.openEditConfigurationForm} size="small">
               <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
             </Button>

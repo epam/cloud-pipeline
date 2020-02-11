@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package com.epam.pipeline.manager.cluster.performancemonitoring;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 
 import javax.annotation.Nullable;
+import java.io.InputStream;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -48,6 +50,20 @@ public interface UsageMonitoringManager {
     List<MonitoringStats> getStatsForNode(String nodeName,
                                           @Nullable LocalDateTime from,
                                           @Nullable LocalDateTime to);
+
+    /**
+     * Retrieves monitoring stats for node as input stream.
+     *
+     * @param nodeName Cluster node name.
+     * @param from Minimal date for collecting stats.
+     * @param to Maximal date for collecting stats.
+     * @param interval period of stats collecting
+     * @return stream, containing required information in .csv format
+     */
+    InputStream getStatsForNodeAsInputStream(String nodeName,
+                                             @Nullable LocalDateTime from,
+                                             @Nullable LocalDateTime to,
+                                             Duration interval);
 
     /**
      * Retrieves number of bytes that available on a pod disk .

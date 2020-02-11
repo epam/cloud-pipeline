@@ -21,7 +21,7 @@ import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.StorageType;
 import com.epam.pipeline.billingreportagent.model.billing.StorageBillingInfo;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
-import com.epam.pipeline.billingreportagent.service.EntityMapper;
+import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -57,12 +57,12 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
     private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
     private static final RoundingMode ROUNDING_MODE = RoundingMode.CEILING;
 
-    private final EntityMapper<StorageBillingInfo> mapper;
+    private final AbstractEntityMapper<StorageBillingInfo> mapper;
     private final ElasticsearchServiceClient elasticsearchService;
     private final StorageType storageType;
     private final AwsStorageServicePricing storagePricing;
 
-    public AwsStorageToBillingRequestConverter(final EntityMapper<StorageBillingInfo> mapper,
+    public AwsStorageToBillingRequestConverter(final AbstractEntityMapper<StorageBillingInfo> mapper,
                                                final ElasticsearchServiceClient elasticsearchService,
                                                final String awsStorageServiceName,
                                                final StorageType storageType) {
@@ -72,7 +72,7 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
         this.storagePricing = new AwsStorageServicePricing(awsStorageServiceName);
     }
 
-    public AwsStorageToBillingRequestConverter(final EntityMapper<StorageBillingInfo> mapper,
+    public AwsStorageToBillingRequestConverter(final AbstractEntityMapper<StorageBillingInfo> mapper,
                                                final ElasticsearchServiceClient elasticsearchService,
                                                final StorageType storageType,
                                                final AwsStorageServicePricing storagePricing) {

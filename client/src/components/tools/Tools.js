@@ -325,7 +325,9 @@ export default class ToolsNew extends React.Component {
             group={this.currentGroup}
             hasPersonalGroup={this.hasPersonalGroup}
             onRefresh={this.refresh}
-            onNavigate={this.navigate} />
+            onNavigate={this.navigate}
+            router={this.props.router}
+          />
         </Col>
       </Row>
     );

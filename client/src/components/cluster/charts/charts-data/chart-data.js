@@ -46,7 +46,7 @@ function joinArrays (arrays) {
 }
 
 async function loadData (node, from, to) {
-  const now = moment().unix()
+  const now = moment().unix();
   const toCorrected = to || now;
   const promises = [
     makePromise(node, from, toCorrected)
@@ -93,6 +93,7 @@ class ChartData {
   @observable instanceTo;
   @observable from;
   @observable to;
+  @observable rangeEndIsFixed = false;
 
   @observable ranges = {};
   listeners = [];
@@ -114,6 +115,7 @@ class ChartData {
     this.instanceTo = instanceTo;
     this.from = instanceFrom;
     this.to = instanceTo;
+    this.rangeEndIsFixed = !!instanceTo;
   }
 
   registerListener = (listener) => {
@@ -153,7 +155,9 @@ class ChartData {
 
   @action
   updateRange = () => {
-    this.instanceTo = moment().unix();
+    if (!this.rangeEndIsFixed) {
+      this.instanceTo = moment().unix();
+    }
   };
 
   correctDateToFixRange = (unixDateTime) => {

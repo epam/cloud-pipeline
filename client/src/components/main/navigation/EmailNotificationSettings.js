@@ -96,6 +96,7 @@ export default class EmailNotificationSettings extends React.Component {
         informedUserIds: (values.informedUserIds || []).map(id => +id),
         keepInformedAdmins: values.keepInformedAdmins,
         keepInformedOwner: values.keepInformedOwner,
+        statusesToInform: values.statusesToInform,
         resendDelay: +values.resendDelay,
         threshold: +values.threshold,
         templateId: emailTemplate.id,

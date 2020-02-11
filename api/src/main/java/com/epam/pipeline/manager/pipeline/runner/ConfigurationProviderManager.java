@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,6 +94,9 @@ public class ConfigurationProviderManager {
     }
 
     private void checkAllEntriesOfTheSameType(List<AbstractRunConfigurationEntry> entries) {
+        if (CollectionUtils.isEmpty(entries)) {
+            return;
+        }
         AbstractRunConfigurationEntry firstEntry = entries.get(0);
         if (entries.stream()
                 .anyMatch(entry -> entry.getExecutionEnvironment() != firstEntry.getExecutionEnvironment())) {

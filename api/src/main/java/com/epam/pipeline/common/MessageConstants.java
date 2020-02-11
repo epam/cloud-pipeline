@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,6 +143,7 @@ public final class MessageConstants {
     public static final String INFO_INSTANCE_STARTED = "info.instance.started";
     public static final String ERROR_RUN_DISK_ATTACHING_WRONG_STATUS = "error.run.attaching.wrong.status";
     public static final String ERROR_RUN_DISK_SIZE_NOT_FOUND = "error.run.disk.size.not.found";
+    public static final String ERROR_BAD_STATS_FILE_ENCODING = "error.run.stats.file.bad.encoding";
 
     //Run schedule
     public static final String CRON_EXPRESSION_IS_NOT_PROVIDED = "cron.expression.is.not.provided";
@@ -150,9 +151,11 @@ public final class MessageConstants {
     public static final String CRON_EXPRESSION_ALREADY_EXISTS = "cron.expression.already.exists";
     public static final String CRON_EXPRESSION_IDENTICAL = "cron.expression.identical";
     public static final String SCHEDULE_ACTION_IS_NOT_PROVIDED = "schedule.action.is.not.provided";
+    public static final String SCHEDULE_ACTION_IS_NOT_ALLOWED = "schedule.action.is.not.allowed";
+    public static final String SCHEDULE_ID_IS_NOT_PROVIDED = "schedule.id.is.not.provided";
     public static final String ERROR_RUN_SCHEDULE_NOT_FOUND = "error.run.schedule.not.found";
     public static final String ERROR_TIME_ZONE_IS_NOT_PROVIDED = "error.time.zone.is.not.provided";
-    public static final String ERROR_RUN_ID_NOT_CORRESPONDING = "error.run.id.not.corresponding";
+    public static final String ERROR_SCHEDULABLE_ID_NOT_CORRESPONDING = "error.schedulable.id.not.corresponding";
 
     // PodMonitor messages
     public static final String DEBUG_MONITOR_CHECK_RUNNING = "debug.monitor.check.running";
@@ -260,7 +263,7 @@ public final class MessageConstants {
     //CAdvicer
     public static final String DEBUG_SEND_CADVISOR_REQUEST = "cadvisor.send.request";
     public static final String DEBUG_RECEIVE_CADVISOR_RESPONSE = "cadvisor.receive.response";
-
+    public static final String CADVISOR_STATS_REPORTS_NOT_SUPPORTED = "cadvisor.reports.not.supported";
 
     // Users
     public static final String ERROR_USER_ID_NOT_FOUND = "user.id.not.found";
@@ -326,6 +329,7 @@ public final class MessageConstants {
     //Pipeline notification
     public static final String ERROR_NOTIFICATION_SETTINGS_NOT_FOUND = "error.notification.settings.not.found";
     public static final String INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED = "info.notification.template.not.configured";
+    public static final String INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION = "info.run.status.not.configured.for.notification";
     public static final String ERROR_TEMPLATE_ID_SHOULD_BE_EQUAL_TO_TYPE = "error.template.id.should.be.equal.to.type";
     public static final String ERROR_NOTIFICATION_SUBJECT_NOT_SPECIFIED = "error.notification.subject.not.specified";
     public static final String ERROR_NOTIFICATION_BODY_NOT_SPECIFIED = "error.notification.body.not.specified";
@@ -465,6 +469,14 @@ public final class MessageConstants {
 
     public static final String ERROR_GCP_INSTANCE_NOT_RUNNING = "error.gcp.instance.not.running";
     public static final String ERROR_GCP_INSTANCE_NOT_FOUND = "error.gcp.instance.not.found";
+
+    //Billing
+    public static final String ERROR_BILLING_FIELD_DATE_GROUPING_NOT_SUPPORTED =
+        "error.billing.date.field.grouping.not.supported";
+    public static final String INFO_BILLING_ENTITY_FOR_DETAILS_NOT_FOUND =
+        "error.billing.entity.for.grouping.not.found";
+    public static final String ERROR_BILLING_DETAILS_NOT_SUPPORTED = "error.billing.details.not.supported";
+    public static final String ERROR_BILLING_INTERVAL_NOT_SUPPORTED = "error.billing.interval.not.supported";
 
     private MessageConstants() {
         // no-op

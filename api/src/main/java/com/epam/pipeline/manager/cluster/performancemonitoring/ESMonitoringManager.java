@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cluster.performancemonitoring;
 
+import com.amazonaws.util.StringInputStream;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
@@ -26,6 +27,7 @@ import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.cluster.writer.MonitoringStatsWriter;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,8 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -67,9 +71,33 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         final LocalDateTime oldestMonitoring = oldestMonitoringDate();
         final LocalDateTime start = requestedStart.isAfter(oldestMonitoring) ? requestedStart : oldestMonitoring;
         final LocalDateTime end = Optional.ofNullable(to).orElseGet(DateUtils::nowUTC);
+        final Duration interval = interval(start, end);
         return end.isAfter(start) && end.isAfter(oldestMonitoring)
-                ? getStats(nodeName, start, end)
+                ? getStats(nodeName, start, end, interval)
                 : Collections.emptyList();
+    }
+
+    @Override
+    public InputStream getStatsForNodeAsInputStream(final String nodeName,
+                                                    final LocalDateTime from,
+                                                    final LocalDateTime to,
+                                                    final Duration interval) {
+        final LocalDateTime requestedStart = Optional.ofNullable(from).orElseGet(() -> creationDate(nodeName));
+        final LocalDateTime oldestMonitoring = oldestMonitoringDate();
+        final LocalDateTime start = requestedStart.isAfter(oldestMonitoring) ? requestedStart : oldestMonitoring;
+        final LocalDateTime end = Optional.ofNullable(to).orElseGet(DateUtils::nowUTC);
+        final Duration minDuration = minimalDuration();
+        final Duration adjustedDuration = interval.compareTo(minDuration) < 0
+                                          ? minDuration
+                                          : interval;
+        final List<MonitoringStats> monitoringStats = getStats(nodeName, start, end, adjustedDuration);
+        final MonitoringStatsWriter statsWriter = new MonitoringStatsWriter();
+        try {
+            return new StringInputStream(statsWriter.convertStatsToCsvString(monitoringStats));
+        } catch (IOException e) {
+            throw new IllegalStateException(messageHelper.getMessage(MessageConstants.ERROR_BAD_STATS_FILE_ENCODING),
+                                            e);
+        }
     }
 
     @Override
@@ -112,8 +140,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         return DateUtils.nowUTC().minus(FALLBACK_MONITORING_PERIOD);
     }
 
-    private List<MonitoringStats> getStats(final String nodeName, final LocalDateTime start, final LocalDateTime end) {
-        final Duration interval = interval(start, end);
+    private List<MonitoringStats> getStats(final String nodeName, final LocalDateTime start, final LocalDateTime end,
+                                           final Duration interval) {
         return Stream.of(MONITORING_METRICS)
                 .map(it -> AbstractMetricRequester.getStatsRequester(it, client))
                 .map(it -> it.requestStats(nodeName, start, end, interval))

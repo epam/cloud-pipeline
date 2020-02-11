@@ -138,13 +138,16 @@ export default class ClusterNodeGeneralInfo extends Component {
     );
   }
 
-  componentDidUpdate() {
+  componentDidUpdate () {
     if (!this.state.dataLoaded && !this.props.node.pending) {
       this.setState({dataLoaded: true});
     }
   }
 
-  render() {
+  render () {
+    if (this.props.node.error) {
+      return null;
+    }
     if (!this.state.dataLoaded && this.props.node.pending) {
       return (<Row type="flex" justify="center"><Spin /></Row>);
     } else {
