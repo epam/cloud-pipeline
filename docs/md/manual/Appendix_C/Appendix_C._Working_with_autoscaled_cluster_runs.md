@@ -76,6 +76,7 @@ The autoscaler will detect such situations and replace weak addition workers wit
 | `GE_AUTOSCALING_SCALE_DOWN_TIMEOUT` | `ge.autoscaling.scale.down.timeout` | Amount of seconds all queue should be empty before autoscaler tries to find excessive additional workers. |
 | `CP_CAP_AUTOSCALE_HYBRID`           |                                     | Enables hybrid cluster mode. It means that additional worker type can vary within either master instance type family or `CP_CAP_AUTOSCALE_HYBRID_FAMILY` if specified. |
 | `CP_CAP_AUTOSCALE_HYBRID_FAMILY`    |                                     | Explicit hybrid cluster additional worker instance type family. |
+| `CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE` |                             | The maximum amount of cores that the hybrid cluster additional worker could have |
 
 ## Example
 
