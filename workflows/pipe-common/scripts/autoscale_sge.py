@@ -95,8 +95,8 @@ class CmdExecutor:
         out, err = process.communicate()
         exit_code = process.wait()
         if exit_code != 0:
-            Logger.warn('Command \'%s\' execution has failed due to %s.' % (command, err))
-            raise ExecutionError('Command \'%s\' execution has failed due to %s.' % (command, err))
+            Logger.warn('Command \'%s\' execution has failed due to %s.' % (command, err.rstrip()))
+            raise ExecutionError('Command \'%s\' execution has failed due to %s.' % (command, err.rstrip()))
         return out
 
     def execute_to_lines(self, command):
@@ -158,6 +158,7 @@ class GridEngine:
     _REMOVE_HOST_FROM_HOST_GROUP = 'qconf -dattr hostgroup hostlist %s %s'
     _REMOVE_HOST_FROM_QUEUE_SETTINGS = 'qconf -purge queue slots %s@%s'
     _SHUTDOWN_HOST_EXECUTION_DAEMON = 'qconf -ke %s'
+    _REMOVE_HOST_FROM_ADMINISTRATIVE_HOSTS = 'qconf -dh %s'
     _QSTAT = 'qstat -u "*"'
     _QSTAT_DATETIME_FORMAT = '%m/%d/%Y %H:%M:%S'
     _QSTAT_COLUMNS = ['job-ID', 'prior', 'name', 'user', 'state', 'submit/start at', 'queue', 'slots', 'ja-task-ID']
@@ -166,6 +167,8 @@ class GridEngine:
     _SHOW_EXECUTION_HOST = 'qconf -se %s'
     _KILL_JOBS = 'qdel %s'
     _FORCE_KILL_JOBS = 'qdel -f %s'
+    _SHOW_HOST_STATES = 'qstat -f | grep \'%s@%s\' | awk \'{print $6}\''
+    _BAD_HOST_STATES = ['u', 'E', 'd']
 
     def __init__(self, cmd_executor):
         self.cmd_executor = cmd_executor
@@ -278,7 +281,8 @@ class GridEngine:
         1. Shutdown host execution daemon.
         2. Removes host from queue settings.
         3. Removes host from host group.
-        4. Removes host from GE.
+        4. Removes host from administrative hosts.
+        5. Removes host from GE.
 
         :param host: Host to be removed.
         :param queue: Queue host is a part of.
@@ -289,6 +293,7 @@ class GridEngine:
         self._shutdown_execution_host(host, skip_on_failure=skip_on_failure)
         self._remove_host_from_queue_settings(host, queue, skip_on_failure=skip_on_failure)
         self._remove_host_from_host_group(host, hostgroup, skip_on_failure=skip_on_failure)
+        self._remove_host_from_administrative_hosts(host, skip_on_failure=skip_on_failure)
         self._remove_host_from_grid_engine(host, skip_on_failure=skip_on_failure)
 
     def _shutdown_execution_host(self, host, skip_on_failure):
@@ -323,6 +328,14 @@ class GridEngine:
             skip_on_failure=skip_on_failure
         )
 
+    def _remove_host_from_administrative_hosts(self, host, skip_on_failure):
+        self._perform_command(
+            action=lambda: self.cmd_executor.execute(GridEngine._REMOVE_HOST_FROM_ADMINISTRATIVE_HOSTS % host),
+            msg='Remove host from list of administrative hosts.',
+            error_msg='Removing host from list of administrative hosts has failed.',
+            skip_on_failure=skip_on_failure
+        )
+
     def _perform_command(self, action, msg, error_msg, skip_on_failure):
         Logger.info(msg)
         try:
@@ -332,18 +345,25 @@ class GridEngine:
             if not skip_on_failure:
                 raise RuntimeError(error_msg, e)
 
-    def is_valid(self, host):
+    def is_valid(self, host, queue=_MAIN_Q):
         """
-        Validates host in GE checking corresponding execution host availability.
+        Validates host in GE checking corresponding execution host availability and its states.
 
         :param host: Host to be checked.
-        :return: True if execution host exists.
+        :return: True if execution host is valid.
         """
         try:
             self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOST % host)
+            host_states = self.cmd_executor.execute(GridEngine._SHOW_HOST_STATES % (queue, host)).strip()
+            for host_state in host_states:
+                if host_state in self._BAD_HOST_STATES:
+                    Logger.warn('Execution host %s GE state is %s which makes host invalid.' % (host, host_states))
+                    return False
+            if host_states:
+                Logger.warn('Execution host %s GE state is not empty: %s.' % (host, host_states))
             return True
-        except RuntimeError:
-            Logger.warn('Execution host %s in GE wasn\'t found.' % host)
+        except RuntimeError as e:
+            Logger.warn('Execution host %s validation has failed in GE: %s' % (host, e))
             return False
 
     def kill_jobs(self, jobs, force=False):
@@ -479,7 +499,7 @@ class GridEngineScaleUpHandler:
             return name
         else:
             error_msg = 'Worker with run_id=%s has no pod name specified.'
-            Logger.fail(error_msg)
+            Logger.warn(error_msg, crucial=True)
             raise ScalingError(error_msg)
 
     def _await_pod_initialization(self, run_id):
@@ -497,7 +517,7 @@ class GridEngineScaleUpHandler:
             attempts -= 1
             time.sleep(self.polling_delay)
         error_msg = 'Pod with run_id=%s hasn\'t started after %s seconds.' % (run_id, self.polling_timeout)
-        Logger.fail(error_msg)
+        Logger.warn(error_msg, crucial=True)
         raise ScalingError(error_msg)
 
     def _add_worker_to_master_hosts(self, pod):
@@ -518,7 +538,7 @@ class GridEngineScaleUpHandler:
             attempts -= 1
             time.sleep(self.polling_delay)
         error_msg = 'Additional worker hasn\'t been initialized after %s seconds.' % self.polling_timeout
-        Logger.fail(error_msg)
+        Logger.warn(error_msg, crucial=True)
         raise ScalingError(error_msg)
 
     def _increase_parallel_environment_slots(self, slots_to_append):
@@ -568,8 +588,8 @@ class GridEngineScaleDownHandler:
             Logger.info('Enable additional worker with host=%s again.' % child_host)
             self.grid_engine.enable_host(child_host)
             return False
-        self._decrease_parallel_environment_slots(self.instance_cores)
         self._remove_host_from_grid_engine_configuration(child_host)
+        self._decrease_parallel_environment_slots(self.instance_cores)
         self._stop_pipeline(child_host)
         self._remove_host_from_hosts(child_host)
         self._remove_host_from_default_hostfile(child_host)
@@ -815,6 +835,8 @@ class GridEngineAutoscaler:
 
 class GridEngineWorkerValidator:
     _STOP_PIPELINE = 'pipe stop --yes %s'
+    _SHOW_RUN_STATUS = 'pipe view-runs %s | grep Status | awk \'{print $2}\''
+    _RUNNING_STATUS = 'RUNNING'
 
     def __init__(self, cmd_executor, host_storage, grid_engine, scale_down_handler):
         """
@@ -822,6 +844,7 @@ class GridEngineWorkerValidator:
 
         The reason why validator exists is that some additional hosts may be broken due to different circumstances.
         F.e. autoscaler has failed while configuring additional host so it is partly configured and has to be stopped.
+        F.e. a spot worker instance was preempted and it has to be removed from its autoscaled cluster.
 
         :param grid_engine: Grid engine.
         :param cmd_executor: Cmd executor.
@@ -835,14 +858,17 @@ class GridEngineWorkerValidator:
 
     def validate_hosts(self):
         """
-        Checks additional hosts if they are valid execution hosts in GE and kills invalid ones.
+        Finds and removes any additional hosts which aren't valid execution hosts in GE or not running pipelines.
         """
         hosts = self.host_storage.load_hosts()
         Logger.info('Validate %s additional workers.' % len(hosts))
-        invalid_hosts = [host for host in hosts if not self.grid_engine.is_valid(host)]
-        for host in invalid_hosts:
-            Logger.warn('Invalid additional host %s was found. It will be downscaled.' % host)
+        invalid_hosts = []
+        for host in hosts:
             run_id = self.scale_down_handler._get_run_id_from_host(host)
+            if (not self.grid_engine.is_valid(host)) or (not self._is_running(run_id)):
+                invalid_hosts.append((host, run_id))
+        for host, run_id in invalid_hosts:
+            Logger.warn('Invalid additional host %s was found. It will be downscaled.' % host, crucial=True)
             self._try_stop_worker(run_id)
             self._try_disable_worker(host, run_id)
             self._try_kill_invalid_host_jobs(host)
@@ -850,6 +876,17 @@ class GridEngineWorkerValidator:
             self._remove_worker_from_hosts(host)
             self.host_storage.remove_host(host)
         Logger.info('Additional hosts validation has finished.')
+
+    def _is_running(self, run_id):
+        try:
+            status = self.executor.execute(GridEngineWorkerValidator._SHOW_RUN_STATUS % run_id).strip()
+            if status == self._RUNNING_STATUS:
+                return True
+            Logger.warn('Additional host with run_id=%s status is not running but %s.' % (run_id, status))
+            return False
+        except:
+            Logger.warn('Additional host with run_id=%s status retrieving has failed.' % run_id)
+            return False
 
     def _try_stop_worker(self, run_id):
         try:
@@ -897,10 +934,10 @@ class GridEngineAutoscalingDaemon:
                 self.worker_validator.validate_hosts()
                 self.autoscaler.scale()
             except KeyboardInterrupt:
-                Logger.warn('Manual stop the autoscaler daemon.')
+                Logger.warn('Manual stop of the autoscaler daemon.')
                 break
             except Exception as e:
-                Logger.fail('Scaling step has failed due to %s.' % e)
+                Logger.warn('Scaling step has failed due to %s.' % e, crucial=True)
 
 
 def make_dirs(path):
