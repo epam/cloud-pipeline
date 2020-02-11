@@ -885,7 +885,7 @@ class GridEngineWorkerValidator:
             Logger.warn('Additional host with run_id=%s status is not running but %s.' % (run_id, status))
             return False
         except:
-            Logger.warn('Additional host with run_id=%s status retrieving has failed.')
+            Logger.warn('Additional host with run_id=%s status retrieving has failed.' % run_id)
             return False
 
     def _try_stop_worker(self, run_id):
