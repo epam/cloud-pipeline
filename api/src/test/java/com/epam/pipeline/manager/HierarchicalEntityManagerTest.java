@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSid;
 import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.docker.DockerClient;
@@ -40,6 +41,7 @@ import com.epam.pipeline.manager.pipeline.FolderCrudManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import org.junit.Assert;
@@ -73,6 +75,7 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
                                                 | AclPermission.EXECUTE.getMask();
     private static final int ALL_PERMISSIONS_SIMPLE = AclPermission.getBasicPermissions().stream()
             .map(AclPermission::getSimpleMask).reduce((m, m2) -> m | m2).get();
+    private static final String TEST_ROLE = "TEST_ROLE";
 
 
     @Autowired
@@ -92,6 +95,9 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
 
     @Autowired
     private UserManager userManager;
+
+    @Autowired
+    private RoleManager roleManager;
 
     @Autowired
     private GrantPermissionManager permissionManager;
@@ -176,6 +182,28 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
         Tool tool = toolManager.create(createTool(TEST_NAME, toolGroup.getId()), false);
         grantPermission(tool.getId(), AclClass.TOOL, DefaultRoles.ROLE_USER.getName(),
                 false, AclPermission.READ.getMask());
+
+        Folder folder = createFolder(TEST_NAME, null);
+        RunConfiguration runConfiguration = createRunConfiguration(TEST_NAME, folder.getId());
+        grantPermission(runConfiguration.getId(), AclClass.CONFIGURATION, DefaultRoles.ROLE_USER.getName(),
+                false, AclPermission.READ.getMask());
+
+        Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
+                .loadAvailable(new AclSid(USER2, true));
+        Assert.assertEquals(2, available.size());
+        Assert.assertEquals((int) available.get(AclClass.TOOL).get(0).getMask(), AclPermission.READ.getMask());
+    }
+
+    @Test
+    @WithMockUser(username = USER)
+    public void testLoadingByGroupSidWorksWhenLoadForUser() {
+        DockerRegistry registry = registryManager.create(createDockerRegistryVO(TEST_NAME, USER, USER));
+        ToolGroup toolGroup = toolGroupManager.create(createToolGroup(TEST_NAME, registry.getId()));
+        Tool tool = toolManager.create(createTool(TEST_NAME, toolGroup.getId()), false);
+        Role role = roleManager.createRole(TEST_ROLE, false, false, null);
+        grantPermission(tool.getId(), AclClass.TOOL, role.getName(),
+                false, AclPermission.READ.getMask());
+        roleManager.assignRole(role.getId(), Collections.singletonList(userManager.loadUserByName(USER2).getId()));
 
         Folder folder = createFolder(TEST_NAME, null);
         RunConfiguration runConfiguration = createRunConfiguration(TEST_NAME, folder.getId());
