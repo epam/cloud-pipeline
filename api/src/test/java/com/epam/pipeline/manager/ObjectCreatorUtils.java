@@ -19,6 +19,7 @@ package com.epam.pipeline.manager;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.PipelineVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
+import com.epam.pipeline.controller.vo.docker.DockerRegistryVO;
 import com.epam.pipeline.controller.vo.metadata.MetadataEntityVO;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.FirecloudRunConfigurationEntry;
@@ -39,6 +40,8 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
@@ -169,6 +172,21 @@ public final class ObjectCreatorUtils {
         return runConfigurationVO;
     }
 
+    public static DockerRegistryVO createDockerRegistryVO(String name, String user, String password) {
+        DockerRegistryVO dockerRegistryVO = new DockerRegistryVO();
+        dockerRegistryVO.setPath(name);
+        dockerRegistryVO.setUserName(user);
+        dockerRegistryVO.setPassword(password);
+        return dockerRegistryVO;
+    }
+
+    public static ToolGroup createToolGroup(String name, Long registryId) {
+        ToolGroup toolGroup = new ToolGroup();
+        toolGroup.setName(name);
+        toolGroup.setRegistryId(registryId);
+        return toolGroup;
+    }
+
     public static Folder createFolder(String name, Long parentId) {
         Folder folder = new Folder();
         folder.setName(name);
@@ -282,5 +300,15 @@ public final class ObjectCreatorUtils {
         AzureRegionCredentials creds = new AzureRegionCredentials();
         creds.setStorageAccountKey(storageKey);
         return creds;
+    }
+
+    public static Tool createTool(final String image, final Long toolGroupId) {
+        Tool tool = new Tool();
+        tool.setImage(image);
+        tool.setToolGroupId(toolGroupId);
+        tool.setCpu("100");
+        tool.setDisk(100);
+        tool.setRam("100");
+        return tool;
     }
 }

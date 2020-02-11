@@ -23,6 +23,7 @@ import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.HierarchicalEntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -41,7 +42,8 @@ public class EntityApiService {
         return entityManager.loadByNameOrId(entityClass, identifier);
     }
 
-    public List<AbstractSecuredEntity> loadEntitiesBySids(final AclSid aclSid) {
-        return hierarchicalEntityManager.loadAll(aclSid);
+    @PostFilter("hasRole('ADMIN')")
+    public List<AbstractSecuredEntity> loadAvailable(final AclSid aclSid) {
+        return hierarchicalEntityManager.loadAvailable(aclSid);
     }
 }

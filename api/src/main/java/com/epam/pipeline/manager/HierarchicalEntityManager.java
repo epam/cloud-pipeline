@@ -48,7 +48,7 @@ public class HierarchicalEntityManager {
     @Autowired
     private DockerRegistryManager registryManager;
 
-    public List<AbstractSecuredEntity> loadAll(final AclSid aclSid) {
+    public List<AbstractSecuredEntity> loadAvailable(final AclSid aclSid) {
         final List<AbstractHierarchicalEntity> allHierarchy =
                 Stream.of(folderManager.loadTree(), registryManager.loadAllRegistriesContent())
                         .peek(h -> permissionManager.filterTree(aclSid, h, AclPermission.READ))
@@ -57,7 +57,8 @@ public class HierarchicalEntityManager {
         return flattenHierarchy(allHierarchy);
     }
 
-    private List<AbstractSecuredEntity> flattenHierarchy(final List<? extends AbstractHierarchicalEntity> allHierarchy) {
+    private List<AbstractSecuredEntity> flattenHierarchy(
+            final List<? extends AbstractHierarchicalEntity> allHierarchy) {
         final List<AbstractSecuredEntity> collector = new ArrayList<>();
         flattenHierarchy(allHierarchy, collector);
         return collector;
@@ -73,6 +74,11 @@ public class HierarchicalEntityManager {
             List<? extends AbstractHierarchicalEntity> children = entity.getChildren();
 
             for (AbstractHierarchicalEntity child : children) {
+                // Filter object with mask 0, because it can be 0 only in case when this object has some children
+                // to show, but forbidden by itself, and was cleared for read only view by filterTree() method
+                if (child.getMask() == 0) {
+                    continue;
+                }
                 AbstractHierarchicalEntity copyView = child.copyView();
                 collector.add(copyView);
             }
