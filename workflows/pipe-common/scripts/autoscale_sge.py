@@ -824,6 +824,8 @@ class GridEngineAutoscaler:
 
 class GridEngineWorkerValidator:
     _STOP_PIPELINE = 'pipe stop --yes %s'
+    _SHOW_RUN_STATUS = 'pipe view-runs %s | grep Status | awk \'{print $2}\''
+    _RUNNING_STATUS = 'RUNNING'
 
     def __init__(self, cmd_executor, host_storage, grid_engine, scale_down_handler):
         """
@@ -831,6 +833,7 @@ class GridEngineWorkerValidator:
 
         The reason why validator exists is that some additional hosts may be broken due to different circumstances.
         F.e. autoscaler has failed while configuring additional host so it is partly configured and has to be stopped.
+        F.e. a spot worker instance was preempted and it has to be removed from its autoscaled cluster.
 
         :param grid_engine: Grid engine.
         :param cmd_executor: Cmd executor.
@@ -844,14 +847,17 @@ class GridEngineWorkerValidator:
 
     def validate_hosts(self):
         """
-        Checks additional hosts if they are valid execution hosts in GE and kills invalid ones.
+        Finds and removes any additional hosts which aren't valid execution hosts in GE or not running pipelines.
         """
         hosts = self.host_storage.load_hosts()
         Logger.info('Validate %s additional workers.' % len(hosts))
-        invalid_hosts = [host for host in hosts if not self.grid_engine.is_valid(host)]
-        for host in invalid_hosts:
-            Logger.warn('Invalid additional host %s was found. It will be downscaled.' % host)
+        invalid_hosts = []
+        for host in hosts:
             run_id = self.scale_down_handler._get_run_id_from_host(host)
+            if (not self.grid_engine.is_valid(host)) or (not self._is_running(run_id)):
+                invalid_hosts.append((host, run_id))
+        for host, run_id in invalid_hosts:
+            Logger.warn('Invalid additional host %s was found. It will be downscaled.' % host)
             self._try_stop_worker(run_id)
             self._try_disable_worker(host, run_id)
             self._try_kill_invalid_host_jobs(host)
@@ -859,6 +865,17 @@ class GridEngineWorkerValidator:
             self._remove_worker_from_hosts(host)
             self.host_storage.remove_host(host)
         Logger.info('Additional hosts validation has finished.')
+
+    def _is_running(self, run_id):
+        try:
+            status = self.executor.execute(GridEngineWorkerValidator._SHOW_RUN_STATUS % run_id).strip()
+            if status == self._RUNNING_STATUS:
+                return True
+            Logger.warn('Additional host with run_id=%s status is not running but %s.' % (run_id, status))
+            return False
+        except:
+            Logger.warn('Additional host with run_id=%s status retrieving has failed.')
+            return False
 
     def _try_stop_worker(self, run_id):
         try:
