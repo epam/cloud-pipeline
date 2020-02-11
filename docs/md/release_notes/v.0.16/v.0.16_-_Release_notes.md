@@ -17,6 +17,7 @@
 - [Displaying SSH link for the active runs in the Dashboard view](#displaying-ssh-link-for-the-active-runs-in-the-dashboard-view)
 - [Enable Slurm for the Cloud Pipeline's clusters](#enable-slurm-workload-manager-for-the-cloud-pipelines-clusters)
 - [The ability to generate the `pipe run` command from the GUI](#the-ability-to-generate-the-pipe-run-command-from-the-gui)
+- [`pipe` CLI: view tools definitions](#pipe-cli-view-tools-definitions)
 
 ***
 
@@ -339,6 +340,28 @@ Also user can select the **API** tab in that popup and get the `POST` request fo
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_PipeRunGUI_4.png)
 
 See an example [here](../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md#generate-pipeline-launch-command-via-the-gui).
+
+## `pipe` CLI: view tools definitions
+
+In **`v0.16`** the ability to view details of a tool/tool version or tools group via the `CLI` was implemented.  
+The general command to perform these operations:
+
+``` bash
+pipe view-tools [OPTIONS]
+```
+
+Via the options users can specify a Docker registry (`-r` option), a tools group (`-g` option), a tool (`-t` option), a tool version (`-v` option) and view the corresponding information.
+
+For example, to show a full tools list of a group:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ViewTools_01.png)
+
+To show a tool definition with versions list:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ViewTools_02.png)
+
+Also the specifying of "path" to the object (registry/group/tool) is supported. The "full path" format is: `<registry_name>:<port>/<group_name>/<tool_name>:<verion_name>`:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ViewTools_03.png)
+
+For more details and usage examples see [here](../../manual/14_CLI/14.8._View_tools_definitions_via_CLI.md).
 
 ***
 
