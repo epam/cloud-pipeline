@@ -26,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -57,9 +56,9 @@ public class IdleMinutesNodeExpirationService implements NodeExpirationService {
                     runId, endDate, keepAliveMinutes);
             return Instant.ofEpochMilli(endDate.getTime())
                     .atZone(ZoneId.systemDefault())
-                    .toLocalDate()
+                    .toLocalDateTime()
                     .plus(keepAliveMinutes, ChronoUnit.MINUTES)
-                    .isAfter(LocalDate.now());
+                    .isAfter(LocalDateTime.now());
         } catch (IllegalArgumentException e) {
             log.trace(e.getMessage(), e);
             return true;
