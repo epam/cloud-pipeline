@@ -621,6 +621,8 @@ def view_cluster_for_node(node_name):
               type=click.Choice([PriceType.SPOT, PriceType.ON_DEMAND]), required=False)
 @click.option('-r', '--region-id', help='Instance cloud region', type=int, required=False)
 @click.option('-pn', '--parent-node', help='Parent instance Run ID. That allows to run a pipeline as a child job on the existing running instance', type=int, required=False)
+@click.option('-np', '--non-pause', help='Allow to switch off auto-pause option. Supported for on-demand runs only',
+              is_flag=True)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def run(pipeline,
         config,
@@ -638,12 +640,13 @@ def run(pipeline,
         sync,
         price_type,
         region_id,
-        parent_node):
+        parent_node,
+        non_pause):
     """Schedules a pipeline execution
     """
     PipelineRunOperations.run(pipeline, config, parameters, yes, run_params, instance_disk, instance_type,
                               docker_image, cmd_template, timeout, quiet, instance_count, cores, sync, price_type,
-                              region_id, parent_node)
+                              region_id, parent_node, non_pause)
 
 
 @cli.command(name='stop')

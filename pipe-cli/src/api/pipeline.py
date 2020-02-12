@@ -99,7 +99,7 @@ class Pipeline(API):
                         instance_disk=None, instance_type=None,
                         docker_image=None, cmd_template=None,
                         timeout=None, config_name=None, instance_count=None,
-                        price_type=None, region_id=None, parent_node=None):
+                        price_type=None, region_id=None, parent_node=None, non_pause=None):
         api = cls.instance()
         params = {}
         for parameter in parameters:
@@ -127,6 +127,8 @@ class Pipeline(API):
             payload['cloudRegionId'] = region_id
         if parent_node is not None:
             cls.__add_parent_node_params(payload, parent_node)
+        if non_pause is not None:
+            payload['nonPause'] = non_pause
         data = json.dumps(payload)
         response_data = api.call('run', data)
         return PipelineRunModel.load(response_data['payload'])
@@ -135,7 +137,7 @@ class Pipeline(API):
     def launch_command(cls, instance_disk, instance_type,
                        docker_image, cmd_template, parameters,
                        timeout=None, instance_count=None, price_type=None,
-                       region_id=None, parent_node=None):
+                       region_id=None, parent_node=None, non_pause=None):
         api = cls.instance()
         payload = {}
         if instance_disk is not None:
@@ -156,6 +158,8 @@ class Pipeline(API):
             payload['cloudRegionId'] = region_id
         if parent_node is not None:
             cls.__add_parent_node_params(payload, parent_node)
+        if non_pause is not None:
+            payload['nonPause'] = non_pause
         if parameters is not None:
             params = {}
             for key in parameters.keys():

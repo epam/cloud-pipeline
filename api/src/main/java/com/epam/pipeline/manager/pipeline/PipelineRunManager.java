@@ -974,6 +974,7 @@ public class PipelineRunManager {
                 .priceType()
                 .regionId()
                 .parentNode()
+                .nonPause()
                 .build();
     }
 
