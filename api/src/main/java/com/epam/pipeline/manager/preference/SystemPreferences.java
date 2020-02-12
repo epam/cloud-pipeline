@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.preference;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
+import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.EnvVarsSettings;
 import com.epam.pipeline.entity.cluster.PriceType;
@@ -74,6 +75,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isLessTh
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLessThanValueOrNull;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
 /**
@@ -296,6 +298,8 @@ public class SystemPreferences {
         "cluster.high.non.batch.priority", false, CLUSTER_GROUP, pass);
     public static final IntPreference CLUSTER_KEEP_ALIVE_MINUTES = new IntPreference("cluster.keep.alive.minutes",
                                                                                 10, CLUSTER_GROUP, isGreaterThan(0));
+    public static final StringPreference CLUSTER_KEEP_ALIVE_POLICY = new StringPreference("cluster.keep.alive.policy",
+            ClusterKeepAlivePolicy.MINUTES_TILL_HOUR.name(), CLUSTER_GROUP, isValidEnum(ClusterKeepAlivePolicy.class));
     public static final BooleanPreference CLUSTER_SPOT = new BooleanPreference("cluster.spot", true, CLUSTER_GROUP,
                                                                                pass);
     public static final StringPreference CLUSTER_SPOT_ALLOC_STRATEGY = new StringPreference(
@@ -340,9 +344,8 @@ public class SystemPreferences {
     public static final ObjectPreference<List<DockerMount>> DOCKER_IN_DOCKER_MOUNTS = new ObjectPreference<>(
             "launch.dind.mounts", null, new TypeReference<List<DockerMount>>() {},
             LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<DockerMount>>() {}));
-    public static final StringPreference RUN_VISIBILITY_POLICY = new StringPreference(
-            "launch.run.visibility", RunVisibilityPolicy.INHERIT.name(), LAUNCH_GROUP,
-            PreferenceValidators.isValidEnum(RunVisibilityPolicy.class));
+    public static final StringPreference RUN_VISIBILITY_POLICY = new StringPreference("launch.run.visibility",
+            RunVisibilityPolicy.INHERIT.name(), LAUNCH_GROUP, isValidEnum(RunVisibilityPolicy.class));
     public static final IntPreference LAUNCH_CONTAINER_CPU_RESOURCE = new IntPreference(
             "launch.container.cpu.resource", 0, LAUNCH_GROUP, isGreaterThan(-1));
 
