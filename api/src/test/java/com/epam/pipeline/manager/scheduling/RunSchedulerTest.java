@@ -49,13 +49,13 @@ public class RunSchedulerTest extends AbstractSpringTest {
 
     private static final Long RUN_ID = 1L;
     private static final long CONFIGURATION_ID = 2L;
-    private static final int TEST_PERIOD_DURATION = 10;
-    private static final int TEST_INVOCATION_PERIOD = 10;
+    private static final int TEST_PERIOD_DURATION = 3;
+    private static final int TEST_INVOCATION_PERIOD = 2;
 
     /**
      * This cron expression should correspond with {@link #TEST_INVOCATION_PERIOD}
      */
-    private static final String CRON_EXPRESSION = "*/10 * * * * ?"; // to run every 10 seconds
+    private static final String CRON_EXPRESSION = "*/2 * * * * ?"; // to run every 2 seconds
     private static final TimeZone TIME_ZONE = TimeZone.getTimeZone("UTC");
     private static final String USER_OWNER = "OWNER";
 
@@ -92,6 +92,7 @@ public class RunSchedulerTest extends AbstractSpringTest {
         Mockito.when(pipelineRunManager.pauseRun(Mockito.anyLong(), Mockito.anyBoolean())).thenReturn(pipelineRun);
         Mockito.when(configurationManager.load(Mockito.anyLong())).thenReturn(runConfiguration);
         Mockito.when(userManager.loadUserByName(Mockito.any())).thenReturn(new PipelineUser(USER_OWNER));
+        System.out.println(TimeZone.getDefault());
     }
 
     @Test
@@ -102,7 +103,9 @@ public class RunSchedulerTest extends AbstractSpringTest {
         runScheduler.scheduleRunSchedule(runSchedule);
 
         TimeUnit.SECONDS.sleep(TEST_PERIOD_DURATION);
-        final int numberOfInvocations = TEST_PERIOD_DURATION / TEST_INVOCATION_PERIOD;
+        runScheduler.unscheduleRunSchedule(runSchedule);
+
+        final int numberOfInvocations = 1 + TEST_PERIOD_DURATION / TEST_INVOCATION_PERIOD;
         Mockito.verify(pipelineRunManager, Mockito.times(numberOfInvocations)).pauseRun(RUN_ID, true);
     }
 
@@ -117,13 +120,14 @@ public class RunSchedulerTest extends AbstractSpringTest {
         runScheduler.scheduleRunSchedule(confSchedule);
 
         TimeUnit.SECONDS.sleep(TEST_PERIOD_DURATION);
-        final int numberOfInvocations = TEST_PERIOD_DURATION / TEST_INVOCATION_PERIOD;
+        runScheduler.unscheduleRunSchedule(runSchedule);
+        runScheduler.unscheduleRunSchedule(confSchedule);
+
+        final int numberOfInvocations = 1 + TEST_PERIOD_DURATION / TEST_INVOCATION_PERIOD;
         Mockito.verify(pipelineRunManager, Mockito.times(numberOfInvocations)).pauseRun(RUN_ID, true);
         Mockito.verify(configurationRunner, Mockito.times(numberOfInvocations))
                 .runConfiguration(Mockito.any(), Mockito.any(), Mockito.any());
 
-        runScheduler.unscheduleRunSchedule(runSchedule);
-        runScheduler.unscheduleRunSchedule(confSchedule);
     }
 
     @Test
@@ -134,11 +138,12 @@ public class RunSchedulerTest extends AbstractSpringTest {
         runScheduler.scheduleRunSchedule(runSchedule);
 
         TimeUnit.SECONDS.sleep(TEST_PERIOD_DURATION);
-        final int numberOfInvocations = TEST_PERIOD_DURATION / TEST_INVOCATION_PERIOD;
+        runScheduler.unscheduleRunSchedule(runSchedule);
+
+        final int numberOfInvocations = 1 + TEST_PERIOD_DURATION / TEST_INVOCATION_PERIOD;
         Mockito.verify(configurationRunner, Mockito.times(numberOfInvocations))
                 .runConfiguration(Mockito.any(), Mockito.any(), Mockito.any());
 
-        runScheduler.unscheduleRunSchedule(runSchedule);
     }
 
     @Test
@@ -149,10 +154,11 @@ public class RunSchedulerTest extends AbstractSpringTest {
         runScheduler.scheduleRunSchedule(runSchedule);
 
         TimeUnit.SECONDS.sleep(TEST_PERIOD_DURATION);
+        runScheduler.unscheduleRunSchedule(runSchedule);
+
         Mockito.verify(configurationRunner, Mockito.never())
                 .runConfiguration(Mockito.any(), Mockito.any(), Mockito.any());
 
-        runScheduler.unscheduleRunSchedule(runSchedule);
     }
 
     @Test
@@ -161,10 +167,12 @@ public class RunSchedulerTest extends AbstractSpringTest {
                 RunScheduledAction.PAUSE, CRON_EXPRESSION);
 
         runScheduler.scheduleRunSchedule(runSchedule);
+        TimeUnit.SECONDS.sleep(1);
         runScheduler.unscheduleRunSchedule(runSchedule);
 
         TimeUnit.SECONDS.sleep(TEST_PERIOD_DURATION);
-        Mockito.verify(pipelineRunManager, Mockito.never()).pauseRun(RUN_ID, true);
+        //check that job was invoked only ony time, right after creation
+        Mockito.verify(pipelineRunManager, Mockito.times(1)).pauseRun(RUN_ID, true);
     }
 
     private RunSchedule getRunSchedule(final Long id, final Long runId, final ScheduleType type,

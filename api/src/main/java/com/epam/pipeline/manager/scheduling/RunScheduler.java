@@ -19,7 +19,6 @@ package com.epam.pipeline.manager.scheduling;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.quartz.CronExpression;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
 import org.quartz.SchedulerException;
@@ -111,7 +110,8 @@ public class RunScheduler {
         jobDetailFactory.getJobDataMap().put("SchedulableId", runSchedule.getSchedulableId());
         jobDetailFactory.getJobDataMap().put("User", runSchedule.getUser());
         jobDetailFactory.getJobDataMap().put("Action", runSchedule.getAction().name());
-        jobDetailFactory.setName(String.format("run_%s-%s", runSchedule.getSchedulableId(), runSchedule.getId()));
+        jobDetailFactory.setName(String.format("%s_%s-%s", runSchedule.getType(),
+                runSchedule.getSchedulableId(), runSchedule.getId()));
         jobDetailFactory.setDescription("Invoke run schedule job service...");
         jobDetailFactory.setDurability(true);
         jobDetailFactory.afterPropertiesSet();
@@ -123,18 +123,7 @@ public class RunScheduler {
         trigger.setName(String.valueOf(runSchedule.getId()));
         trigger.setTimeZone(runSchedule.getTimeZone());
         trigger.setCronExpression(runSchedule.getCronExpression());
-        trigger.setStartTime(getFirstExecutionFromCronExpression(runSchedule.getCronExpression()));
         trigger.afterPropertiesSet();
         return trigger.getObject();
-    }
-
-    private Date getFirstExecutionFromCronExpression(final String cronExpression) {
-        try {
-            CronExpression cron = new CronExpression(cronExpression);
-            return cron.getNextValidTimeAfter(new Date(System.currentTimeMillis()));
-        } catch (ParseException e) {
-            throw new IllegalArgumentException(
-                "Could not get first execution time for cron expression " + cronExpression, e);
-        }
     }
 }
