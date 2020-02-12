@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
+import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
@@ -29,6 +30,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
+import com.epam.pipeline.manager.cluster.alive.policy.NodeExpirationService;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -37,8 +39,10 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.EnumUtils;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,6 +60,7 @@ public class CloudFacadeImpl implements CloudFacade {
     private final KubernetesManager kubernetesManager;
     private final Map<CloudProvider, CloudInstanceService> instanceServices;
     private final Map<CloudProvider, CloudInstancePriceService> instancePriceServices;
+    private final Map<ClusterKeepAlivePolicy, NodeExpirationService> expirationServices;
 
     public CloudFacadeImpl(final MessageHelper messageHelper,
                            final CloudRegionManager regionManager,
@@ -63,7 +68,8 @@ public class CloudFacadeImpl implements CloudFacade {
                            final PipelineRunManager pipelineRunManager,
                            final KubernetesManager kubernetesManager,
                            final List<CloudInstanceService> instanceServices,
-                           final List<CloudInstancePriceService> instancePriceServices) {
+                           final List<CloudInstancePriceService> instancePriceServices,
+                           final List<NodeExpirationService> expirationServices) {
         this.messageHelper = messageHelper;
         this.regionManager = regionManager;
         this.preferenceManager = preferenceManager;
@@ -71,6 +77,7 @@ public class CloudFacadeImpl implements CloudFacade {
         this.kubernetesManager = kubernetesManager;
         this.instanceServices = CommonUtils.groupByCloudProvider(instanceServices);
         this.instancePriceServices = CommonUtils.groupByCloudProvider(instancePriceServices);
+        this.expirationServices = CommonUtils.groupByKey(expirationServices, NodeExpirationService::policy);
     }
 
     @Override
@@ -98,9 +105,18 @@ public class CloudFacadeImpl implements CloudFacade {
 
     @Override
     public boolean isNodeExpired(final Long runId) {
+        final ClusterKeepAlivePolicy clusterKeepAlivePolicy = Optional.ofNullable(
+                preferenceManager.getPreference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY))
+                .map(pref -> EnumUtils.getEnum(ClusterKeepAlivePolicy.class, pref))
+                .orElse(ClusterKeepAlivePolicy.MINUTES_TILL_HOUR);
         final AbstractCloudRegion region = getRegionByRunId(runId);
-        return getInstanceService(region).isNodeExpired(region, runId,
-                preferenceManager.getPreference(SystemPreferences.CLUSTER_KEEP_ALIVE_MINUTES));
+        final LocalDateTime nodeLaunchTime = getInstanceService(region).getNodeLaunchTime(region, runId);
+        return Optional.ofNullable(MapUtils.emptyIfNull(expirationServices)
+                .get(clusterKeepAlivePolicy))
+                .orElseThrow(() -> new IllegalArgumentException(
+                        messageHelper.getMessage(MessageConstants.ERROR_KEEP_ALIVE_POLICY_NOT_SUPPORTED,
+                                clusterKeepAlivePolicy.name())))
+                .isNodeExpired(runId, nodeLaunchTime);
     }
 
     @Override
