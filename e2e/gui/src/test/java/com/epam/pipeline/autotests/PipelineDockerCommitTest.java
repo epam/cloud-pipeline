@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,8 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.LOADING;
-import static com.epam.pipeline.autotests.ao.Primitive.DISK;
-import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
-import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -58,7 +54,7 @@ public class PipelineDockerCommitTest
                     t.tool(toolFullName, tool ->  tool.sleep(1, SECONDS)
                         .delete()
                         .messageShouldAppear("Are you sure you want to delete the tool?")
-                        .ok())));
+                        .delete())));
     }
 
     @BeforeClass

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.CommitPopup.deleteRuntimeFiles;
 import static com.epam.pipeline.autotests.ao.CommitPopup.stopPipeline;
 import static com.epam.pipeline.autotests.ao.ConfirmationPopupAO.confirmCommittingToExistingTool;
-import static com.epam.pipeline.autotests.ao.LogAO.Status.LOADING;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;

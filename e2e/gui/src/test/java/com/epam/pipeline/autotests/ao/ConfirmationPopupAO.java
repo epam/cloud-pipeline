@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,12 @@ import java.util.function.Consumer;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
+import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static org.openqa.selenium.By.className;
 
@@ -35,7 +37,8 @@ public class ConfirmationPopupAO<PARENT_AO> extends PopupAO<ConfirmationPopupAO<
     private boolean messageIsChecked = false;
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(OK, $(byXpath("//*[contains(@role, 'dialog') and .//*[contains(@class, 'ant-confirm')]]//button[. =  'OK' or . = 'Yes' or . = 'Launch']"))),
-            entry(CANCEL, $(byXpath("//*[contains(@role, 'dialog') and .//*[contains(@class, 'ant-confirm')]]//button[. =  'Cancel' or . = 'No']")))
+            entry(CANCEL, $(byXpath("//*[contains(@role, 'dialog') and .//*[contains(@class, 'ant-confirm')]]//button[. =  'Cancel' or . = 'No']"))),
+            entry(DELETE, $(byId("remove-button-delete")))
     );
 
     public ConfirmationPopupAO(PARENT_AO parentAO) {
@@ -72,6 +75,11 @@ public class ConfirmationPopupAO<PARENT_AO> extends PopupAO<ConfirmationPopupAO<
     @Override
     public void closeAll() {
         cancel();
+    }
+
+    public PARENT_AO delete() {
+        click(DELETE);
+        return parent();
     }
 
     public ConfirmationPopupAO<PARENT_AO> ensureTitleIs(String expectedTitle) throws RuntimeException {
