@@ -59,7 +59,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static com.epam.pipeline.manager.ObjectCreatorUtils.*;
 
 @DirtiesContext
 @Transactional
@@ -122,16 +121,18 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
 
         userVO.setUserName(USER2);
         userManager.createUser(userVO);
-
+        Mockito.when(kubernetesManager.createDockerRegistrySecret(Mockito.any())).thenReturn("");
         Mockito.when(dockerClientFactory.getDockerClient(Mockito.any(), Mockito.any())).thenReturn(client);
     }
 
     @Test
     @WithMockUser(username = USER)
     public void testToolInheritPermissionsFromRegistry() {
-        DockerRegistry registry = registryManager.create(createDockerRegistryVO(TEST_NAME, USER, USER));
-        ToolGroup toolGroup = toolGroupManager.create(createToolGroup(TEST_NAME, registry.getId()));
-        toolManager.create(createTool(TEST_NAME, toolGroup.getId()), false);
+        DockerRegistry registry = registryManager.create(
+                ObjectCreatorUtils.createDockerRegistryVO(TEST_NAME, USER, USER));
+        ToolGroup toolGroup = toolGroupManager.create(
+                ObjectCreatorUtils.createToolGroup(TEST_NAME, registry.getId()));
+        toolManager.create(ObjectCreatorUtils.createTool(TEST_NAME, toolGroup.getId()), false);
         grantPermission(registry.getId(), AclClass.DOCKER_REGISTRY, USER2, true, AclPermission.READ.getMask());
 
         Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
@@ -143,9 +144,12 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
     @Test
     @WithMockUser(username = USER)
     public void testIfOnlyToolAllowedGroupAndRegistryDontPresetInResult() {
-        DockerRegistry registry = registryManager.create(createDockerRegistryVO(TEST_NAME, USER, USER));
-        ToolGroup toolGroup = toolGroupManager.create(createToolGroup(TEST_NAME, registry.getId()));
-        Tool tool = toolManager.create(createTool(TEST_NAME, toolGroup.getId()), false);
+        DockerRegistry registry = registryManager.create(
+                ObjectCreatorUtils.createDockerRegistryVO(TEST_NAME, USER, USER));
+        ToolGroup toolGroup = toolGroupManager.create(
+                ObjectCreatorUtils.createToolGroup(TEST_NAME, registry.getId()));
+        Tool tool = toolManager.create(
+                ObjectCreatorUtils.createTool(TEST_NAME, toolGroup.getId()), false);
         grantPermission(tool.getId(), AclClass.TOOL, USER2, true, AclPermission.READ.getMask());
 
         Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
@@ -157,9 +161,12 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
     @Test
     @WithMockUser(username = USER)
     public void testLoadingByRoleSidWorks() {
-        DockerRegistry registry = registryManager.create(createDockerRegistryVO(TEST_NAME, USER, USER));
-        ToolGroup toolGroup = toolGroupManager.create(createToolGroup(TEST_NAME, registry.getId()));
-        Tool tool = toolManager.create(createTool(TEST_NAME, toolGroup.getId()), false);
+        DockerRegistry registry = registryManager.create(
+                ObjectCreatorUtils.createDockerRegistryVO(TEST_NAME, USER, USER));
+        ToolGroup toolGroup = toolGroupManager.create(
+                ObjectCreatorUtils.createToolGroup(TEST_NAME, registry.getId()));
+        Tool tool = toolManager.create(
+                ObjectCreatorUtils.createTool(TEST_NAME, toolGroup.getId()), false);
         grantPermission(tool.getId(), AclClass.TOOL, DefaultRoles.ROLE_USER.getName(),
                 false, AclPermission.READ.getMask());
 
@@ -177,9 +184,12 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
     @Test
     @WithMockUser(username = USER)
     public void testLoadingByRoleSidWorksWhenLoadForUser() {
-        DockerRegistry registry = registryManager.create(createDockerRegistryVO(TEST_NAME, USER, USER));
-        ToolGroup toolGroup = toolGroupManager.create(createToolGroup(TEST_NAME, registry.getId()));
-        Tool tool = toolManager.create(createTool(TEST_NAME, toolGroup.getId()), false);
+        DockerRegistry registry = registryManager.create(
+                ObjectCreatorUtils.createDockerRegistryVO(TEST_NAME, USER, USER));
+        ToolGroup toolGroup = toolGroupManager.create(
+                ObjectCreatorUtils.createToolGroup(TEST_NAME, registry.getId()));
+        Tool tool = toolManager.create(
+                ObjectCreatorUtils.createTool(TEST_NAME, toolGroup.getId()), false);
         grantPermission(tool.getId(), AclClass.TOOL, DefaultRoles.ROLE_USER.getName(),
                 false, AclPermission.READ.getMask());
 
@@ -197,9 +207,12 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
     @Test
     @WithMockUser(username = USER)
     public void testLoadingByGroupSidWorksWhenLoadForUser() {
-        DockerRegistry registry = registryManager.create(createDockerRegistryVO(TEST_NAME, USER, USER));
-        ToolGroup toolGroup = toolGroupManager.create(createToolGroup(TEST_NAME, registry.getId()));
-        Tool tool = toolManager.create(createTool(TEST_NAME, toolGroup.getId()), false);
+        DockerRegistry registry = registryManager.create(
+                ObjectCreatorUtils.createDockerRegistryVO(TEST_NAME, USER, USER));
+        ToolGroup toolGroup = toolGroupManager.create(
+                ObjectCreatorUtils.createToolGroup(TEST_NAME, registry.getId()));
+        Tool tool = toolManager.create(
+                ObjectCreatorUtils.createTool(TEST_NAME, toolGroup.getId()), false);
         Role role = roleManager.createRole(TEST_ROLE, false, false, null);
         grantPermission(tool.getId(), AclClass.TOOL, role.getName(),
                 false, AclPermission.READ.getMask());
@@ -324,11 +337,9 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
         //create
         PipelineConfiguration pipelineConfiguration = new PipelineConfiguration();
         pipelineConfiguration.setCmdTemplate("sleep 10");
-        RunConfigurationEntry entry =
-                createConfigEntry("entry", true, pipelineConfiguration);
+        RunConfigurationEntry entry = ObjectCreatorUtils.createConfigEntry("entry", true, pipelineConfiguration);
 
-        RunConfigurationVO configuration =
-                createRunConfigurationVO(name, null, parentId,
+        RunConfigurationVO configuration = ObjectCreatorUtils.createRunConfigurationVO(name, null, parentId,
                         Collections.singletonList(entry));
         return configurationManager.create(configuration);
     }
