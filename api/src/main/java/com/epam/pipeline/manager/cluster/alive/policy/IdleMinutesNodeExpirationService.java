@@ -52,13 +52,14 @@ public class IdleMinutesNodeExpirationService implements NodeExpirationService {
             if (endDate == null) {
                 return true;
             }
-            log.debug("Node for run {} is idle from {}. Checking preference: keep alive for {} minutes.",
-                    runId, endDate, keepAliveMinutes);
-            return Instant.ofEpochMilli(endDate.getTime())
+            final LocalDateTime expirationTime = Instant.ofEpochMilli(endDate.getTime())
                     .atZone(ZoneId.systemDefault())
                     .toLocalDateTime()
-                    .plus(keepAliveMinutes, ChronoUnit.MINUTES)
-                    .isAfter(LocalDateTime.now());
+                    .plus(keepAliveMinutes, ChronoUnit.MINUTES);
+
+            log.debug("Node for run {} is idle from {}. Checking preference: keep alive for {} minutes. " +
+                            "Node will expire at {}.", runId, endDate, keepAliveMinutes, expirationTime);
+            return expirationTime.isBefore(LocalDateTime.now());
         } catch (IllegalArgumentException e) {
             log.trace(e.getMessage(), e);
             return true;
