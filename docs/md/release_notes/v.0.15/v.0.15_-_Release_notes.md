@@ -39,6 +39,7 @@
 - [Perform objects restore in a batch mode via `pipe`](#perform-objects-restore-in-a-batch-mode-via-pipe)
 - [Mounting data storages to Linux and Mac workstations](#mounting-data-storages-to-linux-and-mac-workstations)
 - [Ability to restrict the visibility of the jobs](#ability-to-restrict-the-visibility-of-the-jobs)
+- [Ability to perform scheduled runs from detached configurations](#ability-to-perform-scheduled-runs-from-detached-configurations)
 - [Displaying of the additional support icon/info](#displaying-of-the-additional-support-iconinfo)
 
 ***
@@ -751,6 +752,25 @@ Next hierarchy is set for applying of specified jobs visibility:
 - Platform level **`launch.run.visibility`** (specified as global defaults via system-level settings)
 
 > **_Note_**: admins can see all runs despite of settings
+
+## Ability to perform scheduled runs from detached configurations
+
+Previously, Cloud Pipeline allowed starting compute jobs only manually (API/GUI/CLI).  
+But in certain use cases, it is beneficial to launch runs on a scheduled basis.
+
+In **`v0.15`** the ability to configure a schedule for detached configuration was implemented:  
+
+- User is able to set a schedule for launch a run from the detached configuration:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SchedulingDetachedConfigurationRuns_1.png)
+- Schedule is defined as a list of rules - user is able to specify any number of them:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SchedulingDetachedConfigurationRuns_2.png)  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SchedulingDetachedConfigurationRuns_3.png)
+- For each rule in the list user is able to set the recurrence:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SchedulingDetachedConfigurationRuns_4.png)
+
+If any schedule rule is configured for the detached configuration - a corresponding job (plain container or a pipeline) will be started accordingly in the scheduled day and time.
+
+See more details [here](../../manual/07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration.md#schedule-a-launch-from-the-detached-configuration).
 
 ## Displaying of the additional support icon/info
 
