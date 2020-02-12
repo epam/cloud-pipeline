@@ -53,6 +53,8 @@ public class IdleMinutesNodeExpirationService implements NodeExpirationService {
             if (endDate == null) {
                 return true;
             }
+            log.debug("Node for run {} is idle from {}. Checking preference: keep alive for {} minutes.",
+                    runId, endDate, keepAliveMinutes);
             return Instant.ofEpochMilli(endDate.getTime())
                     .atZone(ZoneId.systemDefault())
                     .toLocalDate()
