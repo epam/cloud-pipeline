@@ -20,6 +20,7 @@ import {Button, Icon, InputNumber, Modal, Row, Select, TimePicker} from 'antd';
 import {observer} from 'mobx-react';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
+import daysOfWeek from './days-of-week';
 
 import {CronConvert, isTimeZoneEqualCurrent, ruleModes} from './cron-convert';
 
@@ -311,9 +312,11 @@ export default class RunScheduleDialog extends React.Component {
           style={{width: 170}}
         >
           {
-            moment
-              .weekdays(false)
-              .map((day, id) => (<Select.Option key={`${id}`}>{day}</Select.Option>))
+            daysOfWeek.map(({day, value}) => (
+              <Select.Option key={day} value={value.toString()}>
+                {day}
+              </Select.Option>
+            ))
           }
         </Select>
       </div>
