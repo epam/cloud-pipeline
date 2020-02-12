@@ -163,6 +163,13 @@ public class BillingManager {
             throw new IllegalArgumentException(messageHelper
                                                    .getMessage(MessageConstants.ERROR_BILLING_DETAILS_NOT_SUPPORTED));
         }
+        final Long pageSize = request.getPageSize();
+        final Long pageNum = request.getPageNum();
+        if (pageNum != null && pageNum < 0
+            || pageSize != null && pageSize <= 0) {
+            throw new IllegalArgumentException(messageHelper
+                                                   .getMessage(MessageConstants.ERROR_ILLEGAL_PAGING_PARAMETERS));
+        }
     }
 
     private RestHighLevelClient buildClient(final PreferenceManager preferenceManager) {

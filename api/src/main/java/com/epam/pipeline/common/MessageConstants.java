@@ -477,6 +477,7 @@ public final class MessageConstants {
         "error.billing.entity.for.grouping.not.found";
     public static final String ERROR_BILLING_DETAILS_NOT_SUPPORTED = "error.billing.details.not.supported";
     public static final String ERROR_BILLING_INTERVAL_NOT_SUPPORTED = "error.billing.interval.not.supported";
+    public static final String ERROR_ILLEGAL_PAGING_PARAMETERS = "error.billing.invalid.paging";
 
     private MessageConstants() {
         // no-op
