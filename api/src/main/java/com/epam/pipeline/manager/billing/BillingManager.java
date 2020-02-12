@@ -85,6 +85,8 @@ public class BillingManager {
     private static final String USAGE_FIELD = "usage";
     private static final String ID_FIELD = "id";
     private static final String UNIQUE_RUNS = "runs";
+    private static final String PAGE = "page";
+    private static final String TOTAL_PAGES = "totalPages";
     private static final String BILLING_DATE_FIELD = "created_date";
     private static final String HISTOGRAM_AGGREGATION_NAME = "hist_agg";
     private static final String ES_MONTHLY_DATE_REGEXP = "%d-%02d-*";
@@ -284,7 +286,14 @@ public class BillingManager {
                 if (from > resultSize) {
                     return getEmptyGroupingResponse(grouping);
                 }
-                return fullResult.subList(from, Math.min(to, resultSize));
+                final List<BillingChartInfo> finalBilling = fullResult.subList(from, Math.min(to, resultSize));
+                final String totalPagesVal = Long.toString((long) Math.ceil(1.0 * resultSize / pageSize));
+                final String pageNumVal = Long.toString(requiredPageNum);
+                finalBilling.forEach(record -> {
+                    record.getGroupingInfo().put(PAGE, pageNumVal);
+                    record.getGroupingInfo().put(TOTAL_PAGES, totalPagesVal);
+                });
+                return finalBilling;
             }
         } else {
             return getEmptyGroupingResponse(grouping);
