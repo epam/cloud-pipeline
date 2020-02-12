@@ -139,6 +139,8 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      */
     Map<String, String> buildContainerCloudEnvVars(T region);
 
+    // TODO: this logic is moved to NodeExpirationService class, remove this method
+    //  if it is not needed anymore
     default boolean isNodeExpired(T region, Long runId, Integer keepAliveMinutes) {
         if (keepAliveMinutes == null) {
             return true;
