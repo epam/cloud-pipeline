@@ -101,11 +101,7 @@ public class PipeRunCmdBuilder {
 
     public PipeRunCmdBuilder priceType() {
         cmd.add("-pt");
-        if (Objects.nonNull(runVO.getIsSpot()) && !runVO.getIsSpot()) {
-            cmd.add("on-demand");
-        } else {
-            cmd.add("spot");
-        }
+        cmd.add(isOnDemand() ? "on-demand" : "spot");
         return this;
     }
 
@@ -166,6 +162,13 @@ public class PipeRunCmdBuilder {
         return this;
     }
 
+    public PipeRunCmdBuilder nonPause() {
+        if (isOnDemand() && runVO.isNonPause()) {
+            cmd.add("-np");
+        }
+        return this;
+    }
+
     private String prepareParams(final Map.Entry<String, PipeConfValueVO> entry) {
         String value = entry.getValue().getValue();
         if (entry.getValue().getType().equalsIgnoreCase("string")) {
@@ -190,5 +193,9 @@ public class PipeRunCmdBuilder {
 
     private String quoteStringArgument(final String value) {
         return String.format("'%s'", value);
+    }
+
+    private boolean isOnDemand() {
+        return Objects.nonNull(runVO.getIsSpot()) && !runVO.getIsSpot();
     }
 }

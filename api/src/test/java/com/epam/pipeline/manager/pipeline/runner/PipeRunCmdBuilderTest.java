@@ -66,24 +66,7 @@ public class PipeRunCmdBuilderTest {
         pipeRunCmdStartVO.setShowParams(true);
 
         final PipeRunCmdBuilder pipeRunCmdBuilder = new PipeRunCmdBuilder(pipeRunCmdStartVO);
-        final String actualResult = pipeRunCmdBuilder
-                .name()
-                .config()
-                .runParameters()
-                .parameters()
-                .yes()
-                .instanceDisk()
-                .instanceType()
-                .dockerImage()
-                .cmdTemplate()
-                .timeout()
-                .quite()
-                .instanceCount()
-                .sync()
-                .priceType()
-                .regionId()
-                .parentNode()
-                .build();
+        final String actualResult = buildCmd(pipeRunCmdBuilder);
         final String expectedResult = String.format("pipe run -n 1@%s %s '%s' %s %s parent-id 1 -p -y -id 10 " +
                         "-it type -di image -cmd '%s' -t 10 -q -ic 5 -s -pt spot -r 1 -pn 1",
                 TEST_VERSION, TEST_PARAM_NAME_1, TEST_PARAM_VALUE_1, TEST_PARAM_NAME_2, TEST_PARAM_VALUE_2,
@@ -101,7 +84,43 @@ public class PipeRunCmdBuilderTest {
         pipeRunCmdStartVO.setPipelineStart(pipelineStart);
 
         final PipeRunCmdBuilder pipeRunCmdBuilder = new PipeRunCmdBuilder(pipeRunCmdStartVO);
-        final String actualResult = pipeRunCmdBuilder
+        final String actualResult = buildCmd(pipeRunCmdBuilder);
+        Assert.assertEquals("pipe run -n 1 -pt spot", actualResult);
+    }
+
+    @Test
+    public void shouldAddNonPauseOption() {
+        final PipelineStart pipelineStart = new PipelineStart();
+        pipelineStart.setPipelineId(1L);
+        pipelineStart.setIsSpot(false);
+        pipelineStart.setNonPause(true);
+
+        final PipeRunCmdStartVO pipeRunCmdStartVO = new PipeRunCmdStartVO();
+        pipeRunCmdStartVO.setPipelineStart(pipelineStart);
+
+        final PipeRunCmdBuilder pipeRunCmdBuilder = new PipeRunCmdBuilder(pipeRunCmdStartVO);
+        final String actualResult = buildCmd(pipeRunCmdBuilder);
+        Assert.assertEquals("pipe run -n 1 -pt on-demand -np", actualResult);
+    }
+
+    @Test
+    public void shouldIgnoreNonPauseOptionIfSpot() {
+        final PipelineStart pipelineStart = new PipelineStart();
+        pipelineStart.setPipelineId(1L);
+        pipelineStart.setIsSpot(true);
+        pipelineStart.setNonPause(true);
+
+        final PipeRunCmdStartVO pipeRunCmdStartVO = new PipeRunCmdStartVO();
+        pipeRunCmdStartVO.setPipelineStart(pipelineStart);
+
+        final PipeRunCmdBuilder pipeRunCmdBuilder = new PipeRunCmdBuilder(pipeRunCmdStartVO);
+        final String actualResult = buildCmd(pipeRunCmdBuilder);
+        Assert.assertEquals("pipe run -n 1 -pt spot", actualResult);
+    }
+
+
+    private String buildCmd(final PipeRunCmdBuilder pipeRunCmdBuilder) {
+        return pipeRunCmdBuilder
                 .name()
                 .config()
                 .runParameters()
@@ -118,7 +137,7 @@ public class PipeRunCmdBuilderTest {
                 .priceType()
                 .regionId()
                 .parentNode()
+                .nonPause()
                 .build();
-        Assert.assertEquals("pipe run -n 1 -pt spot", actualResult);
     }
 }
