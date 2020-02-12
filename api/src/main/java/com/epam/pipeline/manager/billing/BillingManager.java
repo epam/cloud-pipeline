@@ -146,8 +146,25 @@ public class BillingManager {
         if (interval != null) {
             return getBillingStats(elasticsearchClient, from, to, filters, interval);
         } else {
-            return getBillingStats(elasticsearchClient, from, to, filters, grouping, request.isLoadDetails(),
-                                   request.getPageNum(), request.getPageSize());
+            return getBillingStats(elasticsearchClient, from, to, filters, grouping, request.isLoadDetails());
+        }
+    }
+
+    public List<BillingChartInfo> getBillingChartInfoPaginated(final BillingChartRequest request) {
+        verifyPagingParameters(request);
+        return paginateResult(getBillingChartInfo(request),
+                              request.getGrouping(),
+                              request.getPageNum(),
+                              request.getPageSize());
+    }
+
+    private void verifyPagingParameters(final BillingChartRequest request) {
+        final Long pageSize = request.getPageSize();
+        final Long pageNum = request.getPageNum();
+        if (pageNum != null && pageNum < 0
+            || pageSize != null && pageSize <= 0) {
+            throw new IllegalArgumentException(messageHelper
+                                                   .getMessage(MessageConstants.ERROR_ILLEGAL_PAGING_PARAMETERS));
         }
     }
 
@@ -164,13 +181,6 @@ public class BillingManager {
             && grouping == null) {
             throw new IllegalArgumentException(messageHelper
                                                    .getMessage(MessageConstants.ERROR_BILLING_DETAILS_NOT_SUPPORTED));
-        }
-        final Long pageSize = request.getPageSize();
-        final Long pageNum = request.getPageNum();
-        if (pageNum != null && pageNum < 0
-            || pageSize != null && pageSize <= 0) {
-            throw new IllegalArgumentException(messageHelper
-                                                   .getMessage(MessageConstants.ERROR_ILLEGAL_PAGING_PARAMETERS));
         }
     }
 
@@ -232,9 +242,7 @@ public class BillingManager {
                                                    final LocalDate from, final LocalDate to,
                                                    final Map<String, List<String>> filters,
                                                    final BillingGrouping grouping,
-                                                   final boolean isLoadDetails,
-                                                   final Long pageNum,
-                                                   final Long pageSize) {
+                                                   final boolean isLoadDetails) {
         final SearchRequest searchRequest = new SearchRequest();
         final SearchSourceBuilder searchSource = new SearchSourceBuilder();
         if (grouping != null) {
@@ -262,14 +270,16 @@ public class BillingManager {
             final SearchResponse searchResponse = elasticsearchClient.search(searchRequest);
             final List<BillingChartInfo> billingChartInfoForGrouping =
                 getBillingChartInfoForGrouping(from, to, grouping, searchResponse, isLoadDetails);
-            return finalizeResult(billingChartInfoForGrouping, grouping, pageNum, pageSize);
+            return CollectionUtils.isEmpty(billingChartInfoForGrouping)
+                   ? getEmptyGroupingResponse(grouping)
+                   : billingChartInfoForGrouping;
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
         }
     }
 
-    private List<BillingChartInfo> finalizeResult(final List<BillingChartInfo> fullResult,
+    private List<BillingChartInfo> paginateResult(final List<BillingChartInfo> fullResult,
                                                   final BillingGrouping grouping,
                                                   final Long pageNum,
                                                   final Long pageSize) {
