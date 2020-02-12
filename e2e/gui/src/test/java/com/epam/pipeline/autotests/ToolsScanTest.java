@@ -324,7 +324,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
     private ToolGroup deleteTool(final ToolGroup t) {
         return t.tool(fullToolName, tool -> tool.sleep(1, SECONDS)
                 .delete()
-                .ensureTitleIs("Are you sure you want to delete tool?")
+                .messageShouldAppear("Are you sure you want to delete the tool?")
                 .ok());
     }
 

@@ -75,7 +75,7 @@ public interface Tools extends Navigation {
     default Consumer<ToolGroup> deleteTool(final String toolName) {
         return group -> group.tool(toolName, tool ->
                 tool.sleep(1, SECONDS)
-                        .delete().ensureTitleIs("Are you sure you want to delete tool?").ok()
+                        .delete().messageShouldAppear("Are you sure you want to delete the tool?").ok()
         );
     }
 

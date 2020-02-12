@@ -94,7 +94,7 @@ public class ToolsTest
         tools()
                 .perform(defaultRegistry, defaultGroup, toolWithoutDefaultSettings, tool ->
                         tool.delete()
-                                .ensureTitleIs("Are you sure you want to delete tool?")
+                                .messageShouldAppear("Are you sure you want to delete the tool?")
                                 .ensureVisible(CANCEL, OK)
                                 .ok()
                                 .searchToolByName(toolWithoutDefaultSettings)

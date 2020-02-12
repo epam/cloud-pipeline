@@ -57,7 +57,7 @@ public class PipelineDockerCommitTest
                 .performIf(ToolGroup.tool(toolFullName), visible, t ->
                     t.tool(toolFullName, tool ->  tool.sleep(1, SECONDS)
                         .delete()
-                        .ensureTitleIs("Are you sure you want to delete tool?")
+                        .messageShouldAppear("Are you sure you want to delete the tool?")
                         .ok())));
     }
 

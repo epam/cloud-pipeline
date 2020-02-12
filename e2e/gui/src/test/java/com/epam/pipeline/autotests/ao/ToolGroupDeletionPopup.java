@@ -52,7 +52,7 @@ public class ToolGroupDeletionPopup extends PopupAO<ToolGroupDeletionPopup, Regi
     }
 
     public ToolGroupDeletionPopup ensureGroupNameIs(final String expectedGroupName) {
-        context().find(byText(String.format("Are you sure you want to delete '%s'?", expectedGroupName)))
+        context().find(byText(String.format("Are you sure you want to delete tool group '%s'?", expectedGroupName)))
                 .shouldBe(visible);
         return this;
     }
