@@ -92,7 +92,6 @@ public class RunSchedulerTest extends AbstractSpringTest {
         Mockito.when(pipelineRunManager.pauseRun(Mockito.anyLong(), Mockito.anyBoolean())).thenReturn(pipelineRun);
         Mockito.when(configurationManager.load(Mockito.anyLong())).thenReturn(runConfiguration);
         Mockito.when(userManager.loadUserByName(Mockito.any())).thenReturn(new PipelineUser(USER_OWNER));
-        System.out.println(TimeZone.getDefault());
     }
 
     @Test
