@@ -144,7 +144,8 @@ public class BillingManager {
         if (interval != null) {
             return getBillingStats(elasticsearchClient, from, to, filters, interval);
         } else {
-            return getBillingStats(elasticsearchClient, from, to, filters, grouping, request.isLoadDetails());
+            return getBillingStats(elasticsearchClient, from, to, filters, grouping, request.isLoadDetails(),
+                                   request.getPageNum(), request.getPageSize());
         }
     }
 
@@ -222,7 +223,9 @@ public class BillingManager {
                                                    final LocalDate from, final LocalDate to,
                                                    final Map<String, List<String>> filters,
                                                    final BillingGrouping grouping,
-                                                   final boolean isLoadDetails) {
+                                                   final boolean isLoadDetails,
+                                                   final Long pageNum,
+                                                   final Long pageSize) {
         final SearchRequest searchRequest = new SearchRequest();
         final SearchSourceBuilder searchSource = new SearchSourceBuilder();
         if (grouping != null) {
@@ -233,7 +236,8 @@ public class BillingManager {
                 }));
             final AggregationBuilder fieldAgg = AggregationBuilders.terms(grouping.getCorrespondingField())
                 .field(grouping.getCorrespondingField())
-                .order(Terms.Order.aggregation(COST_FIELD, false));
+                .order(Terms.Order.aggregation(COST_FIELD, false))
+                .size(Integer.MAX_VALUE);
             fieldAgg.subAggregation(costAggregation);
             if (grouping.usageDetailsRequired()) {
                 fieldAgg.subAggregation(usageAggregation);
@@ -249,12 +253,34 @@ public class BillingManager {
             final SearchResponse searchResponse = elasticsearchClient.search(searchRequest);
             final List<BillingChartInfo> billingChartInfoForGrouping =
                 getBillingChartInfoForGrouping(from, to, grouping, searchResponse, isLoadDetails);
-            return CollectionUtils.isEmpty(billingChartInfoForGrouping)
-                   ? getEmptyGroupingResponse(grouping)
-                   : billingChartInfoForGrouping;
+            return finalizeResult(billingChartInfoForGrouping, grouping, pageNum, pageSize);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
+        }
+    }
+
+    private List<BillingChartInfo> finalizeResult(final List<BillingChartInfo> fullResult,
+                                                  final BillingGrouping grouping,
+                                                  final Long pageNum,
+                                                  final Long pageSize) {
+        if (CollectionUtils.isNotEmpty(fullResult)) {
+            if (pageSize == null) {
+                return fullResult;
+            } else {
+                final Long requiredPageNum = pageNum == null
+                                             ? 0
+                                             : pageNum;
+                final int from = (int) (requiredPageNum * pageSize);
+                final int to = (int) (from + pageSize);
+                final int resultSize = fullResult.size();
+                if (from > resultSize) {
+                    return getEmptyGroupingResponse(grouping);
+                }
+                return fullResult.subList(from, Math.min(to, resultSize));
+            }
+        } else {
+            return getEmptyGroupingResponse(grouping);
         }
     }
 
