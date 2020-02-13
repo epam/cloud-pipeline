@@ -46,6 +46,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInter
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.bucket.histogram.ParsedDateHistogram;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
@@ -84,6 +85,8 @@ public class BillingManager {
     private static final String USAGE_FIELD = "usage";
     private static final String ID_FIELD = "id";
     private static final String UNIQUE_RUNS = "runs";
+    private static final String PAGE = "page";
+    private static final String TOTAL_PAGES = "totalPages";
     private static final String BILLING_DATE_FIELD = "created_date";
     private static final String HISTOGRAM_AGGREGATION_NAME = "hist_agg";
     private static final String ES_MONTHLY_DATE_REGEXP = "%d-%02d-*";
@@ -144,6 +147,24 @@ public class BillingManager {
             return getBillingStats(elasticsearchClient, from, to, filters, interval);
         } else {
             return getBillingStats(elasticsearchClient, from, to, filters, grouping, request.isLoadDetails());
+        }
+    }
+
+    public List<BillingChartInfo> getBillingChartInfoPaginated(final BillingChartRequest request) {
+        verifyPagingParameters(request);
+        return paginateResult(getBillingChartInfo(request),
+                              request.getGrouping(),
+                              request.getPageNum(),
+                              request.getPageSize());
+    }
+
+    private void verifyPagingParameters(final BillingChartRequest request) {
+        final Long pageSize = request.getPageSize();
+        final Long pageNum = request.getPageNum();
+        if (pageNum != null && pageNum < 0
+            || pageSize != null && pageSize <= 0) {
+            throw new IllegalArgumentException(messageHelper
+                                                   .getMessage(MessageConstants.ERROR_ILLEGAL_PAGING_PARAMETERS));
         }
     }
 
@@ -231,7 +252,9 @@ public class BillingManager {
                     return l1;
                 }));
             final AggregationBuilder fieldAgg = AggregationBuilders.terms(grouping.getCorrespondingField())
-                .field(grouping.getCorrespondingField());
+                .field(grouping.getCorrespondingField())
+                .order(Terms.Order.aggregation(COST_FIELD, false))
+                .size(Integer.MAX_VALUE);
             fieldAgg.subAggregation(costAggregation);
             if (grouping.usageDetailsRequired()) {
                 fieldAgg.subAggregation(usageAggregation);
@@ -253,6 +276,37 @@ public class BillingManager {
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
+        }
+    }
+
+    private List<BillingChartInfo> paginateResult(final List<BillingChartInfo> fullResult,
+                                                  final BillingGrouping grouping,
+                                                  final Long pageNum,
+                                                  final Long pageSize) {
+        if (CollectionUtils.isNotEmpty(fullResult)) {
+            if (pageSize == null) {
+                return fullResult;
+            } else {
+                final Long requiredPageNum = pageNum == null
+                                             ? 0
+                                             : pageNum;
+                final int from = (int) (requiredPageNum * pageSize);
+                final int to = (int) (from + pageSize);
+                final int resultSize = fullResult.size();
+                if (from > resultSize) {
+                    return getEmptyGroupingResponse(grouping);
+                }
+                final List<BillingChartInfo> finalBilling = fullResult.subList(from, Math.min(to, resultSize));
+                final String totalPagesVal = Long.toString((long) Math.ceil(1.0 * resultSize / pageSize));
+                final String pageNumVal = Long.toString(requiredPageNum);
+                finalBilling.forEach(record -> {
+                    record.getGroupingInfo().put(PAGE, pageNumVal);
+                    record.getGroupingInfo().put(TOTAL_PAGES, totalPagesVal);
+                });
+                return finalBilling;
+            }
+        } else {
+            return getEmptyGroupingResponse(grouping);
         }
     }
 

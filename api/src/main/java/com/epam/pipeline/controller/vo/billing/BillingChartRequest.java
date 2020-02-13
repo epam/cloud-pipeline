@@ -33,4 +33,6 @@ public class BillingChartRequest {
     private DateHistogramInterval interval;
     private BillingGrouping grouping;
     private boolean loadDetails;
+    private Long pageSize;
+    private Long pageNum;
 }
