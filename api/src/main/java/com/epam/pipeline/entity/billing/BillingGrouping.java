@@ -31,7 +31,7 @@ public enum BillingGrouping {
     STORAGE("id", Collections.singletonMap("resource_type", Arrays.asList("STORAGE")), false),
     STORAGE_TYPE("storage_type", false),
     USER("owner", false),
-    BILLING_CENTER("biling_center", false);
+    BILLING_CENTER("billing_center", false);
 
     private final String correspondingField;
     private final Map<String, List<String>> requiredDefaultFilters;
