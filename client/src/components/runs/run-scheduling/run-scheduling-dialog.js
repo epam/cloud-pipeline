@@ -336,6 +336,7 @@ export default class RunScheduleDialog extends React.Component {
       <div style={{marginRight: 15}}>
         at
         <TimePicker
+          allowEmpty={false}
           disabled={removed}
           hideDisabledOptions
           format={format}
