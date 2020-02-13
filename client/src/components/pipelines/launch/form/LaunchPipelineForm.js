@@ -3073,21 +3073,21 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         const onChange = (e) => {
           this.setState({
             autoPause: e.target.checked
-          });
+          }, this.formFieldsChanged);
         };
         return (
           <Row type="flex" align="middle" style={{marginTop: 10, marginBottom: 10}}>
             <Col
-            xs={10}
-            sm={5}
-md={4}
-            lg={3}
-            xl={2}
-            style={{
-              textAlign: 'right',
-              paddingRight: 10,
-              color: '#333'
-            }}>
+              xs={10}
+              sm={5}
+              md={4}
+              lg={3}
+              xl={2}
+              style={{
+                textAlign: 'right',
+                paddingRight: 10,
+                color: '#333'
+              }}>
               Auto pause:
             </Col>
             <Col xs={24} sm={16} md={15} lg={15} xl={10}>
