@@ -17,12 +17,26 @@ import errno
 import logging
 import os
 import sys
+import platform
 
-from cachetools import TTLCache
+supported_libfuse_versions = [
+    ('ubuntu', '16.04', '2.9.2'),
+    ('ubuntu', '18.04', '2.9.2'),
+    ('ubuntu', '19.04', '2.9.2'),
+    ('centos', '6', '2.8.3'),
+    ('centos', '7', '2.9.2'),
+    ('debian', '8', '2.9.2'),
+    ('debian', '9', '2.9.2'),
+    ('', '', '2.8.3')
+]
 
-# TODO: Use libfuse version depending on the host distribution
 source_path = sys._MEIPASS if getattr(sys, 'frozen', False) else os.path.dirname(__file__)
-libfuse_path = os.path.abspath(os.path.join(source_path, 'libfuse/libfuse.so.2.9.2'))
+dist_name, dist_version, _ = platform.linux_distribution()
+libfuse_version = supported_libfuse_versions[-1:][0][-1:][0]
+for supported_dist_name, supported_dist_version, supported_libfuse_version in supported_libfuse_versions:
+    if supported_dist_name in dist_name.lower() and supported_dist_version.startswith(dist_version):
+        libfuse_version = supported_libfuse_version
+libfuse_path = os.path.abspath(os.path.join(source_path, 'libfuse/libfuse.so.%s' % libfuse_version))
 os.environ["FUSE_LIBRARY_PATH"] = libfuse_path
 
 from pipefuse.fuseutils import MB, GB
@@ -39,6 +53,7 @@ from pipefuse.fslock import get_lock
 import ctypes
 import fuse
 from fuse import FUSE, fuse_operations, fuse_file_info
+from cachetools import TTLCache
 
 _allowed_logging_level_names = logging._levelNames
 _allowed_logging_levels = filter(lambda name: isinstance(name, str), _allowed_logging_level_names.keys())
@@ -100,6 +115,7 @@ def enable_fallocate_support():
 
     class extended_fuse_operations(ctypes.Structure):
         _fields_ = list(fuse_operations._fields_) + [
+            # All the missing fields besides fallocate are required for some reason
             ('poll', ctypes.CFUNCTYPE(
                 ctypes.c_int, ctypes.c_char_p, ctypes.POINTER(fuse_file_info),
                 ctypes.POINTER(fuse_pollhandle), ctypes.c_uint)),
@@ -177,6 +193,12 @@ if __name__ == '__main__':
         parser.error('Only the following logging level are allowed: %s.' % _allowed_logging_levels_string)
     logging.basicConfig(format='[%(levelname)s] %(asctime)s %(filename)s - %(message)s',
                         level=_allowed_logging_level_names[args.logging_level])
+
+    if dist_name or dist_version:
+        logging.info('Recognized linux distribution %s %s.' % (dist_name or '', dist_version or ''))
+    else:
+        logging.warn('Linux distribution wasn\'t recognized.')
+    logging.info('Bundled libfuse %s will be used.' % libfuse_version)
 
     try:
         start(args.mountpoint, webdav=args.webdav, bucket=args.bucket, buffer_size=args.buffer_size,
