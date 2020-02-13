@@ -233,5 +233,23 @@ class PipeFS(Operations):
     def fsync(self, path, fdatasync, fh):
         pass
 
+    class FallocateFlag:
+        # See http://man7.org/linux/man-pages/man2/fallocate.2.html.
+        # https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/falloc.h
+        FALLOC_FL_KEEP_SIZE = 0x01
+        FALLOC_FL_PUNCH_HOLE = 0x02
+        FALLOC_FL_NO_HIDE_STALE = 0x04
+        FALLOC_FL_COLLAPSE_RANGE = 0x08
+        FALLOC_FL_ZERO_RANGE = 0x10
+        FALLOC_FL_INSERT_RANGE = 0x20
+        FALLOC_FL_UNSHARE_RANGE = 0x40
+
+    @syncronized
     def fallocate(self, path, mode, offset, length, fh):
-        pass
+        props = self.client.attrs(path)
+        if not props:
+            raise FuseOSError(errno.ENOENT)
+        if mode:
+            logging.warn('Fallocate mode (%s) is not supported yet.' % mode)
+        if offset + length >= props.size:
+            self.client.truncate(fh, path, offset + length)
