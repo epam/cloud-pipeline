@@ -55,6 +55,7 @@ import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.event.EntityEventServiceManager;
 import com.epam.pipeline.manager.issue.IssueManager;
@@ -162,6 +163,8 @@ public class GrantPermissionManager {
     @Autowired private MetadataEntityManager metadataEntityManager;
 
     @Autowired private IssueManager issueManager;
+
+    @Autowired private RunConfigurationManager runConfigurationManager;
 
     @Autowired private PipelineWithPermissionsMapper pipelineWithPermissionsMapper;
 
@@ -722,6 +725,22 @@ public class GrantPermissionManager {
         return permissionsHelper.isAllowed(permissionName, configuration.toEntity())
                 && hasPermissionToConfiguration(configuration.getEntries(), "EXECUTE");
     }
+
+    /**
+     * Checks permission for {@link RunConfiguration}. In case of basic
+     * {@link com.epam.pipeline.entity.configuration.RunConfigurationEntry} entries 'EXECUTE' permission is required
+     * for {@link Pipeline} if it's specified or {@link Tool} if {@link Pipeline} is not specified for each entry.
+     * @param configurationId run configuration ID
+     * @param permissionName the name of permission
+     * @return true if permission is granted
+     */
+    public boolean hasConfigurationUpdatePermission(Long configurationId, String permissionName) {
+        RunConfiguration runConfiguration = runConfigurationManager.load(configurationId);
+        Assert.notNull(runConfiguration, "Can't find Run Configuration by ID: " + configurationId);
+        return permissionsHelper.isAllowed(permissionName, runConfiguration)
+                && hasPermissionToConfiguration(runConfiguration.getEntries(), "EXECUTE");
+    }
+
 
     /**
      * Checks permission for list of {@link AbstractRunConfigurationEntry} entries. In case of basic
