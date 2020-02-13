@@ -141,7 +141,9 @@ public class BillingManager {
         final LocalDate to = request.getTo();
         final BillingGrouping grouping = request.getGrouping();
         final DateHistogramInterval interval = request.getInterval();
-        final Map<String, List<String>> filters = MapUtils.emptyIfNull(request.getFilters());
+        final Map<String, List<String>> filters = MapUtils.isEmpty(request.getFilters())
+                                                  ? new HashMap<>()
+                                                  : request.getFilters();
         setAuthorizationFilters(filters);
         if (interval != null) {
             return getBillingStats(elasticsearchClient, from, to, filters, interval);

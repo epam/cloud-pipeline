@@ -16,7 +16,9 @@
 
 package com.epam.pipeline.entity.billing;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,7 +28,7 @@ public enum BillingGrouping {
     RUN_COMPUTE_TYPE("compute_type", false),
     PIPELINE("pipeline", true),
     TOOL("tool", true),
-    STORAGE("id", Collections.singletonMap("resource_type", Collections.singletonList("STORAGE")), false),
+    STORAGE("id", Collections.singletonMap("resource_type", Arrays.asList("STORAGE")), false),
     STORAGE_TYPE("storage_type", false),
     USER("owner", false),
     BILLING_CENTER("biling_center", false);
@@ -42,7 +44,7 @@ public enum BillingGrouping {
     BillingGrouping(final String correspondingField, final Map<String, List<String>> requiredDefaultFilters,
                     final boolean usageDetailsRequired) {
         this.correspondingField = correspondingField;
-        this.requiredDefaultFilters = requiredDefaultFilters;
+        this.requiredDefaultFilters = new HashMap<>(requiredDefaultFilters);
         this.usageDetailsRequired = usageDetailsRequired;
     }
 
