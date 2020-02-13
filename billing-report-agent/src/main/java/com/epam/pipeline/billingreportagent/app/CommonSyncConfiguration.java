@@ -74,7 +74,7 @@ public class CommonSyncConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = "sync.s3.storage.disable", matchIfMissing = true, havingValue = FALSE)
-    public StorageSynchronizer s3Synchronizer(final @Value("${sync.run.index.mapping}") String runMapping,
+    public StorageSynchronizer s3Synchronizer(final @Value("${sync.storage.index.mapping}") String runMapping,
                                               final @Value("${sync.storage.index.name}") String indexName,
                                               final StorageLoader loader,
                                               final ElasticIndexService indexService,
@@ -94,7 +94,7 @@ public class CommonSyncConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = "sync.nfs.storage.disable", matchIfMissing = true, havingValue = FALSE)
-    public StorageSynchronizer efsSynchronizer(final @Value("${sync.run.index.mapping}") String runMapping,
+    public StorageSynchronizer efsSynchronizer(final @Value("${sync.storage.index.mapping}") String runMapping,
                                               final @Value("${sync.storage.index.name}") String indexName,
                                               final StorageLoader loader,
                                               final ElasticIndexService indexService,
