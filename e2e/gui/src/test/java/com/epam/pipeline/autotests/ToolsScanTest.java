@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -324,8 +324,8 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
     private ToolGroup deleteTool(final ToolGroup t) {
         return t.tool(fullToolName, tool -> tool.sleep(1, SECONDS)
                 .delete()
-                .ensureTitleIs("Are you sure you want to delete tool?")
-                .ok());
+                .messageShouldAppear("Are you sure you want to delete the tool?")
+                .delete());
     }
 
     private void ok() {

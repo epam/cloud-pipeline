@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import static org.openqa.selenium.By.id;
 
 public class ToolGroupDeletionPopup extends PopupAO<ToolGroupDeletionPopup, Registry> {
     private final Map<Primitive,SelenideElement> elements = initialiseElements(
-            entry(DELETE, context().find(id("confirm-remove-group"))),
+            entry(DELETE, context().find(id("remove-button-delete"))),
             entry(CANCEL, context().find(id("cancel-remove-group")))
     );
 
@@ -52,7 +52,7 @@ public class ToolGroupDeletionPopup extends PopupAO<ToolGroupDeletionPopup, Regi
     }
 
     public ToolGroupDeletionPopup ensureGroupNameIs(final String expectedGroupName) {
-        context().find(byText(String.format("Are you sure you want to delete '%s'?", expectedGroupName)))
+        context().find(byText(String.format("Are you sure you want to delete tool group '%s'?", expectedGroupName)))
                 .shouldBe(visible);
         return this;
     }

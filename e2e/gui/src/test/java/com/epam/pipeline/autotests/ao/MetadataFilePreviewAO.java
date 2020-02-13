@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.text;
@@ -66,10 +65,7 @@ public class MetadataFilePreviewAO extends PopupAO<MetadataFilePreviewAO, Metada
         $(byClassName("ant-spin-nested-loading")).shouldBe(visible);
         String fragment = text.length() > 100 ? text.substring(0, 100) : text;
         sleep(4, SECONDS);
-        String textInWindow = $$(byCssSelector(" pre.CodeMirror-line "))
-                .texts()
-                .stream()
-                .collect(Collectors.joining("\n"));
+        String textInWindow = String.join("\n", $$(byCssSelector(" pre.CodeMirror-line ")).texts());
         assert(textInWindow.contains(fragment));
         return this;
     }
