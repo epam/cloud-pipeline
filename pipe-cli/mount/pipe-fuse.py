@@ -20,8 +20,9 @@ import sys
 
 from cachetools import TTLCache
 
+# TODO: Use libfuse version depending on the host distribution
 source_path = sys._MEIPASS if getattr(sys, 'frozen', False) else os.path.dirname(__file__)
-libfuse_path = os.path.abspath(os.path.join(source_path, 'libfuse/libfuse.so.2'))
+libfuse_path = os.path.abspath(os.path.join(source_path, 'libfuse/libfuse.so.2.9.2'))
 os.environ["FUSE_LIBRARY_PATH"] = libfuse_path
 
 from pipefuse.fuseutils import MB, GB
@@ -35,7 +36,9 @@ from pipefuse.webdav import CPWebDavClient
 from pipefuse.s3 import S3Client
 from pipefuse.pipefs import PipeFS
 from pipefuse.fslock import get_lock
-from fuse import FUSE
+import ctypes
+import fuse
+from fuse import FUSE, fuse_operations, fuse_file_info
 
 _allowed_logging_level_names = logging._levelNames
 _allowed_logging_levels = filter(lambda name: isinstance(name, str), _allowed_logging_level_names.keys())
@@ -83,7 +86,47 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
     else:
         logging.info('Truncating support is disabled.')
     fs = PipeFS(client=client, lock=get_lock(threads, monitoring_delay=monitoring_delay), mode=int(default_mode, 8))
+
+    enable_fallocate_support()
     FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=client.is_read_only(), **mount_options)
+
+
+def enable_fallocate_support():
+    class fuse_pollhandle(ctypes.Structure):
+        pass
+
+    class fuse_bufvec(ctypes.Structure):
+        pass
+
+    class extended_fuse_operations(ctypes.Structure):
+        _fields_ = list(fuse_operations._fields_) + [
+            ('poll', ctypes.CFUNCTYPE(
+                ctypes.c_int, ctypes.c_char_p, ctypes.POINTER(fuse_file_info),
+                ctypes.POINTER(fuse_pollhandle), ctypes.c_uint)),
+
+            ('write_buf', ctypes.CFUNCTYPE(
+                ctypes.c_int, ctypes.c_char_p, ctypes.POINTER(fuse_bufvec), ctypes.c_longlong,
+                ctypes.POINTER(fuse_file_info))),
+
+            ('read_buf', ctypes.CFUNCTYPE(
+                ctypes.c_int, ctypes.c_char_p, ctypes.POINTER(fuse_bufvec),
+                ctypes.c_size_t, ctypes.c_longlong, ctypes.POINTER(fuse_file_info))),
+
+            ('flock', ctypes.CFUNCTYPE(
+                ctypes.c_int, ctypes.c_char_p, ctypes.POINTER(fuse_file_info), ctypes.c_int)),
+
+            ('fallocate', ctypes.CFUNCTYPE(
+                ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_longlong, ctypes.c_longlong,
+                ctypes.POINTER(fuse_file_info))),
+        ]
+
+    fuse.fuse_operations = extended_fuse_operations
+
+    def fallocate(self, path, mode, offset, length, fip):
+        fh = fip.contents if self.raw_fi else fip.contents.fh
+        return self.operations('fallocate', path.decode(self.encoding), mode, offset, length, fh)
+
+    setattr(FUSE, 'fallocate', fallocate)
 
 
 def parse_mount_options(options_string):

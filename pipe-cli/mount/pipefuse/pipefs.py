@@ -231,4 +231,7 @@ class PipeFS(Operations):
         self.container.release(fh)
 
     def fsync(self, path, fdatasync, fh):
-        raise UnsupportedOperationException("fsync")
+        pass
+
+    def fallocate(self, path, mode, offset, length, fh):
+        pass
