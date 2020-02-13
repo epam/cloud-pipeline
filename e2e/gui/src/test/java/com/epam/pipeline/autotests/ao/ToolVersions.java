@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +113,8 @@ public class ToolVersions extends ToolTab<ToolVersions> {
     public static By byPrimitive(final Primitive primitive) {
         return Optional.ofNullable(bys.get(primitive))
                 .orElseThrow(() -> new RuntimeException(
-                        String.format("%s was not specified with selector in + %s", primitive, ToolVersions.class.getSimpleName())
+                        String.format("%s was not specified with selector in + %s", primitive,
+                                ToolVersions.class.getSimpleName())
                 ));
     }
 
@@ -165,12 +166,16 @@ public class ToolVersions extends ToolTab<ToolVersions> {
         return byClassName("ant-table-row");
     }
 
-    public RunsMenuAO runVersionWithDefaultSettings(final AbstractSeveralPipelineRunningTest test, String tool, String customTag) {
+    public RunsMenuAO runVersionWithDefaultSettings(final AbstractSeveralPipelineRunningTest test,
+                                                    final String tool,
+                                                    final String customTag) {
         $(byClassName("ant-table-tbody"))
-                .find(byXpath(String.format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
+                .find(byXpath(String.format(
+                        ".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
                 .find(byId(String.format("run-%s-button", customTag))).shouldBe(visible).click();
         new ConfirmationPopupAO<>(new RunsMenuAO())
-                .ensureTitleIs(String.format("Are you sure you want to launch tool (version %s) with default settings?", customTag))
+                .messageShouldAppear(String.format(
+                        "Are you sure you want to launch tool (version %s) with default settings?", customTag))
                 .ok();
         sleep(1, SECONDS);
         test.addRunId(Utils.getToolRunId(tool, customTag));
@@ -179,11 +184,12 @@ public class ToolVersions extends ToolTab<ToolVersions> {
 
     public ToolVersions deleteVersion(String customTag) {
         $(byClassName("ant-table-tbody"))
-                .find(byXpath(String.format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
+                .find(byXpath(String.format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]",
+                        customTag)))
                 .find(buttonByIconClass("anticon-delete")).shouldBe(visible).click();
         new ConfirmationPopupAO<>(new RunsMenuAO())
-                .ensureTitleIs(String.format("Are you sure you want to delete version '%s'?", customTag))
-                .ok();
+                .messageShouldAppear(String.format("Are you sure you want to delete version '%s'?", customTag))
+                .delete();
         return this;
     }
 
