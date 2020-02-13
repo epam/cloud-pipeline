@@ -35,9 +35,9 @@ import java.util.stream.Collectors;
 public class RunScheduleApiService {
 
     private static final String RUN_CONFIGURATION_EXECUTE = "hasRole('ADMIN') OR "
-            + "@grantPermissionManager.hasConfigurationUpdatePermission(#configuration, 'EXECUTE')";
-    private static final String RUN_CONFIGURATION_READ = "hasRole('ADMIN') OR "
-            + "@grantPermissionManager.hasConfigurationUpdatePermission(#configuration, 'READ')";
+            + "@grantPermissionManager.hasConfigurationUpdatePermission(#configurationId, 'EXECUTE')";
+    private static final String RUN_CONFIGURATION_READ = "hasRole('ADMIN') OR " +
+            "hasPermission(#configurationId, 'com.epam.pipeline.entity.configuration.RunConfiguration', 'READ')";
 
     private final RunScheduleManager runScheduleManager;
 
@@ -94,7 +94,7 @@ public class RunScheduleApiService {
     }
 
     @PreAuthorize(RUN_CONFIGURATION_READ)
-    public List<RunSchedule> loadAllRunConfigurationSchedulesByConfigurationId(final Long runId) {
-        return runScheduleManager.loadAllSchedulesBySchedulableId(runId, ScheduleType.RUN_CONFIGURATION);
+    public List<RunSchedule> loadAllRunConfigurationSchedulesByConfigurationId(final Long configurationId) {
+        return runScheduleManager.loadAllSchedulesBySchedulableId(configurationId, ScheduleType.RUN_CONFIGURATION);
     }
 }

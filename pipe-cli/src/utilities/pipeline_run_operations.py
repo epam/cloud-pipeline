@@ -21,6 +21,7 @@ from prettytable import prettytable
 
 from src.api.pipeline_run import PipelineRun
 from src.api.tool import Tool
+from src.model.pipeline_run_model import PriceType
 from src.model.pipeline_run_parameter_model import PipelineRunParameterModel
 from src.utilities.api_wait import wait_for_server_enabling_if_needed
 from src.utilities.cluster_manager import ClusterManager
@@ -61,7 +62,7 @@ class PipelineRunOperations(object):
     @classmethod
     def run(cls, pipeline, config, parameters, yes, run_params, instance_disk, instance_type, docker_image,
             cmd_template, timeout, quiet, instance_count, cores, sync, price_type=None, region_id=None,
-            parent_node=None):
+            parent_node=None, non_pause=None):
         # All pipeline run parameters can be specified as options, e.g. --read1 /path/to/reads.fastq
         # In this case - runs_params_dict will contain keys-values for each option, e.g. {'--read1': '/path/to/reads.fastq'}
         # So they can be addressed with run_params_dict['--read1']
@@ -71,6 +72,12 @@ class PipelineRunOperations(object):
 
         if instance_count == 0:
             instance_count = None
+
+        if non_pause and not price_type == PriceType.ON_DEMAND:
+            click.echo("--non-pause option supported for on-demand runs only and will be ignored")
+            non_pause = None
+        if price_type == PriceType.ON_DEMAND and non_pause is None:
+            non_pause = False
 
         # Calculate instance_type and instance_count if only cores specified
         if not instance_count and cores:
@@ -182,7 +189,8 @@ class PipelineRunOperations(object):
                                                                       instance_count=instance_count,
                                                                       price_type=price_type,
                                                                       region_id=region_id,
-                                                                      parent_node=parent_node)
+                                                                      parent_node=parent_node,
+                                                                      non_pause=non_pause)
                         pipeline_run_id = pipeline_run_model.identifier
                         if not quiet:
                             click.echo('"{}@{}" pipeline run scheduled with RunId: {}'
@@ -233,7 +241,8 @@ class PipelineRunOperations(object):
                                                              instance_count=instance_count,
                                                              price_type=price_type,
                                                              region_id=region_id,
-                                                             parent_node=parent_node)
+                                                             parent_node=parent_node,
+                                                             non_pause=non_pause)
                 pipeline_run_id = pipeline_run_model.identifier
                 if not quiet:
                     click.echo('Pipeline run scheduled with RunId: {}'.format(pipeline_run_id))

@@ -9,6 +9,8 @@
         "registry": {"type": "text" },
         "registryId": { "type": "long", "index": false },
         "image": {"type": "text", "analyzer": "file_path_analyzer", "copy_to": "name"},
+        "version": {"type": "keyword"},
+        "packages": {"type": "keyword" },
         "createdDate": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "description": { "type": "text", "store": true },
         "defaultCommand": { "type": "text" },

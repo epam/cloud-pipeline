@@ -28,12 +28,14 @@ import com.epam.pipeline.manager.scheduling.RunScheduler;
 import com.epam.pipeline.manager.security.AuthManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -92,7 +94,11 @@ public class RunScheduleManager {
 
     public List<RunSchedule> loadAllSchedulesBySchedulableId(final Long schedulableId,
                                                              final ScheduleType scheduleType) {
-        return runScheduleDao.loadAllRunSchedulesBySchedulableIdAndType(schedulableId, scheduleType);
+        return CollectionUtils.emptyIfNull(
+                runScheduleDao.loadAllRunSchedulesBySchedulableIdAndType(schedulableId, scheduleType)
+        ).stream()
+        .sorted(Comparator.comparingLong(RunSchedule::getId))
+        .collect(Collectors.toList());
     }
 
     public List<RunSchedule> loadAllSchedules() {

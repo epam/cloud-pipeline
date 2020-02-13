@@ -248,7 +248,7 @@ class PipelineAPI:
                     result = response.json()
                     return result['payload'] if 'payload' in result else None
             except Exception as e:
-                sys.stderr.write('An error has occurred during request to API: {}', str(e.message))
+                sys.stderr.write('An error has occurred during request to API: {}'.format(str(e.message)))
             time.sleep(self.timeout)
         raise RuntimeError('Exceeded maximum retry count {} for API request'.format(self.attempts))
 

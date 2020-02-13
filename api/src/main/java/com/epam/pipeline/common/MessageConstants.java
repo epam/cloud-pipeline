@@ -479,6 +479,10 @@ public final class MessageConstants {
     public static final String ERROR_BILLING_INTERVAL_NOT_SUPPORTED = "error.billing.interval.not.supported";
     public static final String ERROR_ILLEGAL_PAGING_PARAMETERS = "error.billing.invalid.paging";
 
+
+    //Other
+    public static final String ERROR_KEEP_ALIVE_POLICY_NOT_SUPPORTED = "error.keep.alive.policy.not.supported";
+
     private MessageConstants() {
         // no-op
     }

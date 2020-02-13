@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -118,6 +119,10 @@ public class CloudPipelineAPIClient {
 
     public ToolGroup loadToolGroup(final String toolGroupId) {
         return QueryUtils.execute(cloudPipelineAPI.loadToolGroup(toolGroupId));
+    }
+
+    public ToolDescription loadToolDescription(final Long toolId) {
+        return QueryUtils.execute(cloudPipelineAPI.loadToolAttributes(toolId));
     }
 
     public DockerRegistry loadDockerRegistry(final Long dockerRegistryId) {

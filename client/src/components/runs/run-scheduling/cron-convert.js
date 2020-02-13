@@ -62,8 +62,8 @@ export class CronConvert {
     } else {
       mode = ruleModes.weekly;
       dayOfWeek = cronParts.dayOfWeek.includes(',')
-        ? cronParts.dayOfWeek.replace('7', '0').split(',')
-        : [cronParts.dayOfWeek.replace('7', '0')];
+        ? cronParts.dayOfWeek.replace('0', '7').split(',')
+        : [cronParts.dayOfWeek.replace('0', '7')];
     }
     // {
     //   mode: ruleModes.daily | ruleModes.weekly,
