@@ -1,11 +1,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Icon, Row} from 'antd';
-import moment from 'moment-timezone';
-
+import daysOfWeek from './days-of-week';
 import {isTimeZoneEqualCurrent, CronConvert, ruleModes} from './cron-convert';
-
 import RunScheduleDialog from './run-scheduling-dialog';
+
+function getDayOfWeek (value) {
+  const [dayOfWeek] = daysOfWeek.filter(({value: dayValue}) => +dayValue === +value);
+  if (dayOfWeek) {
+    return dayOfWeek.day;
+  }
+  return '';
+}
 
 export default class RunSchedulingList extends React.Component {
   static propTypes = {
@@ -100,7 +106,7 @@ export default class RunSchedulingList extends React.Component {
     const zone = !isTimeZoneEqualCurrent(timeZone) ? timeZone : null;
     const recurrence = mode === ruleModes.daily
       ? `every ${every} day${+every > 1 ? 's' : ''}`
-      : `on ${dayOfWeek.sort().map((day) => moment.weekdays(false, +day)).join(', ')}`;
+      : `on ${dayOfWeek.sort().map((day) => getDayOfWeek(+day)).join(', ')}`;
 
     const time = `${`0${hours}`.slice(-2)}:${`0${minutes}`.slice(-2)}`;
 
