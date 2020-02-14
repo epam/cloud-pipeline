@@ -248,9 +248,9 @@ public class BillingManager {
         final SearchRequest searchRequest = new SearchRequest();
         final SearchSourceBuilder searchSource = new SearchSourceBuilder();
         if (grouping != null) {
-            filters.forEach(
-                (key, value) -> grouping.getRequiredDefaultFilters().merge(key, value, (l1, l2) -> {
-                    l1.addAll(l2);
+            grouping.getRequiredDefaultFilters().forEach(
+                (key, value) -> filters.merge(key, value, (l1, l2) -> {
+                    l1.addAll(CollectionUtils.subtract(l2, l1));
                     return l1;
                 }));
             final AggregationBuilder fieldAgg = AggregationBuilders.terms(grouping.getCorrespondingField())
