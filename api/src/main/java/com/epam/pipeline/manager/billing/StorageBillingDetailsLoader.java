@@ -30,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -74,7 +75,10 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
         final AbstractDataStorage storage = dataStorageManager.loadByNameOrId(entityIdentifier);
         final Map<String, String> details = getRegionDetails(storage);
         details.put(OWNER, storage.getOwner());
-        details.put(CREATED, DateTimeFormatter.ISO_DATE.format(storage.getCreatedDate().toInstant()));
+        details.put(CREATED, DateTimeFormatter.ISO_DATE_TIME.format(storage.getCreatedDate()
+                                                                        .toInstant()
+                                                                        .atZone(ZoneId.systemDefault())
+                                                                        .toLocalDateTime()));
         return details;
     }
 
@@ -98,10 +102,10 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
                 regionId = ((GSBucketStorage) storage).getRegionId();
                 break;
             default:
-                regionId = -1L;
+                regionId = null;
                 break;
         }
-        if (regionId != -1) {
+        if (regionId != null) {
             try {
                 final AbstractCloudRegion region = regionManager.load(regionId);
                 details.put(PROVIDER, region.getProvider().name());
