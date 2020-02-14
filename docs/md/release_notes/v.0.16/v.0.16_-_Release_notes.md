@@ -15,6 +15,10 @@
 - [Displaying additional node metrics](#displaying-additional-node-metrics-at-the-runs-page)
 - [Export user list](#export-user-list)
 - [Displaying SSH link for the active runs in the Dashboard view](#displaying-ssh-link-for-the-active-runs-in-the-dashboard-view)
+- [Enable Slurm for the Cloud Pipeline's clusters](#enable-slurm-workload-manager-for-the-cloud-pipelines-clusters)
+- [The ability to generate the `pipe run` command from the GUI](#the-ability-to-generate-the-pipe-run-command-from-the-gui)
+- [`pipe` CLI: view tools definitions](#pipe-cli-view-tools-definitions)
+- [GE Autoscaler respects CPU requirements of the job in the queue](#ge-autoscaler-respects-cpu-requirements-of-the-job-in-the-queue)
 
 ***
 
@@ -296,6 +300,92 @@ In **`v0.16`**, a new helpful capability was implemented that allows to open the
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_SSHActiveRuns_2.png)
 
 That SSH link is available for all the non-paused active jobs (interactive and non-interactive) after all run's checks and initializations have passed (same as at the **Run logs** page).
+
+## Enable Slurm workload manager for the Cloud Pipeline's clusters
+
+A new feature for the Cloud Pipeline's clusters was implemented in **`v0.16`**.  
+Now, [**`Slurm`**](https://slurm.schedmd.com/overview.html) can be configured within the `Cluster` tab. It is available only for the fixed size clusters.
+
+To enable this feature - tick the `Enable Slurm` checkbox and set the child nodes count at cluster settings. By default, this checkbox is unticked. Also users can manually enable `Slurm` functionality by the `CP_CAP_SLURM` system parameter:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_SlurmCluster_1.png)
+
+This feature allows you to use the full stack of `Slurm` cluster's commands to allocate the workload over the cluster, for example:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_SlurmCluster_2.png)
+
+For more information about using `Slurm` via the `Cloud Pipeline` see
+[here](../../manual/15_Interactive_services/15.2._Using_Terminal_access.md#example-using-of-slurm-for-the-cloud-pipelines-clusters).
+
+## The ability to generate the `pipe run` command from the GUI
+
+A user has a couple of options to launch a new job in the Cloud Pipeline:
+
+- `API`
+- `CLI`
+- `GUI`
+
+The easiest way to perform it is the `GUI`. But for automation purposes - the `CLI` is much more handy. Previously, users had to construct the commands manually, which made it hard to use.
+
+Now, the ability to automatically generate the `CLI` commands for job runs appeared in the `GUI`.  
+Now, users can get a generated `CLI` command (that assembled all the run information):
+
+- at the **Launch** form:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_PipeRunGUI_2.png)
+- at the **Run logs** form:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_PipeRunGUI_1.png)  
+    **_Note_**: this button is available for completed runs too
+
+Once click these buttons - the popup with the corresponding `pipe run` command will appear:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_PipeRunGUI_3.png)  
+User can copy such command and paste it to the `CLI` for further launch.  
+Also user can select the **API** tab in that popup and get the `POST` request for a job launch:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_PipeRunGUI_4.png)
+
+See an example [here](../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md#generate-pipeline-launch-command-via-the-gui).
+
+## `pipe` CLI: view tools definitions
+
+In **`v0.16`** the ability to view details of a tool/tool version or tools group via the `CLI` was implemented.  
+The general command to perform these operations:
+
+``` bash
+pipe view-tools [OPTIONS]
+```
+
+Via the options users can specify a Docker registry (`-r` option), a tools group (`-g` option), a tool (`-t` option), a tool version (`-v` option) and view the corresponding information.
+
+For example, to show a full tools list of a group:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ViewTools_01.png)
+
+To show a tool definition with versions list:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ViewTools_02.png)
+
+Also the specifying of "path" to the object (registry/group/tool) is supported. The "full path" format is: `<registry_name>:<port>/<group_name>/<tool_name>:<verion_name>`:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ViewTools_03.png)
+
+For more details and usage examples see [here](../../manual/14_CLI/14.8._View_tools_definitions_via_CLI.md).
+
+## GE Autoscaler respects CPU requirements of the job in the queue
+
+At the moment, **GE Autoscaler** treats each job in the queue as a single-core job.  
+Previously, autoscale workers could have only fixed instance type (the same as the master) - that could lead to `unschedulable` jobs in the queue - for examle, if one of the jobs requested **4** slots in the `local` parallel environment within a **2**-cored machine. Described job waited in a queue forever (as autoscaler could setup only new **2**-cored nodes).
+
+In the current version the `hybrid` behavior for the **GE Autoscaler** was implemented, that allows processing the data even if the initial node type is not enough. That behavior allows to scale-up the cluster (attach a worker node) with the instance type distinct of the master - worker is being picked up based on the amount of unsatisfied **CPU** requirements of all pending jobs (according to required slots and parallel environment types).
+
+There are several **System parameters** to configure that behavior:
+
+- **`CP_CAP_AUTOSCALE_HYBRID`** (_boolean_) - enables the `hybrid` mode. In that mode the additional worker type can vary within either master instance type family (or `CP_CAP_AUTOSCALE_HYBRID_FAMILY` if specified). If `disabled` or not specified - the **GE Autoscaler** will work in a general regimen (when scaled-up workers have the same instance type as the master node)
+- **`CP_CAP_AUTOSCALE_HYBRID_FAMILY`** (_string_) - defines the instance "family", from which the **GE Autoscaler** should pick up the worker node in case of `hybrid` behavior. If not specified (by default) - the **GE Autoscaler** will pick up worker instance from the same "family" as the master node
+- **`CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE`** (_string_) - determines the maximum number of instance cores for the node to be scaled up by the **GE Autoscaler** in case of `hybrid` behavior
+
+![CP_v.0.16_ReleaseNotes](attachments/RN016_HybridAutoscaler_1.png)
+
+Also now, if no matching instance is present for the job (no matter - in `hybrid` or general regimen), **GE Autoscaler** logs error message and rejects such job:  
+    for example, when try to request **32** slots for the autoscaled cluster launched in `hybrid` mode with the parameter `CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE` set to **20**:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_HybridAutoscaler_2.png)  
+    and in the logs console at the same time:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_HybridAutoscaler_3.png)
+
+For more details about **GE Autoscaler** see [here](../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md).
 
 ***
 
