@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import java.util.function.Supplier;
 import static com.codeborne.selenide.Condition.have;
 import static com.codeborne.selenide.Condition.hidden;
 import static com.codeborne.selenide.Condition.matchText;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
@@ -51,6 +52,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.SSH_LINK;
 import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import static com.epam.pipeline.autotests.utils.Conditions.textMatches;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.tabWithName;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -124,12 +126,12 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                 .pause(getToolName())
                                 .assertPausingFinishedSuccessfully()
                                 .instanceParameters(parameters -> {
-                                    final String nodeIp = $(parameterWithName(ipField)).text().split(" \\(")[0];
                                     final String ipHyperlink = getParameterValueLink(ipField);
                                     parameters.inAnotherTab(nodeTab ->
-                                            checkNodePage(() -> nodeTab.messageShouldAppear(
-                                                    String.format("The node '%s' was not found or was removed",  nodeIp)
-                                            ), ipHyperlink)
+                                            checkNodePage(() -> nodeTab
+                                                            .ensure(tabWithName("General info"), not(visible))
+                                                            .ensure(tabWithName("Jobs"), not(visible))
+                                                    , ipHyperlink)
                                     );
                                 })
                                 .resume(getToolName())
