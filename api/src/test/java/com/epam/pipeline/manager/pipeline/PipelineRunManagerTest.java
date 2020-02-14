@@ -531,6 +531,9 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         final PipelineRun run5 = launchPipelineRun(beforeSyncStart.minusHours(HOURS_24), null);
         saveStatusForRun(run5.getId(), TaskStatus.PAUSED, beforeSyncStart.minusHours(HOURS_18));
         saveStatusForRun(run5.getId(), TaskStatus.RUNNING, beforeSyncStart.minusHours(HOURS_12));
+        final PipelineRun run6 = launchPipelineRun(beforeSyncStart.minusHours(HOURS_24), null);
+        saveStatusForRun(run6.getId(), TaskStatus.RUNNING, beforeSyncStart.minusHours(HOURS_24));
+        saveStatusForRun(run6.getId(), TaskStatus.PAUSED, beforeSyncStart.minusHours(HOURS_12));
 
         final Map<Long, PipelineRun> stats =
             pipelineRunManager.loadRunsActivityStats(SYNC_PERIOD_START, SYNC_PERIOD_END).stream()

@@ -897,6 +897,7 @@ public class PipelineRunManager {
 
         return runs.stream()
             .peek(run -> run.setRunStatuses(runStatuses.get(run.getId())))
+            .filter(run -> CollectionUtils.isNotEmpty(run.getRunStatuses()))
             .collect(Collectors.toList());
     }
 
@@ -916,14 +917,17 @@ public class PipelineRunManager {
                                    final LocalDateTime end) {
         runStatuses.removeIf(runStatus -> runStatus.getTimestamp().isAfter(end));
         runStatuses.sort(Comparator.comparing(RunStatus::getTimestamp));
-        for (int i = runStatuses.size() - 1; i >= 0; i--) {
+        final int statusesCount = runStatuses.size();
+        for (int i = statusesCount - 1; i >= 0; i--) {
             final RunStatus runStatus = runStatuses.get(i);
             if (runStatus.getTimestamp().isBefore(start)) {
                 if (runStatus.getStatus() == TaskStatus.RUNNING) {
                     runStatus.setTimestamp(start);
                     runStatuses.set(i, runStatus);
+                    return runStatuses.subList(i, statusesCount);
+                } else {
+                    return runStatuses.subList(Math.min(i + 1, statusesCount), statusesCount);
                 }
-                return runStatuses.subList(i, runStatuses.size());
             }
         }
         return runStatuses;
