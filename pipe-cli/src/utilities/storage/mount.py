@@ -33,30 +33,35 @@ class AbstractMount(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url):
+    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url, mode, threading=False):
         pass
 
     @abstractmethod
-    def get_mount_storage_cmd(self, config, mountpoint, options, bucket):
+    def get_mount_storage_cmd(self, config, mountpoint, options, bucket, mode, threading=False):
         pass
 
 
 class FrozenMount(AbstractMount):
 
-    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url):
-        return self._get_mount_cmd(config, mountpoint, options, '--webdav ' + web_dav_url)
+    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url, mode, threading=False):
+        additional_args = self._append_threading('--webdav ' + web_dav_url, threading)
+        return self._get_mount_cmd(config, mountpoint, options, additional_args, mode)
 
-    def get_mount_storage_cmd(self, config, mountpoint, options, bucket):
-        return self._get_mount_cmd(config, mountpoint, options, '--bucket ' + bucket)
+    def get_mount_storage_cmd(self, config, mountpoint, options, bucket, mode, threading=False):
+        additional_args = self._append_threading('--bucket ' + bucket, threading)
+        return self._get_mount_cmd(config, mountpoint, options, additional_args, mode)
 
-    def _get_mount_cmd(self, config, mountpoint, options, additional_arguments):
+    def _append_threading(self, args, threading):
+        return args + ' --threads' if threading else args
+
+    def _get_mount_cmd(self, config, mountpoint, options, additional_arguments, mode):
         mount_bin = self.get_mount_executable(config)
         mount_script = self.create_mount_script(os.path.dirname(Config.config_path()), mount_bin,
-                                                mountpoint, options, additional_arguments)
+                                                mountpoint, options, additional_arguments, mode)
         return ['bash', mount_script]
 
-    def create_mount_script(self, config_folder, mount_bin, mountpoint, options, additional_arguments):
-        mount_cmd = '%s --mountpoint %s %s' % (mount_bin, mountpoint, additional_arguments)
+    def create_mount_script(self, config_folder, mount_bin, mountpoint, options, additional_arguments, mode):
+        mount_cmd = '%s --mountpoint %s %s --mode %d' % (mount_bin, mountpoint, additional_arguments, mode)
         if options:
             mount_cmd += ' -o ' + options
         mount_script = os.path.join(config_folder, 'pipe-fuse-script' + str(uuid.uuid4()))
@@ -93,17 +98,24 @@ class FrozenMount(AbstractMount):
 
 class SourceMount(AbstractMount):
 
-    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url):
-        return self._get_mount_cmd(config, mountpoint, options, ['--webdav', web_dav_url])
+    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url, mode, threading=False):
+        additional_args = self._append_threading(['--webdav', web_dav_url], threading)
+        return self._get_mount_cmd(config, mountpoint, options, additional_args, mode)
 
-    def get_mount_storage_cmd(self, config, mountpoint, options, bucket):
-        return self._get_mount_cmd(config, mountpoint, options, ['--bucket', bucket])
+    def get_mount_storage_cmd(self, config, mountpoint, options, bucket, mode, threading=False):
+        additional_args = self._append_threading(['--bucket', bucket], threading)
+        return self._get_mount_cmd(config, mountpoint, options, additional_args, mode)
 
-    def _get_mount_cmd(self, config, mountpoint, options, additional_arguments):
+    def _append_threading(self, args, threading):
+        if threading:
+            args.append('--threads')
+        return args
+
+    def _get_mount_cmd(self, config, mountpoint, options, additional_arguments, mode):
         python_exec = sys.executable
         script_folder = dirname(Config.get_base_source_dir())
         script_path = os.path.join(script_folder, 'mount/pipe-fuse.py')
-        mount_cmd = [python_exec, script_path, '--mountpoint', mountpoint]
+        mount_cmd = [python_exec, script_path, '--mountpoint', mountpoint, '--mode', mode]
         mount_cmd.extend(additional_arguments)
         if options:
             mount_cmd.extend(['-o', options])
@@ -112,23 +124,26 @@ class SourceMount(AbstractMount):
 
 class Mount(object):
 
-    def mount_storages(self, mountpoint, file=False, bucket=None, options=None, quiet=False, log_file=None):
+    def mount_storages(self, mountpoint, file=False, bucket=None, options=None, quiet=False, log_file=None,
+                       threading=False, mode=700):
         config = Config.instance()
         username = config.get_current_user()
         mount = FrozenMount() if is_frozen() else SourceMount()
         if file:
             web_dav_url = PreferenceAPI.get_preference('base.dav.auth.url').value
             web_dav_url = web_dav_url.replace('auth-sso/', username + '/')
-            self.mount_dav(mount, config, mountpoint, options, web_dav_url, log_file=log_file)
+            self.mount_dav(mount, config, mountpoint, options, web_dav_url, mode, log_file=log_file,
+                           threading=threading)
         else:
-            self.mount_storage(mount, config, mountpoint, options, bucket, log_file=log_file)
+            self.mount_storage(mount, config, mountpoint, options, bucket, mode, log_file=log_file,
+                               threading=threading)
 
-    def mount_dav(self, mount, config, mountpoint, options, web_dav_url, log_file=None):
-        mount_cmd = mount.get_mount_webdav_cmd(config, mountpoint, options, web_dav_url)
+    def mount_dav(self, mount, config, mountpoint, options, web_dav_url, mode, log_file=None, threading=False):
+        mount_cmd = mount.get_mount_webdav_cmd(config, mountpoint, options, web_dav_url, mode, threading=threading)
         self.run(config, mount_cmd, log_file=log_file)
 
-    def mount_storage(self, mount, config, mountpoint, options, bucket, log_file=None):
-        mount_cmd = mount.get_mount_storage_cmd(config, mountpoint, options, bucket)
+    def mount_storage(self, mount, config, mountpoint, options, bucket, mode, log_file=None, threading=False):
+        mount_cmd = mount.get_mount_storage_cmd(config, mountpoint, options, bucket, mode, threading=threading)
         self.run(config, mount_cmd, log_file=log_file)
 
     def run(self, config, mount_cmd, mount_timeout=5, log_file=None):

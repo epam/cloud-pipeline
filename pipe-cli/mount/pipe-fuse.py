@@ -100,7 +100,7 @@ if __name__ == '__main__':
                         help="Listing cache time to live, seconds")
     parser.add_argument("-s", "--cache-size", type=int, required=False, default=100,
                         help="Number of simultaneous listing caches")
-    parser.add_argument("-m", "--mode", type=str, required=False, default="775",
+    parser.add_argument("-m", "--mode", type=str, required=False, default="700",
                         help="Default mode for files")
     parser.add_argument("-o", "--options", type=str, required=False,
                         help="String with mount options supported by FUSE")
