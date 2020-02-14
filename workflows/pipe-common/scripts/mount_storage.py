@@ -360,7 +360,7 @@ class S3Mounter(StorageMounter):
 
     def build_mount_command(self, params):
         if params['aws_token'] is not None or params['fuse_type'] == FUSE_PIPE_ID:
-            return 'pipe storage mount {mount} -b {path} -t'.format(**params)
+            return 'pipe storage mount {mount} -b {path} -t --mode 775'.format(**params)
         elif params['fuse_type'] == FUSE_GOOFYS_ID:
             return 'AWS_ACCESS_KEY_ID={aws_key_id} AWS_SECRET_ACCESS_KEY={aws_secret} nohup goofys ' \
                    '--dir-mode {mask} --file-mode {mask} -o {permissions} -o allow_other ' \
