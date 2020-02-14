@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,6 +143,18 @@ public final class MessageConstants {
     public static final String ERROR_RUN_DISK_ATTACHING_WRONG_STATUS = "error.run.attaching.wrong.status";
     public static final String ERROR_RUN_DISK_SIZE_NOT_FOUND = "error.run.disk.size.not.found";
 
+    //Run schedule
+    public static final String CRON_EXPRESSION_IS_NOT_PROVIDED = "cron.expression.is.not.provided";
+    public static final String CRON_EXPRESSION_IS_NOT_VALID = "cron.expression.is.not.valid";
+    public static final String CRON_EXPRESSION_ALREADY_EXISTS = "cron.expression.already.exists";
+    public static final String CRON_EXPRESSION_IDENTICAL = "cron.expression.identical";
+    public static final String SCHEDULE_ACTION_IS_NOT_PROVIDED = "schedule.action.is.not.provided";
+    public static final String SCHEDULE_ACTION_IS_NOT_ALLOWED = "schedule.action.is.not.allowed";
+    public static final String SCHEDULE_ID_IS_NOT_PROVIDED = "schedule.id.is.not.provided";
+    public static final String ERROR_RUN_SCHEDULE_NOT_FOUND = "error.run.schedule.not.found";
+    public static final String ERROR_TIME_ZONE_IS_NOT_PROVIDED = "error.time.zone.is.not.provided";
+    public static final String ERROR_SCHEDULABLE_ID_NOT_CORRESPONDING = "error.schedulable.id.not.corresponding";
+
     // PodMonitor messages
     public static final String DEBUG_MONITOR_CHECK_RUNNING = "debug.monitor.check.running";
     public static final String DEBUG_MONITOR_CHECK_FINISHED = "debug.monitor.check.finished";
@@ -153,6 +165,7 @@ public final class MessageConstants {
     // ResourceMonitoringManager messages
     public static final String INFO_RUN_IDLE_NOTIFY = "info.run.idle.notify";
     public static final String INFO_RUN_IDLE_ACTION = "info.run.idle.action";
+    public static final String DEBUG_RUN_IDLE_SKIP_CHECK = "debug.run.idle.skip.check";
 
     // Kubernetes messages
     public static final String ERROR_NODE_NOT_FOUND = "error.node.not.found";

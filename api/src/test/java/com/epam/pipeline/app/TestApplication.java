@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
+import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import org.springframework.boot.SpringApplication;
@@ -31,6 +32,7 @@ import org.springframework.boot.autoconfigure.security.SecurityFilterAutoConfigu
 import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomizer;
 import org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainerFactory;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
@@ -44,6 +46,7 @@ import org.springframework.security.acls.domain.SidRetrievalStrategyImpl;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
 import org.springframework.security.saml.key.KeyManager;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 
 import java.io.FileNotFoundException;
 import java.util.concurrent.Executor;
@@ -137,5 +140,15 @@ public class TestApplication {
     public PermissionEvaluator permissionEvaluator() {
         return new DenyAllPermissionEvaluator();
     }
+
+    @Bean
+    public SchedulerFactoryBean schedulerFactoryBean(final ApplicationContext applicationContext) {
+        final SchedulerFactoryBean schedulerFactory = new SchedulerFactoryBean();
+        final AutowiringSpringBeanJobFactory jobFactory = new AutowiringSpringBeanJobFactory();
+        jobFactory.setApplicationContext(applicationContext);
+        schedulerFactory.setJobFactory(jobFactory);
+        return schedulerFactory;
+    }
+
 }
 
