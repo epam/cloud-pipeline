@@ -153,6 +153,8 @@
         
             <li><a class="toctree-l4" href="#ability-to-restrict-the-visibility-of-the-jobs">Ability to restrict the visibility of the jobs</a></li>
         
+            <li><a class="toctree-l4" href="#ability-to-perform-scheduled-runs-from-detached-configurations">Ability to perform scheduled runs from detached configurations</a></li>
+        
             <li><a class="toctree-l4" href="#displaying-of-the-additional-support-iconinfo">Displaying of the additional support icon/info</a></li>
         
             <li><a class="toctree-l4" href="#notable-bug-fixes">Notable Bug fixes</a></li>
@@ -501,6 +503,10 @@
                     
     <a class="" href="../../../manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../../manual/14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -664,6 +670,7 @@
 <li><a href="#perform-objects-restore-in-a-batch-mode-via-pipe">Perform objects restore in a batch mode via <code>pipe</code></a></li>
 <li><a href="#mounting-data-storages-to-linux-and-mac-workstations">Mounting data storages to Linux and Mac workstations</a></li>
 <li><a href="#ability-to-restrict-the-visibility-of-the-jobs">Ability to restrict the visibility of the jobs</a></li>
+<li><a href="#ability-to-perform-scheduled-runs-from-detached-configurations">Ability to perform scheduled runs from detached configurations</a></li>
 <li><a href="#displaying-of-the-additional-support-iconinfo">Displaying of the additional support icon/info</a></li>
 </ul>
 <hr />
@@ -1226,6 +1233,21 @@ Now admin can restrict the visibility of the jobs for non-owner users. The setti
 <blockquote>
 <p><strong><em>Note</em></strong>: admins can see all runs despite of settings</p>
 </blockquote>
+<h2 id="ability-to-perform-scheduled-runs-from-detached-configurations">Ability to perform scheduled runs from detached configurations</h2>
+<p>Previously, Cloud Pipeline allowed starting compute jobs only manually (API/GUI/CLI).<br />
+But in certain use cases, it is beneficial to launch runs on a scheduled basis.</p>
+<p>In <strong><code>v0.15</code></strong> the ability to configure a schedule for detached configuration was implemented:  </p>
+<ul>
+<li>User is able to set a schedule for launch a run from the detached configuration:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SchedulingDetachedConfigurationRuns_1.png" /></li>
+<li>Schedule is defined as a list of rules - user is able to specify any number of them:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SchedulingDetachedConfigurationRuns_2.png" /><br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SchedulingDetachedConfigurationRuns_3.png" /></li>
+<li>For each rule in the list user is able to set the recurrence:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SchedulingDetachedConfigurationRuns_4.png" /></li>
+</ul>
+<p>If any schedule rule is configured for the detached configuration - a corresponding job (plain container or a pipeline) will be started accordingly in the scheduled day and time.</p>
+<p>See more details <a href="../../../manual/07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/#schedule-a-launch-from-the-detached-configuration">here</a>.</p>
 <h2 id="displaying-of-the-additional-support-iconinfo">Displaying of the additional support icon/info</h2>
 <p>In certain cases, users shall have a quick access to the help/support information (e.g. links to docs/faq/support request/etc.)</p>
 <p>In the current version, the ability to display additional "support" icon with the corresponding info in the bottom of the main menu was implemented:<br />
@@ -1329,9 +1351,10 @@ Now, checks that instance associated with <code>SpotRequest</code> (created for 
 <p><a href="https://github.com/epam/cloud-pipeline/issues/832">#832</a></p>
 <p>Previously, the non-informative error message was shown if the paused run could't be resumed in a reasonable amount of time - the count of attempts to resume was displaying incorrectly.</p>
 <h3 id="broken-layouts">Broken layouts</h3>
-<p><a href="https://github.com/epam/cloud-pipeline/issues/553">#553</a>, <a href="https://github.com/epam/cloud-pipeline/issues/619">#619</a>, <a href="https://github.com/epam/cloud-pipeline/issues/643">#643</a>, <a href="https://github.com/epam/cloud-pipeline/issues/644">#644</a></p>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/553">#553</a>, <a href="https://github.com/epam/cloud-pipeline/issues/619">#619</a>, <a href="https://github.com/epam/cloud-pipeline/issues/643">#643</a>, <a href="https://github.com/epam/cloud-pipeline/issues/644">#644</a>, <a href="https://github.com/epam/cloud-pipeline/issues/915">#915</a></p>
 <p>Previously, <strong>pipeline versions page</strong> had broken layout if there were pipeline versions with long description.<br />
 <strong>Global search page</strong> was not rendered correctly when the search results table had too many records.<br />
+When a list of items in the <strong>docker groups selection</strong> dialog was long - it was almost impossible to use a search feature, as the list hid immediately.<br />
 Some of the other page layouts also were broken.</p>
               
             </div>

@@ -429,6 +429,10 @@
                     
     <a class="" href="../14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -566,6 +570,7 @@
 <li><a href="#launch-a-pipeline-in-a-synchronized-mode">Launch a pipeline in a synchronized mode</a></li>
 <li><a href="#launch-a-job-on-the-existing-running-instance">Launch a job on the existing running instance</a></li>
 <li><a href="#run-a-tool">Run a tool</a></li>
+<li><a href="#generate-pipeline-launch-command-via-the-gui">Generate pipeline launch command via the GUI</a></li>
 </ul>
 </li>
 <li><a href="#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol">Run a single command or an interactive session over the SSH protocol</a></li>
@@ -845,6 +850,23 @@ In the example below we will launch the Docker image <strong>ubuntu:latest</stro
 <blockquote>
 <p><strong><em>Note</em></strong>: Docker image path shall be specified in a full manner including version.</p>
 </blockquote>
+<h3 id="generate-pipeline-launch-command-via-the-gui">Generate pipeline launch command via the GUI</h3>
+<p>The construction of the correct <code>run</code> command sometimes could be hard for users, so users can generate necessary launch commands via the GUI.<br />
+For that:</p>
+<ol>
+<li>Via the GUI open the <strong>Launch</strong> page of a pipeline/tool you want to run</li>
+<li>At the <strong>Launch</strong> page, configure all settings for the run as you want and then click the "<strong>CLI command</strong>" button in the right-upper corner:<br />
+<img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_28.png" /></li>
+<li>In the appeared popup copy the <code>pipe run</code> command, e.g.:<br />
+<img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_30.png" /></li>
+<li>Paste the copied command into the terminal and perform it</li>
+</ol>
+<blockquote>
+<p><strong><em>Note</em></strong>: instead of step 2 described above, you may open the <strong>Run logs</strong> page of any active/completed run and click the <strong>LAUNCH COMMAND</strong> button in the right-upper corner to view the launch command of the selected run:<br />
+<img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_29.png" /></p>
+</blockquote>
+<p>Also, user can select the <strong>API</strong> tab in the "Launch commands" popup and get the <code>POST</code> request for a job launch:<br />
+<img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_31.png" /></p>
 <h2 id="run-a-single-command-or-an-interactive-session-over-the-ssh-protocol">Run a single command or an interactive session over the SSH protocol</h2>
 <blockquote>
 <p><strong><em>Note</em></strong>: to perform a command or run an interactive session over the running job, user shall be the <strong>OWNER</strong> of that job or has an <strong>ADMIN</strong> role.</p>

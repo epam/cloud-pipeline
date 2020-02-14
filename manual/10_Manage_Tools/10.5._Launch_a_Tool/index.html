@@ -427,6 +427,10 @@
                     
     <a class="" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -597,6 +601,10 @@
 <img alt="CP_LaunchTool" src="../../../release_notes/v.0.15/attachments/RN015_PermissionsVerification_2.png" />  </p>
 </li>
 </ol>
+<blockquote>
+<p><strong><em>Note</em></strong>: you can also launch a tool with the same settings via the <code>CLI</code> command or <code>API</code> request.<br />
+To generate the corresponding command/request click the button <img alt="CP_LaunchTool" src="../attachments/LaunchTool_25.png" /> near the "Launch" button. For more details see <a href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/#generate-pipeline-launch-command-via-the-gui">here</a>.</p>
+</blockquote>
 <h2 id="launch-particular-tool-version">Launch particular Tool version</h2>
 <ol>
 <li>To run a particular version click the <strong>Versions</strong> section.</li>
@@ -609,7 +617,7 @@
 <li>Click the "<strong>Launch</strong>" button.</li>
 </ol>
 <h3 id="example-1">Example 1</h3>
-<p>In this example, we will run the "<strong>centos-nomachine</strong>" Tool with custom settings: <strong>20 Gb</strong> hard drive, <strong>2 CPU</strong> cores, and <strong>8 Gb</strong> RAM.<br />
+<p>In this example, we will run the "<strong>Ubuntu</strong>" Tool with custom settings: <strong>30 Gb</strong> hard drive, <strong>4 CPU</strong> cores, and <strong>16 Gb</strong> RAM.<br />
 <strong><em>Note</em></strong>: "Start idle" box is ticked to allow <strong>SSH</strong> access to the running Tool. To learn more about interactive services see <a href="../../15_Interactive_services/15._Interactive_services/">15. Interactive services</a>.<br />
 Click the <strong>Launch</strong> button in the top-right corner of the screen when all parameters are set.<br />
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_06.png" /></p>
@@ -617,7 +625,7 @@ Click the <strong>Launch</strong> button in the top-right corner of the screen 
 <ol>
 <li>Click the <strong>Log</strong> button to see run details after instance finishes initialization.<br />
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_07.png" /></li>
-<li>Click the <strong>SSH</strong> button in the <strong>Run logs</strong> page.<br />
+<li>Wait until the <strong>SSH</strong> button will appear at the <strong>Run logs</strong> page, click it<br />
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_08.png" /></li>
 <li>You will be redirected to the page with interactive shell session inside the Docker container. For example, we can list "/" directory content inside the container.<br />
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_09.png" /></li>

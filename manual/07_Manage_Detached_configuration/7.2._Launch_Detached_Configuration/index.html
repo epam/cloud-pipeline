@@ -206,6 +206,8 @@
         
             <li><a class="toctree-l5" href="#launch-detached-cluster-configuration-as-a-cluster">Launch detached cluster configuration as a cluster</a></li>
         
+            <li><a class="toctree-l5" href="#schedule-a-launch-from-the-detached-configuration">Schedule a launch from the detached configuration</a></li>
+        
         </ul>
     
 
@@ -421,6 +423,10 @@
                     
     <a class="" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -548,6 +554,14 @@
             <div class="section">
               
                 <h1 id="72-launch-detached-configuration">7.2. Launch Detached Configuration</h1>
+<ul>
+<li><a href="#launch-detached-cluster-configuration-as-a-cluster">Launch detached cluster configuration as a cluster</a></li>
+<li><a href="#schedule-a-launch-from-the-detached-configuration">Schedule a launch from the detached configuration</a><ul>
+<li><a href="#create-and-configure-a-schedule-rule">Create and configure a schedule rule</a></li>
+<li><a href="#delete-a-schedule-rule">Delete a schedule rule</a></li>
+</ul>
+</li>
+</ul>
 <blockquote>
 <p>To launch a <strong>Detached configuration</strong> you need to have <strong>EXECUTE</strong> permissions for it. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
 </blockquote>
@@ -581,6 +595,62 @@
     Click <strong>OK</strong>.<br />
 <img alt="CP_LaunchDetachedConfiguration" src="../attachments/LaunchDetachedConfiguration_2.png" /></p>
 </li>
+</ol>
+<h2 id="schedule-a-launch-from-the-detached-configuration">Schedule a launch from the detached configuration</h2>
+<p>In some cases, the ability to configure a schedule for detached configuration running is beneficial.
+User is able to set a schedule for launch a run from the detached configuration:</p>
+<ul>
+<li>Schedule is defined as a list of rules (user is able to specify any number of them)</li>
+<li>For each rule in the list user is able to set the recurrence:<ul>
+<li><em>Daily</em>: every <code>N</code> days, time<br />
+or  </li>
+<li><em>Weekly</em>: every <code>weekday(s)</code>, time  </li>
+</ul>
+</li>
+<li>Conflicting rules are not allowed (i.e. rules that are configured on the same launching time)</li>
+<li>If any schedule rule is configured for the detached configuration - a corresponding job (a pipeline (if specified) or a plain container) will be started accordingly in the scheduled day and time</li>
+<li>Configuration will be run from the user who created or updated the corresponding schedule</li>
+<li>If detached configuration has several entries (configs) only default one will be launched by the schedule</li>
+</ul>
+<h3 id="create-and-configure-a-schedule-rule">Create and configure a schedule rule</h3>
+<ol>
+<li>Open the detached configuration</li>
+<li>Click the <strong>Run schedule</strong> button in the right upper corner:<br />
+<img alt="CP_LaunchDetachedConfiguration" src="../attachments/LaunchDetachedConfiguration_4.png" /></li>
+<li>The "Run schedule" popup will appear:<br />
+<img alt="CP_LaunchDetachedConfiguration" src="../attachments/LaunchDetachedConfiguration_5.png" /></li>
+<li>Click the <strong>Add rule</strong> button. The first rule in the list will appear:<br />
+<img alt="CP_LaunchDetachedConfiguration" src="../attachments/LaunchDetachedConfiguration_6.png" /></li>
+<li>Let's configure the launch of the detached configuration every 3 days at 12:30. For that:<ul>
+<li>click the field next to "Every" label and specify the corresponding number in it<br />
+<img alt="CP_LaunchDetachedConfiguration" src="../attachments/LaunchDetachedConfiguration_7.png" /></li>
+<li>click the time field, select hours in the left dropdown list and minutes in the right<br />
+<img alt="CP_LaunchDetachedConfiguration" src="../attachments/LaunchDetachedConfiguration_8.png" /></li>
+</ul>
+</li>
+<li>Let's add another rule and configure the launch of the detached configuration every monday and wednesday at 15:00. For that:<ul>
+<li>click the <strong>Add rule</strong> button</li>
+<li>for the appeared new rule select the "Weekly" item in the recurrence dropdown list<br />
+<img alt="CP_LaunchDetachedConfiguration" src="../attachments/LaunchDetachedConfiguration_9.png" /></li>
+<li>click the field next to the recurrence dropdown and select the corresponding weekdays<br />
+<img alt="CP_LaunchDetachedConfiguration" src="../attachments/LaunchDetachedConfiguration_10.png" /></li>
+<li>click the time field, select the corresponding time values</li>
+</ul>
+</li>
+<li>Click the <strong>OK</strong> button to save created rules:<br />
+<img alt="CP_LaunchDetachedConfiguration" src="../attachments/LaunchDetachedConfiguration_11.png" /></li>
+</ol>
+<p>From now, the run from that detached configuration will be automatically launching according to the created schedule rules.</p>
+<h3 id="delete-a-schedule-rule">Delete a schedule rule</h3>
+<ol>
+<li>Click the <strong>Run schedule</strong> button in the right upper corner of the detached configuration:<br />
+<img alt="CP_LaunchDetachedConfiguration" src="../attachments/LaunchDetachedConfiguration_12.png" /></li>
+<li>The "Run schedule" popup will appear. Click the <strong>Delete</strong> button in the row of the rule you want to remove, e.g.:<br />
+<img alt="CP_LaunchDetachedConfiguration" src="../attachments/LaunchDetachedConfiguration_13.png" /></li>
+<li>The row with removing rule will become pink:<br />
+<img alt="CP_LaunchDetachedConfiguration" src="../attachments/LaunchDetachedConfiguration_14.png" /><br />
+<strong><em>Note</em></strong>: you may easily revert the removal by button <img alt="CP_LaunchDetachedConfiguration" src="../attachments/LaunchDetachedConfiguration_15.png" /></li>
+<li>Click the <strong>OK</strong> button to save performed changes and permanently remove the rule</li>
 </ol>
               
             </div>

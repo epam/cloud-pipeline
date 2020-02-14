@@ -429,6 +429,10 @@
                     
     <a class="" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -822,9 +826,9 @@ Each child-run record contains:</p>
 Clicking a task and its console output will be loaded in the right panel.<br />
 <img alt="CP_ManageRuns" src="../attachments/ManageRuns_14.png" /></p>
 <h3 id="console-output">Console output</h3>
-<p>Console output shows console output from a whole pipeline or a selected task. It also shows a run failure cause if a run failed.<br />
+<p>Here you can view console output from a whole pipeline or a selected task. It also shows a run failure cause if a run failed.<br />
 <img alt="CP_ManageRuns" src="../attachments/ManageRuns_15.png" /></p>
-<p><strong><em>Note</em></strong>: the Follow log control enables auto scrolling of the console output. It is useful for logs monitoring. Follow log is enabled by default, tick the box to turn it off.<br />
+<p><strong><em>Note</em></strong>: the <strong>Follow log</strong> control enables auto scrolling of the console output. It is useful for logs monitoring. <strong>Follow log</strong> is enabled by default, tick the box to turn it off.<br />
 <img alt="CP_ManageRuns" src="../attachments/ManageRuns_16.png" /></p>
 <p>Also, during a pipeline run an extended <strong><em>node-level</em></strong> logging is maintained:</p>
 <ul>
@@ -855,8 +859,8 @@ Clicking a task and its console output will be loaded in the right panel.<br />
 </ol>
 <h3 id="controls">Controls</h3>
 <p><strong><em>Note</em></strong>: Completed and active runs have different controls.<br />
-<strong>Example</strong>: controls of completed Luigi pipeline.</p>
-<p><img alt="CP_ManageRuns" src="../attachments/ManageRuns_17.png" /></p>
+<strong>Example</strong>: controls of running <code>Spot</code> pipeline:<br />
+<img alt="CP_ManageRuns" src="../attachments/ManageRuns_17.png" /></p>
 <p>Here's the list of all existing buttons</p>
 <table>
 <thead>
@@ -867,48 +871,52 @@ Clicking a task and its console output will be loaded in the right panel.<br />
 </thead>
 <tbody>
 <tr>
-<td><strong>PAUSE</strong></td>
-<td>Allows to pause a run (<em>only for <strong>On-demand</strong> non-cluster runs</em>).</td>
-</tr>
-<tr>
-<td><strong>RESUME</strong></td>
-<td>Allows to resume a paused run (<em>only for <strong>On-demand</strong> non-cluster runs</em>).</td>
-</tr>
-<tr>
-<td><strong>TERMINATE</strong></td>
-<td>Allows to terminate compute node of a paused run without resuming (<em>only for <strong>On-demand</strong> non-cluster runs</em>).</td>
-</tr>
-<tr>
-<td><strong>STOP</strong></td>
-<td>Allows to stop a run.</td>
-</tr>
-<tr>
-<td><strong>SHOW TIMINGS</strong>/<strong>HIDE TIMINGS</strong></td>
-<td>Allows to show/hide duration of each task.</td>
+<td><strong>BROWSE</strong></td>
+<td>Allows to open the run instance filesystem in a Storage browser Web GUI - so the user can view, download, upload, delete files and directories for the current active run.</td>
 </tr>
 <tr>
 <td><strong>COMMIT</strong></td>
 <td>Allows modifying an existing tool that has been changed via ssh. See <a href="../../10_Manage_Tools/10.4._Edit_a_Tool/#commit-a-tool">10.4. Edit a Tool</a>.</td>
 </tr>
 <tr>
+<td><strong>EXPORT LOGS</strong></td>
+<td>Allows to export logs.</td>
+</tr>
+<tr>
 <td><strong>GRAPH VIEW</strong></td>
 <td>For Luigi and WDL pipelines GRAPH VIEW is available along with a usual plain view of tasks. See <a href="../../06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL pipeline with graphical PipelineBuilder</a>.</td>
 </tr>
 <tr>
-<td><strong>SSH</strong></td>
-<td>Allows to shh to the instance running "sleep infinity" mode. See <a href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure pipeline</a>.</td>
+<td><strong>LAUNCH COMMAND</strong></td>
+<td>Allows to generate the CLI <code>pipe run</code> command/API <code>POST</code> request for a job launch.</td>
+</tr>
+<tr>
+<td><strong>PAUSE</strong></td>
+<td>Allows to pause a run (<em>only for <strong>On-demand</strong> non-cluster runs</em>).</td>
 </tr>
 <tr>
 <td><strong>RERUN</strong></td>
 <td>Allows to rerun completed runs.</td>
 </tr>
 <tr>
-<td><strong>EXPORT LOGS</strong></td>
-<td>Allows to export logs.</td>
+<td><strong>RESUME</strong></td>
+<td>Allows to resume a paused run (<em>only for <strong>On-demand</strong> non-cluster runs</em>).</td>
 </tr>
 <tr>
-<td><strong>BROWSE</strong></td>
-<td>Allows to open the run instance filesystem in a Storage browser Web GUI - so the user can view, download, upload, delete files and directories for the current active run.</td>
+<td><strong>SHOW TIMINGS</strong>/<strong>HIDE TIMINGS</strong></td>
+<td>Allows to show/hide duration of each task.</td>
+</tr>
+<tr>
+<td><strong>SSH</strong></td>
+<td>Allows to shh to the instance running "sleep infinity" mode. See <a href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure pipeline</a>.</td>
+</tr>
+<tr>
+<td><strong>STOP</strong></td>
+<td>Allows to stop a run.</td>
+</tr>
+<tr>
+<td><strong>TERMINATE</strong></td>
+<td>Allows to terminate compute node of a paused run without resuming (<em>only for <strong>On-demand</strong> non-cluster runs</em>).</td>
 </tr>
 </tbody>
 </table>

@@ -109,6 +109,14 @@
         
             <li><a class="toctree-l4" href="#displaying-ssh-link-for-the-active-runs-in-the-dashboard-view">Displaying SSH link for the active runs in the Dashboard view</a></li>
         
+            <li><a class="toctree-l4" href="#enable-slurm-workload-manager-for-the-cloud-pipelines-clusters">Enable Slurm workload manager for the Cloud Pipeline's clusters</a></li>
+        
+            <li><a class="toctree-l4" href="#the-ability-to-generate-the-pipe-run-command-from-the-gui">The ability to generate the pipe run command from the GUI</a></li>
+        
+            <li><a class="toctree-l4" href="#pipe-cli-view-tools-definitions">pipe CLI: view tools definitions</a></li>
+        
+            <li><a class="toctree-l4" href="#ge-autoscaler-respects-cpu-requirements-of-the-job-in-the-queue">GE Autoscaler respects CPU requirements of the job in the queue</a></li>
+        
             <li><a class="toctree-l4" href="#notable-bug-fixes">Notable Bug fixes</a></li>
         
         </ul>
@@ -451,6 +459,10 @@
                     
     <a class="" href="../../../manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../../manual/14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -590,6 +602,10 @@
 <li><a href="#displaying-additional-node-metrics-at-the-runs-page">Displaying additional node metrics</a></li>
 <li><a href="#export-user-list">Export user list</a></li>
 <li><a href="#displaying-ssh-link-for-the-active-runs-in-the-dashboard-view">Displaying SSH link for the active runs in the Dashboard view</a></li>
+<li><a href="#enable-slurm-workload-manager-for-the-cloud-pipelines-clusters">Enable Slurm for the Cloud Pipeline's clusters</a></li>
+<li><a href="#the-ability-to-generate-the-pipe-run-command-from-the-gui">The ability to generate the <code>pipe run</code> command from the GUI</a></li>
+<li><a href="#pipe-cli-view-tools-definitions"><code>pipe</code> CLI: view tools definitions</a></li>
+<li><a href="#ge-autoscaler-respects-cpu-requirements-of-the-job-in-the-queue">GE Autoscaler respects CPU requirements of the job in the queue</a></li>
 </ul>
 <hr />
 <ul>
@@ -820,6 +836,69 @@ In <strong><code>v0.16</code></strong>, a new helpful capability was implemented
 <img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_SSHActiveRuns_1.png" /><br />
 <img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_SSHActiveRuns_2.png" /></p>
 <p>That SSH link is available for all the non-paused active jobs (interactive and non-interactive) after all run's checks and initializations have passed (same as at the <strong>Run logs</strong> page).</p>
+<h2 id="enable-slurm-workload-manager-for-the-cloud-pipelines-clusters">Enable Slurm workload manager for the Cloud Pipeline's clusters</h2>
+<p>A new feature for the Cloud Pipeline's clusters was implemented in <strong><code>v0.16</code></strong>.<br />
+Now, <a href="https://slurm.schedmd.com/overview.html"><strong><code>Slurm</code></strong></a> can be configured within the <code>Cluster</code> tab. It is available only for the fixed size clusters.</p>
+<p>To enable this feature - tick the <code>Enable Slurm</code> checkbox and set the child nodes count at cluster settings. By default, this checkbox is unticked. Also users can manually enable <code>Slurm</code> functionality by the <code>CP_CAP_SLURM</code> system parameter:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_SlurmCluster_1.png" /></p>
+<p>This feature allows you to use the full stack of <code>Slurm</code> cluster's commands to allocate the workload over the cluster, for example:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_SlurmCluster_2.png" /></p>
+<p>For more information about using <code>Slurm</code> via the <code>Cloud Pipeline</code> see
+<a href="../../../manual/15_Interactive_services/15.2._Using_Terminal_access/#example-using-of-slurm-for-the-cloud-pipelines-clusters">here</a>.</p>
+<h2 id="the-ability-to-generate-the-pipe-run-command-from-the-gui">The ability to generate the <code>pipe run</code> command from the GUI</h2>
+<p>A user has a couple of options to launch a new job in the Cloud Pipeline:</p>
+<ul>
+<li><code>API</code></li>
+<li><code>CLI</code></li>
+<li><code>GUI</code></li>
+</ul>
+<p>The easiest way to perform it is the <code>GUI</code>. But for automation purposes - the <code>CLI</code> is much more handy. Previously, users had to construct the commands manually, which made it hard to use.</p>
+<p>Now, the ability to automatically generate the <code>CLI</code> commands for job runs appeared in the <code>GUI</code>.<br />
+Now, users can get a generated <code>CLI</code> command (that assembled all the run information):</p>
+<ul>
+<li>at the <strong>Launch</strong> form:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_PipeRunGUI_2.png" /></li>
+<li>at the <strong>Run logs</strong> form:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_PipeRunGUI_1.png" /><br />
+<strong><em>Note</em></strong>: this button is available for completed runs too</li>
+</ul>
+<p>Once click these buttons - the popup with the corresponding <code>pipe run</code> command will appear:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_PipeRunGUI_3.png" /><br />
+User can copy such command and paste it to the <code>CLI</code> for further launch.<br />
+Also user can select the <strong>API</strong> tab in that popup and get the <code>POST</code> request for a job launch:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_PipeRunGUI_4.png" /></p>
+<p>See an example <a href="../../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI/#generate-pipeline-launch-command-via-the-gui">here</a>.</p>
+<h2 id="pipe-cli-view-tools-definitions"><code>pipe</code> CLI: view tools definitions</h2>
+<p>In <strong><code>v0.16</code></strong> the ability to view details of a tool/tool version or tools group via the <code>CLI</code> was implemented.<br />
+The general command to perform these operations:</p>
+<pre><code class="bash">pipe view-tools [OPTIONS]
+</code></pre>
+
+<p>Via the options users can specify a Docker registry (<code>-r</code> option), a tools group (<code>-g</code> option), a tool (<code>-t</code> option), a tool version (<code>-v</code> option) and view the corresponding information.</p>
+<p>For example, to show a full tools list of a group:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ViewTools_01.png" /></p>
+<p>To show a tool definition with versions list:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ViewTools_02.png" /></p>
+<p>Also the specifying of "path" to the object (registry/group/tool) is supported. The "full path" format is: <code>&lt;registry_name&gt;:&lt;port&gt;/&lt;group_name&gt;/&lt;tool_name&gt;:&lt;verion_name&gt;</code>:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ViewTools_03.png" /></p>
+<p>For more details and usage examples see <a href="../../../manual/14_CLI/14.8._View_tools_definitions_via_CLI/">here</a>.</p>
+<h2 id="ge-autoscaler-respects-cpu-requirements-of-the-job-in-the-queue">GE Autoscaler respects CPU requirements of the job in the queue</h2>
+<p>At the moment, <strong>GE Autoscaler</strong> treats each job in the queue as a single-core job.<br />
+Previously, autoscale workers could have only fixed instance type (the same as the master) - that could lead to <code>unschedulable</code> jobs in the queue - for examle, if one of the jobs requested <strong>4</strong> slots in the <code>local</code> parallel environment within a <strong>2</strong>-cored machine. Described job waited in a queue forever (as autoscaler could setup only new <strong>2</strong>-cored nodes).</p>
+<p>In the current version the <code>hybrid</code> behavior for the <strong>GE Autoscaler</strong> was implemented, that allows processing the data even if the initial node type is not enough. That behavior allows to scale-up the cluster (attach a worker node) with the instance type distinct of the master - worker is being picked up based on the amount of unsatisfied <strong>CPU</strong> requirements of all pending jobs (according to required slots and parallel environment types).</p>
+<p>There are several <strong>System parameters</strong> to configure that behavior:</p>
+<ul>
+<li><strong><code>CP_CAP_AUTOSCALE_HYBRID</code></strong> (<em>boolean</em>) - enables the <code>hybrid</code> mode. In that mode the additional worker type can vary within either master instance type family (or <code>CP_CAP_AUTOSCALE_HYBRID_FAMILY</code> if specified). If <code>disabled</code> or not specified - the <strong>GE Autoscaler</strong> will work in a general regimen (when scaled-up workers have the same instance type as the master node)</li>
+<li><strong><code>CP_CAP_AUTOSCALE_HYBRID_FAMILY</code></strong> (<em>string</em>) - defines the instance "family", from which the <strong>GE Autoscaler</strong> should pick up the worker node in case of <code>hybrid</code> behavior. If not specified (by default) - the <strong>GE Autoscaler</strong> will pick up worker instance from the same "family" as the master node</li>
+<li><strong><code>CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE</code></strong> (<em>string</em>) - determines the maximum number of instance cores for the node to be scaled up by the <strong>GE Autoscaler</strong> in case of <code>hybrid</code> behavior</li>
+</ul>
+<p><img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_HybridAutoscaler_1.png" /></p>
+<p>Also now, if no matching instance is present for the job (no matter - in <code>hybrid</code> or general regimen), <strong>GE Autoscaler</strong> logs error message and rejects such job:<br />
+    for example, when try to request <strong>32</strong> slots for the autoscaled cluster launched in <code>hybrid</code> mode with the parameter <code>CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE</code> set to <strong>20</strong>:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_HybridAutoscaler_2.png" /><br />
+    and in the logs console at the same time:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_HybridAutoscaler_3.png" /></p>
+<p>For more details about <strong>GE Autoscaler</strong> see <a href="../../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">here</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="parameter-values-changes-cannot-be-saved-for-a-tool">Parameter values changes cannot be saved for a tool</h3>

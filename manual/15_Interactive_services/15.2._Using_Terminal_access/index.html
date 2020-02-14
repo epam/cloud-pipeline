@@ -409,6 +409,10 @@
                     
     <a class="" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
     </ul>
                 </li>
                 <li class=" current">
@@ -435,6 +439,8 @@
             <li><a class="toctree-l5" href="#using-terminal-access">Using Terminal access</a></li>
         
             <li><a class="toctree-l5" href="#example-using-of-environment-modules-for-the-cloud-pipeline-runs">Example: using of Environment Modules for the Cloud Pipeline runs</a></li>
+        
+            <li><a class="toctree-l5" href="#example-using-of-slurm-for-the-cloud-pipelines-clusters">Example: using of Slurm for the Cloud Pipeline's clusters</a></li>
         
         </ul>
     
@@ -550,6 +556,11 @@
             <div class="section">
               
                 <h1 id="152-using-terminal-access">15.2. Using Terminal access</h1>
+<ul>
+<li><a href="#using-terminal-access">Using Terminal access</a></li>
+<li><a href="#example-using-of-environment-modules-for-the-cloud-pipeline-runs">Example: using of Environment Modules for the Cloud Pipeline runs</a></li>
+<li><a href="#example-using-of-slurm-for-the-cloud-pipelines-clusters">Example: using of Slurm for the Cloud Pipeline's clusters</a></li>
+</ul>
 <blockquote>
 <p><strong>Terminal access</strong> is available to the <strong>OWNER</strong> of the running job and users with <strong>ADMIN</strong> role. With sufficient permissions, <strong>Terminal access</strong> can be achieved to any running job.<br />
 For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
@@ -661,6 +672,41 @@ Switch to the <code>JDK ver. 9.0.4</code>:<br />
 <img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_20.png" /><br />
 Unload all <code>JDK</code> versions:<br />
 <img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_19.png" />  </p>
+<h2 id="example-using-of-slurm-for-the-cloud-pipelines-clusters">Example: using of Slurm for the Cloud Pipeline's clusters</h2>
+<p><a href="https://slurm.schedmd.com"><code>Slurm</code></a> is an open source, highly scalable cluster management and job scheduling system for large and small <code>Linux</code> clusters.</p>
+<p>In the example below, we will use <code>Slurm</code> for performing the simplest batch job.</p>
+<ol>
+<li>Open the <strong>Tools</strong> page, select a tool and its version (<strong><em>Note</em></strong>: in our example we will use <code>Ubuntu 18.04</code>). Hover over the <strong>v</strong> button near the <strong>Run</strong> button and click the "Custom settings" item in the dropdown list.</li>
+<li>At the <strong>Launch</strong> page expand "Exec environment" section and click the "<strong>Configure cluster</strong>" button:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_22.png" /></li>
+<li>In the appeared popup click the <strong>Cluster</strong> tab. Set the count of "child" nodes, tick the "Enable Slurm" checkbox and click the <strong>OK</strong> button to confirm:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_23.png" /></li>
+<li>Launch the tool:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_24.png" /></li>
+<li>Open the main Dashboard and wait until the <strong>SSH</strong> hyperlink will appear at the Active Runs panel for the just-launched tool, then click it:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_25.png" /></li>
+<li>The terminal web GUI will appear.</li>
+<li>At the beginning, let's check general system state, view existing partitions in the system and the list of available nodes. For that, perform the <code>sinfo</code> command:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_26.png" /><br />
+    Only <code>main.q</code> partition is created. All cluster nodes are attached to this partition.</li>
+<li>To report more detailed information about partition - the <code>scontrol</code> command can be used:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_27.png" /><br />
+    And to display detailed information about one of the nodes, e.g.:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_28.png" /></li>
+<li>Now, we'll parallely execute <code>/bin/hostname</code> on all three nodes (<code>-N3</code> option) and include task numbers in the output (<code>-l</code> option) via the <code>srun</code> command.<br />
+The default partition will be used. One task per node will be used by default:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_29.png" /></li>
+<li>For the batch job, create the following script:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_30.png" /><br />
+    This script contains a timelimit for the job embedded within itself (via the <code>--time</code> option after the <code>#SBATCH</code> prefix).<br />
+    Script contains the command <code>/bin/hostname</code> that will be executed on the first node in the allocation (where the script runs) plus two job steps initiated using the <code>srun</code> command and executed sequentially.<br />
+    To submit a job script for execution over all three nodes use the <code>sbatch</code> command, result will be written to the file (<code>-o</code> option):<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_31.png" /></li>
+<li>During the script execution you can check the queue of running jobs in priority order via the <code>squeue</code> command:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_32.png" /></li>
+<li>The result of the <code>sbatch</code> command performing:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_33.png" /></li>
+</ol>
               
             </div>
           </div>
