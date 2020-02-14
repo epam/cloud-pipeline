@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,33 @@
  * limitations under the License.
  */
 
-import moment from 'moment-timezone';
-const dateDisplayFormat = 'YYYY-MM-DD HH:mm:ss';
-const displayDate = (date, format = dateDisplayFormat) => {
-  if (!date) {
-    return '';
+export default [
+  {
+    day: 'Monday',
+    value: 2
+  },
+  {
+    day: 'Tuesday',
+    value: 3
+  },
+  {
+    day: 'Wednesday',
+    value: 4
+  },
+  {
+    day: 'Thursday',
+    value: 5
+  },
+  {
+    day: 'Friday',
+    value: 6
+  },
+  {
+    day: 'Saturday',
+    value: 7
+  },
+  {
+    day: 'Sunday',
+    value: 1
   }
-  const localTime = moment.utc(date).toDate();
-  return moment(localTime).format(format);
-};
-export default displayDate;
+];

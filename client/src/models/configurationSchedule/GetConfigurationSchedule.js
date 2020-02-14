@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-import moment from 'moment-timezone';
-const dateDisplayFormat = 'YYYY-MM-DD HH:mm:ss';
-const displayDate = (date, format = dateDisplayFormat) => {
-  if (!date) {
-    return '';
+import Remote from '../basic/Remote';
+
+class GetConfigurationSchedule extends Remote {
+  constructor (configurationId) {
+    super();
+    this.url = `/schedule/configuration/${configurationId}`;
+  };
+
+  postprocess (value) {
+    return (value.payload || []).map(({id, ...rest}) => ({scheduleId: id, ...rest}));
   }
-  const localTime = moment.utc(date).toDate();
-  return moment(localTime).format(format);
-};
-export default displayDate;
+}
+
+export default GetConfigurationSchedule;

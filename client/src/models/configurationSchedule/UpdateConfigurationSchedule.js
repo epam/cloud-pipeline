@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,21 @@
  * limitations under the License.
  */
 
-import moment from 'moment-timezone';
-const dateDisplayFormat = 'YYYY-MM-DD HH:mm:ss';
-const displayDate = (date, format = dateDisplayFormat) => {
-  if (!date) {
-    return '';
+import RemotePost from '../basic/RemotePost';
+
+class UpdateConfigurationSchedule extends RemotePost {
+  constructor (configurationId) {
+    super();
+    this.constructor.fetchOptions = {
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8'
+      },
+      mode: 'cors',
+      credentials: 'include',
+      method: 'PUT'
+    };
+    this.url = `/schedule/configuration/${configurationId}`;
   }
-  const localTime = moment.utc(date).toDate();
-  return moment(localTime).format(format);
-};
-export default displayDate;
+}
+
+export default UpdateConfigurationSchedule;

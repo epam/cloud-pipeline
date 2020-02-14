@@ -25,7 +25,7 @@ import {PipelineRunCommitCheck} from '../../../models/pipelines/PipelineRunCommi
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import StopPipeline from '../../../models/pipelines/StopPipeline';
 import TerminatePipeline from '../../../models/pipelines/TerminatePipeline';
-import moment from 'moment';
+import moment from 'moment-timezone';
 
 export function canStopRun (run) {
   // Checks only run state, not user permissions

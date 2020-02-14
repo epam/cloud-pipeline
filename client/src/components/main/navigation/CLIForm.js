@@ -32,7 +32,7 @@ import styles from './SettingsForm.css';
 import UserToken from '../../../models/user/UserToken';
 import PipelineGitCredentials from '../../../models/pipelines/PipelineGitCredentials';
 import Notifications from '../../../models/notifications/Notifications';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import LoadingView from '../../special/LoadingView';

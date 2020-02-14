@@ -21,7 +21,7 @@ import {computed} from 'mobx';
 import IssuesLoad from '../../../models/issues/IssuesLoad';
 import IssueCreate from '../../../models/issues/IssueCreate';
 import LoadingView from '../../special/LoadingView';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import {Button, Icon, message, Row, Table, Alert} from 'antd';
 import Issue from './Issue';
 import EditIssueForm from './controls/EditIssueForm';

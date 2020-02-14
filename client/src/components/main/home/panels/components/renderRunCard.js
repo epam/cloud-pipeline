@@ -17,7 +17,7 @@
 import React from 'react';
 import StatusIcon from '../../../../special/run-status-icon';
 import {Icon, Popover, Row} from 'antd';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import parseRunServiceUrl from '../../../../../utils/parseRunServiceUrl';
 import evaluateRunDuration from '../../../../../utils/evaluateRunDuration';
 import styles from './CardsPanel.css';

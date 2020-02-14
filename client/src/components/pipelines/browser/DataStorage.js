@@ -66,7 +66,7 @@ import parseQueryParameters from '../../../utils/queryParameters';
 import displayDate from '../../../utils/displayDate';
 import displaySize from '../../../utils/displaySize';
 import roleModel from '../../../utils/roleModel';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import styles from './Browser.css';
 import DataStorageCodeForm from './forms/DataStorageCodeForm';
 import DataStorageGenerateSharedLink

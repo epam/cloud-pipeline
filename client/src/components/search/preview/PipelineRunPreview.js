@@ -27,7 +27,7 @@ import StatusIcon, {Statuses} from '../../special/run-status-icon';
 import styles from './preview.css';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
 import displayDate from '../../../utils/displayDate';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import parseRunServiceUrl from '../../../utils/parseRunServiceUrl';
 import UserName from '../../special/UserName';
 import AWSRegionTag from '../../special/AWSRegionTag';

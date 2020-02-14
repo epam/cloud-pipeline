@@ -24,7 +24,7 @@ import EditableField from '../../special/EditableField';
 import {Alert, Icon, Row} from 'antd';
 import connect from '../../../utils/connect';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import styles from './Browser.css';
 
 const PAGE_SIZE = 20;

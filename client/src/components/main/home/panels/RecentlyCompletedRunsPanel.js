@@ -28,7 +28,7 @@ import ResumePipeline from '../../../../models/pipelines/ResumePipeline';
 import renderRunCard from './components/renderRunCard';
 import getRunActions from './components/getRunActions';
 import roleModel from '../../../../utils/roleModel';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import styles from './Panel.css';
 
 @roleModel.authenticationInfo

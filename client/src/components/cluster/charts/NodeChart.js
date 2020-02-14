@@ -20,7 +20,7 @@ import PropTypes from 'prop-types';
 import {Row} from 'antd';
 import styles from './Charts.css';
 import Chart from 'chart.js';
-import moment from 'moment';
+import moment from 'moment-timezone';
 
 @observer
 export default class NodeChart extends React.Component {
