@@ -176,7 +176,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
         new ConfirmationPopupAO<>(new RunsMenuAO())
                 .messageShouldAppear(String.format(
                         "Are you sure you want to launch tool (version %s) with default settings?", customTag))
-                .ok();
+                .delete();
         sleep(1, SECONDS);
         test.addRunId(Utils.getToolRunId(tool, customTag));
         return new RunsMenuAO();
