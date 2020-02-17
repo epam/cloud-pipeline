@@ -57,23 +57,23 @@ function parseRangeString (string, period) {
   let start, end;
   switch (period) {
     case Period.custom:
-      start = moment(startStr, 'YYYY-MM').startOf('M');
+      start = moment.utc(startStr, 'YYYY-MM').startOf('M');
       if (endStr) {
-        end = moment(endStr, 'YYYY-MM').endOf('M');
+        end = moment.utc(endStr, 'YYYY-MM').endOf('M');
       } else {
         end = moment(start).endOf('M');
       }
       break;
     case Period.year:
-      start = moment(startStr, 'YYYY').startOf('Y');
+      start = moment.utc(startStr, 'YYYY').startOf('Y');
       end = moment(start).endOf('Y');
       break;
     case Period.quarter:
-      start = moment(startStr, 'YYYY-MM').startOf('Q');
+      start = moment.utc(startStr, 'YYYY-MM').startOf('Q');
       end = moment(start).endOf('Q');
       break;
     case Period.month:
-      start = moment(startStr, 'YYYY-MM').startOf('M');
+      start = moment.utc(startStr, 'YYYY-MM').startOf('M');
       end = moment(start).endOf('M');
       break;
   }
@@ -118,8 +118,7 @@ const Range = {
 };
 
 function getPeriod (period, range) {
-  const now = Date.now();
-  const dateNow = moment.utc(now);
+  const dateNow = moment.utc();
   let {start, end} = Range.parse(range, period);
   const rangeIsSelected = !!start && !!end;
   let tickFormat;
