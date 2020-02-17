@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.epam.pipeline.autotests.ao.Primitive.NEXT_PAGE;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 
 @Listeners(value = ConditionalTestAnalyzer.class)
@@ -106,8 +107,10 @@ public class StoragePaginationTest extends AbstractBfxPipelineTest
         storageContent()
                 .ensure(NEXT_PAGE, enabled.because(nextPageAppearingReason))
                 .selectPage()
+                .sleep(1, SECONDS)
                 .removeAllSelectedElements()
                 .selectPage()
+                .sleep(1, SECONDS)
                 .removeAllSelectedElements()
                 .showFilesVersions(true)
                 .ensure(NEXT_PAGE, enabled.because(nextPageAppearingReason))
