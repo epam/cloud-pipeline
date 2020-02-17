@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,8 @@ class BillingCenters extends Remote {
             {
               status: 'OK',
               payload: [
-                {id: 1, name: 'TBD'}
+                {id: 1, name: 'Billing1'},
+                {id: 2, name: 'Billing2'}
               ]});
         } catch (e) {
           this.failed = true;

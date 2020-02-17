@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,9 @@ import UsersList from '../user/Users';
 import BillingCenters from './billing-centers';
 import GetDataWithPrevious from './get-data-with-previous';
 import costMapper from './cost-mapper';
+import join from './join-periods';
 
-class GetGroupedBillingData extends RemotePost {
+export class GetGroupedBillingData extends RemotePost {
   constructor (filters, groupedBy) {
     super();
     this.filters = filters;
@@ -32,6 +33,8 @@ class GetGroupedBillingData extends RemotePost {
   static GROUP_BY = {
     billingCenters: 'BILLING_CENTER',
     resources: 'resource',
+    storageType: 'STORAGE_TYPE',
+    computeType: 'RUN_COMPUTE_TYPE',
     storages: 'STORAGE',
     objectStorages: 'OBJECT_STORAGE',
     fileStorages: 'FILE_STORAGE',
@@ -40,8 +43,9 @@ class GetGroupedBillingData extends RemotePost {
     tools: 'TOOL'
   };
 
+  body = {};
+
   async fetch () {
-    const body = {};
     let billingCenter;
     if (this.filters && this.filters.group) {
       const billingCentersRequest = new BillingCenters();
@@ -55,8 +59,10 @@ class GetGroupedBillingData extends RemotePost {
       userRequest = new User(this.filters.user);
       await userRequest.fetchIfNeededOrWait();
     }
-    body.from = this.filters && this.filters.start ? this.filters.start.toISOString() : undefined;
-    body.to = this.filters && this.filters.end ? this.filters.end.toISOString() : undefined;
+    this.body.from = this.filters && this.filters.start
+      ? this.filters.start.toISOString() : undefined;
+    this.body.to = this.filters && this.filters.end
+      ? this.filters.end.toISOString() : undefined;
     if (this.groupedBy === GetGroupedBillingData.GROUP_BY.billingCenters) {
       if (this.filters && this.filters.group) {
         const usersRequest = new UsersList();
@@ -67,55 +73,74 @@ class GetGroupedBillingData extends RemotePost {
             this.users[u.userName] = u;
           });
         }
-        body.filters = {};
-        body.grouping = 'USER';
+        this.body.filters = {};
+        this.body.grouping = 'USER';
+        this.body.loadDetails = true;
         if (billingCenter) {
-          body.filters.billing_center = [billingCenter.name];
+          this.body.filters.billing_center = [billingCenter.name];
         }
       } else {
-        body.grouping = GetGroupedBillingData.GROUP_BY.billingCenters;
+        this.body.grouping = GetGroupedBillingData.GROUP_BY.billingCenters;
       }
-      return super.send(body);
+      return super.send(this.body);
     } else if (this.groupedBy === GetGroupedBillingData.GROUP_BY.resources) {
       const payload = {};
-      const storageBody = {
-        from: this.filters.start ? this.filters.start.toISOString() : undefined,
-        to: this.filters.end ? this.filters.end.toISOString() : undefined,
-        filters: {},
-        grouping: 'STORAGE_TYPE'
-      };
-      if (this.filters && this.filters.user && userRequest.loaded && userRequest.value) {
-        storageBody.filters.owner = [userRequest.value.userName];
-      }
-      if (this.filters && this.filters.group && billingCenter) {
-        storageBody.filters.billing_center = [billingCenter.name];
-      }
-      await super.send(storageBody);
-      payload['Storage'] = this._response && this._response.payload
-        ? this._response.payload
-        : [];
 
-      const instancesBody = {
-        from: this.filters.start ? this.filters.start.toISOString() : undefined,
-        to: this.filters.end ? this.filters.end.toISOString() : undefined,
-        filters: {},
-        grouping: 'RUN_COMPUTE_TYPE'
-      };
-      if (this.filters && this.filters.user && userRequest.loaded && userRequest.value) {
-        instancesBody.filters.owner = [userRequest.value.userName];
+      this._pending = true;
+      this._postIsExecuting = true;
+
+      const storageTypesRequest = new GetGroupedBillingData(
+        this.filters,
+        GetGroupedBillingData.GROUP_BY.storageType
+      );
+      await storageTypesRequest.fetch();
+
+      if (storageTypesRequest.error) {
+        this._pending = false;
+        this.failed = true;
+        this._postIsExecuting = false;
+        this.error = storageTypesRequest.error;
+        return;
       }
-      if (this.filters && this.filters.group && billingCenter) {
-        instancesBody.filters.billing_center = [billingCenter.name];
+      payload['Storage'] = storageTypesRequest.loaded ? storageTypesRequest.value : [];
+
+      const computeTypesRequest = new GetGroupedBillingData(
+        this.filters,
+        GetGroupedBillingData.GROUP_BY.computeType
+      );
+      await computeTypesRequest.fetch();
+
+      if (computeTypesRequest.error) {
+        this._pending = false;
+        this.failed = true;
+        this._postIsExecuting = false;
+        this.error = computeTypesRequest.error;
+        return;
       }
-      await super.send(instancesBody);
-      payload['Compute instances'] = this._response && this._response.payload
-        ? this._response.payload
-        : [];
+      payload['Compute instances'] = computeTypesRequest.loaded ? computeTypesRequest.value : [];
 
       this.update({
         status: 'OK',
         payload
       });
+      this._pending = false;
+      this._postIsExecuting = false;
+    } else if (
+      [
+        GetGroupedBillingData.GROUP_BY.storageType,
+        GetGroupedBillingData.GROUP_BY.computeType
+      ].includes(this.groupedBy)
+    ) {
+      this.body.filters = {};
+      this.body.grouping = this.groupedBy;
+      if (this.filters && this.filters.user && userRequest.loaded && userRequest.value) {
+        this.body.filters.owner = [userRequest.value.userName];
+      }
+      if (this.filters && this.filters.group && billingCenter) {
+        this.body.filters.billing_center = [billingCenter.name];
+      }
+
+      return super.send(this.body);
     } else if (
       [
         GetGroupedBillingData.GROUP_BY.storages,
@@ -123,41 +148,41 @@ class GetGroupedBillingData extends RemotePost {
         GetGroupedBillingData.GROUP_BY.objectStorages
       ].indexOf(this.groupedBy) >= 0
     ) {
-      body.filters = {};
-      body.grouping = GetGroupedBillingData.GROUP_BY.storages;
-      body.loadDetails = true;
+      this.body.filters = {};
+      this.body.grouping = GetGroupedBillingData.GROUP_BY.storages;
+      this.body.loadDetails = true;
       if (this.groupedBy === GetGroupedBillingData.GROUP_BY.fileStorages) {
-        body.filters.storage_type = [GetGroupedBillingData.GROUP_BY.fileStorages];
+        this.body.filters.storage_type = [GetGroupedBillingData.GROUP_BY.fileStorages];
       } else if (this.groupedBy === GetGroupedBillingData.GROUP_BY.objectStorages) {
-        body.filters.storage_type = [GetGroupedBillingData.GROUP_BY.objectStorages];
+        this.body.filters.storage_type = [GetGroupedBillingData.GROUP_BY.objectStorages];
       }
       if (this.filters && this.filters.user && userRequest.loaded && userRequest.value) {
-        body.filters.owner = [userRequest.value.userName];
+        this.body.filters.owner = [userRequest.value.userName];
       }
       if (this.filters && this.filters.group && billingCenter) {
-        body.filters.billing_center = [billingCenter.name];
+        this.body.filters.billing_center = [billingCenter.name];
       }
 
-      return super.send(body);
+      return super.send(this.body);
     } else if ([
       GetGroupedBillingData.GROUP_BY.instances,
       GetGroupedBillingData.GROUP_BY.tools,
       GetGroupedBillingData.GROUP_BY.pipelines
     ].indexOf(this.groupedBy) >= 0) {
-      body.filters = {};
-      body.grouping = this.groupedBy;
-      body.loadDetails = true;
+      this.body.filters = {};
+      this.body.grouping = this.groupedBy;
+      this.body.loadDetails = true;
       if (this.filters.type) {
-        body.filters.compute_type = [this.filters.type.toUpperCase()];
+        this.body.filters.compute_type = [this.filters.type.toUpperCase()];
       }
       if (this.filters && this.filters.user && userRequest.loaded && userRequest.value) {
-        body.filters.owner = [userRequest.value.userName];
+        this.body.filters.owner = [userRequest.value.userName];
       }
       if (this.filters && this.filters.group && billingCenter) {
-        body.filters.billing_center = [billingCenter.name];
+        this.body.filters.billing_center = [billingCenter.name];
       }
 
-      return super.send(body);
+      return super.send(this.body);
     }
   }
 
@@ -285,7 +310,6 @@ class GetGroupedBillingData extends RemotePost {
   }
 
   prepareData (rawData) {
-    const res = {};
     switch (this.groupedBy) {
       case GetGroupedBillingData.GROUP_BY.billingCenters:
         return this.prepareBillingCentersData(rawData);
@@ -300,51 +324,9 @@ class GetGroupedBillingData extends RemotePost {
       case GetGroupedBillingData.GROUP_BY.pipelines:
         return this.prepareInstancesReportData(rawData);
       default:
-        rawData.forEach(i => {
-          if ('object' in i) {
-            const name = i.object.name || i.object.userName;
-            res[name] = i;
-          }
-        });
-        break;
+        return rawData;
     }
-    return res;
   }
-}
-
-const KeyMappers = {
-  value: 'previous',
-  usage: 'previousUsage',
-  runsCount: 'previousRunsCount'
-};
-
-function join (current, previous, keyMappers = KeyMappers) {
-  const currentKeys = Object.keys(current || {});
-  const previousKeys = Object.keys(previous || {});
-  const keys = [...currentKeys, ...previousKeys]
-    .filter((key, index, array) => array.indexOf(key) === index);
-  const result = {};
-  const prevKeys = Object.keys(keyMappers);
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-    const c = current[key] || {};
-    const p = previous[key] || {};
-    const prevObj = {};
-    for (let j = 0; j < prevKeys.length; j++) {
-      const prevKey = prevKeys[j];
-      if (p && p.hasOwnProperty(prevKey)) {
-        prevObj[keyMappers[prevKey]] = p[prevKey];
-        delete p[prevKey];
-      }
-    }
-    result[key] = {
-      ...p,
-      value: 0,
-      ...c,
-      ...prevObj
-    };
-  }
-  return result;
 }
 
 class GetGroupedBillingDataWithPreviousRange extends GetDataWithPrevious {
