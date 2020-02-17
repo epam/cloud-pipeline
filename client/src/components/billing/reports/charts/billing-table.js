@@ -32,7 +32,7 @@ function BillingTable ({data, showQuota = true}) {
   let currentInfo, previousInfo;
   const {quota, previousQuota, values} = data || {};
   const renderQuotaColumn = showQuota && (quota || previousQuota);
-  const firstValue = (values || []).filter(v => v.value)[0];
+  const firstValue = (values || []).filter(v => v.value).shift();
   const lastValue = (values || []).filter(v => v.value).pop();
   const previousValues = getPreviousValues(values) || false;
   currentInfo = {
