@@ -173,10 +173,10 @@ public class ToolVersions extends ToolTab<ToolVersions> {
                 .find(byXpath(String.format(
                         ".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
                 .find(byId(String.format("run-%s-button", customTag))).shouldBe(visible).click();
-        new ConfirmationPopupAO<>(new RunsMenuAO())
+        new RunsMenuAO()
                 .messageShouldAppear(String.format(
                         "Are you sure you want to launch tool (version %s) with default settings?", customTag))
-                .delete();
+                .click(button("Launch"));
         sleep(1, SECONDS);
         test.addRunId(Utils.getToolRunId(tool, customTag));
         return new RunsMenuAO();
