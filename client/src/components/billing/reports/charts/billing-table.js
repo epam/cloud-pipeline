@@ -16,25 +16,22 @@
 
 import React from 'react';
 import {Icon} from 'antd';
-import styles from './billing-table.css';
 import {observer} from 'mobx-react';
-
-function getPreviousValues (values = []) {
-  const previousValues = values.filter(v => v.previous && v.value);
-  const from = previousValues.shift();
-  const to = previousValues.pop();
-  return previousValues.length
-    ? {from, to}
-    : null;
-}
+import {costTickFormatter} from '../utilities';
+import styles from './billing-table.css';
 
 function BillingTable ({data, showQuota = true}) {
   let currentInfo, previousInfo;
   const {quota, previousQuota, values} = data || {};
   const renderQuotaColumn = showQuota && (quota || previousQuota);
-  const firstValue = (values || []).filter(v => v.value).shift();
+  const [firstValue] = (values || []).filter(v => v.value);
   const lastValue = (values || []).filter(v => v.value).pop();
-  const previousValues = getPreviousValues(values) || false;
+  const lastValueIndex = (values || []).indexOf(lastValue);
+  const [firstPreviousValue] = (values || []).filter(v => v.previous);
+  const lastPreviousValue = (values || [])
+    .slice(0, lastValueIndex + 1)
+    .filter(v => v.previous)
+    .pop();
   currentInfo = {
     quota,
     value: lastValue ? lastValue.value : false,
@@ -45,16 +42,16 @@ function BillingTable ({data, showQuota = true}) {
   };
   previousInfo = {
     quota: previousQuota,
-    value: lastValue ? lastValue.previous : false,
+    value: lastPreviousValue ? lastPreviousValue.previous : false,
     dates: {
-      from: previousValues?.from?.prevDate || false,
-      to: previousValues?.to?.prevDate || false
+      from: firstPreviousValue ? firstPreviousValue.prevDate : false,
+      to: lastPreviousValue ? lastPreviousValue.prevDate : false
     }
   };
   const extra = lastValue && lastValue.value > lastValue.previous;
   const renderValue = (value) => {
     if (!isNaN(value) && value) {
-      return `$${value}`;
+      return costTickFormatter(value);
     }
     return '';
   };
@@ -66,6 +63,10 @@ function BillingTable ({data, showQuota = true}) {
     return '-';
   };
   const renderInfo = (title, info, isCurrent) => {
+    const dateClassNames = [
+      !info ? styles.pending : false,
+      styles.value
+    ].filter(Boolean);
     const valueClassNames = [
       !info ? styles.pending : false,
       renderQuotaColumn && info && info.value > info.quota ? styles.bold : false,
@@ -80,7 +81,7 @@ function BillingTable ({data, showQuota = true}) {
         <td>
           {title}
         </td>
-        <td className={valueClassNames.join(' ')}>
+        <td className={dateClassNames.join(' ')}>
           {renderDates(info ? info.dates : undefined)}
         </td>
         <td className={valueClassNames.join(' ')}>
