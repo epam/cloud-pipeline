@@ -85,6 +85,9 @@ function BillingTable ({data, showQuota = true}) {
           {renderDates(info ? info.dates : undefined)}
         </td>
         <td className={valueClassNames.join(' ')}>
+          {renderDates(info ? info.dates : undefined)}
+        </td>
+        <td className={valueClassNames.join(' ')}>
           {renderValue(info ? info.value : undefined)}
         </td>
         {
