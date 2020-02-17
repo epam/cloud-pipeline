@@ -42,14 +42,14 @@ public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInf
             jsonBuilder
                 .startObject()
                 .field(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_RUN.name())
-                .field("id", run.getId())
+                .field("run_id", run.getId())
                 .field("resource_type", billingInfo.getResourceType())
                 .field("pipeline", run.getPipelineId())
                 .field("tool", run.getDockerImage())
                 .field("instance_type", run.getInstance().getNodeType())
                 .field("compute_type", billingInfo.getEntity().getRunType())
                 .field("cost", billingInfo.getCost())
-                .field("usage", billingInfo.getUsageMinutes())
+                .field("usage_minutes", billingInfo.getUsageMinutes())
                 .field("run_price", run.getPricePerHour().unscaledValue().longValue())
                 .field("cloudRegionId", run.getInstance().getCloudRegionId())
                 .field("created_date", billingInfo.getDate());
