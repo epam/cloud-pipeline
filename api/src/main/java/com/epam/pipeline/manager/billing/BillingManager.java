@@ -84,8 +84,10 @@ public class BillingManager {
 
     private static final String COST_FIELD = "cost";
     private static final String ACCUMULATED_COST = "accumulatedCost";
-    private static final String RUN_USAGE_FIELD = "usage_runs";
-    private static final String STORAGE_USAGE_FIELD = "usage_storages";
+    private static final String RUN_USAGE_AGG = "usage_runs";
+    private static final String RUN_USAGE_FIELD = "usage_minutes";
+    private static final String STORAGE_USAGE_AGG = "usage_storages";
+    private static final String STORAGE_USAGE_FIELD = "usage_bytes";
     private static final String RUN_ID_FIELD = "run_id";
     private static final String UNIQUE_RUNS = "runs";
     private static final String PAGE = "page";
@@ -131,8 +133,8 @@ public class BillingManager {
                                             DateHistogramInterval.MONTH,
                                             DateHistogramInterval.YEAR);
         this.costAggregation = AggregationBuilders.sum(COST_FIELD).field(COST_FIELD);
-        this.runUsageAggregation = AggregationBuilders.sum(RUN_USAGE_FIELD).field(RUN_USAGE_FIELD);
-        this.storageUsageAggregation = AggregationBuilders.avg(STORAGE_USAGE_FIELD).field(STORAGE_USAGE_FIELD);
+        this.runUsageAggregation = AggregationBuilders.sum(RUN_USAGE_AGG).field(RUN_USAGE_FIELD);
+        this.storageUsageAggregation = AggregationBuilders.avg(STORAGE_USAGE_AGG).field(STORAGE_USAGE_FIELD);
         this.uniqueRunsAggregation = AggregationBuilders.terms(UNIQUE_RUNS).field(RUN_ID_FIELD);
         this.billingDetailsLoaders = billingDetailsLoaders.stream()
             .collect(Collectors.toMap(EntityBillingDetailsLoader::getGrouping,
@@ -380,19 +382,19 @@ public class BillingManager {
         }
         if (loadDetails) {
             if (grouping.runUsageDetailsRequired()) {
-                final ParsedSum usageAggResult = aggregations.get(RUN_USAGE_FIELD);
+                final ParsedSum usageAggResult = aggregations.get(RUN_USAGE_AGG);
                 final long usageVal = new Double(usageAggResult.getValue()).longValue();
-                groupingInfo.put(RUN_USAGE_FIELD, Long.toString(usageVal));
+                groupingInfo.put(RUN_USAGE_AGG, Long.toString(usageVal));
                 final ParsedStringTerms ids = aggregations.get(UNIQUE_RUNS);
                 groupingInfo.put(UNIQUE_RUNS, Integer.toString(ids.getBuckets().size()));
             }
             if (grouping.storageUsageDetailsRequired()) {
-                final ParsedAvg usageAggResult = aggregations.get(STORAGE_USAGE_FIELD);
+                final ParsedAvg usageAggResult = aggregations.get(STORAGE_USAGE_AGG);
                 final double aggValue = usageAggResult.getValue();
                 final long usageVal =  Double.isFinite(aggValue)
                                        ? new Double(aggValue).longValue()
                                        : 0L;
-                groupingInfo.put(STORAGE_USAGE_FIELD, Long.toString(usageVal));
+                groupingInfo.put(STORAGE_USAGE_AGG, Long.toString(usageVal));
             }
             if (detailsLoader != null) {
                 try {
