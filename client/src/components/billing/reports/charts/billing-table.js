@@ -19,18 +19,37 @@ import {Icon} from 'antd';
 import styles from './billing-table.css';
 import {observer} from 'mobx-react';
 
+function getPreviousValues (values = []) {
+  const previousValues = values.filter(v => v.previous && v.value);
+  const from = previousValues.shift();
+  const to = previousValues.pop();
+  return previousValues.length
+    ? {from, to}
+    : null;
+}
+
 function BillingTable ({data, showQuota = true}) {
   let currentInfo, previousInfo;
   const {quota, previousQuota, values} = data || {};
   const renderQuotaColumn = showQuota && (quota || previousQuota);
+  const firstValue = (values || []).filter(v => v.value)[0];
   const lastValue = (values || []).filter(v => v.value).pop();
+  const previousValues = getPreviousValues(values) || false;
   currentInfo = {
     quota,
-    value: lastValue ? lastValue.value : false
+    value: lastValue ? lastValue.value : false,
+    dates: {
+      from: firstValue ? firstValue.date : false,
+      to: lastValue ? lastValue.date : false
+    }
   };
   previousInfo = {
     quota: previousQuota,
-    value: lastValue ? lastValue.previous : false
+    value: lastValue ? lastValue.previous : false,
+    dates: {
+      from: previousValues?.from?.prevDate || false,
+      to: previousValues?.to?.prevDate || false
+    }
   };
   const extra = lastValue && lastValue.value > lastValue.previous;
   const renderValue = (value) => {
@@ -38,6 +57,13 @@ function BillingTable ({data, showQuota = true}) {
       return `$${value}`;
     }
     return '';
+  };
+  const renderDates = (date = {}) => {
+    const {from, to} = date;
+    if (from && to) {
+      return `${from} - ${to}`;
+    }
+    return '-';
   };
   const renderInfo = (title, info, isCurrent) => {
     const valueClassNames = [
@@ -53,6 +79,9 @@ function BillingTable ({data, showQuota = true}) {
       <tr>
         <td>
           {title}
+        </td>
+        <td className={valueClassNames.join(' ')}>
+          {renderDates(info ? info.dates : undefined)}
         </td>
         <td className={valueClassNames.join(' ')}>
           {renderValue(info ? info.value : undefined)}
