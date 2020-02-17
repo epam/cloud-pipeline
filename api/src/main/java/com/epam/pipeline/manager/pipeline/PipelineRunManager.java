@@ -73,6 +73,7 @@ import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.utils.PasswordGenerator;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,7 +109,7 @@ public class PipelineRunManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineRunManager.class);
 
     private static final int POD_ID_LENGTH = 63;
-    private static final String EMPTY_STING = "";
+    private static final String EMPTY_STRING = "";
     private static final Long EMPTY_PIPELINE_ID = null;
     private static final int MILLS_IN_SEC = 1000;
     private static final int DIVIDER_TO_GB = 1024 * 1024 * 1024;
@@ -896,9 +897,43 @@ public class PipelineRunManager {
             .collect(Collectors.toMap(Map.Entry::getKey, e -> adjustStatuses(e.getValue(), start, end)));
 
         return runs.stream()
-            .peek(run -> run.setRunStatuses(runStatuses.get(run.getId())))
+            .peek(run -> {
+                final List<RunStatus> loadedStatuses = runStatuses.get(run.getId());
+                if (CollectionUtils.isNotEmpty(loadedStatuses)) {
+                    run.setRunStatuses(loadedStatuses);
+                } else {
+                    createRunStatusesForRun(run, start, end);
+                }
+            })
             .filter(run -> CollectionUtils.isNotEmpty(run.getRunStatuses()))
             .collect(Collectors.toList());
+    }
+
+    /**
+     * Create statuses for run based on its start/end date according to requested billing period
+     *
+     * @param run run to create status
+     * @param syncStart start of the billing calculation period
+     * @param syncEnd end of the billing calculation period
+     */
+    void createRunStatusesForRun(final PipelineRun run, final LocalDateTime syncStart, final LocalDateTime syncEnd) {
+        final LocalDateTime runStart = DateUtils.convertDateToLocalDateTime(run.getStartDate());
+        final Date runEnd = run.getEndDate();
+        if ((!Objects.isNull(runEnd) && syncStart.isAfter(DateUtils.convertDateToLocalDateTime(runEnd)))
+            || syncEnd.isBefore(runStart)) {
+            return;
+        } else {
+            final LocalDateTime runStatusStart = syncStart.isBefore(runStart)
+                                                 ? runStart
+                                                 : syncStart;
+            final LocalDateTime runStatusEnd = Objects.isNull(runEnd)
+                                               ? syncEnd
+                                               : ObjectUtils.min(DateUtils.convertDateToLocalDateTime(runEnd), syncEnd);
+            run.setRunStatuses(Arrays.asList(
+                new RunStatus(run.getId(), TaskStatus.RUNNING, EMPTY_STRING, runStatusStart),
+                new RunStatus(run.getId(), TaskStatus.PAUSED, EMPTY_STRING, runStatusEnd)
+            ));
+        }
     }
 
     /**
@@ -1374,10 +1409,10 @@ public class PipelineRunManager {
 
     private void fillMissingPipelineFields(final PipelineRun restartedRun) {
         restartedRun.setPipelineName(PipelineRun.DEFAULT_PIPELINE_NAME);
-        restartedRun.setRepository(EMPTY_STING);
+        restartedRun.setRepository(EMPTY_STRING);
         restartedRun.setPipelineId(EMPTY_PIPELINE_ID);
-        restartedRun.setVersion(EMPTY_STING);
-        restartedRun.setRevisionName(EMPTY_STING);
+        restartedRun.setVersion(EMPTY_STRING);
+        restartedRun.setRevisionName(EMPTY_STRING);
     }
 
     private RunInstance copyInstance(final RunInstance instance) {
