@@ -84,8 +84,8 @@ public class BillingManager {
 
     private static final String COST_FIELD = "cost";
     private static final String ACCUMULATED_COST = "accumulatedCost";
-    private static final String RUN_USAGE_FIELD = "usage_minutes";
-    private static final String STORAGE_USAGE_FIELD = "usage_bytes";
+    private static final String RUN_USAGE_FIELD = "usage_runs";
+    private static final String STORAGE_USAGE_FIELD = "usage_storages";
     private static final String RUN_ID_FIELD = "run_id";
     private static final String UNIQUE_RUNS = "runs";
     private static final String PAGE = "page";
