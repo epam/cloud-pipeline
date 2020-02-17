@@ -40,7 +40,7 @@ function extractDataSet (data, title, type, color, options = {}) {
 function parse (values, quota, highlightedDate = moment.utc()) {
   const data = (values || [])
     .map(d => ({
-      date: moment(d.date),
+      date: moment(d.date, 'DD MMM YYYY'),
       y: d.value || NaN,
       y2: d.previous || NaN,
       quota: quota
