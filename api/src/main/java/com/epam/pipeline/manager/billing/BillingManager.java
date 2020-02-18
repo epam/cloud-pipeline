@@ -48,6 +48,8 @@ import org.elasticsearch.search.aggregations.bucket.histogram.ParsedDateHistogra
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.avg.AvgAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.avg.ParsedAvg;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.ParsedSimpleValue;
@@ -82,8 +84,11 @@ public class BillingManager {
 
     private static final String COST_FIELD = "cost";
     private static final String ACCUMULATED_COST = "accumulatedCost";
-    private static final String USAGE_FIELD = "usage";
-    private static final String ID_FIELD = "id";
+    private static final String RUN_USAGE_AGG = "usage_runs";
+    private static final String RUN_USAGE_FIELD = "usage_minutes";
+    private static final String STORAGE_USAGE_AGG = "usage_storages";
+    private static final String STORAGE_USAGE_FIELD = "usage_bytes";
+    private static final String RUN_ID_FIELD = "run_id";
     private static final String UNIQUE_RUNS = "runs";
     private static final String PAGE = "page";
     private static final String TOTAL_PAGES = "totalPages";
@@ -99,8 +104,9 @@ public class BillingManager {
     private final Map<DateHistogramInterval, TemporalAdjuster> periodAdjusters;
     private final List<DateHistogramInterval> validIntervals;
     private final SumAggregationBuilder costAggregation;
-    private final SumAggregationBuilder usageAggregation;
-    private final TermsAggregationBuilder idAggregation;
+    private final SumAggregationBuilder runUsageAggregation;
+    private final AvgAggregationBuilder storageUsageAggregation;
+    private final TermsAggregationBuilder uniqueRunsAggregation;
     private final Map<BillingGrouping, EntityBillingDetailsLoader> billingDetailsLoaders;
     @Value("${billing.empty.report.value:unknown}")
     private String emptyValue;
@@ -127,8 +133,9 @@ public class BillingManager {
                                             DateHistogramInterval.MONTH,
                                             DateHistogramInterval.YEAR);
         this.costAggregation = AggregationBuilders.sum(COST_FIELD).field(COST_FIELD);
-        this.usageAggregation = AggregationBuilders.sum(USAGE_FIELD).field(USAGE_FIELD);
-        this.idAggregation = AggregationBuilders.terms(UNIQUE_RUNS).field(ID_FIELD);
+        this.runUsageAggregation = AggregationBuilders.sum(RUN_USAGE_AGG).field(RUN_USAGE_FIELD);
+        this.storageUsageAggregation = AggregationBuilders.avg(STORAGE_USAGE_AGG).field(STORAGE_USAGE_FIELD);
+        this.uniqueRunsAggregation = AggregationBuilders.terms(UNIQUE_RUNS).field(RUN_ID_FIELD);
         this.billingDetailsLoaders = billingDetailsLoaders.stream()
             .collect(Collectors.toMap(EntityBillingDetailsLoader::getGrouping,
                                       Function.identity()));
@@ -248,19 +255,17 @@ public class BillingManager {
         final SearchRequest searchRequest = new SearchRequest();
         final SearchSourceBuilder searchSource = new SearchSourceBuilder();
         if (grouping != null) {
-            grouping.getRequiredDefaultFilters().forEach(
-                (key, value) -> filters.merge(key, value, (l1, l2) -> {
-                    l1.addAll(CollectionUtils.subtract(l2, l1));
-                    return l1;
-                }));
             final AggregationBuilder fieldAgg = AggregationBuilders.terms(grouping.getCorrespondingField())
                 .field(grouping.getCorrespondingField())
                 .order(Terms.Order.aggregation(COST_FIELD, false))
                 .size(Integer.MAX_VALUE);
             fieldAgg.subAggregation(costAggregation);
-            if (grouping.usageDetailsRequired()) {
-                fieldAgg.subAggregation(usageAggregation);
-                fieldAgg.subAggregation(idAggregation);
+            if (grouping.runUsageDetailsRequired()) {
+                fieldAgg.subAggregation(runUsageAggregation);
+                fieldAgg.subAggregation(uniqueRunsAggregation);
+            }
+            if (grouping.storageUsageDetailsRequired()) {
+                fieldAgg.subAggregation(storageUsageAggregation);
             }
             searchSource.aggregation(fieldAgg);
         }
@@ -315,9 +320,12 @@ public class BillingManager {
     private List<BillingChartInfo> getEmptyGroupingResponse(final BillingGrouping grouping) {
         final Map<String, String> details = new HashMap<>();
         details.put(grouping.name(), emptyValue);
-        if (grouping.usageDetailsRequired()) {
-            details.put(USAGE_FIELD, emptyValue);
+        if (grouping.runUsageDetailsRequired()) {
+            details.put(RUN_USAGE_FIELD, emptyValue);
             details.put(UNIQUE_RUNS, emptyValue);
+        }
+        if (grouping.storageUsageDetailsRequired()) {
+            details.put(STORAGE_USAGE_FIELD, emptyValue);
         }
         final BillingChartInfo emptyResponse = BillingChartInfo.builder()
             .groupingInfo(details)
@@ -373,12 +381,20 @@ public class BillingManager {
             }
         }
         if (loadDetails) {
-            if (grouping.usageDetailsRequired()) {
-                final ParsedSum usageAggResult = aggregations.get(USAGE_FIELD);
+            if (grouping.runUsageDetailsRequired()) {
+                final ParsedSum usageAggResult = aggregations.get(RUN_USAGE_AGG);
                 final long usageVal = new Double(usageAggResult.getValue()).longValue();
-                groupingInfo.put(USAGE_FIELD, Long.toString(usageVal));
+                groupingInfo.put(RUN_USAGE_AGG, Long.toString(usageVal));
                 final ParsedStringTerms ids = aggregations.get(UNIQUE_RUNS);
                 groupingInfo.put(UNIQUE_RUNS, Integer.toString(ids.getBuckets().size()));
+            }
+            if (grouping.storageUsageDetailsRequired()) {
+                final ParsedAvg usageAggResult = aggregations.get(STORAGE_USAGE_AGG);
+                final double aggValue = usageAggResult.getValue();
+                final long usageVal =  Double.isFinite(aggValue)
+                                       ? new Double(aggValue).longValue()
+                                       : 0L;
+                groupingInfo.put(STORAGE_USAGE_AGG, Long.toString(usageVal));
             }
             if (detailsLoader != null) {
                 try {

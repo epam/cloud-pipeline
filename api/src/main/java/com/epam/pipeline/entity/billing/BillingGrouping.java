@@ -16,47 +16,37 @@
 
 package com.epam.pipeline.entity.billing;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 public enum BillingGrouping {
-    RESOURCE_TYPE("resource_type", false),
-    RUN_INSTANCE_TYPE("instance_type", true),
-    RUN_COMPUTE_TYPE("compute_type", false),
-    PIPELINE("pipeline", true),
-    TOOL("tool", true),
-    STORAGE("id", Collections.singletonMap("resource_type", Arrays.asList("STORAGE")), false),
-    STORAGE_TYPE("storage_type", false),
-    USER("owner", false),
-    BILLING_CENTER("billing_center", false);
+    RESOURCE_TYPE("resource_type", false, false),
+    RUN_INSTANCE_TYPE("instance_type", true, false),
+    RUN_COMPUTE_TYPE("compute_type", false, false),
+    PIPELINE("pipeline", true, false),
+    TOOL("tool", true, false),
+    STORAGE("storage_id", false, true),
+    STORAGE_TYPE("storage_type", false, false),
+    USER("owner", true, true),
+    BILLING_CENTER("billing_center", true, true);
 
     private final String correspondingField;
-    private final Map<String, List<String>> requiredDefaultFilters;
-    private final boolean usageDetailsRequired;
+    private final boolean runUsageDetailsRequired;
+    private final boolean storageUsageDetailsRequired;
 
-    BillingGrouping(final String correspondingField, final boolean usageDetailsRequired) {
-        this(correspondingField, Collections.emptyMap(), usageDetailsRequired);
-    }
-
-    BillingGrouping(final String correspondingField, final Map<String, List<String>> requiredDefaultFilters,
-                    final boolean usageDetailsRequired) {
+    BillingGrouping(final String correspondingField, final boolean runUsageDetailsRequired,
+                    final boolean storageUsageDetailsRequired) {
         this.correspondingField = correspondingField;
-        this.requiredDefaultFilters = new HashMap<>(requiredDefaultFilters);
-        this.usageDetailsRequired = usageDetailsRequired;
+        this.runUsageDetailsRequired = runUsageDetailsRequired;
+        this.storageUsageDetailsRequired = storageUsageDetailsRequired;
     }
 
     public String getCorrespondingField() {
         return correspondingField;
     }
 
-    public Map<String, List<String>> getRequiredDefaultFilters() {
-        return requiredDefaultFilters;
+    public boolean runUsageDetailsRequired() {
+        return runUsageDetailsRequired;
     }
 
-    public boolean usageDetailsRequired() {
-        return usageDetailsRequired;
+    public boolean storageUsageDetailsRequired() {
+        return storageUsageDetailsRequired;
     }
 }

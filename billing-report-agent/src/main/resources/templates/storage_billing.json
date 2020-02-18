@@ -3,7 +3,7 @@
     "_doc": {
       "properties": {
         "doc_type": { "type": "keyword", "store": true },
-        "id": { "type": "keyword", "store": true },
+        "storage_id": { "type": "keyword", "store": true },
         "resource_type": { "type": "keyword" },
         "region": { "type": "keyword" },
         "provider": { "type": "keyword" },
@@ -11,7 +11,7 @@
         "owner": { "type": "keyword" },
         "groups": { "type": "keyword" },
         "billing_center":  { "type": "keyword" },
-        "usage": {"type": "long"},
+        "usage_bytes": {"type": "long"},
         "cost": {"type": "long"},
         "created_date": {"type": "date"}
       }

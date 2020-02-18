@@ -3,13 +3,13 @@
     "_doc": {
       "properties": {
         "doc_type": { "type": "keyword", "store": true },
-        "id": { "type": "keyword", "store": true },
+        "run_id": { "type": "keyword", "store": true },
         "pipeline": { "type": "keyword" },
         "resource_type": { "type": "keyword" },
         "compute_type": { "type": "keyword" },
         "cost": {"type": "long"},
         "run_price": {"type": "long"},
-        "usage": {"type": "long"},
+        "usage_minutes": {"type": "long"},
         "owner": { "type": "keyword" },
         "groups": { "type": "keyword" },
         "tool": {"type": "keyword"},
