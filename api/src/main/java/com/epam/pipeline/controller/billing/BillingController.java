@@ -26,6 +26,7 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -64,5 +65,16 @@ public class BillingController extends AbstractRestController {
         })
     public Result<List<BillingChartInfo>> getBillingChartInfoPaginated(@RequestBody final BillingChartRequest request) {
         return Result.success(billingApi.getBillingChartInfoPaginated(request));
+    }
+
+    @GetMapping(value = "/billing/centers")
+    @ResponseBody
+    @ApiOperation(
+        value = "Get list containing all billing centers.",
+        notes = "Get list containing all billing centers.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<String>> getAllBillingCenters() {
+        return Result.success(billingApi.getAllBillingCenters());
     }
 }

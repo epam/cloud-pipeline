@@ -21,8 +21,10 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
 import com.epam.pipeline.entity.billing.BillingGrouping;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.search.SearchException;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -100,6 +102,7 @@ public class BillingManager {
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
+    private final MetadataManager metadataManager;
     private final String billingIndicesMonthlyPattern;
     private final Map<DateHistogramInterval, TemporalAdjuster> periodAdjusters;
     private final List<DateHistogramInterval> validIntervals;
@@ -108,18 +111,24 @@ public class BillingManager {
     private final AvgAggregationBuilder storageUsageAggregation;
     private final TermsAggregationBuilder uniqueRunsAggregation;
     private final Map<BillingGrouping, EntityBillingDetailsLoader> billingDetailsLoaders;
-    @Value("${billing.empty.report.value:unknown}")
-    private String emptyValue;
+    private final String emptyValue;
+    private final String billingCenterKey;
 
     @Autowired
     public BillingManager(final AuthManager authManager,
                           final PreferenceManager preferenceManager,
                           final MessageHelper messageHelper,
+                          final MetadataManager metadataManager,
                           final @Value("${billing.index.common.prefix}") String commonPrefix,
+                          final @Value("${billing.empty.report.value:unknown}") String emptyValue,
+                          final @Value("${billing.center.key}") String billingCenterKey,
                           final List<EntityBillingDetailsLoader> billingDetailsLoaders) {
         this.preferenceManager = preferenceManager;
         this.authManager = authManager;
         this.messageHelper = messageHelper;
+        this.metadataManager = metadataManager;
+        this.emptyValue = emptyValue;
+        this.billingCenterKey = billingCenterKey;
         this.billingIndicesMonthlyPattern = String.join("-",
                                                         commonPrefix,
                                                         ES_BILLABLE_RESOURCE_WILDCARD,
@@ -165,6 +174,10 @@ public class BillingManager {
                               request.getGrouping(),
                               request.getPageNum(),
                               request.getPageSize());
+    }
+
+    public List<String> getAllBillingCenters() {
+        return metadataManager.loadUniqueValuesFromEntityClassMetadata(AclClass.PIPELINE_USER, billingCenterKey);
     }
 
     private void verifyPagingParameters(final BillingChartRequest request) {
