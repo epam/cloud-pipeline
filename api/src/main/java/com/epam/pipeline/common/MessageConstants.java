@@ -309,6 +309,8 @@ public final class MessageConstants {
             "error.metadata.entity.class.not.found.in.folder";
     public static final String ERROR_ENTITY_FOR_METADATA_NOT_FOUND = "error.entity.for.metadata.not.found";
     public static final String ERROR_ENTITY_FOR_METADATA_NOT_SPECIFIED = "error.entity.for.metadata.not.specified";
+    public static final String ERROR_KEY_FOR_METADATA_UNIQUE_VALUES_REQUEST_NOT_SPECIFIED =
+        "error.key.for.metadata.unique.values.not.specified";
 
     //Paging
     public static final String ERROR_PAGE_INDEX = "error.page.index";

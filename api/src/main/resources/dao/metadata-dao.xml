@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -139,6 +139,13 @@
                         m.entity_class = ?
                     AND
                         m.data @> CAST(? AS jsonb)
+                ]]>
+            </value>
+        </property>
+        <property name="loadUniqueValuesFromEntitiesAttributes">
+            <value>
+                <![CDATA[
+                    SELECT DISTINCT data -> :KEY -> :VALUE AS data FROM pipeline.metadata WHERE entity_class = :ENTITY_CLASS
                 ]]>
             </value>
         </property>

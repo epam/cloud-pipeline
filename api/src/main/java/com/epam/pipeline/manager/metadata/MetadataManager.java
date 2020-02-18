@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.google.common.io.CharStreams;
 import com.google.common.io.LineProcessor;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -220,6 +221,14 @@ public class MetadataManager {
         } else {
             return updateMetadataItem(metadataVO);
         }
+    }
+
+    public List<String> loadUniqueValuesFromEntityClassMetadata(final AclClass entityClass, final String attributeKey) {
+        if (StringUtils.isEmpty(attributeKey)) {
+            throw new IllegalArgumentException(
+                messageHelper.getMessage(MessageConstants.ERROR_KEY_FOR_METADATA_UNIQUE_VALUES_REQUEST_NOT_SPECIFIED));
+        }
+        return metadataDao.loadUniqueValuesFromEntitiesAttribute(entityClass, attributeKey);
     }
 
     public MetadataEntry loadMetadataItem(Long id, AclClass aclClass) {
