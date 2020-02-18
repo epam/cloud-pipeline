@@ -157,7 +157,8 @@ public class RunScheduleManager {
             .map(this::loadSchedule)
             .peek(schedule -> Assert.isTrue(
                     schedulableId.equals(schedule.getSchedulableId()) && schedule.getType() == scheduleType,
-                    messageHelper.getMessage(MessageConstants.ERROR_SCHEDULABLE_ID_NOT_CORRESPONDING))
+                    messageHelper.getMessage(MessageConstants.ERROR_SCHEDULABLE_ID_NOT_CORRESPONDING,
+                            schedulableId, schedule.getSchedulableId()))
             )
             .peek(scheduler::unscheduleRunSchedule)
             .collect(Collectors.toList());

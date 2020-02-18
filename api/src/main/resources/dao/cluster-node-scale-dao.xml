@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.cluster.ClusterNodeScaleDao" id="clusterNodeScaleDao" autowire="byName">
+        <property name="clusterNodeScaleSequence" value="pipeline.s_cluster_node_scale"/>
+        <property name="createClusterNodeScaleQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.cluster_node_scale (
+                        id,
+                        instance_type,
+                        node_disk,
+                        is_spot,
+                        cloud_region_id,
+                        number_of_instances)
+                    VALUES (
+                        :ID,
+                        :INSTANCE_TYPE,
+                        :NODE_DISK,
+                        :IS_SPOT,
+                        :CLOUD_REGION_ID,
+                        :NUMBER_OF_INSTANCES)
+                ]]>
+            </value>
+        </property>
+        <property name="updateClusterNodeScaleQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.cluster_node_scale SET
+                        instance_type = :INSTANCE_TYPE,
+                        node_disk = :NODE_DISK,
+                        is_spot = :IS_SPOT,
+                        cloud_region_id = :CLOUD_REGION_ID,
+                        number_of_instances = :NUMBER_OF_INSTANCES
+                    WHERE id = :ID
+                ]]>
+            </value>
+        </property>
+        <property name="deleteClusterNodeScaleQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.cluster_node_scale
+                    WHERE id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadClusterNodeScaleQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        id,
+                        instance_type,
+                        node_disk,
+                        is_spot,
+                        cloud_region_id,
+                        number_of_instances
+                    FROM
+                        pipeline.cluster_node_scale
+                    WHERE
+                        id = ?
+
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllClusterNodeScaleQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        id,
+                        instance_type,
+                        node_disk,
+                        is_spot,
+                        cloud_region_id,
+                        number_of_instances
+                    FROM
+                        pipeline.cluster_node_scale
+
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

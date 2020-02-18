@@ -17,6 +17,7 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.cluster.ClusterNodeScaleAction;
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
@@ -35,8 +36,10 @@ import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.security.concurrent.DelegatingSecurityContextExecutor;
 import org.springframework.web.filter.CommonsRequestLoggingFilter;
 
+import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @Configuration
 @EnableScheduling
@@ -59,6 +62,11 @@ public class AppConfiguration implements SchedulingConfigurer {
     @Bean
     public MessageHelper messageHelper() {
         return new MessageHelper(messageSource());
+    }
+
+    @Bean
+    public Queue<ClusterNodeScaleAction> clusterNodeScaleQueue() {
+        return new LinkedBlockingQueue<>();
     }
 
     @Bean

@@ -14,10 +14,19 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.pipeline.run;
+package com.epam.pipeline.entity.cluster;
 
-public enum ScheduleType {
-    PIPELINE_RUN,
-    RUN_CONFIGURATION,
-    CLUSTER_NODE_SCALE
+import com.epam.pipeline.entity.pipeline.run.RunSchedule;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+import java.util.List;
+
+@Data
+@AllArgsConstructor
+public class ClusterNodeSchedule {
+
+    private ClusterNodeScale clusterNodeScale;
+    private List<RunSchedule> schedule;
+
 }

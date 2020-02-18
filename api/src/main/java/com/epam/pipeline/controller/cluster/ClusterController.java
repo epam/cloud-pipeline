@@ -19,13 +19,16 @@ package com.epam.pipeline.controller.cluster;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.FilterNodesVO;
+import com.epam.pipeline.controller.vo.cluster.ClusterNodeScheduleVO;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
+import com.epam.pipeline.entity.cluster.ClusterNodeSchedule;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.manager.cluster.ClusterApiService;
+import com.epam.pipeline.manager.cluster.NodeScheduleApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -34,8 +37,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -61,6 +67,7 @@ public class ClusterController extends AbstractRestController {
     private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     private final ClusterApiService clusterApiService;
+    private final NodeScheduleApiService nodeScheduleApiService;
 
     @GetMapping(value = "/cluster/master")
     @ResponseBody
@@ -223,5 +230,76 @@ public class ClusterController extends AbstractRestController {
         final InputStream inputStream = clusterApiService.getUsageStatisticsFile(name, from, to, interval);
         final String reportName = String.format("%s_%s-%s-%s", name, from, to, interval);
         writeStreamToResponse(response, inputStream, String.format("%s.%s", reportName, "csv"));
+    }
+
+    @PostMapping(value = "/cluster/schedule")
+    @ResponseBody
+    @ApiOperation(
+            value = "Schedule to run or stop batch of node with specific settings",
+            notes = "Schedule to run or stop batch of node with specific settings",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+    )
+    public Result<ClusterNodeSchedule> createClusterNodeSchedule(@RequestBody ClusterNodeScheduleVO actionVO) {
+        return Result.success(nodeScheduleApiService.createClusterNodeSchedule(actionVO));
+    }
+
+    @DeleteMapping(value = "/cluster/schedule/{id}")
+    @ResponseBody
+    @ApiOperation(
+            value = "Delete schedule for specific type of node",
+            notes = "Delete schedule for specific type of node",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+    )
+    public Result deleteClusterNodeSchedule(@PathVariable Long id, @RequestParam(required = false) Long scheduleId) {
+        nodeScheduleApiService.deleteClusterNodeSchedule(id, scheduleId);
+        return Result.success();
+    }
+
+    @GetMapping(value = "/cluster/schedule/")
+    @ResponseBody
+    @ApiOperation(
+            value = "Get all Schedules of batch node settings",
+            notes = "Get all Schedules of batch node settings",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+    )
+    public Result<List<ClusterNodeSchedule>> loadClusterNodeSchedule() {
+        return Result.success(nodeScheduleApiService.loadClusterNodeSchedule());
+    }
+
+    @GetMapping(value = "/cluster/schedule/{id}")
+    @ResponseBody
+    @ApiOperation(
+            value = "Get all Schedules specific batch node settings",
+            notes = "Get all Schedules specific batch node settings",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+    )
+    public Result<ClusterNodeSchedule> loadClusterNodeSchedule(@PathVariable Long id) {
+        return Result.success(nodeScheduleApiService.loadClusterNodeSchedule(id));
+    }
+
+    @PutMapping(value = "/cluster/schedule/")
+    @ResponseBody
+    @ApiOperation(
+            value = "Update schedules for specific batch node settings",
+            notes = "Update schedules for specific batch node settings",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+    )
+    public Result<ClusterNodeSchedule> updateClusterNodeSchedule(@RequestBody ClusterNodeScheduleVO scheduleVO) {
+        return Result.success(nodeScheduleApiService.updateClusterNodeSchedule(scheduleVO));
     }
 }
