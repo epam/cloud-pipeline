@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from treelib import Tree
+
+from src.utilities.storage.storage_item import StorageItem
 
 try:
     from urllib.request import urlopen  # Python 3
@@ -410,6 +413,83 @@ class ListingManager(StorageItemManager, AbstractListingManager):
             return self.list_versions(client, prefix, operation_parameters, recursive)
         else:
             return self.list_objects(client, prefix, operation_parameters, recursive)
+
+    def get_summary_with_depth(self, max_depth, relative_path=None):
+        bucket_name = self.bucket.bucket.path
+        delimiter = S3BucketOperations.S3_PATH_SEPARATOR
+        client = self.session.client('s3', config=S3BucketOperations.get_proxy_config())
+        operation_parameters = {
+            'Bucket': bucket_name
+        }
+        prefix = S3BucketOperations.get_prefix(delimiter, relative_path)
+        if relative_path:
+            operation_parameters['Prefix'] = prefix
+            max_depth += len(prefix.split(delimiter))
+
+        paginator = client.get_paginator('list_objects_v2')
+        page_iterator = paginator.paginate(**operation_parameters)
+        result = Tree()
+        relative_path_len = 0
+        range_start = 1
+        if relative_path:
+            root_path = delimiter.join([bucket_name, relative_path])
+            root = result.create_node(root_path, root_path, data=StorageItem())
+            relative_path_len = len(relative_path.split(delimiter))
+            range_start = relative_path_len + 1
+        else:
+            root = result.create_node(bucket_name, bucket_name, data=StorageItem())
+
+        for page in page_iterator:
+            if 'Contents' in page:
+                for file in page['Contents']:
+                    name = self.get_file_name(file, prefix, True)
+                    size = file['Size']
+
+                    tokens = name.split(delimiter)
+                    root.data.add_item(size)
+
+                    if len(tokens) - relative_path_len > 1:
+                        if relative_path:
+                            first_token = delimiter.join([bucket_name] + tokens[:relative_path_len + 1])
+                        else:
+                            first_token = delimiter.join([bucket_name, tokens[0]])
+                        if not result.contains(first_token):
+                            result.create_node(tokens[0], first_token, data=StorageItem(), parent=root)
+                        result[first_token].data.add_item(size)
+                        for i in range(range_start, min(max_depth, len(tokens) - 1)):
+                            token = delimiter.join([bucket_name] + tokens[:i + 1])
+                            parent_token = delimiter.join([bucket_name] + tokens[:i])
+                            if not result.contains(token):
+                                result.create_node(tokens[i], token, parent=parent_token, data=StorageItem())
+                            result[token].data.add_item(size)
+            if not page['IsTruncated']:
+                break
+        return result
+
+    def get_summary(self, relative_path=None):
+        delimiter = S3BucketOperations.S3_PATH_SEPARATOR
+        client = self.session.client('s3', config=S3BucketOperations.get_proxy_config())
+        operation_parameters = {
+            'Bucket': self.bucket.bucket.path
+        }
+        prefix = S3BucketOperations.get_prefix(delimiter, relative_path)
+        if relative_path:
+            operation_parameters['Prefix'] = prefix
+
+        paginator = client.get_paginator('list_objects_v2')
+        page_iterator = paginator.paginate(**operation_parameters)
+
+        total_size = 0
+        total_objects = 0
+
+        for page in page_iterator:
+            if 'Contents' in page:
+                for file in page['Contents']:
+                    total_size += file['Size']
+                    total_objects += 1
+            if not page['IsTruncated']:
+                break
+        return delimiter.join([self.bucket.bucket.path, relative_path]), total_objects, total_size
 
     def list_versions(self, client, prefix,  operation_parameters, recursive):
         paginator = client.get_paginator('list_object_versions')

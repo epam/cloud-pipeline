@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,11 +25,13 @@ from src.api.data_storage import DataStorage
 from src.api.folder import Folder
 from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
 from src.model.data_storage_wrapper_type import WrapperType
+from src.utilities.du_format_type import DuFormatType
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 
 ALL_ERRORS = Exception
+PRINT_SUMMARY_FORMAT = "%s\t\t%d\t\t%.1f"
 
 
 class DataStorageOperations(object):
@@ -337,6 +339,64 @@ class DataStorageOperations(object):
         except BaseException as e:
             click.echo(str(e.message), err=True)
             sys.exit(1)
+
+    @classmethod
+    def du(cls, path, format='M', depth=None):
+        if depth and not path:
+            click.echo("Error: bucket path must be provided with --depth option", err=True)
+            sys.exit(1)
+        if path:
+            try:
+                root_bucket, original_path = DataStorage.load_from_uri(path)
+            except ALL_ERRORS as error:
+                click.echo('Error: %s' % str(error), err=True)
+                sys.exit(1)
+            if root_bucket is None:
+                click.echo('Storage path "{}" was not found'.format(path), err=True)
+                sys.exit(1)
+            else:
+                relative_path = original_path if original_path != '/' else ''
+                cls.__print_summary(root_bucket, relative_path, format, depth)
+        else:
+            # If no argument is specified - list brief details of all buckets
+            cls.__print_summary(None, None, format, depth)
+
+    @classmethod
+    def __print_summary(cls, root_bucket, relative_path, format, depth=None):
+        click.echo("Storage\t\tFiles count\t\tSize (%s)" % DuFormatType.pretty_type(format))
+        if not root_bucket:
+            storages = list(DataStorage.list())
+            if not storages:
+                click.echo("No datastorages available.")
+                sys.exit(0)
+            for storage in storages:
+                if storage.type not in WrapperType.cloud_types():
+                    continue
+                path, count, size = cls.__get_summary(storage, '')
+                click.echo(PRINT_SUMMARY_FORMAT % (path, count, DuFormatType.pretty_value(size, format)))
+        else:
+            if depth:
+                result_tree = cls.__get_summary_with_depth(root_bucket, relative_path, depth)
+                for node in result_tree.nodes:
+                    size = result_tree[node].data.get_size()
+                    count = result_tree[node].data.get_count()
+                    click.echo(PRINT_SUMMARY_FORMAT % (node, count, DuFormatType.pretty_value(size, format)))
+            else:
+                path, count, size = cls.__get_summary(root_bucket, relative_path)
+                click.echo(PRINT_SUMMARY_FORMAT % (path, count, DuFormatType.pretty_value(size, format)))
+        click.echo()
+
+    @classmethod
+    def __get_summary(cls, root_bucket, relative_path):
+        wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(root_bucket, relative_path)
+        manager = wrapper.get_list_manager(show_versions=False)
+        return manager.get_summary(relative_path)
+
+    @classmethod
+    def __get_summary_with_depth(cls, root_bucket, relative_path, depth):
+        wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(root_bucket, relative_path)
+        manager = wrapper.get_list_manager(show_versions=False)
+        return manager.get_summary_with_depth(depth, relative_path)
 
     @classmethod
     def convert_input_pairs_to_json(cls, tags):

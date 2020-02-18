@@ -26,6 +26,7 @@ from src.api.user import User
 from src.config import Config, ConfigNotFoundError, silent_print_config_info, is_frozen
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
+from src.utilities.du_format_type import DuFormatType
 from src.utilities.tool_operations import ToolOperations
 from src.utilities import date_utilities, time_zone_param_type, state_utilities
 from src.utilities.acl_operations import ACLOperations
@@ -899,6 +900,16 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
     """
     DataStorageOperations.cp(source, destination, recursive, force,
                              exclude, include, quiet, tags, file_list, symlinks, skip_existing=skip_existing)
+
+
+@storage.command('du')
+@click.argument('path', required=False)
+@click.option('-f', '--format', help='Format for size [G/M/K]',
+              type=click.Choice(DuFormatType.possible_types()), required=False, default='M')
+@click.option('-d', '--depth', help='Depth level', type=int, required=False)
+@Config.validate_access_token(quiet_flag_property_name='quiet')
+def storage_copy_item(path, format, depth):
+    DataStorageOperations.du(path, format, depth)
 
 
 @storage.command('restore')
