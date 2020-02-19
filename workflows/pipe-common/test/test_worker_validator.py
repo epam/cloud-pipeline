@@ -29,7 +29,7 @@ host_storage = MemoryHostStorage()
 grid_engine = Mock()
 pipe = Mock()
 scale_down_handler = Mock()
-worker_validator = GridEngineWorkerValidator(cmd_executor=executor, host_storage=host_storage,
+worker_validator = GridEngineWorkerValidator(cmd_executor=executor, pipe=pipe, host_storage=host_storage,
                                              grid_engine=grid_engine, scale_down_handler=scale_down_handler)
 
 
@@ -37,7 +37,7 @@ def setup_function():
     host_storage.clear()
     for host in [HOST1, HOST2, HOST3]:
         host_storage.add_host(host)
-    executor.execute = MagicMock(return_value='RUNNING')
+    pipe.load_run = MagicMock(return_value={'status': 'RUNNING'})
     grid_engine.is_valid = MagicMock(side_effect=[True, False, True])
     grid_engine.get_jobs = MagicMock(return_value=[])
     grid_engine.kill_jobs = MagicMock()
@@ -68,7 +68,7 @@ def test_force_killing_invalid_host_jobs():
 
 
 def test_stopping_dead_worker_hosts():
-    executor.execute = MagicMock(side_effect=['STOPPED', 'RUNNING', 'FAILURE'])
+    pipe.load_run = MagicMock(side_effect=[{'status': 'STOPPED'}, {'status': 'RUNNING'}, {'status': 'FAILURE'}])
     grid_engine.is_valid = MagicMock(return_value=True)
     worker_validator.validate_hosts()
 

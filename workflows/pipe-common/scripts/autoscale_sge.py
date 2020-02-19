@@ -838,7 +838,7 @@ class GridEngineWorkerValidator:
     _SHOW_RUN_STATUS = 'pipe view-runs %s | grep Status | awk \'{print $2}\''
     _RUNNING_STATUS = 'RUNNING'
 
-    def __init__(self, cmd_executor, host_storage, grid_engine, scale_down_handler):
+    def __init__(self, cmd_executor, pipe, host_storage, grid_engine, scale_down_handler):
         """
         Grid engine worker validator.
 
@@ -847,11 +847,13 @@ class GridEngineWorkerValidator:
         F.e. a spot worker instance was preempted and it has to be removed from its autoscaled cluster.
 
         :param grid_engine: Grid engine.
+        :param pipe: Cloud pipeline client.
         :param cmd_executor: Cmd executor.
         :param host_storage: Additional hosts storage.
         :param scale_down_handler: Scale down handler.
         """
         self.grid_engine = grid_engine
+        self.pipe = pipe
         self.executor = cmd_executor
         self.host_storage = host_storage
         self.scale_down_handler = scale_down_handler
@@ -879,10 +881,12 @@ class GridEngineWorkerValidator:
 
     def _is_running(self, run_id):
         try:
-            status = self.executor.execute(GridEngineWorkerValidator._SHOW_RUN_STATUS % run_id).strip()
+            run_info = self.pipe.load_run(run_id)
+            status = run_info.get('status', 'not found').strip().upper()
             if status == self._RUNNING_STATUS:
                 return True
-            Logger.warn('Additional host with run_id=%s status is not running but %s.' % (run_id, status))
+            Logger.warn('Additional host with run_id=%s status is not %s but %s.'
+                        % (run_id, self._RUNNING_STATUS, status))
             return False
         except:
             Logger.warn('Additional host with run_id=%s status retrieving has failed.' % run_id)
@@ -1008,7 +1012,7 @@ if __name__ == '__main__':
                                                 instance_cores=instance_cores, polling_timeout=scale_up_polling_timeout)
     scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
                                                     default_hostfile=default_hostfile, instance_cores=instance_cores)
-    worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, host_storage=host_storage,
+    worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, pipe=pipe, host_storage=host_storage,
                                                  grid_engine=grid_engine, scale_down_handler=scale_down_handler)
     autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, cmd_executor=cmd_executor,
                                       scale_up_handler=scale_up_handler, scale_down_handler=scale_down_handler,
