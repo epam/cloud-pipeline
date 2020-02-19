@@ -58,6 +58,7 @@ class CopyOnDownTruncateFileSystemClient(FileSystemClientDecorator):
                 raise
         elif file_size < length:
             self._inner.truncate(fh, path, length)
+            self._inner.flush(fh, path)
 
     def _temp_path(self, path):
         return '%s_%s.tmp' % (path, str(abs(hash(path))))
@@ -85,6 +86,7 @@ class WriteNullsOnUpTruncateFileSystemClient(FileSystemClientDecorator):
             self._inner.upload(bytearray(), path)
         elif file_size > length:
             self._inner.truncate(fh, path, length)
+            self._inner.flush(fh, path)
         elif file_size < length:
             remaining_size = length - file_size
             current_offset = file_size
@@ -116,6 +118,7 @@ class WriteLastNullOnUpTruncateFileSystemClient(FileSystemClientDecorator):
             self._inner.upload(bytearray(), path)
         elif file_size > length:
             self._inner.truncate(fh, path, length)
+            self._inner.flush(fh, path)
         elif file_size < length:
             self._inner.upload_range(fh, bytearray(1), path, offset=length - 1)
             self._inner.flush(fh, path)
