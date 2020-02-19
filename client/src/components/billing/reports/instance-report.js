@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,16 @@ import {
 } from './charts';
 import {Period, getPeriod} from './periods';
 import InstanceFilter, {InstanceFilters} from './filters/instance-filter';
-import {GetBillingData, GetGroupedBillingData} from '../../../models/billing';
+import {
+  GetBillingData,
+  GetGroupedBillingData,
+  GetGroupedBillingDataPaginated,
+  GetGroupedBillingDataWithPreviousPaginated
+} from '../../../models/billing';
 import {ChartContainer} from './utilities';
 import styles from './reports.css';
+
+const tablePageSize = 10;
 
 function injection (stores, props) {
   const {location, params} = props;
@@ -45,21 +52,48 @@ function injection (stores, props) {
     type,
     ...periodInfo
   };
-  const instances = new GetGroupedBillingData(
+  const instances = new GetGroupedBillingDataWithPreviousPaginated(
     filters,
-    GetGroupedBillingData.GROUP_BY.instances
+    GetGroupedBillingData.GROUP_BY.instances,
+    tablePageSize,
+    0
   );
   instances.fetch();
-  const tools = new GetGroupedBillingData(
+  const instancesTable = new GetGroupedBillingDataPaginated(
     filters,
-    GetGroupedBillingData.GROUP_BY.tools
+    GetGroupedBillingData.GROUP_BY.instances,
+    tablePageSize,
+    0
+  );
+  instancesTable.fetch();
+  const tools = new GetGroupedBillingDataWithPreviousPaginated(
+    filters,
+    GetGroupedBillingData.GROUP_BY.tools,
+    tablePageSize,
+    0
   );
   tools.fetch();
-  const pipelines = new GetGroupedBillingData(
+  const toolsTable = new GetGroupedBillingDataPaginated(
     filters,
-    GetGroupedBillingData.GROUP_BY.pipelines
+    GetGroupedBillingData.GROUP_BY.tools,
+    tablePageSize,
+    0
+  );
+  toolsTable.fetch();
+  const pipelines = new GetGroupedBillingDataWithPreviousPaginated(
+    filters,
+    GetGroupedBillingData.GROUP_BY.pipelines,
+    tablePageSize,
+    0
   );
   pipelines.fetch();
+  const pipelinesTable = new GetGroupedBillingDataPaginated(
+    filters,
+    GetGroupedBillingData.GROUP_BY.pipelines,
+    tablePageSize,
+    0
+  );
+  pipelinesTable.fetch();
   let filterBy = GetBillingData.FILTER_BY.compute;
   if (/^cpu$/i.test(type)) {
     filterBy = GetBillingData.FILTER_BY.cpu;
@@ -74,14 +108,18 @@ function injection (stores, props) {
     type,
     summary,
     instances,
+    instancesTable,
     tools,
-    pipelines
+    toolsTable,
+    pipelines,
+    pipelinesTable
   };
 }
 
 function renderResourcesSubData (
   {
     data,
+    tableDataRequest,
     dataSample = InstanceFilters.value.dataSample,
     previousDataSample = InstanceFilters.value.previousDataSample,
     color = colors.orange,
@@ -151,11 +189,22 @@ function renderResourcesSubData (
       </div>
       <div className={styles.resourcesTable}>
         <Table
-          dataSource={Object.values(data)}
+          dataSource={
+            Object.values(tableDataRequest && tableDataRequest.loaded ? tableDataRequest.value : {})
+          }
+          loading={tableDataRequest.pending}
           rowKey={({name, value, usage}) => {
             return `${name}_${value}_${usage}`;
           }}
           columns={columns}
+          pagination={{
+            current: tableDataRequest.pageNum + 1,
+            pageSize: tableDataRequest.pageSize,
+            total: tableDataRequest.totalPages * tableDataRequest.pageSize,
+            onChange: async (page) => {
+              await tableDataRequest.fetchPage(page - 1);
+            }
+          }}
           size="small"
         />
       </div>
@@ -200,6 +249,9 @@ class InstanceReport extends React.Component {
       instances,
       tools,
       pipelines,
+      instancesTable,
+      toolsTable,
+      pipelinesTable,
       type
     } = this.props;
     const {dataSample, previousDataSample} = this.state;
@@ -231,6 +283,7 @@ class InstanceReport extends React.Component {
             />
             <ResourcesSubData
               data={instances && instances.loaded ? instances.value : []}
+              tableDataRequest={instancesTable}
               dataSample={dataSample}
               previousDataSample={previousDataSample}
               owner={false}
@@ -240,6 +293,7 @@ class InstanceReport extends React.Component {
             />
             <ResourcesSubData
               data={tools && tools.loaded ? tools.value : []}
+              tableDataRequest={toolsTable}
               dataSample={dataSample}
               previousDataSample={previousDataSample}
               owner
@@ -249,6 +303,7 @@ class InstanceReport extends React.Component {
             />
             <ResourcesSubData
               data={pipelines && pipelines.loaded ? pipelines.value : []}
+              tableDataRequest={pipelinesTable}
               dataSample={dataSample}
               previousDataSample={previousDataSample}
               owner

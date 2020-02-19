@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,5 +18,15 @@ import * as quotas from './quotas';
 import FetchBillingCenters from './billing-centers';
 import GetBillingData from './get-billing-data';
 import GetGroupedBillingData from './get-grouped-billing-data';
+import GetGroupedBillingDataWithPreviousPaginated, {
+  GetGroupedBillingDataPaginated
+} from './get-grouped-billing-data-paginated';
 
-export {quotas, FetchBillingCenters, GetBillingData, GetGroupedBillingData};
+export {
+  quotas,
+  FetchBillingCenters,
+  GetBillingData,
+  GetGroupedBillingData,
+  GetGroupedBillingDataPaginated,
+  GetGroupedBillingDataWithPreviousPaginated
+};
