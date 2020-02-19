@@ -20,14 +20,8 @@ _BUILD_DOCKER_IMAGE="${_BUILD_DOCKER_IMAGE:-python:2.7-stretch}"
 cat >$_BUILD_SCRIPT_NAME <<EOL
 
 ###
-# Resolve bundle info
+# Resolve bundle os
 ###
-
-version_file="${PIPE_CLI_SOURCES_DIR}/src/version.py"
-sed -i '/__bundle_info__/d' \$version_file
-
-bundle_type="one-folder"
-[ "\$onefile" ] && bundle_type="one-file"
 
 build_os_id=''
 build_os_version_id=''
@@ -39,8 +33,6 @@ elif [ -f "/etc/centos-release" ]; then
     build_os_id="centos"
     build_os_version_id=\$(cat /etc/centos-release | tr -dc '0-9.'|cut -d \. -f1)
 fi
-
-echo "__bundle_info__ = { 'bundle_type': '\$bundle_type', 'build_os_id': '\$build_os_id', 'build_os_version_id': '\$build_os_version_id' }" >> \$version_file
 
 ###
 # Setup Pyinstaller
@@ -106,6 +98,14 @@ chmod +x /tmp/ntlmaps/dist/ntlmaps/ntlmaps
 function build_pipe {
     local distpath="\$1"
     local onefile="\$2"
+
+    version_file="${PIPE_CLI_SOURCES_DIR}/src/version.py"
+    sed -i '/__bundle_info__/d' \$version_file
+
+    bundle_type="one-folder"
+    [ "\$onefile" ] && bundle_type="one-file"
+
+    echo "__bundle_info__ = { 'bundle_type': '\$bundle_type', 'build_os_id': '\$build_os_id', 'build_os_version_id': '\$build_os_version_id' }" >> \$version_file
 
     cd $PIPE_CLI_SOURCES_DIR
     python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
