@@ -21,13 +21,7 @@ import platform
 
 frozen_libfuse_version = 'frozen'
 supported_libfuse_versions = [
-    ('ubuntu', '16.04', '2.9.2'),
-    ('ubuntu', '18.04', '2.9.2'),
-    ('ubuntu', '19.04', '2.9.2'),
     ('centos', '6', '2.8.3'),
-    ('centos', '7', '2.9.2'),
-    ('debian', '8', '2.9.2'),
-    ('debian', '9', '2.9.2'),
     ('', '', '2.9.2')
 ]
 
