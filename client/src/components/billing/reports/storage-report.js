@@ -178,6 +178,7 @@ function StorageReports ({storages, storagesTable, summary, type}) {
         <ChartContainer style={{height: 175}}>
           <BillingTable
             data={summary && summary.loaded ? summary.value : null}
+            period={summary && summary.loaded ? summary.filters?.name : null}
             showQuota={false}
           />
         </ChartContainer>

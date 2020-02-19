@@ -261,6 +261,7 @@ class InstanceReport extends React.Component {
           <ChartContainer>
             <BillingTable
               data={summary && summary.loaded ? summary.value : null}
+              period={summary && summary.loaded ? summary.filters?.name : null}
               showQuota={false}
             />
             <Summary
