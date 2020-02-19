@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +49,8 @@ public class MetadataDaoTest extends AbstractSpringTest {
     private static final String AUTHOR = "Author";
     private static final Long ID_1 = 1L;
     private static final Long ID_2 = 2L;
+    private static final Long ID_3 = 3L;
+    private static final Long ID_4 = 4L;
     private static final AclClass CLASS_1 = AclClass.PIPELINE;
     private static final AclClass CLASS_2 = AclClass.DATA_STORAGE;
     private static final String DATA_KEY_1 = "tag";
@@ -215,6 +218,33 @@ public class MetadataDaoTest extends AbstractSpringTest {
                 Collections.singletonMap(DATA_KEY_1, new PipeConfValue(null, DATA_VALUE_1)));
         Assert.assertEquals(1, loadedEntities.size());
         Assert.assertEquals(entityVO, loadedEntities.get(0));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testLoadUniqueAttributes() {
+        createMetadataForEntity(ID_1, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_1);
+        createMetadataForEntity(ID_2, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_1);
+        createMetadataForEntity(ID_3, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_2);
+        createMetadataForEntity(ID_4, CLASS_1, DATA_KEY_2, DATA_TYPE_1, DATA_VALUE_2);
+        final List<String> uniqueAttributeValues =
+            metadataDao.loadUniqueValuesFromEntitiesAttribute(CLASS_1, DATA_KEY_1);
+        Assert.assertEquals(2, uniqueAttributeValues.size());
+        Assert.assertThat(uniqueAttributeValues, CoreMatchers.hasItems(DATA_VALUE_1, DATA_VALUE_2));
+        final List<String> emptyValues =
+            metadataDao.loadUniqueValuesFromEntitiesAttribute(CLASS_1, NON_EXISTING_DATA_KEY);
+        Assert.assertEquals(0, emptyValues.size());
+    }
+
+    private void createMetadataForEntity(final Long entityId, final AclClass entityClass,
+                                         final String dataKey, final String dataType, final String dataValue) {
+        final EntityVO entityVO = new EntityVO(entityId, entityClass);
+        final Map<String, PipeConfValue> data = new HashMap<>();
+        data.put(dataKey, new PipeConfValue(dataType, dataValue));
+        final MetadataEntry metadataToSave = new MetadataEntry();
+        metadataToSave.setEntity(entityVO);
+        metadataToSave.setData(data);
+        metadataDao.registerMetadataItem(metadataToSave);
     }
 
     private Issue getIssue(String name, EntityVO entity) {

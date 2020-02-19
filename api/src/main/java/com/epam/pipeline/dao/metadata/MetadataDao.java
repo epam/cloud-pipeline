@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Required;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -32,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,6 +57,7 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     private String deleteMetadataItemKeyQuery;
     private String loadMetadataItemsWithIssuesQuery;
     private String searchMetadataByClassAndKeyValueQuery;
+    private String loadUniqueValuesFromEntitiesAttributes;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void registerMetadataItem(MetadataEntry metadataEntry) {
@@ -93,6 +96,12 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
         metadataEntry.getData().keySet().removeAll(keysToDelete);
         uploadMetadataItem(metadataEntry);
         return metadataEntry;
+    }
+
+    public List<String> loadUniqueValuesFromEntitiesAttribute(final AclClass entityClass, final String attributeKey) {
+        return getNamedParameterJdbcTemplate().query(loadUniqueValuesFromEntitiesAttributes,
+                                       MetadataParameters.getParametersForEntityAndKey(entityClass, attributeKey),
+                                       MetadataParameters.getUniqueAttributesExtractor());
     }
 
     public MetadataEntry loadMetadataItem(EntityVO entity) {
@@ -185,6 +194,11 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
         this.searchMetadataByClassAndKeyValueQuery = searchMetadataByClassAndKeyValueQuery;
     }
 
+    @Required
+    public void setLoadUniqueValuesFromEntitiesAttributes(final String loadUniqueValuesFromEntitiesAttributes) {
+        this.loadUniqueValuesFromEntitiesAttributes = loadUniqueValuesFromEntitiesAttributes;
+    }
+
     public enum MetadataParameters {
         ENTITY_ID,
         ENTITY_CLASS,
@@ -214,6 +228,15 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
             return params;
         }
 
+        static MapSqlParameterSource getParametersForEntityAndKey(final AclClass entityClass,
+                                                                  final String attributeKey) {
+            final MapSqlParameterSource params = new MapSqlParameterSource();
+            params.addValue(KEY, attributeKey);
+            params.addValue(VALUE, VALUE.toLowerCase());
+            params.addValue(ENTITY_CLASS.name(), entityClass.name());
+            return params;
+        }
+
         static RowMapper<MetadataEntry> getRowMapper() {
             return (rs, rowNum) -> {
                 Long metadataEntityId = rs.getLong(ENTITY_ID.name());
@@ -239,6 +262,19 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
                 Long entityId = rs.getLong(ENTITY_ID.name());
                 String entityClass = rs.getString(ENTITY_CLASS.name());
                 return new EntityVO(entityId, AclClass.valueOf(entityClass));
+            };
+        }
+
+        private static ResultSetExtractor<List<String>> getUniqueAttributesExtractor() {
+            return (ResultSet rs) -> {
+                final List<String> values = new ArrayList<>();
+                while (rs.next()) {
+                    final String value = rs.getString(DATA.name().toLowerCase());
+                    if (value != null) {
+                        values.add(value.replace("\"", ""));
+                    }
+                }
+                return values;
             };
         }
 

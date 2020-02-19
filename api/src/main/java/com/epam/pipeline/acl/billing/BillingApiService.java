@@ -37,4 +37,8 @@ public class BillingApiService {
     public List<BillingChartInfo> getBillingChartInfoPaginated(final BillingChartRequest request) {
         return billingManager.getBillingChartInfoPaginated(request);
     }
+
+    public List<String> getAllBillingCenters() {
+        return billingManager.getAllBillingCenters();
+    }
 }
