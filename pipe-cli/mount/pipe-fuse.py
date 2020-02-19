@@ -19,6 +19,7 @@ import os
 import sys
 import platform
 
+frozen_libfuse_version = 'frozen'
 supported_libfuse_versions = [
     ('ubuntu', '16.04', '2.9.2'),
     ('ubuntu', '18.04', '2.9.2'),
@@ -27,15 +28,23 @@ supported_libfuse_versions = [
     ('centos', '7', '2.9.2'),
     ('debian', '8', '2.9.2'),
     ('debian', '9', '2.9.2'),
-    ('', '', '2.8.3')
+    ('', '', '2.9.2')
 ]
 
-source_path = sys._MEIPASS if getattr(sys, 'frozen', False) else os.path.dirname(__file__)
-dist_name, dist_version, _ = platform.linux_distribution()
-libfuse_version = supported_libfuse_versions[-1:][0][-1:][0]
-for supported_dist_name, supported_dist_version, supported_libfuse_version in supported_libfuse_versions:
-    if supported_dist_name in dist_name.lower() and supported_dist_version.startswith(dist_version):
-        libfuse_version = supported_libfuse_version
+is_frozen = getattr(sys, 'frozen', False)
+
+if is_frozen:
+    source_path = sys._MEIPASS
+    libfuse_version = frozen_libfuse_version
+    dist_name, dist_version = None, None
+else:
+    source_path = os.path.dirname(__file__)
+    libfuse_version = supported_libfuse_versions[-1][-1]
+    dist_name, dist_version, _ = platform.linux_distribution()
+    for supported_dist_name, supported_dist_version, supported_libfuse_version in supported_libfuse_versions:
+        if supported_dist_name in dist_name.lower() and supported_dist_version.startswith(dist_version):
+            libfuse_version = supported_libfuse_version
+
 libfuse_path = os.path.abspath(os.path.join(source_path, 'libfuse/libfuse.so.%s' % libfuse_version))
 os.environ["FUSE_LIBRARY_PATH"] = libfuse_path
 
@@ -58,7 +67,7 @@ from cachetools import TTLCache
 _allowed_logging_level_names = logging._levelNames
 _allowed_logging_levels = filter(lambda name: isinstance(name, str), _allowed_logging_level_names.keys())
 _allowed_logging_levels_string = ', '.join(_allowed_logging_levels)
-_default_logging_level = logging.ERROR
+_default_logging_level = logging.INFO
 
 
 def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size, cache_ttl, cache_size, default_mode,
@@ -194,11 +203,15 @@ if __name__ == '__main__':
     logging.basicConfig(format='[%(levelname)s] %(asctime)s %(filename)s - %(message)s',
                         level=_allowed_logging_level_names[args.logging_level])
 
-    if dist_name or dist_version:
-        logging.info('Recognized linux distribution %s %s.' % (dist_name or '', dist_version or ''))
+    if is_frozen:
+        logging.info('Frozen installation found. Bundled libfuse version will be used.')
     else:
-        logging.warn('Linux distribution wasn\'t recognized.')
-    logging.info('Bundled libfuse %s will be used.' % libfuse_version)
+        if dist_name or dist_version:
+            logging.info('Recognized linux distribution %s %s. Libfuse version %s will be used.'
+                         % (dist_name or '', dist_version or '', libfuse_version))
+        else:
+            logging.warn('Linux distribution wasn\'t recognized. Libfuse version %s will be used.'
+                         % libfuse_version)
 
     try:
         start(args.mountpoint, webdav=args.webdav, bucket=args.bucket, buffer_size=args.buffer_size,

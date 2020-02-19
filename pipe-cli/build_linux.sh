@@ -20,6 +20,29 @@ _BUILD_DOCKER_IMAGE="${_BUILD_DOCKER_IMAGE:-python:2.7-stretch}"
 cat >$_BUILD_SCRIPT_NAME <<EOL
 
 ###
+# Resolve bundle info
+###
+
+version_file="${PIPE_CLI_SOURCES_DIR}/src/version.py"
+sed -i '/__bundle_info__/d' \$version_file
+
+bundle_type="one-folder"
+[ "\$onefile" ] && bundle_type="one-file"
+
+build_os_id=''
+build_os_version_id=''
+if [ -f "/etc/os-release" ]; then
+    source /etc/os-release
+    build_os_id="\${ID}"
+    build_os_version_id="\${VERSION_ID}"
+elif [ -f "/etc/centos-release" ]; then
+    build_os_id="centos"
+    build_os_version_id=\$(cat /etc/centos-release | tr -dc '0-9.'|cut -d \. -f1)
+fi
+
+echo "__bundle_info__ = { 'bundle_type': '\$bundle_type', 'build_os_id': '\$build_os_id', 'build_os_version_id': '\$build_os_version_id' }" >> \$version_file
+
+###
 # Setup Pyinstaller
 ###
 
@@ -37,6 +60,14 @@ python2 -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
 ###
 # Build pipe fuse
 ###
+
+if [[ "\$build_os_id" == "centos" ]] && [[ "\$build_os_version_id" == "7" ]]; then
+  libfuse_version="2.8.3"
+else
+  libfuse_version="2.9.2"
+fi
+cp ${PIPE_MOUNT_SOURCES_DIR}/libfuse/libfuse.so.\${libfuse_version} ${PIPE_MOUNT_SOURCES_DIR}/libfuse/libfuse.so.frozen
+
 python2 -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
 cd $PIPE_MOUNT_SOURCES_DIR && \
 python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
@@ -46,7 +77,7 @@ python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                 --clean \
                                 --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
                                 --distpath /tmp/mount/dist \
-                                --add-data ${PIPE_MOUNT_SOURCES_DIR}/libfuse:libfuse \
+                                --add-data "${PIPE_MOUNT_SOURCES_DIR}/libfuse/libfuse.so.frozen:libfuse" \
                                 ${PIPE_MOUNT_SOURCES_DIR}/pipe-fuse.py
 
 chmod +x /tmp/mount/dist/pipe-fuse/pipe-fuse
@@ -76,24 +107,6 @@ function build_pipe {
     local distpath="\$1"
     local onefile="\$2"
 
-    local version_file="${PIPE_CLI_SOURCES_DIR}/src/version.py"
-    sed -i '/__bundle_info__/d' $version_file
-    
-    local bundle_type="one-folder"
-    [ "\$onefile" ] && bundle_type="one-file"
-
-    local build_os_id=''
-    local build_os_version_id=''
-    if [ -f "/etc/os-release" ]; then
-        source /etc/os-release
-        build_os_id="\${ID}"
-        build_os_version_id="\${VERSION_ID}"
-    elif [ -f "/etc/centos-release" ]; then
-        build_os_id="centos"
-        build_os_version_id=\$(cat /etc/centos-release | tr -dc '0-9.'|cut -d \. -f1)
-    fi
-
-    echo "__bundle_info__ = { 'bundle_type': '\$bundle_type', 'build_os_id': '\$build_os_id', 'build_os_version_id': '\$build_os_version_id' }" >> \$version_file
     cd $PIPE_CLI_SOURCES_DIR
     python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                     --add-data "$PIPE_CLI_SOURCES_DIR/res/effective_tld_names.dat.txt:tld/res/" \
