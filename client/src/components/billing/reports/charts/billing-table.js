@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,12 @@
 import React from 'react';
 import {Icon} from 'antd';
 import {observer} from 'mobx-react';
+import moment from 'moment-timezone';
+import {Period} from '../periods';
 import {costTickFormatter} from '../utilities';
 import styles from './billing-table.css';
 
-function BillingTable ({data, showQuota = true}) {
+function BillingTable ({data, showQuota = true, period}) {
   let currentInfo, previousInfo;
   const {quota, previousQuota, values} = data || {};
   const renderQuotaColumn = showQuota && (quota || previousQuota);
@@ -48,19 +50,65 @@ function BillingTable ({data, showQuota = true}) {
       to: lastPreviousValue ? lastPreviousValue.prevDate : false
     }
   };
-  const extra = lastValue && lastValue.value > lastValue.previous;
+  const extra = currentInfo?.value > previousInfo?.value;
+  const quotaOverrun = quota && currentInfo?.value > quota;
+
   const renderValue = (value) => {
     if (!isNaN(value) && value) {
       return costTickFormatter(value);
     }
     return '';
   };
-  const renderDates = (date = {}) => {
+  const renderDates = (date) => {
     const {from, to} = date;
     if (from && to) {
-      return `${from} - ${to}`;
+      const start = moment.utc(from, 'DD MMM YYYY');
+      const end = moment.utc(to, 'DD MMM YYYY');
+      const startDay = start.get('D');
+      const endDay = end.get('D');
+      const endYear = end.get('year');
+      const quarter = end.get('Q');
+      let datesInfo = '-';
+
+      switch ((period || '').toLowerCase()) {
+        case Period.month:
+          datesInfo = `${moment(start).format('MMMM YYYY')}, ${startDay} - ${endDay}`;
+          break;
+        case Period.quarter:
+          datesInfo = `Q${quarter}, ${moment(start).format('DD MMMM')} - ${moment(end).format('DD MMMM')}, ${endYear}`;
+          break;
+        case Period.year:
+          datesInfo = `${moment(start).format('DD MMMM')} - ${moment(end).format('DD MMMM')}, ${endYear}`;
+          break;
+        case Period.custom:
+          datesInfo = `${moment(start).format('DD MMMM YYYY')} - ${moment(end).format('DD MMMM YYYY')}`;
+          break;
+      }
+
+      return datesInfo;
     }
     return '-';
+  };
+  const renderWarning = (currentInfo = {}, previousInfo = {}) => {
+    const {value: current} = currentInfo;
+    const {value: previous} = previousInfo;
+    if (quotaOverrun) {
+      return (
+        <div className={styles.warningContainer}>
+          <Icon type="bars" className={styles.quotaOverrunIcon} />
+        </div>
+      );
+    };
+    if (current && previous && !isNaN(current) && !isNaN(previous)) {
+      const percent = ((current - previous) / previous * 100).toFixed(2);
+      return (
+        <div className={styles.warningContainer}>
+          <Icon type="caret-up" className={styles.warningIcon} />
+          {`+${percent}%`}
+        </div>
+      );
+    };
+    return '';
   };
   const renderInfo = (title, info, isCurrent) => {
     const dateClassNames = [
@@ -96,11 +144,7 @@ function BillingTable ({data, showQuota = true}) {
           )
         }
         <td className={[styles.quota, styles.borderless].join(' ')}>
-          {
-            isCurrent && extra
-              ? <Icon type="caret-up" />
-              : '\u00A0'
-          }
+          {isCurrent && extra && renderWarning(currentInfo, previousInfo)}
         </td>
       </tr>
     );

@@ -55,3 +55,23 @@
 .table td.bold {
   font-weight: bold;
 }
+
+.warning-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  color: #db0000;
+}
+
+.warning-icon {
+  color: #db0000;
+  margin-right: 5px;
+  font-size: 16px;
+}
+
+.quota-overrun-icon {
+  color: #db0000;
+  font-size: 24px;
+  transform: rotate(270deg);
+  font-weight: bold;
+}

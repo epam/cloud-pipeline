@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,6 +121,7 @@ function UserReport ({
       <div className={styles.chartsColumnContainer}>
         <BillingTable
           data={summary && summary.loaded ? summary.value : null}
+          period={summary && summary.loaded ? summary.filters?.name : null}
         />
         <ChartContainer style={{flex: 1, height: 400}}>
           <Summary
@@ -194,6 +195,7 @@ function GroupReport ({
         <ChartContainer>
           <BillingTable
             data={summary && summary.loaded ? summary.value : null}
+            period={summary && summary.loaded ? summary.filters?.name : null}
           />
         </ChartContainer>
         <ChartContainer style={{height: 600}}>
@@ -249,6 +251,7 @@ function GeneralReport ({
         <ChartContainer>
           <BillingTable
             data={summary && summary.loaded ? summary.value : null}
+            period={summary && summary.loaded ? summary.filters?.name : null}
           />
         </ChartContainer>
         <ChartContainer style={{height: 600}}>
