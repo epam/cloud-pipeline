@@ -60,7 +60,7 @@ public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInf
                 .field("run_price", run.getPricePerHour().unscaledValue().longValue())
                 .field("cloudRegionId", run.getInstance().getCloudRegionId())
                 .field("created_date", billingInfo.getDate());
-            buildUserContent(container.getOwner(), container.getOwnerMetadata(), jsonBuilder);
+            buildUserContent(container.getOwner(), jsonBuilder);
             jsonBuilder.endObject();
             return jsonBuilder;
         } catch (IOException e) {

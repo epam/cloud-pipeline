@@ -18,6 +18,7 @@ package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.amazonaws.regions.Regions;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.model.StorageType;
 import com.epam.pipeline.billingreportagent.model.billing.StorageBillingInfo;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
@@ -43,7 +44,6 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -132,7 +132,7 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
                 (String) response.getHits().getAt(0).getSourceAsMap().get(REGION_FIELD);
             return createBilling(container, storageSize, regionLocation, syncStart.toLocalDate().minusDays(1));
         })
-            .map(billing -> getDocWriteRequest(fullIndex, container.getOwner(), container.getOwnerMetadata(), billing))
+            .map(billing -> getDocWriteRequest(fullIndex, container.getOwner(), billing))
             .map(Collections::singletonList)
             .orElse(Collections.emptyList());
     }
@@ -147,13 +147,11 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
     }
 
     private DocWriteRequest getDocWriteRequest(final String fullIndex,
-                                               final PipelineUser owner,
-                                               final Map<String, String> ownerMetadata,
+                                               final EntityWithMetadata<PipelineUser> owner,
                                                final StorageBillingInfo billing) {
         final EntityContainer<StorageBillingInfo> entity = EntityContainer.<StorageBillingInfo>builder()
             .owner(owner)
             .entity(billing)
-            .ownerMetadata(ownerMetadata)
             .build();
         return new IndexRequest(fullIndex, INDEX_TYPE).source(mapper.map(entity));
     }

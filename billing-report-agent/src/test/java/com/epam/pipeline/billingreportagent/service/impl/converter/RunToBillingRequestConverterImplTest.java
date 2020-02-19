@@ -18,6 +18,7 @@ package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.ComputeType;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.model.ResourceType;
 import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
@@ -63,6 +64,10 @@ public class RunToBillingRequestConverterImplTest {
         .groups(USER_GROUPS)
         .attributes(Collections.emptyMap())
         .build();
+
+    private final EntityWithMetadata<PipelineUser> testUserWithMetadata = EntityWithMetadata.<PipelineUser>builder()
+            .entity(testUser)
+            .build();
 
     private final RunToBillingRequestConverter converter =
         new RunToBillingRequestConverter(new RunBillingMapper(BILLING_CENTER_KEY));
@@ -124,7 +129,7 @@ public class RunToBillingRequestConverterImplTest {
         final EntityContainer<PipelineRunWithType> runContainer =
             EntityContainer.<PipelineRunWithType>builder()
                 .entity(new PipelineRunWithType(run, ComputeType.CPU))
-                .owner(testUser)
+                .owner(testUserWithMetadata)
                 .build();
 
         final LocalDateTime prevSync = LocalDateTime.of(2019, 12, 4, 0, 0);

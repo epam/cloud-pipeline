@@ -18,6 +18,7 @@ package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.amazonaws.regions.Regions;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.model.ResourceType;
 import com.epam.pipeline.billingreportagent.model.StorageType;
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
@@ -97,6 +98,10 @@ public class AwsStorageToRequestConverterTest {
         .groups(USER_GROUPS)
         .attributes(Collections.emptyMap())
         .build();
+
+    private final EntityWithMetadata<PipelineUser> testUserWithMetadata = EntityWithMetadata.<PipelineUser>builder()
+            .entity(testUser)
+            .build();
 
     private ElasticsearchServiceClient elasticsearchClient = Mockito.mock(ElasticsearchServiceClient.class);
     private AwsStorageToBillingRequestConverter s3Converter;
@@ -304,7 +309,7 @@ public class AwsStorageToRequestConverterTest {
         }
         return EntityContainer.<AbstractDataStorage>builder()
             .entity(storage)
-            .owner(testUser)
+            .owner(testUserWithMetadata)
             .build();
     }
 }

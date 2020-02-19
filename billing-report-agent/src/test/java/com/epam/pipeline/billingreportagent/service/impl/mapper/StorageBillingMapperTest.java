@@ -17,6 +17,7 @@
 package com.epam.pipeline.billingreportagent.service.impl.mapper;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.model.ResourceType;
 import com.epam.pipeline.billingreportagent.model.StorageType;
 import com.epam.pipeline.billingreportagent.model.billing.StorageBillingInfo;
@@ -61,6 +62,10 @@ public class StorageBillingMapperTest {
         .attributes(Collections.emptyMap())
         .build();
 
+    private final EntityWithMetadata<PipelineUser> testUserWithMetadata = EntityWithMetadata.<PipelineUser>builder()
+            .entity(testUser)
+            .build();
+
     @Test
     public void testStorageMapperMapS3Storage() throws IOException {
         final S3bucketDataStorage s3Storage = new S3bucketDataStorage();
@@ -75,7 +80,7 @@ public class StorageBillingMapperTest {
 
         final EntityContainer<StorageBillingInfo> billingContainer = EntityContainer.<StorageBillingInfo>builder()
             .entity(billing)
-            .owner(testUser)
+            .owner(testUserWithMetadata)
             .build();
 
         final XContentBuilder mappedBilling = s3Mapper.map(billingContainer);
@@ -110,7 +115,7 @@ public class StorageBillingMapperTest {
 
         final EntityContainer<StorageBillingInfo> billingContainer = EntityContainer.<StorageBillingInfo>builder()
             .entity(billing)
-            .owner(testUser)
+            .owner(testUserWithMetadata)
             .build();
 
         final XContentBuilder mappedBilling = efsMapper.map(billingContainer);

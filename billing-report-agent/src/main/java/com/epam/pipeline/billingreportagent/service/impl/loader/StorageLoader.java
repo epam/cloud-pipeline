@@ -16,6 +16,7 @@
 package com.epam.pipeline.billingreportagent.service.impl.loader;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;
 import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -25,7 +26,6 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
@@ -39,17 +39,15 @@ public class StorageLoader implements EntityLoader<AbstractDataStorage> {
 
     @Override
     public List<EntityContainer<AbstractDataStorage>> loadAllEntities() {
-        final Map<String, PipelineUser> users =
-            apiClient.loadAllUsers().stream().collect(Collectors.toMap(PipelineUser::getUserName, Function.identity()));
+        final Map<String, EntityWithMetadata<PipelineUser>> usersWithMetadata = prepareUsers(apiClient);
+
         return apiClient.loadAllDataStorages()
-            .stream()
-            .map(storage -> {
-                final EntityContainer.EntityContainerBuilder<AbstractDataStorage> builder =
-                        EntityContainer.<AbstractDataStorage>builder().entity(storage);
-                buildUserData(builder, storage.getOwner(), users, apiClient);
-                return builder.build();
-            })
-            .collect(Collectors.toList());
+                .stream()
+                .map(storage -> EntityContainer.<AbstractDataStorage>builder()
+                        .entity(storage)
+                        .owner(usersWithMetadata.get(storage.getOwner()))
+                        .build())
+                .collect(Collectors.toList());
     }
 
     @Override

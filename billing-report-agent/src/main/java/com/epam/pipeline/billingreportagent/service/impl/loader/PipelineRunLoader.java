@@ -18,6 +18,7 @@ package com.epam.pipeline.billingreportagent.service.impl.loader;
 
 import com.epam.pipeline.billingreportagent.model.ComputeType;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;
 import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
@@ -50,40 +51,36 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
     @Override
     public List<EntityContainer<PipelineRunWithType>> loadAllEntitiesActiveInPeriod(final LocalDateTime from,
                                                                                     final LocalDateTime to) {
-        final Map<String, PipelineUser> users =
-            apiClient.loadAllUsers().stream().collect(Collectors.toMap(PipelineUser::getUserName, Function.identity()));
+        final Map<String, EntityWithMetadata<PipelineUser>> usersWithMetadata = prepareUsers(apiClient);
 
         final List<PipelineRun> runs =
-            apiClient.loadAllPipelineRunsActiveInPeriod(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(from),
-                                                        DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(to));
+                apiClient.loadAllPipelineRunsActiveInPeriod(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(from),
+                        DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(to));
 
         final Map<Long, List<InstanceType>> regionOffers = runs.stream()
-            .map(PipelineRun::getInstance)
-            .map(RunInstance::getCloudRegionId)
-            .distinct()
-            .collect(Collectors
-                         .toMap(Function.identity(), regionId -> apiClient.loadAllInstanceTypesForRegion(regionId)));
+                .map(PipelineRun::getInstance)
+                .map(RunInstance::getCloudRegionId)
+                .distinct()
+                .collect(Collectors
+                        .toMap(Function.identity(), regionId -> apiClient.loadAllInstanceTypesForRegion(regionId)));
 
         return runs
-            .stream()
-            .map(run -> {
-                final EntityContainer.EntityContainerBuilder<PipelineRunWithType> result =
-                        EntityContainer.<PipelineRunWithType>builder()
-                                .entity(new PipelineRunWithType(run, getRunType(run, regionOffers)));
-                buildUserData(result, run.getOwner(), users, apiClient);
-                return result.build();
-            })
-            .collect(Collectors.toList());
+                .stream()
+                .map(run -> EntityContainer.<PipelineRunWithType>builder()
+                        .entity(new PipelineRunWithType(run, getRunType(run, regionOffers)))
+                        .owner(usersWithMetadata.get(run.getOwner()))
+                        .build())
+                .collect(Collectors.toList());
     }
 
     private ComputeType getRunType(final PipelineRun run, final Map<Long, List<InstanceType>> regionOffers) {
         return regionOffers.get(run.getInstance().getCloudRegionId())
-            .stream()
-            .filter(instanceOffer -> instanceOffer.getName().equals(run.getInstance().getNodeType()))
-            .findAny()
-            .map(instanceOffer -> instanceOffer.getGpu() > 0
-                                  ? ComputeType.GPU
-                                  : ComputeType.CPU)
-            .orElse(ComputeType.CPU);
+                .stream()
+                .filter(instanceOffer -> instanceOffer.getName().equals(run.getInstance().getNodeType()))
+                .findAny()
+                .filter(instanceOffer -> instanceOffer.getGpu() > 0)
+                .map(instanceOffer -> ComputeType.GPU)
+                .orElse(ComputeType.CPU);
     }
+
 }

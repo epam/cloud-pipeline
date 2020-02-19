@@ -18,6 +18,7 @@ package com.epam.pipeline.billingreportagent.service.impl.mapper;
 
 import com.epam.pipeline.billingreportagent.model.ComputeType;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.model.ResourceType;
 import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
@@ -60,6 +61,10 @@ public class RunBillingMapperTest {
         .attributes(Collections.emptyMap())
         .build();
 
+    private final EntityWithMetadata<PipelineUser> testUserWithMetadata = EntityWithMetadata.<PipelineUser>builder()
+            .entity(testUser)
+            .build();
+
     @Test
     public void testRunMapperMap() throws IOException {
         final PipelineRun run =
@@ -74,7 +79,7 @@ public class RunBillingMapperTest {
         final EntityContainer<PipelineRunBillingInfo> billingContainer =
             EntityContainer.<PipelineRunBillingInfo>builder()
             .entity(billing)
-            .owner(testUser)
+            .owner(testUserWithMetadata)
             .build();
 
         final XContentBuilder mappedBilling = mapper.map(billingContainer);

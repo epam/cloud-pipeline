@@ -17,22 +17,22 @@
 package com.epam.pipeline.billingreportagent.service;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.vo.EntityVO;
-import org.apache.commons.collections4.MapUtils;
-import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public interface EntityLoader<T> {
@@ -41,34 +41,35 @@ public interface EntityLoader<T> {
 
     List<EntityContainer<T>> loadAllEntitiesActiveInPeriod(LocalDateTime from, LocalDateTime to);
 
-    default void buildUserData(final EntityContainer.EntityContainerBuilder<T> builder,
-                               final String ownerName,
-                               final Map<String, PipelineUser> users,
-                               final CloudPipelineAPIClient apiClient) {
-        final PipelineUser owner = users.get(ownerName);
-        builder.owner(owner);
-        Optional.ofNullable(owner)
-                .ifPresent(user -> builder.ownerMetadata(
-                        loadMetadata(user.getId(), AclClass.PIPELINE_USER, apiClient)));
+    default Map<String, EntityWithMetadata<PipelineUser>> prepareUsers(final CloudPipelineAPIClient apiClient) {
 
+        final Map<String, PipelineUser> users =
+                apiClient.loadAllUsers()
+                        .stream()
+                        .collect(Collectors.toMap(PipelineUser::getUserName, Function.identity()));
+
+        final Map<Long, Map<String, String>> metadata = apiClient.loadMetadataEntry(users.values()
+                .stream()
+                .map(user -> new EntityVO(user.getId(), AclClass.PIPELINE_USER))
+                .collect(Collectors.toList()))
+                .stream()
+                .collect(Collectors.toMap(data -> data.getEntity().getEntityId(), this::prepareMetadataEntry));
+
+        return users.entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                    Map.Entry::getKey,
+                    entry -> {
+                        final PipelineUser user = entry.getValue();
+                        return EntityWithMetadata.<PipelineUser>builder()
+                            .entity(user)
+                            .metadata(metadata.get(user.getId()))
+                            .build();
+                    }));
     }
 
-    default Map<String, String> loadMetadata(final Long id,
-                                             final AclClass aclClass,
-                                             final CloudPipelineAPIClient apiClient) {
-        if (aclClass == null) {
-            return Collections.emptyMap();
-        }
-        List<MetadataEntry> metadataEntries = apiClient
-                .loadMetadataEntry(Collections.singletonList(new EntityVO(id, aclClass)));
-        return prepareMetadataForEntity(metadataEntries);
-    }
-
-    default Map<String, String> prepareMetadataForEntity(final List<MetadataEntry> metadataEntries) {
-        if (CollectionUtils.isEmpty(metadataEntries) || metadataEntries.size() != 1) {
-            return Collections.emptyMap();
-        }
-        return Stream.of(MapUtils.emptyIfNull(metadataEntries.get(0).getData()))
+    default Map<String, String> prepareMetadataEntry(final MetadataEntry metadataEntry) {
+        return Stream.of(metadataEntry.getData())
                 .map(Map::entrySet)
                 .flatMap(Set::stream)
                 .collect(

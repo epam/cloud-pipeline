@@ -17,6 +17,7 @@
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
@@ -42,7 +43,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -67,8 +67,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
                                                          final LocalDateTime previousSync,
                                                          final LocalDateTime syncStart) {
         return convertRunToBillings(runContainer, previousSync, syncStart).stream()
-            .map(billingInfo -> getDocWriteRequest(indexPrefix, runContainer.getOwner(),
-                    runContainer.getOwnerMetadata(), billingInfo))
+            .map(billingInfo -> getDocWriteRequest(indexPrefix, runContainer.getOwner(), billingInfo))
             .collect(Collectors.toList());
     }
 
@@ -177,13 +176,11 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
     }
 
     private DocWriteRequest getDocWriteRequest(final String indexPrefix,
-                                               final PipelineUser owner,
-                                               final Map<String, String> ownerMetadata,
+                                               final EntityWithMetadata<PipelineUser> owner,
                                                final PipelineRunBillingInfo billing) {
         final EntityContainer<PipelineRunBillingInfo> entity = EntityContainer.<PipelineRunBillingInfo>builder()
             .owner(owner)
             .entity(billing)
-            .ownerMetadata(ownerMetadata)
             .build();
         final String fullIndex = indexPrefix + parseDateToString(billing.getDate());
         return new IndexRequest(fullIndex, INDEX_TYPE).source(mapper.map(entity));

@@ -53,7 +53,7 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
                 .field("usage_bytes", billingInfo.getUsageBytes())
                 .field("cost", billingInfo.getCost())
                 .field("created_date", billingInfo.getDate());
-            buildUserContent(container.getOwner(), container.getOwnerMetadata(), jsonBuilder);
+            buildUserContent(container.getOwner(), jsonBuilder);
             jsonBuilder.endObject();
             return jsonBuilder;
         } catch (IOException e) {
