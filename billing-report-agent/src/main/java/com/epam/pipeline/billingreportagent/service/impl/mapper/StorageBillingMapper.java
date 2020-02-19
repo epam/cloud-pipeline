@@ -23,6 +23,7 @@ import com.epam.pipeline.billingreportagent.model.billing.StorageBillingInfo;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
@@ -30,9 +31,11 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 import java.io.IOException;
 
 @RequiredArgsConstructor
+@Getter
 public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInfo> {
 
     private final SearchDocumentType documentType;
+    private final String billingCenterKey;
 
     @Override
     public XContentBuilder map(final EntityContainer<StorageBillingInfo> container) {
@@ -50,7 +53,7 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
                 .field("usage_bytes", billingInfo.getUsageBytes())
                 .field("cost", billingInfo.getCost())
                 .field("created_date", billingInfo.getDate());
-            buildUserContent(container.getOwner(), jsonBuilder);
+            buildUserContent(container.getOwner(), container.getOwnerMetadata(), jsonBuilder);
             jsonBuilder.endObject();
             return jsonBuilder;
         } catch (IOException e) {

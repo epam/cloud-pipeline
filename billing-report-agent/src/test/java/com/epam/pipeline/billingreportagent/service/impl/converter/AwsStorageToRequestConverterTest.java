@@ -70,6 +70,7 @@ import java.util.Map;
 @SuppressWarnings("checkstyle:MagicNumber")
 public class AwsStorageToRequestConverterTest {
 
+    private static final String BILLING_CENTER_KEY = "billing";
     private static final Long STORAGE_ID = 1L;
     private static final String STORAGE_NAME = "TestStorage";
     private static final int DOC_ID = 2;
@@ -132,14 +133,16 @@ public class AwsStorageToRequestConverterTest {
             Mockito.spy(new AwsStorageServicePricing(StringUtils.EMPTY, testPriceList));
         Mockito.doNothing().when(testStoragePricing).updatePrices();
 
-        s3Converter = new AwsStorageToBillingRequestConverter(new StorageBillingMapper(SearchDocumentType.S3_STORAGE),
-                                                              elasticsearchClient,
-                                                              StorageType.OBJECT_STORAGE,
-                                                              testStoragePricing);
-        nfsConverter = new AwsStorageToBillingRequestConverter(new StorageBillingMapper(SearchDocumentType.NFS_STORAGE),
-                                                               elasticsearchClient,
-                                                               StorageType.FILE_STORAGE,
-                                                               testStoragePricing);
+        s3Converter = new AwsStorageToBillingRequestConverter(
+                new StorageBillingMapper(SearchDocumentType.S3_STORAGE, BILLING_CENTER_KEY),
+                elasticsearchClient,
+                StorageType.OBJECT_STORAGE,
+                testStoragePricing);
+        nfsConverter = new AwsStorageToBillingRequestConverter(
+                new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, BILLING_CENTER_KEY),
+                elasticsearchClient,
+                StorageType.FILE_STORAGE,
+                testStoragePricing);
     }
 
     @Test
@@ -278,13 +281,13 @@ public class AwsStorageToRequestConverterTest {
 
     private void assertFields(final AbstractDataStorage storage, final Map<String, Object> fieldMap,
                               final String region, final StorageType storageType, final Long usage, final Long cost) {
-        Assert.assertEquals(storage.getId().intValue(), fieldMap.get("id"));
+        Assert.assertEquals(storage.getId().intValue(), fieldMap.get("storage_id"));
         Assert.assertEquals(ResourceType.STORAGE.toString(), fieldMap.get("resource_type"));
         Assert.assertEquals(region, fieldMap.get("region"));
         Assert.assertEquals(storage.getType().toString(), fieldMap.get("provider"));
         Assert.assertEquals(storageType.toString(), fieldMap.get("storage_type"));
         Assert.assertEquals(testUser.getUserName(), fieldMap.get("owner"));
-        Assert.assertEquals(usage.intValue(), fieldMap.get("usage"));
+        Assert.assertEquals(usage.intValue(), fieldMap.get("usage_bytes"));
         Assert.assertEquals(cost.intValue(), fieldMap.get("cost"));
         TestUtils.verifyStringArray(USER_GROUPS, fieldMap.get("groups"));
     }

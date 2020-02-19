@@ -40,6 +40,7 @@ import java.util.Map;
 
 public class StorageBillingMapperTest {
 
+    private static final String BILLING_CENTER_KEY = "billing";
     private static final String TEST_USER_NAME = "User";
     private static final String TEST_GROUP_1 = "TestGroup1";
     private static final String TEST_GROUP_2 = "TestGroup2";
@@ -49,8 +50,10 @@ public class StorageBillingMapperTest {
     private static final List<String> TEST_GROUPS = Arrays.asList(TEST_GROUP_1, TEST_GROUP_2);
     private static final LocalDate TEST_DATE = LocalDate.now();
 
-    private final StorageBillingMapper s3Mapper = new StorageBillingMapper(SearchDocumentType.S3_STORAGE);
-    private final StorageBillingMapper efsMapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE);
+    private final StorageBillingMapper s3Mapper = new StorageBillingMapper(
+            SearchDocumentType.S3_STORAGE, BILLING_CENTER_KEY);
+    private final StorageBillingMapper efsMapper = new StorageBillingMapper(
+            SearchDocumentType.NFS_STORAGE, BILLING_CENTER_KEY);
 
     private final PipelineUser testUser = PipelineUser.builder()
         .userName(TEST_USER_NAME)
@@ -81,13 +84,13 @@ public class StorageBillingMapperTest {
 
         Assert.assertEquals(SearchDocumentType.S3_STORAGE.name(),
                             mappedFields.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        Assert.assertEquals(s3Storage.getId(), mappedFields.get("id"));
+        Assert.assertEquals(s3Storage.getId(), mappedFields.get("storage_id"));
         Assert.assertEquals(ResourceType.STORAGE.toString(), mappedFields.get("resource_type"));
         Assert.assertEquals(TEST_REGION, mappedFields.get("region"));
         Assert.assertEquals(s3Storage.getType().toString(), mappedFields.get("provider"));
         Assert.assertEquals(StorageType.OBJECT_STORAGE.toString(), mappedFields.get("storage_type"));
         Assert.assertEquals(TEST_USER_NAME, mappedFields.get("owner"));
-        Assert.assertEquals((int) TEST_USAGE_BYTES, mappedFields.get("usage"));
+        Assert.assertEquals((int) TEST_USAGE_BYTES, mappedFields.get("usage_bytes"));
         Assert.assertEquals((int) TEST_COST, mappedFields.get("cost"));
         Assert.assertEquals(EntityToBillingRequestConverter.SIMPLE_DATE_FORMAT.format(TEST_DATE),
                             mappedFields.get("created_date"));
@@ -116,13 +119,13 @@ public class StorageBillingMapperTest {
 
         Assert.assertEquals(SearchDocumentType.NFS_STORAGE.name(),
                             mappedFields.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        Assert.assertEquals(efsStorage.getId(), mappedFields.get("id"));
+        Assert.assertEquals(efsStorage.getId(), mappedFields.get("storage_id"));
         Assert.assertEquals(ResourceType.STORAGE.toString(), mappedFields.get("resource_type"));
         Assert.assertEquals(billing.getRegionName(), mappedFields.get("region"));
         Assert.assertEquals(efsStorage.getType().toString(), mappedFields.get("provider"));
         Assert.assertEquals(StorageType.FILE_STORAGE.toString(), mappedFields.get("storage_type"));
         Assert.assertEquals(testUser.getUserName(), mappedFields.get("owner"));
-        Assert.assertEquals(billing.getUsageBytes().intValue(), mappedFields.get("usage"));
+        Assert.assertEquals(billing.getUsageBytes().intValue(), mappedFields.get("usage_bytes"));
         Assert.assertEquals(billing.getCost().intValue(), mappedFields.get("cost"));
         TestUtils.verifyStringArray(TEST_GROUPS, mappedFields.get("groups"));
     }

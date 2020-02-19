@@ -76,10 +76,11 @@ public class CommonSyncConfiguration {
     @ConditionalOnProperty(value = "sync.s3.storage.disable", matchIfMissing = true, havingValue = FALSE)
     public StorageSynchronizer s3Synchronizer(final @Value("${sync.storage.index.mapping}") String runMapping,
                                               final @Value("${sync.storage.index.name}") String indexName,
+                                              final @Value("${sync.billing.center.key}") String billingCenterKey,
                                               final StorageLoader loader,
                                               final ElasticIndexService indexService,
                                               final ElasticsearchServiceClient elasticsearchClient) {
-        final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.S3_STORAGE);
+        final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.S3_STORAGE, billingCenterKey);
         return new StorageSynchronizer(runMapping,
                                        commonIndexPrefix,
                                        indexName,
@@ -96,10 +97,11 @@ public class CommonSyncConfiguration {
     @ConditionalOnProperty(value = "sync.nfs.storage.disable", matchIfMissing = true, havingValue = FALSE)
     public StorageSynchronizer efsSynchronizer(final @Value("${sync.storage.index.mapping}") String runMapping,
                                               final @Value("${sync.storage.index.name}") String indexName,
+                                               final @Value("${sync.billing.center.key}") String billingCenterKey,
                                               final StorageLoader loader,
                                               final ElasticIndexService indexService,
                                               final ElasticsearchServiceClient elasticsearchClient) {
-        final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE);
+        final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
         return new StorageSynchronizer(runMapping,
                                        commonIndexPrefix,
                                        indexName,

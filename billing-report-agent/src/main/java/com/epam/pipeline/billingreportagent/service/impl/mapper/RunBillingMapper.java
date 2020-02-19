@@ -23,16 +23,23 @@ import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.search.SearchDocumentType;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 @Component
-@NoArgsConstructor
+@Getter
 public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInfo> {
+
+    private final String billingCenterKey;
+
+    public RunBillingMapper(@Value("${sync.billing.center.key}") final String billingCenterKey) {
+        this.billingCenterKey = billingCenterKey;
+    }
 
     @Override
     public XContentBuilder map(final EntityContainer<PipelineRunBillingInfo> container) {
@@ -53,7 +60,7 @@ public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInf
                 .field("run_price", run.getPricePerHour().unscaledValue().longValue())
                 .field("cloudRegionId", run.getInstance().getCloudRegionId())
                 .field("created_date", billingInfo.getDate());
-            buildUserContent(container.getOwner(), jsonBuilder);
+            buildUserContent(container.getOwner(), container.getOwnerMetadata(), jsonBuilder);
             jsonBuilder.endObject();
             return jsonBuilder;
         } catch (IOException e) {

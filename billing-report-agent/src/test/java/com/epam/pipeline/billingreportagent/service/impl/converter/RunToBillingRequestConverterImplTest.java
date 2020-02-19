@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings("checkstyle:magicnumber")
 public class RunToBillingRequestConverterImplTest {
 
+    private static final String BILLING_CENTER_KEY = "billing";
     private static final Long REGION_ID = 1L;
     private static final String NODE_TYPE = "nodetype.medium";
     private static final Long RUN_ID = 1L;
@@ -64,7 +65,7 @@ public class RunToBillingRequestConverterImplTest {
         .build();
 
     private final RunToBillingRequestConverter converter =
-        new RunToBillingRequestConverter(new RunBillingMapper());
+        new RunToBillingRequestConverter(new RunBillingMapper(BILLING_CENTER_KEY));
 
     @Test
     public void convertRunToBillings() {
@@ -136,13 +137,13 @@ public class RunToBillingRequestConverterImplTest {
         final Map<String, Object> requestFieldsMap = ((IndexRequest) billing).sourceAsMap();
         final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.RUN_BILLING_PREFIX, prevSync);
         Assert.assertEquals(expectedIndex, billing.index());
-        Assert.assertEquals(run.getId().intValue(), requestFieldsMap.get("id"));
+        Assert.assertEquals(run.getId().intValue(), requestFieldsMap.get("run_id"));
         Assert.assertEquals(ResourceType.COMPUTE.toString(), requestFieldsMap.get("resource_type"));
         Assert.assertEquals(run.getPipelineId().intValue(), requestFieldsMap.get("pipeline"));
         Assert.assertEquals(run.getDockerImage(), requestFieldsMap.get("tool"));
         Assert.assertEquals(run.getInstance().getNodeType(), requestFieldsMap.get("instance_type"));
         Assert.assertEquals(9600, requestFieldsMap.get("cost"));
-        Assert.assertEquals(1441, requestFieldsMap.get("usage"));
+        Assert.assertEquals(1441, requestFieldsMap.get("usage_minutes"));
         Assert.assertEquals(PRICE.unscaledValue().intValue(), requestFieldsMap.get("run_price"));
         Assert.assertEquals(run.getInstance().getCloudRegionId().intValue(), requestFieldsMap.get("cloudRegionId"));
         Assert.assertEquals(USER_NAME, requestFieldsMap.get("owner"));

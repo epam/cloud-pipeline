@@ -66,9 +66,13 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
 
         return runs
             .stream()
-            .map(run -> EntityContainer.<PipelineRunWithType>builder()
-                .entity(new PipelineRunWithType(run, getRunType(run, regionOffers)))
-                .owner(users.get(run.getOwner())).build())
+            .map(run -> {
+                final EntityContainer.EntityContainerBuilder<PipelineRunWithType> result =
+                        EntityContainer.<PipelineRunWithType>builder()
+                                .entity(new PipelineRunWithType(run, getRunType(run, regionOffers)));
+                buildUserData(result, run.getOwner(), users, apiClient);
+                return result.build();
+            })
             .collect(Collectors.toList());
     }
 

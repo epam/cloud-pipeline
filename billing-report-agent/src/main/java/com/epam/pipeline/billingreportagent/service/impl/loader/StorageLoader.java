@@ -43,10 +43,12 @@ public class StorageLoader implements EntityLoader<AbstractDataStorage> {
             apiClient.loadAllUsers().stream().collect(Collectors.toMap(PipelineUser::getUserName, Function.identity()));
         return apiClient.loadAllDataStorages()
             .stream()
-            .map(storage -> EntityContainer.<AbstractDataStorage>builder()
-                .entity(storage)
-                .owner(users.get(storage.getOwner()))
-                .build())
+            .map(storage -> {
+                final EntityContainer.EntityContainerBuilder<AbstractDataStorage> builder =
+                        EntityContainer.<AbstractDataStorage>builder().entity(storage);
+                buildUserData(builder, storage.getOwner(), users, apiClient);
+                return builder.build();
+            })
             .collect(Collectors.toList());
     }
 

@@ -38,6 +38,7 @@ import java.util.Map;
 
 public class RunBillingMapperTest {
 
+    private static final String BILLING_CENTER_KEY = "billing";
     private static final Long TEST_PIPELINE_ID = 1L;
     private static final String TEST_USER_NAME = "User";
     private static final String TEST_TOOL_IMAGE = "cp/tool:latest";
@@ -52,7 +53,7 @@ public class RunBillingMapperTest {
     private static final List<String> TEST_GROUPS = Arrays.asList(TEST_GROUP_1, TEST_GROUP_2);
     private static final LocalDate TEST_DATE = LocalDate.now();
 
-    private final RunBillingMapper mapper = new RunBillingMapper();
+    private final RunBillingMapper mapper = new RunBillingMapper(BILLING_CENTER_KEY);
     private final PipelineUser testUser = PipelineUser.builder()
         .userName(TEST_USER_NAME)
         .groups(TEST_GROUPS)
@@ -80,13 +81,13 @@ public class RunBillingMapperTest {
 
         final Map<String, Object> mappedFields = TestUtils.getPuttedObject(mappedBilling);
 
-        Assert.assertEquals(TEST_RUN_ID.intValue(), mappedFields.get("id"));
+        Assert.assertEquals(TEST_RUN_ID.intValue(), mappedFields.get("run_id"));
         Assert.assertEquals(ResourceType.COMPUTE.toString(), mappedFields.get("resource_type"));
         Assert.assertEquals(TEST_PIPELINE_ID.intValue(), mappedFields.get("pipeline"));
         Assert.assertEquals(TEST_TOOL_IMAGE, mappedFields.get("tool"));
         Assert.assertEquals(TEST_NODE_TYPE, mappedFields.get("instance_type"));
         Assert.assertEquals(TEST_COST.intValue(), mappedFields.get("cost"));
-        Assert.assertEquals(TEST_USAGE_MINUTES.intValue(), mappedFields.get("usage"));
+        Assert.assertEquals(TEST_USAGE_MINUTES.intValue(), mappedFields.get("usage_minutes"));
         Assert.assertEquals(run.getPricePerHour().intValue(), mappedFields.get("run_price"));
         Assert.assertEquals(TEST_REGION_ID.intValue(), mappedFields.get("cloudRegionId"));
         Assert.assertEquals(TEST_USER_NAME, mappedFields.get("owner"));

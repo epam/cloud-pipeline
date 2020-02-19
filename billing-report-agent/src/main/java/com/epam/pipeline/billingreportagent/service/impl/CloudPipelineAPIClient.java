@@ -20,11 +20,13 @@ import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.PipelineResponseException;
 import com.epam.pipeline.utils.QueryUtils;
+import com.epam.pipeline.vo.EntityVO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -61,5 +63,9 @@ public class CloudPipelineAPIClient {
         } catch (PipelineResponseException e) {
             return Collections.emptyList();
         }
+    }
+
+    public List<MetadataEntry> loadMetadataEntry(List<EntityVO> entities) {
+        return QueryUtils.execute(cloudPipelineAPI.loadFolderMetadata(entities));
     }
 }

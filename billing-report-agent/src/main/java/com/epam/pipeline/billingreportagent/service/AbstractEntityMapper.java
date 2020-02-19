@@ -18,25 +18,25 @@ package com.epam.pipeline.billingreportagent.service;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.entity.user.PipelineUser;
+import org.apache.commons.collections4.MapUtils;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
+import java.util.Map;
 
 public abstract class AbstractEntityMapper<T> {
 
-    @Value("${sync.billing.center.key}")
-    private String billingCenterKey;
-
     public abstract XContentBuilder map(EntityContainer<T> doc);
+    public abstract String getBillingCenterKey();
 
     protected XContentBuilder buildUserContent(final PipelineUser user,
+                                               final Map<String, String> userMetadata,
                                                final XContentBuilder jsonBuilder) throws IOException {
         if (user != null) {
             jsonBuilder
                     .field("owner", user.getUserName())
                     .field("groups", user.getGroups())
-                    .field("billing_center", user.getAttributes().get(billingCenterKey));
+                    .field("billing_center", MapUtils.emptyIfNull(userMetadata).get(getBillingCenterKey()));
         }
         return jsonBuilder;
     }
