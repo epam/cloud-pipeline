@@ -161,6 +161,7 @@ CP_DAV_INSTRUCTIONS_URL=
 # cp-billing-srv
 CP_BILLING_INTERNAL_HOST=cp-billing-srv.default.svc.cluster.local
 CP_BILLING_INTERNAL_PORT=30096
+CP_BILLING_CENTER_KEY=billing-center
 
 # Other params, specified on command line
 #
