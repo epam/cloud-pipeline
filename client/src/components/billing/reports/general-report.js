@@ -24,7 +24,11 @@ import {
   Summary
 } from './charts';
 import {Period, getPeriod} from './periods';
-import {GetBillingData, GetGroupedBillingData} from '../../../models/billing';
+import {
+  GetBillingData,
+  GetGroupedBillingData,
+  GetGroupedBillingDataPaginated
+} from '../../../models/billing';
 import {ChartContainer} from './utilities';
 import styles from './reports.css';
 import ReportsRouting from './routing';
@@ -48,6 +52,14 @@ function injection (stores, props) {
     GetGroupedBillingData.GROUP_BY.billingCenters
   );
   billingCentersRequest.fetch();
+  let billingCentersTableRequest;
+  if (group) {
+    billingCentersTableRequest = new GetGroupedBillingDataPaginated(
+      filters,
+      GetGroupedBillingData.GROUP_BY.billingCenters
+    );
+    billingCentersTableRequest.fetch();
+  }
   const resources = new GetGroupedBillingData(
     filters,
     GetGroupedBillingData.GROUP_BY.resources
@@ -91,6 +103,7 @@ function injection (stores, props) {
     group,
     summary,
     billingCentersRequest,
+    billingCentersTableRequest,
     resources,
     getBarAndNavigate
   };
@@ -148,6 +161,7 @@ function GroupReport ({
   group,
   billingCenters,
   billingCentersRequest,
+  billingCentersTableRequest,
   resources,
   summary,
   getBarAndNavigate
@@ -227,11 +241,20 @@ function GroupReport ({
         </ChartContainer>
         <Table
           dataSource={
-            billingCentersRequest && billingCentersRequest.loaded
-              ? Object.values(billingCentersRequest.value)
+            billingCentersTableRequest && billingCentersTableRequest.loaded
+              ? Object.values(billingCentersTableRequest.value)
               : []
           }
           columns={tableColumns}
+          loading={billingCentersTableRequest.pending}
+          pagination={{
+            current: billingCentersTableRequest.pageNum + 1,
+            pageSize: billingCentersTableRequest.pageSize,
+            total: billingCentersTableRequest.totalPages * billingCentersTableRequest.pageSize,
+            onChange: async (page) => {
+              await billingCentersTableRequest.fetchPage(page - 1);
+            }
+          }}
           size="small"
         />
       </div>

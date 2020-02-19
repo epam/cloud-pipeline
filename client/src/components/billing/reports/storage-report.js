@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,16 @@ import {
   Summary
 } from './charts';
 import {Period, getPeriod} from './periods';
-import {GetBillingData, GetGroupedBillingData} from '../../../models/billing';
+import {
+  GetBillingData,
+  GetGroupedBillingData,
+  GetGroupedBillingDataPaginated,
+  GetGroupedBillingDataWithPreviousPaginated
+} from '../../../models/billing';
 import {ChartContainer} from './utilities';
 import styles from './reports.css';
+
+const tablePageSize = 10;
 
 function injection (stores, props) {
   const {location, params} = props;
@@ -57,8 +64,15 @@ function injection (stores, props) {
     groupedBy = GetGroupedBillingData.GROUP_BY.objectStorages;
     filterBy = GetBillingData.FILTER_BY.objectStorages;
   }
-  const storages = new GetGroupedBillingData(filters, groupedBy);
+  const storages = new GetGroupedBillingDataWithPreviousPaginated(
+    filters,
+    groupedBy,
+    tablePageSize,
+    0
+  );
   storages.fetch();
+  const storagesTable = new GetGroupedBillingDataPaginated(filters, groupedBy, tablePageSize, 0);
+  storagesTable.fetch();
   const summary = new GetBillingData({
     ...filters,
     filterBy
@@ -70,7 +84,8 @@ function injection (stores, props) {
     group,
     type,
     summary,
-    storages
+    storages,
+    storagesTable
   };
 }
 
@@ -120,16 +135,25 @@ function renderTable ({storages}) {
       rowKey={({info, name}) => {
         return info && info.id ? `storage_${info.id}` : `storage_${name}`;
       }}
+      loading={storages.pending}
       dataSource={dataSource}
       columns={columns}
+      pagination={{
+        current: storages.pageNum + 1,
+        pageSize: storages.pageSize,
+        total: storages.totalPages * storages.pageSize,
+        onChange: async (page) => {
+          await storages.fetchPage(page - 1);
+        }
+      }}
       size="small"
     />
   );
 }
 
-const RenderTable = renderTable;
+const RenderTable = observer(renderTable);
 
-function StorageReports ({storages, summary, type}) {
+function StorageReports ({storages, storagesTable, summary, type}) {
   const getSummaryTitle = () => {
     if (/^file$/i.test(type)) {
       return 'File storages usage';
@@ -186,7 +210,7 @@ function StorageReports ({storages, summary, type}) {
           />
         </ChartContainer>
         <ChartContainer>
-          <RenderTable storages={storages} />
+          <RenderTable storages={storagesTable} />
         </ChartContainer>
       </div>
     </div>
