@@ -10,6 +10,7 @@
 - [Pushing pipeline changes to the GitLab on behalf of the user](#pushing-pipeline-changes-to-the-gitlab-on-behalf-of-the-user)
 - [Allowing to expose compute node FS to upload and download files](#allowing-to-expose-compute-node-fs-to-upload-and-download-files)
 - [Resource usage form improvement](#resource-usage-form-improvement)
+- [View the historical resources utilization](#allow-to-view-the-historical-resources-utilization)
 - [Update pipe CLI version](#update-pipe-cli-version)
 - [Blocking/unblocking users and groups](#blockingunblocking-users-and-groups)
 - [Displaying additional node metrics](#displaying-additional-node-metrics-at-the-runs-page)
@@ -212,6 +213,27 @@ In **`v0.16`**, the number of filters were added to the [Monitor cluster nodes](
 All filters are working for all plots simultaneously: data for all plots will be dynamically updated as soon as the user changes filter value.
 
 For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md).
+
+## Allow to view the historical resources utilization
+
+Another convenient feature that was implemented in **`v0.16`** linked to the [Cluster nodes monitor](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md) is viewing of the detailed history of the resource utilization for any jobs.  
+Previously, it was available only for active jobs. Now, users can view the utilization data even for completed (succeed/stopped/failed) jobs for debugging/optimization purposes.  
+
+The utilization data for all runs is stored for a preconfigured period of time that is set by the system preference **`system.resource.monitoring.stats.retention.period`** (defaults to 5 days).  
+I.e. if the job has been stopped and the specified time period isn't over - the user can access to the resources utilization data of that job:
+
+- Open the **Run logs** page for the completed job:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_HistoricalMonitor_1.png)  
+    Click the node name hyperlink
+- The **Monitor** page of the node resources utilization will be opened:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_HistoricalMonitor_2.png)
+
+Also now, users have the ability to export the utilization information into a `.csv` file.  
+This is required, if the user wants to keep locally the information for a longer period of time than defined by **`system.resource.monitoring.stats.retention.period`**:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_HistoricalMonitor_3.png)  
+The user can select the interval for the utilization statistics output and export the corresponding file.
+
+For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md#monitor).
 
 ## Update `pipe` CLI version
 
