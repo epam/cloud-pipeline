@@ -106,8 +106,9 @@ public class StoragePaginationTest extends AbstractBfxPipelineTest
 
         storageContent()
                 .ensure(NEXT_PAGE, enabled.because(nextPageAppearingReason))
-                .selectPage()
                 .sleep(1, SECONDS)
+                .selectPage()
+                .sleep(2, SECONDS)
                 .removeAllSelectedElements()
                 .selectPage()
                 .sleep(1, SECONDS)
