@@ -51,7 +51,7 @@ from cachetools import TTLCache
 _allowed_logging_level_names = logging._levelNames
 _allowed_logging_levels = filter(lambda name: isinstance(name, str), _allowed_logging_level_names.keys())
 _allowed_logging_levels_string = ', '.join(_allowed_logging_levels)
-_default_logging_level = logging.INFO
+_default_logging_level = logging.ERROR
 
 
 def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size, cache_ttl, cache_size, default_mode,
