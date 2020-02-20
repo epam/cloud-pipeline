@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,15 @@ package com.epam.pipeline.manager.execution;
 
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.cluster.DockerMount;
+import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.cluster.container.ContainerMemoryResourceService;
+import com.epam.pipeline.manager.cluster.container.ContainerResources;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.utils.CommonUtils;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -43,6 +47,7 @@ import io.fabric8.kubernetes.client.utils.HttpClientUtils;
 import okhttp3.OkHttpClient;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -75,13 +80,17 @@ public class PipelineExecutor {
     private final PreferenceManager preferenceManager;
     private final String kubeNamespace;
     private final AuthManager authManager;
+    private final Map<ContainerMemoryResourcePolicy, ContainerMemoryResourceService> memoryRequestServices;
 
     public PipelineExecutor(final PreferenceManager preferenceManager,
                             final AuthManager authManager,
+                            final List<ContainerMemoryResourceService> memoryRequestServices,
                             @Value("${kube.namespace}") final String kubeNamespace) {
         this.preferenceManager = preferenceManager;
         this.kubeNamespace = kubeNamespace;
         this.authManager = authManager;
+        this.memoryRequestServices = CommonUtils.groupByKey(memoryRequestServices,
+                ContainerMemoryResourceService::policy);
     }
 
     public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
@@ -159,13 +168,14 @@ public class PipelineExecutor {
             spec.setHostNetwork(true);
         }
 
-        spec.setContainers(Collections.singletonList(getContainer(
+        spec.setContainers(Collections.singletonList(getContainer(run,
                 envVars, dockerImage, command, pullImage, isDockerInDockerEnabled, isParentPod)));
         return spec;
     }
 
 
-    private Container getContainer(List<EnvVar> envVars,
+    private Container getContainer(PipelineRun run,
+                                   List<EnvVar> envVars,
                                    String dockerImage,
                                    String command,
                                    boolean pullImage,
@@ -187,8 +197,17 @@ public class PipelineExecutor {
         container.setVolumeMounts(getMounts(isDockerInDockerEnabled));
         if (isParentPod) {
             setCpuRequestIfRequired(envVars, container);
+            final ContainerResources containerResources = buildMemoryRequests(run);
+            container.setResources(containerResources.toContainerRequirements());
         }
         return container;
+    }
+
+    private ContainerResources buildMemoryRequests(final PipelineRun run) {
+        final String preference = preferenceManager.getPreference(SystemPreferences.LAUNCH_CONTAINER_MEMORY_RESOURCE_POLICY);
+        final ContainerMemoryResourcePolicy policy = CommonUtils.getEnumValueOrDefault(
+                preference, ContainerMemoryResourcePolicy.NO_LIMIT);
+        return memoryRequestServices.get(policy).buildResourcesForRun(run);
     }
 
     private void setCpuRequestIfRequired(List<EnvVar> envVars, Container container) {

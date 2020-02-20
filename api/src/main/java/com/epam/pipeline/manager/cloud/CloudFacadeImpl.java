@@ -105,10 +105,9 @@ public class CloudFacadeImpl implements CloudFacade {
 
     @Override
     public boolean isNodeExpired(final Long runId) {
-        final ClusterKeepAlivePolicy clusterKeepAlivePolicy = Optional.ofNullable(
-                preferenceManager.getPreference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY))
-                .map(pref -> EnumUtils.getEnum(ClusterKeepAlivePolicy.class, pref))
-                .orElse(ClusterKeepAlivePolicy.MINUTES_TILL_HOUR);
+        final String preference = preferenceManager.getPreference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY);
+        final ClusterKeepAlivePolicy clusterKeepAlivePolicy = CommonUtils.getEnumValueOrDefault(
+                preference, ClusterKeepAlivePolicy.MINUTES_TILL_HOUR);
         final AbstractCloudRegion region = getRegionByRunId(runId);
         final LocalDateTime nodeLaunchTime = getInstanceService(region).getNodeLaunchTime(region, runId);
         return Optional.ofNullable(MapUtils.emptyIfNull(expirationServices)
