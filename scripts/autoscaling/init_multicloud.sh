@@ -289,11 +289,12 @@ rm -f $_KUBELET_INITD_DROPIN_PATH
 ## FIXME: shall be moved to the preferences
 _KUBE_RESERVED_ARGS="--kube-reserved cpu=500m,memory=500Mi,storage=1Gi"
 _KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=500m,memory=500Mi,storage=1Gi"
+_KUBE_EVICTION_ARGS="--eviction-hard= --eviction-soft= --eviction-soft-grace-period="
 
 ## Append extra kube-config to the systemd config
 cat > $_KUBELET_INITD_DROPIN_PATH <<EOF
 [Service]
-Environment="KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS"
+Environment="KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS $_KUBE_EVICTION_ARGS"
 EOF
 chmod +x $_KUBELET_INITD_DROPIN_PATH
 
