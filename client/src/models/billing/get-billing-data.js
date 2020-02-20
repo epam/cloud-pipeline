@@ -105,7 +105,7 @@ class GetBillingData extends RemotePost {
       if (this.dateFilter(initialDate)) {
         const momentDate = this.dateMapper(initialDate);
         res.values.push({
-          date: momentDate.format('DD MMM YYYY'),
+          date: moment(momentDate).format('DD MMM YYYY'),
           prevDate: initialDate.format('DD MMM YYYY'),
           value: isNaN(item.accumulatedCost) ? undefined : costMapper(item.accumulatedCost),
           momentDate

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,23 @@
 import React from 'react';
 import {Icon} from 'antd';
 import {observer} from 'mobx-react';
-import {costTickFormatter} from '../utilities';
+import {costTickFormatter, dateRangeRenderer} from '../utilities';
 import styles from './billing-table.css';
 
-function BillingTable ({data, showQuota = true}) {
+function BillingTable ({summary, showQuota = true}) {
+  const data = summary && summary.loaded ? summary.value : {};
+  const filters = summary ? summary.filters : {};
+  const {
+    start,
+    endStrict: end,
+    previousStart,
+    previousEndStrict: previousEnd
+  } = filters;
   let currentInfo, previousInfo;
   const {quota, previousQuota, values} = data || {};
   const renderQuotaColumn = showQuota && (quota || previousQuota);
-  const [firstValue] = (values || []).filter(v => v.value);
   const lastValue = (values || []).filter(v => v.value).pop();
   const lastValueIndex = (values || []).indexOf(lastValue);
-  const [firstPreviousValue] = (values || []).filter(v => v.previous);
   const lastPreviousValue = (values || [])
     .slice(0, lastValueIndex + 1)
     .filter(v => v.previous)
@@ -36,31 +42,48 @@ function BillingTable ({data, showQuota = true}) {
     quota,
     value: lastValue ? lastValue.value : false,
     dates: {
-      from: firstValue ? firstValue.date : false,
-      to: lastValue ? lastValue.date : false
+      from: start,
+      to: end
     }
   };
   previousInfo = {
     quota: previousQuota,
     value: lastPreviousValue ? lastPreviousValue.previous : false,
     dates: {
-      from: firstPreviousValue ? firstPreviousValue.prevDate : false,
-      to: lastPreviousValue ? lastPreviousValue.prevDate : false
+      from: previousStart,
+      to: previousEnd
     }
   };
-  const extra = lastValue && lastValue.value > lastValue.previous;
+  const extra = currentInfo?.value > previousInfo?.value;
+  const quotaOverrun = quota && currentInfo?.value > quota;
+
   const renderValue = (value) => {
     if (!isNaN(value) && value) {
       return costTickFormatter(value);
     }
     return '';
   };
-  const renderDates = (date = {}) => {
-    const {from, to} = date;
-    if (from && to) {
-      return `${from} - ${to}`;
+  const renderDates = ({from, to} = {}) => dateRangeRenderer(from, to) || '-';
+  const renderWarning = (currentInfo = {}, previousInfo = {}) => {
+    const {value: current} = currentInfo;
+    const {value: previous} = previousInfo;
+    if (quotaOverrun) {
+      return (
+        <div className={styles.warningContainer}>
+          <Icon type="bars" className={styles.quotaOverrunIcon} />
+        </div>
+      );
     }
-    return '-';
+    if (current && previous && !isNaN(current) && !isNaN(previous)) {
+      const percent = ((current - previous) / previous * 100).toFixed(2);
+      return (
+        <div className={styles.warningContainer}>
+          <Icon type="caret-up" className={styles.warningIcon} />
+          {`+${percent}%`}
+        </div>
+      );
+    }
+    return '';
   };
   const renderInfo = (title, info, isCurrent) => {
     const dateClassNames = [
@@ -96,11 +119,7 @@ function BillingTable ({data, showQuota = true}) {
           )
         }
         <td className={[styles.quota, styles.borderless].join(' ')}>
-          {
-            isCurrent && extra
-              ? <Icon type="caret-up" />
-              : '\u00A0'
-          }
+          {isCurrent && extra && renderWarning(currentInfo, previousInfo)}
         </td>
       </tr>
     );

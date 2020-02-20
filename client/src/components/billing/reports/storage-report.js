@@ -19,7 +19,7 @@ import {inject, observer} from 'mobx-react';
 import {
   Table
 } from 'antd';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import {
   BarChart,
   BillingTable,
@@ -176,10 +176,7 @@ function StorageReports ({storages, storagesTable, summary, type}) {
     <div className={styles.chartsContainer}>
       <div className={styles.chartsColumnContainer}>
         <ChartContainer style={{height: 175}}>
-          <BillingTable
-            data={summary && summary.loaded ? summary.value : null}
-            showQuota={false}
-          />
+          <BillingTable summary={summary} showQuota={false} />
         </ChartContainer>
         <ChartContainer style={{height: 400, display: 'block'}}>
           <Summary

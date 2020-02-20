@@ -259,10 +259,7 @@ class InstanceReport extends React.Component {
       <div className={styles.chartsContainer}>
         <div className={styles.chartsColumnContainer}>
           <ChartContainer>
-            <BillingTable
-              data={summary && summary.loaded ? summary.value : null}
-              showQuota={false}
-            />
+            <BillingTable summary={summary} showQuota={false} />
             <Summary
               data={summary && summary.loaded ? summary.value.values : []}
               title={this.getSummaryTitle()}

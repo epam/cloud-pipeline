@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.epam.pipeline.elasticsearchagent.service.impl.converter.tool;
 
 import com.epam.pipeline.elasticsearchagent.exception.EntityNotFoundException;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
+import com.epam.pipeline.elasticsearchagent.model.ToolWithDescription;
 import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.pipeline.Tool;
@@ -81,9 +82,9 @@ class ToolLoaderTest {
 
         when(apiClient.loadTool(anyString())).thenReturn(expectedTool);
 
-        Optional<EntityContainer<Tool>> container = toolLoader.loadEntity(1L);
-        EntityContainer<Tool> toolEntityContainer = container.orElseThrow(AssertionError::new);
-        Tool actualTool = toolEntityContainer.getEntity();
+        Optional<EntityContainer<ToolWithDescription>> container = toolLoader.loadEntity(1L);
+        EntityContainer<ToolWithDescription> toolEntityContainer = container.orElseThrow(AssertionError::new);
+        Tool actualTool = toolEntityContainer.getEntity().getTool();
 
         assertNotNull(actualTool);
 

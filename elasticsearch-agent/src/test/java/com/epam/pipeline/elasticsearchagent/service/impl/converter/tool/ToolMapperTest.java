@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.tool;
 
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
+import com.epam.pipeline.elasticsearchagent.model.ToolWithDescription;
+import com.epam.pipeline.entity.docker.ToolDescription;
+import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.pipeline.Tool;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.jupiter.api.Test;
@@ -54,8 +57,11 @@ class ToolMapperTest {
         tool.setToolGroupId(1L);
         tool.setLabels(Collections.singletonList(TEST_LABEL));
 
-        EntityContainer<Tool> container = EntityContainer.<Tool>builder()
-                .entity(tool)
+        final ToolDescription toolDescription = new ToolDescription();
+        toolDescription.setVersions(Collections.singletonList(new ToolVersionAttributes()));
+        toolDescription.setToolId(tool.getId());
+        EntityContainer<ToolWithDescription> container = EntityContainer.<ToolWithDescription>builder()
+                .entity(new ToolWithDescription(tool, toolDescription))
                 .owner(USER)
                 .metadata(METADATA)
                 .permissions(PERMISSIONS_CONTAINER)

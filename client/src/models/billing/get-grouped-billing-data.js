@@ -331,7 +331,23 @@ export class GetGroupedBillingData extends RemotePost {
 
 class GetGroupedBillingDataWithPreviousRange extends GetDataWithPrevious {
   constructor (filters, groupedBy) {
-    super(GetGroupedBillingData, filters, groupedBy);
+    const {
+      end,
+      endStrict,
+      previousEnd,
+      previousEndStrict,
+      ...rest
+    } = filters;
+    const formattedFilters = {
+      end: endStrict || end,
+      previousEnd: previousEndStrict || previousEnd,
+      ...rest
+    };
+    super(
+      GetGroupedBillingData,
+      formattedFilters,
+      groupedBy
+    );
     this.groupBy = groupedBy;
   }
 

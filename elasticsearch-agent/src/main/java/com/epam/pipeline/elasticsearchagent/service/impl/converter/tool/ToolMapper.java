@@ -31,6 +31,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
@@ -93,6 +94,7 @@ public class ToolMapper implements EntityMapper<ToolWithDescription> {
         if (CollectionUtils.isNotEmpty(versions)) {
             final String[] toolPackagesNames = versions.stream()
                 .map(ToolVersionAttributes::getScanResult)
+                .filter(Objects::nonNull)
                 .map(ToolVersionScanResult::getDependencies)
                 .flatMap(List::stream)
                 .map(ToolDependency::getName)
