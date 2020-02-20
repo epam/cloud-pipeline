@@ -17,27 +17,38 @@
 package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.entity.billing.BillingGrouping;
+import com.epam.pipeline.entity.metadata.MetadataEntry;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.user.UserManager;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.MapUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 public class UserBillingDetailsLoader implements EntityBillingDetailsLoader {
 
-    @Value("${billing.empty.report.value:unknown}")
-    private String emptyValue;
-
-    @Autowired
+    private final String emptyValue;
+    private final String billingCenterKey;
     private final UserManager userManager;
+    private final MetadataManager metadataManager;
+
+    public UserBillingDetailsLoader(
+            @Value("${billing.empty.report.value:unknown}") final String emptyValue,
+            @Value("${billing.center.key}") final String billingCenterKey,
+            final UserManager userManager,
+            final MetadataManager metadataManager) {
+        this.emptyValue = emptyValue;
+        this.billingCenterKey = billingCenterKey;
+        this.userManager = userManager;
+        this.metadataManager = metadataManager;
+    }
 
     @Override
     public BillingGrouping getGrouping() {
@@ -49,8 +60,14 @@ public class UserBillingDetailsLoader implements EntityBillingDetailsLoader {
         final Map<String, String> details = new HashMap<>();
         final PipelineUser user = userManager.loadUserByName(entityIdentifier);
         if (user != null) {
-            details.put(BillingGrouping.BILLING_CENTER.getCorrespondingField(),
-                        MapUtils.emptyIfNull(user.getAttributes()).getOrDefault("billingCenterKey", emptyValue));
+            final String billingCenter = Optional.ofNullable(
+                    metadataManager.loadMetadataItem(user.getId(), AclClass.PIPELINE_USER))
+                    .map(MetadataEntry::getData)
+                    .filter(MapUtils::isNotEmpty)
+                    .flatMap(attributes -> Optional.ofNullable(attributes.get(billingCenterKey)))
+                    .flatMap(value -> Optional.ofNullable(value.getValue()))
+                    .orElse(emptyValue);
+            details.put(BillingGrouping.BILLING_CENTER.getCorrespondingField(), billingCenter);
         } else {
             details.putAll(getEmptyDetails());
         }
