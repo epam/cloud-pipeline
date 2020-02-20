@@ -21,6 +21,8 @@ import {PointDataLabelPlugin, VerticalLinePlugin} from './extensions';
 import {colors, getColor} from './colors';
 import {costTickFormatter} from '../utilities';
 import moment from 'moment-timezone';
+import styles from './charts.css';
+import {Alert} from 'antd';
 
 function extractDataSet (data, title, type, color, options = {}) {
   const {showPoints = true, currentDateIndex} = options;
@@ -69,7 +71,15 @@ function parse (values, quota, highlightedDate = moment.utc()) {
   };
 }
 
-function Summary ({colors: colorsConfig, data, title, quota: quotaValue, style}) {
+function Summary ({colors: colorsConfig, data, error = null, title, quota: quotaValue, style}) {
+  if (error) {
+    return (
+      <div style={Object.assign({height: '100%', position: 'relative', display: 'block'}, style)}>
+        {!!title && <div className={styles.title}>{title}</div>}
+        <Alert type="error" message={error} />
+      </div>
+    );
+  }
   const {currentData, previousData, quota, currentDate, currentDateIndex} = parse(data, quotaValue);
   const dataConfiguration = {
     datasets: [

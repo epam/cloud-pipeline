@@ -120,6 +120,7 @@ function renderResourcesSubData (
   {
     data,
     tableDataRequest,
+    chartError = null,
     dataSample = InstanceFilters.value.dataSample,
     previousDataSample = InstanceFilters.value.previousDataSample,
     color = colors.orange,
@@ -177,6 +178,7 @@ function renderResourcesSubData (
       <div className={styles.resourcesChart}>
         <BarChart
           data={data}
+          error={chartError}
           dataSample={dataSample}
           previousDataSample={previousDataSample}
           title={title}
@@ -262,6 +264,7 @@ class InstanceReport extends React.Component {
             <BillingTable summary={summary} showQuota={false} />
             <Summary
               data={summary && summary.loaded ? summary.value.values : []}
+              error={summary && summary.error ? summary.error : null}
               title={this.getSummaryTitle()}
               colors={{
                 previous: {color: colors.yellow},
@@ -280,6 +283,7 @@ class InstanceReport extends React.Component {
             />
             <ResourcesSubData
               data={instances && instances.loaded ? instances.value : []}
+              chartError={instances && instances.error ? instances.error : null}
               tableDataRequest={instancesTable}
               dataSample={dataSample}
               previousDataSample={previousDataSample}
@@ -290,6 +294,7 @@ class InstanceReport extends React.Component {
             />
             <ResourcesSubData
               data={tools && tools.loaded ? tools.value : []}
+              chartError={tools && tools.error ? tools.error : null}
               tableDataRequest={toolsTable}
               dataSample={dataSample}
               previousDataSample={previousDataSample}
@@ -300,6 +305,7 @@ class InstanceReport extends React.Component {
             />
             <ResourcesSubData
               data={pipelines && pipelines.loaded ? pipelines.value : []}
+              chartError={pipelines && pipelines.error ? pipelines.error : null}
               tableDataRequest={pipelinesTable}
               dataSample={dataSample}
               previousDataSample={previousDataSample}

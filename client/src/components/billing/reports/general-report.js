@@ -136,6 +136,7 @@ function UserReport ({
         <ChartContainer style={{flex: 1, height: 400}}>
           <Summary
             data={summary && summary.loaded ? summary.value.values : []}
+            error={summary && summary.error ? summary.error : null}
             quota={summary && summary.loaded ? summary.value.quota : 0}
             title="Summary"
           />
@@ -145,6 +146,7 @@ function UserReport ({
         <ChartContainer style={{height: 400}}>
           <GroupedBarChart
             data={resources && resources.loaded ? resources.value : {}}
+            error={resources && resources.error ? resources.error : null}
             title="Resources"
             getBarAndNavigate={getBarAndNavigate}
           />
@@ -209,6 +211,7 @@ function GroupReport ({
         <ChartContainer style={{height: 600}}>
           <Summary
             data={summary && summary.loaded ? summary.value.values : []}
+            error={summary && summary.error ? summary.error : null}
             quota={summary && summary.loaded ? summary.value.quota : 0}
             title="Summary"
           />
@@ -218,6 +221,7 @@ function GroupReport ({
         <ChartContainer style={{height: 400, position: 'relative'}}>
           <GroupedBarChart
             data={resources && resources.loaded ? resources.value : {}}
+            error={resources && resources.error ? resources.error : null}
             title="Resources"
             getBarAndNavigate={getBarAndNavigate}
           />
@@ -228,6 +232,10 @@ function GroupReport ({
               billingCentersRequest && billingCentersRequest.loaded
                 ? billingCentersRequest.value
                 : {}
+            }
+            error={billingCentersRequest && billingCentersRequest.error
+              ? billingCentersRequest.error
+              : null
             }
             title={title}
             getBarAndNavigate={getBarAndNavigate}
@@ -271,6 +279,7 @@ function GeneralReport ({
         <ChartContainer style={{height: 600}}>
           <Summary
             data={summary && summary.loaded ? summary.value.values : []}
+            error={summary && summary.error ? summary.error : null}
             quota={summary && summary.loaded ? summary.value.quota : 0}
             title="Summary"
           />
@@ -284,6 +293,7 @@ function GeneralReport ({
         }}>
           <GroupedBarChart
             data={resources && resources.loaded ? resources.value : {}}
+            error={resources && resources.error ? resources.error : null}
             getBarAndNavigate={getBarAndNavigate}
             title="Resources"
           />
@@ -293,6 +303,10 @@ function GeneralReport ({
             data={billingCentersRequest && billingCentersRequest.loaded
               ? billingCentersRequest.value
               : {}
+            }
+            error={billingCentersRequest && billingCentersRequest.error
+              ? billingCentersRequest.error
+              : null
             }
             title="Billing centers"
             getBarAndNavigate={getBarAndNavigate}

@@ -20,6 +20,9 @@ import Chart from './base';
 import {colors, getColor, getBackgroundColor} from './colors';
 import {BarchartDataLabelPlugin} from './extensions';
 import {costTickFormatter} from '../utilities';
+import {Alert} from 'antd';
+
+import styles from './charts.css';
 
 function toValueFormat (value) {
   return Math.round((+value || 0) * 100.0) / 100.0;
@@ -53,6 +56,7 @@ function BarChart (
     axisPosition = 'left',
     colors: colorsConfig,
     data,
+    error = null,
     dataSample = 'value',
     previousDataSample = 'previous',
     onSelect,
@@ -63,6 +67,14 @@ function BarChart (
     getBarAndNavigate
   }
 ) {
+  if (error) {
+    return (
+      <div style={Object.assign({height: '100%', position: 'relative', display: 'block'}, style)}>
+        {!subChart && !!title && <div className={styles.title}>{title}</div>}
+        <Alert type="error" message={error} />
+      </div>
+    );
+  }
   const {filteredData, filtered} = filterTopData(data, top);
   const groups = Object.keys(filteredData || {});
   const chartData = {
