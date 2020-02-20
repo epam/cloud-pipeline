@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,8 +54,9 @@ public abstract class AbstractCloudPipelineEntityLoader<T> implements EntityLoad
             return Optional.of(buildContainer(id));
         } catch (PipelineResponseException e) {
             log.error(e.getMessage(), e);
-            log.debug("Expected error message: {}", buildNotFoundErrorMessage(id));
-            if (e.getMessage().contains(buildNotFoundErrorMessage(id))) {
+            final String errorMessageWithId = buildNotFoundErrorMessage(id);
+            log.debug("Expected error message: {}", errorMessageWithId);
+            if (e.getMessage().replaceAll("[^\\w\\s]", "").contains(errorMessageWithId)) {
                 throw new EntityNotFoundException(e);
             }
             return Optional.empty();
