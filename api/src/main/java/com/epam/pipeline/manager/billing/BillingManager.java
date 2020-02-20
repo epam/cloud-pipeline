@@ -144,7 +144,7 @@ public class BillingManager {
         this.costAggregation = AggregationBuilders.sum(COST_FIELD).field(COST_FIELD);
         this.runUsageAggregation = AggregationBuilders.sum(RUN_USAGE_AGG).field(RUN_USAGE_FIELD);
         this.storageUsageAggregation = AggregationBuilders.avg(STORAGE_USAGE_AGG).field(STORAGE_USAGE_FIELD);
-        this.uniqueRunsAggregation = AggregationBuilders.terms(UNIQUE_RUNS).field(RUN_ID_FIELD);
+        this.uniqueRunsAggregation = AggregationBuilders.terms(UNIQUE_RUNS).field(RUN_ID_FIELD).size(Integer.MAX_VALUE);
         this.billingDetailsLoaders = billingDetailsLoaders.stream()
             .collect(Collectors.toMap(EntityBillingDetailsLoader::getGrouping,
                                       Function.identity()));
