@@ -65,7 +65,7 @@ public class SearchRequestBuilder {
 
     private static final String STORAGE_SIZE_AGG_NAME = "sizeSumSearch";
     private static final String SIZE_FIELD = "size";
-    private static final String NAME_FIELD = "name";
+    private static final String NAME_FIELD = "id";
 
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
