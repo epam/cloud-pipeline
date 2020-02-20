@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.search;
 
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.search.SearchDocument;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.search.SearchResult;
@@ -31,6 +33,7 @@ import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
 import org.springframework.stereotype.Service;
 
@@ -47,6 +50,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SearchResultConverter {
 
+    private static final String STORAGE_SIZE_AGG_NAME = "sizeSumSearch";
+
     public SearchResult buildResult(final SearchResponse searchResult,
                                     final String aggregation,
                                     final String typeFieldName,
@@ -56,6 +61,19 @@ public class SearchResultConverter {
                 .totalHits(searchResult.getHits().getTotalHits())
                 .documents(buildDocuments(searchResult.getHits(), typeFieldName, aclFilterFields))
                 .aggregates(buildAggregates(searchResult.getAggregations(), aggregation))
+                .build();
+    }
+
+    public StorageUsage buildStorageUsageResponse(final SearchResponse searchResponse,
+                                                  final AbstractDataStorage dataStorage, final String path) {
+        final ParsedSum sumAggResult = searchResponse.getAggregations().get(STORAGE_SIZE_AGG_NAME);
+        return StorageUsage.builder()
+                .id(dataStorage.getId())
+                .name(dataStorage.getName())
+                .type(dataStorage.getType())
+                .path(path)
+                .size(new Double(sumAggResult.getValue()).longValue())
+                .count(searchResponse.getHits().getTotalHits())
                 .build();
     }
 
