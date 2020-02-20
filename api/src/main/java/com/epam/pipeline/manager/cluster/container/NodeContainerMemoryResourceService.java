@@ -64,4 +64,3 @@ public class NodeContainerMemoryResourceService implements ContainerMemoryResour
         return ContainerMemoryResourcePolicy.NODE;
     }
 }
-x
