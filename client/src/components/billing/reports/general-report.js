@@ -135,9 +135,7 @@ function UserReport ({
         <BillingTable summary={summary} />
         <ChartContainer style={{flex: 1, height: 400}}>
           <Summary
-            data={summary && summary.loaded ? summary.value.values : []}
-            error={summary && summary.error ? summary.error : null}
-            quota={summary && summary.loaded ? summary.value.quota : 0}
+            summary={summary}
             title="Summary"
           />
         </ChartContainer>
@@ -210,9 +208,7 @@ function GroupReport ({
         </ChartContainer>
         <ChartContainer style={{height: 600}}>
           <Summary
-            data={summary && summary.loaded ? summary.value.values : []}
-            error={summary && summary.error ? summary.error : null}
-            quota={summary && summary.loaded ? summary.value.quota : 0}
+            summary={summary}
             title="Summary"
           />
         </ChartContainer>
@@ -278,9 +274,7 @@ function GeneralReport ({
         </ChartContainer>
         <ChartContainer style={{height: 600}}>
           <Summary
-            data={summary && summary.loaded ? summary.value.values : []}
-            error={summary && summary.error ? summary.error : null}
-            quota={summary && summary.loaded ? summary.value.quota : 0}
+            summary={summary}
             title="Summary"
           />
         </ChartContainer>

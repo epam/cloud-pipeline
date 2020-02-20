@@ -21,6 +21,26 @@ function isNotSet (v) {
   return v === undefined || v === null;
 }
 
+const INTERSECTION_MARGIN = 1;
+
+function sectionsIntersects (a, b) {
+  const {p1: ap1, p2: ap2} = a;
+  const {p1: bp1, p2: bp2} = b;
+  return Math.max(ap1, ap2, bp1, bp2) - Math.min(ap1, ap2, bp1, bp2) - 2 * INTERSECTION_MARGIN <
+    Math.max(ap1, ap2) - Math.min(ap1, ap2) + Math.max(bp1, bp2) - Math.min(bp1, bp2);
+}
+
+function labelsIntersects (a, b) {
+  const {x: aX, y: aY, width: aW, height: aH} = a;
+  const {x: bX, y: bY, width: bW, height: bH} = b;
+  return sectionsIntersects({p1: aX, p2: aX + aW}, {p1: bX, p2: bX + bW}) &&
+    sectionsIntersects({p1: aY, p2: aY + aH}, {p1: bY, p2: bY + bH});
+}
+
+function resolveConflicts (labels, index = 0) {
+
+}
+
 const plugin = {
   id,
   afterDatasetsDraw: function (chart, ease, pluginOptions) {
@@ -43,61 +63,7 @@ const plugin = {
     if (!labels || !labels.length) {
       return;
     }
-    const [
-      {label: {position: currentPosition}},
-      {label: {position: previousPosition}},
-      quota
-    ] = labels;
-    const margin = 5;
-    const paddingX = 5;
-
-    if (quota) {
-      const {label: {position: quotaPosition}} = quota;
-      const quotaOverlapsCurrent = (
-        quotaPosition.y <= currentPosition.y + margin &&
-        quotaPosition.y >= currentPosition.y - currentPosition.height - margin
-      ) || (
-        quotaPosition.y - quotaPosition.height <= currentPosition.y + margin &&
-        quotaPosition.y - quotaPosition.height >=
-        currentPosition.y - currentPosition.height - margin
-      );
-      const quotaOverlapsPrevious = (
-        quotaPosition.y <= previousPosition.y + margin &&
-        quotaPosition.y >= previousPosition.y - previousPosition.height - margin
-      ) || (
-        quotaPosition.y - quotaPosition.height <= previousPosition.y + margin &&
-        quotaPosition.y - quotaPosition.height >=
-        previousPosition.y - previousPosition.height - margin
-      );
-
-      if (quotaOverlapsCurrent || quotaOverlapsPrevious) {
-        const shiftLength =
-          Math.max(quotaPosition.width, currentPosition.width, previousPosition.width) +
-          margin * 2;
-        quotaPosition.x += shiftLength * quotaPosition.direction;
-        quotaPosition.labelX += shiftLength * quotaPosition.direction;
-      }
-    }
-
-    const currentOverlapsPrevious = (
-      currentPosition.y <= previousPosition.y + margin &&
-      currentPosition.y >= previousPosition.y - previousPosition.height - margin
-    ) || (
-      currentPosition.y - currentPosition.height <= previousPosition.y + margin &&
-      currentPosition.y - currentPosition.height >=
-      previousPosition.y - previousPosition.height - margin
-    );
-    if (currentOverlapsPrevious) {
-      if (currentPosition.direction === -1) {
-        currentPosition.x = currentPosition.point.x + margin;
-        currentPosition.direction = 1;
-        currentPosition.labelX = currentPosition.x + paddingX;
-      } else {
-        previousPosition.direction = -1;
-        previousPosition.x = previousPosition.point.x - margin - previousPosition.width;
-        previousPosition.labelX = previousPosition.x + paddingX;
-      }
-    }
+    resolveConflicts(labels);
   },
   drawLabels: function (ctx, labels) {
     labels.forEach(label => this.drawLabel(ctx, label));
@@ -130,7 +96,10 @@ const plugin = {
     if (!dataset) {
       return null;
     }
-    const {data: elements, xAxisID, yAxisID} = dataset;
+    const {data: elements, xAxisID, yAxisID, hidden} = dataset;
+    if (hidden) {
+      return null;
+    }
     const {data, ...datasetConfig} = dataset.controller.getDataset();
     const xAxis = chart.scales[xAxisID];
     const yAxis = chart.scales[yAxisID];
@@ -146,7 +115,7 @@ const plugin = {
       left: xAxis.left,
       right: xAxis.right
     };
-    const labelText = costTickFormatter(dataItem.y);
+    const labelText = costTickFormatter(dataItem);
     const labelWidth = ctx.measureText(labelText).width;
     const padding = {x: 5, y: 2};
     const margin = 5;
@@ -173,12 +142,18 @@ const plugin = {
       point: element.getCenterPoint(),
       direction
     };
+    const labelAlternatePosition = {
+      ...labelPosition,
+      x: x - direction * (labelWidth + 2 * margin + 2 * padding.x),
+      direction
+    };
     return {
       datasetConfig,
       globalBounds,
       label: {
         text: labelText,
-        position: labelPosition
+        position: labelPosition,
+        alternate: labelAlternatePosition
       }
     };
   }

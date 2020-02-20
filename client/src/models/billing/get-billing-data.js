@@ -101,14 +101,14 @@ class GetBillingData extends RemotePost {
       values: []
     };
     (payload || []).forEach((item) => {
-      const initialDate = moment(item.periodStart);
+      const initialDate = moment.utc(item.periodStart, 'YYYY-MM-DD HH:mm:ss.SSS');
       if (this.dateFilter(initialDate)) {
         const momentDate = this.dateMapper(initialDate);
         res.values.push({
           date: moment(momentDate).format('DD MMM YYYY'),
-          prevDate: initialDate.format('DD MMM YYYY'),
           value: isNaN(item.accumulatedCost) ? undefined : costMapper(item.accumulatedCost),
-          momentDate
+          dateValue: momentDate,
+          initialDate
         });
       }
     });
@@ -149,9 +149,8 @@ class GetBillingDataWithPreviousRange extends GetDataWithPrevious {
         result.push(item);
       }
     }
-    const sorter = (a, b) => a.momentDate - b.momentDate;
+    const sorter = (a, b) => a.dateValue - b.dateValue;
     result.sort(sorter);
-    result.forEach((r) => delete r.momentDate);
     return {...rest, values: result};
   }
 }

@@ -65,8 +65,8 @@ class RangeFilter extends React.Component {
 
   disabledStartDate = (date) => {
     const {endValue} = this.state;
-    const end = endValue ? moment(endValue) : moment();
-    return date && date > end;
+    return (endValue && date > moment(endValue)) ||
+      date > moment();
   };
 
   disabledEndDate = (date) => {

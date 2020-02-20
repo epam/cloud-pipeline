@@ -228,5 +228,6 @@ function getPeriod (period, range) {
 export {
   Period,
   getPeriod,
-  Range
+  Range,
+  getTickFormat
 };

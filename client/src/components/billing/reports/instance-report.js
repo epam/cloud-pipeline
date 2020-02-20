@@ -253,8 +253,7 @@ class InstanceReport extends React.Component {
       pipelines,
       instancesTable,
       toolsTable,
-      pipelinesTable,
-      type
+      pipelinesTable
     } = this.props;
     const {dataSample, previousDataSample} = this.state;
     return (
@@ -263,14 +262,27 @@ class InstanceReport extends React.Component {
           <ChartContainer>
             <BillingTable summary={summary} showQuota={false} />
             <Summary
-              data={summary && summary.loaded ? summary.value.values : []}
-              error={summary && summary.error ? summary.error : null}
+              summary={summary}
+              quota={false}
               title={this.getSummaryTitle()}
               colors={{
                 previous: {color: colors.yellow},
                 current: {color: colors.green}
               }}
-              style={{height: 500}}
+              style={{height: 400}}
+            />
+          </ChartContainer>
+          <ChartContainer>
+            <ResourcesSubData
+              data={pipelines && pipelines.loaded ? pipelines.value : []}
+              chartError={pipelines && pipelines.error ? pipelines.error : null}
+              tableDataRequest={pipelinesTable}
+              dataSample={dataSample}
+              previousDataSample={previousDataSample}
+              owner
+              color={colors.current}
+              title="Pipelines"
+              singleTitle="Pipeline"
             />
           </ChartContainer>
         </div>
@@ -302,17 +314,6 @@ class InstanceReport extends React.Component {
               color={colors.gray}
               title="Tools"
               singleTitle="Tool"
-            />
-            <ResourcesSubData
-              data={pipelines && pipelines.loaded ? pipelines.value : []}
-              chartError={pipelines && pipelines.error ? pipelines.error : null}
-              tableDataRequest={pipelinesTable}
-              dataSample={dataSample}
-              previousDataSample={previousDataSample}
-              owner
-              color={colors.current}
-              title="Pipelines"
-              singleTitle="Pipeline"
             />
           </ChartContainer>
         </div>

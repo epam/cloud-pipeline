@@ -180,8 +180,8 @@ function StorageReports ({storages, storagesTable, summary, type}) {
         </ChartContainer>
         <ChartContainer style={{height: 400, display: 'block'}}>
           <Summary
-            data={summary && summary.loaded ? summary.value.values : []}
-            error={summary && summary.error ? summary.error : null}
+            summary={summary}
+            quota={false}
             title={getSummaryTitle()}
             colors={{
               previous: {color: colors.yellow},
