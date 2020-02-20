@@ -17,30 +17,20 @@ import errno
 import logging
 import os
 import sys
-import platform
-
-frozen_libfuse_version = 'frozen'
-supported_libfuse_versions = [
-    ('centos', '6', '2.8.3'),
-    ('', '', '2.9.2')
-]
 
 is_frozen = getattr(sys, 'frozen', False)
 
 if is_frozen:
     source_path = sys._MEIPASS
-    libfuse_version = frozen_libfuse_version
-    dist_name, dist_version = None, None
+    libfuse_version = 'frozen'
 else:
     source_path = os.path.dirname(__file__)
-    libfuse_version = supported_libfuse_versions[-1][-1]
-    dist_name, dist_version, _ = platform.linux_distribution()
-    for supported_dist_name, supported_dist_version, supported_libfuse_version in supported_libfuse_versions:
-        if supported_dist_name in dist_name.lower() and supported_dist_version.startswith(dist_version):
-            libfuse_version = supported_libfuse_version
+    libfuse_version = '2.9.2'
 
 libfuse_path = os.path.abspath(os.path.join(source_path, 'libfuse/libfuse.so.%s' % libfuse_version))
-os.environ["FUSE_LIBRARY_PATH"] = libfuse_path
+if os.path.exists(libfuse_path):
+    os.environ["FUSE_LIBRARY_PATH"] = libfuse_path
+
 
 from pipefuse.fuseutils import MB, GB
 from pipefuse.cache import CachingFileSystemClient
@@ -198,14 +188,9 @@ if __name__ == '__main__':
                         level=_allowed_logging_level_names[args.logging_level])
 
     if is_frozen:
-        logging.info('Frozen installation found. Bundled libfuse version will be used.')
+        logging.info('Frozen installation found. Bundled libfuse will be used.')
     else:
-        if dist_name or dist_version:
-            logging.info('Recognized linux distribution %s %s. Libfuse version %s will be used.'
-                         % (dist_name or '', dist_version or '', libfuse_version))
-        else:
-            logging.warn('Linux distribution wasn\'t recognized. Libfuse version %s will be used.'
-                         % libfuse_version)
+        logging.info('Packaged installation found. Either packaged or host libfuse will be used.')
 
     try:
         start(args.mountpoint, webdav=args.webdav, bucket=args.bucket, buffer_size=args.buffer_size,
