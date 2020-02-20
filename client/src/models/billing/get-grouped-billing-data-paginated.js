@@ -80,7 +80,19 @@ export class GetGroupedBillingDataPaginated extends GetGroupedBillingData {
 
 export default class GetGroupedBillingDataWithPreviousRangePaginated extends GetDataWithPrevious {
   constructor (filters, groupedBy, pageSize = 10, pageNum = 0) {
-    super(GetGroupedBillingDataPaginated, filters, groupedBy, pageSize, pageNum);
+    const {
+      end,
+      endStrict,
+      previousEnd,
+      previousEndStrict,
+      ...rest
+    } = filters;
+    const formattedFilters = {
+      end: endStrict || end,
+      previousEnd: previousEndStrict || previousEnd,
+      ...rest
+    };
+    super(GetGroupedBillingDataPaginated, formattedFilters, groupedBy, pageSize, pageNum);
   }
 
   async fetchPage (pageNum) {

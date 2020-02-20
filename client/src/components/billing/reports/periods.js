@@ -51,13 +51,20 @@ function buildRangeString ({start, end}, period) {
 
 function parseRangeString (string, period) {
   if (!string) {
-    return {};
+    return {
+      isCurrent: true
+    };
   }
   const [startStr, endStr] = string.split('|');
-  let start, end;
+  let start, end, isCurrent;
+  const checkCurrent = (date, ...units) => {
+    const checkUnit = (unit) => date.get(unit) === moment.utc().get(unit);
+    return units.map(checkUnit).reduce((r, c) => r && c, true);
+  };
   switch (period) {
     case Period.custom:
       start = moment.utc(startStr, 'YYYY-MM').startOf('M');
+      isCurrent = false;
       if (endStr) {
         end = moment.utc(endStr, 'YYYY-MM').endOf('M');
       } else {
@@ -67,19 +74,23 @@ function parseRangeString (string, period) {
     case Period.year:
       start = moment.utc(startStr, 'YYYY').startOf('Y');
       end = moment(start).endOf('Y');
+      isCurrent = checkCurrent(start, 'Y');
       break;
     case Period.quarter:
       start = moment.utc(startStr, 'YYYY-MM').startOf('Q');
       end = moment(start).endOf('Q');
+      isCurrent = checkCurrent(start, 'Y', 'Q');
       break;
     case Period.month:
       start = moment.utc(startStr, 'YYYY-MM').startOf('M');
       end = moment(start).endOf('M');
+      isCurrent = checkCurrent(start, 'Y', 'M');
       break;
   }
   return {
     start,
-    end
+    end,
+    isCurrent
   };
 }
 
@@ -119,11 +130,13 @@ const Range = {
 
 function getPeriod (period, range) {
   const dateNow = moment.utc();
-  let {start, end} = Range.parse(range, period);
+  let {start, end, isCurrent} = Range.parse(range, period);
   const rangeIsSelected = !!start && !!end;
   let tickFormat;
   let previousStart;
   let previousEnd;
+  let endStrict;
+  let previousEndStrict;
   let previousShiftFn;
   let previousFilterFn;
 
@@ -136,6 +149,17 @@ function getPeriod (period, range) {
       tickFormat = getTickFormat(start, end);
       previousStart = moment(start).add(-1, 'M');
       previousEnd = moment(previousStart).endOf('M');
+      endStrict = moment(end);
+      previousEndStrict = moment(previousEnd);
+      if (isCurrent) {
+        if (moment.utc() < endStrict) {
+          endStrict = moment.utc();
+        }
+        const temp = moment(endStrict).add(-1, 'M');
+        if (temp < previousEndStrict) {
+          previousEndStrict = temp;
+        }
+      }
       const daysInMonth = start.daysInMonth();
       previousShiftFn = (momentDate) => moment(momentDate).add(1, 'M');
       previousFilterFn = (momentDate) => momentDate.get('D') <= daysInMonth;
@@ -148,6 +172,17 @@ function getPeriod (period, range) {
       tickFormat = getTickFormat(start, end);
       previousStart = moment(start).add(-1, 'y');
       previousEnd = moment(end).add(-1, 'y');
+      endStrict = moment(end);
+      previousEndStrict = moment(previousEnd);
+      if (isCurrent) {
+        if (moment.utc() < endStrict) {
+          endStrict = moment.utc();
+        }
+        const temp = moment(endStrict).add(-1, 'y');
+        if (temp < previousEndStrict) {
+          previousEndStrict = temp;
+        }
+      }
       previousShiftFn = (momentDate) => moment(momentDate).add(1, 'y');
       break;
     case Period.year:
@@ -158,10 +193,22 @@ function getPeriod (period, range) {
       tickFormat = getTickFormat(start, end);
       previousStart = moment(start).add(-1, 'y');
       previousEnd = moment(end).add(-1, 'y');
+      endStrict = moment(end);
+      previousEndStrict = moment(previousEnd);
+      if (isCurrent) {
+        if (moment.utc() < endStrict) {
+          endStrict = moment.utc();
+        }
+        const temp = moment(endStrict).add(-1, 'y');
+        if (temp < previousEndStrict) {
+          previousEndStrict = temp;
+        }
+      }
       previousShiftFn = (momentDate) => moment(momentDate).add(1, 'y');
       break;
     default:
       tickFormat = getTickFormat(start, end);
+      endStrict = moment(end);
       break;
   }
   return {
@@ -169,8 +216,10 @@ function getPeriod (period, range) {
     tick: tickFormat,
     start,
     end,
+    endStrict,
     previousStart,
     previousEnd,
+    previousEndStrict,
     previousShiftFn,
     previousFilterFn
   };

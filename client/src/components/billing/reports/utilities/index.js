@@ -16,3 +16,4 @@
 
 export {default as ChartContainer} from './chart-container';
 export {default as costTickFormatter} from './cost-tick-formatter';
+export {default as dateRangeRenderer} from './date-range-renderer';

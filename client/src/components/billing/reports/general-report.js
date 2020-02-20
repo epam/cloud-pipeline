@@ -132,10 +132,7 @@ function UserReport ({
   return (
     <div className={styles.chartsContainer}>
       <div className={styles.chartsColumnContainer}>
-        <BillingTable
-          data={summary && summary.loaded ? summary.value : null}
-          period={summary && summary.loaded ? summary.filters?.name : null}
-        />
+        <BillingTable summary={summary} />
         <ChartContainer style={{flex: 1, height: 400}}>
           <Summary
             data={summary && summary.loaded ? summary.value.values : []}
@@ -207,10 +204,7 @@ function GroupReport ({
     <div className={styles.chartsContainer}>
       <div className={styles.chartsColumnContainer}>
         <ChartContainer>
-          <BillingTable
-            data={summary && summary.loaded ? summary.value : null}
-            period={summary && summary.loaded ? summary.filters?.name : null}
-          />
+          <BillingTable summary={summary} />
         </ChartContainer>
         <ChartContainer style={{height: 600}}>
           <Summary
@@ -272,10 +266,7 @@ function GeneralReport ({
     <div className={styles.chartsContainer}>
       <div className={styles.chartsColumnContainer}>
         <ChartContainer>
-          <BillingTable
-            data={summary && summary.loaded ? summary.value : null}
-            period={summary && summary.loaded ? summary.filters?.name : null}
-          />
+          <BillingTable summary={summary} />
         </ChartContainer>
         <ChartContainer style={{height: 600}}>
           <Summary

@@ -17,19 +17,23 @@
 import React from 'react';
 import {Icon} from 'antd';
 import {observer} from 'mobx-react';
-import moment from 'moment-timezone';
-import {Period} from '../periods';
-import {costTickFormatter} from '../utilities';
+import {costTickFormatter, dateRangeRenderer} from '../utilities';
 import styles from './billing-table.css';
 
-function BillingTable ({data, showQuota = true, period}) {
+function BillingTable ({summary, showQuota = true}) {
+  const data = summary && summary.loaded ? summary.value : {};
+  const filters = summary ? summary.filters : {};
+  const {
+    start,
+    endStrict: end,
+    previousStart,
+    previousEndStrict: previousEnd
+  } = filters;
   let currentInfo, previousInfo;
   const {quota, previousQuota, values} = data || {};
   const renderQuotaColumn = showQuota && (quota || previousQuota);
-  const [firstValue] = (values || []).filter(v => v.value);
   const lastValue = (values || []).filter(v => v.value).pop();
   const lastValueIndex = (values || []).indexOf(lastValue);
-  const [firstPreviousValue] = (values || []).filter(v => v.previous);
   const lastPreviousValue = (values || [])
     .slice(0, lastValueIndex + 1)
     .filter(v => v.previous)
@@ -38,16 +42,16 @@ function BillingTable ({data, showQuota = true, period}) {
     quota,
     value: lastValue ? lastValue.value : false,
     dates: {
-      from: firstValue ? firstValue.date : false,
-      to: lastValue ? lastValue.date : false
+      from: start,
+      to: end
     }
   };
   previousInfo = {
     quota: previousQuota,
     value: lastPreviousValue ? lastPreviousValue.previous : false,
     dates: {
-      from: firstPreviousValue ? firstPreviousValue.prevDate : false,
-      to: lastPreviousValue ? lastPreviousValue.prevDate : false
+      from: previousStart,
+      to: previousEnd
     }
   };
   const extra = currentInfo?.value > previousInfo?.value;
@@ -59,36 +63,7 @@ function BillingTable ({data, showQuota = true, period}) {
     }
     return '';
   };
-  const renderDates = (date) => {
-    const {from, to} = date;
-    if (from && to) {
-      const start = moment.utc(from, 'DD MMM YYYY');
-      const end = moment.utc(to, 'DD MMM YYYY');
-      const startDay = start.get('D');
-      const endDay = end.get('D');
-      const endYear = end.get('year');
-      const quarter = end.get('Q');
-      let datesInfo = '-';
-
-      switch ((period || '').toLowerCase()) {
-        case Period.month:
-          datesInfo = `${moment(start).format('MMMM YYYY')}, ${startDay} - ${endDay}`;
-          break;
-        case Period.quarter:
-          datesInfo = `Q${quarter}, ${moment(start).format('DD MMMM')} - ${moment(end).format('DD MMMM')}, ${endYear}`;
-          break;
-        case Period.year:
-          datesInfo = `${moment(start).format('DD MMMM')} - ${moment(end).format('DD MMMM')}, ${endYear}`;
-          break;
-        case Period.custom:
-          datesInfo = `${moment(start).format('DD MMMM YYYY')} - ${moment(end).format('DD MMMM YYYY')}`;
-          break;
-      }
-
-      return datesInfo;
-    }
-    return '-';
-  };
+  const renderDates = ({from, to} = {}) => dateRangeRenderer(from, to) || '-';
   const renderWarning = (currentInfo = {}, previousInfo = {}) => {
     const {value: current} = currentInfo;
     const {value: previous} = previousInfo;
@@ -98,7 +73,7 @@ function BillingTable ({data, showQuota = true, period}) {
           <Icon type="bars" className={styles.quotaOverrunIcon} />
         </div>
       );
-    };
+    }
     if (current && previous && !isNaN(current) && !isNaN(previous)) {
       const percent = ((current - previous) / previous * 100).toFixed(2);
       return (
@@ -107,7 +82,7 @@ function BillingTable ({data, showQuota = true, period}) {
           {`+${percent}%`}
         </div>
       );
-    };
+    }
     return '';
   };
   const renderInfo = (title, info, isCurrent) => {
