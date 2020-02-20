@@ -53,7 +53,7 @@ python2 -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
 # Build pipe fuse
 ###
 
-if [[ "\$build_os_id" == "centos" ]] && [[ "\$build_os_version_id" == "7" ]]; then
+if [[ "\$build_os_id" == "centos" ]] && [[ "\$build_os_version_id" == "6" ]]; then
   libfuse_version="2.8.3"
 else
   libfuse_version="2.9.2"
