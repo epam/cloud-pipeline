@@ -48,7 +48,12 @@ const rules = [
   },
   {
     value: date => date.format('YYYY'),
-    render: (start, end, year) => `${start.format('MMMM')} - ${end.format('MMMM')}, ${year}`
+    render: (start, end, year) => {
+      const dateFormat = isMonthStart(start) && isMonthEnd(end)
+        ? 'MMMM'
+        : 'D MMMM';
+      return `${start.format(dateFormat)} - ${end.format(dateFormat)}, ${year}`;
+    }
   },
   {
     value: () => undefined,

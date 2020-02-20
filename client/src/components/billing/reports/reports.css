@@ -29,7 +29,7 @@
 .charts-container {
   display: flex;
   flex-flow: row wrap;
-  padding: 20px;
+  padding: 2px;
   align-content: flex-start;
   width: 100%;
 }

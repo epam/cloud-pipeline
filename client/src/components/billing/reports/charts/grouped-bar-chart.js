@@ -19,8 +19,9 @@ import {observer} from 'mobx-react';
 import BarChart from './bar-chart';
 import {colors} from './colors';
 import styles from './charts.css';
+import {Alert} from 'antd';
 
-function GroupedBarChart ({data, onSelect, title, getBarAndNavigate}) {
+function GroupedBarChart ({data, error = null, onSelect, title, getBarAndNavigate}) {
   const groups = Object.keys(data || {});
   const itemsCount = groups.map(group => Object.keys(data[group] || {}).length);
   const total = itemsCount.reduce((r, c) => r + c, 0);
@@ -53,21 +54,27 @@ function GroupedBarChart ({data, onSelect, title, getBarAndNavigate}) {
       }}
     >
       {title && <div className={styles.title}>{title}</div>}
-      <div style={{
-        display: 'flex',
-        width: '100%',
-        height: '100%',
-        position: 'relative'
-      }}>
-        <div style={{
-          width: '100%',
-          height: '100%',
-          display: 'block',
-          position: 'relative'
-        }}>
-          {charts}
-        </div>
-      </div>
+      {
+        error
+          ? <Alert type="error" message={error} />
+          : (
+            <div style={{
+              display: 'flex',
+              width: '100%',
+              height: '100%',
+              position: 'relative'
+            }}>
+              <div style={{
+                width: '100%',
+                height: '100%',
+                display: 'block',
+                position: 'relative'
+              }}>
+                {charts}
+              </div>
+            </div>
+          )
+      }
     </div>
   );
 }

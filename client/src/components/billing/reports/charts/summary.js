@@ -20,14 +20,103 @@ import Chart from './base';
 import {PointDataLabelPlugin, VerticalLinePlugin} from './extensions';
 import {colors, getColor} from './colors';
 import {costTickFormatter} from '../utilities';
+import {getTickFormat} from '../periods';
 import moment from 'moment-timezone';
+import styles from './charts.css';
+import {Alert} from 'antd';
+
+function dataIsEmpty (data) {
+  return !data || data.filter((d) => !isNaN(d)).length === 0;
+}
+
+function generateEmptySet (filters) {
+  if (!filters) {
+    return null;
+  }
+  const {
+    start: initial,
+    end
+  } = filters;
+  const emptySet = [];
+  let start = moment(initial);
+  let unit = 'day';
+  if (getTickFormat(initial, end) === '1M') {
+    unit = 'M';
+  }
+  while (start <= end) {
+    emptySet.push({
+      dateValue: moment(start),
+      key: moment(start).format('YYYY-MM-DD')
+    });
+    start = start.add(1, unit);
+  }
+  return emptySet;
+}
+
+function fillSet (filters, data) {
+  const set = generateEmptySet(filters);
+  if (!set || !set.length || !data || !data.length) {
+    return data;
+  }
+  for (let i = 0; i < data.length; i++) {
+    const item = data[i];
+    const key = item.dateValue.format('YYYY-MM-DD');
+    const [index] = set
+      .map(({key}, index) => ({key, index}))
+      .filter(e => e.key === key)
+      .map(e => e.index);
+    if (index >= 0) {
+      set.splice(index, 1, item);
+    }
+  }
+  set.forEach(e => delete e.key);
+  return set;
+}
+
+function generateLabels (data, filters = {}) {
+  if (!data || !data.length) {
+    return [];
+  }
+  const {
+    start,
+    end
+  } = filters;
+  let format = 'D MMM';
+  let fullFormat = 'D MMM YYYY';
+  let tooltipFormat = 'MMMM D, YYYY';
+  if (getTickFormat(start, end) === '1M') {
+    format = 'MMM';
+    fullFormat = 'MMM YYYY';
+    tooltipFormat = 'MMMM YYYY';
+  }
+  const labels = [];
+  let year;
+  for (let i = 0; i < data.length; i++) {
+    const date = data[i].dateValue;
+    let label = date.format(format);
+    if (!year) {
+      year = date.get('y');
+    } else if (year !== date.get('y')) {
+      year = date.get('y');
+      label = date.format(fullFormat);
+    }
+    if (labels.indexOf(label) >= 0) {
+      label = false;
+    }
+    labels.push({text: label, date, tooltip: date.format(tooltipFormat)});
+  }
+  return labels;
+}
 
 function extractDataSet (data, title, type, color, options = {}) {
+  if (dataIsEmpty(data)) {
+    return false;
+  }
   const {showPoints = true, currentDateIndex} = options;
   return {
     label: title,
     type,
-    data: data,
+    data,
     fill: false,
     borderColor: color,
     borderWidth: 2,
@@ -40,9 +129,9 @@ function extractDataSet (data, title, type, color, options = {}) {
 function parse (values, quota, highlightedDate = moment.utc()) {
   const data = (values || [])
     .map(d => ({
-      date: moment(d.date, 'DD MMM YYYY'),
-      y: d.value || NaN,
-      y2: d.previous || NaN,
+      date: d.dateValue,
+      value: d.value || NaN,
+      previous: d.previous || NaN,
       quota: quota
     }));
   let currentDateIndex;
@@ -51,7 +140,7 @@ function parse (values, quota, highlightedDate = moment.utc()) {
     const year = highlightedDate.get('y');
     const month = highlightedDate.get('M');
     const day = highlightedDate.get('D');
-    currentDate = moment({y: year, M: month, D: day}).toDate();
+    currentDate = moment.utc({y: year, M: month, D: day}).toDate();
     const [highlighted] = data
       .filter(d =>
         d.date && d.date.get('y') === year && d.date.get('M') === month && d.date.get('D') === day
@@ -61,17 +150,44 @@ function parse (values, quota, highlightedDate = moment.utc()) {
     }
   }
   return {
-    quota: data.map(d => ({x: d.date.toDate(), y: d.quota})),
-    currentData: data.map(d => ({x: d.date.toDate(), y: d.y})),
-    previousData: data.map(d => ({x: d.date.toDate(), y: d.y2})),
+    quota: data.map(d => d.quota),
+    currentData: data.map(d => d.value),
+    previousData: data.map(d => d.previous),
     currentDate,
     currentDateIndex
   };
 }
 
-function Summary ({colors: colorsConfig, data, title, quota: quotaValue, style}) {
+function Summary (
+  {
+    colors: colorsConfig,
+    title,
+    style,
+    summary,
+    quota: showQuota = true
+  }
+) {
+  const data = summary && summary.loaded
+    ? fillSet(summary.filters, summary.value.values || [])
+    : [];
+  const quotaValue = showQuota && summary && summary.loaded
+    ? summary.value.quota
+    : undefined;
+  const error = summary
+    ? summary.error
+    : undefined;
+  if (error) {
+    return (
+      <div style={Object.assign({height: '100%', position: 'relative', display: 'block'}, style)}>
+        {!!title && <div className={styles.title}>{title}</div>}
+        <Alert type="error" message={error} />
+      </div>
+    );
+  }
   const {currentData, previousData, quota, currentDate, currentDateIndex} = parse(data, quotaValue);
+  const labels = generateLabels(data, summary?.filters);
   const dataConfiguration = {
+    labels: labels.map(l => l.text),
     datasets: [
       extractDataSet(
         currentData,
@@ -104,16 +220,15 @@ function Summary ({colors: colorsConfig, data, title, quota: quotaValue, style})
     },
     scales: {
       xAxes: [{
-        type: 'time',
-        time: {tooltipFormat: 'DD MMM YYYY'},
-        bounds: 'data',
         gridLines: {
           drawOnChartArea: false
         },
-        tick: {
+        ticks: {
           display: true,
-          source: 'auto'
-        }
+          maxRotation: 45,
+          callback: (date) => date || ''
+        },
+        offset: true
       }],
       yAxes: [{
         ticks: {
@@ -129,6 +244,17 @@ function Summary ({colors: colorsConfig, data, title, quota: quotaValue, style})
       mode: 'nearest',
       axis: 'x',
       callbacks: {
+        title: function (tooltipItems, data) {
+          const [firstItem] = tooltipItems;
+          if (firstItem) {
+            const {xLabel: defaultTitle, index} = firstItem;
+            if (index >= 0 && index < labels.length) {
+              const {tooltip} = labels[index];
+              return tooltip || defaultTitle;
+            }
+          }
+          return undefined;
+        },
         label: function (tooltipItem, data) {
           const {label} = data.datasets[tooltipItem.datasetIndex];
           const value = costTickFormatter(tooltipItem.yLabel);
@@ -144,11 +270,9 @@ function Summary ({colors: colorsConfig, data, title, quota: quotaValue, style})
         index: currentDateIndex,
         time: currentDate
       },
-      [PointDataLabelPlugin.id]: [
-        {datasetIndex: 0, index: currentDateIndex},
-        {datasetIndex: 1, index: currentDateIndex},
-        quotaValue ? {datasetIndex: 2, index: currentDateIndex} : false
-      ].filter(Boolean)
+      [PointDataLabelPlugin.id]: {
+        index: currentDateIndex
+      }
     }
   };
   return (

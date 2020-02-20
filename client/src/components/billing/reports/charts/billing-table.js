@@ -32,11 +32,11 @@ function BillingTable ({summary, showQuota = true}) {
   let currentInfo, previousInfo;
   const {quota, previousQuota, values} = data || {};
   const renderQuotaColumn = showQuota && (quota || previousQuota);
-  const lastValue = (values || []).filter(v => v.value).pop();
-  const lastValueIndex = (values || []).indexOf(lastValue);
+  const lastValue = (values || [])
+    .filter(v => v.value && v.initialDate <= end)
+    .pop();
   const lastPreviousValue = (values || [])
-    .slice(0, lastValueIndex + 1)
-    .filter(v => v.previous)
+    .filter(v => v.previous && v.initialDate <= previousEnd)
     .pop();
   currentInfo = {
     quota,
@@ -61,7 +61,7 @@ function BillingTable ({summary, showQuota = true}) {
     if (!isNaN(value) && value) {
       return costTickFormatter(value);
     }
-    return '';
+    return '-';
   };
   const renderDates = ({from, to} = {}) => dateRangeRenderer(from, to) || '-';
   const renderWarning = (currentInfo = {}, previousInfo = {}) => {
@@ -93,6 +93,7 @@ function BillingTable ({summary, showQuota = true}) {
     const valueClassNames = [
       !info ? styles.pending : false,
       renderQuotaColumn && info && info.value > info.quota ? styles.bold : false,
+      isCurrent ? styles.bold : false,
       styles.value
     ].filter(Boolean);
     const quotaClassNames = [
@@ -128,13 +129,15 @@ function BillingTable ({summary, showQuota = true}) {
     <div className={styles.container}>
       <table className={styles.table}>
         <tbody>
-          <tr>
-            <td className={styles.borderless} colSpan={2}>{'\u00A0'}</td>
-            {
-              renderQuotaColumn && (<td>Quota</td>)
-            }
-            <td className={[styles.quota, styles.borderless].join(' ')}>{'\u00A0'}</td>
-          </tr>
+          {
+            renderQuotaColumn && (
+              <tr>
+                <td className={styles.borderless} colSpan={2}>{'\u00A0'}</td>
+                <td>Quota</td>
+                <td className={[styles.quota, styles.borderless].join(' ')}>{'\u00A0'}</td>
+              </tr>
+            )
+          }
           {renderInfo('Current', currentInfo, true)}
           {renderInfo('Previous', previousInfo)}
         </tbody>
