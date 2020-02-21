@@ -35,7 +35,7 @@ const isFullMonth = (start, end) => isMonthStart(start) && isMonthEnd(end);
 const rules = [
   {
     value: date => date.format('DD.MM.YYYY'),
-    render: (start) => start.format('D MMM YYYY')
+    render: (start) => start.format('DD MMM YYYY')
   },
   {
     value: date => date.format('MM.YYYY'),
@@ -43,7 +43,7 @@ const rules = [
       if (isFullMonth(start, end)) {
         return start.format('MMMM YYYY');
       }
-      return `${start.format('MMMM YYYY')}, ${start.format('D')} - ${end.format('D')}`;
+      return `${start.format('MMMM YYYY')}, ${start.format('DD')} - ${end.format('DD')}`;
     }
   },
   {
@@ -51,15 +51,15 @@ const rules = [
     render: (start, end, year) => {
       const dateFormat = isMonthStart(start) && isMonthEnd(end)
         ? 'MMMM'
-        : 'D MMMM';
+        : 'DD MMMM';
       return `${start.format(dateFormat)} - ${end.format(dateFormat)}, ${year}`;
     }
   },
   {
     value: () => undefined,
     render: (start, end) => {
-      const startStringFormat = isMonthStart(start) ? 'MMM YYYY' : 'D MMM YYYY';
-      const endStringFormat = isMonthEnd(end) ? 'MMM YYYY' : 'D MMM YYYY';
+      const startStringFormat = isMonthStart(start) ? 'MMM YYYY' : 'DD MMM YYYY';
+      const endStringFormat = isMonthEnd(end) ? 'MMM YYYY' : 'DD MMM YYYY';
       return `${start.format(startStringFormat)} - ${end.format(endStringFormat)}`;
     }
   }

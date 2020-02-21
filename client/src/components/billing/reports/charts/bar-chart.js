@@ -18,7 +18,7 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import Chart from './base';
 import {colors} from './colors';
-import {BarchartDataLabelPlugin} from './extensions';
+import {BarchartDataLabelPlugin, ScaleTitleClickPlugin} from './extensions';
 import {costTickFormatter} from '../utilities';
 import {Alert} from 'antd';
 
@@ -28,27 +28,19 @@ function toValueFormat (value) {
   return Math.round((+value || 0) * 100.0) / 100.0;
 }
 
-function getValues (data, keys, propertyName = 'value') {
-  return (keys || []).map(key => toValueFormat(data[key][propertyName]));
+function getValues (data, propertyName = 'value') {
+  return data.map(({item}) => toValueFormat(item[propertyName]));
 }
 
 function filterTopData (data, top) {
-  if (top && data && Object.keys(data).length > top) {
-    const valuedData = Object.keys(data)
-      .map((key, index) => ({item: data[key], index}));
-    valuedData.sort((a, b) => +b.item.value - (+a.item.value));
-    const filteredData = valuedData.filter((i, index) => index < top).map(i => i.index);
-    return {
-      filtered: true,
-      filteredData: Object.keys(data)
-        .filter((d, i) => filteredData.indexOf(i) >= 0)
-        .reduce((r, c) => ({...r, [c]: data[c]}), {})
-    };
+  const sortedData = Object.keys(data || {})
+    .map((key) => ({name: key, item: data[key]}));
+  sortedData
+    .sort((a, b) => +b.item.value - (+a.item.value));
+  if (top) {
+    return sortedData.filter((o, i) => i < top);
   }
-  return {
-    filteredData: data,
-    filtered: false
-  };
+  return sortedData;
 }
 
 function BarChart (
@@ -75,18 +67,18 @@ function BarChart (
       </div>
     );
   }
-  const {filteredData, filtered} = filterTopData(data, top);
-  const groups = Object.keys(filteredData || {});
+  const filteredData = filterTopData(data, top);
+  const groups = filteredData.map(d => d.name);
   const chartData = {
     labels: groups,
     datasets: [
       {
         label: 'Previous',
         type: 'quota-bar',
-        data: getValues(filteredData, groups, previousDataSample),
+        data: getValues(filteredData, previousDataSample),
         borderWidth: 2,
         borderDash: [4, 4],
-        borderColor: colors.blue,
+        borderColor: colors.previous,
         backgroundColor: 'transparent',
         borderSkipped: '',
         textColor: '',
@@ -94,10 +86,10 @@ function BarChart (
       },
       {
         label: 'Current',
-        data: getValues(filteredData, groups, dataSample),
+        data: getValues(filteredData, dataSample),
         borderWidth: 1,
-        borderColor: colors.red,
-        backgroundColor: colors.pink,
+        borderColor: colors.current,
+        backgroundColor: colors.lightCurrent,
         borderSkipped: ''
       }
     ]
@@ -106,6 +98,7 @@ function BarChart (
     animation: {duration: 0},
     scales: {
       xAxes: [{
+        id: 'x-axis',
         gridLines: {
           drawOnChartArea: false
         },
@@ -124,7 +117,7 @@ function BarChart (
     },
     title: {
       display: !subChart && !!title,
-      text: filtered ? `${title} (TOP ${top})` : title
+      text: top ? `${title} (TOP ${top})` : title
     },
     legend: {
       display: false
@@ -158,6 +151,10 @@ function BarChart (
         textColor: '',
         labelPosition: 'inner',
         valueFormatter
+      },
+      [ScaleTitleClickPlugin.id]: {
+        handler: () => {},
+        axis: 'x-axis'
       }
     }
   };
@@ -170,7 +167,8 @@ function BarChart (
         options={options}
         getBarAndNavigate={getBarAndNavigate}
         plugins={[
-          BarchartDataLabelPlugin.plugin
+          BarchartDataLabelPlugin.plugin,
+          ScaleTitleClickPlugin.plugin
         ]}
       />
     </div>
