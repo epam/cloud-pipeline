@@ -91,7 +91,7 @@ function BillingTable ({summary, showQuota = true}) {
   const renderInfo = (title, info, isCurrent) => {
     const dateClassNames = [
       !info ? styles.pending : false,
-      styles.value
+      styles.date
     ].filter(Boolean);
     const valueClassNames = [
       !info ? styles.pending : false,

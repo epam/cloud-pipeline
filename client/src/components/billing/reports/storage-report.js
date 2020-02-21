@@ -32,7 +32,6 @@ import {
   GetGroupedBillingDataPaginated,
   GetGroupedBillingDataWithPreviousPaginated
 } from '../../../models/billing';
-import {ChartContainer} from './utilities';
 import styles from './reports.css';
 
 const tablePageSize = 10;
@@ -86,6 +85,16 @@ function injection (stores, props) {
     storages,
     storagesTable
   };
+}
+
+function StoragesDataBlock ({children}) {
+  return (
+    <div className={styles.storagesChartsContainer}>
+      <div>
+        {children}
+      </div>
+    </div>
+  );
 }
 
 function renderTable ({storages}) {
@@ -173,36 +182,25 @@ function StorageReports ({storages, storagesTable, summary, type}) {
   };
   return (
     <div className={styles.chartsContainer}>
-      <div className={styles.chartsColumnContainer}>
-        <ChartContainer style={{height: 175}}>
-          <BillingTable summary={summary} showQuota={false} />
-        </ChartContainer>
-        <ChartContainer style={{height: 400, display: 'block'}}>
-          <Summary
-            summary={summary}
-            quota={false}
-            title={getSummaryTitle()}
-          />
-        </ChartContainer>
-      </div>
-      <div className={styles.chartsColumnContainer}>
-        <ChartContainer
-          style={{
-            height: 400,
-            position: 'relative'
-          }}
-        >
-          <BarChart
-            data={storages && storages.loaded ? storages.value : {}}
-            error={storages && storages.error ? storages.error : null}
-            title={getTitle()}
-            top={10}
-          />
-        </ChartContainer>
-        <ChartContainer>
-          <RenderTable storages={storagesTable} />
-        </ChartContainer>
-      </div>
+      <StoragesDataBlock>
+        <BillingTable summary={summary} showQuota={false} />
+        <Summary
+          summary={summary}
+          quota={false}
+          title={getSummaryTitle()}
+          style={{flex: 1, maxHeight: 500}}
+        />
+      </StoragesDataBlock>
+      <StoragesDataBlock className={styles.chartsColumnContainer}>
+        <BarChart
+          data={storages && storages.loaded ? storages.value : {}}
+          error={storages && storages.error ? storages.error : null}
+          title={getTitle()}
+          top={tablePageSize}
+          style={{height: 300}}
+        />
+        <RenderTable storages={storagesTable} />
+      </StoragesDataBlock>
     </div>
   );
 }

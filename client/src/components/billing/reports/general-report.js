@@ -29,7 +29,7 @@ import {
   GetGroupedBillingData,
   GetGroupedBillingDataPaginated
 } from '../../../models/billing';
-import {ChartContainer} from './utilities';
+import {costTickFormatter} from './utilities';
 import styles from './reports.css';
 import ReportsRouting from './routing';
 
@@ -116,40 +116,40 @@ function toValue (value) {
   return null;
 }
 
-function toMoneyValue (value) {
-  if (value) {
-    return `$${Math.round((+value) * 100.0) / 100.0}`;
-  }
-  return null;
+function GeneralDataBlock ({children, style}) {
+  return (
+    <div className={styles.generalChartsContainer}>
+      <div style={style}>
+        {children}
+      </div>
+    </div>
+  );
 }
 
 function UserReport ({
-  billingCentersRequest,
   resources,
   summary,
   getBarAndNavigate
 }) {
   return (
     <div className={styles.chartsContainer}>
-      <div className={styles.chartsColumnContainer}>
+      <GeneralDataBlock>
         <BillingTable summary={summary} />
-        <ChartContainer style={{flex: 1, height: 400}}>
-          <Summary
-            summary={summary}
-            title="Summary"
-          />
-        </ChartContainer>
-      </div>
-      <div className={styles.chartsColumnContainer}>
-        <ChartContainer style={{height: 400}}>
-          <GroupedBarChart
-            data={resources && resources.loaded ? resources.value : {}}
-            error={resources && resources.error ? resources.error : null}
-            title="Resources"
-            getBarAndNavigate={getBarAndNavigate}
-          />
-        </ChartContainer>
-      </div>
+        <Summary
+          summary={summary}
+          title="Summary"
+          style={{flex: 1, maxHeight: 500}}
+        />
+      </GeneralDataBlock>
+      <GeneralDataBlock>
+        <GroupedBarChart
+          data={resources && resources.loaded ? resources.value : {}}
+          error={resources && resources.error ? resources.error : null}
+          title="Resources"
+          getBarAndNavigate={getBarAndNavigate}
+          height={400}
+        />
+      </GeneralDataBlock>
     </div>
   );
 }
@@ -194,7 +194,7 @@ function GroupReport ({
     key: 'spendings',
     dataIndex: 'spendings',
     title: 'Spendings',
-    render: toMoneyValue
+    render: costTickFormatter
   }, {
     key: 'billingCenter',
     title: 'Billing center',
@@ -202,27 +202,25 @@ function GroupReport ({
   }];
   return (
     <div className={styles.chartsContainer}>
-      <div className={styles.chartsColumnContainer}>
-        <ChartContainer>
-          <BillingTable summary={summary} />
-        </ChartContainer>
-        <ChartContainer style={{height: 600}}>
-          <Summary
-            summary={summary}
-            title="Summary"
-          />
-        </ChartContainer>
-      </div>
-      <div className={styles.chartsColumnContainer}>
-        <ChartContainer style={{height: 400, position: 'relative'}}>
+      <GeneralDataBlock>
+        <BillingTable summary={summary} />
+        <Summary
+          summary={summary}
+          title="Summary"
+          style={{flex: 1, maxHeight: 500}}
+        />
+      </GeneralDataBlock>
+      <div className={styles.chartsSubContainer}>
+        <GeneralDataBlock>
           <GroupedBarChart
             data={resources && resources.loaded ? resources.value : {}}
             error={resources && resources.error ? resources.error : null}
             title="Resources"
             getBarAndNavigate={getBarAndNavigate}
+            height={400}
           />
-        </ChartContainer>
-        <ChartContainer style={{height: 400}}>
+        </GeneralDataBlock>
+        <GeneralDataBlock>
           <BarChart
             data={
               billingCentersRequest && billingCentersRequest.loaded
@@ -235,26 +233,27 @@ function GroupReport ({
             }
             title={title}
             getBarAndNavigate={getBarAndNavigate}
+            style={{height: 250}}
           />
-        </ChartContainer>
-        <Table
-          dataSource={
-            billingCentersTableRequest && billingCentersTableRequest.loaded
-              ? Object.values(billingCentersTableRequest.value)
-              : []
-          }
-          columns={tableColumns}
-          loading={billingCentersTableRequest.pending}
-          pagination={{
-            current: billingCentersTableRequest.pageNum + 1,
-            pageSize: billingCentersTableRequest.pageSize,
-            total: billingCentersTableRequest.totalPages * billingCentersTableRequest.pageSize,
-            onChange: async (page) => {
-              await billingCentersTableRequest.fetchPage(page - 1);
+          <Table
+            dataSource={
+              billingCentersTableRequest && billingCentersTableRequest.loaded
+                ? Object.values(billingCentersTableRequest.value)
+                : []
             }
-          }}
-          size="small"
-        />
+            columns={tableColumns}
+            loading={billingCentersTableRequest.pending}
+            pagination={{
+              current: billingCentersTableRequest.pageNum + 1,
+              pageSize: billingCentersTableRequest.pageSize,
+              total: billingCentersTableRequest.totalPages * billingCentersTableRequest.pageSize,
+              onChange: async (page) => {
+                await billingCentersTableRequest.fetchPage(page - 1);
+              }
+            }}
+            size="small"
+          />
+        </GeneralDataBlock>
       </div>
     </div>
   );
@@ -268,31 +267,28 @@ function GeneralReport ({
 }) {
   return (
     <div className={styles.chartsContainer}>
-      <div className={styles.chartsColumnContainer}>
-        <ChartContainer>
-          <BillingTable summary={summary} />
-        </ChartContainer>
-        <ChartContainer style={{height: 600}}>
-          <Summary
-            summary={summary}
-            title="Summary"
-          />
-        </ChartContainer>
-      </div>
-      <div className={styles.chartsColumnContainer}>
-        <ChartContainer style={{
-          height: 400,
+      <GeneralDataBlock>
+        <BillingTable summary={summary} />
+        <Summary
+          summary={summary}
+          title="Summary"
+          style={{flex: 1, maxHeight: 500}}
+        />
+      </GeneralDataBlock>
+      <div className={styles.chartsSubContainer}>
+        <GeneralDataBlock style={{
           position: 'relative',
-          marginBottom: 40
+          flex: 'unset'
         }}>
           <GroupedBarChart
             data={resources && resources.loaded ? resources.value : {}}
             error={resources && resources.error ? resources.error : null}
             getBarAndNavigate={getBarAndNavigate}
             title="Resources"
+            height={400}
           />
-        </ChartContainer>
-        <ChartContainer style={{height: 400}}>
+        </GeneralDataBlock>
+        <GeneralDataBlock style={{flex: 'unset'}}>
           <BarChart
             data={billingCentersRequest && billingCentersRequest.loaded
               ? billingCentersRequest.value
@@ -304,8 +300,9 @@ function GeneralReport ({
             }
             title="Billing centers"
             getBarAndNavigate={getBarAndNavigate}
+            style={{height: 400}}
           />
-        </ChartContainer>
+        </GeneralDataBlock>
       </div>
     </div>
   );
