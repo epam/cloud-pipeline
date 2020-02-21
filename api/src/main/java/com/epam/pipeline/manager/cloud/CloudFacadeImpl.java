@@ -39,7 +39,6 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.EnumUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -105,10 +104,9 @@ public class CloudFacadeImpl implements CloudFacade {
 
     @Override
     public boolean isNodeExpired(final Long runId) {
-        final ClusterKeepAlivePolicy clusterKeepAlivePolicy = Optional.ofNullable(
-                preferenceManager.getPreference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY))
-                .map(pref -> EnumUtils.getEnum(ClusterKeepAlivePolicy.class, pref))
-                .orElse(ClusterKeepAlivePolicy.MINUTES_TILL_HOUR);
+        final String preference = preferenceManager.getPreference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY);
+        final ClusterKeepAlivePolicy clusterKeepAlivePolicy = CommonUtils.getEnumValueOrDefault(
+                preference, ClusterKeepAlivePolicy.MINUTES_TILL_HOUR);
         final AbstractCloudRegion region = getRegionByRunId(runId);
         final LocalDateTime nodeLaunchTime = getInstanceService(region).getNodeLaunchTime(region, runId);
         return Optional.ofNullable(MapUtils.emptyIfNull(expirationServices)

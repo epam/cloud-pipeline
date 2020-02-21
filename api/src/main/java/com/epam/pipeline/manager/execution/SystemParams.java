@@ -66,7 +66,9 @@ public enum SystemParams {
     FSBROWSER_TMP("cp-fsbrowser-tmp", "CP_FSBROWSER_TMP", false, true),
     FSBROWSER_STORAGE("cp-fsbrowser-storage", "CP_FSBROWSER_STORAGE", false, true),
     FSBROWSER_BLACK_LIST("cp-fsbrowser-black-list", "CP_FSBROWSER_BLACK_LIST", false, true),
-    CONTAINER_CPU_RESOURCE("container-cpu-resource", "CP_CONTAINER_CPU_RESOURCE", false, true);
+    CONTAINER_CPU_RESOURCE("container-cpu-resource", "CP_CONTAINER_CPU_RESOURCE", false, true),
+    CONTAINER_MEMORY_RESOURCE_POLICY("container-memory-resource-policy",
+            "CP_CONTAINER_MEMORY_RESOURCE_POLICY", false, true);
 
     public static final String CLOUD_REGION_PREFIX = "CP_ACCOUNT_REGION_";
     public static final String CLOUD_ACCOUNT_PREFIX = "CP_ACCOUNT_ID_";

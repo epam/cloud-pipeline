@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,12 @@ package com.epam.pipeline.utils;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudAwareService;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.EnumUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -30,6 +33,13 @@ public final class CommonUtils {
 
     private CommonUtils() {
         //no op
+    }
+
+
+    public static <T extends Enum<T>> T getEnumValueOrDefault(final String enumName, final T defaultValue) {
+        return Optional.ofNullable(enumName)
+                .map(name -> EnumUtils.getEnum(defaultValue.getDeclaringClass(), enumName))
+                .orElse(defaultValue);
     }
 
     public static <T extends CloudAwareService> Map<CloudProvider, T> groupByCloudProvider(final List<T> services) {
@@ -45,7 +55,9 @@ public final class CommonUtils {
 
     public static <K, V> Map<K, V> mergeMaps(final Map<K, V> first,
                                              final Map<K, V> second) {
-        return Stream.concat(first.entrySet().stream(), second.entrySet().stream())
+        return Stream.concat(
+                MapUtils.emptyIfNull(first).entrySet().stream(),
+                MapUtils.emptyIfNull(second).entrySet().stream())
                 .collect(Collectors.toMap(
                     Map.Entry::getKey,
                     Map.Entry::getValue,

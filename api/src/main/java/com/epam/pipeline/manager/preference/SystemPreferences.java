@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.EnvVarsSettings;
 import com.epam.pipeline.entity.cluster.PriceType;
+import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.preference.Preference;
@@ -348,6 +349,11 @@ public class SystemPreferences {
             RunVisibilityPolicy.INHERIT.name(), LAUNCH_GROUP, isValidEnum(RunVisibilityPolicy.class));
     public static final IntPreference LAUNCH_CONTAINER_CPU_RESOURCE = new IntPreference(
             "launch.container.cpu.resource", 0, LAUNCH_GROUP, isGreaterThan(-1));
+    public static final StringPreference LAUNCH_CONTAINER_MEMORY_RESOURCE_POLICY = new StringPreference(
+            "launch.container.memory.resource.policy", ContainerMemoryResourcePolicy.NO_LIMIT.name(),
+            LAUNCH_GROUP, isValidEnum(ContainerMemoryResourcePolicy.class));
+    public static final IntPreference LAUNCH_CONTAINER_MEMORY_RESOURCE_REQUEST = new IntPreference(
+            "launch.container.memory.resource.request", 1, LAUNCH_GROUP, isGreaterThan(0));
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",
