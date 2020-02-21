@@ -908,7 +908,7 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
               type=click.Choice(DuFormatType.possible_types()), required=False, default='M')
 @click.option('-d', '--depth', help='Depth level', type=int, required=False)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
-def storage_copy_item(path, format, depth):
+def du(path, format, depth):
     DataStorageOperations.du(path, format, depth)
 
 
