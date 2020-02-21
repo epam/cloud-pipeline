@@ -21,6 +21,7 @@ from pipeline import PipelineAPI, Logger as CloudPipelineLogger
 import subprocess
 import time
 import multiprocessing
+import requests
 
 
 class ExecutionError(RuntimeError):
@@ -36,6 +37,18 @@ class LoggingError(RuntimeError):
 
 
 class ScalingError(RuntimeError):
+    pass
+
+
+class ServerError(RuntimeError):
+    pass
+
+
+class HTTPError(ServerError):
+    pass
+
+
+class APIError(ServerError):
     pass
 
 
@@ -403,7 +416,7 @@ class GridEngineScaleUpHandler:
         and self.default_hostfile).
 
         :param cmd_executor: Cmd executor.
-        :param pipe: Cloud pipeline client.
+        :param pipe: Cloud pipeline raw client.
         :param grid_engine: Grid engine client.
         :param host_storage: Additional hosts storage.
         :param parent_run_id: Additional nodes parent run id.
@@ -838,7 +851,7 @@ class GridEngineWorkerValidator:
     _SHOW_RUN_STATUS = 'pipe view-runs %s | grep Status | awk \'{print $2}\''
     _RUNNING_STATUS = 'RUNNING'
 
-    def __init__(self, cmd_executor, pipe, host_storage, grid_engine, scale_down_handler):
+    def __init__(self, cmd_executor, api, host_storage, grid_engine, scale_down_handler):
         """
         Grid engine worker validator.
 
@@ -847,13 +860,13 @@ class GridEngineWorkerValidator:
         F.e. a spot worker instance was preempted and it has to be removed from its autoscaled cluster.
 
         :param grid_engine: Grid engine.
-        :param pipe: Cloud pipeline client.
+        :param api: Cloud pipeline client.
         :param cmd_executor: Cmd executor.
         :param host_storage: Additional hosts storage.
         :param scale_down_handler: Scale down handler.
         """
         self.grid_engine = grid_engine
-        self.pipe = pipe
+        self.api = api
         self.executor = cmd_executor
         self.host_storage = host_storage
         self.scale_down_handler = scale_down_handler
@@ -881,16 +894,21 @@ class GridEngineWorkerValidator:
 
     def _is_running(self, run_id):
         try:
-            run_info = self.pipe.load_run(run_id)
+            run_info = self.api.load_run(run_id)
             status = run_info.get('status', 'not found').strip().upper()
             if status == self._RUNNING_STATUS:
                 return True
             Logger.warn('Additional host with run_id=%s status is not %s but %s.'
                         % (run_id, self._RUNNING_STATUS, status))
             return False
-        except:
-            Logger.warn('Additional host with run_id=%s status retrieving has failed.' % run_id)
+        except APIError as e:
+            Logger.warn('Additional host with run_id=%s status retrieving has failed '
+                        'and it is considered not running: %s' % (run_id, str(e)))
             return False
+        except Exception as e:
+            Logger.warn('Additional host with run_id=%s status retrieving has failed '
+                        'but it is temporary considered running: %s' % (run_id, str(e)))
+            return True
 
     def _try_stop_worker(self, run_id):
         try:
@@ -959,12 +977,56 @@ def make_dirs(path):
             raise
 
 
-def _retrieve_preference(pipe, preference, default_value):
-    try:
-        return pipe.get_preference(preference)['value']
-    except:
-        Logger.warn('Pipeline preference %s retrieving failed. Using default value: %s.' % (preference, default_value))
-        return default_value
+class CloudPipelineAPI:
+
+    def __init__(self, pipe):
+        """
+        Cloud pipeline client.
+
+        :param pipe: Cloud pipeline raw client.
+        """
+        self.pipe = pipe
+
+    def retrieve_preference(self, preference, default_value):
+        try:
+            return self.pipe.get_preference(preference)['value']
+        except:
+            Logger.warn('Pipeline preference %s retrieving has failed. Using default value: %s.'
+                        % (preference, default_value))
+            return default_value
+
+    def load_run(self, run_id):
+        result = self._execute_request(str(self.pipe.api_url) + self.pipe.GET_RUN_URL.format(run_id))
+        return result or {}
+
+    def _execute_request(self, url):
+        count = 0
+        exceptions = []
+        while count < self.pipe.attempts:
+            count += 1
+            try:
+                response = requests.get(url, headers=self.pipe.header, verify=False, timeout=self.pipe.connection_timeout)
+                if response.status_code != 200:
+                    raise HTTPError('API responded with http status %s.' % str(response.status_code))
+                data = response.json()
+                status = data.get('status')
+                message = data.get('message')
+                if not status:
+                    raise APIError('API responded without any status.')
+                if status != self.pipe.RESPONSE_STATUS_OK:
+                    if message:
+                        raise APIError('API responded with status %s and error message: %s.' % (status, message))
+                    else:
+                        raise APIError('API responded with status %s.' % status)
+                return data.get('payload')
+            except Exception as e:
+                exceptions.append(e)
+                Logger.warn('An error has occurred during request %s/%s to API: %s'
+                            % (count, self.pipe.attempts, str(e)))
+            time.sleep(self.pipe.timeout)
+        err_msg = 'Exceeded maximum retry count %s for API request.' % self.pipe.attempts
+        Logger.warn(err_msg)
+        raise exceptions[-1]
 
 
 if __name__ == '__main__':
@@ -999,11 +1061,12 @@ if __name__ == '__main__':
     cmd_executor = CmdExecutor()
     grid_engine = GridEngine(cmd_executor=cmd_executor)
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file='/common/workdir/.autoscaler.storage')
+    # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
     pipe = PipelineAPI(api_url=pipeline_api, log_dir='/common/workdir/.pipe.log')
-    scale_up_timeout = int(_retrieve_preference(pipe, 'ge.autoscaling.scale.up.timeout', default_value=30))
-    scale_down_timeout = int(_retrieve_preference(pipe, 'ge.autoscaling.scale.down.timeout', default_value=30))
-    scale_up_polling_timeout = int(_retrieve_preference(pipe, 'ge.autoscaling.scale.up.polling.timeout',
-                                                        default_value=600))
+    api = CloudPipelineAPI(pipe=pipe)
+    scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default_value=30))
+    scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default_value=30))
+    scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout', default_value=600))
     scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, pipe=pipe, grid_engine=grid_engine,
                                                 host_storage=host_storage, parent_run_id=master_run_id,
                                                 default_hostfile=default_hostfile, instance_disk=instance_disk,
@@ -1012,7 +1075,7 @@ if __name__ == '__main__':
                                                 instance_cores=instance_cores, polling_timeout=scale_up_polling_timeout)
     scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
                                                     default_hostfile=default_hostfile, instance_cores=instance_cores)
-    worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, pipe=pipe, host_storage=host_storage,
+    worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,
                                                  grid_engine=grid_engine, scale_down_handler=scale_down_handler)
     autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, cmd_executor=cmd_executor,
                                       scale_up_handler=scale_up_handler, scale_down_handler=scale_down_handler,
