@@ -15,52 +15,28 @@
 
 package com.epam.pipeline.manager.cluster.container;
 
-import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
-import io.fabric8.kubernetes.api.model.Quantity;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-
-
 @Service
-@RequiredArgsConstructor
-public class NodeContainerMemoryResourceService implements ContainerMemoryResourceService {
+public class NodeContainerMemoryResourceService extends AbstractNodeContainerMemoryResourceService {
 
-    private static final String MEMORY_RESOURCE = "memory";
-
-    private final InstanceOfferManager instanceOfferManager;
-    private final PreferenceManager preferenceManager;
+    public NodeContainerMemoryResourceService(final InstanceOfferManager instanceOfferManager,
+                                              final PreferenceManager preferenceManager) {
+        super(instanceOfferManager, preferenceManager);
+    }
 
     @Override
-    public ContainerResources buildResourcesForRun(final PipelineRun run) {
-        final RunInstance instance = run.getInstance();
-        final String nodeType = instance.getNodeType();
-        final Float nodeRam = ListUtils.emptyIfNull(
-                instanceOfferManager.getAllInstanceTypes(instance.getCloudRegionId(), instance.getSpot()))
-                .stream()
-                .filter(type -> nodeType.equals(type.getName()))
-                .findFirst()
-                .map(InstanceType::getMemory)
-                .orElse(0.0f);
-        final int memoryRequest = preferenceManager.getPreference(SystemPreferences.LAUNCH_CONTAINER_MEMORY_RESOURCE_REQUEST);
-        final int memoryLimit = Math.max(0, Math.round(nodeRam - 1.0f));
-        return ContainerResources
-                .builder()
-                .requests(Collections.singletonMap(MEMORY_RESOURCE, new Quantity(String.valueOf(memoryRequest))))
-                .limits(Collections.singletonMap(MEMORY_RESOURCE, new Quantity(String.valueOf(memoryLimit))))
-                .build();
+    protected double getMemorySize(final PipelineRun run) {
+        return getNodeRam(run);
     }
 
     @Override
     public ContainerMemoryResourcePolicy policy() {
         return ContainerMemoryResourcePolicy.NODE;
     }
+
 }

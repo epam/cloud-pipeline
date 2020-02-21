@@ -36,7 +36,6 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodSpec;
 import io.fabric8.kubernetes.api.model.Quantity;
-import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.SecurityContext;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
@@ -47,7 +46,6 @@ import io.fabric8.kubernetes.client.utils.HttpClientUtils;
 import okhttp3.OkHttpClient;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -196,22 +194,31 @@ public class PipelineExecutor {
         container.setImagePullPolicy(pullImage ? "Always" : "Never");
         container.setVolumeMounts(getMounts(isDockerInDockerEnabled));
         if (isParentPod) {
-            setCpuRequestIfRequired(envVars, container);
-            final ContainerResources containerResources = buildMemoryRequests(run);
-            container.setResources(containerResources.toContainerRequirements());
+            buildContainerResources(run, envVars, container);
         }
         return container;
     }
 
-    private ContainerResources buildMemoryRequests(final PipelineRun run) {
-        final String preference = preferenceManager.getPreference(SystemPreferences.LAUNCH_CONTAINER_MEMORY_RESOURCE_POLICY);
+    private void buildContainerResources(PipelineRun run, List<EnvVar> envVars, Container container) {
+        final ContainerResources cpuResources = buildCpuRequests(envVars);
+        final ContainerResources memoryResources = buildMemoryRequests(run, envVars);
+        container.setResources(ContainerResources.merge(cpuResources, memoryResources)
+                .toContainerRequirements());
+    }
+
+    private ContainerResources buildMemoryRequests(final PipelineRun run, final List<EnvVar> envVars) {
+        final String policyName = ListUtils.emptyIfNull(envVars).stream()
+                .filter(var -> SystemParams.CONTAINER_MEMORY_RESOURCE_POLICY.getEnvName().equals(var.getName()))
+                .findFirst()
+                .map(EnvVar::getValue)
+                .orElse(preferenceManager.getPreference(SystemPreferences.LAUNCH_CONTAINER_MEMORY_RESOURCE_POLICY));
         final ContainerMemoryResourcePolicy policy = CommonUtils.getEnumValueOrDefault(
-                preference, ContainerMemoryResourcePolicy.NO_LIMIT);
+                policyName, ContainerMemoryResourcePolicy.NO_LIMIT);
         return memoryRequestServices.get(policy).buildResourcesForRun(run);
     }
 
-    private void setCpuRequestIfRequired(List<EnvVar> envVars, Container container) {
-        ListUtils.emptyIfNull(envVars).stream()
+    private ContainerResources buildCpuRequests(List<EnvVar> envVars) {
+        return ListUtils.emptyIfNull(envVars).stream()
                 .filter(var -> SystemParams.CONTAINER_CPU_RESOURCE.getEnvName().equals(var.getName()))
                 .findFirst()
                 .map(var -> {
@@ -221,11 +228,11 @@ public class PipelineExecutor {
                     return DEFAULT_CPU_REQUEST;
                 })
                 .filter(cpuRequest -> Integer.parseInt(cpuRequest) > 0)
-                .ifPresent(cpuRequest -> {
-                    ResourceRequirements resources = new ResourceRequirements();
-                    resources.setRequests(Collections.singletonMap(CPU_REQUEST_NAME, new Quantity(cpuRequest)));
-                    container.setResources(resources);
-                });
+                .map(cpuRequest ->
+                    ContainerResources.builder()
+                            .requests(Collections.singletonMap(CPU_REQUEST_NAME, new Quantity(cpuRequest)))
+                            .build())
+                .orElse(ContainerResources.empty());
     }
 
     private List<Volume> getVolumes(final boolean isDockerInDockerEnabled) {

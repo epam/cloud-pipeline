@@ -23,7 +23,6 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
@@ -31,10 +30,7 @@ public class NoLimitContainerMemoryResourceService implements ContainerMemoryRes
 
     @Override
     public ContainerResources buildResourcesForRun(final PipelineRun run) {
-        return ContainerResources.builder()
-                .limits(Collections.emptyMap())
-                .requests(Collections.emptyMap())
-                .build();
+        return ContainerResources.empty();
     }
 
     @Override

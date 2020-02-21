@@ -19,6 +19,7 @@ package com.epam.pipeline.utils;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudAwareService;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.EnumUtils;
 
 import java.util.List;
@@ -54,7 +55,9 @@ public final class CommonUtils {
 
     public static <K, V> Map<K, V> mergeMaps(final Map<K, V> first,
                                              final Map<K, V> second) {
-        return Stream.concat(first.entrySet().stream(), second.entrySet().stream())
+        return Stream.concat(
+                MapUtils.emptyIfNull(first).entrySet().stream(),
+                MapUtils.emptyIfNull(second).entrySet().stream())
                 .collect(Collectors.toMap(
                     Map.Entry::getKey,
                     Map.Entry::getValue,
