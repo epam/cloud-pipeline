@@ -119,7 +119,7 @@ const plugin = {
                 labelCoordinates[0][index] < 30;
               const calculatedYPos = getLabelYPosition(meta, position, labelsGap, quotaOutOfBounds);
               ctx.fillStyle = getTextColor(element, title);
-              ctx.font = '11px sans-serif';
+              ctx.font = 'bold 8pt sans-serif';
               ctx.textAlign = 'center';
               ctx.textBaseline = 'bottom';
               ctx.fillText(dataString, position.x, calculatedYPos);

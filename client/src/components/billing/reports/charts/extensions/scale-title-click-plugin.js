@@ -14,19 +14,28 @@
  * limitations under the License.
  */
 
-import SummaryChart from './summary-chart';
-import './quota-bar';
-import * as PointDataLabelPlugin from './point-data-label-plugin';
-import * as NoDataLabelPlugin from './no-data-label-plugin';
-import * as BarchartDataLabelPlugin from './barchart-data-label-plugin';
-import * as VerticalLinePlugin from './vertical-line-plugin';
-import * as ScaleTitleClickPlugin from './scale-title-click-plugin';
+const id = 'scale-title-click-plugin';
 
-export {
-  PointDataLabelPlugin,
-  VerticalLinePlugin,
-  BarchartDataLabelPlugin,
-  NoDataLabelPlugin,
-  SummaryChart,
-  ScaleTitleClickPlugin
+function mouseOverElement (mouse, element) {
+  if (!element) {
+    return false;
+  }
+  const {x, y} = mouse;
+  const {top, bottom, left, right} = element;
+  return top <= y && y <= bottom && left <= x && x <= right;
+}
+
+const plugin = {
+  id,
+  afterEvent: function (chart, event, configuration) {
+    const {axis, handler} = configuration;
+    const {type, native} = event;
+    const {scales} = chart;
+    if (/^click$/i.test(type) && mouseOverElement(event, scales[axis])) {
+      handler(event.native);
+      native.stopPropagation();
+    }
+  }
 };
+
+export {id, plugin};

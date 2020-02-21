@@ -88,9 +88,9 @@ function generateLabels (data, filters = {}) {
   const checkUnits = (test, ...units) =>
     units.map(u => checkUnit(test, u)).reduce((r, c) => r && c, true);
   let isCurrentDateFn = (test) => checkUnits(test, 'Y', 'M', 'D');
-  let format = 'D MMM';
-  let fullFormat = 'D MMM YYYY';
-  let tooltipFormat = 'MMMM D, YYYY';
+  let format = 'DD MMM';
+  let fullFormat = 'DD MMM YYYY';
+  let tooltipFormat = 'MMMM DD, YYYY';
   let previousDateFn = date => moment(date).add(-1, 'M');
   if (getTickFormat(start, end) === '1M') {
     format = 'MMM';

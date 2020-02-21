@@ -134,7 +134,7 @@ function renderTable ({storages}) {
       key: 'created',
       title: 'Created date',
       dataIndex: 'created',
-      render: (value) => moment.utc(value).format('D MMM YYYY')
+      render: (value) => moment.utc(value).format('DD MMM YYYY')
     }
   ];
   const dataSource = Object.values(storages.value || {});
