@@ -182,7 +182,7 @@ public class SearchRequestBuilder {
                 .toArray(String[]::new);
     }
 
-    public static SearchDocumentType getStorageFileDocumentType(final DataStorageType type) {
+    private static SearchDocumentType getStorageFileDocumentType(final DataStorageType type) {
         switch (type) {
             case S3:
                 return SearchDocumentType.S3_FILE;
