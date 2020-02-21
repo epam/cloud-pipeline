@@ -891,11 +891,14 @@ public class DataStorageManager implements SecuredEntityManager {
         String dataStorageName = pathParts[pathParts.length - 1];
         Long parentFolderId = null;
         if (pathParts.length > 1) {
-            Folder parentFolder = folderManager
-                    .loadByNameOrId(
-                            String.join("/", Arrays.asList(pathParts).subList(0, pathParts.length - 1)));
-            if (parentFolder != null) {
-                parentFolderId = parentFolder.getId();
+            try {
+                final Folder parentFolder = folderManager.loadByNameOrId(
+                                String.join("/", Arrays.asList(pathParts).subList(0, pathParts.length - 1)));
+                if (parentFolder != null) {
+                    parentFolderId = parentFolder.getId();
+                }
+            } catch (IllegalArgumentException e) {
+                LOGGER.error(e.getMessage());
             }
         }
         if (parentFolderId != null) {
