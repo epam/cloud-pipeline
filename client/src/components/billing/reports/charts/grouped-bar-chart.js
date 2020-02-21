@@ -20,7 +20,7 @@ import BarChart from './bar-chart';
 import styles from './charts.css';
 import {Alert} from 'antd';
 
-function GroupedBarChart ({data, error = null, onSelect, title, getBarAndNavigate}) {
+function GroupedBarChart ({data, error = null, onSelect, title, getBarAndNavigate, height}) {
   const groups = Object.keys(data || {});
   const itemsCount = groups.map(group => Object.keys(data[group] || {}).length);
   const total = itemsCount.reduce((r, c) => r + c, 0);
@@ -31,43 +31,26 @@ function GroupedBarChart ({data, error = null, onSelect, title, getBarAndNavigat
       title={group}
       getBarAndNavigate={getBarAndNavigate}
       subChart
-      style={{
+      style={Object.assign({
         width: total > 0 ? `${100.0 * itemsCount[index] / total}%` : `${100 / itemsCount.length}%`,
-        display: 'inline-block'
-      }}
+        display: 'inline-block',
+        height
+      })}
       onSelect={onSelect ? key => onSelect({group, key}) : undefined}
       axisPosition={index === 0 ? 'left' : 'right'}
     />
   ));
   return (
-    <div
-      style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column'
-      }}
-    >
+    <div style={{position: 'relative'}}>
       {title && <div className={styles.title}>{title}</div>}
       {
         error
           ? <Alert type="error" message={error} />
           : (
-            <div style={{
-              display: 'flex',
-              width: '100%',
-              height: '100%',
-              position: 'relative'
-            }}>
-              <div style={{
-                width: '100%',
-                height: '100%',
-                display: 'block',
-                position: 'relative'
-              }}>
-                {charts}
-              </div>
+            <div style={{position: 'relative', display: 'block', height}}>
+              {
+                charts.length > 0 ? charts : '\u00A0'
+              }
             </div>
           )
       }

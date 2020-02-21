@@ -31,13 +31,12 @@ import {
   GetGroupedBillingDataWithPreviousPaginated
 } from '../../../models/billing';
 import {
-  ChartContainer,
   numberFormatter,
   costTickFormatter
 } from './utilities';
 import styles from './reports.css';
 
-const tablePageSize = 10;
+const tablePageSize = 6;
 
 function injection (stores, props) {
   const {location, params} = props;
@@ -119,6 +118,16 @@ function injection (stores, props) {
   };
 }
 
+function ResourcesDataBlock ({children}) {
+  return (
+    <div className={styles.resourcesChartsContainer}>
+      <div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function renderResourcesSubData (
   {
     data,
@@ -128,7 +137,8 @@ function renderResourcesSubData (
     previousDataSample = InstanceFilters.value.previousDataSample,
     owner = true,
     title,
-    singleTitle
+    singleTitle,
+    extra
   }
 ) {
   const columns = [
@@ -175,7 +185,8 @@ function renderResourcesSubData (
     }
   ].filter(Boolean);
   return (
-    <div>
+    <ResourcesDataBlock>
+      {extra}
       <div className={styles.resourcesChart}>
         <BarChart
           data={data}
@@ -183,7 +194,8 @@ function renderResourcesSubData (
           dataSample={dataSample}
           previousDataSample={previousDataSample}
           title={title}
-          style={{height: 300}}
+          style={{height: 250}}
+          top={tablePageSize}
           valueFormatter={
             dataSample === InstanceFilters.value.dataSample
               ? costTickFormatter
@@ -191,28 +203,28 @@ function renderResourcesSubData (
           }
         />
       </div>
-      <div className={styles.resourcesTable}>
-        <Table
-          dataSource={
-            Object.values(tableDataRequest && tableDataRequest.loaded ? tableDataRequest.value : {})
+      <Table
+        className={styles.resourcesTable}
+        dataSource={
+          Object.values(tableDataRequest && tableDataRequest.loaded ? tableDataRequest.value : {})
+        }
+        loading={tableDataRequest.pending}
+        rowKey={({name, value, usage}) => {
+          return `${name}_${value}_${usage}`;
+        }}
+        columns={columns}
+        pagination={{
+          current: tableDataRequest.pageNum + 1,
+          pageSize: tableDataRequest.pageSize,
+          total: tableDataRequest.totalPages * tableDataRequest.pageSize,
+          onChange: async (page) => {
+            await tableDataRequest.fetchPage(page - 1);
           }
-          loading={tableDataRequest.pending}
-          rowKey={({name, value, usage}) => {
-            return `${name}_${value}_${usage}`;
-          }}
-          columns={columns}
-          pagination={{
-            current: tableDataRequest.pageNum + 1,
-            pageSize: tableDataRequest.pageSize,
-            total: tableDataRequest.totalPages * tableDataRequest.pageSize,
-            onChange: async (page) => {
-              await tableDataRequest.fetchPage(page - 1);
-            }
-          }}
-          size="small"
-        />
-      </div>
-    </div>
+        }}
+        rowClassName={() => styles.resourcesTableRow}
+        size="small"
+      />
+    </ResourcesDataBlock>
   );
 }
 
@@ -260,58 +272,54 @@ class InstanceReport extends React.Component {
     const {dataSample, previousDataSample} = this.state;
     return (
       <div className={styles.chartsContainer}>
-        <div className={styles.chartsColumnContainer}>
-          <ChartContainer>
-            <BillingTable summary={summary} showQuota={false} />
-            <Summary
-              summary={summary}
-              quota={false}
-              title={this.getSummaryTitle()}
-              style={{height: 500}}
-            />
-          </ChartContainer>
-          <ChartContainer>
-            <ResourcesSubData
-              data={pipelines && pipelines.loaded ? pipelines.value : []}
-              chartError={pipelines && pipelines.error ? pipelines.error : null}
-              tableDataRequest={pipelinesTable}
-              dataSample={dataSample}
-              previousDataSample={previousDataSample}
-              owner
-              title="Pipelines"
-              singleTitle="Pipeline"
-            />
-          </ChartContainer>
-        </div>
-        <div className={styles.chartsColumnContainer}>
-          <ChartContainer>
-            <InstanceFilter
-              onChange={this.handleDataSampleChange}
-              value={dataSample}
-              previous={previousDataSample}
-            />
-            <ResourcesSubData
-              data={instances && instances.loaded ? instances.value : []}
-              chartError={instances && instances.error ? instances.error : null}
-              tableDataRequest={instancesTable}
-              dataSample={dataSample}
-              previousDataSample={previousDataSample}
-              owner={false}
-              title={this.getInstanceTitle()}
-              singleTitle="Instance"
-            />
-            <ResourcesSubData
-              data={tools && tools.loaded ? tools.value : []}
-              chartError={tools && tools.error ? tools.error : null}
-              tableDataRequest={toolsTable}
-              dataSample={dataSample}
-              previousDataSample={previousDataSample}
-              owner
-              title="Tools"
-              singleTitle="Tool"
-            />
-          </ChartContainer>
-        </div>
+        <ResourcesDataBlock>
+          <BillingTable summary={summary} showQuota={false} />
+          <Summary
+            summary={summary}
+            quota={false}
+            title={this.getSummaryTitle()}
+            style={{flex: 1, maxHeight: 500}}
+          />
+        </ResourcesDataBlock>
+        <ResourcesSubData
+          extra={(
+            <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'center'}}>
+              <InstanceFilter
+                onChange={this.handleDataSampleChange}
+                value={dataSample}
+                previous={previousDataSample}
+              />
+            </div>
+          )}
+          data={instances && instances.loaded ? instances.value : []}
+          chartError={instances && instances.error ? instances.error : null}
+          tableDataRequest={instancesTable}
+          dataSample={dataSample}
+          previousDataSample={previousDataSample}
+          owner={false}
+          title={this.getInstanceTitle()}
+          singleTitle="Instance"
+        />
+        <ResourcesSubData
+          data={pipelines && pipelines.loaded ? pipelines.value : []}
+          chartError={pipelines && pipelines.error ? pipelines.error : null}
+          tableDataRequest={pipelinesTable}
+          dataSample={dataSample}
+          previousDataSample={previousDataSample}
+          owner
+          title="Pipelines"
+          singleTitle="Pipeline"
+        />
+        <ResourcesSubData
+          data={tools && tools.loaded ? tools.value : []}
+          chartError={tools && tools.error ? tools.error : null}
+          tableDataRequest={toolsTable}
+          dataSample={dataSample}
+          previousDataSample={previousDataSample}
+          owner
+          title="Tools"
+          singleTitle="Tool"
+        />
       </div>
     );
   }

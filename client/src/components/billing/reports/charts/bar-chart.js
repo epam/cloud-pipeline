@@ -62,7 +62,7 @@ function BarChart (
     title,
     style,
     subChart,
-    top = 6,
+    top = 10,
     getBarAndNavigate,
     valueFormatter = costTickFormatter
   }
