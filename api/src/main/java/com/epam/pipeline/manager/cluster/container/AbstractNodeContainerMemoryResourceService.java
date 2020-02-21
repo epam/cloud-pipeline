@@ -35,6 +35,7 @@ public abstract class AbstractNodeContainerMemoryResourceService implements Cont
 
     private static final String MEMORY_RESOURCE = "memory";
     private static final double MEMORY_LIMIT_GAP = 1.0;
+    private static final String GIBIBYTE_UNIT = "Gi";
 
     private final InstanceOfferManager instanceOfferManager;
     private final PreferenceManager preferenceManager;
@@ -50,9 +51,9 @@ public abstract class AbstractNodeContainerMemoryResourceService implements Cont
         log.debug("Calculated memory limit is {}", memoryLimit);
         final ContainerResources.ContainerResourcesBuilder requests = ContainerResources
                 .builder()
-                .requests(Collections.singletonMap(MEMORY_RESOURCE, new Quantity(String.valueOf(memoryRequest))));
+                .requests(Collections.singletonMap(MEMORY_RESOURCE, new Quantity(memoryRequest + GIBIBYTE_UNIT)));
         if (memoryLimit > 0) {
-            requests.limits(Collections.singletonMap(MEMORY_RESOURCE, new Quantity(String.valueOf(memoryLimit))));
+            requests.limits(Collections.singletonMap(MEMORY_RESOURCE, new Quantity(memoryLimit + GIBIBYTE_UNIT)));
         }
         return requests.build();
     }
