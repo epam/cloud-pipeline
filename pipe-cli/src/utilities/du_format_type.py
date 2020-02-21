@@ -33,11 +33,15 @@ class DuFormatType(object):
     @staticmethod
     def pretty_value(value, type):
         if type in DuFormatType.__gb():
-            return value / float(1 << 30)
+            return DuFormatType.__to_string(value / float(1 << 30))
         if type in DuFormatType.__mb():
-            return value / float(1 << 20)
+            return DuFormatType.__to_string(value / float(1 << 20))
         if type in DuFormatType.__kb():
-            return value / float(1 << 10)
+            return DuFormatType.__to_string(value / float(1 << 10))
+
+    @staticmethod
+    def __to_string(value):
+        return "%.1f" % value
 
     @staticmethod
     def __mb():

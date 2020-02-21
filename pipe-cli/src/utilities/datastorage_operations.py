@@ -25,6 +25,7 @@ from src.api.data_storage import DataStorage
 from src.api.folder import Folder
 from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
 from src.model.data_storage_wrapper_type import WrapperType
+from src.utilities.du import DataUsageHelper
 from src.utilities.du_format_type import DuFormatType
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.mount import Mount
@@ -36,7 +37,6 @@ except ImportError:
     from urlparse import urlparse  # Python 2
 
 ALL_ERRORS = Exception
-PRINT_SUMMARY_FORMAT = "%s\t\t%d\t\t%.1f"
 
 
 class DataStorageOperations(object):
@@ -350,8 +350,16 @@ class DataStorageOperations(object):
         if depth and not path:
             click.echo("Error: bucket path must be provided with --depth option", err=True)
             sys.exit(1)
-        if path:
-            try:
+        du_helper = DataUsageHelper(format)
+        items_table = prettytable.PrettyTable()
+        fields = ["Storage", "Files count", "Size (%s)" % DuFormatType.pretty_type(format)]
+        items_table.field_names = fields
+        items_table.align = "l"
+        items_table.border = False
+        items_table.padding_width = 2
+        items_table.align['Size'] = 'r'
+        try:
+            if path:
                 parsed_path = urlparse(path)
                 requested_scheme = parsed_path.scheme.lower()
                 supported_schemes = WrapperType.cloud_schemes() + ['nfs']
@@ -361,85 +369,27 @@ class DataStorageOperations(object):
                 if requested_scheme == 'nfs':
                     if depth:
                         raise RuntimeError('--depth option is not supported for NFS storages')
-                    storage_name, relative_path = cls.__parse_nfs_storage_path(parsed_path)
-                    click.echo("Storage\t\tFiles count\t\tSize (%s)" % DuFormatType.pretty_type(format))
-                    cls.__print_nfs_summary(storage_name, relative_path, format)
-                    return
-                root_bucket, original_path = DataStorage.load_from_uri(path)
-            except ALL_ERRORS as error:
-                click.echo('Error: %s' % str(error), err=True)
-                sys.exit(1)
-            if root_bucket is None:
-                click.echo('Storage path "{}" was not found'.format(path), err=True)
-                sys.exit(1)
+                    items_table.add_row(du_helper.get_nfs_storage_summary(parsed_path))
+                else:
+                    root_bucket, original_path = DataStorage.load_from_uri(path)
+                    if root_bucket is None:
+                        raise RuntimeError('Storage path "{}" was not found'.format(path))
+                    relative_path = original_path if original_path != '/' else ''
+                    for item in du_helper.get_cloud_storage_summary(root_bucket, relative_path, depth):
+                        items_table.add_row(item)
             else:
-                relative_path = original_path if original_path != '/' else ''
-                cls.__print_summary(root_bucket, relative_path, format, depth)
-        else:
-            # If no argument is specified - list brief details of all buckets
-            cls.__print_summary(None, None, format, depth)
-
-    @classmethod
-    def __print_nfs_summary(cls, storage_name, relative_path, format):
-        usage = DataStorage.get_storage_usage(storage_name, relative_path)
-        size = 0
-        count = 0
-        if 'size' in usage:
-            size = usage['size']
-        if 'count' in usage:
-            count = usage['count']
-        if not relative_path:
-            path = storage_name
-        else:
-            path = "/".join([storage_name, relative_path])
-        click.echo(PRINT_SUMMARY_FORMAT % (path, count, DuFormatType.pretty_value(size, format)))
-
-    @classmethod
-    def __parse_nfs_storage_path(cls, parsed_path):
-        parts = parsed_path.path.split("/")
-        storage_name = "/".join([parsed_path.netloc, parts[1]])
-        relative_path = None
-        if len(parts) > 2:
-            relative_path = parsed_path.path[(len(parts[1]) + 2):]
-        return storage_name, relative_path
-
-    @classmethod
-    def __print_summary(cls, root_bucket, relative_path, format, depth=None):
-        click.echo("Storage\t\tFiles count\t\tSize (%s)" % DuFormatType.pretty_type(format))
-        if not root_bucket:
-            storages = list(DataStorage.list())
-            if not storages:
-                click.echo("No datastorages available.")
-                sys.exit(0)
-            for storage in storages:
-                if storage.type.lower() == 'nfs':
-                    cls.__print_nfs_summary(storage.path, None, format)
-                    continue
-                path, count, size = cls.__get_summary(storage, '')
-                click.echo(PRINT_SUMMARY_FORMAT % (path, count, DuFormatType.pretty_value(size, format)))
-        else:
-            if depth:
-                result_tree = cls.__get_summary_with_depth(root_bucket, relative_path, depth)
-                for node in result_tree.nodes:
-                    size = result_tree[node].data.get_size()
-                    count = result_tree[node].data.get_count()
-                    click.echo(PRINT_SUMMARY_FORMAT % (node, count, DuFormatType.pretty_value(size, format)))
-            else:
-                path, count, size = cls.__get_summary(root_bucket, relative_path)
-                click.echo(PRINT_SUMMARY_FORMAT % (path, count, DuFormatType.pretty_value(size, format)))
+                # If no argument is specified - list all buckets
+                items = du_helper.get_total_summary()
+                if items is None:
+                    click.echo("No datastorages available.")
+                    sys.exit(0)
+                for item in items:
+                    items_table.add_row(item)
+        except ALL_ERRORS as error:
+            click.echo('Error: %s' % str(error), err=True)
+            sys.exit(1)
+        click.echo(items_table)
         click.echo()
-
-    @classmethod
-    def __get_summary(cls, root_bucket, relative_path):
-        wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(root_bucket, relative_path)
-        manager = wrapper.get_list_manager(show_versions=False)
-        return manager.get_summary(relative_path)
-
-    @classmethod
-    def __get_summary_with_depth(cls, root_bucket, relative_path, depth):
-        wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(root_bucket, relative_path)
-        manager = wrapper.get_list_manager(show_versions=False)
-        return manager.get_summary_with_depth(depth, relative_path)
 
     @classmethod
     def convert_input_pairs_to_json(cls, tags):
