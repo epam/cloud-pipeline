@@ -17,7 +17,6 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import BarChart from './bar-chart';
-import {colors} from './colors';
 import styles from './charts.css';
 import {Alert} from 'antd';
 
@@ -38,9 +37,6 @@ function GroupedBarChart ({data, error = null, onSelect, title, getBarAndNavigat
       }}
       onSelect={onSelect ? key => onSelect({group, key}) : undefined}
       axisPosition={index === 0 ? 'left' : 'right'}
-      colors={{
-        current: {background: colors.orange, color: colors.orange}
-      }}
     />
   ));
   return (

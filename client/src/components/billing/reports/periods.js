@@ -128,8 +128,12 @@ const Range = {
   buildRangeByDate
 };
 
+function getCurrentDate () {
+  return moment.utc().add(-1, 'd');
+}
+
 function getPeriod (period, range) {
-  const dateNow = moment.utc();
+  const dateNow = getCurrentDate();
   let {start, end, isCurrent} = Range.parse(range, period);
   const rangeIsSelected = !!start && !!end;
   let tickFormat;
@@ -152,8 +156,8 @@ function getPeriod (period, range) {
       endStrict = moment(end);
       previousEndStrict = moment(previousEnd);
       if (isCurrent) {
-        if (moment.utc() < endStrict) {
-          endStrict = moment.utc();
+        if (dateNow < endStrict) {
+          endStrict = moment(dateNow);
         }
         const temp = moment(endStrict).add(-1, 'M');
         if (temp < previousEndStrict) {
@@ -175,8 +179,8 @@ function getPeriod (period, range) {
       endStrict = moment(end);
       previousEndStrict = moment(previousEnd);
       if (isCurrent) {
-        if (moment.utc() < endStrict) {
-          endStrict = moment.utc();
+        if (dateNow < endStrict) {
+          endStrict = moment(dateNow);
         }
         const temp = moment(endStrict).add(-1, 'y');
         if (temp < previousEndStrict) {
@@ -196,8 +200,8 @@ function getPeriod (period, range) {
       endStrict = moment(end);
       previousEndStrict = moment(previousEnd);
       if (isCurrent) {
-        if (moment.utc() < endStrict) {
-          endStrict = moment.utc();
+        if (dateNow < endStrict) {
+          endStrict = moment(dateNow);
         }
         const temp = moment(endStrict).add(-1, 'y');
         if (temp < previousEndStrict) {
@@ -229,5 +233,6 @@ export {
   Period,
   getPeriod,
   Range,
-  getTickFormat
+  getTickFormat,
+  getCurrentDate
 };

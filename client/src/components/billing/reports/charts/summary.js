@@ -18,9 +18,9 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import Chart from './base';
 import {PointDataLabelPlugin, VerticalLinePlugin} from './extensions';
-import {colors, getColor} from './colors';
+import {colors} from './colors';
 import {costTickFormatter} from '../utilities';
-import {getTickFormat} from '../periods';
+import {getTickFormat, getCurrentDate} from '../periods';
 import moment from 'moment-timezone';
 import styles from './charts.css';
 import {Alert} from 'antd';
@@ -75,12 +75,19 @@ function fillSet (filters, data) {
 
 function generateLabels (data, filters = {}) {
   if (!data || !data.length) {
-    return [];
+    return {labels: []};
   }
   const {
     start,
-    end
+    end,
+    endStrict
   } = filters;
+  const currentDate = endStrict ? moment(endStrict) : getCurrentDate();
+  let currentDateIndex = data.length - 1;
+  const checkUnit = (test, unit) => test.get(unit) === currentDate.get(unit);
+  const checkUnits = (test, ...units) =>
+    units.map(u => checkUnit(test, u)).reduce((r, c) => r && c, true);
+  let isCurrentDateFn = (test) => checkUnits(test, 'Y', 'M', 'D');
   let format = 'D MMM';
   let fullFormat = 'D MMM YYYY';
   let tooltipFormat = 'MMMM D, YYYY';
@@ -88,11 +95,15 @@ function generateLabels (data, filters = {}) {
     format = 'MMM';
     fullFormat = 'MMM YYYY';
     tooltipFormat = 'MMMM YYYY';
+    isCurrentDateFn = (test) => checkUnits(test, 'Y', 'M');
   }
   const labels = [];
   let year;
   for (let i = 0; i < data.length; i++) {
     const date = data[i].dateValue;
+    if (isCurrentDateFn(date)) {
+      currentDateIndex = i;
+    }
     let label = date.format(format);
     if (!year) {
       year = date.get('y');
@@ -105,28 +116,35 @@ function generateLabels (data, filters = {}) {
     }
     labels.push({text: label, date, tooltip: date.format(tooltipFormat)});
   }
-  return labels;
+  return {
+    labels,
+    currentDateIndex
+  };
 }
 
 function extractDataSet (data, title, type, color, options = {}) {
   if (dataIsEmpty(data)) {
     return false;
   }
-  const {showPoints = true, currentDateIndex} = options;
+  const {
+    showPoints = true,
+    currentDateIndex,
+    borderWidth = 2
+  } = options;
   return {
     label: title,
     type,
     data,
     fill: false,
     borderColor: color,
-    borderWidth: 2,
+    borderWidth,
     pointRadius: data.map((e, index) => showPoints && index === currentDateIndex ? 2 : 0),
     pointBackgroundColor: color,
     cubicInterpolationMode: 'monotone'
   };
 }
 
-function parse (values, quota, highlightedDate = moment.utc()) {
+function parse (values, quota) {
   const data = (values || [])
     .map(d => ({
       date: d.dateValue,
@@ -134,33 +152,15 @@ function parse (values, quota, highlightedDate = moment.utc()) {
       previous: d.previous || NaN,
       quota: quota
     }));
-  let currentDateIndex;
-  let currentDate;
-  if (highlightedDate) {
-    const year = highlightedDate.get('y');
-    const month = highlightedDate.get('M');
-    const day = highlightedDate.get('D');
-    currentDate = moment.utc({y: year, M: month, D: day}).toDate();
-    const [highlighted] = data
-      .filter(d =>
-        d.date && d.date.get('y') === year && d.date.get('M') === month && d.date.get('D') === day
-      );
-    if (highlighted) {
-      currentDateIndex = data.indexOf(highlighted);
-    }
-  }
   return {
     quota: data.map(d => d.quota),
     currentData: data.map(d => d.value),
-    previousData: data.map(d => d.previous),
-    currentDate,
-    currentDateIndex
+    previousData: data.map(d => d.previous)
   };
 }
 
 function Summary (
   {
-    colors: colorsConfig,
     title,
     style,
     summary,
@@ -184,8 +184,8 @@ function Summary (
       </div>
     );
   }
-  const {currentData, previousData, quota, currentDate, currentDateIndex} = parse(data, quotaValue);
-  const labels = generateLabels(data, summary?.filters);
+  const {labels, currentDateIndex} = generateLabels(data, summary?.filters);
+  const {currentData, previousData, quota} = parse(data, quotaValue);
   const dataConfiguration = {
     labels: labels.map(l => l.text),
     datasets: [
@@ -193,21 +193,21 @@ function Summary (
         currentData,
         'Current period',
         'summary-current',
-        getColor(colorsConfig, 'current') || colors.current,
-        {currentDateIndex}
+        colors.current,
+        {currentDateIndex, borderWidth: 3}
       ),
       extractDataSet(
         previousData,
         'Previous period',
         'summary-previous',
-        getColor(colorsConfig, 'previous') || colors.previous,
+        colors.previous,
         {currentDateIndex}
       ),
       quotaValue ? extractDataSet(
         quota,
         'Quota',
         'summary-quota',
-        getColor(colorsConfig, 'quota') || colors.quota,
+        colors.quota,
         {showPoints: false, currentDateIndex}
       ) : false
     ].filter(Boolean)
@@ -267,8 +267,7 @@ function Summary (
     },
     plugins: {
       [VerticalLinePlugin.id]: {
-        index: currentDateIndex,
-        time: currentDate
+        index: currentDateIndex
       },
       [PointDataLabelPlugin.id]: {
         index: currentDateIndex

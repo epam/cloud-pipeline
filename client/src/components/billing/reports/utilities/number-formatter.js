@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-import numberFormatter from './number-formatter';
-
 export default function (value) {
   if (isNaN(value)) {
     return value;
   }
-  return `$${numberFormatter(value)}`;
+  return (value || 0).toLocaleString(
+    'en',
+    {
+      useGrouping: true,
+      style: 'decimal'
+    });
 }

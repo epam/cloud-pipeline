@@ -17,7 +17,7 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import Chart from './base';
-import {colors, getColor, getBackgroundColor} from './colors';
+import {colors} from './colors';
 import {BarchartDataLabelPlugin} from './extensions';
 import {costTickFormatter} from '../utilities';
 import {Alert} from 'antd';
@@ -54,7 +54,6 @@ function filterTopData (data, top) {
 function BarChart (
   {
     axisPosition = 'left',
-    colors: colorsConfig,
     data,
     error = null,
     dataSample = 'value',
@@ -64,7 +63,8 @@ function BarChart (
     style,
     subChart,
     top = 6,
-    getBarAndNavigate
+    getBarAndNavigate,
+    valueFormatter = costTickFormatter
   }
 ) {
   if (error) {
@@ -86,8 +86,8 @@ function BarChart (
         data: getValues(filteredData, groups, previousDataSample),
         borderWidth: 2,
         borderDash: [4, 4],
-        borderColor: getColor(colorsConfig, 'previous') || colors.red,
-        backgroundColor: getBackgroundColor(colorsConfig, 'previous') || 'transparent',
+        borderColor: colors.blue,
+        backgroundColor: 'transparent',
         borderSkipped: '',
         textColor: '',
         showDataLabels: false
@@ -96,8 +96,8 @@ function BarChart (
         label: 'Current',
         data: getValues(filteredData, groups, dataSample),
         borderWidth: 1,
-        borderColor: getColor(colorsConfig, 'current') || 'rgb(36, 85, 148)',
-        backgroundColor: getBackgroundColor(colorsConfig, 'current') || 'white',
+        borderColor: colors.red,
+        backgroundColor: colors.pink,
         borderSkipped: ''
       }
     ]
@@ -118,7 +118,7 @@ function BarChart (
         position: axisPosition,
         ticks: {
           beginAtZero: true,
-          callback: costTickFormatter
+          callback: valueFormatter
         }
       }]
     },
@@ -135,7 +135,7 @@ function BarChart (
       callbacks: {
         label: function (tooltipItem, data) {
           const {label} = data.datasets[tooltipItem.datasetIndex];
-          const value = costTickFormatter(tooltipItem.yLabel);
+          const value = valueFormatter(tooltipItem.yLabel);
           if (label) {
             return `${label}: ${value}`;
           }
@@ -156,7 +156,8 @@ function BarChart (
         showDataLabels: true,
         datasetLabels: ['Current', 'Previous'],
         textColor: '',
-        labelPosition: 'inner'
+        labelPosition: 'inner',
+        valueFormatter
       }
     }
   };
