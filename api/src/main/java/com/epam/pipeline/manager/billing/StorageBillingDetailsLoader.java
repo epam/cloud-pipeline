@@ -18,11 +18,14 @@ package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -56,6 +59,9 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
     @Autowired
     private final CloudRegionManager regionManager;
 
+    @Autowired
+    private final FileShareMountManager fileShareMountManager;
+
     @Override
     public BillingGrouping getGrouping() {
         return BillingGrouping.STORAGE;
@@ -64,7 +70,10 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
     @Override
     public String loadName(final String entityIdentifier) {
         try {
-            return dataStorageManager.loadByNameOrId(entityIdentifier).getPath();
+            final AbstractDataStorage storage = dataStorageManager.loadByNameOrId(entityIdentifier);
+            return DataStorageType.NFS.equals(storage.getType())
+                   ? storage.getName()
+                   : storage.getPath();
         } catch (IllegalArgumentException e) {
             return entityIdentifier;
         }
@@ -102,7 +111,7 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
                 regionId = ((GSBucketStorage) storage).getRegionId();
                 break;
             default:
-                regionId = null;
+                regionId = tryLoadRegionIdThroughMount(storage);
                 break;
         }
         if (regionId != null) {
@@ -118,5 +127,18 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
         details.put(PROVIDER, storage.getType().name());
         details.put(REGION, emptyValue);
         return details;
+    }
+
+    private Long tryLoadRegionIdThroughMount(final AbstractDataStorage storage) {
+        final Long mountId = storage.getFileShareMountId();
+        if (mountId != null) {
+            try {
+                final FileShareMount mount = fileShareMountManager.load(mountId);
+                return mount.getRegionId();
+            } catch (IllegalArgumentException e) {
+                log.warn("Can't load region through mount point for storage id={}!", storage.getId());
+            }
+        }
+        return null;
     }
 }
