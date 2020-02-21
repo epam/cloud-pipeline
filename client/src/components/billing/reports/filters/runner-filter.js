@@ -78,9 +78,9 @@ function runnerFilter (
           centers.map((center, index) => (
             <Select.Option
               key={`center_${index}`}
-              value={`${RunnerType.group}_${center.id}`}
+              value={`${RunnerType.group}_${center}`}
             >
-              {center.name}
+              {center}
             </Select.Option>
           ))
         }

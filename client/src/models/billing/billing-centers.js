@@ -15,41 +15,11 @@
  */
 
 import Remote from '../basic/Remote';
-import defer from '../../utils/defer';
-
-function wait (seconds) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, seconds * 1000);
-  });
-}
 
 class BillingCenters extends Remote {
-  async fetch () {
-    this._loadRequired = false;
-    if (!this._fetchPromise) {
-      this._fetchPromise = new Promise(async (resolve) => {
-        this._pending = true;
-        try {
-          await defer();
-          await wait(0.5);
-          this.update(
-            {
-              status: 'OK',
-              payload: [
-                {id: 1, name: 'Billing1'},
-                {id: 2, name: 'Billing2'}
-              ]});
-        } catch (e) {
-          this.failed = true;
-          this.error = e.toString();
-        }
-
-        this._pending = false;
-        this._fetchPromise = null;
-        resolve();
-      });
-    }
-    return this._fetchPromise;
+  constructor () {
+    super();
+    this.url = '/billing/centers';
   }
 }
 
