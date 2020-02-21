@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import click
 
 from src.utilities.du_format_type import DuFormatType
 
@@ -30,7 +31,8 @@ class DataUsageHelper(object):
             return None
         for storage in storages:
             path, count, size = self.__get_storage_usage(storage.path, None)
-            items.append([path, count, DuFormatType.pretty_value(size, self.format)])
+            if path is not None:
+                items.append([path, count, DuFormatType.pretty_value(size, self.format)])
         return items
 
     def get_cloud_storage_summary(self, root_bucket, relative_path, depth=None):
@@ -53,7 +55,11 @@ class DataUsageHelper(object):
 
     @classmethod
     def __get_storage_usage(cls, storage_name, relative_path):
-        usage = DataStorage.get_storage_usage(storage_name, relative_path)
+        try:
+            usage = DataStorage.get_storage_usage(storage_name, relative_path)
+        except Exception as e:
+            click.echo("Failed to load usage for datastorage '%s'. Cause: %s" % (storage_name, e.message), err=True)
+            return None, None, None
         size = 0
         count = 0
         if 'size' in usage:
