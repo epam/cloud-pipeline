@@ -30,6 +30,11 @@ from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 
+try:
+    from urllib.parse import urlparse  # Python 3
+except ImportError:
+    from urlparse import urlparse  # Python 2
+
 ALL_ERRORS = Exception
 PRINT_SUMMARY_FORMAT = "%s\t\t%d\t\t%.1f"
 
@@ -347,6 +352,19 @@ class DataStorageOperations(object):
             sys.exit(1)
         if path:
             try:
+                parsed_path = urlparse(path)
+                requested_scheme = parsed_path.scheme.lower()
+                supported_schemes = WrapperType.cloud_schemes() + ['nfs']
+                if requested_scheme not in supported_schemes:
+                    raise RuntimeError('Supported schemes for datastorage are: {}. Actual scheme is "{}".'
+                                       .format('"' + '", "'.join(supported_schemes) + '"', requested_scheme))
+                if requested_scheme == 'nfs':
+                    if depth:
+                        raise RuntimeError('--depth option is not supported for NFS storages')
+                    storage_name, relative_path = cls.__parse_nfs_storage_path(parsed_path)
+                    click.echo("Storage\t\tFiles count\t\tSize (%s)" % DuFormatType.pretty_type(format))
+                    cls.__print_nfs_summary(storage_name, relative_path, format)
+                    return
                 root_bucket, original_path = DataStorage.load_from_uri(path)
             except ALL_ERRORS as error:
                 click.echo('Error: %s' % str(error), err=True)
@@ -362,6 +380,30 @@ class DataStorageOperations(object):
             cls.__print_summary(None, None, format, depth)
 
     @classmethod
+    def __print_nfs_summary(cls, storage_name, relative_path, format):
+        usage = DataStorage.get_storage_usage(storage_name, relative_path)
+        size = 0
+        count = 0
+        if 'size' in usage:
+            size = usage['size']
+        if 'count' in usage:
+            count = usage['count']
+        if not relative_path:
+            path = storage_name
+        else:
+            path = "/".join([storage_name, relative_path])
+        click.echo(PRINT_SUMMARY_FORMAT % (path, count, DuFormatType.pretty_value(size, format)))
+
+    @classmethod
+    def __parse_nfs_storage_path(cls, parsed_path):
+        parts = parsed_path.path.split("/")
+        storage_name = "/".join([parsed_path.netloc, parts[1]])
+        relative_path = None
+        if len(parts) > 2:
+            relative_path = parsed_path.path[(len(parts[1]) + 2):]
+        return storage_name, relative_path
+
+    @classmethod
     def __print_summary(cls, root_bucket, relative_path, format, depth=None):
         click.echo("Storage\t\tFiles count\t\tSize (%s)" % DuFormatType.pretty_type(format))
         if not root_bucket:
@@ -370,7 +412,8 @@ class DataStorageOperations(object):
                 click.echo("No datastorages available.")
                 sys.exit(0)
             for storage in storages:
-                if storage.type not in WrapperType.cloud_types():
+                if storage.type.lower() == 'nfs':
+                    cls.__print_nfs_summary(storage.path, None, format)
                     continue
                 path, count, size = cls.__get_summary(storage, '')
                 click.echo(PRINT_SUMMARY_FORMAT % (path, count, DuFormatType.pretty_value(size, format)))

@@ -1,3 +1,17 @@
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import re
 
@@ -234,6 +248,27 @@ class AbstractListingManager:
         :param recursive: Specifies if the listing has to be recursive.
         :param page_size: Max number of items to return. The argument is ignored if show_all argument is specified.
         :param show_all: Specifies if all items have to be listed.
+        """
+        pass
+
+    @abstractmethod
+    def get_summary_with_depth(self, max_depth, relative_path=None):
+        """
+        Returns tree with storage usage statistic under the given relative path and according to given depth.
+
+        :param max_depth: returns N or fewer levels below
+        :param relative_path: Storage relative path to be processed
+        :return: tree with storage usage statistic
+        """
+        pass
+
+    @abstractmethod
+    def get_summary(self, relative_path=None):
+        """
+        Calculates storage usage statistic according to relative path
+
+        :param relative_path: Storage relative path to be processed
+        :return: <Storage path>, <total objects by path>, <total objects size>
         """
         pass
 
