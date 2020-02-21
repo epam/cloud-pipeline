@@ -101,7 +101,7 @@ class QuotasSection extends React.Component {
           mapper = u => ({name: u.userName, obj: u, user: true});
           break;
         case billing.quotas.keys.billingCenters:
-          mapper = b => ({name: b.name, obj: b, center: true});
+          mapper = b => ({name: b, obj: {id: b, name: b}, center: true});
           break;
       }
       return (subjects.value || []).map(mapper);

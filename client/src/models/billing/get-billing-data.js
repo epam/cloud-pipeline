@@ -16,7 +16,6 @@
 
 import RemotePost from '../basic/RemotePost';
 import moment from 'moment';
-import BillingCenters from './billing-centers';
 import User from '../user/User';
 import GetDataWithPrevious from './get-data-with-previous';
 import costMapper from './cost-mapper';
@@ -48,14 +47,7 @@ class GetBillingData extends RemotePost {
       filters: {}
     };
     if (this.filters && this.filters.group) {
-      const billingCentersRequest = new BillingCenters();
-      await billingCentersRequest.fetch();
-      const [billingCenter] = billingCentersRequest.loaded && billingCentersRequest.value
-        ? billingCentersRequest.value.filter(bc => bc.id === +this.filters.group)
-        : [null];
-      if (billingCenter) {
-        body.filters.billing_center = [billingCenter.name];
-      }
+      body.filters.billing_center = [this.filters.group];
     }
     if (this.filters && this.filters.user) {
       const userRequest = new User(this.filters.user);

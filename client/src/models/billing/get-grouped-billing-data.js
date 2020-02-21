@@ -16,7 +16,6 @@
 
 import RemotePost from '../basic/RemotePost';
 import User from '../user/User';
-import BillingCenters from './billing-centers';
 import GetDataWithPrevious from './get-data-with-previous';
 import costMapper from './cost-mapper';
 import join from './join-periods';
@@ -60,14 +59,6 @@ export class GetGroupedBillingData extends RemotePost {
   body = {};
 
   async fetch () {
-    let billingCenter;
-    if (this.filters && this.filters.group) {
-      const billingCentersRequest = new BillingCenters();
-      await billingCentersRequest.fetch();
-      [billingCenter] = billingCentersRequest.loaded && billingCentersRequest.value
-        ? billingCentersRequest.value.filter(bc => bc.id === +this.filters.group)
-        : [null];
-    }
     let userRequest;
     if (this.filters && this.filters.user) {
       userRequest = new User(this.filters.user);
@@ -82,9 +73,7 @@ export class GetGroupedBillingData extends RemotePost {
         this.body.filters = {};
         this.body.grouping = 'USER';
         this.body.loadDetails = true;
-        if (billingCenter) {
-          this.body.filters.billing_center = [billingCenter.name];
-        }
+        this.body.filters.billing_center = [this.filters.group];
       } else {
         this.body.grouping = GetGroupedBillingData.GROUP_BY.billingCenters;
       }
@@ -142,8 +131,8 @@ export class GetGroupedBillingData extends RemotePost {
       if (this.filters && this.filters.user && userRequest.loaded && userRequest.value) {
         this.body.filters.owner = [userRequest.value.userName];
       }
-      if (this.filters && this.filters.group && billingCenter) {
-        this.body.filters.billing_center = [billingCenter.name];
+      if (this.filters && this.filters.group) {
+        this.body.filters.billing_center = [this.filters.group];
       }
 
       return super.send(this.body);
@@ -165,8 +154,8 @@ export class GetGroupedBillingData extends RemotePost {
       if (this.filters && this.filters.user && userRequest.loaded && userRequest.value) {
         this.body.filters.owner = [userRequest.value.userName];
       }
-      if (this.filters && this.filters.group && billingCenter) {
-        this.body.filters.billing_center = [billingCenter.name];
+      if (this.filters && this.filters.group) {
+        this.body.filters.billing_center = [this.filters.group];
       }
 
       return super.send(this.body);
@@ -184,8 +173,8 @@ export class GetGroupedBillingData extends RemotePost {
       if (this.filters && this.filters.user && userRequest.loaded && userRequest.value) {
         this.body.filters.owner = [userRequest.value.userName];
       }
-      if (this.filters && this.filters.group && billingCenter) {
-        this.body.filters.billing_center = [billingCenter.name];
+      if (this.filters && this.filters.group) {
+        this.body.filters.billing_center = [this.filters.group];
       }
 
       return super.send(this.body);

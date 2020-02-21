@@ -88,13 +88,13 @@ function injection (stores, props) {
     const user = users.value
       .find((item) => item.userName === label);
     const center = billingCenters.value
-      .find((item) => item.name === label);
+      .find((item) => item === label);
     const period = query.period ? `&period=${query.period}` : '';
     if (user && !center) {
       return `?user=${user.id}${period}`;
     }
     if (center && !user) {
-      return `?group=${center.id}${period}`;
+      return `?group=${center}${period}`;
     }
     return '';
   };
@@ -156,22 +156,14 @@ function UserReport ({
 
 function GroupReport ({
   group,
-  billingCenters,
   billingCentersRequest,
   billingCentersTableRequest,
   resources,
   summary,
   getBarAndNavigate
 }) {
-  let title = 'User\'s spendings';
-  let billingCenterName;
-  if (billingCenters.loaded) {
-    const [billingCenter] = (billingCenters.value || []).filter(c => +c.id === +group);
-    if (billingCenter) {
-      billingCenterName = billingCenter.name;
-      title = `${billingCenter.name} user's spendings`;
-    }
-  }
+  const billingCenterName = group;
+  const title = `${billingCenterName} user's spendings`;
   const tableColumns = [{
     key: 'user',
     dataIndex: 'name',
@@ -236,6 +228,7 @@ function GroupReport ({
             style={{height: 250}}
           />
           <Table
+            rowKey={(record) => `user-item_${record.name}`}
             dataSource={
               billingCentersTableRequest && billingCentersTableRequest.loaded
                 ? Object.values(billingCentersTableRequest.value)
