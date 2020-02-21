@@ -17,10 +17,10 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import Chart from './base';
-import {PointDataLabelPlugin, VerticalLinePlugin} from './extensions';
-import {colors, getColor} from './colors';
+import {SummaryChart, PointDataLabelPlugin, VerticalLinePlugin} from './extensions';
+import {colors} from './colors';
 import {costTickFormatter} from '../utilities';
-import {getTickFormat} from '../periods';
+import {getTickFormat, getCurrentDate} from '../periods';
 import moment from 'moment-timezone';
 import styles from './charts.css';
 import {Alert} from 'antd';
@@ -75,24 +75,37 @@ function fillSet (filters, data) {
 
 function generateLabels (data, filters = {}) {
   if (!data || !data.length) {
-    return [];
+    return {labels: []};
   }
   const {
     start,
-    end
+    end,
+    endStrict
   } = filters;
+  const currentDate = endStrict ? moment(endStrict) : getCurrentDate();
+  let currentDateIndex = data.length - 1;
+  const checkUnit = (test, unit) => test.get(unit) === currentDate.get(unit);
+  const checkUnits = (test, ...units) =>
+    units.map(u => checkUnit(test, u)).reduce((r, c) => r && c, true);
+  let isCurrentDateFn = (test) => checkUnits(test, 'Y', 'M', 'D');
   let format = 'D MMM';
   let fullFormat = 'D MMM YYYY';
   let tooltipFormat = 'MMMM D, YYYY';
+  let previousDateFn = date => moment(date).add(-1, 'M');
   if (getTickFormat(start, end) === '1M') {
     format = 'MMM';
     fullFormat = 'MMM YYYY';
     tooltipFormat = 'MMMM YYYY';
+    isCurrentDateFn = (test) => checkUnits(test, 'Y', 'M');
+    previousDateFn = date => moment(date).add(-1, 'Y');
   }
   const labels = [];
   let year;
   for (let i = 0; i < data.length; i++) {
     const date = data[i].dateValue;
+    if (isCurrentDateFn(date)) {
+      currentDateIndex = i;
+    }
     let label = date.format(format);
     if (!year) {
       year = date.get('y');
@@ -103,30 +116,42 @@ function generateLabels (data, filters = {}) {
     if (labels.indexOf(label) >= 0) {
       label = false;
     }
-    labels.push({text: label, date, tooltip: date.format(tooltipFormat)});
+    labels.push({
+      text: label,
+      date,
+      tooltip: date.format(tooltipFormat),
+      previousTooltip: previousDateFn(date).format(tooltipFormat)
+    });
   }
-  return labels;
+  return {
+    labels,
+    currentDateIndex
+  };
 }
 
 function extractDataSet (data, title, type, color, options = {}) {
   if (dataIsEmpty(data)) {
     return false;
   }
-  const {showPoints = true, currentDateIndex} = options;
+  const {
+    showPoints = true,
+    currentDateIndex,
+    borderWidth = 2
+  } = options;
   return {
     label: title,
     type,
     data,
     fill: false,
     borderColor: color,
-    borderWidth: 2,
+    borderWidth,
     pointRadius: data.map((e, index) => showPoints && index === currentDateIndex ? 2 : 0),
     pointBackgroundColor: color,
     cubicInterpolationMode: 'monotone'
   };
 }
 
-function parse (values, quota, highlightedDate = moment.utc()) {
+function parse (values, quota) {
   const data = (values || [])
     .map(d => ({
       date: d.dateValue,
@@ -134,33 +159,15 @@ function parse (values, quota, highlightedDate = moment.utc()) {
       previous: d.previous || NaN,
       quota: quota
     }));
-  let currentDateIndex;
-  let currentDate;
-  if (highlightedDate) {
-    const year = highlightedDate.get('y');
-    const month = highlightedDate.get('M');
-    const day = highlightedDate.get('D');
-    currentDate = moment.utc({y: year, M: month, D: day}).toDate();
-    const [highlighted] = data
-      .filter(d =>
-        d.date && d.date.get('y') === year && d.date.get('M') === month && d.date.get('D') === day
-      );
-    if (highlighted) {
-      currentDateIndex = data.indexOf(highlighted);
-    }
-  }
   return {
     quota: data.map(d => d.quota),
     currentData: data.map(d => d.value),
-    previousData: data.map(d => d.previous),
-    currentDate,
-    currentDateIndex
+    previousData: data.map(d => d.previous)
   };
 }
 
 function Summary (
   {
-    colors: colorsConfig,
     title,
     style,
     summary,
@@ -184,30 +191,30 @@ function Summary (
       </div>
     );
   }
-  const {currentData, previousData, quota, currentDate, currentDateIndex} = parse(data, quotaValue);
-  const labels = generateLabels(data, summary?.filters);
+  const {labels, currentDateIndex} = generateLabels(data, summary?.filters);
+  const {currentData, previousData, quota} = parse(data, quotaValue);
   const dataConfiguration = {
     labels: labels.map(l => l.text),
     datasets: [
       extractDataSet(
         currentData,
         'Current period',
-        'summary-current',
-        getColor(colorsConfig, 'current') || colors.current,
-        {currentDateIndex}
+        SummaryChart.current,
+        colors.current,
+        {currentDateIndex, borderWidth: 3}
       ),
       extractDataSet(
         previousData,
         'Previous period',
-        'summary-previous',
-        getColor(colorsConfig, 'previous') || colors.previous,
+        SummaryChart.previous,
+        colors.previous,
         {currentDateIndex}
       ),
       quotaValue ? extractDataSet(
         quota,
         'Quota',
-        'summary-quota',
-        getColor(colorsConfig, 'quota') || colors.quota,
+        SummaryChart.quota,
+        colors.quota,
         {showPoints: false, currentDateIndex}
       ) : false
     ].filter(Boolean)
@@ -244,20 +251,21 @@ function Summary (
       mode: 'nearest',
       axis: 'x',
       callbacks: {
-        title: function (tooltipItems, data) {
-          const [firstItem] = tooltipItems;
-          if (firstItem) {
-            const {xLabel: defaultTitle, index} = firstItem;
-            if (index >= 0 && index < labels.length) {
-              const {tooltip} = labels[index];
-              return tooltip || defaultTitle;
-            }
-          }
+        title: function () {
           return undefined;
         },
         label: function (tooltipItem, data) {
-          const {label} = data.datasets[tooltipItem.datasetIndex];
+          let {label, type} = data.datasets[tooltipItem.datasetIndex];
           const value = costTickFormatter(tooltipItem.yLabel);
+          const {xLabel: defaultTitle, index} = tooltipItem;
+          if (index >= 0 && index < labels.length) {
+            const {tooltip, previousTooltip} = labels[index];
+            if (type === SummaryChart.previous) {
+              label = previousTooltip || defaultTitle;
+            } else {
+              label = tooltip || defaultTitle;
+            }
+          }
           if (label) {
             return `${label}: ${value}`;
           }
@@ -267,8 +275,7 @@ function Summary (
     },
     plugins: {
       [VerticalLinePlugin.id]: {
-        index: currentDateIndex,
-        time: currentDate
+        index: currentDateIndex
       },
       [PointDataLabelPlugin.id]: {
         index: currentDateIndex

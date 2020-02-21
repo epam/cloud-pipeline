@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
-import './summary-chart';
+import SummaryChart from './summary-chart';
 import './quota-bar';
 import * as PointDataLabelPlugin from './point-data-label-plugin';
 import * as NoDataLabelPlugin from './no-data-label-plugin';
 import * as BarchartDataLabelPlugin from './barchart-data-label-plugin';
 import * as VerticalLinePlugin from './vertical-line-plugin';
 
-export {PointDataLabelPlugin, VerticalLinePlugin, BarchartDataLabelPlugin, NoDataLabelPlugin};
+export {
+  PointDataLabelPlugin,
+  VerticalLinePlugin,
+  BarchartDataLabelPlugin,
+  NoDataLabelPlugin,
+  SummaryChart
+};

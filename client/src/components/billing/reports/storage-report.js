@@ -23,7 +23,6 @@ import moment from 'moment-timezone';
 import {
   BarChart,
   BillingTable,
-  colors,
   Summary
 } from './charts';
 import {Period, getPeriod} from './periods';
@@ -183,10 +182,6 @@ function StorageReports ({storages, storagesTable, summary, type}) {
             summary={summary}
             quota={false}
             title={getSummaryTitle()}
-            colors={{
-              previous: {color: colors.yellow},
-              current: {color: colors.green}
-            }}
           />
         </ChartContainer>
       </div>
@@ -202,10 +197,6 @@ function StorageReports ({storages, storagesTable, summary, type}) {
             error={storages && storages.error ? storages.error : null}
             title={getTitle()}
             top={10}
-            colors={{
-              current: {background: colors.orange, color: colors.orange},
-              previous: {background: colors.blue, color: colors.blue}
-            }}
           />
         </ChartContainer>
         <ChartContainer>

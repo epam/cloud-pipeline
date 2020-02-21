@@ -30,17 +30,6 @@ function sectionsIntersects (a, b) {
     Math.max(ap1, ap2) - Math.min(ap1, ap2) + Math.max(bp1, bp2) - Math.min(bp1, bp2);
 }
 
-function labelsIntersects (a, b) {
-  const {x: aX, y: aY, width: aW, height: aH} = a;
-  const {x: bX, y: bY, width: bW, height: bH} = b;
-  return sectionsIntersects({p1: aX, p2: aX + aW}, {p1: bX, p2: bX + bW}) &&
-    sectionsIntersects({p1: aY, p2: aY + aH}, {p1: bY, p2: bY + bH});
-}
-
-function resolveConflicts (labels, index = 0) {
-
-}
-
 const plugin = {
   id,
   afterDatasetsDraw: function (chart, ease, pluginOptions) {
@@ -63,7 +52,73 @@ const plugin = {
     if (!labels || !labels.length) {
       return;
     }
-    resolveConflicts(labels);
+    if (labels.length > 0) {
+      const [any] = labels;
+      const {top, bottom} = any.globalBounds;
+      const spaces = [{
+        p1: top,
+        p2: bottom,
+        left: true
+      }, {
+        p1: top,
+        p2: bottom,
+        left: false
+      }];
+      const addLabel = (boundaries) => {
+        const {y, height, left} = boundaries;
+        const [intersection] = spaces
+          .filter(s => s.left === left && sectionsIntersects(s, {p1: y, p2: y + height}));
+        if (intersection) {
+          const before = {
+            p1: Math.min(intersection.p1, y),
+            p2: Math.min(intersection.p2, y),
+            left
+          };
+          const after = {
+            p1: Math.min(intersection.p2, y + height),
+            p2: Math.max(intersection.p2, y + height),
+            left
+          };
+          const newSpaces = [before, after].filter(({p1, p2}) => p2 - p1 > 0);
+          const index = spaces.indexOf(intersection);
+          spaces.splice(index, 1, ...newSpaces);
+        }
+      };
+      for (let i = 0; i < labels.length; i++) {
+        const config = labels[i];
+        const {
+          dataPoint,
+          getLabelPosition,
+          positionAvailability,
+          labelHeight
+        } = config.label;
+        const findSpace = (left) => {
+          const destinationY = dataPoint.y;
+          return spaces
+            .filter(s => s.left === left && (s.p2 - s.p1) >= labelHeight)
+            .map(space => {
+              const y = Math.max(
+                Math.min(destinationY, space.p2 - labelHeight / 2.0),
+                space.p1 + labelHeight / 2.0
+              );
+              return {
+                space,
+                distance: Math.abs(y - destinationY),
+                position: getLabelPosition(y, left)
+              };
+            });
+        };
+        const {left, right} = positionAvailability;
+        const l = left ? findSpace(true) : [];
+        const r = right ? findSpace(false) : [];
+        const found = [...l, ...r].sort((a, b) => a.distance - b.distance);
+        const [space] = found;
+        if (space) {
+          addLabel(space.position);
+          config.label.position = space.position;
+        }
+      }
+    }
   },
   drawLabels: function (ctx, labels) {
     labels.forEach(label => this.drawLabel(ctx, label));
@@ -88,7 +143,8 @@ const plugin = {
     ctx.restore();
   },
   getInitialLabelConfig: function (chart, ease, configuration) {
-    const {datasetIndex, index} = configuration;
+    const {datasetIndex} = configuration;
+    let {index} = configuration;
     if (isNotSet(datasetIndex)) {
       return null;
     }
@@ -96,7 +152,7 @@ const plugin = {
     if (!dataset) {
       return null;
     }
-    const {data: elements, xAxisID, yAxisID, hidden} = dataset;
+    const {type, data: elements, xAxisID, yAxisID, hidden} = dataset;
     if (hidden) {
       return null;
     }
@@ -121,39 +177,36 @@ const plugin = {
     const margin = 5;
     const height = 15;
     let {x, y} = element.getCenterPoint();
-    const globalCenter = (globalBounds.right + globalBounds.left) / 2.0;
-    let direction;
-    if (x > globalCenter) {
-      // left
-      x = x - margin - labelWidth - 2 * padding.x;
-      direction = -1;
-    } else {
-      // right
-      x = x + margin;
-      direction = 1;
-    }
-    const labelPosition = {
-      x: x,
-      y: y - height / 2.0 - padding.y,
-      width: labelWidth + padding.x * 2.0,
-      height: height + 2 * padding.y,
-      labelX: x + padding.x,
-      labelY: y,
-      point: element.getCenterPoint(),
-      direction
-    };
-    const labelAlternatePosition = {
-      ...labelPosition,
-      x: x - direction * (labelWidth + 2 * margin + 2 * padding.x),
-      direction
+    const dataPoint = {x, y};
+    const leftByDefault = (globalBounds.left + globalBounds.right) / 2.0 < x;
+    const labelTotalWidth = labelWidth + 2.0 * (margin + padding.x);
+    const leftAvailable = x - globalBounds.left > labelTotalWidth;
+    const rightAvailable = globalBounds.right - x > labelTotalWidth;
+    const getLabelPosition = (yy = y, left = leftByDefault) => {
+      const shift = left ? -labelTotalWidth : 0;
+      return {
+        x: x + margin + shift,
+        y: yy - height / 2.0 - padding.y,
+        width: labelWidth + padding.x * 2.0,
+        height: height + padding.y * 2.0,
+        labelX: x + margin + shift + padding.x,
+        labelY: yy,
+        left
+      };
     };
     return {
       datasetConfig,
       globalBounds,
+      type,
       label: {
-        text: labelText,
-        position: labelPosition,
-        alternate: labelAlternatePosition
+        dataPoint,
+        getLabelPosition,
+        positionAvailability: {
+          left: leftAvailable,
+          right: rightAvailable
+        },
+        labelHeight: height + (margin + padding.y) * 2.0,
+        text: labelText
       }
     };
   }

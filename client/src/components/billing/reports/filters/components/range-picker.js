@@ -126,7 +126,7 @@ class RangeFilter extends React.Component {
         <div className={styles.datesContainer}>
           <MonthPicker
             disabledDate={this.disabledStartDate}
-            format="D MMM YYYY"
+            format="MMM YYYY"
             value={startValue}
             placeholder="From"
             onChange={onStartChange}
@@ -135,7 +135,7 @@ class RangeFilter extends React.Component {
           />
           <MonthPicker
             disabledDate={this.disabledEndDate}
-            format="D MMM YYYY"
+            format="MMM YYYY"
             value={endValue}
             placeholder="End month"
             onChange={onEndChange}

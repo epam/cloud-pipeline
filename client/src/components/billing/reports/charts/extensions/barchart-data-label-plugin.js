@@ -28,7 +28,8 @@ const plugin = {
       const {
         datasetLabels = [],
         labelPosition = 'inner',
-        textColor
+        textColor,
+        valueFormatter = costTickFormatter
       } = pluginOptions;
       const ctx = chart.chart.ctx;
       let colorInverse = false;
@@ -108,7 +109,7 @@ const plugin = {
           if (meta) {
             meta.data.forEach((element, index) => {
               const title = element._chart.options.title.text;
-              const dataString = costTickFormatter(dataset.data[index]);
+              const dataString = valueFormatter(dataset.data[index]);
               const position = element.tooltipPosition();
               labelCoordinates[i]
                 ? labelCoordinates[i][index] = position.y

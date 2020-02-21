@@ -16,14 +16,16 @@
 
 const colors = {
   quota: 'rgb(255, 191, 51)',
-  current: 'rgb(83, 157, 210)',
-  previous: 'rgb(106, 173, 79)',
+  current: 'rgb(106, 173, 79)',
+  previous: 'rgb(83, 157, 210)',
+  blue: 'rgb(11, 127, 214)',
+  lightBlue: 'rgb(83, 157, 210)',
   orange: 'rgb(245, 124, 62)',
+  red: 'rgb(245, 54, 88)',
+  pink: 'rgba(245, 54, 88, 0.25)',
   darkOrange: 'orange',
-  red: 'red',
   yellow: 'rgb(255, 191, 51)',
   green: 'rgb(106, 173, 79)',
-  blue: 'blue',
   darkBlue: 'darkBlue',
   gray: 'rgb(170, 170, 170)'
 };

@@ -20,7 +20,6 @@ import {Table, Tooltip} from 'antd';
 import {
   BarChart,
   BillingTable,
-  colors,
   Summary
 } from './charts';
 import {Period, getPeriod} from './periods';
@@ -31,7 +30,11 @@ import {
   GetGroupedBillingDataPaginated,
   GetGroupedBillingDataWithPreviousPaginated
 } from '../../../models/billing';
-import {ChartContainer} from './utilities';
+import {
+  ChartContainer,
+  numberFormatter,
+  costTickFormatter
+} from './utilities';
 import styles from './reports.css';
 
 const tablePageSize = 10;
@@ -123,7 +126,6 @@ function renderResourcesSubData (
     chartError = null,
     dataSample = InstanceFilters.value.dataSample,
     previousDataSample = InstanceFilters.value.previousDataSample,
-    color = colors.orange,
     owner = true,
     title,
     singleTitle
@@ -157,8 +159,7 @@ function renderResourcesSubData (
     {
       key: 'usage',
       dataIndex: 'usage',
-      title: 'Usage (hours)',
-      render: value => value ? `${Math.round(value)}` : null
+      title: 'Usage (hours)'
     },
     {
       key: 'runs',
@@ -182,11 +183,12 @@ function renderResourcesSubData (
           dataSample={dataSample}
           previousDataSample={previousDataSample}
           title={title}
-          style={{height: 250}}
-          colors={{
-            current: {background: color, color: color},
-            previous: {background: colors.blue, color: colors.blue}
-          }}
+          style={{height: 300}}
+          valueFormatter={
+            dataSample === InstanceFilters.value.dataSample
+              ? costTickFormatter
+              : numberFormatter
+          }
         />
       </div>
       <div className={styles.resourcesTable}>
@@ -265,11 +267,7 @@ class InstanceReport extends React.Component {
               summary={summary}
               quota={false}
               title={this.getSummaryTitle()}
-              colors={{
-                previous: {color: colors.yellow},
-                current: {color: colors.green}
-              }}
-              style={{height: 400}}
+              style={{height: 500}}
             />
           </ChartContainer>
           <ChartContainer>
@@ -280,7 +278,6 @@ class InstanceReport extends React.Component {
               dataSample={dataSample}
               previousDataSample={previousDataSample}
               owner
-              color={colors.current}
               title="Pipelines"
               singleTitle="Pipeline"
             />
@@ -300,7 +297,6 @@ class InstanceReport extends React.Component {
               dataSample={dataSample}
               previousDataSample={previousDataSample}
               owner={false}
-              color={colors.orange}
               title={this.getInstanceTitle()}
               singleTitle="Instance"
             />
@@ -311,7 +307,6 @@ class InstanceReport extends React.Component {
               dataSample={dataSample}
               previousDataSample={previousDataSample}
               owner
-              color={colors.gray}
               title="Tools"
               singleTitle="Tool"
             />

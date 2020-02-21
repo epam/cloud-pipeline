@@ -17,11 +17,19 @@
 import Chart from 'chart.js';
 import 'chart.js/dist/Chart.css';
 
+const SummaryChart = {
+  current: 'summary-current',
+  previous: 'summary-previous',
+  quota: 'summary-quota'
+};
+
 Chart.defaults.summary = Chart.defaults.line;
-Chart.defaults['summary-current'] = Chart.defaults.summary;
-Chart.defaults['summary-previous'] = Chart.defaults.summary;
-Chart.defaults['summary-quota'] = Chart.defaults.summary;
+Chart.defaults[SummaryChart.current] = Chart.defaults.summary;
+Chart.defaults[SummaryChart.previous] = Chart.defaults.summary;
+Chart.defaults[SummaryChart.quota] = Chart.defaults.summary;
 Chart.controllers.summary = Chart.controllers.line.extend({});
-Chart.controllers['summary-current'] = Chart.controllers.summary.extend({});
-Chart.controllers['summary-previous'] = Chart.controllers.summary.extend({});
-Chart.controllers['summary-quota'] = Chart.controllers.summary.extend({});
+Chart.controllers[SummaryChart.current] = Chart.controllers.summary.extend({});
+Chart.controllers[SummaryChart.previous] = Chart.controllers.summary.extend({});
+Chart.controllers[SummaryChart.quota] = Chart.controllers.summary.extend({});
+
+export default SummaryChart;

@@ -54,7 +54,6 @@ function BillingTable ({summary, showQuota = true}) {
       to: previousEnd
     }
   };
-  const extra = currentInfo?.value > previousInfo?.value;
   const quotaOverrun = quota && currentInfo?.value > quota;
 
   const renderValue = (value) => {
@@ -67,23 +66,27 @@ function BillingTable ({summary, showQuota = true}) {
   const renderWarning = (currentInfo = {}, previousInfo = {}) => {
     const {value: current} = currentInfo;
     const {value: previous} = previousInfo;
-    if (quotaOverrun) {
-      return (
-        <div className={styles.warningContainer}>
-          <Icon type="bars" className={styles.quotaOverrunIcon} />
-        </div>
-      );
-    }
+    let percent = 0;
     if (current && previous && !isNaN(current) && !isNaN(previous)) {
-      const percent = ((current - previous) / previous * 100).toFixed(2);
-      return (
-        <div className={styles.warningContainer}>
-          <Icon type="caret-up" className={styles.warningIcon} />
-          {`+${percent}%`}
-        </div>
-      );
+      percent = ((current - previous) / previous * 100).toFixed(2);
     }
-    return '';
+    const containerClassNames = [
+      styles.warningContainer,
+      percent > 0 ? styles.negative : false,
+      percent < 0 ? styles.positive : false
+    ].filter(Boolean).join(' ');
+    return (
+      <div className={containerClassNames}>
+        {quotaOverrun && (<Icon type="bars" className={styles.quotaOverrunIcon} />)}
+        {percent !== 0 && (
+          <Icon
+            type={percent > 0 ? 'caret-up' : 'caret-down'}
+            className={styles.warningIcon}
+          />
+        )}
+        {percent !== 0 && <span>{percent > 0 ? '+' : ''}{percent}%</span>}
+      </div>
+    );
   };
   const renderInfo = (title, info, isCurrent) => {
     const dateClassNames = [
@@ -120,7 +123,7 @@ function BillingTable ({summary, showQuota = true}) {
           )
         }
         <td className={[styles.quota, styles.borderless].join(' ')}>
-          {isCurrent && extra && renderWarning(currentInfo, previousInfo)}
+          {isCurrent && renderWarning(currentInfo, previousInfo)}
         </td>
       </tr>
     );

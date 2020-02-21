@@ -16,11 +16,25 @@
 
 import RemotePost from '../basic/RemotePost';
 import User from '../user/User';
-import UsersList from '../user/Users';
 import BillingCenters from './billing-centers';
 import GetDataWithPrevious from './get-data-with-previous';
 import costMapper from './cost-mapper';
 import join from './join-periods';
+
+const minutesToHours = (minutes) => {
+  if (!minutes || isNaN(minutes)) {
+    return 0;
+  }
+
+  return Math.round(((minutes / 60) + Number.EPSILON) * 100) / 100;
+};
+const bytesToGbs = (bytes) => {
+  if (!bytes || isNaN(bytes)) {
+    return 0;
+  }
+  const bInGb = 1024 * 1024 * 1024;
+  return Math.round(((bytes / bInGb) + Number.EPSILON) * 100) / 100;
+};
 
 export class GetGroupedBillingData extends RemotePost {
   constructor (filters, groupedBy) {
@@ -65,14 +79,6 @@ export class GetGroupedBillingData extends RemotePost {
       ? this.filters.end.toISOString() : undefined;
     if (this.groupedBy === GetGroupedBillingData.GROUP_BY.billingCenters) {
       if (this.filters && this.filters.group) {
-        const usersRequest = new UsersList();
-        await usersRequest.fetch();
-        this.users = {};
-        if (usersRequest.loaded) {
-          (usersRequest.value || []).forEach(u => {
-            this.users[u.userName] = u;
-          });
-        }
         this.body.filters = {};
         this.body.grouping = 'USER';
         this.body.loadDetails = true;
@@ -259,15 +265,12 @@ export class GetGroupedBillingData extends RemotePost {
         if (name && name !== 'unknown') {
           res[name] = {
             ...i,
+            name,
             value: isNaN(i.cost) ? 0 : costMapper(i.cost),
-            user: {
-              ...this.users[name],
-              // todo
-              // runsDuration: i.user.run_duration,
-              // storageUsage: i.user.storage_duration,
-              // runsCount: i.user.run_count,
-              spendings: isNaN(i.cost) ? 0 : costMapper(i.cost)
-            }
+            runsDuration: minutesToHours(i.groupingInfo.usage_runs),
+            storageUsage: bytesToGbs(i.groupingInfo.usage_storages),
+            runsCount: i.groupingInfo.runs,
+            spendings: isNaN(i.cost) ? 0 : costMapper(i.cost)
           };
         }
       } else {
@@ -299,7 +302,7 @@ export class GetGroupedBillingData extends RemotePost {
           fullName,
           ...item,
           owner: item.groupingInfo.owner,
-          usage: item.groupingInfo.usage,
+          usage: minutesToHours(item.groupingInfo.usage_runs),
           runsCount: item.groupingInfo.runs,
           value: isNaN(item.cost) ? 0 : costMapper(item.cost)
         };
