@@ -17,7 +17,7 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import Chart from './base';
-import {PointDataLabelPlugin, VerticalLinePlugin} from './extensions';
+import {SummaryChart, PointDataLabelPlugin, VerticalLinePlugin} from './extensions';
 import {colors} from './colors';
 import {costTickFormatter} from '../utilities';
 import {getTickFormat, getCurrentDate} from '../periods';
@@ -91,11 +91,13 @@ function generateLabels (data, filters = {}) {
   let format = 'D MMM';
   let fullFormat = 'D MMM YYYY';
   let tooltipFormat = 'MMMM D, YYYY';
+  let previousDateFn = date => moment(date).add(-1, 'M');
   if (getTickFormat(start, end) === '1M') {
     format = 'MMM';
     fullFormat = 'MMM YYYY';
     tooltipFormat = 'MMMM YYYY';
     isCurrentDateFn = (test) => checkUnits(test, 'Y', 'M');
+    previousDateFn = date => moment(date).add(-1, 'Y');
   }
   const labels = [];
   let year;
@@ -114,7 +116,12 @@ function generateLabels (data, filters = {}) {
     if (labels.indexOf(label) >= 0) {
       label = false;
     }
-    labels.push({text: label, date, tooltip: date.format(tooltipFormat)});
+    labels.push({
+      text: label,
+      date,
+      tooltip: date.format(tooltipFormat),
+      previousTooltip: previousDateFn(date).format(tooltipFormat)
+    });
   }
   return {
     labels,
@@ -192,21 +199,21 @@ function Summary (
       extractDataSet(
         currentData,
         'Current period',
-        'summary-current',
+        SummaryChart.current,
         colors.current,
         {currentDateIndex, borderWidth: 3}
       ),
       extractDataSet(
         previousData,
         'Previous period',
-        'summary-previous',
+        SummaryChart.previous,
         colors.previous,
         {currentDateIndex}
       ),
       quotaValue ? extractDataSet(
         quota,
         'Quota',
-        'summary-quota',
+        SummaryChart.quota,
         colors.quota,
         {showPoints: false, currentDateIndex}
       ) : false
@@ -244,20 +251,21 @@ function Summary (
       mode: 'nearest',
       axis: 'x',
       callbacks: {
-        title: function (tooltipItems, data) {
-          const [firstItem] = tooltipItems;
-          if (firstItem) {
-            const {xLabel: defaultTitle, index} = firstItem;
-            if (index >= 0 && index < labels.length) {
-              const {tooltip} = labels[index];
-              return tooltip || defaultTitle;
-            }
-          }
+        title: function () {
           return undefined;
         },
         label: function (tooltipItem, data) {
-          const {label} = data.datasets[tooltipItem.datasetIndex];
+          let {label, type} = data.datasets[tooltipItem.datasetIndex];
           const value = costTickFormatter(tooltipItem.yLabel);
+          const {xLabel: defaultTitle, index} = tooltipItem;
+          if (index >= 0 && index < labels.length) {
+            const {tooltip, previousTooltip} = labels[index];
+            if (type === SummaryChart.previous) {
+              label = previousTooltip || defaultTitle;
+            } else {
+              label = tooltip || defaultTitle;
+            }
+          }
           if (label) {
             return `${label}: ${value}`;
           }
