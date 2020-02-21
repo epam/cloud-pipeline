@@ -96,8 +96,11 @@ public class ToolMapper implements EntityMapper<ToolWithDescription> {
                 .map(ToolVersionAttributes::getScanResult)
                 .filter(Objects::nonNull)
                 .map(ToolVersionScanResult::getDependencies)
+                .filter(Objects::nonNull)
                 .flatMap(List::stream)
+                .filter(Objects::nonNull)
                 .map(ToolDependency::getName)
+                .filter(Objects::nonNull)
                 .distinct()
                 .toArray(String[]::new);
             jsonBuilder.array("packages", toolPackagesNames);
