@@ -157,8 +157,7 @@ function renderResourcesSubData (
     {
       key: 'usage',
       dataIndex: 'usage',
-      title: 'Usage (hours)',
-      render: value => value ? `${Math.round(value)}` : null
+      title: 'Usage (hours)'
     },
     {
       key: 'runs',

@@ -174,25 +174,25 @@ function GroupReport ({
   }
   const tableColumns = [{
     key: 'user',
-    dataIndex: 'user.userName',
+    dataIndex: 'name',
     title: 'User'
   }, {
     key: 'runs-duration',
-    dataIndex: 'user.runsDuration',
+    dataIndex: 'runsDuration',
     title: 'Runs duration (hours)',
     render: toValue
   }, {
     key: 'runs-count',
-    dataIndex: 'user.runsCount',
+    dataIndex: 'runsCount',
     title: 'Runs count'
   }, {
     key: 'storage-usage',
-    dataIndex: 'user.storageUsage',
-    title: 'Storages usage (Gb/month)',
+    dataIndex: 'storageUsage',
+    title: 'Storages usage (Gb)',
     render: toValue
   }, {
     key: 'spendings',
-    dataIndex: 'user.spendings',
+    dataIndex: 'spendings',
     title: 'Spendings',
     render: toMoneyValue
   }, {
