@@ -72,6 +72,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreate
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLessThanValueOrNull;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
 /**
@@ -79,6 +80,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
  * validation functionality.
  */
 @Component
+@SuppressWarnings("PMD.TooManyStaticImports")
 public class SystemPreferences {
     private static final String COMMIT_GROUP = "Commit";
     private static final String GIT_GROUP = "Git";
@@ -313,7 +315,7 @@ public class SystemPreferences {
             LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<DockerMount>>() {}));
     public static final StringPreference RUN_VISIBILITY_POLICY = new StringPreference(
             "launch.run.visibility", RunVisibilityPolicy.INHERIT.name(), LAUNCH_GROUP,
-            PreferenceValidators.isValidEnum(RunVisibilityPolicy.class));
+            isValidEnum(RunVisibilityPolicy.class));
     public static final IntPreference LAUNCH_CONTAINER_CPU_RESOURCE = new IntPreference(
             "launch.container.cpu.resource", 0, LAUNCH_GROUP, isGreaterThan(-1));
     public static final StringPreference LAUNCH_CONTAINER_MEMORY_RESOURCE_POLICY = new StringPreference(

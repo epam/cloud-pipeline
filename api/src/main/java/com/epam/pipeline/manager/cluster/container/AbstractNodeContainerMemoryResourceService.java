@@ -64,7 +64,7 @@ public abstract class AbstractNodeContainerMemoryResourceService implements Cont
         final RunInstance instance = run.getInstance();
         final String nodeType = instance.getNodeType();
         return ListUtils.emptyIfNull(
-                instanceOfferManager.getAllInstanceTypes(instance.getCloudRegionId(), instance.getSpot()))
+                instanceOfferManager.getAllInstanceTypes(instance.getCloudRegionId()))
                 .stream()
                 .filter(type -> nodeType.equals(type.getName()))
                 .findFirst()
