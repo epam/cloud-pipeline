@@ -10,26 +10,58 @@ var child_process = require('child_process');
 var ENV_TAG_RUNID_NAME = 'CP_ENV_TAG_RUNID';
 var CONN_QUOTA_PER_PIPELINE_ID = process.env.CP_EDGE_MAX_SSH_CONNECTIONS || 25;
 
-function get_pipe_details(pipeline_id, auth_key) {
-    api_url = process.env.API  + '/run/' + pipeline_id;
+
+function call_api(api_method, auth_key) {
     var options = {
         'headers': {
             'Authorization': 'Bearer ' + auth_key
         }
     };
-    var response = request('GET', api_url, options);
+    var response = request('GET', process.env.API + api_method, options);
     if (response.statusCode == 200) {
-        payload = JSON.parse(response.getBody()).payload;
+        return JSON.parse(response.getBody()).payload;
+    }
+    return null;
+}
+
+function get_pipe_details(pipeline_id, auth_key) {
+    payload = call_api('/run/' + pipeline_id, auth_key);
+    if (payload) {
         return {
             'ip': payload.podIP,
             'pass': payload.sshPassword,
             'owner': payload.owner,
             'pod_id': payload.podId
-
         };
+    } else {
+        return payload;
     }
+}
 
-    return null;
+function get_user_details(auth_key) {
+    payload = call_api('/whoami', auth_key);
+    if (payload) {
+        return {
+            'id': payload.id,
+            'name': payload.userName
+        };
+    } else {
+        return payload;
+    }
+}
+
+function get_preference(preference, auth_key) {
+    payload = call_api('/preferences/' + preference, auth_key);
+    return payload && payload.value;
+}
+
+function get_boolean_preference(preference, auth_key) {
+    value = get_preference(preference, auth_key);
+    if (value) {
+        return value.toLowerCase().trim() === 'true';
+    } else {
+        return false;
+    }
 }
 
 function conn_quota_available(pipeline_id) {
@@ -146,10 +178,24 @@ io.on('connection', function(socket) {
             return;
         }
 
+        user_details = get_user_details(auth_key);
+        if (!user_details || !user_details.name) {
+            console.log((new Date()) + " Cannot get an authenticated user name");
+            socket.disconnect();
+            return;
+        }
+
+        ssh_default_root_user_enabled = get_boolean_preference('system.ssh.default.root.user.enabled', auth_key);
+
         if(match[1] == "pipeline") {
             sshhost = pipe_details.ip;
-            sshpass = pipe_details.pass;
-            sshuser = 'root';
+            if (ssh_default_root_user_enabled) {
+                sshpass = pipe_details.pass;
+                sshuser = 'root';
+            } else {
+                sshpass = user_details.name;
+                sshuser = user_details.name;
+            }
             term = pty.spawn('sshpass', ['-p', sshpass, 'ssh', sshuser + '@' + sshhost, '-p', sshport, '-o', 'StrictHostKeyChecking=no', '-o', 'GlobalKnownHostsFile=/dev/null', '-o', 'UserKnownHostsFile=/dev/null', '-q'], {
                     name: 'xterm-256color',
                     cols: 80,
