@@ -32,6 +32,14 @@ function getValues (data, propertyName = 'value') {
   return data.map(({item}) => toValueFormat(item[propertyName]));
 }
 
+function getMaximum (...values) {
+  const trueMaximum = Math.max(...values.filter(v => !isNaN(v)), 0);
+  const extended = trueMaximum * 1.2; // + 20%
+  const step = trueMaximum / 10.0;
+  const basis = 10 ** Math.floor(Math.log10(step));
+  return Math.ceil(extended / basis) * basis;
+}
+
 function filterTopData (data, top) {
   const sortedData = Object.keys(data || {})
     .map((key) => ({name: key, item: data[key]}));
@@ -69,28 +77,37 @@ function BarChart (
   }
   const filteredData = filterTopData(data, top);
   const groups = filteredData.map(d => d.name);
+  const previousData = getValues(filteredData, previousDataSample);
+  const currentData = getValues(filteredData, dataSample);
+  const maximum = getMaximum(
+    ...previousData,
+    ...currentData
+  );
   const chartData = {
     labels: groups,
     datasets: [
       {
         label: 'Previous',
         type: 'quota-bar',
-        data: getValues(filteredData, previousDataSample),
+        data: previousData,
         borderWidth: 2,
         borderDash: [4, 4],
-        borderColor: colors.previous,
-        backgroundColor: 'transparent',
+        borderColor: colors.blue,
+        backgroundColor: colors.blue,
         borderSkipped: '',
-        textColor: '',
+        textColor: colors.blue,
+        textBold: false,
         showDataLabels: false
       },
       {
         label: 'Current',
-        data: getValues(filteredData, dataSample),
+        data: currentData,
         borderWidth: 1,
         borderColor: colors.current,
         backgroundColor: colors.lightCurrent,
-        borderSkipped: ''
+        borderSkipped: '',
+        textColor: colors.darkCurrent,
+        textBold: false
       }
     ]
   };
@@ -111,7 +128,13 @@ function BarChart (
         position: axisPosition,
         ticks: {
           beginAtZero: true,
-          callback: valueFormatter
+          callback: value => {
+            if (value === maximum) {
+              return '';
+            }
+            return valueFormatter(value);
+          },
+          max: maximum
         }
       }]
     },
@@ -146,10 +169,6 @@ function BarChart (
     },
     plugins: {
       [BarchartDataLabelPlugin.id]: {
-        showDataLabels: true,
-        datasetLabels: ['Current', 'Previous'],
-        textColor: '',
-        labelPosition: 'inner',
         valueFormatter
       },
       [ScaleTitleClickPlugin.id]: {

@@ -18,6 +18,7 @@ const colors = {
   quota: 'rgb(255, 191, 51)',
   current: 'rgb(106, 173, 79)',
   lightCurrent: 'rgba(106, 173, 79, 0.5)',
+  darkCurrent: 'rgb(19,130,14)',
   previous: 'rgb(83, 157, 210)',
   blue: 'rgb(11, 127, 214)',
   lightBlue: 'rgb(83, 157, 210)',

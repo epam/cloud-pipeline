@@ -14,20 +14,12 @@
  * limitations under the License.
  */
 import {costTickFormatter} from '../../utilities';
+import {sectionsIntersects} from './utilities/label-positioning';
 
 const id = 'point-data-label';
 
 function isNotSet (v) {
   return v === undefined || v === null;
-}
-
-const INTERSECTION_MARGIN = 1;
-
-function sectionsIntersects (a, b) {
-  const {p1: ap1, p2: ap2} = a;
-  const {p1: bp1, p2: bp2} = b;
-  return Math.max(ap1, ap2, bp1, bp2) - Math.min(ap1, ap2, bp1, bp2) - 2 * INTERSECTION_MARGIN <
-    Math.max(ap1, ap2) - Math.min(ap1, ap2) + Math.max(bp1, bp2) - Math.min(bp1, bp2);
 }
 
 const plugin = {
@@ -139,6 +131,7 @@ const plugin = {
     ctx.stroke();
     ctx.lineWidth = 1;
     ctx.fillStyle = '#606060';
+    ctx.font = `bold 9pt sans-serif`;
     ctx.fillText(text, position.labelX, position.labelY);
     ctx.restore();
   },
@@ -172,6 +165,7 @@ const plugin = {
       right: xAxis.right
     };
     const labelText = costTickFormatter(dataItem);
+    ctx.font = `bold 9pt sans-serif`;
     const labelWidth = ctx.measureText(labelText).width;
     const padding = {x: 5, y: 2};
     const margin = 5;
