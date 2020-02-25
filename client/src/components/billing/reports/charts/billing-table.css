@@ -47,12 +47,9 @@
   border: none;
 }
 
-.table td.value {
-  font-size: large;
-}
-
+.table td.value,
 .table td.date {
-  font-size: medium;
+  font-size: inherit;
 }
 
 .table td.bold {
