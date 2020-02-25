@@ -65,12 +65,6 @@ Chart.controllers['quota-bar'] = Chart.controllers.line.extend({
             : y - 5;
           ctx.save();
           ctx.beginPath();
-          ctx.strokeStyle = 'transparent';
-          ctx.lineWidth = 0;
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-          ctx.rect(left, y - 1, right - left, lineWidth + 1);
-          ctx.fill();
-          ctx.beginPath();
           if (borderColor) {
             ctx.strokeStyle = borderColor;
           }
