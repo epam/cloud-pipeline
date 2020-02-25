@@ -40,11 +40,11 @@ function getMaximum (...values) {
   return Math.ceil(extended / basis) * basis;
 }
 
-function filterTopData (data, top) {
+function filterTopData (data, top, dataSample = 'value') {
   const sortedData = Object.keys(data || {})
     .map((key) => ({name: key, item: data[key]}));
   sortedData
-    .sort((a, b) => +b.item.value - (+a.item.value));
+    .sort((a, b) => +b.item[dataSample] - (+a.item[dataSample]));
   if (top) {
     return sortedData.filter((o, i) => i < top);
   }
@@ -75,7 +75,7 @@ function BarChart (
       </div>
     );
   }
-  const filteredData = filterTopData(data, top);
+  const filteredData = filterTopData(data, top, dataSample);
   const groups = filteredData.map(d => d.name);
   const previousData = getValues(filteredData, previousDataSample);
   const currentData = getValues(filteredData, dataSample);
