@@ -39,24 +39,13 @@ Chart.controllers['quota-bar'] = Chart.controllers.line.extend({
       const [values] = this.chart.config.data.datasets
         .filter(dataset => dataset.type === 'quota-bar')
         .map((dataset) => dataset.data);
-      ctx.save();
-      if (borderColor) {
-        ctx.strokeStyle = borderColor;
-      }
-      if (showDataLabels) {
-        ctx.fillStyle = textColor || borderColor;
-      }
-      if (borderWidth !== undefined) {
-        ctx.lineWidth = borderWidth;
-      }
-      if (borderDash) {
-        ctx.setLineDash(borderDash);
-      } else {
-        ctx.setLineDash([]);
-      }
       if (bars.length) {
         for (let i = 0; i < data.length; i++) {
           const dataItem = data[i];
+          let lineWidth = 1;
+          if (borderWidth !== undefined) {
+            lineWidth = borderWidth;
+          }
           const left = Math.min(
             ...bars
               .filter(b => b.data && b.data.length > i)
@@ -67,15 +56,38 @@ Chart.controllers['quota-bar'] = Chart.controllers.line.extend({
               .filter(b => b.data && b.data.length > i)
               .map(b => b.data[i]._view.x + b.data[i]._view.width / 2.0)
           );
-          const center = (right - left) / 2 + left;
-          const labelViewY = dataItem._view.y < 20
-            ? dataItem._view.y + 15
-            : dataItem._view.y - 5;
+          const y = Math.max(
+            Math.round(lineWidth / 2.0),
+            Math.round(dataItem._view.y) - Math.round(lineWidth / 2.0)
+          );
+          const labelViewY = y < 20
+            ? y + 15
+            : y - 5;
+          ctx.save();
           ctx.beginPath();
-          ctx.moveTo(left, dataItem._view.y);
-          ctx.lineTo(right, dataItem._view.y);
+          ctx.strokeStyle = 'transparent';
+          ctx.lineWidth = 0;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+          ctx.rect(left, y - 1, right - left, lineWidth + 1);
+          ctx.fill();
+          ctx.beginPath();
+          if (borderColor) {
+            ctx.strokeStyle = borderColor;
+          }
+          if (showDataLabels) {
+            ctx.fillStyle = textColor || borderColor;
+          }
+          ctx.lineWidth = lineWidth;
+          if (borderDash) {
+            ctx.setLineDash(borderDash);
+          } else {
+            ctx.setLineDash([]);
+          }
+          ctx.moveTo(left, y);
+          ctx.lineTo(right, y);
           ctx.stroke();
           if (showDataLabels) {
+            const center = (right - left) / 2 + left;
             ctx.font = '14px serif';
             ctx.textAlign = 'center';
             ctx.fillText(values[i], center, labelViewY);
