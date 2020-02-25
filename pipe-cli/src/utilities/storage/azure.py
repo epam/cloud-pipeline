@@ -22,6 +22,8 @@ from datetime import timedelta, datetime
 import os
 import click
 
+from src.utilities.storage.storage_usage import StorageUsageAccumulator
+
 try:
     from urllib.request import urlopen  # Python 3
 except ImportError:
@@ -83,11 +85,29 @@ class AzureListingManager(AzureManager, AbstractListingManager):
         absolute_items = [self._to_storage_item(blob) for blob in blobs_generator]
         return absolute_items if recursive else [self._to_local_item(item, prefix) for item in absolute_items]
 
-    def get_summary(self, relative_path=''):
-        raise RuntimeError("Operation is unsupported for Azure provider")
+    def get_summary(self, relative_path=None):
+        prefix = StorageOperations.get_prefix(relative_path)
+        blobs_generator = self.service.list_blobs(self.bucket.path,
+                                                  prefix=prefix if relative_path else None)
+        size = 0
+        count = 0
+        for blob in blobs_generator:
+            if type(blob) == Blob:
+                size += blob.properties.content_length
+                count += 1
+        return [self.delimiter.join([self.bucket.path, relative_path]), count, size]
 
     def get_summary_with_depth(self, max_depth, relative_path=None):
-        raise RuntimeError("Operation is unsupported for Azure provider")
+        prefix = StorageOperations.get_prefix(relative_path)
+        blobs_generator = self.service.list_blobs(self.bucket.path,
+                                                  prefix=prefix if relative_path else None)
+        accumulator = StorageUsageAccumulator(self.bucket.path, relative_path, self.delimiter, max_depth)
+        for blob in blobs_generator:
+            if type(blob) == Blob:
+                size = blob.properties.content_length
+                name = blob.name
+                accumulator.add_path(name, size)
+        return accumulator.get_tree()
 
     def _to_storage_item(self, blob):
         item = DataStorageItemModel()
