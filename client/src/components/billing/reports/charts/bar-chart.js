@@ -102,7 +102,7 @@ function BarChart (
       {
         label: 'Current',
         data: currentData,
-        borderWidth: 1,
+        borderWidth: 2,
         borderColor: colors.current,
         backgroundColor: colors.lightCurrent,
         borderSkipped: '',

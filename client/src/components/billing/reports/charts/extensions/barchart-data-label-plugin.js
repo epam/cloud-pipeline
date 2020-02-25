@@ -67,14 +67,7 @@ const plugin = {
       const spaces = [{
         p1: top,
         p2: bottom
-      },
-      ...labels
-        .map(({label}) => label)
-        .filter(Boolean)
-        .map(({dataPoint}) => dataPoint)
-        .filter(Boolean)
-        .map(({y}) => ({p1: y - 1, p2: y + 1}))
-      ];
+      }];
       const addLabel = (boundaries) => {
         const {y, height} = boundaries;
         const [intersection] = spaces
@@ -93,6 +86,13 @@ const plugin = {
           spaces.splice(index, 1, ...newSpaces);
         }
       };
+      labels
+        .map(({label}) => label)
+        .filter(Boolean)
+        .map(({dataPoint}) => dataPoint)
+        .filter(Boolean)
+        .map(({y}) => ({y, height: 2}))
+        .forEach(addLabel);
       for (let i = 0; i < labels.length; i++) {
         const config = labels[i];
         const {
