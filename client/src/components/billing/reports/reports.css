@@ -101,3 +101,7 @@
 .resources-table-row {
   background-color: white;
 }
+
+.users-table-row {
+  cursor: pointer;
+}
