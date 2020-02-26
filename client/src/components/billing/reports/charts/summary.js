@@ -179,9 +179,7 @@ function Summary (
   const quotaValue = showQuota && summary && summary.loaded
     ? summary.value.quota
     : undefined;
-  const error = summary
-    ? summary.error
-    : undefined;
+  const error = summary?.error;
   if (error) {
     return (
       <div style={Object.assign({height: '100%', position: 'relative', display: 'block'}, style)}>
