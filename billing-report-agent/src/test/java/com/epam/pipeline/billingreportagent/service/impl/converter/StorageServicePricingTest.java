@@ -26,7 +26,7 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
-public class AwsStorageServicePricingTest {
+public class StorageServicePricingTest {
 
     private static final long STORAGE_LIMIT_TIER_1 = 51200L;
     private static final long STORAGE_LIMIT_TIER_2 = STORAGE_LIMIT_TIER_1 * 10;
@@ -49,11 +49,11 @@ public class AwsStorageServicePricingTest {
         pricingUsEast2.addPrice(new StoragePricing.StoragePricingEntity(endRangeBytesTier2,
                                                                         Long.MAX_VALUE,
                                                                         BigDecimal.ONE));
-        final Map<Regions, StoragePricing> testPriceList = new HashMap<>();
-        testPriceList.put(Regions.US_EAST_1, pricingUsEast1);
-        testPriceList.put(Regions.US_EAST_2, pricingUsEast2);
-        final AwsStorageServicePricing testStoragePricing =
-            new AwsStorageServicePricing(StringUtils.EMPTY, testPriceList);
+        final Map<String, StoragePricing> testPriceList = new HashMap<>();
+        testPriceList.put(Regions.US_EAST_1.getName(), pricingUsEast1);
+        testPriceList.put(Regions.US_EAST_2.getName(), pricingUsEast2);
+        final AbstractStoragePricingService testStoragePricing = new AwsStoragePricingService(StringUtils.EMPTY,
+                                                                                              testPriceList);
 
         Assert.assertEquals(BigDecimal.TEN, testStoragePricing.getDefaultPriceGb());
     }
