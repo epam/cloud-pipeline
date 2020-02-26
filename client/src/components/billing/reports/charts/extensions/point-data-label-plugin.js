@@ -132,6 +132,7 @@ const plugin = {
     ctx.lineWidth = 1;
     ctx.fillStyle = '#606060';
     ctx.font = `bold 9pt sans-serif`;
+    ctx.textBaseline = 'middle';
     ctx.fillText(text, position.labelX, position.labelY);
     ctx.restore();
   },
@@ -166,6 +167,7 @@ const plugin = {
     };
     const labelText = costTickFormatter(dataItem);
     ctx.font = `bold 9pt sans-serif`;
+    ctx.textBaseline = 'middle';
     const labelWidth = ctx.measureText(labelText).width;
     const padding = {x: 5, y: 2};
     const margin = 5;

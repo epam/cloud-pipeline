@@ -30,9 +30,13 @@
 .table td {
   padding: 2px 5px;
   border: 1px solid #eee;
-  vertical-align: center;
+  vertical-align: middle;
   text-align: center;
   min-width: 150px;
+}
+
+.table td > * {
+  vertical-align: middle;
 }
 
 .table td.pending {
@@ -45,6 +49,11 @@
 
 .table td.borderless {
   border: none;
+}
+
+.table td.date {
+  text-align: left;
+  min-width: unset;
 }
 
 .table td.value,
@@ -78,4 +87,20 @@
   font-size: 24px;
   transform: rotate(270deg);
   font-weight: bold;
+}
+
+.table td.legend-row {
+  text-align: left;
+  min-width: unset;
+}
+
+.table td.legend-row > * {
+  vertical-align: middle;
+}
+
+.table td.legend-row .legend {
+  display: inline-block;
+  width: 30px;
+  height: 12px;
+  margin-right: 5px;
 }
