@@ -33,6 +33,8 @@ class RemotePost {
   static isJson = true;
   static noResponse = false;
 
+  @observable error = undefined;
+
   url;
 
   @observable _pending = false;
