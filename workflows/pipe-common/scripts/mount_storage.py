@@ -497,15 +497,22 @@ class NFSMounter(StorageMounter):
             command = command.format(protocol="nfs")
 
         permission = 'g+rwx'
+        mask = '0774'
         if not PermissionHelper.is_storage_writable(self.storage):
             permission = 'g+rx'
+            mask = '0554'
             if not mount_options:
                 mount_options = 'ro'
             else:
                 options = mount_options.split(',')
                 if 'ro' not in options:
                     mount_options += ',ro'
-
+        if self.share_mount.mount_type == "SMB":
+            file_mode_options = 'file_mode={mode},dir_mode={mode}'.format(mode=mask)
+            if not mount_options:
+                mount_options = file_mode_options
+            else:
+                mount_options += ',' + file_mode_options
         if mount_options:
             command += ' -o {}'.format(mount_options)
         command += ' {path} {mount}'.format(**params)
