@@ -79,11 +79,10 @@ function generateLabels (data, filters = {}) {
   }
   const {
     start,
-    end,
-    endStrict
+    end
   } = filters;
-  const currentDate = endStrict ? moment(endStrict) : getCurrentDate();
-  let currentDateIndex = data.length - 1;
+  const currentDate = getCurrentDate();
+  let currentDateIndex;
   const checkUnit = (test, unit) => test.get(unit) === currentDate.get(unit);
   const checkUnits = (test, ...units) =>
     units.map(u => checkUnit(test, u)).reduce((r, c) => r && c, true);

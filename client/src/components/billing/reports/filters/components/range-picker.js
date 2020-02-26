@@ -25,6 +25,17 @@ import pickerStyles from './pickers.css';
 
 const {MonthPicker} = DatePicker;
 
+function checkDateInRange (date, start = undefined, end = undefined) {
+  const dateToCheck = moment.utc(date).startOf('M').add(1, 'D');
+  if (start && moment.utc(start).startOf('M') > dateToCheck) {
+    return true;
+  }
+  if (end && moment.utc(end).endOf('M') < dateToCheck) {
+    return true;
+  }
+  return moment.utc().endOf('M') < dateToCheck;
+}
+
 class RangeFilter extends React.Component {
   static propTypes = {
     disabled: PropTypes.bool,
@@ -65,16 +76,12 @@ class RangeFilter extends React.Component {
 
   disabledStartDate = (date) => {
     const {endValue} = this.state;
-    return (endValue && date > moment(endValue)) ||
-      date > moment();
+    return checkDateInRange(date, undefined, endValue);
   };
 
   disabledEndDate = (date) => {
     const {startValue} = this.state;
-    if (!startValue) {
-      return date > moment();
-    }
-    return startValue > date || date > moment();
+    return checkDateInRange(date, startValue);
   };
 
   handleRangeChange = () => {
