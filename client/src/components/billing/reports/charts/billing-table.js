@@ -17,8 +17,20 @@
 import React from 'react';
 import {Icon} from 'antd';
 import {observer} from 'mobx-react';
+import {colors} from './colors';
 import {costTickFormatter, dateRangeRenderer} from '../utilities';
 import styles from './billing-table.css';
+
+function LegendItem ({color}) {
+  return (
+    <div
+      className={styles.legend}
+      style={{backgroundColor: color}}
+    >
+      {'\u00A0'}
+    </div>
+  );
+}
 
 function BillingTable ({summary, showQuota = true}) {
   const data = summary && summary.loaded ? summary.value : {};
@@ -88,7 +100,7 @@ function BillingTable ({summary, showQuota = true}) {
       </div>
     );
   };
-  const renderInfo = (title, info, isCurrent) => {
+  const renderInfo = (title, color, info, isCurrent) => {
     const dateClassNames = [
       !info ? styles.pending : false,
       styles.date
@@ -105,25 +117,26 @@ function BillingTable ({summary, showQuota = true}) {
     ].filter(Boolean);
     return (
       <tr>
-        <td>
-          {title}
+        <td className={styles.legendRow}>
+          <LegendItem color={color} />
+          <span>{title}</span>
         </td>
         <td className={dateClassNames.join(' ')}>
-          {renderDates(info ? info.dates : undefined)}
+          <span>{renderDates(info ? info.dates : undefined)}</span>
         </td>
         <td className={valueClassNames.join(' ')}>
-          {renderValue(info ? info.value : undefined)}
+          <span>{renderValue(info ? info.value : undefined)}</span>
         </td>
         {
           renderQuotaColumn &&
           (
             <td className={quotaClassNames.join(' ')}>
-              {renderValue(info ? info.quota : undefined)}
+              <span>{renderValue(info ? info.quota : undefined)}</span>
             </td>
           )
         }
         <td className={[styles.quota, styles.borderless].join(' ')}>
-          {isCurrent && renderWarning(currentInfo, previousInfo)}
+          <span>{isCurrent && renderWarning(currentInfo, previousInfo)}</span>
         </td>
       </tr>
     );
@@ -141,8 +154,8 @@ function BillingTable ({summary, showQuota = true}) {
               </tr>
             )
           }
-          {renderInfo('Current', currentInfo, true)}
-          {renderInfo('Previous', previousInfo)}
+          {renderInfo('Current', colors.current, currentInfo, true)}
+          {renderInfo('Previous', colors.previous, previousInfo)}
         </tbody>
       </table>
     </div>

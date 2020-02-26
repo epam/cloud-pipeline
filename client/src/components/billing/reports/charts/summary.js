@@ -241,7 +241,7 @@ function Summary (
       }]
     },
     legend: {
-      position: 'right'
+      display: false
     },
     tooltips: {
       intersect: false,
