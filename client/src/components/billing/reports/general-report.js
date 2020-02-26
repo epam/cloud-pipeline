@@ -212,6 +212,7 @@ function GroupReport ({
           />
           <Table
             rowKey={(record) => `user-item_${record.name}`}
+            rowClassName={() => styles.usersTableRow}
             dataSource={
               billingCentersTableRequest && billingCentersTableRequest.loaded
                 ? Object.values(billingCentersTableRequest.value)
@@ -227,6 +228,7 @@ function GroupReport ({
                 await billingCentersTableRequest.fetchPage(page - 1);
               }
             }}
+            onRowClick={record => onUserSelect({key: record.name})}
             size="small"
           />
         </GeneralDataBlock>
