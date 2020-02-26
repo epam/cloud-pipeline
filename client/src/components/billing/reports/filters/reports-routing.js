@@ -20,6 +20,9 @@ function getConfigurations (obj, paths = []) {
   }
   const keys = Object.keys(obj);
   const children = [];
+  function match (test) {
+    return this._r.test(test);
+  }
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
     if (
@@ -27,46 +30,36 @@ function getConfigurations (obj, paths = []) {
       typeof obj[key] === 'object' &&
       obj[key].hasOwnProperty('path')
     ) {
-      children.push({
-        name: [...paths, key].join('.'),
-        path: obj[key].path,
-        _r: new RegExp(`^${obj[key].path}/?$`, 'i'),
-        match: function (test) {
-          return this._r.test(test);
-        }
-      });
+      obj[key].name = [...paths, key].join('.');
+      obj[key]._r = new RegExp(`^${obj[key].path}/?$`, 'i');
+      obj[key].match = match.bind(obj[key]);
+      children.push(obj[key]);
       children.push(...(getConfigurations(obj[key], [...paths, key])));
     }
   }
   return children;
 }
 
-const routing = {
+const reportsRouting = {
   general: {
     path: '/billing/reports'
   },
   storages: {
     path: '/billing/reports/storage',
-    title: 'Storage',
     file: {
-      path: '/billing/reports/storage/file',
-      label: 'File'
+      path: '/billing/reports/storage/file'
     },
     object: {
-      path: '/billing/reports/storage/object',
-      label: 'Object'
+      path: '/billing/reports/storage/object'
     }
   },
   instances: {
     path: '/billing/reports/instance',
-    title: 'Compute instances',
     cpu: {
-      path: '/billing/reports/instance/cpu',
-      label: 'CPU'
+      path: '/billing/reports/instance/cpu'
     },
     gpu: {
-      path: '/billing/reports/instance/gpu',
-      label: 'GPU'
+      path: '/billing/reports/instance/gpu'
     }
   },
   configurations: [],
@@ -77,21 +70,9 @@ const routing = {
   getPath: function (name) {
     const [match] = this.configurations.filter(c => c.name === name);
     return match?.path || this.general.path;
-  },
-  getPathByChartInfo: function (label, title) {
-    for (let type in routing) {
-      if (routing[type].title === title && routing.hasOwnProperty(type)) {
-        for (let subType in routing[type]) {
-          if (routing[type][subType].label === label && routing[type].hasOwnProperty(subType)) {
-            return this.getPath(`${type}.${subType}`);
-          }
-        }
-      }
-    }
-    return null;
   }
 };
 
-routing.configurations = getConfigurations(routing);
+reportsRouting.configurations = getConfigurations(reportsRouting);
 
-export default routing;
+export default reportsRouting;

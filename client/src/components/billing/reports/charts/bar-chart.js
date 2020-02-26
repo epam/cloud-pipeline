@@ -59,11 +59,11 @@ function BarChart (
     dataSample = 'value',
     previousDataSample = 'previous',
     onSelect,
+    onScaleSelect,
     title,
     style,
     subChart,
     top = 10,
-    getBarAndNavigate,
     valueFormatter = costTickFormatter
   }
 ) {
@@ -162,7 +162,7 @@ function BarChart (
     hover: {
       onHover: function (e) {
         const point = this.getElementsAtXAxis(e);
-        e.target.style.cursor = point.length && getBarAndNavigate
+        e.target.style.cursor = point.length && onSelect
           ? 'pointer'
           : 'default';
       }
@@ -172,7 +172,8 @@ function BarChart (
         valueFormatter
       },
       [ScaleTitleClickPlugin.id]: {
-        handler: () => {},
+        handler: onSelect ? index => onSelect({key: groups[index]}) : undefined,
+        scaleHandler: onScaleSelect,
         axis: 'x-axis'
       }
     }
@@ -184,7 +185,6 @@ function BarChart (
         data={chartData}
         type="bar"
         options={options}
-        getBarAndNavigate={getBarAndNavigate}
         plugins={[
           BarchartDataLabelPlugin.plugin,
           ScaleTitleClickPlugin.plugin
