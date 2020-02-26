@@ -148,6 +148,10 @@ function BarChart (
     tooltips: {
       intersect: false,
       mode: 'index',
+      itemSort: function ({datasetIndex: a}, {datasetIndex: b}) {
+        // reverse tooltip orders
+        return b - a;
+      },
       callbacks: {
         label: function (tooltipItem, data) {
           const {label} = data.datasets[tooltipItem.datasetIndex];
