@@ -116,8 +116,7 @@ public class AwsStoragePricingService extends AbstractStoragePricingService {
 
     private StoragePricing.StoragePricingEntity extractPricingFromJson(final JsonNode priceDimension) {
         final BigDecimal priceGb =
-            new BigDecimal(priceDimension.path("pricePerUnit").path("USD").asDouble(), new MathContext(
-                PRECISION))
+            new BigDecimal(priceDimension.path("pricePerUnit").path("USD").asDouble(), new MathContext(PRECISION))
                 .multiply(BigDecimal.valueOf(CENTS_IN_DOLLAR));
         final long beginRange =
             priceDimension.path("beginRange").asLong() * BYTES_TO_GB;

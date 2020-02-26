@@ -21,9 +21,11 @@ import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.billingreportagent.service.impl.ElasticIndexService;
+import com.epam.pipeline.billingreportagent.service.impl.converter.AwsStoragePricingService;
+import com.epam.pipeline.billingreportagent.service.impl.converter.GcpStoragePricingService;
 import com.epam.pipeline.billingreportagent.service.impl.synchronizer.PipelineRunSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.synchronizer.StorageSynchronizer;
-import com.epam.pipeline.billingreportagent.service.impl.converter.AwsStorageToBillingRequestConverter;
+import com.epam.pipeline.billingreportagent.service.impl.converter.StorageToBillingRequestConverter;
 import com.epam.pipeline.billingreportagent.service.impl.loader.PipelineRunLoader;
 import com.epam.pipeline.billingreportagent.service.impl.loader.StorageLoader;
 import com.epam.pipeline.billingreportagent.service.impl.mapper.RunBillingMapper;
@@ -73,44 +75,68 @@ public class CommonSyncConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = "sync.s3.storage.disable", matchIfMissing = true, havingValue = FALSE)
-    public StorageSynchronizer s3Synchronizer(final @Value("${sync.storage.index.mapping}") String runMapping,
+    @ConditionalOnProperty(value = "sync.storage.disable", matchIfMissing = true, havingValue = FALSE)
+    public StorageSynchronizer s3Synchronizer(final @Value("${sync.storage.index.mapping}") String storageMapping,
                                               final @Value("${sync.storage.index.name}") String indexName,
                                               final @Value("${sync.billing.center.key}") String billingCenterKey,
                                               final StorageLoader loader,
                                               final ElasticIndexService indexService,
                                               final ElasticsearchServiceClient elasticsearchClient) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.S3_STORAGE, billingCenterKey);
-        return new StorageSynchronizer(runMapping,
+        return new StorageSynchronizer(storageMapping,
                                        commonIndexPrefix,
                                        indexName,
                                        bulkSize,
                                        elasticsearchClient,
                                        loader,
                                        indexService,
-                                       new AwsStorageToBillingRequestConverter(mapper, elasticsearchClient, "AmazonS3",
-                                                                               StorageType.OBJECT_STORAGE),
+                                       new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                                                                            StorageType.OBJECT_STORAGE,
+                                                                            new AwsStoragePricingService("AmazonS3")),
                                        DataStorageType.S3);
     }
 
     @Bean
-    @ConditionalOnProperty(value = "sync.nfs.storage.disable", matchIfMissing = true, havingValue = FALSE)
-    public StorageSynchronizer efsSynchronizer(final @Value("${sync.storage.index.mapping}") String runMapping,
+    @ConditionalOnProperty(value = "sync.storage.disable", matchIfMissing = true, havingValue = FALSE)
+    public StorageSynchronizer efsSynchronizer(final @Value("${sync.storage.index.mapping}") String storageMapping,
                                               final @Value("${sync.storage.index.name}") String indexName,
                                                final @Value("${sync.billing.center.key}") String billingCenterKey,
                                               final StorageLoader loader,
                                               final ElasticIndexService indexService,
                                               final ElasticsearchServiceClient elasticsearchClient) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
-        return new StorageSynchronizer(runMapping,
+        return new StorageSynchronizer(storageMapping,
                                        commonIndexPrefix,
                                        indexName,
                                        bulkSize,
                                        elasticsearchClient,
                                        loader,
                                        indexService,
-                                       new AwsStorageToBillingRequestConverter(mapper, elasticsearchClient, "AmazonEFS",
-                                                                               StorageType.FILE_STORAGE),
+                                       new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                                                                            StorageType.FILE_STORAGE,
+                                                                            new AwsStoragePricingService("AmazonEFS")),
                                        DataStorageType.NFS);
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "sync.storage.disable", matchIfMissing = true, havingValue = FALSE)
+    public StorageSynchronizer gsSynchronizer(final @Value("${sync.storage.index.mapping}") String storageMapping,
+                                               final @Value("${sync.storage.index.name}") String indexName,
+                                               final @Value("${sync.billing.center.key}") String billingCenterKey,
+                                               final StorageLoader loader,
+                                               final ElasticIndexService indexService,
+                                               final ElasticsearchServiceClient elasticsearchClient) {
+        final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.GS_STORAGE, billingCenterKey);
+        return new StorageSynchronizer(storageMapping,
+                                       commonIndexPrefix,
+                                       indexName,
+                                       bulkSize,
+                                       elasticsearchClient,
+                                       loader,
+                                       indexService,
+                                       new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                                                                            StorageType.OBJECT_STORAGE,
+                                                                            new GcpStoragePricingService()),
+                                       DataStorageType.GS);
     }
 }
