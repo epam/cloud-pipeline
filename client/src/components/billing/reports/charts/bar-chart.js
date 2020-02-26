@@ -97,7 +97,8 @@ function BarChart (
         borderSkipped: '',
         textColor: colors.blue,
         textBold: false,
-        showDataLabels: false
+        showDataLabels: false,
+        maxBarThickness: 70
       },
       {
         label: 'Current',
@@ -107,7 +108,8 @@ function BarChart (
         backgroundColor: colors.lightCurrent,
         borderSkipped: '',
         textColor: colors.darkCurrent,
-        textBold: false
+        textBold: false,
+        maxBarThickness: 70
       }
     ]
   };
