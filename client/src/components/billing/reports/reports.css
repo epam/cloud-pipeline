@@ -44,13 +44,12 @@
 
 .period-filters {
   display: flex;
-  margin: 0 auto;
-  margin-bottom: 15px;
+  align-items: center;
+  height: 30px;
+  margin: 0;
 }
 
-.report-filter {
-  min-height: 100vh;
-}
+.report-filter {}
 
 .chart {
   padding-bottom: 15px;
