@@ -19,6 +19,8 @@ import os
 from datetime import datetime, timedelta
 from requests import RequestException
 
+from src.utilities.storage.storage_usage import StorageUsageAccumulator
+
 try:
     from urllib.parse import urlparse  # Python 3
     from urllib.request import urlopen  # Python 3
@@ -247,11 +249,30 @@ class GsListingManager(GsManager, AbstractListingManager):
                                                             for item in absolute_items]
         return requested_items if show_all or not page_size else requested_items[:page_size]
 
-    def get_summary(self, relative_path=''):
-        raise RuntimeError("Operation is unsupported for GCP provider")
+    def get_summary(self, relative_path=None):
+        prefix = StorageOperations.get_prefix(relative_path)
+        bucket = self.client.bucket(self.bucket.path)
+        blobs_iterator = bucket.list_blobs(prefix=prefix if relative_path else None)
+
+        size = 0
+        count = 0
+        for blob in blobs_iterator:
+            size += blob.size
+            count += 1
+        return [StorageOperations.PATH_SEPARATOR.join([self.bucket.path, relative_path]), count, size]
 
     def get_summary_with_depth(self, max_depth, relative_path=None):
-        raise RuntimeError("Operation is unsupported for GCP provider")
+        prefix = StorageOperations.get_prefix(relative_path)
+        bucket = self.client.bucket(self.bucket.path)
+        blobs_iterator = bucket.list_blobs(prefix=prefix if relative_path else None)
+
+        accumulator = StorageUsageAccumulator(self.bucket.path, relative_path, StorageOperations.PATH_SEPARATOR,
+                                              max_depth)
+        for blob in blobs_iterator:
+            size = blob.size
+            name = blob.name
+            accumulator.add_path(name, size)
+        return accumulator.get_tree()
 
     def _to_storage_file(self, blob):
         item = DataStorageItemModel()
