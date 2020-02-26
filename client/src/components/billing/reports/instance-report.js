@@ -22,6 +22,7 @@ import {
   BillingTable,
   Summary
 } from './charts';
+import Filters from './filters';
 import {Period, getPeriod} from './periods';
 import InstanceFilter, {InstanceFilters} from './filters/instance-filter';
 import {
@@ -325,4 +326,10 @@ class InstanceReport extends React.Component {
   }
 }
 
-export default inject('awsRegions')(inject(injection)(observer(InstanceReport)));
+export default inject('awsRegions')(
+  inject(injection)(
+    Filters.attach(
+      observer(InstanceReport)
+    )
+  )
+);

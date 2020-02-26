@@ -57,38 +57,11 @@ class ChartWrapper extends React.Component {
     }
   };
 
-  handleClick = (e) => {
-    const {getBarAndNavigate} = this.props;
-    const {options} = this.chart;
-    const activePoints = this.chart.getElementsAtEventForMode(e, 'nearest', options);
-    if (activePoints && activePoints.length) {
-      const currentChart = activePoints[0];
-      const {_datasetIndex, _index, _chart} = currentChart;
-      const {data, options} = _chart.config;
-      const title = options.title.text;
-      const chartId = _chart.id;
-      const label = data.labels && data.labels.length
-        ? data.labels[_index]
-        : null;
-      const values = data.datasets.map((val) => val.data[_index]);
-      const currentBar = {
-        chartId,
-        datasetId: _datasetIndex,
-        barId: _index,
-        label,
-        values,
-        title
-      };
-      getBarAndNavigate && getBarAndNavigate(currentBar);
-    }
-  };
-
   render () {
     return (
       <canvas
         ref={this.chartRef}
         style={{position: 'relative', width: '100%', height: '100%'}}
-        onClick={this.handleClick}
       />
     );
   }

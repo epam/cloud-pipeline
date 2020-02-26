@@ -24,14 +24,15 @@ import {
   Summary
 } from './charts';
 import {Period, getPeriod} from './periods';
+import Filters from './filters';
 import {
   GetBillingData,
   GetGroupedBillingData,
   GetGroupedBillingDataPaginated
 } from '../../../models/billing';
+import * as navigation from './navigation';
 import {costTickFormatter} from './utilities';
 import styles from './reports.css';
-import ReportsRouting from './routing';
 
 function injection (stores, props) {
   const {location} = props;
@@ -67,45 +68,13 @@ function injection (stores, props) {
   resources.fetch();
   const summary = new GetBillingData(filters);
   summary.fetch();
-  const getBarAndNavigate = (currentBar) => {
-    if (props.router) {
-      const {router} = props;
-      const {pathname} = router.location;
-      const {search} = router.location;
-      const {label, title} = currentBar;
-      const reportsPath = ReportsRouting.getPathByChartInfo(label, title);
-      if (reportsPath) {
-        router.push(`${reportsPath}${search}`);
-      } else {
-        const query = getQuery(label);
-        query.length && router.push(`${pathname}${query}`);
-      }
-    }
-  };
-  const getQuery = (label) => {
-    const {users, billingCenters} = props;
-    const {query} = props.router.location;
-    const user = users.value
-      .find((item) => item.userName === label);
-    const center = billingCenters.value
-      .find((item) => item === label);
-    const period = query.period ? `&period=${query.period}` : '';
-    if (user && !center) {
-      return `?user=${user.id}${period}`;
-    }
-    if (center && !user) {
-      return `?group=${center}${period}`;
-    }
-    return '';
-  };
   return {
     user,
     group,
     summary,
     billingCentersRequest,
     billingCentersTableRequest,
-    resources,
-    getBarAndNavigate
+    resources
   };
 }
 
@@ -129,8 +98,12 @@ function GeneralDataBlock ({children, style}) {
 function UserReport ({
   resources,
   summary,
-  getBarAndNavigate
+  filters
 }) {
+  const onResourcesSelect = navigation.wrapNavigation(
+    navigation.resourcesNavigation,
+    filters
+  );
   return (
     <div className={styles.chartsContainer}>
       <GeneralDataBlock>
@@ -146,7 +119,7 @@ function UserReport ({
           data={resources && resources.loaded ? resources.value : {}}
           error={resources && resources.error ? resources.error : null}
           title="Resources"
-          getBarAndNavigate={getBarAndNavigate}
+          onSelect={onResourcesSelect}
           height={400}
         />
       </GeneralDataBlock>
@@ -160,7 +133,8 @@ function GroupReport ({
   billingCentersTableRequest,
   resources,
   summary,
-  getBarAndNavigate
+  filters,
+  users
 }) {
   const billingCenterName = group;
   const title = `${billingCenterName} user's spendings`;
@@ -192,6 +166,15 @@ function GroupReport ({
     title: 'Billing center',
     render: () => billingCenterName
   }];
+  const onResourcesSelect = navigation.wrapNavigation(
+    navigation.resourcesNavigation,
+    filters
+  );
+  const onUserSelect = navigation.wrapNavigation(
+    navigation.usersNavigation,
+    filters,
+    users
+  );
   return (
     <div className={styles.chartsContainer}>
       <GeneralDataBlock>
@@ -208,7 +191,7 @@ function GroupReport ({
             data={resources && resources.loaded ? resources.value : {}}
             error={resources && resources.error ? resources.error : null}
             title="Resources"
-            getBarAndNavigate={getBarAndNavigate}
+            onSelect={onResourcesSelect}
             height={400}
           />
         </GeneralDataBlock>
@@ -224,7 +207,7 @@ function GroupReport ({
               : null
             }
             title={title}
-            getBarAndNavigate={getBarAndNavigate}
+            onSelect={onUserSelect}
             style={{height: 250}}
           />
           <Table
@@ -256,8 +239,16 @@ function GeneralReport ({
   billingCentersRequest,
   resources,
   summary,
-  getBarAndNavigate
+  filters
 }) {
+  const onResourcesSelect = navigation.wrapNavigation(
+    navigation.resourcesNavigation,
+    filters
+  );
+  const onBillingCenterSelect = navigation.wrapNavigation(
+    navigation.billingCentersNavigation,
+    filters
+  );
   return (
     <div className={styles.chartsContainer}>
       <GeneralDataBlock>
@@ -276,7 +267,7 @@ function GeneralReport ({
           <GroupedBarChart
             data={resources && resources.loaded ? resources.value : {}}
             error={resources && resources.error ? resources.error : null}
-            getBarAndNavigate={getBarAndNavigate}
+            onSelect={onResourcesSelect}
             title="Resources"
             height={400}
           />
@@ -292,7 +283,7 @@ function GeneralReport ({
               : null
             }
             title="Billing centers"
-            getBarAndNavigate={getBarAndNavigate}
+            onSelect={onBillingCenterSelect}
             style={{height: 400}}
           />
         </GeneralDataBlock>
@@ -312,4 +303,10 @@ function DefaultReport (props) {
   return GeneralReport(props);
 }
 
-export default inject('billingCenters', 'users')(inject(injection)(observer(DefaultReport)));
+export default inject('billingCenters', 'users')(
+  inject(injection)(
+    Filters.attach(
+      observer(DefaultReport)
+    )
+  )
+);

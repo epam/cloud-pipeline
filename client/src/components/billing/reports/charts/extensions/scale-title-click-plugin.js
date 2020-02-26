@@ -28,12 +28,22 @@ function mouseOverElement (mouse, element) {
 const plugin = {
   id,
   afterEvent: function (chart, event, configuration) {
-    const {axis, handler} = configuration;
-    const {type, native} = event;
+    const {axis, handler, scaleHandler} = configuration;
+    const {x, y, type} = event;
     const {scales} = chart;
-    if (/^click$/i.test(type) && mouseOverElement(event, scales[axis])) {
-      handler(event.native);
-      native.stopPropagation();
+    if (/^click$/i.test(type)) {
+      if (mouseOverElement(event, scales[axis])) {
+        const {top} = scales[axis];
+        const {highest} = scales[axis]._getLabelSizes();
+        const {height, offset} = highest;
+        if (scaleHandler && y > height + offset + top) {
+          scaleHandler();
+          return;
+        }
+      }
+      if (handler) {
+        handler(scales[axis].getValueForPixel(x));
+      }
     }
   }
 };

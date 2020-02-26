@@ -63,9 +63,9 @@ function runnerFilter (
     >
       <Select.OptGroup label="Users">
         {
-          users.map((user, index) => (
+          users.map((user) => (
             <Select.Option
-              key={`user_${index}`}
+              key={`${RunnerType.user}_${user.id}`}
               value={`${RunnerType.user}_${user.id}`}
             >
               <UserName userName={user.userName} />
@@ -75,9 +75,9 @@ function runnerFilter (
       </Select.OptGroup>
       <Select.OptGroup label="Billing centers">
         {
-          centers.map((center, index) => (
+          centers.map((center) => (
             <Select.Option
-              key={`center_${index}`}
+              key={`${RunnerType.group}_${center}`}
               value={`${RunnerType.group}_${center}`}
             >
               {center}

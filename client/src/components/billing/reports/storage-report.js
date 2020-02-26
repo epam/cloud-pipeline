@@ -25,6 +25,7 @@ import {
   BillingTable,
   Summary
 } from './charts';
+import Filters from './filters';
 import {Period, getPeriod} from './periods';
 import {
   GetBillingData,
@@ -205,4 +206,8 @@ function StorageReports ({storages, storagesTable, summary, type}) {
   );
 }
 
-export default inject(injection)(observer(StorageReports));
+export default inject(injection)(
+  Filters.attach(
+    observer(StorageReports)
+  )
+);

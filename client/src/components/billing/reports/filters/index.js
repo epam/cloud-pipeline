@@ -16,93 +16,31 @@
 
 import React from 'react';
 import {inject, Provider} from 'mobx-react';
+import FilterStore from './filter-store';
 import PeriodFilter from './period-filter';
 import ReportFilter from './report-filter';
 import RunnerFilter, {RunnerType} from './runner-filter';
+import reportsRouting from './reports-routing';
 import Divider from './divider';
-import {Period} from '../periods';
-import ReportsRouting from '../routing';
 import styles from '../reports.css';
 
-class Filter {
-  period;
-  range;
-  report;
-  runner;
-
-  rebuild = ({location, router}) => {
-    this.router = router;
-    const {
-      period = Period.month,
-      user,
-      group,
-      range
-    } = (location || {}).query || {};
-    if (user) {
-      this.runner = {
-        type: RunnerType.user,
-        id: user
-      };
-    } else if (group) {
-      this.runner = {
-        type: RunnerType.group,
-        id: group
-      };
-    } else {
-      this.runner = undefined;
-    }
-    this.report = ReportsRouting.parse(location);
-    this.period = period;
-    this.range = range;
-  };
-
-  navigate = (navigation, strictRange = false) => {
-    let {report, runner, period, range} = navigation || {};
-    if (report === undefined) {
-      report = this.report;
-    }
-    if (runner === undefined) {
-      runner = this.runner;
-    }
-    if (period === undefined) {
-      period = this.period;
-    }
-    if (range === undefined && !strictRange) {
-      range = this.range;
-    }
-    const params = [
-      runner && runner.type === RunnerType.user && `user=${runner.id}`,
-      runner && runner.type === RunnerType.group && `group=${runner.id}`,
-      period && `period=${period}`,
-      range && `range=${range}`
-    ].filter(Boolean);
-    let query = '';
-    if (params.length) {
-      query = `?${params.join('&')}`;
-    }
-    if (this.router) {
-      this.router.push(`${ReportsRouting.getPath(report)}${query}`);
-    }
-  };
-
-  buildNavigationFn = (property) => e => this.navigate({[property]: e});
-
-  periodNavigation = (period, range) => this.navigate({period, range}, true);
-}
-
 class Filters extends React.Component {
-  reportsFilter = new Filter();
+  static attach = (...opts) => inject('filters')(...opts);
+  static reportsRoutes = reportsRouting;
+  static runnerTypes = RunnerType;
+
+  filterStore = new FilterStore();
 
   componentWillReceiveProps (nextProps, nextContext) {
-    this.reportsFilter.rebuild(this.props);
+    this.filterStore.rebuild(this.props);
   }
 
   componentDidMount () {
-    this.reportsFilter.rebuild(this.props);
+    this.filterStore.rebuild(this.props);
   }
 
   render () {
-    if (!this.reportsFilter) {
+    if (!this.filterStore) {
       return null;
     }
     const {children} = this.props;
@@ -110,24 +48,24 @@ class Filters extends React.Component {
       <div className={styles.container}>
         <div className={styles.reportFilter}>
           <ReportFilter
-            filter={this.reportsFilter.report}
-            onChange={this.reportsFilter.buildNavigationFn('report')}
+            filter={this.filterStore.report}
+            onChange={this.filterStore.buildNavigationFn('report')}
           />
         </div>
         <div className={styles.billingContainer}>
           <div className={styles.periodFilters}>
             <PeriodFilter
-              filter={this.reportsFilter.period}
-              range={this.reportsFilter.range}
-              onChange={this.reportsFilter.periodNavigation}
+              filter={this.filterStore.period}
+              range={this.filterStore.range}
+              onChange={this.filterStore.periodNavigation}
             />
             <Divider />
             <RunnerFilter
-              filter={this.reportsFilter.runner}
-              onChange={this.reportsFilter.buildNavigationFn('runner')}
+              filter={this.filterStore.runner}
+              onChange={this.filterStore.buildNavigationFn('runner')}
             />
           </div>
-          <Provider reportsFilter={this.reportsFilter}>
+          <Provider filters={this.filterStore}>
             {children}
           </Provider>
         </div>
@@ -136,7 +74,4 @@ class Filters extends React.Component {
   }
 }
 
-export {RunnerType, Filter};
-
-export const injectFilters = (...opts) => inject('reportsFilter')(...opts);
 export default Filters;

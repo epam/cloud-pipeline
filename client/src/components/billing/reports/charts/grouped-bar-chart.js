@@ -20,7 +20,15 @@ import BarChart from './bar-chart';
 import styles from './charts.css';
 import {Alert} from 'antd';
 
-function GroupedBarChart ({data, error = null, onSelect, title, getBarAndNavigate, height}) {
+function GroupedBarChart (
+  {
+    data,
+    error = null,
+    onSelect,
+    title,
+    height
+  }
+) {
   const groups = Object.keys(data || {});
   const itemsCount = groups.map(group => Object.keys(data[group] || {}).length);
   const total = itemsCount.reduce((r, c) => r + c, 0);
@@ -29,14 +37,14 @@ function GroupedBarChart ({data, error = null, onSelect, title, getBarAndNavigat
       key={group}
       data={data[group]}
       title={group}
-      getBarAndNavigate={getBarAndNavigate}
       subChart
       style={Object.assign({
         width: total > 0 ? `${100.0 * itemsCount[index] / total}%` : `${100 / itemsCount.length}%`,
         display: 'inline-block',
         height
       })}
-      onSelect={onSelect ? key => onSelect({group, key}) : undefined}
+      onSelect={onSelect ? ({key} = {}) => onSelect({group, key}) : undefined}
+      onScaleSelect={onSelect ? () => onSelect({group}) : undefined}
       axisPosition={index === 0 ? 'left' : 'right'}
     />
   ));

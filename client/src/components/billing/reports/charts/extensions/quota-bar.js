@@ -86,9 +86,9 @@ Chart.controllers['quota-bar'] = Chart.controllers.line.extend({
             ctx.textAlign = 'center';
             ctx.fillText(values[i], center, labelViewY);
           }
+          ctx.restore();
         }
       }
-      ctx.restore();
     }
   }
 });
