@@ -413,7 +413,7 @@ public class GrantPermissionManager {
     }
 
     public boolean storagePermissionByName(final String identifier, final String permissionName) {
-        AbstractSecuredEntity storage = entityManager.loadByNameOrId(AclClass.DATA_STORAGE, identifier);
+        final AbstractSecuredEntity storage = entityManager.loadByNameOrId(AclClass.DATA_STORAGE, identifier);
         if (permissionName.equals(OWNER)) {
             return isOwnerOrAdmin(storage.getOwner());
         } else {
