@@ -64,12 +64,12 @@ function parseRangeString (string, period) {
   switch (period) {
     case Period.custom:
       start = moment.utc(startStr, 'YYYY-MM').startOf('M');
-      isCurrent = false;
       if (endStr) {
         end = moment.utc(endStr, 'YYYY-MM').endOf('M');
       } else {
         end = moment(start).endOf('M');
       }
+      isCurrent = checkCurrent(end, 'Y', 'M');
       break;
     case Period.year:
       start = moment.utc(startStr, 'YYYY').startOf('Y');
@@ -213,6 +213,11 @@ function getPeriod (period, range) {
     default:
       tickFormat = getTickFormat(start, end);
       endStrict = moment(end);
+      if (isCurrent) {
+        if (dateNow < endStrict) {
+          endStrict = moment(dateNow);
+        }
+      }
       break;
   }
   return {
