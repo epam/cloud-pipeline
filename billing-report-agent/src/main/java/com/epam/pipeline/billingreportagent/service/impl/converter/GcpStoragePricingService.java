@@ -33,48 +33,22 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.security.GeneralSecurityException;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class GcpStoragePricingService implements StoragePricingService {
+public class GcpStoragePricingService extends AbstractStoragePricingService {
 
     private static final String GCP_STORAGE_SERVICES_FAMILY = "Cloud Storage";
     private static final String GCP_DATA_STORAGE_GROUP = "RegionalStorage";
 
-    private final Map<String, StoragePricing> storagePriceListGb = new HashMap<>();
-    private BigDecimal defaultPriceGb;
-
     public GcpStoragePricingService() {
-        updatePrices();
+        super(GCP_STORAGE_SERVICES_FAMILY);
     }
 
     @Override
-    public void updatePrices() {
-        try {
-            loadFullPriceList();
-        } catch (IOException e) {
-            log.error("Can't instantiate {} storage price list!", CloudProvider.GCP.name());
-        } catch (GeneralSecurityException e) {
-            throw new IllegalStateException("Can't instantiate trusted transport to request GCP!");
-        }
-        this.defaultPriceGb = calculateDefaultPriceGb();
-    }
-
-    @Override
-    public StoragePricing getRegionPricing(final String region) {
-        return storagePriceListGb.get(region);
-    }
-
-    @Override
-    public BigDecimal getDefaultPriceGb() {
-        return defaultPriceGb;
-    }
-
-    private void loadFullPriceList() throws IOException, GeneralSecurityException {
+    public void loadFullPriceList() throws IOException, GeneralSecurityException {
         final String accessToken = GoogleCredential.getApplicationDefault().getAccessToken();
         final Cloudbilling cloudbilling = new Cloudbilling(GoogleNetHttpTransport.newTrustedTransport(),
                                                            JacksonFactory.getDefaultInstance(),
@@ -93,13 +67,20 @@ public class GcpStoragePricingService implements StoragePricingService {
 
         final Map<List<String>, List<TierRate>> dataStoragePriceTable = skuResponse.getSkus().stream()
             .filter(sku -> sku.getCategory().getResourceGroup().equals(GCP_DATA_STORAGE_GROUP))
-            .collect(Collectors.toMap(Sku::getServiceRegions,
-                                      sku -> sku.getPricingInfo().get(0).getPricingExpression().getTieredRates()));
+            .collect(
+                Collectors.toMap(Sku::getServiceRegions,
+                                 sku -> sku.getPricingInfo().get(0).getPricingExpression().getTieredRates())
+            );
 
         dataStoragePriceTable.forEach((regions, gcpRates) -> {
             final StoragePricing pricing = convertGcpTierRateToStoragePrices(gcpRates);
-            regions.forEach(region -> storagePriceListGb.put(region, pricing));
+            regions.forEach(region -> putRegionPricing(region, pricing));
         });
+    }
+
+    @Override
+    protected CloudProvider getProvider() {
+        return CloudProvider.GCP;
     }
 
     private StoragePricing convertGcpTierRateToStoragePrices(final List<TierRate> rates) {
@@ -122,15 +103,5 @@ public class GcpStoragePricingService implements StoragePricingService {
             pricingRanges.addPrice(new StoragePricing.StoragePricingEntity(startRange, endRange, priceCentsPerGb));
         }
         return pricingRanges;
-    }
-
-    private BigDecimal calculateDefaultPriceGb() {
-        return storagePriceListGb.values()
-            .stream()
-            .flatMap(pricing -> pricing.getPrices().stream())
-            .map(StoragePricing.StoragePricingEntity::getPriceCentsPerGb)
-            .filter(price -> !BigDecimal.ZERO.equals(price))
-            .max(Comparator.naturalOrder())
-            .orElseThrow(() -> new IllegalStateException("No GCP storage prices loaded!"));
     }
 }
