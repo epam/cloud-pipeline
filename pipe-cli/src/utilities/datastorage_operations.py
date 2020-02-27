@@ -31,11 +31,6 @@ from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 
-try:
-    from urllib.parse import urlparse  # Python 3
-except ImportError:
-    from urlparse import urlparse  # Python 2
-
 ALL_ERRORS = Exception
 
 
