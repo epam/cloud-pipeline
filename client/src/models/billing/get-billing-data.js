@@ -99,6 +99,7 @@ class GetBillingData extends RemotePost {
         res.values.push({
           date: moment(momentDate).format('DD MMM YYYY'),
           value: isNaN(item.accumulatedCost) ? undefined : costMapper(item.accumulatedCost),
+          cost: isNaN(item.cost) ? undefined : costMapper(item.cost),
           dateValue: momentDate,
           initialDate
         });
@@ -128,15 +129,24 @@ class GetBillingDataWithPreviousRange extends GetDataWithPrevious {
     const {values: previousValues = []} = previous;
     const {values: currentValues = [], ...rest} = current || {};
     const result = previousValues.length > 0
-      ? previousValues.map((o) => ({...o, previous: o.value}))
+      ? previousValues.map((o) => (
+        {
+          ...o,
+          previous: o.value,
+          previousCost: o.cost
+        }))
       : [];
-    result.forEach((o) => delete o.value);
+    result.forEach((o) => {
+      delete o.value;
+      delete o.cost;
+    });
     for (let i = 0; i < (currentValues || []).length; i++) {
       const item = currentValues[i];
       const {date} = item;
       const [prev] = result.filter((r) => r.date === date);
       if (prev) {
         prev.value = item.value;
+        prev.cost = item.cost;
       } else {
         result.push(item);
       }

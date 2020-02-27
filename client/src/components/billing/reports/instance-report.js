@@ -25,6 +25,7 @@ import {
 import Filters from './filters';
 import {Period, getPeriod} from './periods';
 import InstanceFilter, {InstanceFilters} from './filters/instance-filter';
+import Export, {ExportComposers} from './export';
 import {
   GetBillingData,
   GetGroupedBillingData,
@@ -269,8 +270,49 @@ class InstanceReport extends React.Component {
       pipelinesTable
     } = this.props;
     const {dataSample, previousDataSample} = this.state;
+    const composers = [
+      {
+        composer: ExportComposers.summaryComposer,
+        options: [summary]
+      },
+      {
+        composer: ExportComposers.defaultComposer,
+        options: [
+          instances,
+          {
+            usage: 'usage',
+            runs_count: 'runsCount'
+          }
+        ]
+      },
+      {
+        composer: ExportComposers.defaultComposer,
+        options: [
+          tools,
+          {
+            owner: 'owner',
+            usage: 'usage',
+            runs_count: 'runsCount'
+          }
+        ]
+      },
+      {
+        composer: ExportComposers.defaultComposer,
+        options: [
+          pipelines,
+          {
+            owner: 'owner',
+            usage: 'usage',
+            runs_count: 'runsCount'
+          }
+        ]
+      }
+    ];
     return (
-      <div className={styles.chartsContainer}>
+      <Export.Consumer
+        className={styles.chartsContainer}
+        composers={composers}
+      >
         <ResourcesDataBlock>
           <BillingTable summary={summary} showQuota={false} />
           <Summary
@@ -316,7 +358,7 @@ class InstanceReport extends React.Component {
           title="Tools"
           singleTitle="Tool"
         />
-      </div>
+      </Export.Consumer>
     );
   }
 }

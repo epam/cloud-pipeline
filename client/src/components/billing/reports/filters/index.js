@@ -22,6 +22,7 @@ import ReportFilter from './report-filter';
 import RunnerFilter, {RunnerType} from './runner-filter';
 import reportsRouting from './reports-routing';
 import Divider from './divider';
+import ExportReports from '../export';
 import styles from '../reports.css';
 
 class Filters extends React.Component {
@@ -64,9 +65,14 @@ class Filters extends React.Component {
               filter={this.filterStore.runner}
               onChange={this.filterStore.buildNavigationFn('runner')}
             />
+            <ExportReports
+              className={styles.exportReportsButton}
+            />
           </div>
           <Provider filters={this.filterStore}>
-            {children}
+            <ExportReports.Provider>
+              {children}
+            </ExportReports.Provider>
           </Provider>
         </div>
       </div>
