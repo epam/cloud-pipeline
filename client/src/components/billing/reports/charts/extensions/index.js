@@ -16,17 +16,17 @@
 
 import SummaryChart from './summary-chart';
 import './quota-bar';
-import * as PointDataLabelPlugin from './point-data-label-plugin';
-import * as NoDataLabelPlugin from './no-data-label-plugin';
 import * as BarchartDataLabelPlugin from './barchart-data-label-plugin';
+import * as ChartClickPlugin from './chart-click-plugin';
+import * as DataLabelPlugin from './data-label-plugin';
+import * as PointDataLabelPlugin from './point-data-label-plugin';
 import * as VerticalLinePlugin from './vertical-line-plugin';
-import * as ScaleTitleClickPlugin from './scale-title-click-plugin';
 
 export {
+  BarchartDataLabelPlugin,
+  ChartClickPlugin,
+  DataLabelPlugin,
   PointDataLabelPlugin,
   VerticalLinePlugin,
-  BarchartDataLabelPlugin,
-  NoDataLabelPlugin,
-  SummaryChart,
-  ScaleTitleClickPlugin
+  SummaryChart
 };

@@ -17,13 +17,16 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import Chart from './base';
-import {SummaryChart, PointDataLabelPlugin, VerticalLinePlugin} from './extensions';
+import {
+  SummaryChart,
+  DataLabelPlugin,
+  PointDataLabelPlugin,
+  VerticalLinePlugin
+} from './extensions';
 import {colors} from './colors';
 import {costTickFormatter} from '../utilities';
 import {getTickFormat, getCurrentDate} from '../periods';
 import moment from 'moment-timezone';
-import styles from './charts.css';
-import {Alert} from 'antd';
 
 function dataIsEmpty (data) {
   return !data || data.filter((d) => !isNaN(d)).length === 0;
@@ -138,6 +141,7 @@ function extractDataSet (data, title, type, color, options = {}) {
     borderWidth = 2
   } = options;
   return {
+    [DataLabelPlugin.noDataIgnoreOption]: options[DataLabelPlugin.noDataIgnoreOption],
     label: title,
     type,
     data,
@@ -180,16 +184,10 @@ function Summary (
     ? summary.value.quota
     : undefined;
   const error = summary?.error;
-  if (error) {
-    return (
-      <div style={Object.assign({height: '100%', position: 'relative', display: 'block'}, style)}>
-        {!!title && <div className={styles.title}>{title}</div>}
-        <Alert type="error" message={error} />
-      </div>
-    );
-  }
   const {labels, currentDateIndex} = generateLabels(data, summary?.filters);
   const {currentData, previousData, quota} = parse(data, quotaValue);
+  const disabled = currentData.length === 0 && previousData.length === 0;
+  const loading = summary?.pending && !summary?.loaded;
   const dataConfiguration = {
     labels: labels.map(l => l.text),
     datasets: [
@@ -212,7 +210,11 @@ function Summary (
         'Quota',
         SummaryChart.quota,
         colors.quota,
-        {showPoints: false, currentDateIndex}
+        {
+          showPoints: false,
+          currentDateIndex,
+          [DataLabelPlugin.noDataIgnoreOption]: true
+        }
       ) : false
     ].filter(Boolean)
   };
@@ -235,7 +237,11 @@ function Summary (
         offset: true
       }],
       yAxes: [{
+        gridLines: {
+          display: !disabled
+        },
         ticks: {
+          display: !disabled,
           callback: costTickFormatter
         }
       }]
@@ -282,7 +288,9 @@ function Summary (
   return (
     <div style={Object.assign({height: '100%', position: 'relative', display: 'block'}, style)}>
       <Chart
+        error={error}
         data={dataConfiguration}
+        loading={loading}
         type="summary"
         options={options}
         plugins={[

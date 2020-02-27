@@ -131,9 +131,8 @@ function ResourcesDataBlock ({children}) {
 
 function renderResourcesSubData (
   {
-    data,
+    request,
     tableDataRequest,
-    chartError = null,
     dataSample = InstanceFilters.value.dataSample,
     previousDataSample = InstanceFilters.value.previousDataSample,
     owner = true,
@@ -190,8 +189,7 @@ function renderResourcesSubData (
       {extra}
       <div className={styles.resourcesChart}>
         <BarChart
-          data={data}
-          error={chartError}
+          request={request}
           dataSample={dataSample}
           previousDataSample={previousDataSample}
           title={title}
@@ -292,8 +290,7 @@ class InstanceReport extends React.Component {
               />
             </div>
           )}
-          data={instances && instances.loaded ? instances.value : []}
-          chartError={instances && instances.error ? instances.error : null}
+          request={instances}
           tableDataRequest={instancesTable}
           dataSample={dataSample}
           previousDataSample={previousDataSample}
@@ -302,8 +299,7 @@ class InstanceReport extends React.Component {
           singleTitle="Instance"
         />
         <ResourcesSubData
-          data={pipelines && pipelines.loaded ? pipelines.value : []}
-          chartError={pipelines && pipelines.error ? pipelines.error : null}
+          request={pipelines}
           tableDataRequest={pipelinesTable}
           dataSample={dataSample}
           previousDataSample={previousDataSample}
@@ -312,8 +308,7 @@ class InstanceReport extends React.Component {
           singleTitle="Pipeline"
         />
         <ResourcesSubData
-          data={tools && tools.loaded ? tools.value : []}
-          chartError={tools && tools.error ? tools.error : null}
+          request={tools}
           tableDataRequest={toolsTable}
           dataSample={dataSample}
           previousDataSample={previousDataSample}

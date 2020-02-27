@@ -116,8 +116,7 @@ function UserReport ({
       </GeneralDataBlock>
       <GeneralDataBlock>
         <GroupedBarChart
-          data={resources && resources.loaded ? resources.value : {}}
-          error={resources && resources.error ? resources.error : null}
+          request={resources}
           title="Resources"
           onSelect={onResourcesSelect}
           height={400}
@@ -188,8 +187,7 @@ function GroupReport ({
       <div className={styles.chartsSubContainer}>
         <GeneralDataBlock>
           <GroupedBarChart
-            data={resources && resources.loaded ? resources.value : {}}
-            error={resources && resources.error ? resources.error : null}
+            request={resources}
             title="Resources"
             onSelect={onResourcesSelect}
             height={400}
@@ -197,15 +195,7 @@ function GroupReport ({
         </GeneralDataBlock>
         <GeneralDataBlock>
           <BarChart
-            data={
-              billingCentersRequest && billingCentersRequest.loaded
-                ? billingCentersRequest.value
-                : {}
-            }
-            error={billingCentersRequest && billingCentersRequest.error
-              ? billingCentersRequest.error
-              : null
-            }
+            request={billingCentersRequest}
             title={title}
             onSelect={onUserSelect}
             style={{height: 250}}
@@ -267,8 +257,7 @@ function GeneralReport ({
           flex: 'unset'
         }}>
           <GroupedBarChart
-            data={resources && resources.loaded ? resources.value : {}}
-            error={resources && resources.error ? resources.error : null}
+            request={resources}
             onSelect={onResourcesSelect}
             title="Resources"
             height={400}
@@ -276,14 +265,7 @@ function GeneralReport ({
         </GeneralDataBlock>
         <GeneralDataBlock style={{flex: 'unset'}}>
           <BarChart
-            data={billingCentersRequest && billingCentersRequest.loaded
-              ? billingCentersRequest.value
-              : {}
-            }
-            error={billingCentersRequest && billingCentersRequest.error
-              ? billingCentersRequest.error
-              : null
-            }
+            request={billingCentersRequest}
             title="Billing centers"
             onSelect={onBillingCenterSelect}
             style={{height: 400}}

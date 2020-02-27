@@ -194,8 +194,7 @@ function StorageReports ({storages, storagesTable, summary, type}) {
       </StoragesDataBlock>
       <StoragesDataBlock className={styles.chartsColumnContainer}>
         <BarChart
-          data={storages && storages.loaded ? storages.value : {}}
-          error={storages && storages.error ? storages.error : null}
+          request={storages}
           title={getTitle()}
           top={tablePageSize}
           style={{height: 300}}

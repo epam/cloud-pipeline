@@ -14,42 +14,38 @@
  * limitations under the License.
  */
 
-const id = 'no-data-label';
+const id = 'data-label-plugin';
+const noDataIgnoreOption = 'data-plugin-ignore';
 
 const plugin = {
   id,
-  afterDraw: function (chart) {
-    if (!this.hasData(chart.data)) {
+  noDataIgnoreOption,
+  afterDraw: function (chart, e, configuration) {
+    const {error, label} = configuration;
+    if (!this.hasData(chart.data) || error || label) {
       const ctx = chart.chart.ctx;
       const width = chart.chart.width;
       const height = chart.chart.height;
 
       ctx.save();
-      ctx.lineWidth = 0;
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0)';
-      ctx.rect(0, 0, width, height);
-      ctx.fill();
-      ctx.stroke();
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.lineWidth = 1;
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      ctx.font = '12px 700 sans-serif';
-      if (chart.options.title.display) {
-        ctx.fillText(chart.options.title.text, width / 2, 18);
-      }
-      ctx.fillText('No data to display', width / 2, height / 2);
+      ctx.fillStyle = error ? 'rgba(255, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.6)';
+      ctx.font = '9pt sans-serif';
+      ctx.fillText(error || label || 'No data to display', width / 2, height / 2);
       ctx.restore();
     }
   },
   hasData: function (data) {
     if (data.datasets && data.datasets.length > 0) {
-      return data.datasets.some(d => d.data && d.data.length > 0);
+      return data.datasets
+        .filter(d => !d[this.noDataIgnoreOption])
+        .some(d => d.data && d.data.length > 0);
     }
 
     return false;
   }
 };
 
-export {id, plugin};
+export {id, noDataIgnoreOption, plugin};
