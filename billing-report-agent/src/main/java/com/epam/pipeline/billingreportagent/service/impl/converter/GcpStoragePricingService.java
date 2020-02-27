@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -41,7 +42,7 @@ import java.util.stream.Collectors;
 public class GcpStoragePricingService extends AbstractStoragePricingService {
 
     private static final String GCP_STORAGE_SERVICES_FAMILY = "Cloud Storage";
-    private static final String GCP_DATA_STORAGE_GROUP = "RegionalStorage";
+    private static final List<String> SUPPORTED_STORAGE = Arrays.asList("RegionalStorage", "MultiRegionalStorage");
 
     public GcpStoragePricingService() {
         super(GCP_STORAGE_SERVICES_FAMILY);
@@ -55,7 +56,7 @@ public class GcpStoragePricingService extends AbstractStoragePricingService {
                                                            null);
         final ListServicesResponse services = cloudbilling.services().list().setAccessToken(accessToken).execute();
         final Service cloudStorageService = services.getServices().stream()
-            .filter(service -> service.getDisplayName().equals(GCP_STORAGE_SERVICES_FAMILY))
+            .filter(service -> service.getDisplayName().equals(getStorageServiceGroup()))
             .findAny()
             .orElseThrow(() -> new RuntimeException("No services received from GCP!"));
 
@@ -66,7 +67,7 @@ public class GcpStoragePricingService extends AbstractStoragePricingService {
             .execute();
 
         final Map<List<String>, List<TierRate>> dataStoragePriceTable = skuResponse.getSkus().stream()
-            .filter(sku -> sku.getCategory().getResourceGroup().equals(GCP_DATA_STORAGE_GROUP))
+            .filter(sku -> SUPPORTED_STORAGE.contains(sku.getCategory().getResourceGroup()))
             .collect(
                 Collectors.toMap(Sku::getServiceRegions,
                                  sku -> sku.getPricingInfo().get(0).getPricingExpression().getTieredRates())
