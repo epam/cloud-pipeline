@@ -341,7 +341,7 @@ class DataStorageOperations(object):
             sys.exit(1)
 
     @classmethod
-    def du(cls, storage_name, relative_path='', format='M', depth=None):
+    def du(cls, storage_name, relative_path=None, format='M', depth=None):
         if depth and not storage_name:
             click.echo("Error: bucket path must be provided with --depth option", err=True)
             sys.exit(1)
@@ -355,7 +355,7 @@ class DataStorageOperations(object):
         items_table.align['Size'] = 'r'
         try:
             if storage_name:
-                if relative_path == "/":
+                if not relative_path or relative_path == "/":
                     relative_path = ''
                 storage = DataStorage.get(storage_name)
                 if storage is None:
