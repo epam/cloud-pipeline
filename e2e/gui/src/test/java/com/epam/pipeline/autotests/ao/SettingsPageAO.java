@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -412,13 +412,21 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public UserEntry searchForUserEntry(String login) {
                 sleep(1, SECONDS);
-                SelenideElement entry = elements().get(TABLE)
+                final String nextPage = "Next Page";
+                while (!getUser(login).isDisplayed()
+                        && $(byTitle(nextPage)).has(not(cssClass("ant-pagination-disabled")))) {
+                    click(byTitle(nextPage));
+                }
+                SelenideElement entry = getUser(login).shouldBe(visible);
+                return new UserEntry(this, login, entry);
+            }
+
+            private SelenideElement getUser(final String login) {
+                return elements().get(TABLE)
                         .find(byXpath(String.format(
                                 ".//td[contains(@class, 'user-management-form__user-name-column') and " +
                                         "starts-with(., '%s')]", login)))
-                        .closest(".ant-table-row-level-0")
-                        .shouldBe(visible);
-                return new UserEntry(this, login, entry);
+                        .closest(".ant-table-row-level-0");
             }
 
             public UsersTabAO clickSearch() {
