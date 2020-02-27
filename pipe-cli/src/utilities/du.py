@@ -48,8 +48,7 @@ class DataUsageHelper(object):
             items.append([path, count, DuFormatType.pretty_value(size, self.format)])
         return items
 
-    def get_nfs_storage_summary(self, parsed_path):
-        storage_name, relative_path = self.__parse_nfs_storage_path(parsed_path)
+    def get_nfs_storage_summary(self, storage_name, relative_path):
         path, count, size = self.__get_storage_usage(storage_name, relative_path)
         return [path, count, DuFormatType.pretty_value(size, self.format)]
 
@@ -83,12 +82,3 @@ class DataUsageHelper(object):
         wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(root_bucket, relative_path)
         manager = wrapper.get_list_manager(show_versions=False)
         return manager.get_summary(relative_path)
-
-    @classmethod
-    def __parse_nfs_storage_path(cls, parsed_path):
-        parts = parsed_path.path.split("/")
-        storage_name = "/".join([parsed_path.netloc, parts[1]])
-        relative_path = None
-        if len(parts) > 2:
-            relative_path = parsed_path.path[(len(parts[1]) + 2):]
-        return storage_name, relative_path

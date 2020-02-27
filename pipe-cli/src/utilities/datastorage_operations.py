@@ -346,8 +346,8 @@ class DataStorageOperations(object):
             sys.exit(1)
 
     @classmethod
-    def du(cls, path, format='M', depth=None):
-        if depth and not path:
+    def du(cls, storage_name, relative_path='', format='M', depth=None):
+        if depth and not storage_name:
             click.echo("Error: bucket path must be provided with --depth option", err=True)
             sys.exit(1)
         du_helper = DataUsageHelper(format)
@@ -359,23 +359,18 @@ class DataStorageOperations(object):
         items_table.padding_width = 2
         items_table.align['Size'] = 'r'
         try:
-            if path:
-                parsed_path = urlparse(path)
-                requested_scheme = parsed_path.scheme.lower()
-                supported_schemes = WrapperType.cloud_schemes() + ['nfs']
-                if requested_scheme not in supported_schemes:
-                    raise RuntimeError('Supported schemes for datastorage are: {}. Actual scheme is "{}".'
-                                       .format('"' + '", "'.join(supported_schemes) + '"', requested_scheme))
-                if requested_scheme == 'nfs':
+            if storage_name:
+                if relative_path == "/":
+                    relative_path = ''
+                storage = DataStorage.get(storage_name)
+                if storage is None:
+                    raise RuntimeError('Storage "{}" was not found'.format(storage_name))
+                if storage.type.lower() == 'nfs':
                     if depth:
                         raise RuntimeError('--depth option is not supported for NFS storages')
-                    items_table.add_row(du_helper.get_nfs_storage_summary(parsed_path))
+                    items_table.add_row(du_helper.get_nfs_storage_summary(storage_name, relative_path))
                 else:
-                    root_bucket, original_path = DataStorage.load_from_uri(path)
-                    if root_bucket is None:
-                        raise RuntimeError('Storage path "{}" was not found'.format(path))
-                    relative_path = original_path if original_path != '/' else ''
-                    for item in du_helper.get_cloud_storage_summary(root_bucket, relative_path, depth):
+                    for item in du_helper.get_cloud_storage_summary(storage, relative_path, depth):
                         items_table.add_row(item)
             else:
                 # If no argument is specified - list all buckets

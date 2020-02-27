@@ -903,13 +903,14 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 
 
 @storage.command('du')
-@click.argument('path', required=False)
+@click.argument('name', required=False)
+@click.option('-p', '--relative-path', required=False, help='Relative path')
 @click.option('-f', '--format', help='Format for size [G/M/K]',
               type=click.Choice(DuFormatType.possible_types()), required=False, default='M')
 @click.option('-d', '--depth', help='Depth level', type=int, required=False)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
-def du(path, format, depth):
-    DataStorageOperations.du(path, format, depth)
+def du(name, relative_path, format, depth):
+    DataStorageOperations.du(name, relative_path, format, depth)
 
 
 @storage.command('restore')
