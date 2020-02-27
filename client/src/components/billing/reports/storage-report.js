@@ -27,6 +27,7 @@ import {
 } from './charts';
 import Filters from './filters';
 import {Period, getPeriod} from './periods';
+import Export, {ExportComposers} from './export';
 import {
   GetBillingData,
   GetGroupedBillingData,
@@ -181,8 +182,29 @@ function StorageReports ({storages, storagesTable, summary, type}) {
     }
     return 'Storages';
   };
+  const composers = [
+    {
+      composer: ExportComposers.summaryComposer,
+      options: [summary]
+    },
+    {
+      composer: ExportComposers.defaultComposer,
+      options: [
+        storages,
+        {
+          owner: 'owner',
+          cloud_provider: 'provider',
+          cloud_region: 'region',
+          created_date: 'created'
+        }
+      ]
+    }
+  ];
   return (
-    <div className={styles.chartsContainer}>
+    <Export.Consumer
+      className={styles.chartsContainer}
+      composers={composers}
+    >
       <StoragesDataBlock>
         <BillingTable summary={summary} showQuota={false} />
         <Summary
@@ -201,7 +223,7 @@ function StorageReports ({storages, storagesTable, summary, type}) {
         />
         <RenderTable storages={storagesTable} />
       </StoragesDataBlock>
-    </div>
+    </Export.Consumer>
   );
 }
 

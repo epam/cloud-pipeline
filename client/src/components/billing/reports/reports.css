@@ -45,11 +45,19 @@
 .period-filters {
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 100%;
   height: 30px;
   margin: 0;
+  position: relative;
 }
 
 .report-filter {}
+
+.export-reports-button {
+  position: absolute;
+  right: 10px;
+}
 
 .chart {
   padding-bottom: 15px;

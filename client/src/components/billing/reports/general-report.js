@@ -31,6 +31,7 @@ import {
   GetGroupedBillingDataPaginated
 } from '../../../models/billing';
 import * as navigation from './navigation';
+import Export, {ExportComposers} from './export';
 import {costTickFormatter} from './utilities';
 import styles from './reports.css';
 
@@ -104,8 +105,21 @@ function UserReport ({
     navigation.resourcesNavigation,
     filters
   );
+  const composers = [
+    {
+      composer: ExportComposers.summaryComposer,
+      options: [summary]
+    },
+    {
+      composer: ExportComposers.resourcesComposer,
+      options: [resources]
+    }
+  ];
   return (
-    <div className={styles.chartsContainer}>
+    <Export.Consumer
+      className={styles.chartsContainer}
+      composers={composers}
+    >
       <GeneralDataBlock>
         <BillingTable summary={summary} />
         <Summary
@@ -122,7 +136,7 @@ function UserReport ({
           height={400}
         />
       </GeneralDataBlock>
-    </div>
+    </Export.Consumer>
   );
 }
 
@@ -174,8 +188,32 @@ function GroupReport ({
     filters,
     users
   );
+  const composers = [
+    {
+      composer: ExportComposers.summaryComposer,
+      options: [summary]
+    },
+    {
+      composer: ExportComposers.resourcesComposer,
+      options: [resources]
+    },
+    {
+      composer: ExportComposers.defaultComposer,
+      options: [
+        billingCentersRequest,
+        {
+          runs_duration: 'runsDuration',
+          runs_count: 'runsCount',
+          billing_center: () => group
+        }
+      ]
+    }
+  ];
   return (
-    <div className={styles.chartsContainer}>
+    <Export.Consumer
+      className={styles.chartsContainer}
+      composers={composers}
+    >
       <GeneralDataBlock>
         <BillingTable summary={summary} />
         <Summary
@@ -223,7 +261,7 @@ function GroupReport ({
           />
         </GeneralDataBlock>
       </div>
-    </div>
+    </Export.Consumer>
   );
 }
 
@@ -241,8 +279,25 @@ function GeneralReport ({
     navigation.billingCentersNavigation,
     filters
   );
+  const composers = [
+    {
+      composer: ExportComposers.summaryComposer,
+      options: [summary]
+    },
+    {
+      composer: ExportComposers.resourcesComposer,
+      options: [resources]
+    },
+    {
+      composer: ExportComposers.defaultComposer,
+      options: [billingCentersRequest]
+    }
+  ];
   return (
-    <div className={styles.chartsContainer}>
+    <Export.Consumer
+      className={styles.chartsContainer}
+      composers={composers}
+    >
       <GeneralDataBlock>
         <BillingTable summary={summary} />
         <Summary
@@ -272,7 +327,7 @@ function GeneralReport ({
           />
         </GeneralDataBlock>
       </div>
-    </div>
+    </Export.Consumer>
   );
 }
 
