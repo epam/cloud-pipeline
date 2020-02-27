@@ -18,23 +18,23 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import BarChart from './bar-chart';
 import styles from './charts.css';
-import {Alert} from 'antd';
 
 function GroupedBarChart (
   {
-    data,
-    error = null,
+    request,
     onSelect,
     title,
     height
   }
 ) {
+  const data = request.loaded ? (request.value || {}) : {};
   const groups = Object.keys(data || {});
   const itemsCount = groups.map(group => Object.keys(data[group] || {}).length);
   const total = itemsCount.reduce((r, c) => r + c, 0);
   const charts = groups.map((group, index) => (
     <BarChart
       key={group}
+      request={request}
       data={data[group]}
       title={group}
       subChart
@@ -51,17 +51,11 @@ function GroupedBarChart (
   return (
     <div style={{position: 'relative'}}>
       {title && <div className={styles.title}>{title}</div>}
-      {
-        error
-          ? <Alert type="error" message={error} />
-          : (
-            <div style={{position: 'relative', display: 'block', height}}>
-              {
-                charts.length > 0 ? charts : '\u00A0'
-              }
-            </div>
-          )
-      }
+      <div style={{position: 'relative', display: 'block', height}}>
+        {
+          charts.length > 0 ? charts : '\u00A0'
+        }
+      </div>
     </div>
   );
 }

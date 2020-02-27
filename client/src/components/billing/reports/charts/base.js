@@ -17,13 +17,14 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Chart from 'chart.js';
-import * as NoDataLabelPlugin from './extensions/no-data-label-plugin';
+import {DataLabelPlugin} from './extensions';
 import 'chart.js/dist/Chart.css';
-import './extensions';
 
 class ChartWrapper extends React.Component {
   static propTypes = {
     data: PropTypes.object,
+    error: PropTypes.string,
+    loading: PropTypes.bool,
     type: PropTypes.string,
     options: PropTypes.object,
     plugins: PropTypes.array
@@ -40,17 +41,37 @@ class ChartWrapper extends React.Component {
   chartRef = (ctx, props) => {
     if (ctx) {
       this.ctx = ctx;
-      const {data, options, type, plugins} = props || this.props;
+      const {
+        data,
+        error,
+        loading,
+        options = {},
+        type,
+        plugins
+      } = props || this.props;
+      const {plugins: optPlugins = {}, ...rest} = options;
+      optPlugins[DataLabelPlugin.id] = {
+        error,
+        label: loading ? 'Loading...' : undefined
+      };
       if (this.chart) {
         this.chart.data = data;
-        this.chart.options = {...options, maintainAspectRatio: false};
+        this.chart.options = {
+          ...rest,
+          plugins: optPlugins,
+          maintainAspectRatio: false
+        };
         this.chart.update();
       } else {
         this.chart = new Chart(ctx, {
           type,
           data,
-          options: {...options, maintainAspectRatio: false},
-          plugins: [...plugins, NoDataLabelPlugin.plugin]
+          options: {
+            ...rest,
+            plugins: optPlugins,
+            maintainAspectRatio: false
+          },
+          plugins: [...plugins, DataLabelPlugin.plugin]
         });
       }
       this.chart.resize();

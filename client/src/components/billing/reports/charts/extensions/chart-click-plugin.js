@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-const id = 'scale-title-click-plugin';
+const id = 'chart-click-plugin';
 
 function mouseOverElement (mouse, element) {
   if (!element) {
@@ -42,7 +42,10 @@ const plugin = {
         }
       }
       if (handler) {
-        handler(scales[axis].getValueForPixel(x));
+        const value = scales[axis].getValueForPixel(x);
+        if (value >= 0) {
+          handler(value);
+        }
       }
     }
   }

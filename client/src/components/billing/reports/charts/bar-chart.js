@@ -18,11 +18,11 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import Chart from './base';
 import {colors} from './colors';
-import {BarchartDataLabelPlugin, ScaleTitleClickPlugin} from './extensions';
+import {
+  BarchartDataLabelPlugin,
+  ChartClickPlugin
+} from './extensions';
 import {costTickFormatter} from '../utilities';
-import {Alert} from 'antd';
-
-import styles from './charts.css';
 
 function toValueFormat (value) {
   return Math.round((+value || 0) * 100.0) / 100.0;
@@ -54,8 +54,8 @@ function filterTopData (data, top, dataSample = 'value') {
 function BarChart (
   {
     axisPosition = 'left',
-    data,
-    error = null,
+    request,
+    data: rawData,
     dataSample = 'value',
     previousDataSample = 'previous',
     onSelect,
@@ -67,14 +67,12 @@ function BarChart (
     valueFormatter = costTickFormatter
   }
 ) {
-  if (error) {
-    return (
-      <div style={Object.assign({height: '100%', position: 'relative', display: 'block'}, style)}>
-        {!subChart && !!title && <div className={styles.title}>{title}</div>}
-        <Alert type="error" message={error} />
-      </div>
-    );
+  if (!request) {
+    return null;
   }
+  const loading = request.pending && !request.loaded;
+  const data = rawData || (request.loaded ? (request.value || {}) : {});
+  const error = request.error;
   const filteredData = filterTopData(data, top, dataSample);
   const groups = filteredData.map(d => d.name);
   const previousData = getValues(filteredData, previousDataSample);
@@ -83,6 +81,7 @@ function BarChart (
     ...previousData,
     ...currentData
   );
+  const disabled = isNaN(maximum);
   const chartData = {
     labels: groups,
     datasets: [
@@ -122,13 +121,17 @@ function BarChart (
           drawOnChartArea: false
         },
         scaleLabel: {
-          display: subChart,
+          display: !disabled && subChart,
           labelString: title
         }
       }],
       yAxes: [{
         position: axisPosition,
+        gridLines: {
+          display: !disabled
+        },
         ticks: {
+          display: !disabled,
           beginAtZero: true,
           callback: value => {
             if (value === maximum) {
@@ -136,7 +139,7 @@ function BarChart (
             }
             return valueFormatter(value);
           },
-          max: maximum
+          max: !disabled ? maximum : undefined
         }
       }]
     },
@@ -177,7 +180,7 @@ function BarChart (
       [BarchartDataLabelPlugin.id]: {
         valueFormatter
       },
-      [ScaleTitleClickPlugin.id]: {
+      [ChartClickPlugin.id]: {
         handler: onSelect ? index => onSelect({key: groups[index]}) : undefined,
         scaleHandler: onScaleSelect,
         axis: 'x-axis'
@@ -189,11 +192,13 @@ function BarChart (
     <div style={Object.assign({height: '100%', position: 'relative', display: 'block'}, style)}>
       <Chart
         data={chartData}
+        error={error}
+        loading={loading}
         type="bar"
         options={options}
         plugins={[
           BarchartDataLabelPlugin.plugin,
-          ScaleTitleClickPlugin.plugin
+          ChartClickPlugin.plugin
         ]}
       />
     </div>
