@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.manager.datastorage.DataStorageApiService;
@@ -679,5 +680,19 @@ public class DataStorageController extends AbstractRestController {
             })
     public Result<List<PathDescription>> getDataSizes(@RequestBody final List<String> paths) {
         return Result.success(dataStorageApiService.getDataSizes(paths));
+    }
+
+    @GetMapping(value = "/datastorage/path/usage")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns storage usage statistics.",
+            notes = "Returns storage usage statistics.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<StorageUsage> getStorageUsage(@RequestParam final String id,
+                                                @RequestParam(required = false) final String path) {
+        return Result.success(dataStorageApiService.getStorageUsage(id, path));
     }
 }

@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
 try:
     from urllib.request import urlopen  # Python 3
@@ -410,6 +412,58 @@ class ListingManager(StorageItemManager, AbstractListingManager):
             return self.list_versions(client, prefix, operation_parameters, recursive)
         else:
             return self.list_objects(client, prefix, operation_parameters, recursive)
+
+    def get_summary_with_depth(self, max_depth, relative_path=None):
+        bucket_name = self.bucket.bucket.path
+        delimiter = S3BucketOperations.S3_PATH_SEPARATOR
+        client = self.session.client('s3', config=S3BucketOperations.get_proxy_config())
+        operation_parameters = {
+            'Bucket': bucket_name
+        }
+        prefix = S3BucketOperations.get_prefix(delimiter, relative_path)
+        if relative_path:
+            operation_parameters['Prefix'] = prefix
+            max_depth += len(prefix.split(delimiter))
+
+        paginator = client.get_paginator('list_objects_v2')
+        page_iterator = paginator.paginate(**operation_parameters)
+
+        accumulator = StorageUsageAccumulator(bucket_name, relative_path, delimiter, max_depth)
+
+        for page in page_iterator:
+            if 'Contents' in page:
+                for file in page['Contents']:
+                    name = self.get_file_name(file, prefix, True)
+                    size = file['Size']
+                    accumulator.add_path(name, size)
+            if not page['IsTruncated']:
+                break
+        return accumulator.get_tree()
+
+    def get_summary(self, relative_path=None):
+        delimiter = S3BucketOperations.S3_PATH_SEPARATOR
+        client = self.session.client('s3', config=S3BucketOperations.get_proxy_config())
+        operation_parameters = {
+            'Bucket': self.bucket.bucket.path
+        }
+        prefix = S3BucketOperations.get_prefix(delimiter, relative_path)
+        if relative_path:
+            operation_parameters['Prefix'] = prefix
+
+        paginator = client.get_paginator('list_objects_v2')
+        page_iterator = paginator.paginate(**operation_parameters)
+
+        total_size = 0
+        total_objects = 0
+
+        for page in page_iterator:
+            if 'Contents' in page:
+                for file in page['Contents']:
+                    total_size += file['Size']
+                    total_objects += 1
+            if not page['IsTruncated']:
+                break
+        return delimiter.join([self.bucket.bucket.path, relative_path]), total_objects, total_size
 
     def list_versions(self, client, prefix,  operation_parameters, recursive):
         paginator = client.get_paginator('list_object_versions')

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.search;
 
 import com.epam.pipeline.controller.vo.search.ElasticSearchRequest;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -30,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -37,11 +39,13 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +62,10 @@ import static com.epam.pipeline.manager.preference.SystemPreferences.SEARCH_ELAS
 @Service
 @RequiredArgsConstructor
 public class SearchRequestBuilder {
+
+    private static final String STORAGE_SIZE_AGG_NAME = "sizeSumSearch";
+    private static final String SIZE_FIELD = "size";
+    private static final String NAME_FIELD = "id";
 
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
@@ -91,6 +99,19 @@ public class SearchRequestBuilder {
         return new SearchRequest(buildIndexNames(searchRequest.getFilterTypes()))
                 .indicesOptions(IndicesOptions.lenientExpandOpen())
                 .source(searchSource);
+    }
+
+    public SearchRequest buildSumAggregationForStorage(final Long storageId, final DataStorageType storageType,
+                                                       final String path) {
+        final SumAggregationBuilder sizeSumAggregator = AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME)
+                .field(SIZE_FIELD);
+        final SearchSourceBuilder sizeSumSearch = new SearchSourceBuilder().aggregation(sizeSumAggregator);
+        if (StringUtils.isNotBlank(path)) {
+            sizeSumSearch.query(QueryBuilders.prefixQuery(NAME_FIELD, path));
+        }
+        return new SearchRequest()
+                .indices(buildIndexNames(Collections.singletonList(getStorageFileDocumentType(storageType))))
+                .source(sizeSumSearch);
     }
 
     private QueryBuilder getQuery(final ElasticSearchRequest searchRequest) {
@@ -159,5 +180,21 @@ public class SearchRequestBuilder {
                 .map(type -> Optional.ofNullable(typeIndexPrefixes.get(type))
                         .orElseThrow(() -> new SearchException("Missing index name for type: " + type)))
                 .toArray(String[]::new);
+    }
+
+    private static SearchDocumentType getStorageFileDocumentType(final DataStorageType type) {
+        switch (type) {
+            case S3:
+                return SearchDocumentType.S3_FILE;
+            case AZ:
+                return SearchDocumentType.AZ_BLOB_FILE;
+            case GS:
+                return SearchDocumentType.GS_FILE;
+            case NFS:
+                return SearchDocumentType.NFS_FILE;
+            default:
+                throw new UnsupportedOperationException(String
+                        .format("Unsupported storage search document type '%s'", type.name()));
+        }
     }
 }

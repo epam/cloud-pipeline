@@ -1,3 +1,17 @@
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import absolute_import
 
 import copy
@@ -7,6 +21,8 @@ from threading import Lock
 from datetime import timedelta, datetime
 import os
 import click
+
+from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
 try:
     from urllib.request import urlopen  # Python 3
@@ -68,6 +84,30 @@ class AzureListingManager(AzureManager, AbstractListingManager):
                                                   delimiter=StorageOperations.PATH_SEPARATOR if not recursive else None)
         absolute_items = [self._to_storage_item(blob) for blob in blobs_generator]
         return absolute_items if recursive else [self._to_local_item(item, prefix) for item in absolute_items]
+
+    def get_summary(self, relative_path=None):
+        prefix = StorageOperations.get_prefix(relative_path)
+        blobs_generator = self.service.list_blobs(self.bucket.path,
+                                                  prefix=prefix if relative_path else None)
+        size = 0
+        count = 0
+        for blob in blobs_generator:
+            if type(blob) == Blob:
+                size += blob.properties.content_length
+                count += 1
+        return [self.delimiter.join([self.bucket.path, relative_path]), count, size]
+
+    def get_summary_with_depth(self, max_depth, relative_path=None):
+        prefix = StorageOperations.get_prefix(relative_path)
+        blobs_generator = self.service.list_blobs(self.bucket.path,
+                                                  prefix=prefix if relative_path else None)
+        accumulator = StorageUsageAccumulator(self.bucket.path, relative_path, self.delimiter, max_depth)
+        for blob in blobs_generator:
+            if type(blob) == Blob:
+                size = blob.properties.content_length
+                name = blob.name
+                accumulator.add_path(name, size)
+        return accumulator.get_tree()
 
     def _to_storage_item(self, blob):
         item = DataStorageItemModel()

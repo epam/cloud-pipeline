@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -326,5 +327,10 @@ public class DataStorageApiService {
     @PostAuthorize(AclExpressions.STORAGE_PATHS_READ)
     public List<PathDescription> getDataSizes(final List<String> paths) {
         return dataStorageManager.getDataSizes(paths);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermissionByName(#id, 'READ')")
+    public StorageUsage getStorageUsage(final String id, final String path) {
+        return dataStorageManager.getStorageUsage(id, path);
     }
 }

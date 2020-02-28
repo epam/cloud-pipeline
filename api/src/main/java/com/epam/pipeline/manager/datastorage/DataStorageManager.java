@@ -41,6 +41,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.StorageServiceType;
+import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -54,6 +55,7 @@ import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
@@ -136,6 +138,9 @@ public class DataStorageManager implements SecuredEntityManager {
     @Autowired
     private Executor dataStoragePathExecutor;
 
+    @Autowired
+    private SearchManager searchManager;
+
     private AbstractDataStorageFactory dataStorageFactory =
             AbstractDataStorageFactory.getDefaultDataStorageFactory();
 
@@ -188,21 +193,11 @@ public class DataStorageManager implements SecuredEntityManager {
             if (pathWithName.endsWith("/")) {
                 pathWithName = pathWithName.substring(0, pathWithName.length() - 1);
             }
-            String[] pathParts = pathWithName.split("/");
-            String dataStorageName = pathParts[pathParts.length - 1];
-            Long parentFolderId = null;
-            if (pathParts.length > 1) {
-                Folder parentFolder = folderManager
-                        .loadByNameOrId(
-                                String.join("/", Arrays.asList(pathParts).subList(0, pathParts.length - 1)));
-                if (parentFolder != null) {
-                    parentFolderId = parentFolder.getId();
-                }
-            }
-            if (parentFolderId != null) {
-                dataStorage = dataStorageDao.loadDataStorageByNameAndParentId(dataStorageName, parentFolderId);
-            } else {
-                dataStorage = dataStorageDao.loadDataStorageByNameOrPath(dataStorageName, dataStorageName);
+
+            dataStorage = loadDataStorageFromFolder(pathWithName);
+
+            if (dataStorage == null) {
+                dataStorage = dataStorageDao.loadDataStorageByNameOrPath(pathWithName, pathWithName);
             }
         }
         Assert.notNull(dataStorage, messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND, identifier));
@@ -616,6 +611,11 @@ public class DataStorageManager implements SecuredEntityManager {
         return new ArrayList<>(container.values());
     }
 
+    public StorageUsage getStorageUsage(final String id, final String path) {
+        final AbstractDataStorage dataStorage = loadByNameOrId(id);
+        return searchManager.getStorageUsage(dataStorage, path);
+    }
+
     private Collection<String> getRootPaths(final List<String> paths) {
         final Set<String> initialPaths = new HashSet<>(paths);
         final List<String> childPaths = initialPaths.stream()
@@ -884,5 +884,27 @@ public class DataStorageManager implements SecuredEntityManager {
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_USED_AS_DEFAULT, storageId,
                         values.stream().findFirst().map(v -> v.getClass().getSimpleName()).orElse("CLASS"),
                         values.stream().map(v -> String.valueOf(v.getId())).collect(Collectors.joining(","))));
+    }
+
+    private AbstractDataStorage loadDataStorageFromFolder(final String pathWithName) {
+        String[] pathParts = pathWithName.split("/");
+        String dataStorageName = pathParts[pathParts.length - 1];
+        Long parentFolderId = null;
+        if (pathParts.length > 1) {
+            try {
+                final Folder parentFolder = folderManager.loadByNameOrId(
+                                String.join("/", Arrays.asList(pathParts).subList(0, pathParts.length - 1)));
+                if (parentFolder != null) {
+                    parentFolderId = parentFolder.getId();
+                }
+            } catch (IllegalArgumentException e) {
+                LOGGER.error(e.getMessage());
+            }
+        }
+        if (parentFolderId != null) {
+            return dataStorageDao.loadDataStorageByNameAndParentId(dataStorageName, parentFolderId);
+        } else {
+            return dataStorageDao.loadDataStorageByNameOrPath(dataStorageName, dataStorageName);
+        }
     }
 }

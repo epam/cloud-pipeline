@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -314,6 +314,22 @@ class DataStorage(API):
             raise RuntimeError(response_data['message'])
         else:
             raise RuntimeError("Failed to update tags for object {}.".format(path))
+
+    @classmethod
+    def get_storage_usage(cls, name, path=None):
+        api = cls.instance()
+        endpoint = 'datastorage/path/usage?id={}'.format(name)
+        if path:
+            endpoint = '&path='.join([endpoint, path])
+        response_data = api.call(endpoint, None)
+        if 'payload' in response_data:
+            return response_data['payload']
+        if response_data['status'] == 'OK':
+            return []
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        else:
+            raise RuntimeError("Failed to load usage statistic for storage '{}'.".format(name))
 
 
 def __create_policy__(sts_duration, lts_duration, versioning, backup_duration):

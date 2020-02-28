@@ -1,9 +1,25 @@
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import base64
 import copy
 import hashlib
 import os
 from datetime import datetime, timedelta
 from requests import RequestException
+
+from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
 try:
     from urllib.parse import urlparse  # Python 3
@@ -232,6 +248,31 @@ class GsListingManager(GsManager, AbstractListingManager):
         requested_items = absolute_items if recursive else [self._to_local_item(item, prefix)
                                                             for item in absolute_items]
         return requested_items if show_all or not page_size else requested_items[:page_size]
+
+    def get_summary(self, relative_path=None):
+        prefix = StorageOperations.get_prefix(relative_path)
+        bucket = self.client.bucket(self.bucket.path)
+        blobs_iterator = bucket.list_blobs(prefix=prefix if relative_path else None)
+
+        size = 0
+        count = 0
+        for blob in blobs_iterator:
+            size += blob.size
+            count += 1
+        return [StorageOperations.PATH_SEPARATOR.join([self.bucket.path, relative_path]), count, size]
+
+    def get_summary_with_depth(self, max_depth, relative_path=None):
+        prefix = StorageOperations.get_prefix(relative_path)
+        bucket = self.client.bucket(self.bucket.path)
+        blobs_iterator = bucket.list_blobs(prefix=prefix if relative_path else None)
+
+        accumulator = StorageUsageAccumulator(self.bucket.path, relative_path, StorageOperations.PATH_SEPARATOR,
+                                              max_depth)
+        for blob in blobs_iterator:
+            size = blob.size
+            name = blob.name
+            accumulator.add_path(name, size)
+        return accumulator.get_tree()
 
     def _to_storage_file(self, blob):
         item = DataStorageItemModel()
