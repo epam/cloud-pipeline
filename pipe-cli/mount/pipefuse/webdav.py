@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -155,7 +155,7 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
     def mv(self, old_path, new_path):
         headers = {'Destination': self._get_url(new_path),
                    'Overwrite': "T"}
-        self._send('MOVE', old_path, 201, headers=headers, allow_redirects=True)
+        self._send('MOVE', old_path, (201, 204), headers=headers, allow_redirects=True)
 
     def _send(self, method, path, expected_code, allow_redirects=False, **kwargs):
         url = self._get_url(path)
