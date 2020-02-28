@@ -42,24 +42,31 @@ function getConfigurations (obj, paths = []) {
 
 const reportsRouting = {
   general: {
-    path: '/billing/reports'
+    path: '/billing/reports',
+    title: 'General Report'
   },
   storages: {
     path: '/billing/reports/storage',
+    title: 'Storage Report',
     file: {
-      path: '/billing/reports/storage/file'
+      path: '/billing/reports/storage/file',
+      title: 'File Storage Report'
     },
     object: {
-      path: '/billing/reports/storage/object'
+      path: '/billing/reports/storage/object',
+      title: 'Object Storage Report'
     }
   },
   instances: {
     path: '/billing/reports/instance',
+    title: 'Instances Report',
     cpu: {
-      path: '/billing/reports/instance/cpu'
+      path: '/billing/reports/instance/cpu',
+      title: 'CPU Instances Report'
     },
     gpu: {
-      path: '/billing/reports/instance/gpu'
+      path: '/billing/reports/instance/gpu',
+      title: 'GPU Instances Report'
     }
   },
   configurations: [],
@@ -70,6 +77,10 @@ const reportsRouting = {
   getPath: function (name) {
     const [match] = this.configurations.filter(c => c.name === name);
     return match?.path || this.general.path;
+  },
+  getTitle: function (name) {
+    const [match] = this.configurations.filter(c => c.name === name);
+    return match?.title || this.general.title;
   }
 };
 

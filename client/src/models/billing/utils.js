@@ -14,9 +14,25 @@
  * limitations under the License.
  */
 
-export default function (value) {
+export function costMapper (value) {
   if (!value || isNaN(value)) {
     return 0;
   }
   return Math.round(+value / 100.0) / 100.0;
+}
+
+export function minutesToHours (minutes) {
+  if (!minutes || isNaN(minutes)) {
+    return 0;
+  }
+
+  return Math.round(((minutes / 60) + Number.EPSILON) * 100) / 100;
+}
+
+export function bytesToGbs (bytes) {
+  if (!bytes || isNaN(bytes)) {
+    return 0;
+  }
+  const bInGb = 1024 * 1024 * 1024;
+  return Math.round(((bytes / bInGb) + Number.EPSILON) * 100) / 100;
 }

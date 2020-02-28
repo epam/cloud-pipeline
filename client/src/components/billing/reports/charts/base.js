@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Chart from 'chart.js';
+import Export from '../export';
 import {DataLabelPlugin} from './extensions';
 import 'chart.js/dist/Chart.css';
 
@@ -27,10 +28,23 @@ class ChartWrapper extends React.Component {
     loading: PropTypes.bool,
     type: PropTypes.string,
     options: PropTypes.object,
-    plugins: PropTypes.array
+    plugins: PropTypes.array,
+    useChartImageGenerator: PropTypes.bool
   };
+
+  static defaultProps = {
+    useChartImageGenerator: true
+  };
+
   chart;
   ctx;
+
+  componentDidMount () {
+    const {useChartImageGenerator, imageGenerator} = this.props;
+    if (useChartImageGenerator && imageGenerator) {
+      imageGenerator.registerGenerator(this.generateImage);
+    }
+  }
 
   componentWillReceiveProps (nextProps, nextContext) {
     if (this.ctx) {
@@ -78,6 +92,32 @@ class ChartWrapper extends React.Component {
     }
   };
 
+  generateImage = () => {
+    if (this.chart) {
+      return new Promise((resolve, reject) => {
+        const {canvas} = this.chart;
+        const {width, height} = canvas;
+        const canvasElement = document.createElement('canvas');
+        canvasElement.width = width;
+        canvasElement.height = height;
+        document.body.appendChild(canvasElement);
+        const ctx = canvasElement.getContext('2d');
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, width, height);
+        const image = new Image();
+        image.onload = function () {
+          ctx.drawImage(this, 0, 0);
+          const data = ctx.getImageData(0, 0, width, height);
+          document.body.removeChild(canvasElement);
+          resolve(data);
+        };
+        image.onerror = reject;
+        image.src = this.chart.toBase64Image();
+      });
+    }
+    return Promise.resolve(null);
+  };
+
   render () {
     return (
       <canvas
@@ -88,4 +128,4 @@ class ChartWrapper extends React.Component {
   }
 }
 
-export default ChartWrapper;
+export default Export.ImageConsumer.Generator(ChartWrapper);

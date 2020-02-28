@@ -17,16 +17,42 @@
 import * as quotas from './quotas';
 import FetchBillingCenters from './billing-centers';
 import GetBillingData from './get-billing-data';
-import GetGroupedBillingData from './get-grouped-billing-data';
-import GetGroupedBillingDataWithPreviousPaginated, {
-  GetGroupedBillingDataPaginated
-} from './get-grouped-billing-data-paginated';
+import {
+  GetGroupedBillingCenters,
+  GetGroupedBillingCentersWithPrevious
+} from './get-grouped-billing-centers';
+import {GetGroupedResources, GetGroupedResourcesWithPrevious} from './get-grouped-resources';
+import {GetGroupedStorages, GetGroupedStoragesWithPrevious} from './get-grouped-storages';
+import {
+  GetGroupedFileStorages,
+  GetGroupedFileStoragesWithPrevious
+} from './get-grouped-file-storages';
+import {
+  GetGroupedObjectStorages,
+  GetGroupedObjectStoragesWithPrevious
+} from './get-grouped-object-storages';
+import {GetGroupedInstances, GetGroupedInstancesWithPrevious} from './get-grouped-instances';
+import {GetGroupedPipelines, GetGroupedPipelinesWithPrevious} from './get-grouped-pipelines-data';
+import {GetGroupedTools, GetGroupedToolsWithPrevious} from './get-grouped-tools-data';
 
 export {
   quotas,
   FetchBillingCenters,
   GetBillingData,
-  GetGroupedBillingData,
-  GetGroupedBillingDataPaginated,
-  GetGroupedBillingDataWithPreviousPaginated
+  GetGroupedBillingCenters,
+  GetGroupedBillingCentersWithPrevious,
+  GetGroupedResources,
+  GetGroupedResourcesWithPrevious,
+  GetGroupedStorages,
+  GetGroupedStoragesWithPrevious,
+  GetGroupedFileStorages,
+  GetGroupedFileStoragesWithPrevious,
+  GetGroupedObjectStorages,
+  GetGroupedObjectStoragesWithPrevious,
+  GetGroupedInstances,
+  GetGroupedInstancesWithPrevious,
+  GetGroupedPipelines,
+  GetGroupedPipelinesWithPrevious,
+  GetGroupedTools,
+  GetGroupedToolsWithPrevious
 };

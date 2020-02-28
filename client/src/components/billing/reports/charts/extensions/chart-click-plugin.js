@@ -27,19 +27,23 @@ function mouseOverElement (mouse, element) {
 
 const plugin = {
   id,
-  afterEvent: function (chart, event, configuration) {
+  beforeEvent: function (chart, event, configuration) {
     const {axis, handler, scaleHandler} = configuration;
     const {x, y, type} = event;
     const {scales} = chart;
+    let scaleHovered = false;
+    if (mouseOverElement(event, scales[axis])) {
+      const {top} = scales[axis];
+      const {highest} = scales[axis]._getLabelSizes();
+      const {height, offset} = highest;
+      if (y > height + offset + top) {
+        scaleHovered = true;
+      }
+    }
     if (/^click$/i.test(type)) {
-      if (mouseOverElement(event, scales[axis])) {
-        const {top} = scales[axis];
-        const {highest} = scales[axis]._getLabelSizes();
-        const {height, offset} = highest;
-        if (scaleHandler && y > height + offset + top) {
-          scaleHandler();
-          return;
-        }
+      if (scaleHovered && scaleHandler) {
+        scaleHandler();
+        return;
       }
       if (handler) {
         const value = scales[axis].getValueForPixel(x);
@@ -47,7 +51,11 @@ const plugin = {
           handler(value);
         }
       }
+    } else if (/^mousemove$/i.test(type) && scaleHovered && scaleHandler) {
+      // disable tooltip
+      return false;
     }
+    return true;
   }
 };
 

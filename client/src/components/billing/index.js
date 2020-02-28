@@ -15,21 +15,22 @@
  */
 
 import React from 'react';
-import {Menu} from 'antd';
-import Quotas from './quotas';
+// import {Menu} from 'antd';
+// import Quotas from './quotas';
 import * as Reports from './reports';
 import styles from './billing.css';
 
 function billing ({children, location, router}) {
-  const {pathname = ''} = location;
-  const [, active] = pathname.toLowerCase().split('/').filter(Boolean);
-  const onClick = ({key}) => {
-    if (key !== active) {
-      router.push(`/billing/${key}`);
-    }
-  };
+  // const {pathname = ''} = location;
+  // const [, active] = pathname.toLowerCase().split('/').filter(Boolean);
+  // const onClick = ({key}) => {
+  //   if (key !== active) {
+  //     router.push(`/billing/${key}`);
+  //   }
+  // };
   return (
     <div className={styles.container}>
+      {/*
       <div className={styles.menuContainer}>
         <Menu
           className={styles.menu}
@@ -45,6 +46,7 @@ function billing ({children, location, router}) {
           </Menu.Item>
         </Menu>
       </div>
+      */}
       <div className={styles.children}>
         {children}
       </div>
@@ -53,7 +55,7 @@ function billing ({children, location, router}) {
 }
 
 export {
-  Quotas as BillingQuotas,
+  // Quotas as BillingQuotas,
   Reports as BillingReports
 };
 export default billing;

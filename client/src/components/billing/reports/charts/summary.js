@@ -24,9 +24,15 @@ import {
   VerticalLinePlugin
 } from './extensions';
 import {colors} from './colors';
+import Export from '../export';
 import {costTickFormatter} from '../utilities';
 import {getTickFormat, getCurrentDate} from '../periods';
 import moment from 'moment-timezone';
+
+const Display = {
+  accumulative: 'accumulative',
+  fact: 'fact'
+};
 
 function dataIsEmpty (data) {
   return !data || data.filter((d) => !isNaN(d)).length === 0;
@@ -138,15 +144,19 @@ function extractDataSet (data, title, type, color, options = {}) {
   const {
     showPoints = true,
     currentDateIndex,
-    borderWidth = 2
+    borderWidth = 2,
+    fill = false,
+    borderColor = color,
+    backgroundColor = 'transparent'
   } = options;
   return {
     [DataLabelPlugin.noDataIgnoreOption]: options[DataLabelPlugin.noDataIgnoreOption],
     label: title,
     type,
     data,
-    fill: false,
-    borderColor: color,
+    fill,
+    backgroundColor,
+    borderColor,
     borderWidth,
     pointRadius: data.map((e, index) => showPoints && index === currentDateIndex ? 2 : 0),
     pointBackgroundColor: color,
@@ -159,13 +169,17 @@ function parse (values, quota) {
     .map(d => ({
       date: d.dateValue,
       value: d.value || NaN,
+      cost: d.cost || NaN,
       previous: d.previous || NaN,
+      previousCost: d.previousCost || NaN,
       quota: quota
     }));
   return {
     quota: data.map(d => d.quota),
-    currentData: data.map(d => d.value),
-    previousData: data.map(d => d.previous)
+    currentData: data.map(d => d.cost),
+    previousData: data.map(d => d.previousCost),
+    currentAccumulativeData: data.map(d => d.value),
+    previousAccumulativeData: data.map(d => d.previous)
   };
 }
 
@@ -174,7 +188,8 @@ function Summary (
     title,
     style,
     summary,
-    quota: showQuota = true
+    quota: showQuota = true,
+    display = Display.accumulative
   }
 ) {
   const data = summary && summary.loaded
@@ -185,26 +200,54 @@ function Summary (
     : undefined;
   const error = summary?.error;
   const {labels, currentDateIndex} = generateLabels(data, summary?.filters);
-  const {currentData, previousData, quota} = parse(data, quotaValue);
+  const {
+    currentData,
+    previousData,
+    currentAccumulativeData,
+    previousAccumulativeData,
+    quota
+  } = parse(data, quotaValue);
   const disabled = currentData.length === 0 && previousData.length === 0;
   const loading = summary?.pending && !summary?.loaded;
   const dataConfiguration = {
     labels: labels.map(l => l.text),
     datasets: [
-      extractDataSet(
-        currentData,
+      display === Display.accumulative ? extractDataSet(
+        currentAccumulativeData,
         'Current period',
         SummaryChart.current,
         colors.current,
         {currentDateIndex, borderWidth: 3}
-      ),
-      extractDataSet(
-        previousData,
+      ) : false,
+      display === Display.fact ? extractDataSet(
+        currentData,
+        'Current period (cost)',
+        'bar',
+        colors.current,
+        {
+          backgroundColor: colors.current,
+          currentDateIndex,
+          borderWidth: 1
+        }
+      ) : false,
+      display === Display.accumulative ? extractDataSet(
+        previousAccumulativeData,
         'Previous period',
         SummaryChart.previous,
         colors.previous,
         {currentDateIndex}
-      ),
+      ) : false,
+      display === Display.fact ? extractDataSet(
+        previousData,
+        'Previous period (cost)',
+        'bar',
+        colors.previous,
+        {
+          backgroundColor: colors.previous,
+          currentDateIndex,
+          borderWidth: 1
+        }
+      ) : false,
       quotaValue ? extractDataSet(
         quota,
         'Quota',
@@ -251,8 +294,11 @@ function Summary (
     },
     tooltips: {
       intersect: false,
-      mode: 'nearest',
+      mode: 'index',
       axis: 'x',
+      filter: function ({yLabel}) {
+        return !isNaN(yLabel);
+      },
       callbacks: {
         title: function () {
           return undefined;
@@ -286,7 +332,15 @@ function Summary (
     }
   };
   return (
-    <div style={Object.assign({height: '100%', position: 'relative', display: 'block'}, style)}>
+    <Export.ImageConsumer
+      style={
+        Object.assign(
+          {height: '100%', position: 'relative', display: 'block'},
+          style
+        )
+      }
+      order={1}
+    >
       <Chart
         error={error}
         data={dataConfiguration}
@@ -298,8 +352,9 @@ function Summary (
           VerticalLinePlugin.plugin
         ]}
       />
-    </div>
+    </Export.ImageConsumer>
   );
 }
 
 export default observer(Summary);
+export {Display};
