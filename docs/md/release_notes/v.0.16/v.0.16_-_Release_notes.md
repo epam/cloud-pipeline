@@ -11,6 +11,7 @@
 - [Allowing to expose compute node FS to upload and download files](#allowing-to-expose-compute-node-fs-to-upload-and-download-files)
 - [Resource usage form improvement](#resource-usage-form-improvement)
 - [View the historical resources utilization](#allow-to-view-the-historical-resources-utilization)
+- [Ability to schedule automatic pause/restart of the running jobs](#ability-to-schedule-automatic-pauserestart-of-the-running-jobs)
 - [Update pipe CLI version](#update-pipe-cli-version)
 - [Blocking/unblocking users and groups](#blockingunblocking-users-and-groups)
 - [Displaying additional node metrics](#displaying-additional-node-metrics-at-the-runs-page)
@@ -234,6 +235,25 @@ This is required, if the user wants to keep locally the information for a longer
 The user can select the interval for the utilization statistics output and export the corresponding file.
 
 For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md#monitor).
+
+## Ability to schedule automatic pause/restart of the running jobs
+
+For certain use cases (e.g. when `Cloud Pipeline` is used as a development/research environment) users can launch jobs and keep them running all the time, including weekends and holidays.  
+To reduce costs, in the current version, the ability to set a **Run schedule** was implemented. This feature allows to automatically pause/resume runs, based on the configuration specified. This feature is applied only to the "Pausable" runs (i.e. "On-demand" and non-cluster):
+
+- The user (who has permissions to pause/resume a run) is able to set a schedule for a run being launched:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ShedulePauseRestart_01.png)
+- Schedule is defined as a list of rules - user is able to specify any number of them:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ShedulePauseRestart_02.png)  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ShedulePauseRestart_03.png)
+- For each rule in the list user is able to set the action (`PAUSE`/`RESUME`) and the recurrence:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ShedulePauseRestart_04.png)
+
+If any schedule rule is configured for the launched active run - that run will be paused/restarted accordingly in the scheduled day and time.  
+Also, users (who have permissions to pause/resume a run) can create/view/modify/delete schedule rules anytime run is active via the **Run logs** page:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ShedulePauseRestart_05.png)
+
+See more details [here](../../manual/06_Manage_Pipeline/6.2._Launch_a_pipeline.md) (item 5).
 
 ## Update `pipe` CLI version
 
