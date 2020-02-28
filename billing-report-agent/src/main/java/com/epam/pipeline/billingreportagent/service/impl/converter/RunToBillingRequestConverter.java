@@ -183,6 +183,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
             .entity(billing)
             .build();
         final String fullIndex = indexPrefix + parseDateToString(billing.getDate());
-        return new IndexRequest(fullIndex, INDEX_TYPE).source(mapper.map(entity));
+        final String docId = billing.getEntity().getPipelineRun().getId().toString();
+        return new IndexRequest(fullIndex, INDEX_TYPE).id(docId).source(mapper.map(entity));
     }
 }
