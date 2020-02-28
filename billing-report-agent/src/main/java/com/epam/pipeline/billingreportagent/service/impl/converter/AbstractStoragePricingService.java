@@ -45,7 +45,8 @@ public abstract class AbstractStoragePricingService {
     protected abstract void loadFullPriceList() throws Exception;
     protected abstract CloudProvider getProvider();
 
-    public AbstractStoragePricingService(final String storageServiceGroup, final Map<String, StoragePricing> initialPriceList) {
+    public AbstractStoragePricingService(final String storageServiceGroup,
+                                         final Map<String, StoragePricing> initialPriceList) {
         this.storagePriceListGb.putAll(initialPriceList);
         this.storageServiceGroup = storageServiceGroup;
         this.defaultPriceGb = calculateDefaultPriceGb();
@@ -84,6 +85,7 @@ public abstract class AbstractStoragePricingService {
             .map(StoragePricing.StoragePricingEntity::getPriceCentsPerGb)
             .filter(price -> !BigDecimal.ZERO.equals(price))
             .max(Comparator.naturalOrder())
-            .orElseThrow(() -> new IllegalStateException("No GCP storage prices loaded!"));
+            .orElseThrow(() -> new IllegalStateException(String.format("No %s storage prices loaded!",
+                                                                       getProvider().name())));
     }
 }
