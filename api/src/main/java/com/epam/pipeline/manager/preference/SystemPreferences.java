@@ -313,6 +313,13 @@ public class SystemPreferences {
     public static final ObjectPreference<List<DockerMount>> DOCKER_IN_DOCKER_MOUNTS = new ObjectPreference<>(
             "launch.dind.mounts", null, new TypeReference<List<DockerMount>>() {},
             LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<DockerMount>>() {}));
+    /**
+     * Specifies a comma-separated list of environment variables that should be inherited by DIND containers
+     * from run container.
+     */
+    public static final StringPreference DOCKER_IN_DOCKER_CONTAINER_VARS = new StringPreference(
+            "launch.dind.container.vars", "http_proxy,https_proxy,no_proxy,API,API_TOKEN",
+            LAUNCH_GROUP, pass);
     public static final StringPreference RUN_VISIBILITY_POLICY = new StringPreference(
             "launch.run.visibility", RunVisibilityPolicy.INHERIT.name(), LAUNCH_GROUP,
             isValidEnum(RunVisibilityPolicy.class));
