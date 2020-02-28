@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 import io
 import logging
 
-from fsclient import FileSystemClient
+from fsclient import FileSystemClientDecorator
 from fuseutils import MB
 
 
@@ -101,9 +101,10 @@ class _ReadBuffer(_FileBuffer):
             self._offset += len(old_first_buf)
 
 
-class BufferedFileSystemClient(FileSystemClient):
+class BufferedFileSystemClient(FileSystemClientDecorator):
 
     _READ_AHEAD_SIZE = 20 * MB
+    _READ_AHEAD_MULTIPLIER = 1.1
 
     def __init__(self, inner, capacity):
         """
@@ -114,19 +115,11 @@ class BufferedFileSystemClient(FileSystemClient):
         :param inner: Decorating file system client.
         :param capacity: Capacity of single file buffer in bytes.
         """
+        super(BufferedFileSystemClient, self).__init__(inner)
         self._inner = inner
         self._capacity = capacity
         self._write_file_buffs = {}
         self._read_file_buffs = {}
-
-    def is_available(self):
-        return self._inner.is_available()
-
-    def is_read_only(self):
-        return self._inner.is_read_only()
-
-    def exists(self, path):
-        return self._inner.exists(path)
 
     def attrs(self, path):
         attrs = self._inner.attrs(path)
@@ -135,24 +128,6 @@ class BufferedFileSystemClient(FileSystemClient):
             attrs = attrs._replace(size=max(attrs.size, write_buf.inherited_size))
         return attrs
 
-    def ls(self, path, depth=1):
-        return self._inner.ls(path, depth)
-
-    def upload(self, buf, path):
-        self._inner.upload(buf, path)
-
-    def delete(self, path):
-        self._inner.delete(path)
-
-    def mv(self, old_path, path):
-        self._inner.mv(old_path, path)
-
-    def mkdir(self, path):
-        self._inner.mkdir(path)
-
-    def rmdir(self, path):
-        self._inner.rmdir(path)
-
     def download_range(self, fh, buf, path, offset=0, length=0):
         buf_key = fh, path
         file_buf = self._read_file_buffs.get(buf_key)
@@ -160,25 +135,26 @@ class BufferedFileSystemClient(FileSystemClient):
             file_size = self.attrs(path).size
             if not file_size:
                 return
-            file_buf = self._new_read_buf(fh, path, file_size, offset)
+            file_buf = self._new_read_buf(fh, path, file_size, offset, length)
             self._read_file_buffs[buf_key] = file_buf
         if not file_buf.suits(offset, length):
             if file_buf.offset < file_buf.capacity:
-                file_buf.append(self._read_ahead(fh, path, file_buf.offset))
+                file_buf.append(self._read_ahead(fh, path, file_buf.offset, length))
                 file_buf.shrink()
             if not file_buf.suits(offset, length):
-                file_buf = self._new_read_buf(fh, path, file_buf.capacity, offset)
+                file_buf = self._new_read_buf(fh, path, file_buf.capacity, offset, length)
                 self._read_file_buffs[buf_key] = file_buf
         buf.write(file_buf.view(offset, length))
 
-    def _new_read_buf(self, fh, path, file_size, offset):
+    def _new_read_buf(self, fh, path, file_size, offset, length):
         file_buf = _ReadBuffer(offset, file_size)
-        file_buf.append(self._read_ahead(fh, path, offset))
+        file_buf.append(self._read_ahead(fh, path, offset, length))
         return file_buf
 
-    def _read_ahead(self, fh, path, offset):
+    def _read_ahead(self, fh, path, offset, length):
+        size = max(self._READ_AHEAD_SIZE, int(length * self._READ_AHEAD_MULTIPLIER))
         with io.BytesIO() as read_ahead_buf:
-            self._inner.download_range(fh, read_ahead_buf, path, offset, length=self._READ_AHEAD_SIZE)
+            self._inner.download_range(fh, read_ahead_buf, path, offset, length=size)
             return read_ahead_buf.getvalue()
 
     def upload_range(self, fh, buf, path, offset=0):
@@ -222,9 +198,3 @@ class BufferedFileSystemClient(FileSystemClient):
 
     def _flush_read_buf(self, fh, path):
         return self._read_file_buffs.pop((fh, path), None)
-
-    def __getattr__(self, name):
-        if hasattr(self._inner, name):
-            return getattr(self._inner, name)
-        else:
-            raise RuntimeError('BufferedFileSystemClient or its inner client doesn\'t have %s attribute.' % name)

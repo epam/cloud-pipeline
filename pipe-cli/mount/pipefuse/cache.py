@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@ from datetime import datetime
 
 import pytz
 
-from fsclient import FileSystemClient, File
+from fsclient import File, FileSystemClientDecorator
 import fuseutils
 
 
-class CachingFileSystemClient(FileSystemClient):
+class CachingFileSystemClient(FileSystemClientDecorator):
 
     def __init__(self, inner, cache):
         """
@@ -34,18 +34,10 @@ class CachingFileSystemClient(FileSystemClient):
         :param inner: Decorating file system client.
         :param cache: Caching dictionary.
         """
+        super(CachingFileSystemClient, self).__init__(inner)
         self._inner = inner
         self._cache = cache
         self._delimiter = '/'
-
-    def is_available(self):
-        return self._inner.is_available()
-
-    def is_read_only(self):
-        return self._inner.is_read_only()
-
-    def exists(self, path):
-        return self._inner.exists(path)
 
     def attrs(self, path):
         parent_path, file_name = fuseutils.split_path(path)
@@ -107,12 +99,6 @@ class CachingFileSystemClient(FileSystemClient):
         self._remove_from_parent_cache(path)
         self._invalidate_cache_recursively(path)
 
-    def download_range(self, fh, buf, path, offset=0, length=0):
-        self._inner.download_range(fh, buf, path, offset, length)
-
-    def upload_range(self, fh, buf, path, offset=0):
-        self._inner.upload_range(fh, buf, path, offset)
-
     def flush(self, fh, path):
         self._inner.flush(fh, path)
         self._invalidate_parent_cache(path)
@@ -141,9 +127,3 @@ class CachingFileSystemClient(FileSystemClient):
             relative_path = fuseutils.without_prefix(cache_path, path)
             return not relative_path or relative_path.startswith(self._delimiter)
         return False
-
-    def __getattr__(self, name):
-        if hasattr(self._inner, name):
-            return getattr(self._inner, name)
-        else:
-            raise RuntimeError('BufferedFileSystemClient or its inner client doesn\'t have %s attribute.' % name)
