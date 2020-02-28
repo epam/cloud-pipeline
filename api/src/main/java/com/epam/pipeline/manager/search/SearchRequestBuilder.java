@@ -45,7 +45,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +65,7 @@ public class SearchRequestBuilder {
     private static final String STORAGE_SIZE_AGG_NAME = "sizeSumSearch";
     private static final String SIZE_FIELD = "size";
     private static final String NAME_FIELD = "id";
+    private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
 
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
@@ -103,6 +103,8 @@ public class SearchRequestBuilder {
 
     public SearchRequest buildSumAggregationForStorage(final Long storageId, final DataStorageType storageType,
                                                        final String path) {
+        final String searchIndex =
+                String.format(ES_FILE_INDEX_PATTERN, storageType.toString().toLowerCase(), storageId);
         final SumAggregationBuilder sizeSumAggregator = AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME)
                 .field(SIZE_FIELD);
         final SearchSourceBuilder sizeSumSearch = new SearchSourceBuilder().aggregation(sizeSumAggregator);
@@ -110,7 +112,7 @@ public class SearchRequestBuilder {
             sizeSumSearch.query(QueryBuilders.prefixQuery(NAME_FIELD, path));
         }
         return new SearchRequest()
-                .indices(buildIndexNames(Collections.singletonList(getStorageFileDocumentType(storageType))))
+                .indices(searchIndex)
                 .source(sizeSumSearch);
     }
 
@@ -180,21 +182,5 @@ public class SearchRequestBuilder {
                 .map(type -> Optional.ofNullable(typeIndexPrefixes.get(type))
                         .orElseThrow(() -> new SearchException("Missing index name for type: " + type)))
                 .toArray(String[]::new);
-    }
-
-    private static SearchDocumentType getStorageFileDocumentType(final DataStorageType type) {
-        switch (type) {
-            case S3:
-                return SearchDocumentType.S3_FILE;
-            case AZ:
-                return SearchDocumentType.AZ_BLOB_FILE;
-            case GS:
-                return SearchDocumentType.GS_FILE;
-            case NFS:
-                return SearchDocumentType.NFS_FILE;
-            default:
-                throw new UnsupportedOperationException(String
-                        .format("Unsupported storage search document type '%s'", type.name()));
-        }
     }
 }
