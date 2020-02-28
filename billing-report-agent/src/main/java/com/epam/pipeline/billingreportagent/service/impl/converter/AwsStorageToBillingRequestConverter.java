@@ -153,7 +153,8 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
             .owner(owner)
             .entity(billing)
             .build();
-        return new IndexRequest(fullIndex, INDEX_TYPE).source(mapper.map(entity));
+        final String docId = billing.getEntity().getId().toString();
+        return new IndexRequest(fullIndex, INDEX_TYPE).id(docId).source(mapper.map(entity));
     }
 
     private StorageBillingInfo createBilling(final EntityContainer<AbstractDataStorage> storageContainer,

@@ -190,6 +190,7 @@ public class AwsStorageToRequestConverterTest {
                                                                             SYNC_START, SYNC_END).get(0);
 
         final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.STORAGE_BILLING_PREFIX, SYNC_START);
+        Assert.assertEquals(s3Storage.getId().toString(), request.id());
         final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.S3_STORAGE.name(),
@@ -207,6 +208,7 @@ public class AwsStorageToRequestConverterTest {
                                                                              TestUtils.STORAGE_BILLING_PREFIX,
                                                                              SYNC_START, SYNC_END).get(0);
         final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.STORAGE_BILLING_PREFIX, SYNC_START);
+        Assert.assertEquals(nfsStorage.getId().toString(), request.id());
         final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.NFS_STORAGE.name(),
@@ -223,6 +225,7 @@ public class AwsStorageToRequestConverterTest {
                                                                             TestUtils.STORAGE_BILLING_PREFIX,
                                                                             SYNC_START, SYNC_END).get(0);
         final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.STORAGE_BILLING_PREFIX, SYNC_START);
+        Assert.assertEquals(s3Storage.getId().toString(), request.id());
         final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.S3_STORAGE.name(),
