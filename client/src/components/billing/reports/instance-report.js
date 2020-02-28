@@ -28,9 +28,12 @@ import InstanceFilter, {InstanceFilters} from './filters/instance-filter';
 import Export, {ExportComposers} from './export';
 import {
   GetBillingData,
-  GetGroupedBillingData,
-  GetGroupedBillingDataPaginated,
-  GetGroupedBillingDataWithPreviousPaginated
+  GetGroupedInstances,
+  GetGroupedInstancesWithPrevious,
+  GetGroupedTools,
+  GetGroupedToolsWithPrevious,
+  GetGroupedPipelines,
+  GetGroupedPipelinesWithPrevious
 } from '../../../models/billing';
 import {
   numberFormatter,
@@ -56,47 +59,21 @@ function injection (stores, props) {
     type,
     ...periodInfo
   };
-  const instances = new GetGroupedBillingDataWithPreviousPaginated(
-    filters,
-    GetGroupedBillingData.GROUP_BY.instances,
-    tablePageSize,
-    0
-  );
+  const pagination = {
+    pageSize: tablePageSize,
+    pageNum: 0
+  };
+  const instances = new GetGroupedInstancesWithPrevious(filters, pagination);
   instances.fetch();
-  const instancesTable = new GetGroupedBillingDataPaginated(
-    filters,
-    GetGroupedBillingData.GROUP_BY.instances,
-    tablePageSize,
-    0
-  );
+  const instancesTable = new GetGroupedInstances(filters, pagination);
   instancesTable.fetch();
-  const tools = new GetGroupedBillingDataWithPreviousPaginated(
-    filters,
-    GetGroupedBillingData.GROUP_BY.tools,
-    tablePageSize,
-    0
-  );
+  const tools = new GetGroupedToolsWithPrevious(filters, pagination);
   tools.fetch();
-  const toolsTable = new GetGroupedBillingDataPaginated(
-    filters,
-    GetGroupedBillingData.GROUP_BY.tools,
-    tablePageSize,
-    0
-  );
+  const toolsTable = new GetGroupedTools(filters, pagination);
   toolsTable.fetch();
-  const pipelines = new GetGroupedBillingDataWithPreviousPaginated(
-    filters,
-    GetGroupedBillingData.GROUP_BY.pipelines,
-    tablePageSize,
-    0
-  );
+  const pipelines = new GetGroupedPipelinesWithPrevious(filters, pagination);
   pipelines.fetch();
-  const pipelinesTable = new GetGroupedBillingDataPaginated(
-    filters,
-    GetGroupedBillingData.GROUP_BY.pipelines,
-    tablePageSize,
-    0
-  );
+  const pipelinesTable = new GetGroupedPipelines(filters, pagination);
   pipelinesTable.fetch();
   let filterBy = GetBillingData.FILTER_BY.compute;
   if (/^cpu$/i.test(type)) {

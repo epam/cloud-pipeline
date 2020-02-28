@@ -30,9 +30,12 @@ import {Period, getPeriod} from './periods';
 import Export, {ExportComposers} from './export';
 import {
   GetBillingData,
-  GetGroupedBillingData,
-  GetGroupedBillingDataPaginated,
-  GetGroupedBillingDataWithPreviousPaginated
+  GetGroupedStorages,
+  GetGroupedStoragesWithPrevious,
+  GetGroupedFileStorages,
+  GetGroupedFileStoragesWithPrevious,
+  GetGroupedObjectStorages,
+  GetGroupedObjectStoragesWithPrevious
 } from '../../../models/billing';
 import styles from './reports.css';
 
@@ -54,24 +57,22 @@ function injection (stores, props) {
     type,
     ...periodInfo
   };
-  let groupedBy = GetGroupedBillingData.GROUP_BY.storages;
   let filterBy = GetBillingData.FILTER_BY.storages;
+  let storages;
+  let storagesTable;
   if (/^file$/i.test(type)) {
-    groupedBy = GetGroupedBillingData.GROUP_BY.fileStorages;
+    storages = new GetGroupedFileStoragesWithPrevious(filters, true);
+    storagesTable = new GetGroupedFileStorages(filters, true);
     filterBy = GetBillingData.FILTER_BY.fileStorages;
-  }
-  if (/^object$/i.test(type)) {
-    groupedBy = GetGroupedBillingData.GROUP_BY.objectStorages;
+  } else if (/^object$/i.test(type)) {
+    storages = new GetGroupedObjectStoragesWithPrevious(filters, true);
+    storagesTable = new GetGroupedObjectStorages(filters, true);
     filterBy = GetBillingData.FILTER_BY.objectStorages;
+  } else {
+    storages = new GetGroupedStoragesWithPrevious(filters, true);
+    storagesTable = new GetGroupedStorages(filters, true);
   }
-  const storages = new GetGroupedBillingDataWithPreviousPaginated(
-    filters,
-    groupedBy,
-    tablePageSize,
-    0
-  );
   storages.fetch();
-  const storagesTable = new GetGroupedBillingDataPaginated(filters, groupedBy, tablePageSize, 0);
   storagesTable.fetch();
   const summary = new GetBillingData({
     ...filters,

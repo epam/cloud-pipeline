@@ -18,7 +18,7 @@ import RemotePost from '../basic/RemotePost';
 import moment from 'moment';
 import User from '../user/User';
 import GetDataWithPrevious from './get-data-with-previous';
-import costMapper from './cost-mapper';
+import {costMapper} from './utils';
 
 class GetBillingData extends RemotePost {
   constructor (filter) {

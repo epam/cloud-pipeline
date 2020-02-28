@@ -27,8 +27,9 @@ import {Period, getPeriod} from './periods';
 import Filters from './filters';
 import {
   GetBillingData,
-  GetGroupedBillingData,
-  GetGroupedBillingDataPaginated
+  GetGroupedBillingCenters,
+  GetGroupedBillingCentersWithPrevious,
+  GetGroupedResourcesWithPrevious
 } from '../../../models/billing';
 import * as navigation from './navigation';
 import Export, {ExportComposers} from './export';
@@ -49,23 +50,14 @@ function injection (stores, props) {
     user,
     ...periodInfo
   };
-  const billingCentersRequest = new GetGroupedBillingData(
-    filters,
-    GetGroupedBillingData.GROUP_BY.billingCenters
-  );
+  const billingCentersRequest = new GetGroupedBillingCentersWithPrevious(filters, true);
   billingCentersRequest.fetch();
   let billingCentersTableRequest;
   if (group) {
-    billingCentersTableRequest = new GetGroupedBillingDataPaginated(
-      filters,
-      GetGroupedBillingData.GROUP_BY.billingCenters
-    );
+    billingCentersTableRequest = new GetGroupedBillingCenters(filters, true);
     billingCentersTableRequest.fetch();
   }
-  const resources = new GetGroupedBillingData(
-    filters,
-    GetGroupedBillingData.GROUP_BY.resources
-  );
+  const resources = new GetGroupedResourcesWithPrevious(filters);
   resources.fetch();
   const summary = new GetBillingData(filters);
   summary.fetch();
