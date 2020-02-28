@@ -1269,7 +1269,7 @@ echo "-"
 # Check whether there are any capabilities init scripts available and execute them before main SCRIPT
 cp_cap_init
 
-# Configure docker wrapper. See https://github.com/epam/cloud-pipeline/issues/983.
+# Configure docker wrapper
 if check_cp_cap CP_CAP_DIND_CONTAINER && ! check_cp_cap CP_CAP_DIND_CONTAINER_NO_VARS
 then
     DEFAULT_ENV_FILE="/etc/docker/default.env.file"
