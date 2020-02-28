@@ -423,21 +423,21 @@ function create_sys_dir {
       setfacl -d -m user::rwx -m group::rwx -m other::rx "$_DIR_NAME"
 }
 
-function initialise_restrictors {
-    local _RESTRICTING_COMMANDS="$1"
-    local _RESTRICTOR="$2"
-    local _RESTRICTORS_BIN="$3"
-    IFS=',' read -r -a RESTRICTING_COMMANDS_LIST <<< "$_RESTRICTING_COMMANDS"
-    for COMMAND in "${RESTRICTING_COMMANDS_LIST[@]}"
+function initialise_wrappers {
+    local _WRAPPING_COMMANDS="$1"
+    local _WRAPPER="$2"
+    local _WRAPPERS_BIN="$3"
+    IFS=',' read -r -a WRAPPING_COMMANDS_LIST <<< "$_WRAPPING_COMMANDS"
+    for COMMAND in "${WRAPPING_COMMANDS_LIST[@]}"
     do
         COMMAND_PATH=$(command -v "$COMMAND")
         if [[ "$?" == 0 ]]
         then
-            COMMAND_WRAPPER_PATH="$_RESTRICTORS_BIN/$COMMAND"
+            COMMAND_WRAPPER_PATH="$_WRAPPERS_BIN/$COMMAND"
             COMMAND_PERMISSIONS=$(stat -c %a "$COMMAND_PATH")
             if [[ "$?" == 0 ]]
             then
-                echo "$COMMON_REPO_DIR/shell/$_RESTRICTOR \"$COMMAND_PATH\" \"\$@\"" > "$COMMAND_WRAPPER_PATH"
+                echo "$COMMON_REPO_DIR/shell/$_WRAPPER \"$COMMAND_PATH\" \"\$@\"" > "$COMMAND_WRAPPER_PATH"
                 chmod "$COMMAND_PERMISSIONS" "$COMMAND_WRAPPER_PATH"
             fi
         fi
@@ -1164,12 +1164,12 @@ CP_USR_BIN="/usr/cpbin"
 
 mkdir -p "$CP_USR_BIN"
 
-initialise_restrictors "$CP_RESTRICTING_PACKAGE_MANAGERS" "package_manager_restrictor" "$CP_USR_BIN"
+initialise_wrappers "$CP_RESTRICTING_PACKAGE_MANAGERS" "package_manager_restrictor" "$CP_USR_BIN"
 
 if [[ "$CP_ALLOWED_MOUNT_TRANSFER_SIZE" ]]
 then
     MOUNTED_PATHS=$(list_storage_mounts "$DATA_STORAGE_MOUNT_ROOT")
-    initialise_restrictors "cp,mv" "transfer_restrictor \"$MOUNTED_PATHS\" \"$DATA_STORAGE_MOUNT_ROOT\"" "$CP_USR_BIN"
+    initialise_wrappers "cp,mv" "transfer_restrictor \"$MOUNTED_PATHS\" \"$DATA_STORAGE_MOUNT_ROOT\"" "$CP_USR_BIN"
 fi
 
 echo "export PATH=\"$CP_USR_BIN:\${PATH}\"" >> "$CP_ENV_FILE_TO_SOURCE"
@@ -1268,6 +1268,14 @@ echo "-"
 
 # Check whether there are any capabilities init scripts available and execute them before main SCRIPT
 cp_cap_init
+
+# Configure docker wrapper
+if check_cp_cap CP_CAP_DIND_CONTAINER && ! check_cp_cap CP_CAP_DIND_CONTAINER_NO_VARS
+then
+    DEFAULT_ENV_FILE="/etc/docker/default.env.file"
+    pipe_get_preference "launch.dind.container.vars" | tr ',' '\n' > "$DEFAULT_ENV_FILE"
+    initialise_wrappers "docker" "docker_wrapper \"$DEFAULT_ENV_FILE\"" "$CP_USR_BIN"
+fi
 
 # As some environments do not support "sleep infinity" command - it is substituted with "sleep 10000d"
 SCRIPT="${SCRIPT/sleep infinity/sleep 10000d}"
