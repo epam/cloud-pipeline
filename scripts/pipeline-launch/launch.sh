@@ -390,7 +390,7 @@ function symlink_common_locations {
       local _OWNER_HOME="$2"
 
       # Grant OWNER passwordless sudo
-      echo "$_OWNER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+      check_cp_cap CP_CAP_SUDO_ENABLE && echo "$_OWNER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
       mkdir -p $_OWNER_HOME && chown $_OWNER $_OWNER_HOME
 
       # Create symlinks to /cloud-data with mounted buckets into account's home dir
@@ -716,6 +716,12 @@ if [ -z "$CP_CAP_ENV_UMASK" ] ;
     then
         export CP_CAP_ENV_UMASK="0002"
         echo "CP_CAP_ENV_UMASK is not defined, setting to ${CP_CAP_ENV_UMASK}"
+fi
+
+if [ -z "$CP_CAP_SUDO_ENABLE" ] ;
+    then
+        export CP_CAP_SUDO_ENABLE="true"
+        echo "CP_CAP_SUDO_ENABLE is not defined, setting to ${CP_CAP_SUDO_ENABLE}"
 fi
 
 # Setup max open files and max processes limits for a current session and all ssh sessions, as default limit is 1024
