@@ -30,9 +30,12 @@ add_worker() {
         qconf -Ae \$TMPFILE
         rm \$TMPFILE
 
+        if [ "$_SLOTS" ]; then
+            qconf -aattr queue slots \"[$HOSTNAME=$_SLOTS]\" $_QUEUE
+        fi
+
         # add to the all hosts list
         qconf -aattr hostgroup hostlist $HOSTNAME @allhosts
-
         if [ \"$cluster_role_type\" = \"additional\" ]
         then
             # additional hosts should be disabled until GE autoscaler enables them
@@ -44,10 +47,6 @@ add_worker() {
 
         qconf -as $HOSTNAME
         qconf -ah $HOSTNAME
-
-        if [ "$_SLOTS" ]; then
-                qconf -aattr queue slots \"[$HOSTNAME=$_SLOTS]\" $_QUEUE
-        fi
         '"
         /etc/init.d/gridengine-exec restart
         check_last_exit_code $? "All SGE packages were installed" "Fail to install SGE worker"
@@ -56,6 +55,10 @@ add_worker() {
         ssh -o "StrictHostKeyChecking=no" "$_MASTER_NAME" bash --login -c "'qconf -ah $HOSTNAME'"
         copy_qmaster_configuration $_MASTER_NAME
         run_redhat_installation "worker"
+
+        if [ "$_SLOTS" ]; then
+            qconf -aattr queue slots "[$HOSTNAME=$_SLOTS]" $_QUEUE
+        fi
 
         qconf -aattr hostgroup hostlist $HOSTNAME @allhosts
         if [ "$cluster_role_type" = "additional" ]
@@ -68,9 +71,6 @@ add_worker() {
         fi
         qconf -as $HOSTNAME
         qconf -ah $HOSTNAME
-        if [ "$_SLOTS" ]; then
-                qconf -aattr queue slots "[$HOSTNAME=$_SLOTS]" $_QUEUE
-        fi
 
         $SGE_ROOT/$SGE_CELL/common/sgeexecd restart
     fi

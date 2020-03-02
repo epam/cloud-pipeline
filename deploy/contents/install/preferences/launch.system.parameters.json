@@ -72,6 +72,12 @@
         "defaultValue": ""
     },
     {
+        "name": "CP_CAP_SGE_WORKER_FREE_CORES",
+        "type": "string",
+        "description": "Allow to keep the specified number of CPUs unused by the GE worker",
+        "defaultValue": "1"
+    },
+    {
         "name": "CP_CAP_NFS",
         "type": "boolean",
         "description": "Enables shared filesystem (NFS) for a current run. If a cluster run is scheduled - worker nodes will mount NFS share",
