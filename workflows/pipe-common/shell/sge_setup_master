@@ -302,12 +302,18 @@ if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
 elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
     export SGE_ROOT="/opt/sge"
 fi
-echo "export SGE_ROOT=$SGE_ROOT" >> /etc/cp_env.sh
-echo "export SGE_CELL=$SGE_CELL" >> /etc/cp_env.sh
-echo "export SGE_CLUSTER_NAME=$SGE_CLUSTER_NAME" >> /etc/cp_env.sh
-echo "export CP_CAP_SGE_QUEUE_NAME=$CP_CAP_SGE_QUEUE_NAME" >> /etc/cp_env.sh
-echo "export CP_CAP_SGE_PE_NAME=$CP_CAP_SGE_PE_NAME" >> /etc/cp_env.sh
-echo "export CP_CAP_SGE_PE_MPI_NAME=$CP_CAP_SGE_PE_MPI_NAME" >> /etc/cp_env.sh
+CP_CAP_SCRIPTS_DIR="${CP_CAP_SCRIPTS_DIR:-/common/cap_scripts}"
+CP_CAP_SGE_MASTER_ENV_FILE="${CP_CAP_SCRIPTS_DIR}/sge_master_env.sh"
+mkdir -p "$CP_CAP_SCRIPTS_DIR"
+echo "export SGE_ROOT=$SGE_ROOT" > $CP_CAP_SGE_MASTER_ENV_FILE
+echo "export SGE_CELL=$SGE_CELL" >> $CP_CAP_SGE_MASTER_ENV_FILE
+echo "export SGE_CLUSTER_NAME=$SGE_CLUSTER_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
+echo "export CP_CAP_SGE_QUEUE_NAME=$CP_CAP_SGE_QUEUE_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
+echo "export CP_CAP_SGE_PE_NAME=$CP_CAP_SGE_PE_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
+echo "export CP_CAP_SGE_PE_MPI_NAME=$CP_CAP_SGE_PE_MPI_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
+echo "export CP_CAP_SGE_WORKER_FREE_CORES=$CP_CAP_SGE_WORKER_FREE_CORES" >> $CP_CAP_SGE_MASTER_ENV_FILE
+cat $CP_CAP_SGE_MASTER_ENV_FILE >> /etc/cp_env.sh
+
 
 # Verify whether it is a resumed run - if so, do not reinstall sge, instead - just rerun master and exec daemon
 if [ "$RESUMED_RUN" = true ]; then
@@ -443,6 +449,13 @@ else
     _MASTER_WORKER_CORES=$(nproc)
     CP_CAP_SGE_MASTER_CORES="${CP_CAP_SGE_MASTER_CORES:-999999999}"
     _MASTER_WORKER_CORES=$((_MASTER_WORKER_CORES < CP_CAP_SGE_MASTER_CORES ? _MASTER_WORKER_CORES : CP_CAP_SGE_MASTER_CORES))
+
+    # If a certain number of cores, shall be reserved (outside the SGE): CP_CAP_SGE_WORKER_FREE_CORES can be used
+    # Total number of the worker slots is calculated as (_MASTER_WORKER_CORES - CP_CAP_SGE_WORKER_FREE_CORES). If the result <= 0: _MASTER_WORKER_CORES is used 
+    _MASTER_WORKER_CORES_BKP=$_MASTER_WORKER_CORES
+    CP_CAP_SGE_WORKER_FREE_CORES="${CP_CAP_SGE_WORKER_FREE_CORES:-0}"
+    _MASTER_WORKER_CORES=$(($_MASTER_WORKER_CORES - $CP_CAP_SGE_WORKER_FREE_CORES))
+    (( $_MASTER_WORKER_CORES <= 0 )) && _MASTER_WORKER_CORES=$_MASTER_WORKER_CORES_BKP
 
     add_worker "$CP_CAP_SGE_QUEUE_NAME" "$_MASTER_WORKER_CORES"
     check_last_exit_code $? "Master host was added as a worker with $_MASTER_WORKER_CORES slots" "Fail to add master host as a SGE worker"
