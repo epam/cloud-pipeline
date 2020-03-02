@@ -15,6 +15,7 @@
  */
 import {costTickFormatter} from '../../utilities';
 import {sectionsIntersects} from './utilities/label-positioning';
+import SummaryChart from './summary-chart';
 
 const id = 'point-data-label';
 
@@ -147,7 +148,10 @@ const plugin = {
       return null;
     }
     const {type, data: elements, xAxisID, yAxisID, hidden} = dataset;
-    if (hidden) {
+    if (
+      hidden ||
+      [SummaryChart.previous, SummaryChart.current, SummaryChart.quota].indexOf(type) === -1
+    ) {
       return null;
     }
     const {data, ...datasetConfig} = dataset.controller.getDataset();

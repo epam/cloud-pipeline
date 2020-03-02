@@ -138,15 +138,19 @@ function extractDataSet (data, title, type, color, options = {}) {
   const {
     showPoints = true,
     currentDateIndex,
-    borderWidth = 2
+    borderWidth = 2,
+    fill = false,
+    borderColor = color,
+    backgroundColor = 'transparent'
   } = options;
   return {
     [DataLabelPlugin.noDataIgnoreOption]: options[DataLabelPlugin.noDataIgnoreOption],
     label: title,
     type,
     data,
-    fill: false,
-    borderColor: color,
+    fill,
+    backgroundColor,
+    borderColor,
     borderWidth,
     pointRadius: data.map((e, index) => showPoints && index === currentDateIndex ? 2 : 0),
     pointBackgroundColor: color,
@@ -159,13 +163,17 @@ function parse (values, quota) {
     .map(d => ({
       date: d.dateValue,
       value: d.value || NaN,
+      cost: d.cost || NaN,
       previous: d.previous || NaN,
+      previousCost: d.previousCost || NaN,
       quota: quota
     }));
   return {
     quota: data.map(d => d.quota),
-    currentData: data.map(d => d.value),
-    previousData: data.map(d => d.previous)
+    currentData: data.map(d => d.cost),
+    previousData: data.map(d => d.previousCost),
+    currentAccumulativeData: data.map(d => d.value),
+    previousAccumulativeData: data.map(d => d.previous)
   };
 }
 
@@ -185,25 +193,53 @@ function Summary (
     : undefined;
   const error = summary?.error;
   const {labels, currentDateIndex} = generateLabels(data, summary?.filters);
-  const {currentData, previousData, quota} = parse(data, quotaValue);
+  const {
+    currentData,
+    previousData,
+    currentAccumulativeData,
+    previousAccumulativeData,
+    quota
+  } = parse(data, quotaValue);
   const disabled = currentData.length === 0 && previousData.length === 0;
   const loading = summary?.pending && !summary?.loaded;
   const dataConfiguration = {
     labels: labels.map(l => l.text),
     datasets: [
       extractDataSet(
-        currentData,
+        currentAccumulativeData,
         'Current period',
         SummaryChart.current,
         colors.current,
         {currentDateIndex, borderWidth: 3}
       ),
       extractDataSet(
-        previousData,
+        currentData,
+        'Current period (cost)',
+        'bar',
+        colors.transparentCurrent,
+        {
+          backgroundColor: colors.transparentCurrent,
+          currentDateIndex,
+          borderWidth: 1
+        }
+      ),
+      extractDataSet(
+        previousAccumulativeData,
         'Previous period',
         SummaryChart.previous,
         colors.previous,
         {currentDateIndex}
+      ),
+      extractDataSet(
+        previousData,
+        'Previous period (cost)',
+        'bar',
+        colors.transparentBlue,
+        {
+          backgroundColor: colors.transparentBlue,
+          currentDateIndex,
+          borderWidth: 1
+        }
       ),
       quotaValue ? extractDataSet(
         quota,
