@@ -182,7 +182,8 @@ function Summary (
     title,
     style,
     summary,
-    quota: showQuota = true
+    quota: showQuota = true,
+    display = 'linear'
   }
 ) {
   const data = summary && summary.loaded
@@ -205,14 +206,14 @@ function Summary (
   const dataConfiguration = {
     labels: labels.map(l => l.text),
     datasets: [
-      extractDataSet(
+      display === 'linear' ? extractDataSet(
         currentAccumulativeData,
         'Current period',
         SummaryChart.current,
         colors.current,
         {currentDateIndex, borderWidth: 3}
-      ),
-      extractDataSet(
+      ) : false,
+      display === 'bar' ? extractDataSet(
         currentData,
         'Current period (cost)',
         'bar',
@@ -222,15 +223,15 @@ function Summary (
           currentDateIndex,
           borderWidth: 1
         }
-      ),
-      extractDataSet(
+      ) : false,
+      display === 'linear' ? extractDataSet(
         previousAccumulativeData,
         'Previous period',
         SummaryChart.previous,
         colors.previous,
         {currentDateIndex}
-      ),
-      extractDataSet(
+      ) : false,
+      display === 'bar' ? extractDataSet(
         previousData,
         'Previous period (cost)',
         'bar',
@@ -240,7 +241,7 @@ function Summary (
           currentDateIndex,
           borderWidth: 1
         }
-      ),
+      ) : false,
       quotaValue ? extractDataSet(
         quota,
         'Quota',

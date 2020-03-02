@@ -31,10 +31,13 @@ import {
   GetGroupedBillingCentersWithPrevious,
   GetGroupedResourcesWithPrevious
 } from '../../../models/billing';
+import {SummaryHOC} from './charts/summaryHOC';
 import * as navigation from './navigation';
 import Export, {ExportComposers} from './export';
 import {costTickFormatter} from './utilities';
 import styles from './reports.css';
+
+const SummaryWithControls = SummaryHOC(Summary);
 
 function injection (stores, props) {
   const {location} = props;
@@ -114,7 +117,7 @@ function UserReport ({
     >
       <GeneralDataBlock>
         <BillingTable summary={summary} />
-        <Summary
+        <SummaryWithControls
           summary={summary}
           title="Summary"
           style={{flex: 1, maxHeight: 500}}
@@ -208,7 +211,7 @@ function GroupReport ({
     >
       <GeneralDataBlock>
         <BillingTable summary={summary} />
-        <Summary
+        <SummaryWithControls
           summary={summary}
           title="Summary"
           style={{flex: 1, maxHeight: 500}}
@@ -292,7 +295,7 @@ function GeneralReport ({
     >
       <GeneralDataBlock>
         <BillingTable summary={summary} />
-        <Summary
+        <SummaryWithControls
           summary={summary}
           title="Summary"
           style={{flex: 1, maxHeight: 500}}

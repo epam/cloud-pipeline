@@ -22,6 +22,7 @@ import {
   BillingTable,
   Summary
 } from './charts';
+import {SummaryHOC} from './charts/summaryHOC';
 import Filters from './filters';
 import {Period, getPeriod} from './periods';
 import InstanceFilter, {InstanceFilters} from './filters/instance-filter';
@@ -41,6 +42,7 @@ import {
 } from './utilities';
 import styles from './reports.css';
 
+const SummaryWithControls = SummaryHOC(Summary);
 const tablePageSize = 6;
 
 function injection (stores, props) {
@@ -292,7 +294,7 @@ class InstanceReport extends React.Component {
       >
         <ResourcesDataBlock>
           <BillingTable summary={summary} showQuota={false} />
-          <Summary
+          <SummaryWithControls
             summary={summary}
             quota={false}
             title={this.getSummaryTitle()}
