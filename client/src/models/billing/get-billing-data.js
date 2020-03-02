@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
-import RemotePost from '../basic/RemotePost';
 import moment from 'moment';
-import User from '../user/User';
+import BaseBillingRequest from './base-billing-request';
 import GetDataWithPrevious from './get-data-with-previous';
 import {costMapper} from './utils';
 
-class GetBillingData extends RemotePost {
+class GetBillingData extends BaseBillingRequest {
   constructor (filter) {
-    super();
-    this.filters = filter;
+    super(filter);
     const {dateFilter, dateMapper} = filter;
     this.dateMapper = dateMapper || (o => o);
     this.dateFilter = dateFilter || (() => true);
-    this.url = '/billing/charts';
   }
 
   static FILTER_BY = {
@@ -39,22 +36,10 @@ class GetBillingData extends RemotePost {
     gpu: 'GPU'
   };
 
-  async fetch () {
-    const body = {
-      from: this.filters && this.filters.start ? this.filters.start.toISOString() : undefined,
-      to: this.filters && this.filters.end ? this.filters.end.toISOString() : undefined,
-      interval: this.filters && this.filters.tick ? this.filters.tick : undefined,
-      filters: {}
-    };
-    if (this.filters && this.filters.group) {
-      body.filters.billing_center = [this.filters.group];
-    }
-    if (this.filters && this.filters.user) {
-      const userRequest = new User(this.filters.user);
-      await userRequest.fetchIfNeededOrWait();
-      if (userRequest.loaded && userRequest.value) {
-        body.filters.owner = [userRequest.value.userName];
-      }
+  async prepareBody () {
+    super.prepareBody();
+    if (this.filters && this.filters.tick) {
+      this.body.interval = this.filters.tick;
     }
     if (this.filters.filterBy) {
       if ([
@@ -62,26 +47,25 @@ class GetBillingData extends RemotePost {
         GetBillingData.FILTER_BY.fileStorages,
         GetBillingData.FILTER_BY.objectStorages
       ].includes(this.filters.filterBy)) {
-        body.filters.resource_type = ['STORAGE'];
+        this.body.filters.resource_type = ['STORAGE'];
         if (this.filters.filterBy === GetBillingData.FILTER_BY.fileStorages) {
-          body.filters.storage_type = ['FILE_STORAGE'];
+          this.body.filters.storage_type = ['FILE_STORAGE'];
         } else if (this.filters.filterBy === GetBillingData.FILTER_BY.objectStorages) {
-          body.filters.storage_type = ['OBJECT_STORAGE'];
+          this.body.filters.storage_type = ['OBJECT_STORAGE'];
         }
       } else if ([
         GetBillingData.FILTER_BY.compute,
         GetBillingData.FILTER_BY.cpu,
         GetBillingData.FILTER_BY.gpu
       ].includes(this.filters.filterBy)) {
-        body.filters.resource_type = ['COMPUTE'];
+        this.body.filters.resource_type = ['COMPUTE'];
         if (this.filters.filterBy === GetBillingData.FILTER_BY.cpu) {
-          body.filters.compute_type = ['CPU'];
+          this.body.filters.compute_type = ['CPU'];
         } else if (this.filters.filterBy === GetBillingData.FILTER_BY.gpu) {
-          body.filters.compute_type = ['GPU'];
+          this.body.filters.compute_type = ['GPU'];
         }
       }
     }
-    await super.send(body);
   }
 
   postprocess (value) {
