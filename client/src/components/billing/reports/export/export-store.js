@@ -86,8 +86,8 @@ class ExportStore {
           const context = canvasElement.getContext('2d');
           context.fillStyle = 'white';
           context.fillRect(0, 0, width, height);
-          context.fillStyle = 'black';
-          context.font = `10pt sans-serif`;
+          context.fillStyle = 'rgb(89, 89, 89)';
+          context.font = `bold 12pt sans-serif`;
           context.textAlign = 'center';
           context.textBaseline = 'middle';
           context.fillText(
