@@ -449,6 +449,22 @@ function list_storage_mounts() {
     echo $(df -T | awk '$2 == "fuse"' | awk '{ print $7 }' | grep "^$_MOUNT_ROOT")
 }
 
+function update_user_limits() {
+    local _MAX_NOPEN_LIMIT=$1
+    local _MAX_PROCS_LIMIT=$2
+    ulimit -n "$_MAX_NOPEN_LIMIT" -u "$_MAX_PROCS_LIMIT"
+cat <<EOT >> /etc/security/limits.conf
+* soft nofile $_MAX_NOPEN_LIMIT
+* hard nofile $_MAX_NOPEN_LIMIT
+* soft nproc $_MAX_PROCS_LIMIT
+* hard nproc $_MAX_PROCS_LIMIT
+root soft nofile $_MAX_NOPEN_LIMIT
+root hard nofile $_MAX_NOPEN_LIMIT
+root soft nproc $_MAX_PROCS_LIMIT
+root hard nproc $_MAX_PROCS_LIMIT
+EOT
+}
+
 ######################################################
 
 
@@ -702,10 +718,8 @@ if [ -z "$CP_CAP_ENV_UMASK" ] ;
         echo "CP_CAP_ENV_UMASK is not defined, setting to ${CP_CAP_ENV_UMASK}"
 fi
 
-# Setup max open files and max processes limits for a current session, as default limit is 1024
-# Further this command is also pushed to the "profile" and "bashrc scripts" for SSH sessions
-_CP_ENV_ULIMIT="ulimit -n $MAX_NOPEN_LIMIT -u $MAX_PROCS_LIMIT"
-eval "$_CP_ENV_ULIMIT"
+# Setup max open files and max processes limits for a current session and all ssh sessions, as default limit is 1024
+update_user_limits $MAX_NOPEN_LIMIT $MAX_PROCS_LIMIT
 
 # default 0002 - will result into 775 (dir) and 664 (file) permissions
 _CP_ENV_UMASK="umask ${CP_CAP_ENV_UMASK:-0002}"
