@@ -40,6 +40,7 @@
 - [Mounting data storages to Linux and Mac workstations](#mounting-data-storages-to-linux-and-mac-workstations)
 - [Ability to restrict the visibility of the jobs](#ability-to-restrict-the-visibility-of-the-jobs)
 - [Ability to perform scheduled runs from detached configurations](#ability-to-perform-scheduled-runs-from-detached-configurations)
+- [Using custom domain names as a "friendly URL" for the interactive services](#the-ability-to-use-custom-domain-names-as-a-friendly-url-for-the-interactive-services)
 - [Displaying of the additional support icon/info](#displaying-of-the-additional-support-iconinfo)
 
 ***
@@ -771,6 +772,24 @@ In **`v0.15`** the ability to configure a schedule for detached configuration wa
 If any schedule rule is configured for the detached configuration - a corresponding job (plain container or a pipeline) will be started accordingly in the scheduled day and time.
 
 See more details [here](../../manual/07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration.md#schedule-a-launch-from-the-detached-configuration).
+
+## The ability to use custom domain names as a "friendly URL" for the interactive services
+
+In **[`v0.13`](../v.0.13/v.0.13_-_Release_notes.md#running-instances-sharing-with-other-users-or-groups-of-users)** the ability to set a "friendly URL" for the interactive services endpoint was implemented. It allows to configure the view of the interactive service endpoint:
+
+- Default view: `https://<host>/pipeline-<run-id>-<port>`  
+- "Friendly" view: `https://<host>/<friendly-url>`
+
+In the current version this feature is expanded: users allow to specify a custom host.  
+So the endpoint url now can look like: `https://<custom-host>` or `https://<custom-host>/<friendly-url>`.  
+**_Note_**: custom host should exist, be valid and configured.
+
+The custom host is being specified into the same field as a "friendly URL" previously, e.g.:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_CustomDomainNames_1.png)  
+Final URL for the service endpoint will be generated using the specified host and friendly URL:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_CustomDomainNames_2.png)
+
+For more details see [here](../../manual/10_Manage_Tools/10.5._Launch_a_Tool.md#launch-a-tool-with-friendly-url).
 
 ## Displaying of the additional support icon/info
 
