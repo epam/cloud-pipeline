@@ -26,7 +26,6 @@ import {
   Summary
 } from './charts';
 import Filters from './filters';
-import {SummaryHOC} from './charts/summaryHOC';
 import {Period, getPeriod} from './periods';
 import Export, {ExportComposers} from './export';
 import {
@@ -40,7 +39,6 @@ import {
 } from '../../../models/billing';
 import styles from './reports.css';
 
-const SummaryWithControls = SummaryHOC(Summary);
 const tablePageSize = 10;
 
 function injection (stores, props) {
@@ -210,7 +208,7 @@ function StorageReports ({storages, storagesTable, summary, type}) {
     >
       <StoragesDataBlock>
         <BillingTable summary={summary} showQuota={false} />
-        <SummaryWithControls
+        <Summary
           summary={summary}
           quota={false}
           title={getSummaryTitle()}

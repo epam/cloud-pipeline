@@ -18,6 +18,7 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import BarChart from './bar-chart';
 import styles from './charts.css';
+import Export from '../export';
 
 function GroupedBarChart (
   {
@@ -46,17 +47,21 @@ function GroupedBarChart (
       onSelect={onSelect ? ({key} = {}) => onSelect({group, key}) : undefined}
       onScaleSelect={onSelect ? () => onSelect({group}) : undefined}
       axisPosition={index === 0 ? 'left' : 'right'}
+      useImageConsumer={false}
     />
   ));
   return (
-    <div style={{position: 'relative'}}>
+    <Export.ImageConsumer
+      style={{position: 'relative'}}
+      order={2}
+    >
       {title && <div className={styles.title}>{title}</div>}
       <div style={{position: 'relative', display: 'block', height}}>
         {
           charts.length > 0 ? charts : '\u00A0'
         }
       </div>
-    </div>
+    </Export.ImageConsumer>
   );
 }
 

@@ -24,9 +24,15 @@ import {
   VerticalLinePlugin
 } from './extensions';
 import {colors} from './colors';
+import Export from '../export';
 import {costTickFormatter} from '../utilities';
 import {getTickFormat, getCurrentDate} from '../periods';
 import moment from 'moment-timezone';
+
+const Display = {
+  accumulative: 'accumulative',
+  fact: 'fact'
+};
 
 function dataIsEmpty (data) {
   return !data || data.filter((d) => !isNaN(d)).length === 0;
@@ -183,7 +189,7 @@ function Summary (
     style,
     summary,
     quota: showQuota = true,
-    display = 'linear'
+    display = Display.accumulative
   }
 ) {
   const data = summary && summary.loaded
@@ -206,38 +212,38 @@ function Summary (
   const dataConfiguration = {
     labels: labels.map(l => l.text),
     datasets: [
-      display === 'linear' ? extractDataSet(
+      display === Display.accumulative ? extractDataSet(
         currentAccumulativeData,
         'Current period',
         SummaryChart.current,
         colors.current,
         {currentDateIndex, borderWidth: 3}
       ) : false,
-      display === 'bar' ? extractDataSet(
+      display === Display.fact ? extractDataSet(
         currentData,
         'Current period (cost)',
         'bar',
-        colors.transparentCurrent,
+        colors.current,
         {
-          backgroundColor: colors.transparentCurrent,
+          backgroundColor: colors.current,
           currentDateIndex,
           borderWidth: 1
         }
       ) : false,
-      display === 'linear' ? extractDataSet(
+      display === Display.accumulative ? extractDataSet(
         previousAccumulativeData,
         'Previous period',
         SummaryChart.previous,
         colors.previous,
         {currentDateIndex}
       ) : false,
-      display === 'bar' ? extractDataSet(
+      display === Display.fact ? extractDataSet(
         previousData,
         'Previous period (cost)',
         'bar',
-        colors.transparentBlue,
+        colors.previous,
         {
-          backgroundColor: colors.transparentBlue,
+          backgroundColor: colors.previous,
           currentDateIndex,
           borderWidth: 1
         }
@@ -288,8 +294,11 @@ function Summary (
     },
     tooltips: {
       intersect: false,
-      mode: 'nearest',
+      mode: 'index',
       axis: 'x',
+      filter: function ({yLabel}) {
+        return !isNaN(yLabel);
+      },
       callbacks: {
         title: function () {
           return undefined;
@@ -323,7 +332,15 @@ function Summary (
     }
   };
   return (
-    <div style={Object.assign({height: '100%', position: 'relative', display: 'block'}, style)}>
+    <Export.ImageConsumer
+      style={
+        Object.assign(
+          {height: '100%', position: 'relative', display: 'block'},
+          style
+        )
+      }
+      order={1}
+    >
       <Chart
         error={error}
         data={dataConfiguration}
@@ -335,8 +352,9 @@ function Summary (
           VerticalLinePlugin.plugin
         ]}
       />
-    </div>
+    </Export.ImageConsumer>
   );
 }
 
 export default observer(Summary);
+export {Display};

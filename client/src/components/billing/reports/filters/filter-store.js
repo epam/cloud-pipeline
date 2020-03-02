@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-import {Period} from '../periods';
+import {observable} from 'mobx';
+import {Period, getPeriod} from '../periods';
 import {RunnerType} from './runner-filter';
 import ReportsRouting from './reports-routing';
 
 class Filter {
-  period;
-  range;
-  report;
-  runner;
+  @observable period;
+  @observable range;
+  @observable report;
+  @observable runner;
 
   rebuild = ({location, router}) => {
     this.router = router;
@@ -77,6 +78,31 @@ class Filter {
     if (this.router) {
       this.router.push(`${ReportsRouting.getPath(report)}${query}`);
     }
+  };
+
+  getDescription = ({users}) => {
+    const title = ReportsRouting.getTitle(this.report) || 'Report';
+    const {start, endStrict} = getPeriod(this.period, this.range);
+    let dates = this.period;
+    if (start && endStrict) {
+      dates = `${start.format('YYYY-MM-DD')} - ${endStrict.format('YYYY-MM-DD')}`;
+    }
+    let runner;
+    if (this.runner && this.runner.type === RunnerType.user && users && users.loaded) {
+      const [user] = (users.value || []).filter(({id}) => `${id}` === `${this.runner.id}`);
+      if (user) {
+        runner = user.userName;
+      } else {
+        runner = `user #${this.runner.id}`;
+      }
+    } else if (this.runner) {
+      runner = `${this.runner.type} ${this.runner.id}`;
+    }
+    return [
+      title,
+      dates,
+      runner
+    ].filter(Boolean).join(' - ');
   };
 
   buildNavigationFn = (property) => e => this.navigate({[property]: e});

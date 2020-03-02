@@ -17,10 +17,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Provider as MobxProvider} from 'mobx-react';
-import {Button, Icon} from 'antd';
+import {Button, Dropdown, Icon, Menu} from 'antd';
 import ExportConsumer from './export-consumer';
+import ExportImageConsumer from './export-image-consumer';
 import exportStore from './export-store';
 import * as ExportComposers from './composers';
+
+const ExportFormat = {
+  csv: 'csv',
+  image: 'image'
+};
 
 class ExportReports extends React.Component {
   static Provider = ({children}) => (
@@ -31,23 +37,57 @@ class ExportReports extends React.Component {
 
   static Consumer = ExportConsumer;
 
+  static ImageConsumer = ExportImageConsumer;
+
+  onExport = (format) => {
+    const {documentName} = this.props;
+    const title = typeof documentName === 'function' ? documentName() : documentName;
+    switch (format) {
+      case ExportFormat.image:
+        exportStore.doImageExport(title);
+        break;
+      default:
+      case ExportFormat.csv:
+        exportStore.doCsvExport(title);
+        break;
+    }
+  };
+
+  renderExportMenu = () => {
+    return (
+      <Menu onClick={({key: format}) => this.onExport(format)}>
+        <Menu.Item key={ExportFormat.csv}>As CSV</Menu.Item>
+        <Menu.Item key={ExportFormat.image}>As Image</Menu.Item>
+      </Menu>
+    );
+  };
+
   render () {
     const {className} = this.props;
     return (
-      <Button
-        id="export-reports"
-        className={className}
-        onClick={() => exportStore.doExport()}
+      <Dropdown
+        overlay={this.renderExportMenu()}
+        trigger={['click']}
       >
-        <Icon type="export" />
-        Export
-      </Button>
+        <Button
+          id="export-reports"
+          className={className}
+        >
+          <Icon type="export" />
+          Export
+        </Button>
+      </Dropdown>
     );
   }
 }
 
 ExportReports.propTypes = {
-  className: PropTypes.string
+  className: PropTypes.string,
+  documentName: PropTypes.oneOfType([PropTypes.func, PropTypes.string])
+};
+
+ExportReports.defaultProps = {
+  documentName: 'Billing report'
 };
 
 export default ExportReports;

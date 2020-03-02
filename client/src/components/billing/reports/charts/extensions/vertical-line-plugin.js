@@ -41,10 +41,14 @@ const plugin = {
           x = timeScale.getPixelForOffset(time);
         }
       }
-      if (!x && index) {
+      if (!x && !isNaN(index)) {
         const meta = chart.getDatasetMeta(0);
-        const data = meta.data;
-        x = data[pluginOptions.index]._model.x;
+        const {data, xAxisID} = meta;
+        if (chart.scales.hasOwnProperty(xAxisID)) {
+          x = chart.scales[xAxisID].getPixelForTick(index);
+        } else {
+          x = data[pluginOptions.index]._model.x;
+        }
       }
       if (x && top !== undefined && bottom !== undefined) {
         const context = chart.chart.ctx;

@@ -18,6 +18,7 @@ import React from 'react';
 import {Icon} from 'antd';
 import {observer} from 'mobx-react';
 import {colors} from './colors';
+import Export from '../export';
 import {costTickFormatter, dateRangeRenderer} from '../utilities';
 import styles from './billing-table.css';
 
@@ -142,7 +143,10 @@ function BillingTable ({summary, showQuota = true}) {
     );
   };
   return (
-    <div className={styles.container}>
+    <Export.ImageConsumer
+      className={styles.container}
+      order={0}
+    >
       <table className={styles.table}>
         <tbody>
           {
@@ -158,7 +162,7 @@ function BillingTable ({summary, showQuota = true}) {
           {renderInfo('Previous', colors.previous, previousInfo)}
         </tbody>
       </table>
-    </div>
+    </Export.ImageConsumer>
   );
 }
 

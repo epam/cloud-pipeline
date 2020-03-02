@@ -16,17 +16,18 @@
 
 import React from 'react';
 import {Radio} from 'antd';
+import Summary, {Display} from './summary';
 
-export const SummaryHOC = WrappedComponent => {
+const SummaryHOC = WrappedComponent => {
   return class extends React.Component {
     state= {
-      display: 'linear'
+      display: Display.accumulative
     };
     displayHandler = (e) => {
       this.setState({
         display: e.target.value
       });
-    }
+    };
     render () {
       const {display} = this.state;
       return (
@@ -35,9 +36,20 @@ export const SummaryHOC = WrappedComponent => {
             value={display}
             onChange={this.displayHandler}
             style={{display: 'flex', justifyContent: 'center'}}
+            size="small"
           >
-            <Radio.Button key="linear" value="linear">linear</Radio.Button>
-            <Radio.Button key="bar" value="bar">bar</Radio.Button>
+            <Radio.Button
+              key={Display.accumulative}
+              value={Display.accumulative}
+            >
+              Accumulative
+            </Radio.Button>
+            <Radio.Button
+              key={Display.fact}
+              value={Display.fact}
+            >
+              Fact
+            </Radio.Button>
           </Radio.Group>
           <WrappedComponent
             display={display}
@@ -48,3 +60,5 @@ export const SummaryHOC = WrappedComponent => {
     }
   };
 };
+
+export default SummaryHOC(Summary);

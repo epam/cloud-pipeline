@@ -22,6 +22,7 @@ import {
   BarchartDataLabelPlugin,
   ChartClickPlugin
 } from './extensions';
+import Export from '../export';
 import {costTickFormatter} from '../utilities';
 
 function toValueFormat (value) {
@@ -64,7 +65,8 @@ function BarChart (
     style,
     subChart,
     top = 10,
-    valueFormatter = costTickFormatter
+    valueFormatter = costTickFormatter,
+    useImageConsumer = true
   }
 ) {
   if (!request) {
@@ -188,8 +190,33 @@ function BarChart (
     }
   };
 
+  const Container = ({style: cssStyle, children}) => {
+    if (useImageConsumer) {
+      return (
+        <Export.ImageConsumer
+          style={cssStyle}
+          order={2}
+        >
+          {children}
+        </Export.ImageConsumer>
+      );
+    }
+    return (
+      <div style={cssStyle}>
+        {children}
+      </div>
+    );
+  };
+
   return (
-    <div style={Object.assign({height: '100%', position: 'relative', display: 'block'}, style)}>
+    <Container
+      style={
+        Object.assign(
+          {height: '100%', position: 'relative', display: 'block'},
+          style
+        )
+      }
+    >
       <Chart
         data={chartData}
         error={error}
@@ -200,8 +227,9 @@ function BarChart (
           BarchartDataLabelPlugin.plugin,
           ChartClickPlugin.plugin
         ]}
+        useChartImageGenerator={useImageConsumer}
       />
-    </div>
+    </Container>
   );
 }
 

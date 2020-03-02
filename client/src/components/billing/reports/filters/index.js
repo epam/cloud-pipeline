@@ -15,7 +15,8 @@
  */
 
 import React from 'react';
-import {inject, Provider} from 'mobx-react';
+import {observable} from 'mobx';
+import {inject, observer, Provider} from 'mobx-react';
 import FilterStore from './filter-store';
 import PeriodFilter from './period-filter';
 import ReportFilter from './report-filter';
@@ -30,7 +31,7 @@ class Filters extends React.Component {
   static reportsRoutes = reportsRouting;
   static runnerTypes = RunnerType;
 
-  filterStore = new FilterStore();
+  @observable filterStore = new FilterStore();
 
   componentWillReceiveProps (nextProps, nextContext) {
     this.filterStore.rebuild(this.props);
@@ -44,7 +45,7 @@ class Filters extends React.Component {
     if (!this.filterStore) {
       return null;
     }
-    const {children} = this.props;
+    const {children, users} = this.props;
     return (
       <div className={styles.container}>
         <div className={styles.reportFilter}>
@@ -67,6 +68,7 @@ class Filters extends React.Component {
             />
             <ExportReports
               className={styles.exportReportsButton}
+              documentName={() => this.filterStore.getDescription({users})}
             />
           </div>
           <Provider filters={this.filterStore}>
@@ -80,4 +82,4 @@ class Filters extends React.Component {
   }
 }
 
-export default Filters;
+export default inject('users')(observer(Filters));
