@@ -21,6 +21,7 @@
 - [The ability to generate the `pipe run` command from the GUI](#the-ability-to-generate-the-pipe-run-command-from-the-gui)
 - [`pipe` CLI: view tools definitions](#pipe-cli-view-tools-definitions)
 - [GE Autoscaler respects CPU requirements of the job in the queue](#ge-autoscaler-respects-cpu-requirements-of-the-job-in-the-queue)
+- [Search the tool by its version/package name](#the-ability-to-find-the-tool-by-its-versionpackage-name)
 
 ***
 
@@ -428,6 +429,16 @@ Also now, if no matching instance is present for the job (no matter - in `hybrid
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_HybridAutoscaler_3.png)
 
 For more details about **GE Autoscaler** see [here](../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md).
+
+## The ability to find the tool by its version/package name
+
+Cloud Pipeline allows searching for the tools in the registry by its name or description. But in some cases, it is more convenient and useful to find which tool contains a specific software package and then use it.
+
+In the current version, this ability - to find a tool by its content - is implemented based on the global search capabilities.  
+Now, via the Global Search, you may find a tool by its version name, e.g.:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_SearchToolByVersionPackage_1.png)  
+And by the package name (from any available ecosystem), e.g.:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_SearchToolByVersionPackage_2.png)
 
 ***
 
