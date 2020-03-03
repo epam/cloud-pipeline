@@ -296,7 +296,7 @@ class InstanceReport extends React.Component {
             summary={summary}
             quota={false}
             title={this.getSummaryTitle()}
-            style={{flex: 1, maxHeight: 500}}
+            style={{flex: 1, height: 500}}
           />
         </ResourcesDataBlock>
         <ResourcesSubData

@@ -212,7 +212,7 @@ function StorageReports ({storages, storagesTable, summary, type}) {
           summary={summary}
           quota={false}
           title={getSummaryTitle()}
-          style={{flex: 1, maxHeight: 500}}
+          style={{flex: 1, height: 500}}
         />
       </StoragesDataBlock>
       <StoragesDataBlock className={styles.chartsColumnContainer}>
