@@ -695,10 +695,20 @@ if [ -z "$MAX_NOPEN_LIMIT" ] ;
         echo "MAX_NOPEN_LIMIT is not defined, setting to ${MAX_NOPEN_LIMIT}"
 fi
 
+if [ -z "$CP_CAP_ENV_UMASK" ] ;
+    then
+        export CP_CAP_ENV_UMASK="0002"
+        echo "CP_CAP_ENV_UMASK is not defined, setting to ${CP_CAP_ENV_UMASK}"
+fi
+
 # Setup max open files and max processes limits for a current session, as default limit is 1024
 # Further this command is also pushed to the "profile" and "bashrc scripts" for SSH sessions
 _CP_ENV_ULIMIT="ulimit -n $MAX_NOPEN_LIMIT -u $MAX_PROCS_LIMIT"
 eval "$_CP_ENV_ULIMIT"
+
+# default 0002 - will result into 775 (dir) and 664 (file) permissions
+_CP_ENV_UMASK="umask ${CP_CAP_ENV_UMASK:-0002}"
+eval "$_CP_ENV_UMASK"
 
 echo "------"
 echo
@@ -1110,6 +1120,8 @@ echo "$_CP_ENV_SUDO_ALIAS" >> /etc/profile
 sed -i "\|ulimit|d" /etc/profile
 echo "$_CP_ENV_ULIMIT" >> /etc/profile
 
+# umask may be present in the existing file, so we are replacing it the updated value
+sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" /etc/profile
 
 if [ -f /etc/bash.bashrc ]; then
       _GLOBAL_BASHRC_PATH="/etc/bash.bashrc"
@@ -1120,6 +1132,9 @@ else
       touch $_GLOBAL_BASHRC_PATH
       ln -s $_GLOBAL_BASHRC_PATH /etc/bashrc
 fi
+
+sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" $_GLOBAL_BASHRC_PATH
+sed -i "1i$_CP_ENV_UMASK" $_GLOBAL_BASHRC_PATH
 
 sed -i "\|ulimit|d" $_GLOBAL_BASHRC_PATH
 sed -i "1i$_CP_ENV_ULIMIT" $_GLOBAL_BASHRC_PATH
