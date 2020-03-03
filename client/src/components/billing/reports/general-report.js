@@ -117,7 +117,7 @@ function UserReport ({
         <Summary
           summary={summary}
           title="Summary"
-          style={{flex: 1, maxHeight: 500}}
+          style={{flex: 1, height: 500}}
         />
       </GeneralDataBlock>
       <GeneralDataBlock>
@@ -211,7 +211,7 @@ function GroupReport ({
         <Summary
           summary={summary}
           title="Summary"
-          style={{flex: 1, maxHeight: 500}}
+          style={{flex: 1, height: 500}}
         />
       </GeneralDataBlock>
       <div className={styles.chartsSubContainer}>
@@ -295,7 +295,7 @@ function GeneralReport ({
         <Summary
           summary={summary}
           title="Summary"
-          style={{flex: 1, maxHeight: 500}}
+          style={{flex: 1, height: 500}}
         />
       </GeneralDataBlock>
       <div className={styles.chartsSubContainer}>
