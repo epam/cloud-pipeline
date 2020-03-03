@@ -19,6 +19,7 @@ import './quota-bar';
 import * as BarchartDataLabelPlugin from './barchart-data-label-plugin';
 import * as ChartClickPlugin from './chart-click-plugin';
 import * as DataLabelPlugin from './data-label-plugin';
+import * as GenerateImagePlugin from './generate-image-plugin';
 import * as PointDataLabelPlugin from './point-data-label-plugin';
 import * as VerticalLinePlugin from './vertical-line-plugin';
 
@@ -26,6 +27,7 @@ export {
   BarchartDataLabelPlugin,
   ChartClickPlugin,
   DataLabelPlugin,
+  GenerateImagePlugin,
   PointDataLabelPlugin,
   VerticalLinePlugin,
   SummaryChart

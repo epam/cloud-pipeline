@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Chart from 'chart.js';
 import Export from '../export';
-import {DataLabelPlugin} from './extensions';
+import {DataLabelPlugin, GenerateImagePlugin} from './extensions';
 import 'chart.js/dist/Chart.css';
 
 class ChartWrapper extends React.Component {
@@ -38,6 +38,9 @@ class ChartWrapper extends React.Component {
 
   chart;
   ctx;
+
+  _graphImage;
+  _graphImageError;
 
   componentDidMount () {
     const {useChartImageGenerator, imageGenerator} = this.props;
@@ -68,6 +71,14 @@ class ChartWrapper extends React.Component {
         error,
         label: loading ? 'Loading...' : undefined
       };
+      optPlugins[GenerateImagePlugin.id] = {
+        onImageReady: (data) => {
+          this._graphImage = data;
+        },
+        onImageError: (error) => {
+          this._graphImageError = error;
+        }
+      };
       if (this.chart) {
         this.chart.data = data;
         this.chart.options = {
@@ -85,7 +96,7 @@ class ChartWrapper extends React.Component {
             plugins: optPlugins,
             maintainAspectRatio: false
           },
-          plugins: [...plugins, DataLabelPlugin.plugin]
+          plugins: [...plugins, DataLabelPlugin.plugin, GenerateImagePlugin.plugin]
         });
       }
       this.chart.resize();
@@ -94,26 +105,11 @@ class ChartWrapper extends React.Component {
 
   generateImage = () => {
     if (this.chart) {
-      return new Promise((resolve, reject) => {
-        const {canvas} = this.chart;
-        const {width, height} = canvas;
-        const canvasElement = document.createElement('canvas');
-        canvasElement.width = width;
-        canvasElement.height = height;
-        document.body.appendChild(canvasElement);
-        const ctx = canvasElement.getContext('2d');
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, width, height);
-        const image = new Image();
-        image.onload = function () {
-          ctx.drawImage(this, 0, 0);
-          const data = ctx.getImageData(0, 0, width, height);
-          document.body.removeChild(canvasElement);
-          resolve(data);
-        };
-        image.onerror = reject;
-        image.src = this.chart.toBase64Image();
-      });
+      if (this._graphImageError) {
+        return Promise.reject(this._graphImageError);
+      } else if (this._graphImage) {
+        return Promise.resolve(this._graphImage);
+      }
     }
     return Promise.resolve(null);
   };
