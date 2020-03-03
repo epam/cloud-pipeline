@@ -22,6 +22,7 @@
 - [`pipe` CLI: view tools definitions](#pipe-cli-view-tools-definitions)
 - [GE Autoscaler respects CPU requirements of the job in the queue](#ge-autoscaler-respects-cpu-requirements-of-the-job-in-the-queue)
 - [Search the tool by its version/package name](#the-ability-to-find-the-tool-by-its-versionpackage-name)
+- [The ability to restrict which run statuses trigger the email notification](#the-ability-to-restrict-which-run-statuses-trigger-the-email-notification)
 
 ***
 
@@ -439,6 +440,19 @@ Now, via the Global Search, you may find a tool by its version name, e.g.:
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_SearchToolByVersionPackage_1.png)  
 And by the package name (from any available ecosystem), e.g.:  
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_SearchToolByVersionPackage_2.png)
+
+## The ability to restrict which run statuses trigger the email notification
+
+Cloud Pipeline can be configured to send the email to the owner of the job (or specific users) if its status is changed.  
+But in certain cases - it is not desired to get a notification about all changes of the run state.  
+To reduce a number of the emails in these cases, the ability to configure, which statuses are triggering the notifications, is implemented in **`v0.16`**.
+
+Now, when the administrator configures the emails sending linked to the run status changes - he can select specific run states that will trigger the notifications.  
+It is done through the `PIPELINE_RUN_STATUS` section at the **Email notifications** tab of the System Settings (the "**Statuses to inform**" field):  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_RunStatusChangingTrigger.png)  
+The email notifications will be sent only if the run enters one of the selected states.
+
+For more information how to configure the email notifications see [here](../../manual/12_Manage_Settings/12.9._Change_email_notification.md).
 
 ***
 
