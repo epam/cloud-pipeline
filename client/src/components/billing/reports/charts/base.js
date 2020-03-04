@@ -29,7 +29,8 @@ class ChartWrapper extends React.Component {
     type: PropTypes.string,
     options: PropTypes.object,
     plugins: PropTypes.array,
-    useChartImageGenerator: PropTypes.bool
+    useChartImageGenerator: PropTypes.bool,
+    onImageDataReceived: PropTypes.func
   };
 
   static defaultProps = {
@@ -64,7 +65,8 @@ class ChartWrapper extends React.Component {
         loading,
         options = {},
         type,
-        plugins
+        plugins,
+        onImageDataReceived
       } = props || this.props;
       const {plugins: optPlugins = {}, ...rest} = options;
       optPlugins[DataLabelPlugin.id] = {
@@ -74,9 +76,15 @@ class ChartWrapper extends React.Component {
       optPlugins[GenerateImagePlugin.id] = {
         onImageReady: (data) => {
           this._graphImage = data;
+          if (onImageDataReceived) {
+            onImageDataReceived(data);
+          }
         },
         onImageError: (error) => {
           this._graphImageError = error;
+          if (onImageDataReceived) {
+            onImageDataReceived(null);
+          }
         }
       };
       if (this.chart) {

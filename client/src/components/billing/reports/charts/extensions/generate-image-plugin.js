@@ -18,7 +18,7 @@ const id = 'generate-image-plugin';
 
 const plugin = {
   id,
-  afterDraw: function (chart, e, configuration) {
+  afterRender: function (chart, configuration) {
     if (chart) {
       const {onImageReady, onImageError} = configuration;
       const {canvas} = chart;
@@ -26,6 +26,7 @@ const plugin = {
       const canvasElement = document.createElement('canvas');
       canvasElement.width = width;
       canvasElement.height = height;
+      document.body.style.overflowY = 'hidden';
       document.body.appendChild(canvasElement);
       const ctx = canvasElement.getContext('2d');
       ctx.fillStyle = 'white';
@@ -35,6 +36,7 @@ const plugin = {
         ctx.drawImage(this, 0, 0);
         const data = ctx.getImageData(0, 0, width, height);
         document.body.removeChild(canvasElement);
+        document.body.style.overflowY = 'unset';
         onImageReady(data);
       };
       image.onerror = onImageError;
