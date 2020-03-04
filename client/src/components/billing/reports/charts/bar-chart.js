@@ -66,7 +66,8 @@ function BarChart (
     subChart,
     top = 10,
     valueFormatter = costTickFormatter,
-    useImageConsumer = true
+    useImageConsumer = true,
+    onImageDataReceived
   }
 ) {
   if (!request) {
@@ -228,6 +229,7 @@ function BarChart (
           ChartClickPlugin.plugin
         ]}
         useChartImageGenerator={useImageConsumer}
+        onImageDataReceived={onImageDataReceived}
       />
     </Container>
   );

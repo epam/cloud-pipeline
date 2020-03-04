@@ -18,7 +18,7 @@ const id = 'generate-image-plugin';
 
 const plugin = {
   id,
-  afterDraw: function (chart, e, configuration) {
+  afterRender: function (chart, configuration) {
     if (chart) {
       const {onImageReady, onImageError} = configuration;
       const {canvas} = chart;
