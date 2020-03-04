@@ -26,7 +26,12 @@ class PickerButton extends React.Component {
     onClick: PropTypes.func,
     onRemove: PropTypes.func,
     valueIsSet: PropTypes.bool,
-    style: PropTypes.shape()
+    style: PropTypes.shape(),
+    navigationEnabled: PropTypes.bool,
+    canNavigateBack: PropTypes.bool,
+    canNavigateForward: PropTypes.bool,
+    onNavigateBack: PropTypes.func,
+    onNavigateForward: PropTypes.func
   };
 
   state = {
@@ -53,7 +58,12 @@ class PickerButton extends React.Component {
       onClick,
       valueIsSet,
       style,
-      onRemove
+      onRemove,
+      navigationEnabled,
+      canNavigateBack,
+      canNavigateForward,
+      onNavigateBack,
+      onNavigateForward
     } = this.props;
     const {hovered} = this.state;
     const onRemoveIsSet = !!onRemove;
@@ -62,29 +72,55 @@ class PickerButton extends React.Component {
       hovered ? styles.hovered : undefined
     ].filter(Boolean).join(' ');
     return (
-      <Button
+      <Button.Group
         className={className}
-        onClick={onClick}
         style={style}
-        onMouseOver={() => this.handleHover(true)}
-        onMouseOut={() => this.handleHover(false)}
       >
-        <div className={classNames}>
-          {children || 'Calendar'}
-          {
-            valueIsSet &&
-            onRemoveIsSet &&
-            hovered && (
-              <Icon
-                className={styles.close}
-                type="close-circle"
-                onClick={this.onRemove}
-              />
-            )
-          }
-          {(!valueIsSet || !hovered || !onRemoveIsSet) && <Icon type="calendar" />}
-        </div>
-      </Button>
+        {
+          navigationEnabled && (
+            <Button
+              style={{paddingLeft: 8}}
+              disabled={!canNavigateBack}
+              onClick={onNavigateBack}
+            >
+              <Icon type="left" />
+            </Button>
+          )
+        }
+        <Button
+          className={styles.button}
+          onClick={onClick}
+          onMouseOver={() => this.handleHover(true)}
+          onMouseOut={() => this.handleHover(false)}
+        >
+          <div className={classNames}>
+            {children || 'Calendar'}
+            {
+              valueIsSet &&
+              onRemoveIsSet &&
+              hovered && (
+                <Icon
+                  className={styles.close}
+                  type="close-circle"
+                  onClick={this.onRemove}
+                />
+              )
+            }
+            {(!valueIsSet || !hovered || !onRemoveIsSet) && <Icon type="calendar" />}
+          </div>
+        </Button>
+        {
+          navigationEnabled && (
+            <Button
+              style={{paddingRight: 8}}
+              disabled={!canNavigateForward}
+              onClick={onNavigateForward}
+            >
+              <Icon type="right" />
+            </Button>
+          )
+        }
+      </Button.Group>
     );
   }
 }
