@@ -18,6 +18,7 @@ package com.epam.pipeline.app;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
+import com.epam.pipeline.entity.cluster.ClusterNodeScaleAction;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
@@ -51,7 +52,9 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 
 import java.io.FileNotFoundException;
+import java.util.Queue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @SpringBootConfiguration
 @Import({AppMVCConfiguration.class,
@@ -121,6 +124,11 @@ public class TestApplication {
     @Bean
     public SidRetrievalStrategy sidRetrievalStrategy() {
         return new SidRetrievalStrategyImpl();
+    }
+
+    @Bean
+    public Queue<ClusterNodeScaleAction> clusterNodeScaleQueue() {
+        return new LinkedBlockingQueue<>();
     }
 
     @Bean

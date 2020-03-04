@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum RunScheduledAction {
-    PAUSE(0), RESUME(1), RUN(2);
+    PAUSE(0), RESUME(1), RUN(2), STOP(3);
 
     private final long id;
 
@@ -29,6 +29,7 @@ public enum RunScheduledAction {
         idMap.put(PAUSE.id, PAUSE);
         idMap.put(RESUME.id, RESUME);
         idMap.put(RUN.id, RUN);
+        idMap.put(STOP.id, STOP);
     }
 
     RunScheduledAction(final long id) {

@@ -283,4 +283,13 @@ public final class ObjectCreatorUtils {
         creds.setStorageAccountKey(storageKey);
         return creds;
     }
+
+    public static RunInstance createRunInstance(final String nodeType, final int nodeDisk,
+                                                final long cloudRegionId) {
+        RunInstance instance = new RunInstance();
+        instance.setNodeType(nodeType);
+        instance.setNodeDisk(nodeDisk);
+        instance.setCloudRegionId(cloudRegionId);
+        return instance;
+    }
 }
