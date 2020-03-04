@@ -428,7 +428,7 @@ class GCPMounter(StorageMounter):
     def build_mount_command(self, params):
         if not params:
             return ""
-        return 'gcsfuse -o {permissions} --key-file {credentials} --temp-dir {tmp_dir} ' \
+        return 'gcsfuse -o {permissions} -o allow_other --key-file {credentials} --temp-dir {tmp_dir} ' \
                '--dir-mode {mask} --file-mode {mask} --implicit-dirs {path} {mount}'.format(**params)
 
     def _get_credentials(self, storage):
