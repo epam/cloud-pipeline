@@ -30,6 +30,7 @@ const Quarters = {
 
 class QuarterPicker extends React.Component {
   static propTypes = {
+    title: PropTypes.string,
     value: PropTypes.object,
     minimum: PropTypes.object,
     maximum: PropTypes.object,
@@ -46,6 +47,24 @@ class QuarterPicker extends React.Component {
     opened: false
   };
 
+  get canNavigateBack () {
+    const {minimum, value} = this.props;
+    const minimumValue = minimum
+      ? moment.utc(minimum).endOf('Q')
+      : moment.utc({y: 1900}).endOf('Q');
+    const current = value ? moment.utc(value) : moment.utc();
+    return current > minimumValue;
+  }
+
+  get canNavigateForward () {
+    const {maximum, value} = this.props;
+    const maximumValue = maximum
+      ? moment.utc(maximum).startOf('Q')
+      : moment.utc().startOf('Q');
+    const current = value ? moment.utc(value) : moment.utc();
+    return current < maximumValue;
+  }
+
   componentDidMount () {
     this.rebuildValues(this.props);
   }
@@ -59,37 +78,59 @@ class QuarterPicker extends React.Component {
   rebuildValues = (props) => {
     const {value} = props;
     if (value) {
-      const date = moment(value);
+      const date = moment.utc(value);
       const year = date.get('Y');
       const quarter = date.get('Q');
       this.setState({year, quarter, selectedYear: year});
     } else {
-      this.setState({year: undefined, quarter: undefined, selectedYear: moment().get('Y')});
+      this.setState({year: undefined, quarter: undefined, selectedYear: moment.utc().get('Y')});
+    }
+  };
+
+  onNavigateBack = () => {
+    const {value, onChange} = this.props;
+    if (onChange) {
+      onChange(
+        value
+          ? moment.utc(value).add(-1, 'Q')
+          : moment.utc().add(-1, 'Q')
+      );
+    }
+  };
+
+  onNavigateForward = () => {
+    const {value, onChange} = this.props;
+    if (onChange) {
+      onChange(
+        value
+          ? moment.utc(value).add(1, 'Q')
+          : moment.utc().add(1, 'Q')
+      );
     }
   };
 
   handleVisibility = (visible) => {
     const payload = {opened: visible};
     if (!visible) {
-      payload.selectedYear = this.state.year;
+      payload.selectedYear = this.state.year || moment.utc().get('Y');
     }
     this.setState(payload);
   };
 
   getDisplayName = () => {
-    const {value} = this.props;
+    const {value, title} = this.props;
     if (!value) {
-      return undefined;
+      return title;
     }
-    const year = moment(value).get('Y');
-    const quarter = moment(value).get('Q');
+    const year = moment.utc(value).get('Y');
+    const quarter = moment.utc(value).get('Q');
     return `${Quarters[quarter]} quarter, ${year}`;
   };
 
   onChange = (year, quarter) => {
     const {onChange} = this.props;
     if (onChange) {
-      const date = moment({year, month: (quarter - 1) * 3 + 1});
+      const date = moment.utc({year, month: (quarter - 1) * 3 + 1});
       onChange(date);
     }
   };
@@ -114,8 +155,8 @@ class QuarterPicker extends React.Component {
       e.preventDefault();
       this.setState({selectedYear: selectedYear + 1});
     };
-    const minimumValue = minimum ? moment(minimum) : moment({y: 1900});
-    const maximumValue = maximum ? moment(maximum) : moment();
+    const minimumValue = minimum ? moment.utc(minimum) : moment.utc({y: 1900});
+    const maximumValue = maximum ? moment.utc(maximum) : moment.utc();
     const canNavigateLeft = selectedYear > +minimumValue.get('Y');
     const canNavigateRight = selectedYear < +maximumValue.get('Y');
     const leftClassNames = [
@@ -127,7 +168,7 @@ class QuarterPicker extends React.Component {
       !canNavigateRight && styles.disabled
     ].filter(Boolean);
     const renderQuarter = (q) => {
-      const date = moment(`${selectedYear}-${(q - 1) * 3 + 1}-01`, 'YYYY-MM-DD');
+      const date = moment.utc(`${selectedYear}-${(q - 1) * 3 + 1}-01`, 'YYYY-MM-DD');
       const classNames = [
         styles.item,
         year === selectedYear && quarter === q ? styles.selected : undefined,
@@ -187,10 +228,15 @@ class QuarterPicker extends React.Component {
         overlay={this.renderOverlay()}
       >
         <PickerButton
-          className={styles.button}
+          className={styles.buttonContainer}
           style={style}
           valueIsSet={!!value}
           onRemove={this.onRemove}
+          navigationEnabled
+          canNavigateBack={this.canNavigateBack}
+          canNavigateForward={this.canNavigateForward}
+          onNavigateBack={this.onNavigateBack}
+          onNavigateForward={this.onNavigateForward}
         >
           {this.getDisplayName()}
         </PickerButton>

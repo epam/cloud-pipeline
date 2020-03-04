@@ -14,8 +14,15 @@
  * limitations under the License.
  */
 
+.button-container {
+  min-width: 200px;
+  padding: 0;
+  line-height: 1.5;
+  display: inline-flex;
+}
+
 .button {
-  width: 175px;
+  width: 100%;
 }
 
 .button > div {
@@ -23,11 +30,6 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-}
-
-.button {
-  padding: 0 7px;
-  line-height: 1.5;
 }
 
 .button,
@@ -60,7 +62,7 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  line-height: 30px;
+  line-height: 36px;
   border-bottom: 1px solid #ccc;
 }
 
