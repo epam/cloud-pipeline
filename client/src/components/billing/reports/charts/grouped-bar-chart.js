@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ class GroupedBarChart extends React.Component {
     request: PropTypes.object,
     onSelect: PropTypes.func,
     title: PropTypes.string,
-    height: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    height: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
   };
 
   charts = {};
@@ -93,25 +93,26 @@ class GroupedBarChart extends React.Component {
       <div style={{position: 'relative'}}>
         {title && <div className={styles.title}>{title}</div>}
         <div style={{position: 'relative', display: 'block', height}}>
-          {
-            groups.length > 0 ? groups.map((group, index) => (
-              <BarChart
-                key={group}
-                request={request}
-                data={data[group]}
-                title={group}
-                subChart
-                style={Object.assign({
-                  width: total > 0 ? `${100.0 * itemsCount[index] / total}%` : `${100 / itemsCount.length}%`,
-                  display: 'inline-block',
-                  height
-                })}
-                onSelect={onSelect ? ({key} = {}) => onSelect({group, key}) : undefined}
-                onScaleSelect={onSelect ? () => onSelect({group}) : undefined}
-                axisPosition={index === 0 ? 'left' : 'right'}
-                useImageConsumer={false}
-                onImageDataReceived={this.onImageDataReceived(group)}
-              />
+          {groups.length > 0 ? groups.map((group, index) => (
+            <BarChart
+              key={group}
+              request={request}
+              data={data[group]}
+              title={group}
+              subChart
+              style={Object.assign({
+                width: total > 0
+                  ? `${100.0 * itemsCount[index] / total}%`
+                  : `${100 / itemsCount.length}%`,
+                display: 'inline-block',
+                height
+              })}
+              onSelect={onSelect ? ({key} = {}) => onSelect({group, key}) : undefined}
+              onScaleSelect={onSelect ? () => onSelect({group}) : undefined}
+              axisPosition={index === 0 ? 'left' : 'right'}
+              useImageConsumer={false}
+              onImageDataReceived={this.onImageDataReceived(group)}
+            />
           )) : '\u00A0'
           }
         </div>
