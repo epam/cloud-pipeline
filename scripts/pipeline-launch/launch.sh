@@ -291,7 +291,7 @@ function check_python_module_installed {
 
 function upgrade_installed_packages {
       local _UPGRADE_COMMAND_TEXT=
-      check_installed "apt-get" && { _UPGRADE_COMMAND_TEXT="rm -rf /var/lib/apt/lists/ && apt-get update -y -qq && apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" upgrade";  };
+      check_installed "apt-get" && { _UPGRADE_COMMAND_TEXT="rm -rf /var/lib/apt/lists/ && apt-get update -y -qq --allow-insecure-repositories && apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" upgrade";  };
       check_installed "yum" && { _UPGRADE_COMMAND_TEXT="yum update -q -y";  };
       check_installed "apk" && { _UPGRADE_COMMAND_TEXT="apk update -q 1>/dev/null && apk upgrade -q 1>/dev/null";  };
       eval "$_UPGRADE_COMMAND_TEXT"
@@ -334,7 +334,7 @@ function configure_package_manager {
             sed -i '/deb http:\/\/deb.debian.org\/debian jessie-updates main/d' /etc/apt/sources.list
             mkdir -p /etc/apt/apt.conf.d/
             echo "Acquire::Check-Valid-Until false;" > /etc/apt/apt.conf.d/10-nocheckvalid
-            apt-get update
+            apt-get update -y --allow-insecure-repositories
       fi
 
       # Add a Cloud Pipeline repo, which contains the required runtime packages
@@ -350,12 +350,12 @@ function configure_package_manager {
                   rm -f /etc/yum.repos.d/cloud-pipeline.repo
             fi
       elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
-            apt-get update -qq && \
+            apt-get update -qq -y --allow-insecure-repositories && \
             apt-get install curl apt-transport-https gnupg -y -qq && \
             sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
             curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
             sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
-            apt-get update -qq
+            apt-get update -qq -y --allow-insecure-repositories
             
             if [ $? -ne 0 ]; then
                   echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
@@ -379,7 +379,7 @@ function get_install_command_by_current_distr {
             _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
       fi
 
-      check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/ && apt-get update -y -qq && DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated install $_TOOLS_TO_INSTALL";  };
+      check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/ && apt-get update -y -qq --allow-insecure-repositories && DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated install $_TOOLS_TO_INSTALL";  };
       check_installed "yum" && { _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL";  };
       check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL";  };
       eval $_RESULT_VAR=\$_INSTALL_COMMAND_TEXT
