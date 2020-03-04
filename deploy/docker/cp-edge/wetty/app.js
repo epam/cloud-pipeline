@@ -38,18 +38,6 @@ function get_pipe_details(pipeline_id, auth_key) {
     }
 }
 
-function get_user_details(auth_key) {
-    payload = call_api('/whoami', auth_key);
-    if (payload) {
-        return {
-            'id': payload.id,
-            'name': payload.userName
-        };
-    } else {
-        return payload;
-    }
-}
-
 function get_preference(preference, auth_key) {
     payload = call_api('/preferences/' + preference, auth_key);
     return payload && payload.value;
@@ -172,15 +160,8 @@ io.on('connection', function(socket) {
 
         var auth_key = socket.handshake.headers['token'];
         pipe_details = get_pipe_details(pipeline_id, auth_key);
-        if (!pipe_details || !pipe_details.ip || !pipe_details.pass) {
-            console.log((new Date()) + " Cannot get ip/pass for a run #" + pipeline_id);
-            socket.disconnect();
-            return;
-        }
-
-        user_details = get_user_details(auth_key);
-        if (!user_details || !user_details.name) {
-            console.log((new Date()) + " Cannot get an authenticated user name");
+        if (!pipe_details || !pipe_details.ip || !pipe_details.pass || !pipe_details.owner) {
+            console.log((new Date()) + " Cannot get ip/pass/owner for a run #" + pipeline_id);
             socket.disconnect();
             return;
         }
@@ -193,8 +174,8 @@ io.on('connection', function(socket) {
                 sshpass = pipe_details.pass;
                 sshuser = 'root';
             } else {
-                sshpass = user_details.name;
-                sshuser = user_details.name;
+                sshpass = pipe_details.owner;
+                sshuser = pipe_details.owner;
             }
             term = pty.spawn('sshpass', ['-p', sshpass, 'ssh', sshuser + '@' + sshhost, '-p', sshport, '-o', 'StrictHostKeyChecking=no', '-o', 'GlobalKnownHostsFile=/dev/null', '-o', 'UserKnownHostsFile=/dev/null', '-q'], {
                     name: 'xterm-256color',
