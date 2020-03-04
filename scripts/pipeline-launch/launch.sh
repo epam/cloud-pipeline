@@ -390,7 +390,10 @@ function symlink_common_locations {
       local _OWNER_HOME="$2"
 
       # Grant OWNER passwordless sudo
-      check_cp_cap CP_CAP_SUDO_ENABLE && echo "$_OWNER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+      if check_cp_cap CP_CAP_SUDO_ENABLE || [[ "$_OWNER" == "root" ]]
+      then
+            echo "$_OWNER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+      fi
       mkdir -p $_OWNER_HOME && chown $_OWNER $_OWNER_HOME
 
       # Create symlinks to /cloud-data with mounted buckets into account's home dir
