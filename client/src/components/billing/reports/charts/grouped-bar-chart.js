@@ -44,15 +44,18 @@ class GroupedBarChart extends React.Component {
   }
 
   generateImage = () => {
+    const {title} = this.props;
     const {groups} = this.billingData;
     const totalWidth = (groups || [])
       .map(group => this.charts[group] || {})
-      .map(({width}) => width || 0)
+      .map(({width}) => (width) || 0)
       .reduce((r, c) => r + c, 0);
+    const reports = (groups || [])
+      .map(group => this.charts[group] || {});
     const titleHeight = 30;
     const totalHeight = titleHeight + Math.max(0, ...(groups || [])
       .map(group => this.charts[group] || {})
-      .map(({height}) => height || 0));
+      .map(({height}) => (height) || 0));
     return new Promise((resolve) => {
       const canvasElement = document.createElement('canvas');
       canvasElement.width = totalWidth;
@@ -61,8 +64,20 @@ class GroupedBarChart extends React.Component {
       const ctx = canvasElement.getContext('2d');
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, totalWidth, totalHeight);
-      // todo: add chart title at the top
-      // todo: draw this.charts images horizontally, as they appear
+      ctx.fillStyle = 'rgb(89, 89, 89)';
+      ctx.font = 'bold 9pt sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(
+        title,
+        totalWidth / 2,
+        titleHeight
+      );
+      let x = 0;
+      reports.forEach((canvasData) => {
+        ctx.putImageData(canvasData, x, titleHeight);
+        x += canvasData.width;
+      });
       document.body.removeChild(canvasElement);
       resolve(ctx.getImageData(0, 0, totalWidth, totalHeight));
     });
