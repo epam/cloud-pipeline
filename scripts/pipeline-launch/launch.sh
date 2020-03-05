@@ -386,7 +386,7 @@ function symlink_common_locations {
 
       # Grant OWNER passwordless sudo
       echo "$_OWNER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-      mkdir -p $_OWNER_HOME && chown $_OWNER $_OWNER_HOME
+      user_create_home "$_OWNER" "$_OWNER_HOME"
 
       # Create symlinks to /cloud-data with mounted buckets into account's home dir
       mkdir -p /cloud-data/
@@ -743,8 +743,7 @@ then
             fi
 		echo "$OWNER:$OWNER" | chpasswd
 	fi
-      # If group/other can write to the home directory - user won't be able to SSH using the personal account
-      chmod 755 $OWNER_HOME
+      user_create_home "$OWNER" "$OWNER_HOME"
 else
 	echo "OWNER is not set - skipping owner account configuration"
 fi
