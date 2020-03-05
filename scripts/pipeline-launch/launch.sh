@@ -744,7 +744,6 @@ then
             fi
 		echo "$OWNER:$OWNER" | chpasswd
 	fi
-      user_create_home "$OWNER" "$OWNER_HOME"
 else
 	echo "OWNER is not set - skipping owner account configuration"
 fi
@@ -1207,6 +1206,8 @@ echo "-"
 if [ "$OWNER" ] && [ "$OWNER_HOME" ] && [ $_OWNER_CONFIGURED -ne 0 ]
 then
       symlink_common_locations "$OWNER" "$OWNER_HOME"
+      # Just double check the permissions for the OWNER on the OWNER_HOME
+      user_create_home "$OWNER" "$OWNER_HOME"
 else
       echo "Owner $OWNER account is not configured, no symlinks will be created"
 fi
