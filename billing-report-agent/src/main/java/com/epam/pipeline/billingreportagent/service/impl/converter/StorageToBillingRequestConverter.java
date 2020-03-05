@@ -35,7 +35,6 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -51,28 +50,29 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
-@SuppressWarnings("checkstyle:MagicNumber")
 public class StorageToBillingRequestConverter implements EntityToBillingRequestConverter<AbstractDataStorage> {
 
     private static final String STORAGE_SIZE_AGG_NAME = "sizeSumSearch";
     private static final String SIZE_FIELD = "size";
     private static final String REGION_FIELD = "storage_region";
-    private static final String ES_FILE_INDEX_PATTERN = "*cp-%s-file-%d";
     private static final RoundingMode ROUNDING_MODE = RoundingMode.CEILING;
 
     private final AbstractEntityMapper<StorageBillingInfo> mapper;
     private final ElasticsearchServiceClient elasticsearchService;
     private final StorageType storageType;
-    private final AbstractStoragePricingService storagePricing;
+    private final StoragePricingService storagePricing;
+    private final String esFileIndexPattern;
 
     public StorageToBillingRequestConverter(final AbstractEntityMapper<StorageBillingInfo> mapper,
                                             final ElasticsearchServiceClient elasticsearchService,
                                             final StorageType storageType,
-                                            final AbstractStoragePricingService storagePricing) {
+                                            final StoragePricingService storagePricing,
+                                            final String esFileIndexPattern) {
         this.mapper = mapper;
         this.elasticsearchService = elasticsearchService;
         this.storageType = storageType;
         this.storagePricing = storagePricing;
+        this.esFileIndexPattern = esFileIndexPattern;
     }
 
     @Override
@@ -102,7 +102,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
     private Optional<SearchResponse> requestSumAggregationForStorage(final Long storageId,
                                                                      final DataStorageType storageType) {
         final String searchIndex =
-            String.format(ES_FILE_INDEX_PATTERN, storageType.toString().toLowerCase(), storageId);
+            String.format(esFileIndexPattern, storageType.toString().toLowerCase(), storageId);
         if (elasticsearchService.isIndexExists(searchIndex)) {
             final SearchRequest searchRequest = new SearchRequest();
             searchRequest.indices(searchIndex);
@@ -133,16 +133,16 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
     }
 
     private Optional<Long> extractStorageSize(final SearchResponse response) {
-        final Aggregations aggregations = response.getAggregations();
-        if (aggregations == null) {
+        final long totalMatches = response.getHits().getTotalHits();
+        if (totalMatches == 0) {
             return Optional.empty();
         }
-        final ParsedSum sumAggResult = aggregations.get(STORAGE_SIZE_AGG_NAME);
-        final long storageSize = new Double(sumAggResult.getValue()).longValue();
-        final long totalMatches = response.getHits().getTotalHits();
-        return (storageSize == 0 || totalMatches == 0)
-               ? Optional.empty()
-               : Optional.of(storageSize);
+        return Optional.ofNullable(response.getAggregations())
+            .map(aggregations -> aggregations.get(STORAGE_SIZE_AGG_NAME))
+            .map(ParsedSum.class::cast)
+            .map(ParsedSum::getValue)
+            .map(Double::longValue)
+            .filter(val -> !val.equals(0L));
     }
 
     private DocWriteRequest getDocWriteRequest(final String fullIndex,
@@ -189,8 +189,8 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
      */
     Long calculateDailyCost(final Long sizeBytes, final BigDecimal monthlyPriceGb, final LocalDate date) {
         final BigDecimal sizeGb = BigDecimal.valueOf(sizeBytes)
-            .divide(BigDecimal.valueOf(AbstractStoragePricingService.BYTES_TO_GB),
-                    AbstractStoragePricingService.PRECISION,
+            .divide(BigDecimal.valueOf(StoragePriceListLoader.BYTES_TO_GB),
+                    StoragePriceListLoader.PRECISION,
                     ROUNDING_MODE);
 
         final int daysInMonth = YearMonth.of(date.getYear(), date.getMonthValue()).lengthOfMonth();

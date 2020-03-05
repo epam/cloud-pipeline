@@ -137,25 +137,27 @@ public class StorageToRequestConverterTest {
         testPriceList.put(Regions.US_EAST_1.getName(), pricingUsEast1);
         testPriceList.put(Regions.US_EAST_2.getName(), pricingUsEast2);
 
-        final AwsStoragePricingService testStoragePricing =
-            Mockito.spy(new AwsStoragePricingService(StringUtils.EMPTY, testPriceList));
+        final StoragePricingService testStoragePricing = Mockito.spy(new StoragePricingService(testPriceList));
         Mockito.doNothing().when(testStoragePricing).updatePrices();
 
         s3Converter = new StorageToBillingRequestConverter(
-                new StorageBillingMapper(SearchDocumentType.S3_STORAGE, BILLING_CENTER_KEY),
-                elasticsearchClient,
-                StorageType.OBJECT_STORAGE,
-                testStoragePricing);
+            new StorageBillingMapper(SearchDocumentType.S3_STORAGE, BILLING_CENTER_KEY),
+            elasticsearchClient,
+            StorageType.OBJECT_STORAGE,
+            testStoragePricing,
+            StringUtils.EMPTY);
         nfsConverter = new StorageToBillingRequestConverter(
-                new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, BILLING_CENTER_KEY),
-                elasticsearchClient,
-                StorageType.FILE_STORAGE,
-                testStoragePricing);
+            new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, BILLING_CENTER_KEY),
+            elasticsearchClient,
+            StorageType.FILE_STORAGE,
+            testStoragePricing,
+            StringUtils.EMPTY);
         gcpConverter = new StorageToBillingRequestConverter(
             new StorageBillingMapper(SearchDocumentType.GS_STORAGE, BILLING_CENTER_KEY),
             elasticsearchClient,
             StorageType.OBJECT_STORAGE,
-            testStoragePricing);
+            testStoragePricing,
+            StringUtils.EMPTY);
 
     }
 

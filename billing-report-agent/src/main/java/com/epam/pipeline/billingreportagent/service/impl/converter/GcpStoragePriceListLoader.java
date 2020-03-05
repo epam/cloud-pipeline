@@ -34,31 +34,29 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class GcpStoragePricingService extends AbstractStoragePricingService {
+public class GcpStoragePriceListLoader implements StoragePriceListLoader{
 
     private static final String GCP_STORAGE_SERVICES_FAMILY = "Cloud Storage";
     private static final List<String> SUPPORTED_STORAGE = Arrays.asList("RegionalStorage", "MultiRegionalStorage");
 
-    public GcpStoragePricingService() {
-        super(GCP_STORAGE_SERVICES_FAMILY);
-    }
-
     @Override
-    public void loadFullPriceList() throws IOException, GeneralSecurityException {
+    public Map<String, StoragePricing> loadFullPriceList() throws IOException, GeneralSecurityException {
         final String accessToken = GoogleCredential.getApplicationDefault().getAccessToken();
         final Cloudbilling cloudbilling = new Cloudbilling(GoogleNetHttpTransport.newTrustedTransport(),
                                                            JacksonFactory.getDefaultInstance(),
                                                            null);
         final ListServicesResponse services = cloudbilling.services().list().setAccessToken(accessToken).execute();
         final Service cloudStorageService = services.getServices().stream()
-            .filter(service -> service.getDisplayName().equals(getStorageServiceGroup()))
+            .filter(service -> service.getDisplayName().equals(GCP_STORAGE_SERVICES_FAMILY))
             .findAny()
-            .orElseThrow(() -> new RuntimeException("No services received from GCP!"));
+            .orElseThrow(() -> new IllegalStateException("No services received from GCP!"));
 
         final ListSkusResponse skuResponse = cloudbilling.services()
             .skus()
@@ -66,21 +64,24 @@ public class GcpStoragePricingService extends AbstractStoragePricingService {
             .setAccessToken(accessToken)
             .execute();
 
-        final Map<List<String>, List<TierRate>> dataStoragePriceTable = skuResponse.getSkus().stream()
+        return skuResponse.getSkus().stream()
             .filter(sku -> SUPPORTED_STORAGE.contains(sku.getCategory().getResourceGroup()))
-            .collect(
-                Collectors.toMap(Sku::getServiceRegions,
-                                 sku -> sku.getPricingInfo().get(0).getPricingExpression().getTieredRates())
-            );
+            .map(this::convertSku)
+            .map(Map::entrySet)
+            .flatMap(Set::stream)
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
 
-        dataStoragePriceTable.forEach((regions, gcpRates) -> {
-            final StoragePricing pricing = convertGcpTierRateToStoragePrices(gcpRates);
-            regions.forEach(region -> putRegionPricing(region, pricing));
-        });
+    private Map<String, StoragePricing> convertSku(final Sku sku) {
+        final Map<String, StoragePricing> flattenPrices = new HashMap<>();
+        final List<TierRate> tieredRates = sku.getPricingInfo().get(0).getPricingExpression().getTieredRates();
+        final StoragePricing convertedRates = convertGcpTierRateToStoragePrices(tieredRates);
+        sku.getServiceRegions().forEach(key -> flattenPrices.put(key, convertedRates));
+        return flattenPrices;
     }
 
     @Override
-    protected CloudProvider getProvider() {
+    public CloudProvider getProvider() {
         return CloudProvider.GCP;
     }
 

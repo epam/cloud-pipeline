@@ -21,8 +21,9 @@ import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.billingreportagent.service.impl.ElasticIndexService;
-import com.epam.pipeline.billingreportagent.service.impl.converter.AwsStoragePricingService;
-import com.epam.pipeline.billingreportagent.service.impl.converter.GcpStoragePricingService;
+import com.epam.pipeline.billingreportagent.service.impl.converter.AwsStoragePriceListLoader;
+import com.epam.pipeline.billingreportagent.service.impl.converter.GcpStoragePriceListLoader;
+import com.epam.pipeline.billingreportagent.service.impl.converter.StoragePricingService;
 import com.epam.pipeline.billingreportagent.service.impl.synchronizer.PipelineRunSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.synchronizer.StorageSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.converter.StorageToBillingRequestConverter;
@@ -79,10 +80,13 @@ public class CommonSyncConfiguration {
     public StorageSynchronizer s3Synchronizer(final @Value("${sync.storage.index.mapping}") String storageMapping,
                                               final @Value("${sync.storage.index.name}") String indexName,
                                               final @Value("${sync.billing.center.key}") String billingCenterKey,
+                                              final @Value("${sync.storage.file.index.pattern}") String fileIndexPattern,
                                               final StorageLoader loader,
                                               final ElasticIndexService indexService,
                                               final ElasticsearchServiceClient elasticsearchClient) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.S3_STORAGE, billingCenterKey);
+        final StoragePricingService pricingService =
+            new StoragePricingService(new AwsStoragePriceListLoader("AmazonS3"));
         return new StorageSynchronizer(storageMapping,
                                        commonIndexPrefix,
                                        indexName,
@@ -92,19 +96,23 @@ public class CommonSyncConfiguration {
                                        indexService,
                                        new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                                                                             StorageType.OBJECT_STORAGE,
-                                                                            new AwsStoragePricingService("AmazonS3")),
+                                                                            pricingService,
+                                                                            fileIndexPattern),
                                        DataStorageType.S3);
     }
 
     @Bean
     @ConditionalOnProperty(value = "sync.storage.disable", matchIfMissing = true, havingValue = FALSE)
     public StorageSynchronizer efsSynchronizer(final @Value("${sync.storage.index.mapping}") String storageMapping,
-                                              final @Value("${sync.storage.index.name}") String indexName,
+                                               final @Value("${sync.storage.index.name}") String indexName,
                                                final @Value("${sync.billing.center.key}") String billingCenterKey,
-                                              final StorageLoader loader,
-                                              final ElasticIndexService indexService,
-                                              final ElasticsearchServiceClient elasticsearchClient) {
+                                               final @Value("${sync.storage.file.index.pattern}") String fileIndexPattern,
+                                               final StorageLoader loader,
+                                               final ElasticIndexService indexService,
+                                               final ElasticsearchServiceClient elasticsearchClient) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
+        final StoragePricingService pricingService =
+            new StoragePricingService(new AwsStoragePriceListLoader("AmazonEFS"));
         return new StorageSynchronizer(storageMapping,
                                        commonIndexPrefix,
                                        indexName,
@@ -114,19 +122,23 @@ public class CommonSyncConfiguration {
                                        indexService,
                                        new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                                                                             StorageType.FILE_STORAGE,
-                                                                            new AwsStoragePricingService("AmazonEFS")),
+                                                                            pricingService,
+                                                                            fileIndexPattern),
                                        DataStorageType.NFS);
     }
 
     @Bean
     @ConditionalOnProperty(value = "sync.storage.disable", matchIfMissing = true, havingValue = FALSE)
     public StorageSynchronizer gsSynchronizer(final @Value("${sync.storage.index.mapping}") String storageMapping,
-                                               final @Value("${sync.storage.index.name}") String indexName,
-                                               final @Value("${sync.billing.center.key}") String billingCenterKey,
-                                               final StorageLoader loader,
-                                               final ElasticIndexService indexService,
-                                               final ElasticsearchServiceClient elasticsearchClient) {
+                                              final @Value("${sync.storage.index.name}") String indexName,
+                                              final @Value("${sync.billing.center.key}") String billingCenterKey,
+                                              final @Value("${sync.storage.file.index.pattern}") String fileIndexPattern,
+                                              final StorageLoader loader,
+                                              final ElasticIndexService indexService,
+                                              final ElasticsearchServiceClient elasticsearchClient) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.GS_STORAGE, billingCenterKey);
+        final StoragePricingService pricingService =
+            new StoragePricingService(new GcpStoragePriceListLoader());
         return new StorageSynchronizer(storageMapping,
                                        commonIndexPrefix,
                                        indexName,
@@ -136,7 +148,8 @@ public class CommonSyncConfiguration {
                                        indexService,
                                        new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                                                                             StorageType.OBJECT_STORAGE,
-                                                                            new GcpStoragePricingService()),
+                                                                            pricingService,
+                                                                            fileIndexPattern),
                                        DataStorageType.GS);
     }
 }

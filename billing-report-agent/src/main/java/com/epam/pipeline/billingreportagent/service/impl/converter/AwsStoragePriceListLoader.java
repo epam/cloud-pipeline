@@ -33,46 +33,47 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
-public class AwsStoragePricingService extends AbstractStoragePricingService {
+public class AwsStoragePriceListLoader implements StoragePriceListLoader {
 
-    public AwsStoragePricingService(final String awsStorageServiceName) {
-        super(awsStorageServiceName);
-    }
+    private final String awsStorageServiceName;
 
-    public AwsStoragePricingService(final String awsStorageServiceName,
-                                    final Map<String, StoragePricing> initialPriceList) {
-        super(awsStorageServiceName, initialPriceList);
+    public AwsStoragePriceListLoader(final String awsStorageServiceName) {
+        this.awsStorageServiceName = awsStorageServiceName;
     }
 
     @Override
-    public void loadFullPriceList() {
-        loadPricesInJson(getStorageServiceGroup()).forEach(price -> {
+    public Map<String, StoragePricing> loadFullPriceList() {
+        final Map<String, StoragePricing> fullPriceList = new HashMap<>();
+        loadPricesInJson(awsStorageServiceName).forEach(price -> {
             try {
                 final JsonNode regionInfo = new ObjectMapper().readTree(price);
                 final String regionName = regionInfo.path("product").path("attributes").path("location").asText();
-                getRegionFromFullLocation(regionName).ifPresent(region -> fillPricingInfoForRegion(region, regionInfo));
+                getRegionFromFullLocation(regionName)
+                    .ifPresent(region -> fullPriceList.put(region.getName(), convertPricingJsonInfo(regionInfo)));
             } catch (IOException e) {
                 log.error("Can't instantiate AWS storage price list!");
             }
         });
+        return fullPriceList;
     }
 
     @Override
-    protected CloudProvider getProvider() {
+    public CloudProvider getProvider() {
         return CloudProvider.AWS;
     }
 
-    private void fillPricingInfoForRegion(final Regions region, final JsonNode regionInfo) {
+    private StoragePricing convertPricingJsonInfo(final JsonNode regionInfo) {
         final StoragePricing pricing = new StoragePricing();
         regionInfo.findParents("pricePerUnit").stream()
             .map(this::extractPricingFromJson)
             .forEach(pricing::addPrice);
-        putRegionPricing(region.getName(), pricing);
+        return pricing;
     }
 
     private List<String> loadPricesInJson(final String awsStorageServiceName) {

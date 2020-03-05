@@ -52,9 +52,7 @@ public class StorageServicePricingTest {
         final Map<String, StoragePricing> testPriceList = new HashMap<>();
         testPriceList.put(Regions.US_EAST_1.getName(), pricingUsEast1);
         testPriceList.put(Regions.US_EAST_2.getName(), pricingUsEast2);
-        final AbstractStoragePricingService testStoragePricing = new AwsStoragePricingService(StringUtils.EMPTY,
-                                                                                              testPriceList);
-
+        final StoragePricingService testStoragePricing = new StoragePricingService(testPriceList);
         Assert.assertEquals(BigDecimal.TEN, testStoragePricing.getDefaultPriceGb());
     }
 }

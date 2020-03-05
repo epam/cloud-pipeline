@@ -17,7 +17,7 @@
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
-import com.epam.pipeline.entity.region.CloudProvider;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -26,40 +26,33 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
-@SuppressWarnings("checkstyle:magicNumber")
-public abstract class AbstractStoragePricingService {
-
-    public static final int CENTS_IN_DOLLAR = 100;
-    public static final int BYTES_TO_GB = 1 << 30;
-    public static final int PRECISION = 5;
+public class StoragePricingService {
 
     private final Map<String, StoragePricing> storagePriceListGb = new HashMap<>();
     private BigDecimal defaultPriceGb;
-    private final String storageServiceGroup;
+    private StoragePriceListLoader priceListLoader;
 
-    public AbstractStoragePricingService(final String storageServiceGroup) {
-        this.storageServiceGroup = storageServiceGroup;
+    public StoragePricingService(@NonNull final StoragePriceListLoader priceListLoader) {
+        this.priceListLoader = priceListLoader;
         updatePrices();
     }
 
-    protected abstract void loadFullPriceList() throws Exception;
-    protected abstract CloudProvider getProvider();
-
-    public AbstractStoragePricingService(final String storageServiceGroup,
-                                         final Map<String, StoragePricing> initialPriceList) {
-        this.storagePriceListGb.putAll(initialPriceList);
-        this.storageServiceGroup = storageServiceGroup;
+    public StoragePricingService(final Map<String, StoragePricing> fixedPriceList) {
+        this.storagePriceListGb.putAll(fixedPriceList);
         this.defaultPriceGb = calculateDefaultPriceGb();
     }
 
     public void updatePrices() {
         try {
-            loadFullPriceList();
+            if (priceListLoader != null) {
+                final Map<String, StoragePricing> priceList = priceListLoader.loadFullPriceList();
+                storagePriceListGb.putAll(priceList);
+                defaultPriceGb = calculateDefaultPriceGb();
+            }
         } catch (Exception e) {
             throw new IllegalStateException(String.format("Can't instantiate %s storage price list!",
-                                                          getProvider().name()));
+                                                          priceListLoader.getProvider().name()));
         }
-        this.defaultPriceGb = calculateDefaultPriceGb();
     }
 
     public StoragePricing getRegionPricing(final String region) {
@@ -70,14 +63,6 @@ public abstract class AbstractStoragePricingService {
         return this.defaultPriceGb;
     }
 
-    protected String getStorageServiceGroup() {
-        return storageServiceGroup;
-    }
-
-    protected StoragePricing putRegionPricing(final String region, final StoragePricing pricing) {
-        return storagePriceListGb.put(region, pricing);
-    }
-
     private BigDecimal calculateDefaultPriceGb() {
         return storagePriceListGb.values()
             .stream()
@@ -86,6 +71,6 @@ public abstract class AbstractStoragePricingService {
             .filter(price -> !BigDecimal.ZERO.equals(price))
             .max(Comparator.naturalOrder())
             .orElseThrow(() -> new IllegalStateException(String.format("No %s storage prices loaded!",
-                                                                       getProvider().name())));
+                                                                       priceListLoader.getProvider().name())));
     }
 }
