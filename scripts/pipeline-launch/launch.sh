@@ -790,8 +790,9 @@ else
 fi
 
 # Disable strict host checking
-mkdir -p /root/.ssh/
+mkdir -p /root/.ssh
 echo "StrictHostKeyChecking no" >> /root/.ssh/config
+chmod 600 -R /root/.ssh
 
 # Check if installation is done and launch ssh server
 if [ -f $SSH_SERVER_EXEC_PATH ] ;
@@ -998,6 +999,7 @@ if [ "${OWNER}" ] && [ -d /root/.ssh ]; then
     mkdir -p /home/${OWNER}/.ssh && \
     cp /root/.ssh/* /home/${OWNER}/.ssh/ && \
     chown -R ${OWNER} /home/${OWNER}/.ssh
+    chmod 600 -R /home/${OWNER}/.ssh
     echo "Passworldess SSH for ${OWNER} is configured"
 else
     echo "[ERROR] Failed to configure passworldess SSH for \"${OWNER}\""
