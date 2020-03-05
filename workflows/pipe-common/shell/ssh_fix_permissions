@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-mkdir -p /root/.ssh/ && \
-cp -f /etc/ssh/ssh_host_rsa_key /root/.ssh/id_rsa && \
-cp -f /etc/ssh/ssh_host_rsa_key.pub /root/.ssh/id_rsa.pub && \
-cp -f /etc/ssh/ssh_host_rsa_key.pub /root/.ssh/authorized_keys && \
-ssh_fix_permissions /root/.ssh
+_SSH_DIR="$1"
+if [ -z "$_SSH_DIR" ]; then
+    echo "[ERROR] Path to the SSH directory shall be specified"
+    exit 1
+fi
+if [ ! -d "$_SSH_DIR" ]; then
+    echo "[ERROR] $_SSH_DIR SSH directory does not exist"
+    exit 1
+fi
+
+chmod 700 "$_SSH_DIR"
+chmod 600 "$_SSH_DIR"/*

@@ -743,6 +743,8 @@ then
             fi
 		echo "$OWNER:$OWNER" | chpasswd
 	fi
+      # If group/other can write to the home directory - user won't be able to SSH using the personal account
+      chmod 755 $OWNER_HOME
 else
 	echo "OWNER is not set - skipping owner account configuration"
 fi
@@ -791,7 +793,7 @@ fi
 # Disable strict host checking
 mkdir -p /root/.ssh
 echo "StrictHostKeyChecking no" >> /root/.ssh/config
-chmod 600 -R /root/.ssh
+ssh_fix_permissions /root/.ssh
 
 # Check if installation is done and launch ssh server
 if [ -f $SSH_SERVER_EXEC_PATH ] ;
@@ -982,7 +984,7 @@ if [ "${OWNER}" ] && [ -d /root/.ssh ]; then
     mkdir -p /home/${OWNER}/.ssh && \
     cp /root/.ssh/* /home/${OWNER}/.ssh/ && \
     chown -R ${OWNER} /home/${OWNER}/.ssh
-    chmod 600 -R /home/${OWNER}/.ssh
+    ssh_fix_permissions /home/${OWNER}/.ssh
     echo "Passworldess SSH for ${OWNER} is configured"
 else
     echo "[ERROR] Failed to configure passworldess SSH for \"${OWNER}\""
