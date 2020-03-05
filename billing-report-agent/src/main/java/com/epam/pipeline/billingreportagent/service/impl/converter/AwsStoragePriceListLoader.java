@@ -23,6 +23,8 @@ import com.amazonaws.services.pricing.model.Filter;
 import com.amazonaws.services.pricing.model.GetProductsRequest;
 import com.amazonaws.services.pricing.model.GetProductsResult;
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
+import com.epam.pipeline.billingreportagent.model.pricing.AwsPriceRate;
+import com.epam.pipeline.billingreportagent.model.pricing.AwsPricingCard;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,28 +39,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class AwsStoragePriceListLoader implements StoragePriceListLoader {
 
+    private static final String DOLLARS = "USD";
+
     private final String awsStorageServiceName;
+    private final ObjectMapper mapper;
 
     public AwsStoragePriceListLoader(final String awsStorageServiceName) {
         this.awsStorageServiceName = awsStorageServiceName;
+        this.mapper = new ObjectMapper();
     }
 
     @Override
     public Map<String, StoragePricing> loadFullPriceList() {
         final Map<String, StoragePricing> fullPriceList = new HashMap<>();
-        loadPricesInJson(awsStorageServiceName).forEach(price -> {
-            try {
-                final JsonNode regionInfo = new ObjectMapper().readTree(price);
-                final String regionName = regionInfo.path("product").path("attributes").path("location").asText();
-                getRegionFromFullLocation(regionName)
-                    .ifPresent(region -> fullPriceList.put(region.getName(), convertPricingJsonInfo(regionInfo)));
-            } catch (IOException e) {
-                log.error("Can't instantiate AWS storage price list!");
-            }
+        loadAwsPricingCards(awsStorageServiceName).forEach(price -> {
+            final String regionName = price.getProduct().getAttributes().get("location");
+            getRegionFromFullLocation(regionName)
+                .ifPresent(region -> fullPriceList.put(region.getName(),
+                                                       convertAwsPricing(price.getPriceDimensions())));
         });
         return fullPriceList;
     }
@@ -68,16 +71,24 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
         return CloudProvider.AWS;
     }
 
-    private StoragePricing convertPricingJsonInfo(final JsonNode regionInfo) {
+    private StoragePricing convertAwsPricing(final List<AwsPriceRate> rates) {
         final StoragePricing pricing = new StoragePricing();
-        regionInfo.findParents("pricePerUnit").stream()
-            .map(this::extractPricingFromJson)
-            .forEach(pricing::addPrice);
+        rates.forEach(rate -> {
+            final BigDecimal priceGb = new BigDecimal(rate.getPricePerUnit().get(DOLLARS), new MathContext(PRECISION))
+                .multiply(BigDecimal.valueOf(CENTS_IN_DOLLAR));
+            final Long beginRange = rate.getBeginRange() * BYTES_TO_GB;
+            final Long endRange = rate.getEndRange().equals(Long.MAX_VALUE)
+                                  ? Long.MAX_VALUE
+                                  : rate.getEndRange() * BYTES_TO_GB;
+            final StoragePricing.StoragePricingEntity pricingEntity =
+                new StoragePricing.StoragePricingEntity(beginRange, endRange, priceGb);
+            pricing.addPrice(pricingEntity);
+        });
         return pricing;
     }
 
-    private List<String> loadPricesInJson(final String awsStorageServiceName) {
-        final List<String> allPrices = new ArrayList<>();
+    private List<AwsPricingCard> loadAwsPricingCards(final String awsStorageServiceName) {
+        final List<AwsPricingCard> allPrices = new ArrayList<>();
         final Filter filter = new Filter();
         filter.setType("TERM_MATCH");
         filter.setField("productFamily");
@@ -99,7 +110,28 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
                 .build();
 
             final GetProductsResult result = awsPricingService.getProducts(request);
-            allPrices.addAll(result.getPriceList());
+            result.getPriceList().stream()
+                .map(jsonStr -> {
+                    try {
+                        final AwsPricingCard pricingCard = mapper.readValue(jsonStr, AwsPricingCard.class);
+                        final JsonNode jsonNode = mapper.readTree(jsonStr);
+                        final List<AwsPriceRate> prices = jsonNode.findParents("pricePerUnit").stream()
+                            .map(JsonNode::toString)
+                            .map(priceRate -> {
+                                try {
+                                    final AwsPriceRate awsPriceRate = mapper.readValue(priceRate, AwsPriceRate.class);
+                                    return awsPriceRate;
+                                } catch (IOException e) {
+                                    throw new IllegalStateException("Error during pricing rates parsing!");
+                                }
+                            }).collect(Collectors.toList());
+                        pricingCard.setPriceDimensions(prices);
+                        return pricingCard;
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Error during general pricing info parsing!");
+                    }
+                })
+                .forEach(allPrices::add);
             nextToken = result.getNextToken();
         } while (nextToken != null);
         return allPrices;
@@ -113,19 +145,5 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
         }
         log.warn("Can't parse location: " + location);
         return Optional.empty();
-    }
-
-    private StoragePricing.StoragePricingEntity extractPricingFromJson(final JsonNode priceDimension) {
-        final BigDecimal priceGb =
-            new BigDecimal(priceDimension.path("pricePerUnit").path("USD").asDouble(), new MathContext(PRECISION))
-                .multiply(BigDecimal.valueOf(CENTS_IN_DOLLAR));
-        final long beginRange =
-            priceDimension.path("beginRange").asLong() * BYTES_TO_GB;
-        final long endRange = priceDimension.path("endRange").asLong();
-        return new StoragePricing.StoragePricingEntity(beginRange,
-                                                       endRange == 0
-                                                       ? Long.MAX_VALUE
-                                                       : endRange * BYTES_TO_GB,
-                                                       priceGb);
     }
 }
