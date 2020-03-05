@@ -77,7 +77,7 @@ function rangeFilter ({period, range, onChange}) {
         value={start}
         placeholder={defaultStart.format('MMM YYYY')}
         onChange={onChangeDate}
-        style={{width: 175}}
+        style={{minWidth: 200}}
       />
     );
   }

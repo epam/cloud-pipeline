@@ -51,7 +51,8 @@ class GroupedBarChart extends React.Component {
       .map(({width}) => (width) || 0)
       .reduce((r, c) => r + c, 0);
     const reports = (groups || [])
-      .map(group => this.charts[group] || {});
+      .map(group => this.charts[group] || null)
+      .filter(Boolean);
     const titleHeight = 30;
     const totalHeight = titleHeight + Math.max(0, ...(groups || [])
       .map(group => this.charts[group] || {})
