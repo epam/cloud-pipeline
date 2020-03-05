@@ -150,4 +150,4 @@ add_ssh_config  "$ROOT_SSH_DIR/config" \
                 "$ROOT_SSH_DIR/id_${OWNER}"
 
 chown -R root:root $ROOT_SSH_DIR
-chmod -R 600 $ROOT_SSH_DIR
+ssh_fix_permissions $ROOT_SSH_DIR
