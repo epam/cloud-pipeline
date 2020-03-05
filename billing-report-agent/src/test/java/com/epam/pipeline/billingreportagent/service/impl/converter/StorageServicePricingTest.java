@@ -18,7 +18,6 @@ package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.amazonaws.regions.Regions;
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
