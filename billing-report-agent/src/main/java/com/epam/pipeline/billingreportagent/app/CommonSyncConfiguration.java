@@ -49,6 +49,18 @@ public class CommonSyncConfiguration {
     @Value("${sync.bulk.insert.size:1000}")
     private int bulkSize;
 
+    @Value("${sync.storage.index.mapping}")
+    private  String storageMapping;
+
+    @Value("${sync.storage.index.name}")
+    private  String storageIndexName;
+
+    @Value("${sync.billing.center.key}")
+    private String billingCenterKey;
+
+    @Value("${sync.storage.file.index.pattern}")
+    private  String fileIndexPattern;
+
     @Bean
     public BulkRequestSender bulkRequestSender(
         final ElasticsearchServiceClient elasticsearchClient) {
@@ -62,12 +74,11 @@ public class CommonSyncConfiguration {
         final PipelineRunLoader loader,
         final ElasticIndexService indexService,
         final ElasticsearchServiceClient elasticsearchClient,
-        final @Value("${sync.run.index.name}") String indexName,
-        final @Value("${sync.run.index.mapping}") String runMapping,
-        final @Value("${sync.run.bulk.insert.size:1000}") int bulkSize) {
+        final @Value("${sync.run.index.name}") String runIndexName,
+        final @Value("${sync.run.index.mapping}") String runMapping) {
         return new PipelineRunSynchronizer(runMapping,
                                            commonIndexPrefix,
-                                           indexName,
+                                           runIndexName,
                                            bulkSize,
                                            elasticsearchClient,
                                            indexService,
@@ -77,11 +88,7 @@ public class CommonSyncConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = "sync.storage.disable", matchIfMissing = true, havingValue = FALSE)
-    public StorageSynchronizer s3Synchronizer(final @Value("${sync.storage.index.mapping}") String storageMapping,
-                                              final @Value("${sync.storage.index.name}") String indexName,
-                                              final @Value("${sync.billing.center.key}") String billingCenterKey,
-                                              final @Value("${sync.storage.file.index.pattern}") String fileIndexPattern,
-                                              final StorageLoader loader,
+    public StorageSynchronizer s3Synchronizer(final StorageLoader loader,
                                               final ElasticIndexService indexService,
                                               final ElasticsearchServiceClient elasticsearchClient) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.S3_STORAGE, billingCenterKey);
@@ -89,7 +96,7 @@ public class CommonSyncConfiguration {
             new StoragePricingService(new AwsStoragePriceListLoader("AmazonS3"));
         return new StorageSynchronizer(storageMapping,
                                        commonIndexPrefix,
-                                       indexName,
+                                       storageIndexName,
                                        bulkSize,
                                        elasticsearchClient,
                                        loader,
@@ -103,11 +110,7 @@ public class CommonSyncConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = "sync.storage.disable", matchIfMissing = true, havingValue = FALSE)
-    public StorageSynchronizer efsSynchronizer(final @Value("${sync.storage.index.mapping}") String storageMapping,
-                                               final @Value("${sync.storage.index.name}") String indexName,
-                                               final @Value("${sync.billing.center.key}") String billingCenterKey,
-                                               final @Value("${sync.storage.file.index.pattern}") String fileIndexPattern,
-                                               final StorageLoader loader,
+    public StorageSynchronizer efsSynchronizer(final StorageLoader loader,
                                                final ElasticIndexService indexService,
                                                final ElasticsearchServiceClient elasticsearchClient) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
@@ -115,7 +118,7 @@ public class CommonSyncConfiguration {
             new StoragePricingService(new AwsStoragePriceListLoader("AmazonEFS"));
         return new StorageSynchronizer(storageMapping,
                                        commonIndexPrefix,
-                                       indexName,
+                                       storageIndexName,
                                        bulkSize,
                                        elasticsearchClient,
                                        loader,
@@ -129,11 +132,7 @@ public class CommonSyncConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = "sync.storage.disable", matchIfMissing = true, havingValue = FALSE)
-    public StorageSynchronizer gsSynchronizer(final @Value("${sync.storage.index.mapping}") String storageMapping,
-                                              final @Value("${sync.storage.index.name}") String indexName,
-                                              final @Value("${sync.billing.center.key}") String billingCenterKey,
-                                              final @Value("${sync.storage.file.index.pattern}") String fileIndexPattern,
-                                              final StorageLoader loader,
+    public StorageSynchronizer gsSynchronizer(final StorageLoader loader,
                                               final ElasticIndexService indexService,
                                               final ElasticsearchServiceClient elasticsearchClient) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.GS_STORAGE, billingCenterKey);
@@ -141,7 +140,7 @@ public class CommonSyncConfiguration {
             new StoragePricingService(new GcpStoragePriceListLoader());
         return new StorageSynchronizer(storageMapping,
                                        commonIndexPrefix,
-                                       indexName,
+                                       storageIndexName,
                                        bulkSize,
                                        elasticsearchClient,
                                        loader,
