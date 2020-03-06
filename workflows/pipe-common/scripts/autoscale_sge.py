@@ -108,8 +108,9 @@ class CmdExecutor:
         out, err = process.communicate()
         exit_code = process.wait()
         if exit_code != 0:
-            Logger.warn('Command \'%s\' execution has failed due to %s.' % (command, err.rstrip()))
-            raise ExecutionError('Command \'%s\' execution has failed due to %s.' % (command, err.rstrip()))
+            exec_err_msg = 'Command \'%s\' execution has failed. Out: %s Err: %s.' % (command, out.rstrip(), err.rstrip())
+            Logger.warn(exec_err_msg)
+            raise ExecutionError(exec_err_msg)
         return out
 
     def execute_to_lines(self, command):
@@ -930,7 +931,7 @@ class GridEngineWorkerValidator:
             self.grid_engine.kill_jobs(invalid_host_jobs, force=True)
 
     def _remove_worker_from_hosts(self, host):
-        Logger.info('Disable worker with host=%s from GE.' % host)
+        Logger.info('Remove worker (host=%s) from the well-known hosts.' % host)
         self.scale_down_handler._remove_host_from_hosts(host)
         self.scale_down_handler._remove_host_from_default_hostfile(host)
 
