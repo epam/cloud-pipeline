@@ -16,24 +16,19 @@
 
 package com.epam.pipeline.billingreportagent.model.pricing;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
-public class AwsPricingCard {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class AwsTerms {
 
-    @JsonProperty(value = "product")
-    private AwsProduct product;
+    @JsonProperty(value = "OnDemand")
+    private Map<String, AwsPriceDimensions> onDemand;
 
-    @JsonProperty(value = "serviceCode")
-    private String serviceCode;
-
-    @JsonProperty(value = "version")
-    private String version;
-
-    @JsonProperty(value = "publicationDate")
-    private String publicationDate;
-
-    @JsonProperty(value = "terms")
-    private AwsTerms terms;
+    @JsonProperty(value = "Spot")
+    private Map<String, AwsPriceDimensions> spot;
 }

@@ -16,16 +16,15 @@
 
 package com.epam.pipeline.billingreportagent.model.pricing;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import lombok.Data;
 import org.apache.commons.lang3.math.NumberUtils;
 
+import java.util.List;
 import java.util.Map;
 
 @Data
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class AwsPriceRate {
 
     @JsonProperty(value = "unit")
@@ -41,6 +40,12 @@ public class AwsPriceRate {
 
     @JsonProperty(value = "pricePerUnit")
     private Map<String, Double> pricePerUnit;
+
+    @JsonProperty(value = "description")
+    private String description;
+
+    @JsonProperty(value = "appliesTo")
+    private List<String> appliesTo;
 
     @JsonSetter("endRange")
     public void setEndRange(String endRange) {
