@@ -1,16 +1,6 @@
 jdk: openjdk8
 os: linux
 dist: xenial
-before_cache:
-  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
-  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
-cache:
-  directories:
-    - $HOME/.gradle/caches/
-    - $HOME/.gradle/wrapper/
-    - $HOME/.npm/
-    - client/node_modules
-
 env:
   global:
   - secure: m2UM1yayaCbC12cz4EuUFtgtsVfnIm54G+OfDXxAv4+lARMXi3bunxHgvGO2rabbJM6+XHd6wolo2njTtDjO9JrjP/igP6InOz2uy2ZNXJRfg9+WFN2z7Jp1r1O6DLmt7dggO49xYeasykZDjFVpAIEk9JvXo8aHK0pCWQYkY6h/on14a3MW23HMLMp5rPdrR3T1Ku/r5j0fMU8mx76HAZTHnfXArBH4JP5OWGZlQSrsZnLQ4jLt2JqjlRMfO6CvKIefYI3WKhVpxQYtZUhLV6DRHZn+GtvzN3ZeiNpmY/KR2wkW8eWby+Cyir0I4UL3BEgPbMFxeysnTKLYj4s8pC/eD2zSf4GusB/bhgtERvtwrbl8HBtpJm0fbakSRoZC3Z/++PitZvmcUsQTg4CcJP/MPaYyrDNFHVL9YDkfbuuwGAQyVj5N5iqdf7m+8ftiOA/PEB+ajNH/z9Gxy2lYv1/+LABanMqaIzTpoWkzy+igkhIP7M07IsRgetd/JhrMj9D3kkkCzheW15rAFkp9cYkbtivHI1JUcJ5chFZO2TyjUbg5axOwhAZUdn32zcwysDIFzGMQtph3OouMloILdomiL/2LSSD6Y2HuhGcFjTCcx1hFJzDekbAoAlbBiWyDn5enR4j0Y1vhd1y9oXNp/Km9S1A5uVAXNnO8bkLszIA=
