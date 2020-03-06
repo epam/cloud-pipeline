@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {QuarterPicker, RangePicker, YearPicker, MonthPicker} from './components';
+import {QuarterPicker, Quarters, RangePicker, YearPicker, MonthPicker} from './components';
 import {Period, Range, getPeriod} from '../periods';
 
 function rangeFilter ({period, range, onChange}) {
@@ -46,7 +46,13 @@ function rangeFilter ({period, range, onChange}) {
   if (period === Period.quarter) {
     return (
       <QuarterPicker
-        title={`${defaultStart.format('Q')} quarter, ${defaultStart.format('YYYY')}`}
+        title={
+          `${
+            Quarters && Quarters[defaultStart.format('Q')]
+              ? Quarters[defaultStart.format('Q')]
+              : defaultStart.format('Q')
+          } quarter, ${defaultStart.format('YYYY')}`
+        }
         value={start}
         onChange={onChangeDate}
       />
