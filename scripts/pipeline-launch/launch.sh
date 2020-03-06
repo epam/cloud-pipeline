@@ -791,7 +791,8 @@ fi
 # Disable strict host checking
 mkdir -p /root/.ssh
 echo "StrictHostKeyChecking no" >> /root/.ssh/config
-ssh_fix_permissions /root/.ssh
+chmod 700 /root/.ssh
+chmod 600 /root/.ssh/*
 
 # Check if installation is done and launch ssh server
 if [ -f $SSH_SERVER_EXEC_PATH ] ;
@@ -987,7 +988,8 @@ if [ "${OWNER}" ] && [ -d /root/.ssh ]; then
 else
     echo "[ERROR] Failed to configure passworldess SSH for \"${OWNER}\""
 fi
-
+# Double check that root's SSH permissions are correct
+ssh_fix_permissions /root/.ssh
 
 echo "------"
 echo
