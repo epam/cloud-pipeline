@@ -56,11 +56,14 @@ dependencies {
     implementation group: "org.apache.commons", name: "commons-lang3", version: apacheCommonsLangVersion
     implementation group: "org.apache.commons", name: "commons-collections4", version: apacheCommonsCollectionsVersion
 
+    // Azure
+    implementation group: 'com.microsoft.azure', name: 'azure-client-authentication', version: azureAuthVersion
+
     // AWS
-    compile group: 'com.amazonaws', name: 'aws-java-sdk-pricing', version: awsSdkVersion
+    implementation group: 'com.amazonaws', name: 'aws-java-sdk-pricing', version: awsSdkVersion
 
     // GCP
-    compile group:'com.google.apis', name:'google-api-services-cloudbilling', version: gcpBillingSdkVersion
+    implementation group:'com.google.apis', name:'google-api-services-cloudbilling', version: gcpBillingSdkVersion
 
     //Lombok
     implementation group: "org.projectlombok", name: "lombok", version: lombokVersion

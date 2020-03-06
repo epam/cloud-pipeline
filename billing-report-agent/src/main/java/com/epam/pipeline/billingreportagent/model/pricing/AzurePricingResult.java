@@ -14,31 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.billingreportagent.model.billing;
+package com.epam.pipeline.billingreportagent.model.pricing;
 
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 
-@Getter
-public class StoragePricing {
-
-    private final List<StoragePricingEntity> prices = new ArrayList<>();
-
-    public void addPrice(final StoragePricingEntity entity) {
-        prices.add(entity);
-    }
-
-    @Data
-    @AllArgsConstructor
-    public static class StoragePricingEntity {
-
-        private Long beginRangeBytes;
-        private Long endRangeBytes;
-        private BigDecimal priceCentsPerGb;
-    }
+@NoArgsConstructor
+@Data
+public class AzurePricingResult {
+    @JsonProperty(value = "Meters")
+    private List<AzurePricingMeter> meters;
 }

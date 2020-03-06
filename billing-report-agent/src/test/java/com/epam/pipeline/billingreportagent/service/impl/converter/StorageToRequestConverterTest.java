@@ -28,7 +28,9 @@ import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.TestUtils;
 import com.epam.pipeline.billingreportagent.service.impl.mapper.StorageBillingMapper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.S3bucketDataStorage;
 import com.epam.pipeline.entity.search.SearchDocumentType;
@@ -107,12 +109,15 @@ public class StorageToRequestConverterTest {
     private StorageToBillingRequestConverter s3Converter;
     private StorageToBillingRequestConverter nfsConverter;
     private StorageToBillingRequestConverter gcpConverter;
+    private StorageToBillingRequestConverter azureConverter;
     private final EntityContainer<AbstractDataStorage> s3StorageContainer =
         getStorageContainer(STORAGE_ID, STORAGE_NAME, STORAGE_NAME, DataStorageType.S3);
     private final EntityContainer<AbstractDataStorage> nfsStorageContainer =
         getStorageContainer(STORAGE_ID, STORAGE_NAME, STORAGE_NAME, DataStorageType.NFS);
     private final EntityContainer<AbstractDataStorage> gcpStorageContainer =
         getStorageContainer(STORAGE_ID, STORAGE_NAME, STORAGE_NAME, DataStorageType.GS);
+    private final EntityContainer<AbstractDataStorage> azureStorageContainer =
+        getStorageContainer(STORAGE_ID, STORAGE_NAME, STORAGE_NAME, DataStorageType.AZ);
 
     @BeforeEach
     public void init() {
@@ -158,7 +163,12 @@ public class StorageToRequestConverterTest {
             StorageType.OBJECT_STORAGE,
             testStoragePricing,
             StringUtils.EMPTY);
-
+        azureConverter = new StorageToBillingRequestConverter(
+            new StorageBillingMapper(SearchDocumentType.AZ_BLOB_STORAGE, BILLING_CENTER_KEY),
+            elasticsearchClient,
+            StorageType.OBJECT_STORAGE,
+            testStoragePricing,
+            StringUtils.EMPTY);
     }
 
     @Test
@@ -242,6 +252,23 @@ public class StorageToRequestConverterTest {
         Assert.assertEquals(SearchDocumentType.GS_STORAGE.name(),
                             requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
         assertFields(gsStorage, requestFieldsMap, US_EAST_1, StorageType.OBJECT_STORAGE,
+                     BYTES_IN_1_GB, BigDecimal.ONE.scaleByPowerOfTen(2).longValue());
+    }
+
+    @Test
+    public void testAzureStorageConverting() throws IOException {
+        final AbstractDataStorage azureStorage = azureStorageContainer.getEntity();
+        createElasticsearchSearchContext(BYTES_IN_1_GB, false, US_EAST_1);
+
+        final DocWriteRequest request = azureConverter.convertEntityToRequests(azureStorageContainer,
+                                                                               TestUtils.STORAGE_BILLING_PREFIX,
+                                                                               SYNC_START, SYNC_END).get(0);
+        final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.STORAGE_BILLING_PREFIX, SYNC_START);
+        final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
+        Assert.assertEquals(expectedIndex, request.index());
+        Assert.assertEquals(SearchDocumentType.AZ_BLOB_STORAGE.name(),
+                            requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
+        assertFields(azureStorage, requestFieldsMap, US_EAST_1, StorageType.OBJECT_STORAGE,
                      BYTES_IN_1_GB, BigDecimal.ONE.scaleByPowerOfTen(2).longValue());
     }
 
@@ -333,10 +360,19 @@ public class StorageToRequestConverterTest {
                                                                      final String path,
                                                                      final DataStorageType storageType) {
         final AbstractDataStorage storage;
-        if (storageType.equals(DataStorageType.S3)) {
-            storage = new S3bucketDataStorage(id, name, path);
-        } else {
-            storage = new NFSDataStorage(id, name, path);
+        switch (storageType) {
+            case GS:
+                storage = new GSBucketStorage(id, name, path, null, null);
+                break;
+            case NFS:
+                storage = new NFSDataStorage(id, name, path);
+                break;
+            case AZ:
+                storage = new AzureBlobStorage(id, name, path, null, null);
+                break;
+            default:
+                storage = new S3bucketDataStorage(id, name, path);
+                break;
         }
         return EntityContainer.<AbstractDataStorage>builder()
             .entity(storage)

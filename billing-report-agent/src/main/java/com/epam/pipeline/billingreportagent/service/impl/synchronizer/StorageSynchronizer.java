@@ -40,7 +40,7 @@ import java.util.List;
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class StorageSynchronizer implements ElasticsearchSynchronizer {
 
-    private final  String storageIndexMappingFile;
+    private final String storageIndexMappingFile;
     private final String indexPrefix;
     private final EntityLoader<AbstractDataStorage> loader;
     private final EntityToBillingRequestConverter<AbstractDataStorage> storageToBillingRequestConverter;
