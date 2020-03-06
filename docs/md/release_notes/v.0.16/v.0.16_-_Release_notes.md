@@ -20,6 +20,7 @@
 - [Enable Slurm for the Cloud Pipeline's clusters](#enable-slurm-workload-manager-for-the-cloud-pipelines-clusters)
 - [The ability to generate the `pipe run` command from the GUI](#the-ability-to-generate-the-pipe-run-command-from-the-gui)
 - [`pipe` CLI: view tools definitions](#pipe-cli-view-tools-definitions)
+- [Storage usage statistics retrieval via `pipe`](#storage-usage-statistics-retrieval-via-pipe)
 - [GE Autoscaler respects CPU requirements of the job in the queue](#ge-autoscaler-respects-cpu-requirements-of-the-job-in-the-queue)
 - [Search the tool by its version/package name](#the-ability-to-find-the-tool-by-its-versionpackage-name)
 - [The ability to restrict which run statuses trigger the email notification](#the-ability-to-restrict-which-run-statuses-trigger-the-email-notification)
@@ -407,6 +408,30 @@ Also the specifying of "path" to the object (registry/group/tool) is supported. 
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_ViewTools_03.png)
 
 For more details and usage examples see [here](../../manual/14_CLI/14.8._View_tools_definitions_via_CLI.md).
+
+## Storage usage statistics retrieval via `pipe`
+
+In some cases, it may be necessary to obtain an information about storage usage or some inner folder(s).  
+In the current version, the command `pipe storage du` is implemented that provides "disk usage" information on the supported data storages/path:
+
+- number of files in the storage/path
+- summary size of the files in the storage/path
+
+In general, the command has the following format:
+
+``` bash
+pipe storage du [OPTIONS] [STORAGE]
+```
+
+Without specifying any options and storage this command prints the full list of the available storages (both types - object and FS) with the "usage" information for each of them.  
+With specifying the storage name this command prints the "usage" information only by that storage, e.g.:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_PipeDiskUsage_1.png)  
+With `-p` (`--relative-path`) option the command prints the "usage" information for the specified path in the required storage, e.g.:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_PipeDiskUsage_2.png)  
+With `-d` (`--depth`) option the command prints the "usage" information in the required storage (and path) for the specified folders nesting depth, e.g.:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_PipeDiskUsage_3.png)
+
+For more details about that command and full list of its options see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#show-storage-usage).
 
 ## GE Autoscaler respects CPU requirements of the job in the queue
 
