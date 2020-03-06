@@ -21,7 +21,7 @@ import {Dropdown, Icon} from 'antd';
 import PickerButton from './picker-button';
 import styles from './pickers.css';
 
-const Quarters = {
+export const Quarters = {
   1: 'I',
   2: 'II',
   3: 'III',

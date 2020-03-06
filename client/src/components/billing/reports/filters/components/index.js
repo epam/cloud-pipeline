@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-export {default as QuarterPicker} from './quarter-picker';
+export {default as QuarterPicker, Quarters} from './quarter-picker';
 export {default as RangePicker} from './range-picker';
 export {default as YearPicker} from './year-picker';
 export {default as MonthPicker} from './month-picker';
