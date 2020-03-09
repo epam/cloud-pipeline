@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import org.junit.Test;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
@@ -62,10 +63,12 @@ public class AzureRegionHelperTest {
     }
 
     @Test
-    public void shouldThrowIfAzurePolicyIsEmpty() {
+    public void shouldPassIfPolicyExistsButEmpty() {
         final AzureRegionHelper azureRegionHelper = new AzureRegionHelper(messageHelper);
-
-        final AzurePolicy policy = new AzurePolicy();
-        assertThrows(IllegalArgumentException.class, () -> azureRegionHelper.validateStoragePolicy(policy));
+        final AzurePolicy emptyPolicy = new AzurePolicy();
+        //check that policy is empty but validateStoragePolicy does not throw
+        assertNull(emptyPolicy.getIpMax());
+        assertNull(emptyPolicy.getIpMin());
+        azureRegionHelper.validateStoragePolicy(emptyPolicy);
     }
 }

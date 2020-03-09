@@ -129,7 +129,8 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
     }
 
     void validateStoragePolicy(final AzurePolicy policy) {
-        if (Objects.isNull(policy)) {
+        if (Objects.isNull(policy) ||
+                (Objects.isNull(policy.getIpMax()) && Objects.isNull(policy.getIpMin()))) {
             return;
         }
 
