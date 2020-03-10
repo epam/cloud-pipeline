@@ -102,6 +102,7 @@ public class SystemPreferences {
     private static final String SEARCH_GROUP = "Search";
     private static final String GRID_ENGINE_AUTOSCALING_GROUP = "Grid engine autoscaling";
     private static final String GCP_GROUP = "GCP";
+    private static final String LDAP_GROUP = "LDAP";
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc";
 
@@ -585,6 +586,22 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, GCPResourceMapping>> GCP_SKU_MAPPING = new ObjectPreference<>(
             "gcp.sku.mapping", null, new TypeReference<Map<String, GCPResourceMapping>>() {}, GCP_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, GCPResourceMapping>>() {}));
+    
+    //LDAP
+    public static final StringPreference LDAP_BASE_PATH = new StringPreference(
+            "ldap.base.path", "", LDAP_GROUP, pass);
+    public static final StringPreference LDAP_USER_FILTER = new StringPreference(
+            "ldap.user.filter", "(&(objectClass=person)(cn=*%s*))", LDAP_GROUP, pass);
+    public static final StringPreference LDAP_GROUP_FILTER = new StringPreference(
+            "ldap.group.filter", "(&(objectClass=group)(cn=*%s*))", LDAP_GROUP, pass);
+    public static final StringPreference LDAP_NAME_ATTRIBUTE = new StringPreference(
+            "ldap.entity.attribute.name", "cn", LDAP_GROUP, pass);
+    public static final StringPreference LDAP_ENTITY_ATTRIBUTES = new StringPreference(
+            "ldap.entity.attributes", "cn,distinguishedName,mail", LDAP_GROUP, pass);
+    public static final IntPreference LDAP_RESPONSE_SIZE = new IntPreference(
+            "ldap.response.size", 10, LDAP_GROUP, isGreaterThan(0));
+    public static final IntPreference LDAP_RESPONSE_TIMEOUT = new IntPreference(
+            "ldap.response.timeout", 60000, LDAP_GROUP, isGreaterThanOrEquals(0));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

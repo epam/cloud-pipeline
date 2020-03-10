@@ -198,6 +198,17 @@ public class PreferenceManager {
     }
 
     /**
+     * A generic method to find an optional value of any AbstractSystemPreference
+     * @param systemPreference a preference to load value of
+     * @param <E> a type of preference value
+     * @param <T> a type of preference
+     * @return optional of typed value of AbstractSystemPreference
+     */
+    public <E, T extends AbstractSystemPreference<E>> Optional<E> findPreference(T systemPreference) {
+        return Optional.ofNullable(getPreference(systemPreference));
+    }
+
+    /**
      * An generic method to load an Observable of any AbstractSystemPreference's value. An Observable exposes preference
      * value changes. Use this method only if there's need to do some actions on preference changes.
      * @param preference a preference to load value of

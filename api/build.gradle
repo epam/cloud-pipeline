@@ -202,6 +202,9 @@ dependencies {
     // Pipeline run scheduling
     compile group: 'org.quartz-scheduler', name: 'quartz', version: '2.3.2'
 
+    //LDAP
+    compile 'org.springframework.ldap:spring-ldap-core:2.3.2.RELEASE'
+
     //Tests
     compile group: "org.springframework.boot", name: "spring-boot-starter-test", version: project.ext.versionSpringBoot
 }
