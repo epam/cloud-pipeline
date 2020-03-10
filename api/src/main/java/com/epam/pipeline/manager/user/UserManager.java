@@ -26,6 +26,8 @@ import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.CustomControl;
@@ -35,7 +37,9 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.ControlEntry;
+import com.epam.pipeline.exception.DefaultStorageCreationException;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
+import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -48,6 +52,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,6 +72,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class UserManager {
+
+    private static final String DEFAULT_STORAGE_TEMPLATE = "DefaultStorage";
 
     @Autowired
     private UserDao userDao;
@@ -95,10 +102,44 @@ public class UserManager {
     @Autowired
     private MetadataManager metadataManager;
 
-    @Transactional(propagation = Propagation.REQUIRED)
+    @Autowired
+    private FolderManager folderManager;
+
+    @Value("${storage.user.home.auto:false}")
+    private boolean shouldCreateDefaultHome;
+
     public PipelineUser createUser(String name, List<Long> roles,
                                    List<String> groups, Map<String, String> attributes,
                                    Long defaultStorageId) {
+        final PipelineUser newUser = createUser(name, roles, groups, attributes);
+        if (defaultStorageId != null) {
+            newUser.setDefaultStorageId(defaultStorageId);
+            userDao.updateUser(newUser);
+        } else if (shouldCreateDefaultHome) {
+            final AbstractDataStorage defaultStorage = createUserDefaultFolder(newUser).getStorages().get(0);
+            newUser.setDefaultStorageId(defaultStorage.getId());
+            userDao.updateUser(newUser);
+        }
+        return newUser;
+    }
+
+    private Folder createUserDefaultFolder(final PipelineUser user) {
+        final Folder folder = new Folder();
+        final String userName = user.getUserName();
+        folder.setName(userName);
+        try {
+            return folderManager.createFromTemplate(folder, DEFAULT_STORAGE_TEMPLATE);
+        } catch (RuntimeException e) {
+            throw new DefaultStorageCreationException(
+                messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION,
+                                         userName,
+                                         e.getMessage())
+            );
+        }
+    }
+
+    private PipelineUser createUser(String name, List<Long> roles,
+                                   List<String> groups, Map<String, String> attributes) {
         Assert.isTrue(StringUtils.isNotBlank(name),
                 messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_REQUIRED));
         String userName = name.trim().toUpperCase();
@@ -109,12 +150,10 @@ public class UserManager {
         user.setRoles(roleDao.loadRolesList(userRoles));
         user.setGroups(groups);
         user.setAttributes(attributes);
-        user.setDefaultStorageId(defaultStorageId);
         storageValidator.validate(user);
         log.info(messageHelper.getMessage(MessageConstants.INFO_CREATE_USER, userName));
         return userDao.createUser(user, userRoles);
     }
-
 
     /**
      * Creates user with parameters defined in Cloud Pipeline (username and roles).
@@ -123,7 +162,6 @@ public class UserManager {
      * @param userVO specifies user to create
      * @return created user
      */
-    @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser createUser(PipelineUserVO userVO) {
         return createUser(userVO.getUserName(), userVO.getRoleIds(), null, null, null);
     }
@@ -276,7 +314,6 @@ public class UserManager {
         log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_SAML_INFO, user.getUserName(), id));
         return loadUserById(id);
     }
-
 
     public PipelineUser loadUserByNameOrId(String identifier) {
         PipelineUser user;

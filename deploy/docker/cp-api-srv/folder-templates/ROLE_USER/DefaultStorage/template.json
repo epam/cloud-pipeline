@@ -1,0 +1,26 @@
+{
+    "name": "@@",
+    "metadata": {
+        "type": {
+            "value": "defaultUserStorage"
+        },
+        "DataStorage": {
+            "value": "${CP_PREF_STORAGE_SCHEMA}://cloud-pipeline-user-@@-default-storage",
+            "type": "bucket"
+        }
+    },
+    "permissions": [
+        {
+            "userName" : "@@",
+            "mask" : 7
+        }
+    ],
+    "datastorages": [
+        {
+            "name": "@@-default-storage",
+            "path": "cloud-pipeline-user-@@-default-storage",
+            "serviceType" : "OBJECT_STORAGE",
+            "parentFolderId" : "${CP_PARENT_FOLDER_ID_DEFAULT_USER_STORAGE}"
+        }
+    ]
+}

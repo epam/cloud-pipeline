@@ -309,7 +309,7 @@ public final class MessageConstants {
     public static final String INFO_UPDATE_USER_DATASTORAGE = "info.update.user.datastorage";
     public static final String INFO_UPDATE_USER_BLOCK_STATUS= "info.update.user.block.status";
     public static final String INFO_UPDATE_USER_SAML_INFO = "info.update.user.saml.info";
-
+    public static final String ERROR_DEFAULT_STORAGE_CREATION = "user.storage.home.auto.fails";
 
     // Security
     public static final String ERROR_PERMISSION_PARAM_REQUIRED = "permission.param.is.required";
@@ -520,7 +520,7 @@ public final class MessageConstants {
     public static final String ERROR_BILLING_INTERVAL_NOT_SUPPORTED = "error.billing.interval.not.supported";
     public static final String ERROR_ILLEGAL_PAGING_PARAMETERS = "error.billing.invalid.paging";
 
-    //Disks    
+    //Disks
     public static final String ERROR_DISK_NODE_MISSING = "error.disk.node.missing";
     public static final String ERROR_DISK_DATE_MISSING = "error.disk.date.missing";
     public static final String ERROR_DISK_SIZE_MISSING = "error.disk.size.missing";
