@@ -309,7 +309,7 @@ function Summary (
           const {xLabel: defaultTitle, index} = tooltipItem;
           if (index >= 0 && index < labels.length) {
             const {tooltip, previousTooltip} = labels[index];
-            if (type === SummaryChart.previous) {
+            if (type === SummaryChart.previous || label.toLowerCase().includes('previous')) {
               label = previousTooltip || defaultTitle;
             } else {
               label = tooltip || defaultTitle;
