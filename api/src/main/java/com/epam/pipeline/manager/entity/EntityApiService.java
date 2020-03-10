@@ -43,7 +43,7 @@ public class EntityApiService {
     }
 
     @PostAuthorize("hasRole('ADMIN')")
-    public Map<AclClass, List<AbstractSecuredEntity>> loadAvailable(final AclSid aclSid) {
-        return hierarchicalEntityManager.loadAvailable(aclSid);
+    public Map<AclClass, List<AbstractSecuredEntity>> loadAvailable(final AclSid aclSid, final AclClass aclClass) {
+        return hierarchicalEntityManager.loadAvailable(aclSid, aclClass);
     }
 }

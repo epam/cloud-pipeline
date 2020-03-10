@@ -136,7 +136,7 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
         grantPermission(registry.getId(), AclClass.DOCKER_REGISTRY, USER2, true, AclPermission.READ.getMask());
 
         Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(USER2, true));
+                .loadAvailable(new AclSid(USER2, true), null);
         Assert.assertEquals(3, available.size());
         Assert.assertEquals((int) available.get(AclClass.TOOL).get(0).getMask(), AclPermission.READ.getMask());
     }
@@ -153,7 +153,7 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
         grantPermission(tool.getId(), AclClass.TOOL, USER2, true, AclPermission.READ.getMask());
 
         Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(USER2, true));
+                .loadAvailable(new AclSid(USER2, true), null);
         Assert.assertEquals(1, available.size());
         Assert.assertEquals((int) available.get(AclClass.TOOL).get(0).getMask(), AclPermission.READ.getMask());
     }
@@ -176,7 +176,7 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
                 false, AclPermission.READ.getMask());
 
         Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager.loadAvailable(
-                new AclSid(DefaultRoles.ROLE_USER.getName(), false));
+                new AclSid(DefaultRoles.ROLE_USER.getName(), false), null);
         Assert.assertEquals(2, available.size());
         Assert.assertEquals((int) available.get(AclClass.TOOL).get(0).getMask(), AclPermission.READ.getMask());
     }
@@ -199,7 +199,7 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
                 false, AclPermission.READ.getMask());
 
         Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(USER2, true));
+                .loadAvailable(new AclSid(USER2, true), null);
         Assert.assertEquals(2, available.size());
         Assert.assertEquals((int) available.get(AclClass.TOOL).get(0).getMask(), AclPermission.READ.getMask());
     }
@@ -224,7 +224,7 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
                 false, AclPermission.READ.getMask());
 
         Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(USER2, true));
+                .loadAvailable(new AclSid(USER2, true), null);
         Assert.assertEquals(2, available.size());
         Assert.assertEquals((int) available.get(AclClass.TOOL).get(0).getMask(), AclPermission.READ.getMask());
     }
@@ -238,7 +238,7 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
         grantPermission(folder.getId(), AclClass.FOLDER, USER2, true, AclPermission.READ.getMask());
 
         Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(USER2, true));
+                .loadAvailable(new AclSid(USER2, true), null);
         Assert.assertEquals(2, available.size());
         Assert.assertEquals((int) available.get(AclClass.CONFIGURATION).get(0).getMask(), AclPermission.READ.getMask());
     }
@@ -252,7 +252,7 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
         grantPermission(folder.getId(), AclClass.FOLDER, USER2, true, AclPermission.READ.getMask());
 
         Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(USER2, true));
+                .loadAvailable(new AclSid(USER2, true), null);
         Assert.assertEquals(2, available.size());
         Assert.assertEquals((int) available.get(AclClass.CONFIGURATION).get(0).getMask(), AclPermission.READ.getMask());
 
@@ -260,7 +260,7 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
         grantPermission(runConfiguration.getId(), AclClass.CONFIGURATION, USER2, true,
                 ALL_PERMISSIONS);
 
-        available = hierarchicalEntityManager.loadAvailable(new AclSid(USER2, true));
+        available = hierarchicalEntityManager.loadAvailable(new AclSid(USER2, true), null);
         Assert.assertEquals(2, available.size());
         Assert.assertEquals((int) available.get(AclClass.CONFIGURATION).get(0).getMask(), ALL_PERMISSIONS_SIMPLE);
     }
@@ -276,7 +276,7 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
                 ALL_PERMISSIONS);
 
         Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(USER2, true));
+                .loadAvailable(new AclSid(USER2, true), null);
         //folder should be filtered because it forbidden
         Assert.assertEquals(1, available.size());
         Assert.assertEquals((int) available.get(AclClass.CONFIGURATION).get(0).getMask(), ALL_PERMISSIONS_SIMPLE);
@@ -293,7 +293,7 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
                 AclPermission.NO_READ.getMask());
 
         Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(USER2, true));
+                .loadAvailable(new AclSid(USER2, true), null);
         //folder should be filtered because it forbidden
         Assert.assertEquals(1, available.size());
         Assert.assertEquals((int) available.get(AclClass.FOLDER).get(0).getMask(), ALL_PERMISSIONS_SIMPLE);
@@ -311,8 +311,25 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
                 ALL_PERMISSIONS);
 
         Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
-                .loadAvailable(new AclSid(USER2, true));
+                .loadAvailable(new AclSid(USER2, true), null);
         //folder should be filtered because it forbidden
+        Assert.assertEquals(1, available.size());
+        Assert.assertEquals((int) available.get(AclClass.CONFIGURATION).get(0).getMask(), ALL_PERMISSIONS_SIMPLE);
+    }
+
+    @Test
+    @WithMockUser(username = USER)
+    public void shouldReturnOneAclClassOnly() {
+        Folder folder = createFolder(TEST_NAME, null);
+        Folder subFolder = createFolder(TEST_NAME, folder.getId());
+        RunConfiguration runConfiguration = createRunConfiguration(TEST_NAME, subFolder.getId());
+
+        grantPermission(folder.getId(), AclClass.FOLDER, USER2, true, ALL_PERMISSIONS);
+        grantPermission(runConfiguration.getId(), AclClass.CONFIGURATION, USER2, true,
+                ALL_PERMISSIONS);
+
+        Map<AclClass, List<AbstractSecuredEntity>> available = hierarchicalEntityManager
+                .loadAvailable(new AclSid(USER2, true), AclClass.CONFIGURATION);
         Assert.assertEquals(1, available.size());
         Assert.assertEquals((int) available.get(AclClass.CONFIGURATION).get(0).getMask(), ALL_PERMISSIONS_SIMPLE);
     }

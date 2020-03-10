@@ -67,7 +67,9 @@ public class EntityController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<Map<AclClass, List<AbstractSecuredEntity>>> loadEntities(@RequestBody AclSid aclSid) {
-        return Result.success(entityApiService.loadAvailable(aclSid));
+    public Result<Map<AclClass, List<AbstractSecuredEntity>>> loadEntities(
+            @RequestParam(required = false) final AclClass aclClass,
+            @RequestBody final AclSid aclSid) {
+        return Result.success(entityApiService.loadAvailable(aclSid, aclClass));
     }
 }
