@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -144,17 +144,28 @@ def get_cloud_config_section(aws_region, section_name):
         return None
 
 
-def get_networks_config(aws_region):
-    return get_cloud_config_section(aws_region, "networks")
+def get_networks_config(ec2, aws_region):
+    allowed_networks = get_cloud_config_section(aws_region, "networks")
+    valid_networks = {}
 
+    if allowed_networks and len(allowed_networks) > 0:
+        try:
+            allowed_networks_details = ec2.describe_subnets(SubnetIds=allowed_networks.values())['Subnets']
+            for network in allowed_networks_details:
+                subnet_id = network['SubnetId']
+                az_name = network['AvailabilityZone']
+                subnet_ips = int(network['AvailableIpAddressCount'])
+                pipe_log('Subnet {} in {} zone has {} available IP addresses'.format(subnet_id, az_name, str(subnet_ips)))
+                if subnet_ips > 0:
+                    valid_networks.update({ az_name: subnet_id })
+        except Exception as allowed_networks_details_e:
+            pipe_log_warn('Cannot get the details of the subnets, so we do not validate subnet usage:\n' + str(allowed_networks_details_e))
+            valid_networks = allowed_networks
+
+    return valid_networks
 
 def get_instance_images_config(aws_region):
     return get_cloud_config_section(aws_region, "amis")
-
-
-def get_allowed_zones(aws_region):
-    return list(get_networks_config(aws_region).keys())
-
 
 def get_security_groups(aws_region):
     config = get_cloud_config_section(aws_region, "security_group_ids")
@@ -285,7 +296,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                            kms_encyr_key_id, run_id, user_data_script, num_rep, time_rep,
                            swap_size):
     pipe_log('Creating on demand instance')
-    allowed_networks = get_networks_config(aws_region)
+    allowed_networks = get_networks_config(ec2, aws_region)
     additional_args = {}
     subnet_id = None
     if allowed_networks and len(allowed_networks) > 0:
@@ -731,7 +742,7 @@ def get_availability_zones(ec2):
 
 def get_spot_prices(ec2, aws_region, instance_type, hours=3):
     prices = []
-    allowed_networks = get_networks_config(aws_region)
+    allowed_networks = get_networks_config(ec2, aws_region)
     if allowed_networks and len(allowed_networks) > 0:
         zones = list(allowed_networks.keys())
     else:
@@ -765,7 +776,7 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
     pipe_log('- Checking spot prices for current region...')
     spot_prices = get_spot_prices(ec2, aws_region, ins_type)
 
-    allowed_networks = get_networks_config(aws_region)
+    allowed_networks = get_networks_config(ec2, aws_region)
     cheapest_zone = ''
     if len(spot_prices) == 0:
         pipe_log('- Unable to get prices for a spot of type {}, cheapest zone can not be determined'.format(ins_type))
