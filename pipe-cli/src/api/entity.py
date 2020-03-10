@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 
 from src.api.base import API
 
@@ -31,3 +32,21 @@ class Entity(API):
             raise RuntimeError(response_data['message'])
         else:
             raise RuntimeError("Failed to load entity by entity id or entity name.")
+
+    @classmethod
+    def load_available_entities(cls, sid_name, principal, acl_class=None):
+        api = cls.instance()
+        body = {
+            "name": sid_name,
+            "principal": principal
+        }
+        query = 'entities'
+        if acl_class:
+            query += '?aclClass=' + str(acl_class).upper()
+        response_data = api.call(query, json.dumps(body))
+        if 'payload' in response_data:
+            return response_data['payload']
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        else:
+            raise RuntimeError("Failed to load entities available for '{}'".format(sid_name))

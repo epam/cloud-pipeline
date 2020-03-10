@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import sys
 
 import click
 import requests
 import prettytable
-from src.api.folder import Folder
-from src.api.pipeline import Pipeline
-from src.api.data_storage import DataStorage
+
+from src.api.entity import Entity
 from src.api.user import User
 from src.config import ConfigNotFoundError
 
@@ -30,17 +30,6 @@ class ACLOperations(object):
         """
 
         try:
-            if object_type == 'pipeline':
-                model = Pipeline.get(identifier, load_storage_rules=False, load_run_parameters=False,
-                                     load_versions=False)
-                identifier = model.identifier
-            elif object_type == 'folder':
-                model = Folder.load(identifier)
-                identifier = model.id
-            elif object_type == 'data_storage':
-                model = DataStorage.get(identifier)
-                identifier = model.identifier
-
             all_permissions = User.get_permissions(identifier, object_type)
             user_permissions = filter(lambda permission:
                                       permission.name.lower() == sid.lower() and permission.principal != group,
@@ -121,17 +110,6 @@ class ACLOperations(object):
         """
 
         try:
-            if object_type == 'pipeline':
-                model = Pipeline.get(identifier, load_storage_rules=False, load_run_parameters=False,
-                                     load_versions=False)
-                identifier = model.identifier
-            elif object_type == 'folder':
-                model = Folder.load(identifier)
-                identifier = model.id
-            elif object_type == 'data_storage':
-                model = DataStorage.get(identifier)
-                identifier = model.identifier
-
             permissions_list = User.get_permissions(identifier, object_type)
             if len(permissions_list) > 0:
                 permissions_table = prettytable.PrettyTable()
@@ -147,6 +125,34 @@ class ACLOperations(object):
             else:
                 click.echo('No user permissions are configured')
 
+        except ConfigNotFoundError as config_not_found_error:
+            click.echo(str(config_not_found_error), err=True)
+        except requests.exceptions.RequestException as http_error:
+            click.echo('Http error: {}'.format(str(http_error)), err=True)
+        except RuntimeError as runtime_error:
+            click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        except ValueError as value_error:
+            click.echo('Error: {}'.format(str(value_error)), err=True)
+
+    @classmethod
+    def print_sid_objects(cls, sid_name, principal, acl_class=None):
+        try:
+            available_entities = Entity.load_available_entities(sid_name, principal, acl_class)
+            if len(available_entities) == 0:
+                click.echo("No entities available for '%s'", sid_name)
+                sys.exit(0)
+            entities_table = prettytable.PrettyTable()
+            entities_table.field_names = ["Type", "Name"]
+            entities_table.align = "r"
+            for item in available_entities.iteritems():
+                entity_type = item[0]
+                entities = item[1]
+                for entity in entities:
+                    if 'name' not in entity:
+                        continue
+                    entities_table.add_row([entity_type, entity['name']])
+            click.echo(entities_table)
+            click.echo()
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
         except requests.exceptions.RequestException as http_error:

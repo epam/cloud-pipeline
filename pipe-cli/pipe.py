@@ -1033,6 +1033,32 @@ def set_acl(identifier, object_type, sid, group, allow, deny, inherit):
     ACLOperations.set_acl(identifier, object_type, sid, group, allow, deny, inherit)
 
 
+@cli.command(name='view-user-objects')
+@click.argument('username')
+@click.option(
+    '-t', '--object-type',
+    help='Object type',
+    required=True,
+    type=click.Choice(['pipeline', 'folder', 'data_storage'])
+)
+@Config.validate_access_token
+def view_user_objects(username, object_type):
+    ACLOperations.print_sid_objects(username, True, object_type)
+
+
+@cli.command(name='view-group-objects')
+@click.argument('group_name')
+@click.option(
+    '-t', '--object-type',
+    help='Object type',
+    required=True,
+    type=click.Choice(['pipeline', 'folder', 'data_storage'])
+)
+@Config.validate_access_token
+def view_user_objects(group_name, object_type):
+    ACLOperations.print_sid_objects(group_name, False, object_type)
+
+
 @cli.group()
 def tag():
     """ Operations with tags
