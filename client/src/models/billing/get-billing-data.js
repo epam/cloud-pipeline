@@ -37,7 +37,7 @@ class GetBillingData extends BaseBillingRequest {
   };
 
   async prepareBody () {
-    super.prepareBody();
+    await super.prepareBody();
     if (this.filters && this.filters.tick) {
       this.body.interval = this.filters.tick;
     }
