@@ -475,7 +475,8 @@ To reduce a number of the emails in these cases, the ability to configure, which
 Now, when the administrator configures the emails sending linked to the run status changes - he can select specific run states that will trigger the notifications.  
 It is done through the `PIPELINE_RUN_STATUS` section at the **Email notifications** tab of the System Settings (the "**Statuses to inform**" field):  
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_RunStatusChangingTrigger.png)  
-The email notifications will be sent only if the run enters one of the selected states.
+The email notifications will be sent only if the run enters one of the selected states.  
+**_Note_**: if no statuses are selected in the "**Statuses to inform**" field - email notifications will be sent as previously - for all status changes.
 
 For more information how to configure the email notifications see [here](../../manual/12_Manage_Settings/12.9._Change_email_notification.md).
 
