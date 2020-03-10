@@ -2,13 +2,14 @@
     "name": "@@",
     "metadata": {
         "type": {
-            "value": "defaultUserStorage"
+            "value": "defaultUserFolder"
         },
         "DataStorage": {
             "value": "${CP_PREF_STORAGE_SCHEMA}://cloud-pipeline-user-@@-default-storage",
             "type": "bucket"
         }
     },
+    "parentId" : "${CP_PARENT_FOLDER_ID_DEFAULT_USER_STORAGE}",
     "permissions": [
         {
             "userName" : "@@",
@@ -19,8 +20,7 @@
         {
             "name": "@@-default-storage",
             "path": "cloud-pipeline-user-@@-default-storage",
-            "serviceType" : "OBJECT_STORAGE",
-            "parentFolderId" : "${CP_PARENT_FOLDER_ID_DEFAULT_USER_STORAGE}"
+            "serviceType" : "OBJECT_STORAGE"
         }
     ]
 }

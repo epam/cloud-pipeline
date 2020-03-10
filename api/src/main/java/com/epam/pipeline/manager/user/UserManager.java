@@ -128,7 +128,7 @@ public class UserManager {
         final String userName = user.getUserName();
         folder.setName(userName);
         try {
-            return folderManager.createFromTemplate(folder, DEFAULT_STORAGE_TEMPLATE);
+            return folderManager.createFromTemplate(folder, DEFAULT_STORAGE_TEMPLATE, false);
         } catch (RuntimeException e) {
             throw new DefaultStorageCreationException(
                 messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION,
