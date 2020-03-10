@@ -1055,7 +1055,7 @@ def view_user_objects(username, object_type):
     type=click.Choice(['pipeline', 'folder', 'data_storage'])
 )
 @Config.validate_access_token
-def view_user_objects(group_name, object_type):
+def view_group_objects(group_name, object_type):
     ACLOperations.print_sid_objects(group_name, False, object_type)
 
 
