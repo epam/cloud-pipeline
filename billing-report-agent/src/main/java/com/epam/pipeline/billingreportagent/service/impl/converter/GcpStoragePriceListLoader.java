@@ -34,10 +34,10 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -73,11 +73,9 @@ public class GcpStoragePriceListLoader implements StoragePriceListLoader{
     }
 
     private Map<String, StoragePricing> convertSku(final Sku sku) {
-        final Map<String, StoragePricing> flattenPrices = new HashMap<>();
         final List<TierRate> tieredRates = sku.getPricingInfo().get(0).getPricingExpression().getTieredRates();
-        final StoragePricing convertedRates = convertGcpTierRateToStoragePrices(tieredRates);
-        sku.getServiceRegions().forEach(key -> flattenPrices.put(key, convertedRates));
-        return flattenPrices;
+        return sku.getServiceRegions().stream()
+            .collect(Collectors.toMap(Function.identity(), v -> convertGcpTierRateToStoragePrices(tieredRates)));
     }
 
     @Override
