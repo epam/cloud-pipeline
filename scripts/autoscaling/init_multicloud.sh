@@ -303,6 +303,8 @@ systemctl start kubelet
 
 update_nameserver "$nameserver_post_val" "infinity"
 
+# In v16 "_KUBE_NODE_NAME" is defined as a cloud instance ID. But here, kubelet still uses "hostname" value
+_KUBE_NODE_NAME="$(hostname)"
 _API_URL="@API_URL@"
 _API_TOKEN="@API_TOKEN@"
 _MOUNT_POINT="/ebs"
