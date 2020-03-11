@@ -13,7 +13,7 @@
     "permissions": [
         {
             "userName" : "@@",
-            "mask" : 7
+            "mask" : 16
         }
     ],
     "datastorages": [
