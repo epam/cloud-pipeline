@@ -9,12 +9,6 @@
             "type": "bucket"
         }
     },
-    "permissions": [
-        {
-            "userName" : "@@",
-            "mask" : 16
-        }
-    ],
     "datastorages": [
         {
             "name": "@@-default-storage",

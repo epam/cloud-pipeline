@@ -44,6 +44,7 @@ import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.UserContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -104,6 +105,9 @@ public class UserManager {
     @Autowired
     private FolderManager folderManager;
 
+    @Autowired
+    private GrantPermissionManager permissionManager;
+
     @Value("${storage.user.home.template}")
     private  String defaultUserStorageTemplateName;
 
@@ -132,7 +136,9 @@ public class UserManager {
         final String userName = user.getUserName();
         folder.setName(userName);
         try {
-            return folderManager.createFromTemplate(folder, defaultUserStorageTemplateName, false);
+            final Folder defaultFolder = folderManager.createFromTemplate(folder, defaultUserStorageTemplateName, false);
+            grantOwnerPermissionsToUser(userName, defaultFolder);
+            return defaultFolder;
         } catch (RuntimeException e) {
             throw new DefaultStorageCreationException(
                 messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION,
@@ -140,6 +146,13 @@ public class UserManager {
                                          e.getMessage())
             );
         }
+    }
+
+    private void grantOwnerPermissionsToUser(final String userName, final Folder defaultFolder) {
+        final Long folderId = defaultFolder.getId();
+        permissionManager.changeOwner(folderId, AclClass.FOLDER, userName);
+        final Long storageId = defaultFolder.getStorages().get(0).getId();
+        permissionManager.changeOwner(storageId, AclClass.DATA_STORAGE, userName);
     }
 
     private PipelineUser createUser(String name, List<Long> roles,
