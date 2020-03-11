@@ -75,7 +75,8 @@ function setup_swap_device {
             echo "Unable to swapon at $swap_drive_name"
             return 1
         fi
-        echo "$swap_drive_name none swap sw 0 0" >> /etc/fstab
+        swap_drive_uuid=$(lsblk -sdrpn -o NAME,UUID | awk '$1 == "'"$swap_drive_name"'" { print $2 }')
+        echo "UUID=$swap_drive_uuid none swap sw 0 0" >> /etc/fstab
     fi
 }
 
@@ -106,10 +107,11 @@ do
     MOUNT_POINT=$MOUNT_POINT$DRIVE_NUM
   fi
 
-  mkfs -t ext4 $DRIVE_NAME
+  mkfs.btrfs -f -d single $DRIVE_NAME
   mkdir $MOUNT_POINT
   mount $DRIVE_NAME $MOUNT_POINT
-  echo "$DRIVE_NAME $MOUNT_POINT ext4 defaults,nofail 0 2" >> /etc/fstab
+  DRIVE_UUID=$(btrfs filesystem show "$MOUNT_POINT" | head -n 1 | awk '{print $NF}')
+  echo "UUID=$DRIVE_UUID $MOUNT_POINT btrfs defaults,nofail 0 2" >> /etc/fstab
   mkdir -p $MOUNT_POINT/runs
   mkdir -p $MOUNT_POINT/reference
   rm -rf $MOUNT_POINT/lost+found/   
@@ -126,14 +128,13 @@ if check_installed "nvidia-smi"; then
   # Fix nvidia-smi performance
   nvidia-persistenced --persistence-mode
 
+# As long as we use btrfs as backing filesystem we should also use btrfs storage driver according to the docs
+# https://docs.docker.com/storage/storagedriver/btrfs-driver/
 cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "/ebs/docker",
-  "storage-driver": "overlay2",
+  "storage-driver": "btrfs",
   "max-concurrent-uploads": 1,
-  "storage-opts": [
-    "overlay2.override_kernel_check=true"
-  ],
   "default-runtime": "nvidia",
    "runtimes": {
         "nvidia": {
@@ -148,11 +149,8 @@ else
 cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "/ebs/docker",
-  "storage-driver": "overlay2",
-  "max-concurrent-uploads": 1,
-  "storage-opts": [
-    "overlay2.override_kernel_check=true"
-  ]
+  "storage-driver": "btrfs",
+  "max-concurrent-uploads": 1
 }
 EOT
 fi
@@ -306,6 +304,31 @@ kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks --node-name 
 systemctl start kubelet
 
 update_nameserver "$nameserver_post_val" "infinity"
+
+_API_URL="@API_URL@"
+_API_TOKEN="@API_TOKEN@"
+_MOUNT_POINT="/ebs"
+_CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cp "$_CURRENT_DIR/fsautoscale" "/usr/bin/fsautoscale"
+cat >/etc/systemd/system/fsautoscale.service <<EOL
+[Unit]
+Description=Cloud Pipeline Filesystem Autoscaling Daemon
+Documentation=https://cloud-pipeline.com/
+
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=10
+Environment="API_ARGS=--api-url $_API_URL --api-token $_API_TOKEN"
+Environment="NODE_ARGS=--node-name $_KUBE_NODE_NAME"
+Environment="MOUNT_POINT_ARGS=--mount-point $_MOUNT_POINT"
+ExecStart=/usr/bin/fsautoscale \$API_ARGS \$NODE_ARGS \$MOUNT_POINT_ARGS
+
+[Install]
+WantedBy=multi-user.target
+EOL
+systemctl enable fsautoscale
+systemctl start fsautoscale
 
 # Setup the scripts to restore the state of the "paused" job
 #   1. NVIDIA-specific scripts for GPU nodes

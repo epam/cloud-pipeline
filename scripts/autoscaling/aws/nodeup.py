@@ -24,7 +24,7 @@ import logging
 import os
 import pytz
 from botocore.exceptions import ClientError
-from pipeline import Logger, TaskStatus, PipelineAPI
+from pipeline import Logger, TaskStatus, PipelineAPI, pack_script_contents
 from itertools import groupby
 from operator import itemgetter
 from random import randint
@@ -176,24 +176,24 @@ def get_security_groups(aws_region):
 def get_well_known_hosts(aws_region):
     return get_cloud_config_section(aws_region, "well_known_hosts")
 
-def get_allowed_instance_image(aws_region, instance_type, default_image):
+def get_allowed_instance_image(cloud_region, instance_type, default_image):
     default_init_script = os.path.dirname(os.path.abspath(__file__)) + '/init.sh'
-    default_object = { "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script }
+    default_embedded_scripts = { "fsautoscale": os.path.dirname(os.path.abspath(__file__)) + '/fsautoscale.sh' }
+    default_object = { "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script,
+        "embedded_scripts": default_embedded_scripts }
 
-    instance_images_config = get_instance_images_config(aws_region)
+    instance_images_config = get_instance_images_config(cloud_region)
     if not instance_images_config:
         return default_object
 
     for image_config in instance_images_config:
         instance_mask = image_config["instance_mask"]
         instance_mask_ami = image_config["ami"]
-        init_script = None
-        if "init_script" in image_config:
-            init_script = image_config["init_script"]
-        else:
-            init_script = default_object["init_script"]
+        init_script = image_config.get("init_script", default_object["init_script"])
+        embedded_scripts = image_config.get("embedded_scripts", default_object["embedded_scripts"])
         if fnmatch.fnmatch(instance_type, instance_mask):
-            return { "instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script":  init_script}
+            return { "instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script,
+            "embedded_scripts": embedded_scripts }
 
     return default_object
 
@@ -280,9 +280,9 @@ def run_id_filter(run_id):
            }
 
 
-def run_instance(bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token):
+def run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token):
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
-    user_data_script = get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size)
+    user_data_script = get_user_data_script(api_url, api_token, aws_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size)
     if is_spot:
         ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
                                             user_data_script, num_rep, time_rep, swap_size)
@@ -504,7 +504,7 @@ def get_swap_ratio(swap_params):
                     pipe_log("Unexpected swap_ratio value: {}".format(item_value))
     return None
 
-def get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size):
+def get_user_data_script(api_url, api_token, aws_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size):
     allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -517,16 +517,14 @@ def get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token, 
         user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
                                             .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
                                             .replace('@KUBE_IP@', kube_ip) \
-                                            .replace('@KUBE_TOKEN@', kubeadm_token)
-
-        # If there is a fresh "pipeline" module installed - we'll use a gzipped/self-extracting script
-        # to minimize the size of the user data
-        # Otherwise - raw script will be used
-        try:
-            from pipeline import pack_script_contents
-            return pack_script_contents(user_data_script)
-        except:
-            return user_data_script
+                                            .replace('@KUBE_TOKEN@', kubeadm_token) \
+                                            .replace('@API_URL@', api_url) \
+                                            .replace('@API_TOKEN@', api_token)
+        embedded_scripts = {}
+        if allowed_instance["embedded_scripts"]:
+            for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():
+                embedded_scripts[embedded_name] = open(embedded_path, 'r').read()
+        return pack_script_contents(user_data_script, embedded_scripts)
     else:
         raise RuntimeError('Unable to get init.sh path')
 
@@ -1087,7 +1085,9 @@ def main():
             ins_id, ins_ip = check_spot_request_exists(ec2, num_rep, run_id, time_rep)
 
         if not ins_id:
-            ins_id, ins_ip = run_instance(bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot,
+            api_url = os.environ["API"]
+            api_token = os.environ["API_TOKEN"]
+            ins_id, ins_ip = run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot,
                                         num_rep, run_id, time_rep, kube_ip, kubeadm_token)
 
         check_instance(ec2, ins_id, run_id, num_rep, time_rep)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -172,6 +172,10 @@ public final class PreferenceValidators {
 
     public static BiPredicate<String, Map<String, Preference>> isLessThan(int x) {
         return (pref, dependencies) -> NumberUtils.isNumber(pref) && Integer.parseInt(pref) < x;
+    }
+
+    public static BiPredicate<String, Map<String, Preference>> isLessThan(float x) {
+        return (pref, dependencies) -> NumberUtils.isNumber(pref) && Float.parseFloat(pref) < x;
     }
 
     public static BiPredicate<String, Map<String, Preference>> isValidEnum(final Class<? extends Enum> enumClass) {
