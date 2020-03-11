@@ -16,6 +16,8 @@ import base64
 import copy
 import hashlib
 import os
+import types
+
 from datetime import datetime, timedelta
 from requests import RequestException
 
@@ -68,6 +70,50 @@ class GsProgressPercentage(ProgressPercentage):
             return None
         progress = GsProgressPercentage(source_key, size)
         return lambda current: progress(current)
+
+
+class _InputStreamMixin(object):
+
+    def __init__(self, stream):
+        self._stream = stream
+        self._bytes_transferred = 0
+
+    def __getattr__(self, name):
+        if hasattr(self._stream, name):
+            return getattr(self._stream, name)
+        else:
+            raise AttributeError("'%s' object has no attribute '%s'" % (type(self).__name__, name))
+
+
+class _ProgressInputStream(_InputStreamMixin):
+
+    def __init__(self, stream, progress_callback, progress_chunk_size):
+        """
+        Input stream wrapper that updates reading progress.
+
+        Progress callbacks are time-consuming actions. To improve overall performance callbacks have to be called
+        only a limited number of times. The amount of transferred data to cause a new progress callback is specified
+        in progress_chunk_size parameter.
+
+        :param stream: Wrapping stream.
+        :param progress_callback: Progress callback.
+        :param progress_chunk_size: Required amount of transferred data from the previous progress callback
+         to cause a new callback.
+        """
+        super(_ProgressInputStream, self).__init__(stream)
+        self._progress_callback = progress_callback
+        self._progress_chunk_size = progress_chunk_size
+        self._progress_chunk = 0
+
+    def read(self, n):
+        current_chunk = self._bytes_transferred / self._progress_chunk_size
+        if current_chunk > self._progress_chunk:
+            self._progress_chunk = current_chunk
+            if self._progress_callback:
+                self._progress_callback(self._bytes_transferred)
+        data = self._stream.read(n)
+        self._bytes_transferred += n
+        return data
 
 
 class _OutputStreamMixin(object):
@@ -163,8 +209,19 @@ class _ResumableDownloadProgressMixin(Blob):
 
 
 class _UploadProgressMixin(Blob):
+    """
+    Blob upload mixin that uses single chunk upload strategy and checks uploading progress.
 
-    def _do_resumable_upload(self, client, stream, content_type, size, num_retries, predefined_acl):
+    The reason why single chunk upload strategy is used based on the google cloud best practices as well as the
+    performance benchmarks.
+
+    See the corresponding issue for more information on the single chunk uploading:
+     https://github.com/epam/cloud-pipeline/issues/524.
+    """
+
+    def _do_resumable_upload(self, client, file_obj, content_type, size, num_retries, predefined_acl):
+        stream = _ProgressInputStream(file_obj, progress_callback=self._progress_callback,
+                                      progress_chunk_size=self._progress_chunk_size)
         upload, transport = self._initiate_resumable_upload(
             client,
             stream,
@@ -175,10 +232,20 @@ class _UploadProgressMixin(Blob):
             chunk_size=self.chunk_size
         )
 
+        def transmit_as_single_chunk(self, transport):
+            headers = {
+                resumable_media._upload._CONTENT_TYPE_HEADER: self._content_type
+            }
+            result = resumable_media.requests._helpers.http_request(
+                transport, resumable_media._upload._PUT, self.resumable_url, data=self._stream, headers=headers,
+                retry_strategy=self._retry_strategy)
+            self._process_response(result, self._stream.tell())
+            return result
+
+        upload.transmit_next_chunk = types.MethodType(transmit_as_single_chunk, upload)
+
         response = None
-        while not upload.finished:
-            if self._progress_callback:
-                self._progress_callback(upload._bytes_uploaded)
+        if not upload.finished:
             response = upload.transmit_next_chunk(transport)
 
         return response
