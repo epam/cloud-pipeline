@@ -130,6 +130,10 @@ public class SystemPreferences {
         "storage.temp.credentials.duration", 3600, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference STORAGE_MOUNTS_PER_GB_RATIO = new IntPreference(
             "storage.mounts.per.gb.ratio", null, DATA_STORAGE_GROUP, isNullOrGreaterThan(0));
+    public static final BooleanPreference DEFAULT_USER_DATA_STORAGE_ENABLED =
+        new BooleanPreference("storage.user.home.auto", false, DATA_STORAGE_GROUP, pass);
+    public static final LongPreference DEFAULT_USER_DATA_STORAGE_PARENT_FOLDER = new LongPreference(
+        "storage.user.home.auto.parent.folder", null, DATA_STORAGE_GROUP, isGreaterThan(0));
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'

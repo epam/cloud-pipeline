@@ -9,7 +9,6 @@
             "type": "bucket"
         }
     },
-    "parentId" : "${CP_PARENT_FOLDER_ID_DEFAULT_USER_STORAGE}",
     "permissions": [
         {
             "userName" : "@@",

@@ -310,6 +310,7 @@ public final class MessageConstants {
     public static final String INFO_UPDATE_USER_BLOCK_STATUS= "info.update.user.block.status";
     public static final String INFO_UPDATE_USER_SAML_INFO = "info.update.user.saml.info";
     public static final String ERROR_DEFAULT_STORAGE_CREATION = "user.storage.home.auto.fails";
+    public static final String ERROR_DEFAULT_STORAGE_NULL_PARENT_FOLDER = "user.storage.home.auto.null.parent";
 
     // Security
     public static final String ERROR_PERMISSION_PARAM_REQUIRED = "permission.param.is.required";

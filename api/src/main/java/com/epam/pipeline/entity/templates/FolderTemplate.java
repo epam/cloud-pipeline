@@ -33,7 +33,6 @@ import java.util.Map;
 @Builder
 public class FolderTemplate {
     private String name;
-    private Long parentId;
     private List<DataStorageWithMetadataVO> datastorages;
     private Map<String, PipeConfValue> metadata;
     private List<FolderTemplate> children;

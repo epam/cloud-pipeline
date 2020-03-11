@@ -109,8 +109,11 @@ public class FolderTemplateManager {
     }
 
     void createFolderFromTemplate(Folder folder, FolderTemplate template) {
+        final Long parentId = folder.getParentId();
+        if (parentId != null) {
+            crudManager.load(parentId);
+        }
         folder.setName(template.getName());
-        folder.setParentId(template.getParentId());
         Folder savedFolder = crudManager.create(folder);
         if (CollectionUtils.isNotEmpty(template.getDatastorages())) {
             final List<AbstractDataStorage> storages =
@@ -198,10 +201,6 @@ public class FolderTemplateManager {
 
     private void prepareTemplate(FolderTemplate template, String prefix, boolean failOnExisting) {
         template.setName(template.getName().replaceAll(REPLACE_MARK, prefix));
-        final Long parentId = template.getParentId();
-        if (parentId != null) {
-            crudManager.load(parentId);
-        }
         if (CollectionUtils.isNotEmpty(template.getDatastorages())) {
             prepareTemplateStorages(template, prefix, failOnExisting);
         }
