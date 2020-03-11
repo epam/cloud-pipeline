@@ -147,12 +147,14 @@ function extractDataSet (data, title, type, color, options = {}) {
     borderWidth = 2,
     fill = false,
     borderColor = color,
-    backgroundColor = 'transparent'
+    backgroundColor = 'transparent',
+    isPrevious = false
   } = options;
   return {
     [DataLabelPlugin.noDataIgnoreOption]: options[DataLabelPlugin.noDataIgnoreOption],
     label: title,
     type,
+    isPrevious,
     data,
     fill,
     backgroundColor,
@@ -245,7 +247,8 @@ function Summary (
         {
           backgroundColor: colors.previous,
           currentDateIndex,
-          borderWidth: 1
+          borderWidth: 1,
+          isPrevious: true
         }
       ) : false,
       quotaValue ? extractDataSet(
@@ -304,12 +307,12 @@ function Summary (
           return undefined;
         },
         label: function (tooltipItem, data) {
-          let {label, type} = data.datasets[tooltipItem.datasetIndex];
+          let {label, type, isPrevious} = data.datasets[tooltipItem.datasetIndex];
           const value = costTickFormatter(tooltipItem.yLabel);
           const {xLabel: defaultTitle, index} = tooltipItem;
           if (index >= 0 && index < labels.length) {
             const {tooltip, previousTooltip} = labels[index];
-            if (type === SummaryChart.previous || label.toLowerCase().includes('previous')) {
+            if (type === SummaryChart.previous || isPrevious) {
               label = previousTooltip || defaultTitle;
             } else {
               label = tooltip || defaultTitle;
