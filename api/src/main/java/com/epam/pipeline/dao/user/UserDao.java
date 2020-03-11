@@ -147,7 +147,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
         return getJdbcTemplate().query(loadUsersByGroupQuery, UserParameters.getUserExtractor(), group);
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser updateUser(PipelineUser user) {
         getNamedParameterJdbcTemplate().update(updateUserQuery, UserParameters.getParameters(user, getConnection()));
         return user;
