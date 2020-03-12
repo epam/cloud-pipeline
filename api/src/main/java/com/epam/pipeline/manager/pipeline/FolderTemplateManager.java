@@ -37,9 +37,11 @@ import com.epam.pipeline.manager.git.TemplatesScanner;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.metadata.processor.MetadataPostProcessorService;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.mapper.AbstractDataStorageMapper;
 import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,17 +80,27 @@ public class FolderTemplateManager {
     private MessageHelper messageHelper;
     @Autowired
     private MetadataPostProcessorService metadataPostProcessorService;
+    @Autowired
+    private AbstractDataStorageMapper dataStorageMapper;
 
     @Value("${templates.folder.directory}")
     private String folderTemplatesDirectoryPath;
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public Folder create(final Folder folder, final String templateName) {
-        return create(folder, templateName, true);
+    public Folder create(final Folder folder, final String templateName, final boolean failOnExisting) {
+        final FolderTemplate folderTemplate = prepareFolderTemplate(folder, templateName, failOnExisting);
+        try {
+            return ListUtils.emptyIfNull(crudManager.load(folder.getParentId()).getChildFolders()).stream()
+                .filter(f -> f.getName().equals(folderTemplate.getName()))
+                .findAny()
+                .orElseThrow(IllegalArgumentException::new);
+        } catch (IllegalArgumentException e) {
+            createFolderFromTemplate(folder, folderTemplate);
+            return folder;
+        }
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
-    public Folder create(final Folder folder, final String templateName, boolean failOnExisting) {
+    private FolderTemplate prepareFolderTemplate(Folder folder, String templateName, boolean failOnExisting) {
         TemplatesScanner templatesScanner = new TemplatesScanner(folderTemplatesDirectoryPath);
         Template template = templatesScanner.listTemplates().get(templateName);
         Assert.notNull(template,
@@ -99,13 +111,14 @@ public class FolderTemplateManager {
         FolderTemplate folderTemplate = parseTemplateJson(template.getDirPath(), folder.getName());
 
         Assert.isTrue(StringUtils.hasText(folderTemplate.getName()),
-                messageHelper.getMessage(MessageConstants.ERROR_TEMPLATE_FOLDER_NAME_IS_EMPTY, templateName));
-        Assert.isNull(folderDao.loadFolderByNameAndParentId(folderTemplate.getName(), folder.getParentId()),
-                messageHelper.getMessage(MessageConstants.ERROR_FOLDER_NAME_EXISTS, folderTemplate.getName(),
-                        folder.getParentId()));
-        prepareTemplate(folderTemplate, folder.getName(), failOnExisting);
-        createFolderFromTemplate(folder, folderTemplate);
-        return folder;
+                      messageHelper.getMessage(MessageConstants.ERROR_TEMPLATE_FOLDER_NAME_IS_EMPTY, templateName));
+        if (failOnExisting) {
+            Assert.isNull(folderDao.loadFolderByNameAndParentId(folderTemplate.getName(), folder.getParentId()),
+                          messageHelper.getMessage(MessageConstants.ERROR_FOLDER_NAME_EXISTS, folderTemplate.getName(),
+                                                   folder.getParentId()));
+        }
+        fillTemplateIn(folderTemplate, folder.getName(), failOnExisting);
+        return folderTemplate;
     }
 
     void createFolderFromTemplate(Folder folder, FolderTemplate template) {
@@ -147,6 +160,8 @@ public class FolderTemplateManager {
         AbstractDataStorage storageToAdd;
         try {
             storageToAdd = dataStorageManager.loadByNameOrId(storageVO.getName());
+            storageToAdd.setParentFolderId(storageVO.getParentFolderId());
+            dataStorageManager.update(dataStorageMapper.toDataStorageVO(storageToAdd));
         } catch (IllegalArgumentException e) {
             storageToAdd = dataStorageManager.create(storageVO, true, true, false).getEntity();
         }
@@ -199,7 +214,7 @@ public class FolderTemplateManager {
         metadataManager.updateMetadataItemKeys(metadataVO);
     }
 
-    private void prepareTemplate(FolderTemplate template, String prefix, boolean failOnExisting) {
+    private void fillTemplateIn(FolderTemplate template, String prefix, boolean failOnExisting) {
         template.setName(template.getName().replaceAll(REPLACE_MARK, prefix));
         if (CollectionUtils.isNotEmpty(template.getDatastorages())) {
             prepareTemplateStorages(template, prefix, failOnExisting);
@@ -221,7 +236,7 @@ public class FolderTemplateManager {
         template.getChildren().forEach(child -> {
             Assert.isTrue(!StringUtils.isEmpty(child.getName()), messageHelper.getMessage(
                     MessageConstants.ERROR_TEMPLATE_FOLDER_NAME_IS_EMPTY, template.getName()));
-            prepareTemplate(child, prefix, failOnExisting);
+            fillTemplateIn(child, prefix, failOnExisting);
         });
     }
 

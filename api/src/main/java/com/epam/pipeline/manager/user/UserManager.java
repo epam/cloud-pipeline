@@ -136,7 +136,8 @@ public class UserManager {
         final String userName = user.getUserName();
         folder.setName(userName);
         try {
-            final Folder defaultFolder = folderManager.createFromTemplate(folder, defaultUserStorageTemplateName, false);
+            final Folder defaultFolder =
+                folderManager.createFromTemplate(folder, defaultUserStorageTemplateName, false);
             grantOwnerPermissionsToUser(userName, defaultFolder);
             return defaultFolder;
         } catch (RuntimeException e) {
