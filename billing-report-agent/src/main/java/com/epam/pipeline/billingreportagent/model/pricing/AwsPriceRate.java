@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.billingreportagent.model.pricing;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import lombok.Data;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -27,24 +26,18 @@ import java.util.Map;
 @Data
 public class AwsPriceRate {
 
-    @JsonProperty(value = "unit")
     private String unit;
 
-    @JsonProperty(value = "rateCode")
     private String rateCode;
 
-    @JsonProperty(value = "beginRange")
     private Long beginRange;
 
     private Long endRange;
 
-    @JsonProperty(value = "pricePerUnit")
     private Map<String, Double> pricePerUnit;
 
-    @JsonProperty(value = "description")
     private String description;
 
-    @JsonProperty(value = "appliesTo")
     private List<String> appliesTo;
 
     @JsonSetter("endRange")

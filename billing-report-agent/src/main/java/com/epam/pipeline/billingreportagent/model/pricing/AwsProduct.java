@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.billingreportagent.model.pricing;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.Map;
@@ -24,12 +23,9 @@ import java.util.Map;
 @Data
 public class AwsProduct {
 
-    @JsonProperty(value = "productFamily")
     private String productFamily;
 
-    @JsonProperty(value = "attributes")
     private Map<String, String> attributes;
 
-    @JsonProperty(value = "sku")
     private String sku;
 }

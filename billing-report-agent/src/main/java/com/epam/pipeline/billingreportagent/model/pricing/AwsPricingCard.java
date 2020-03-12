@@ -16,24 +16,18 @@
 
 package com.epam.pipeline.billingreportagent.model.pricing;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
 public class AwsPricingCard {
 
-    @JsonProperty(value = "product")
     private AwsProduct product;
 
-    @JsonProperty(value = "serviceCode")
     private String serviceCode;
 
-    @JsonProperty(value = "version")
     private String version;
 
-    @JsonProperty(value = "publicationDate")
     private String publicationDate;
 
-    @JsonProperty(value = "terms")
     private AwsTerms terms;
 }
