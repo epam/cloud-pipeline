@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -117,5 +117,24 @@ public class DockerRegistry extends AbstractHierarchicalEntity {
     @JsonIgnore
     public String getCaCert() {
         return caCert;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public DockerRegistry copyView() {
+        final DockerRegistry registry = new DockerRegistry();
+        registry.setId(this.getId());
+        registry.setPath(this.getPath());
+        registry.setDescription(this.getDescription());
+        registry.setOwner(this.getOwner());
+        registry.setMask(this.getMask());
+        registry.setSecretName(this.getSecretName());
+        registry.setCaCert(this.getCaCert());
+        registry.setUserName(this.getUserName());
+        registry.setPipelineAuth(this.isPipelineAuth());
+        registry.setExternalUrl(this.getExternalUrl());
+        registry.setPassword(this.getPassword());
+        registry.setSecurityScanEnabled(this.isSecurityScanEnabled());
+        return registry;
     }
 }

@@ -369,6 +369,14 @@ public class GrantPermissionManager {
         filterTree(getSids(), entity, permission);
     }
 
+    public void filterTree(AclSid aclSid, AbstractHierarchicalEntity entity, Permission permission) {
+        if (aclSid.isPrincipal()) {
+            filterTree(aclSid.getName(), entity, permission);
+        } else {
+            filterTree(Collections.singletonList(new GrantedAuthoritySid(aclSid.getName())), entity, permission);
+        }
+    }
+
     public void filterTree(String userName, AbstractHierarchicalEntity entity, Permission permission) {
         filterTree(convertUserToSids(userName), entity, permission);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,15 @@ package com.epam.pipeline.manager.entity;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.security.acl.AclSid;
 import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.HierarchicalEntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class EntityApiService {
@@ -29,8 +34,16 @@ public class EntityApiService {
     @Autowired
     private EntityManager entityManager;
 
+    @Autowired
+    private HierarchicalEntityManager hierarchicalEntityManager;
+
     @PostAuthorize("hasRole('ADMIN') OR @grantPermissionManager.entityPermission(returnObject, 'READ')")
     public AbstractSecuredEntity loadByNameOrId(AclClass entityClass, String identifier) {
         return entityManager.loadByNameOrId(entityClass, identifier);
+    }
+
+    @PostAuthorize("hasRole('ADMIN')")
+    public Map<AclClass, List<AbstractSecuredEntity>> loadAvailable(final AclSid aclSid, final AclClass aclClass) {
+        return hierarchicalEntityManager.loadAvailable(aclSid, aclClass);
     }
 }
