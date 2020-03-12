@@ -25,12 +25,12 @@ const filters = {
   usage: {
     dataSample: 'usage',
     previousDataSample: 'previousUsage',
-    title: 'usage hours'
+    title: 'Usage (hours)'
   },
   runsCount: {
     dataSample: 'runsCount',
     previousDataSample: 'previousRunsCount',
-    title: 'number of runs'
+    title: 'Runs count'
   }
 };
 
