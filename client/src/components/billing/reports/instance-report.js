@@ -233,9 +233,10 @@ class InstanceReport extends React.Component {
     return 'Compute instances runs';
   };
   getClarificationTitle = () => {
-    if (InstanceFilters) {
-      const {dataSample} = this.state;
-      return InstanceFilters[dataSample]?.title || '';
+    const {dataSample} = this.state;
+    if (InstanceFilters && InstanceFilters[dataSample]) {
+      const {title} = InstanceFilters[dataSample];
+      return title ? `- ${title}` : '';
     }
     return '';
   }
@@ -321,7 +322,7 @@ class InstanceReport extends React.Component {
           dataSample={dataSample}
           previousDataSample={previousDataSample}
           owner={false}
-          title={`${this.getInstanceTitle()} - ${this.getClarificationTitle()}`}
+          title={`${this.getInstanceTitle()} ${this.getClarificationTitle()}`}
           singleTitle="Instance"
         />
         <ResourcesSubData
@@ -330,7 +331,7 @@ class InstanceReport extends React.Component {
           dataSample={dataSample}
           previousDataSample={previousDataSample}
           owner
-          title={`Pipelines - ${this.getClarificationTitle()}`}
+          title={`Pipelines ${this.getClarificationTitle()}`}
           singleTitle="Pipeline"
         />
         <ResourcesSubData
@@ -339,7 +340,7 @@ class InstanceReport extends React.Component {
           dataSample={dataSample}
           previousDataSample={previousDataSample}
           owner
-          title={`Tools - ${this.getClarificationTitle()}`}
+          title={`Tools ${this.getClarificationTitle()}`}
           singleTitle="Tool"
         />
       </Export.Consumer>
