@@ -69,7 +69,7 @@ import java.util.Map;
 
 @RunWith(MockitoJUnitRunner.class)
 @SuppressWarnings("checkstyle:MagicNumber")
-public class AwsStorageToRequestConverterTest {
+public class StorageToRequestConverterTest {
 
     private static final String BILLING_CENTER_KEY = "billing";
     private static final Long STORAGE_ID = 1L;
@@ -104,12 +104,15 @@ public class AwsStorageToRequestConverterTest {
             .build();
 
     private ElasticsearchServiceClient elasticsearchClient = Mockito.mock(ElasticsearchServiceClient.class);
-    private AwsStorageToBillingRequestConverter s3Converter;
-    private AwsStorageToBillingRequestConverter nfsConverter;
+    private StorageToBillingRequestConverter s3Converter;
+    private StorageToBillingRequestConverter nfsConverter;
+    private StorageToBillingRequestConverter gcpConverter;
     private final EntityContainer<AbstractDataStorage> s3StorageContainer =
         getStorageContainer(STORAGE_ID, STORAGE_NAME, STORAGE_NAME, DataStorageType.S3);
     private final EntityContainer<AbstractDataStorage> nfsStorageContainer =
         getStorageContainer(STORAGE_ID, STORAGE_NAME, STORAGE_NAME, DataStorageType.NFS);
+    private final EntityContainer<AbstractDataStorage> gcpStorageContainer =
+        getStorageContainer(STORAGE_ID, STORAGE_NAME, STORAGE_NAME, DataStorageType.GS);
 
     @BeforeEach
     public void init() {
@@ -130,24 +133,32 @@ public class AwsStorageToRequestConverterTest {
                                                          Long.MAX_VALUE,
                                                          BigDecimal.ONE.multiply(DAYS_IN_SYNC_MONTH)));
 
-        final Map<Regions, StoragePricing> testPriceList = new HashMap<>();
-        testPriceList.put(Regions.US_EAST_1, pricingUsEast1);
-        testPriceList.put(Regions.US_EAST_2, pricingUsEast2);
+        final Map<String, StoragePricing> testPriceList = new HashMap<>();
+        testPriceList.put(Regions.US_EAST_1.getName(), pricingUsEast1);
+        testPriceList.put(Regions.US_EAST_2.getName(), pricingUsEast2);
 
-        final AwsStorageServicePricing testStoragePricing =
-            Mockito.spy(new AwsStorageServicePricing(StringUtils.EMPTY, testPriceList));
+        final StoragePricingService testStoragePricing = Mockito.spy(new StoragePricingService(testPriceList));
         Mockito.doNothing().when(testStoragePricing).updatePrices();
 
-        s3Converter = new AwsStorageToBillingRequestConverter(
-                new StorageBillingMapper(SearchDocumentType.S3_STORAGE, BILLING_CENTER_KEY),
-                elasticsearchClient,
-                StorageType.OBJECT_STORAGE,
-                testStoragePricing);
-        nfsConverter = new AwsStorageToBillingRequestConverter(
-                new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, BILLING_CENTER_KEY),
-                elasticsearchClient,
-                StorageType.FILE_STORAGE,
-                testStoragePricing);
+        s3Converter = new StorageToBillingRequestConverter(
+            new StorageBillingMapper(SearchDocumentType.S3_STORAGE, BILLING_CENTER_KEY),
+            elasticsearchClient,
+            StorageType.OBJECT_STORAGE,
+            testStoragePricing,
+            StringUtils.EMPTY);
+        nfsConverter = new StorageToBillingRequestConverter(
+            new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, BILLING_CENTER_KEY),
+            elasticsearchClient,
+            StorageType.FILE_STORAGE,
+            testStoragePricing,
+            StringUtils.EMPTY);
+        gcpConverter = new StorageToBillingRequestConverter(
+            new StorageBillingMapper(SearchDocumentType.GS_STORAGE, BILLING_CENTER_KEY),
+            elasticsearchClient,
+            StorageType.OBJECT_STORAGE,
+            testStoragePricing,
+            StringUtils.EMPTY);
+
     }
 
     @Test
@@ -176,7 +187,7 @@ public class AwsStorageToRequestConverterTest {
             .add(BigDecimal.ONE.multiply(BigDecimal.valueOf(storageUsedTier3)));
 
         final long dailyCostForTotalSize =
-            s3Converter.calculateDailyCost(totalSize * BYTES_IN_1_GB, Regions.US_EAST_2, syncDate);
+            s3Converter.calculateDailyCost(totalSize * BYTES_IN_1_GB, Regions.US_EAST_2.getName(), syncDate);
 
         Assert.assertEquals(expectedPrice.scaleByPowerOfTen(2).longValue(), dailyCostForTotalSize);
     }
@@ -218,6 +229,23 @@ public class AwsStorageToRequestConverterTest {
     }
 
     @Test
+    public void testGcpStorageConverting() throws IOException {
+        final AbstractDataStorage gsStorage = gcpStorageContainer.getEntity();
+        createElasticsearchSearchContext(BYTES_IN_1_GB, false, US_EAST_1);
+
+        final DocWriteRequest request = gcpConverter.convertEntityToRequests(gcpStorageContainer,
+                                                                             TestUtils.STORAGE_BILLING_PREFIX,
+                                                                             SYNC_START, SYNC_END).get(0);
+        final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.STORAGE_BILLING_PREFIX, SYNC_START);
+        final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
+        Assert.assertEquals(expectedIndex, request.index());
+        Assert.assertEquals(SearchDocumentType.GS_STORAGE.name(),
+                            requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
+        assertFields(gsStorage, requestFieldsMap, US_EAST_1, StorageType.OBJECT_STORAGE,
+                     BYTES_IN_1_GB, BigDecimal.ONE.scaleByPowerOfTen(2).longValue());
+    }
+
+    @Test
     public void testStorageWithUnknownRegionConverting() throws IOException {
         final AbstractDataStorage s3Storage = s3StorageContainer.getEntity();
         createElasticsearchSearchContext(BYTES_IN_1_GB, false, UNKNOWN_REGION);
@@ -230,7 +258,7 @@ public class AwsStorageToRequestConverterTest {
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.S3_STORAGE.name(),
                             requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        assertFields(s3Storage, requestFieldsMap, null, StorageType.OBJECT_STORAGE, BYTES_IN_1_GB,
+        assertFields(s3Storage, requestFieldsMap, UNKNOWN_REGION, StorageType.OBJECT_STORAGE, BYTES_IN_1_GB,
                      BigDecimal.TEN.scaleByPowerOfTen(2).longValue());
     }
 

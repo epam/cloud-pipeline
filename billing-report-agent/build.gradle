@@ -59,6 +59,9 @@ dependencies {
     // AWS
     compile group: 'com.amazonaws', name: 'aws-java-sdk-pricing', version: awsSdkVersion
 
+    // GCP
+    compile group:'com.google.apis', name:'google-api-services-cloudbilling', version: gcpBillingSdkVersion
+
     //Lombok
     implementation group: "org.projectlombok", name: "lombok", version: lombokVersion
 
