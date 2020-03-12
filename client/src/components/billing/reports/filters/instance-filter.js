@@ -24,11 +24,13 @@ const filters = {
   },
   usage: {
     dataSample: 'usage',
-    previousDataSample: 'previousUsage'
+    previousDataSample: 'previousUsage',
+    title: 'Usage (hours)'
   },
   runsCount: {
     dataSample: 'runsCount',
-    previousDataSample: 'previousRunsCount'
+    previousDataSample: 'previousRunsCount',
+    title: 'Runs count'
   }
 };
 
