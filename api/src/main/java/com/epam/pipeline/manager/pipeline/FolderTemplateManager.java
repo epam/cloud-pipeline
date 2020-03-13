@@ -90,10 +90,24 @@ public class FolderTemplateManager {
     public Folder create(final Folder folder, final String templateName, final boolean failOnExisting) {
         final FolderTemplate folderTemplate = prepareFolderTemplate(folder, templateName, failOnExisting);
         try {
-            return ListUtils.emptyIfNull(crudManager.load(folder.getParentId()).getChildFolders()).stream()
-                .filter(f -> f.getName().equals(folderTemplate.getName()))
-                .findAny()
-                .orElseThrow(IllegalArgumentException::new);
+            final Folder existingFolder =
+                ListUtils.emptyIfNull(crudManager.load(folder.getParentId()).getChildFolders()).stream()
+                    .filter(f -> f.getName().equals(folderTemplate.getName()))
+                    .findAny()
+                    .orElseThrow(IllegalArgumentException::new);
+            final DataStorageWithMetadataVO storageToCreate = folderTemplate.getDatastorages().get(0);
+            storageToCreate.setParentFolderId(existingFolder.getId());
+            final List<AbstractDataStorage> storages = ListUtils.emptyIfNull(existingFolder.getStorages());
+            final boolean hasSuitableStorage = storages.stream()
+                .anyMatch(s -> s.getPath().equals(storageToCreate.getPath()));
+            if (!hasSuitableStorage) {
+                final AbstractDataStorage newStorage =
+                    dataStorageManager.create(storageToCreate, true, true, true).getEntity();
+                storages.add(newStorage);
+                existingFolder.setStorages(storages);
+                crudManager.update(existingFolder);
+            }
+            return existingFolder;
         } catch (IllegalArgumentException e) {
             createFolderFromTemplate(folder, folderTemplate);
             return folder;
