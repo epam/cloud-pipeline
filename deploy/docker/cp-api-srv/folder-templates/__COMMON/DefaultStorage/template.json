@@ -1,0 +1,19 @@
+{
+    "name": "@@",
+    "metadata": {
+        "type": {
+            "value": "defaultUserFolder"
+        },
+        "DataStorage": {
+            "value": "${CP_PREF_STORAGE_SCHEMA}://cloud-pipeline-user-@@-default-storage",
+            "type": "bucket"
+        }
+    },
+    "datastorages": [
+        {
+            "name": "@@-default-storage",
+            "path": "cloud-pipeline-user-@@-default-storage",
+            "serviceType" : "OBJECT_STORAGE"
+        }
+    ]
+}

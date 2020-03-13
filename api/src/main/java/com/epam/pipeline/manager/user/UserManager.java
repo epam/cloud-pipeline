@@ -47,6 +47,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.UserContext;
 import lombok.extern.slf4j.Slf4j;
+import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -54,6 +55,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -453,6 +456,66 @@ public class UserManager {
         final List<String> sensitiveKeys = preferenceManager.getPreference(
                 SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
         return new UserExporter().exportUsers(attr, users, sensitiveKeys).getBytes(Charset.defaultCharset());
+    }
+
+    private PipelineUser createUser(final String name, final List<Long> roles,
+                                    final List<String> groups, final Map<String, String> attributes) {
+        Assert.isTrue(StringUtils.isNotBlank(name),
+                      messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_REQUIRED));
+        final String userName = name.trim().toUpperCase();
+        final PipelineUser loadedUser = userDao.loadUserByName(userName);
+        Assert.isNull(loadedUser, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_EXISTS, name));
+        final PipelineUser user = new PipelineUser(userName);
+        final List<Long> userRoles = getNewUserRoles(roles);
+        user.setRoles(roleDao.loadRolesList(userRoles));
+        user.setGroups(groups);
+        user.setAttributes(attributes);
+        storageValidator.validate(user);
+        return userDao.createUser(user, userRoles);
+    }
+
+    private Folder createUserDefaultFolder(final PipelineUser user) {
+        final Folder folder = new Folder();
+        final Long parentId =
+            preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_PARENT_FOLDER);
+        Assert.notNull(parentId,
+                       messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_NULL_PARENT_FOLDER));
+        folder.setParentId(parentId);
+        final String userName = user.getUserName();
+        folder.setName(userName);
+        try {
+            final Folder defaultFolder =
+                folderManager.createFromTemplate(folder, defaultUserStorageTemplateName, false);
+            grantOwnerPermissionsToUser(userName, defaultFolder);
+            return defaultFolder;
+        } catch (RuntimeException e) {
+            throw new DefaultStorageCreationException(
+                messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION,
+                                         userName,
+                                         e.getMessage())
+            );
+        }
+    }
+
+    private void grantOwnerPermissionsToUser(final String userName, final Folder defaultFolder) {
+        final Authentication originalAuth = authManager.getAuthentication();
+        if (originalAuth == null) {
+            setAuthAsUser(userName);
+        }
+        final Long folderId = defaultFolder.getId();
+        permissionManager.changeOwner(folderId, AclClass.FOLDER, userName);
+        final Long storageId = defaultFolder.getStorages().get(0).getId();
+        permissionManager.changeOwner(storageId, AclClass.DATA_STORAGE, userName);
+        if (originalAuth == null) {
+            SecurityContextHolder.getContext().setAuthentication(null);
+        }
+    }
+
+    private void setAuthAsUser(final String userName) {
+        final PipelineUser pipelineUser = loadUserByName(userName);
+        final UserContext userContext = new UserContext(pipelineUser);
+        final JwtAuthenticationToken userAuth = new JwtAuthenticationToken(userContext, userContext.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(userAuth);
     }
 
     private void checkAllRolesPresent(List<Long> roles) {
