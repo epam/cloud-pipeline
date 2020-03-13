@@ -1058,8 +1058,8 @@ def set_acl(identifier, object_type, sid, group, allow, deny, inherit):
 @click.option(
     '-t', '--object-type',
     help='Object type',
-    required=True,
-    type=click.Choice(['pipeline', 'folder', 'data_storage'])
+    required=False,
+    type=click.Choice(ACLOperations.get_classes())
 )
 @Config.validate_access_token
 def view_user_objects(username, object_type):
@@ -1071,8 +1071,8 @@ def view_user_objects(username, object_type):
 @click.option(
     '-t', '--object-type',
     help='Object type',
-    required=True,
-    type=click.Choice(['pipeline', 'folder', 'data_storage'])
+    required=False,
+    type=click.Choice(ACLOperations.get_classes())
 )
 @Config.validate_access_token
 def view_group_objects(group_name, object_type):
