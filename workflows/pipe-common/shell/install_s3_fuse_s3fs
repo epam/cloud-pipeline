@@ -29,7 +29,7 @@ function install_from_source {
                         libxml2-devel \
                         openssl-devel
     else
-        apt-get update -y && \
+        apt-get update -y --allow-insecure-repositories
         apt-get install  -y     automake \
                                 autotools-dev \
                                 fuse \

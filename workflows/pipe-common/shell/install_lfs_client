@@ -62,7 +62,7 @@ else
             
             echo "deb [trusted=yes] http://packages.lizardfs.com/$_repository/$_release $_release main" > /etc/apt/sources.list.d/lizardfs.list
             
-            apt-get update -qq
+            apt-get update -y -qq --allow-insecure-repositories
         fi
 
         apt-get install lizardfs-client -t $_release -y -qq

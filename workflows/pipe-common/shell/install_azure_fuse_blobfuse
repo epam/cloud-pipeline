@@ -57,12 +57,12 @@ function install_from_package_repository {
         rpm -Uvh https://packages.microsoft.com/config/$DISTRIB_ID/$DISTRIB_RELEASE/packages-microsoft-prod.rpm && \
         yum install -y blobfuse fuse
     else
-        apt-get update -y && \
+        apt-get update -y --allow-insecure-repositories ; \
         apt-get install -y apt-transport-https && \
         wget https://packages.microsoft.com/config/$DISTRIB_ID/$DISTRIB_RELEASE/packages-microsoft-prod.deb && \
         dpkg -i packages-microsoft-prod.deb && \
         rm packages-microsoft-prod.deb && \
-        apt-get update -y && \
+        apt-get update -y --allow-insecure-repositories ; \
         apt-get install -y blobfuse fuse
     fi
 }
