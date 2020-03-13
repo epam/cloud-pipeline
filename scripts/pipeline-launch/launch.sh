@@ -291,7 +291,7 @@ function check_python_module_installed {
 
 function upgrade_installed_packages {
       local _UPGRADE_COMMAND_TEXT=
-      check_installed "apt-get" && { _UPGRADE_COMMAND_TEXT="rm -rf /var/lib/apt/lists/ && apt-get update -y -qq --allow-insecure-repositories && apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" upgrade";  };
+      check_installed "apt-get" && { _UPGRADE_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" upgrade";  };
       check_installed "yum" && { _UPGRADE_COMMAND_TEXT="yum update -q -y";  };
       check_installed "apk" && { _UPGRADE_COMMAND_TEXT="apk update -q 1>/dev/null && apk upgrade -q 1>/dev/null";  };
       eval "$_UPGRADE_COMMAND_TEXT"
@@ -379,7 +379,7 @@ function get_install_command_by_current_distr {
             _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
       fi
 
-      check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/ && apt-get update -y -qq --allow-insecure-repositories && DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated install $_TOOLS_TO_INSTALL";  };
+      check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated install $_TOOLS_TO_INSTALL";  };
       check_installed "yum" && { _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL";  };
       check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL";  };
       eval $_RESULT_VAR=\$_INSTALL_COMMAND_TEXT
