@@ -117,9 +117,9 @@ public class FolderCrudManager implements SecuredEntityManager {
             dbFolder.setName(validateName(folder.getName()));
         }
         Long parentId = folder.getParentId();
-        Assert.isNull(loadByNameAndParentId(folder.getName(), parentId),
-                messageHelper.getMessage(MessageConstants.ERROR_FOLDER_NAME_EXISTS,
-                        folder.getName(), parentId));
+        Assert.notNull(loadByNameAndParentId(folder.getName(), parentId),
+                messageHelper.getMessage(MessageConstants.ERROR_FOLDER_NOT_FOUND,
+                        folder.getId()));
         if (parentId != null) {
             Assert.isTrue(!dbFolder.getId().equals(parentId), messageHelper.getMessage(
                     MessageConstants.ERROR_FOLDER_RECURSIVE_DEPENDENCY, folder.getId(), parentId));
