@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ class PermissionsOperations(object):
             if object_name.isdigit():
                 object_id = object_name
             else:
-                object_id = Entity.load_by_id_or_name(object_name, class_name)
+                object_id = Entity.load_by_id_or_name(object_name, class_name)['id']
             User.change_owner(user_name, class_name, object_id)
         except (ConfigNotFoundError, requests.exceptions.RequestException, RuntimeError, ValueError) as error:
             click.echo('Error: %s' % str(error), err=True)

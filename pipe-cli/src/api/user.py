@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from src.api.entity import Entity
 from .base import API
 import json
 from ..model.object_permission_model import ObjectPermissionModel
@@ -23,8 +23,13 @@ class User(API):
 
     @classmethod
     def get_permissions(cls, identifier, acl_class):
+        entity = Entity.load_by_id_or_name(identifier, acl_class)
+        return cls.permissions(entity['id'], entity['aclClass'])
+
+    @classmethod
+    def permissions(cls, id, acl_class):
         api = cls.instance()
-        response_data = api.call('grant?id={}&aclClass={}'.format(identifier, acl_class.upper()), None)
+        response_data = api.call('permissions?id={}&aclClass={}'.format(id, acl_class.upper()), None)
         if 'payload' in response_data and 'permissions' in response_data['payload']:
             permissions = []
             for permission_json in response_data['payload']['permissions']:

@@ -17,12 +17,17 @@ import click
 import requests
 import prettytable
 
+
 from src.api.entity import Entity
 from src.api.user import User
 from src.config import ConfigNotFoundError
 
 
 class ACLOperations(object):
+
+    @classmethod
+    def get_classes(cls):
+        return ['pipeline', 'folder', 'data_storage', 'configuration', 'docker_registry', 'tool', 'tool_group']
 
     @classmethod
     def set_acl(cls, identifier, object_type, sid, group, allow, deny, inherit):

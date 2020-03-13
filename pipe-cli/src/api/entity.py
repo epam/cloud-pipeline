@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ class Entity(API):
         api = cls.instance()
         response_data = api.call('entities?identifier={}&aclClass={}'.format(identifier, str(entity_class).upper()),
                                  None)
-        if 'payload' in response_data and 'id' in response_data['payload']:
-            return response_data['payload']['id']
+        if 'payload' in response_data and 'id' in response_data['payload'] and 'aclClass' in response_data['payload']:
+            return response_data['payload']
         if 'message' in response_data:
             raise RuntimeError(response_data['message'])
         else:

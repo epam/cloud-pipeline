@@ -1022,7 +1022,7 @@ def umount_storage(mountpoint, quiet):
     '-t', '--object-type',
     help='Object type',
     required=True,
-    type=click.Choice(['pipeline', 'folder', 'data_storage'])
+    type=click.Choice(ACLOperations.get_classes())
 )
 @Config.validate_access_token
 def view_acl(identifier, object_type):
@@ -1038,7 +1038,7 @@ def view_acl(identifier, object_type):
     '-t', '--object-type',
     help='Object type',
     required=True,
-    type=click.Choice(['pipeline', 'folder', 'data_storage'])
+    type=click.Choice(ACLOperations.get_classes())
 )
 @click.option('-s', '--sid', help='User or group name', required=True)
 @click.option('-g', '--group', help='Group flag', is_flag=True)
@@ -1058,8 +1058,8 @@ def set_acl(identifier, object_type, sid, group, allow, deny, inherit):
 @click.option(
     '-t', '--object-type',
     help='Object type',
-    required=True,
-    type=click.Choice(['pipeline', 'folder', 'data_storage'])
+    required=False,
+    type=click.Choice(ACLOperations.get_classes())
 )
 @Config.validate_access_token
 def view_user_objects(username, object_type):
@@ -1071,8 +1071,8 @@ def view_user_objects(username, object_type):
 @click.option(
     '-t', '--object-type',
     help='Object type',
-    required=True,
-    type=click.Choice(['pipeline', 'folder', 'data_storage'])
+    required=False,
+    type=click.Choice(ACLOperations.get_classes())
 )
 @Config.validate_access_token
 def view_group_objects(group_name, object_type):
@@ -1148,6 +1148,7 @@ def chown(user_name, entity_class, entity_name):
     - ENTITY_NAME: defines name or id of the object
     """
     PermissionsOperations.chown(user_name, entity_class, entity_name)
+
 
 @cli.command(name='ssh', context_settings=dict(
     ignore_unknown_options=True,
