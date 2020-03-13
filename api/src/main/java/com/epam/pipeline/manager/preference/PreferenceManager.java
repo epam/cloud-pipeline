@@ -200,8 +200,6 @@ public class PreferenceManager {
     /**
      * A generic method to find an optional value of any AbstractSystemPreference
      * @param systemPreference a preference to load value of
-     * @param <E> a type of preference value
-     * @param <T> a type of preference
      * @return optional of typed value of AbstractSystemPreference
      */
     public <E, T extends AbstractSystemPreference<E>> Optional<E> findPreference(T systemPreference) {

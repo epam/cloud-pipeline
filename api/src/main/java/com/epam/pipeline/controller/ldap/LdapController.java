@@ -42,8 +42,8 @@ public class LdapController extends AbstractRestController {
 
     @PostMapping
     @ApiOperation(
-            value = "Searches for a ldap entities by the given search request.",
-            notes = "Searches for a ldap entities by the given search request.",
+            value = "Searches for ldap entities by the given search request.",
+            notes = "Searches for ldap entities by the given search request.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)

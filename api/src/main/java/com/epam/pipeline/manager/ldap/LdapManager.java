@@ -6,6 +6,7 @@ import com.epam.pipeline.entity.ldap.LdapEntity;
 import com.epam.pipeline.entity.ldap.LdapEntityType;
 import com.epam.pipeline.entity.ldap.LdapSearchRequest;
 import com.epam.pipeline.entity.ldap.LdapSearchResponse;
+import com.epam.pipeline.exception.ldap.LdapException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
@@ -44,8 +45,8 @@ public class LdapManager {
      */
     public LdapSearchResponse search(final LdapSearchRequest request) {
         Assert.notNull(request.getType(), messageHelper.getMessage(MessageConstants.ERROR_LDAP_SEARCH_TYPE_MISSING));
-        final int size = responseSize();
         try {
+            final int size = responseSize();
             return truncated(search(request, size), size);
         } catch (TimeLimitExceededException e) {
             log.warn(String.format("Time limit was exceeded during LDAP search request %s", request), e);
@@ -82,7 +83,7 @@ public class LdapManager {
             case GROUP:
                 return groupFilter();
             default:
-                throw new RuntimeException(String.format("Unrecognized entity type %s", type));
+                throw new LdapException(String.format("Unrecognized entity type %s", type));
         }
     }
 

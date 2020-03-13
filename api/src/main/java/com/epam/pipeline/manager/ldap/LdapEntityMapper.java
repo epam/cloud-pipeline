@@ -2,6 +2,7 @@ package com.epam.pipeline.manager.ldap;
 
 import com.epam.pipeline.entity.ldap.LdapEntity;
 import com.epam.pipeline.entity.ldap.LdapEntityType;
+import com.epam.pipeline.exception.ldap.LdapException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +47,7 @@ public class LdapEntityMapper {
                     .map(Object::toString)
                     .collect(Collectors.toList());
         } catch (NamingException e) {
-            throw new RuntimeException("Attribute values extraction has failed", e);
+            throw new LdapException("Attribute values extraction has failed", e);
         }
     }
 
