@@ -158,7 +158,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 );
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-2627"})
     public void forbiddenPauseValidation() {
         loginAsAdminAndPerform(() ->
