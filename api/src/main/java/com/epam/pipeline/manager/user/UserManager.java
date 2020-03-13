@@ -129,36 +129,6 @@ public class UserManager {
         return newUser;
     }
 
-    private Folder createUserDefaultFolder(final PipelineUser user) {
-        final Folder folder = new Folder();
-        final Long parentId =
-            preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_PARENT_FOLDER);
-        Assert.notNull(parentId,
-                       messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_NULL_PARENT_FOLDER));
-        folder.setParentId(parentId);
-        final String userName = user.getUserName();
-        folder.setName(userName);
-        try {
-            final Folder defaultFolder =
-                folderManager.createFromTemplate(folder, defaultUserStorageTemplateName, false);
-            grantOwnerPermissionsToUser(userName, defaultFolder);
-            return defaultFolder;
-        } catch (RuntimeException e) {
-            throw new DefaultStorageCreationException(
-                messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION,
-                                         userName,
-                                         e.getMessage())
-            );
-        }
-    }
-
-    private void grantOwnerPermissionsToUser(final String userName, final Folder defaultFolder) {
-        final Long folderId = defaultFolder.getId();
-        permissionManager.changeOwner(folderId, AclClass.FOLDER, userName);
-        final Long storageId = defaultFolder.getStorages().get(0).getId();
-        permissionManager.changeOwner(storageId, AclClass.DATA_STORAGE, userName);
-    }
-
     private PipelineUser createUser(String name, List<Long> roles,
                                    List<String> groups, Map<String, String> attributes) {
         Assert.isTrue(StringUtils.isNotBlank(name),
@@ -456,22 +426,6 @@ public class UserManager {
         final List<String> sensitiveKeys = preferenceManager.getPreference(
                 SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
         return new UserExporter().exportUsers(attr, users, sensitiveKeys).getBytes(Charset.defaultCharset());
-    }
-
-    private PipelineUser createUser(final String name, final List<Long> roles,
-                                    final List<String> groups, final Map<String, String> attributes) {
-        Assert.isTrue(StringUtils.isNotBlank(name),
-                      messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_REQUIRED));
-        final String userName = name.trim().toUpperCase();
-        final PipelineUser loadedUser = userDao.loadUserByName(userName);
-        Assert.isNull(loadedUser, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_EXISTS, name));
-        final PipelineUser user = new PipelineUser(userName);
-        final List<Long> userRoles = getNewUserRoles(roles);
-        user.setRoles(roleDao.loadRolesList(userRoles));
-        user.setGroups(groups);
-        user.setAttributes(attributes);
-        storageValidator.validate(user);
-        return userDao.createUser(user, userRoles);
     }
 
     private Folder createUserDefaultFolder(final PipelineUser user) {
