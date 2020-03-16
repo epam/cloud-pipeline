@@ -27,6 +27,7 @@ import com.epam.pipeline.billingreportagent.model.pricing.AwsPriceDimensions;
 import com.epam.pipeline.billingreportagent.model.pricing.AwsPriceRate;
 import com.epam.pipeline.billingreportagent.model.pricing.AwsPricingCard;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -35,13 +36,14 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 public class AwsStoragePriceListLoader implements StoragePriceListLoader {
@@ -60,24 +62,29 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
 
     public AwsStoragePriceListLoader(final String awsStorageServiceName) {
         this.awsStorageServiceName = awsStorageServiceName;
-        this.mapper = new ObjectMapper();
-    }
-
-    @Override
-    public Map<String, StoragePricing> loadFullPriceList() {
-        final Map<String, StoragePricing> fullPriceList = new HashMap<>();
-        loadAwsPricingCards(awsStorageServiceName).forEach(price -> {
-            final String regionName = price.getProduct().getAttributes().get(LOCATION_KEY);
-            getRegionFromFullLocation(regionName)
-                .ifPresent(region -> fullPriceList.put(region.getName(),
-                                                       convertAwsPricing(price.getTerms().getOnDemand())));
-        });
-        return fullPriceList;
+        this.mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     @Override
     public CloudProvider getProvider() {
         return CloudProvider.AWS;
+    }
+
+    @Override
+    public Map<String, StoragePricing> loadFullPriceList() {
+        return loadAwsPricingCards(awsStorageServiceName).stream()
+            .map(this::extractEntryFromAwsPricing)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toMap(SimpleEntry::getKey,
+                                      SimpleEntry::getValue));
+    }
+
+    private Optional<SimpleEntry<String, StoragePricing>> extractEntryFromAwsPricing(final AwsPricingCard price) {
+        final String regionName = price.getProduct().getAttributes().get(LOCATION_KEY);
+        return getRegionFromFullLocation(regionName)
+            .map(region -> new SimpleEntry<>(region.getName(),
+                                             convertAwsPricing(price.getTerms().getOnDemand())));
     }
 
     private StoragePricing convertAwsPricing(final Map<String, AwsPriceDimensions> allPrices) {
@@ -112,17 +119,17 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
         filter.setValue(GENERAL_STORAGE);
 
         String nextToken = StringUtils.EMPTY;
+
+        final AWSPricing awsPricingService = AWSPricingClientBuilder
+            .standard()
+            .withRegion(Regions.US_EAST_1)
+            .build();
         do {
             final GetProductsRequest request = new GetProductsRequest()
                 .withServiceCode(awsStorageServiceName)
                 .withFilters(filter)
                 .withNextToken(nextToken)
                 .withFormatVersion(AWS_PRICE_FORMAT_VERSION);
-
-            final AWSPricing awsPricingService = AWSPricingClientBuilder
-                .standard()
-                .withRegion(Regions.US_EAST_1)
-                .build();
 
             final GetProductsResult result = awsPricingService.getProducts(request);
             result.getPriceList().stream()
@@ -142,12 +149,12 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
     }
 
     private Optional<Regions> getRegionFromFullLocation(final String location) {
-        for (Regions region : Regions.values()) {
-            if (region.getDescription().equals(location)) {
-                return Optional.of(region);
-            }
+        final Optional<Regions> awsRegion = Stream.of(Regions.values())
+            .filter(region -> location.equals(region.getDescription()))
+            .findAny();
+        if (!awsRegion.isPresent()) {
+            log.warn("Can't parse {} location: {}", getProvider().name(), location);
         }
-        log.warn("Can't parse {} location: {}", getProvider().name(), location);
-        return Optional.empty();
+        return awsRegion;
     }
 }
