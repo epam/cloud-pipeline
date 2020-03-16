@@ -104,7 +104,7 @@ class ExportStore {
           canvasElement.toBlob((blob) => {
             FileSaver.saveAs(blob, `${title}.png`);
             document.body.removeChild(canvasElement);
-            document.body.style.overflowY = 'unset';
+            document.body.style.overflowY = '';
             hide();
           });
         })

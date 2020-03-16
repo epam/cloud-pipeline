@@ -36,7 +36,7 @@ const plugin = {
         ctx.drawImage(this, 0, 0);
         const data = ctx.getImageData(0, 0, width, height);
         document.body.removeChild(canvasElement);
-        document.body.style.overflowY = 'unset';
+        document.body.style.overflowY = '';
         onImageReady(data);
       };
       image.onerror = onImageError;
