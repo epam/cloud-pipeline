@@ -74,6 +74,9 @@ public class GcpStoragePriceListLoader implements StoragePriceListLoader{
 
     private Map<String, StoragePricing> convertSku(final Sku sku) {
         final List<TierRate> tieredRates = sku.getPricingInfo().get(0).getPricingExpression().getTieredRates();
+        final TierRate upperBound = new TierRate();
+        upperBound.setStartUsageAmount(Double.POSITIVE_INFINITY);
+        tieredRates.add(upperBound);
         return sku.getServiceRegions().stream()
             .collect(Collectors.toMap(Function.identity(), v -> convertGcpTierRateToStoragePrices(tieredRates)));
     }
@@ -84,9 +87,6 @@ public class GcpStoragePriceListLoader implements StoragePriceListLoader{
     }
 
     private StoragePricing convertGcpTierRateToStoragePrices(final List<TierRate> rates) {
-        final TierRate upperBound = new TierRate();
-        upperBound.setStartUsageAmount(Double.POSITIVE_INFINITY);
-        rates.add(upperBound);
         final StoragePricing pricingRanges = new StoragePricing();
         for (int i = 0; i < rates.size() - 1; i++) {
             final TierRate currentRate = rates.get(i);

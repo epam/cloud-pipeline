@@ -22,6 +22,7 @@ import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.billingreportagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AwsStoragePriceListLoader;
+import com.epam.pipeline.billingreportagent.service.impl.converter.AzureStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.GcpStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.StoragePricingService;
 import com.epam.pipeline.billingreportagent.service.impl.synchronizer.PipelineRunSynchronizer;
@@ -42,6 +43,7 @@ import org.springframework.context.annotation.Configuration;
 public class CommonSyncConfiguration {
 
     private static final String FALSE = "false";
+    private static final String STORAGE_SYNC_DISABLE_PROP = "sync.storage.disable";
 
     @Value("${sync.index.common.prefix}")
     private String commonIndexPrefix;
@@ -87,7 +89,7 @@ public class CommonSyncConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = "sync.storage.disable", matchIfMissing = true, havingValue = FALSE)
+    @ConditionalOnProperty(value = STORAGE_SYNC_DISABLE_PROP, matchIfMissing = true, havingValue = FALSE)
     public StorageSynchronizer s3Synchronizer(final StorageLoader loader,
                                               final ElasticIndexService indexService,
                                               final ElasticsearchServiceClient elasticsearchClient) {
@@ -109,7 +111,7 @@ public class CommonSyncConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = "sync.storage.disable", matchIfMissing = true, havingValue = FALSE)
+    @ConditionalOnProperty(value = STORAGE_SYNC_DISABLE_PROP, matchIfMissing = true, havingValue = FALSE)
     public StorageSynchronizer efsSynchronizer(final StorageLoader loader,
                                                final ElasticIndexService indexService,
                                                final ElasticsearchServiceClient elasticsearchClient) {
@@ -131,7 +133,7 @@ public class CommonSyncConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = "sync.storage.disable", matchIfMissing = true, havingValue = FALSE)
+    @ConditionalOnProperty(value = STORAGE_SYNC_DISABLE_PROP, matchIfMissing = true, havingValue = FALSE)
     public StorageSynchronizer gsSynchronizer(final StorageLoader loader,
                                               final ElasticIndexService indexService,
                                               final ElasticsearchServiceClient elasticsearchClient) {
@@ -150,5 +152,30 @@ public class CommonSyncConfiguration {
                                                                             pricingService,
                                                                             fileIndexPattern),
                                        DataStorageType.GS);
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = STORAGE_SYNC_DISABLE_PROP, matchIfMissing = true, havingValue = FALSE)
+    public StorageSynchronizer azureSynchronizer(final @Value("${sync.storage.azure.auth.file}") String authFile,
+                                                 final @Value("${sync.storage.azure.offer.id}") String offerId,
+                                                 final StorageLoader loader,
+                                                 final ElasticIndexService indexService,
+                                                 final ElasticsearchServiceClient elasticsearchClient) {
+        final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.AZ_BLOB_STORAGE,
+                                                                     billingCenterKey);
+        final StoragePricingService pricingService =
+            new StoragePricingService(new AzureStoragePriceListLoader(offerId, authFile));
+        return new StorageSynchronizer(storageMapping,
+                                       commonIndexPrefix,
+                                       storageIndexName,
+                                       bulkSize,
+                                       elasticsearchClient,
+                                       loader,
+                                       indexService,
+                                       new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                                                                            StorageType.OBJECT_STORAGE,
+                                                                            pricingService,
+                                                                            fileIndexPattern),
+                                       DataStorageType.AZ);
     }
 }
