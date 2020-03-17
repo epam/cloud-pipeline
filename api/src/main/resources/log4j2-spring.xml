@@ -141,6 +141,9 @@
         <Logger name="com.epam.pipeline.manager.security" level="info" additivity="true">
             <AppenderRef ref="JSONSecurityLogsAppender"/>
         </Logger>
+        <Logger name="com.epam.pipeline.manager.user" level="info" additivity="true">
+            <AppenderRef ref="JSONSecurityLogsAppender"/>
+        </Logger>
         <Logger name="org.springframework.security.saml" level="debug" additivity="false">
             <AppenderRef ref="Spring-Appender"/>
         </Logger>

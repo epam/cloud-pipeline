@@ -35,19 +35,27 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class SecurityLogAspect {
 
-    public static final String CHANGING_PERMISSION_POINTCUT =
-            "execution(* com.epam.pipeline.manager.security.GrantPermissionManager.setPermissions(..))" +
+    public static final String PERMISSION_RELATED_METHODS_POINTCUT =
+            "execution(* com.epam.pipeline.manager.security.GrantPermissionManager.*(..))" +
             "|| execution(* com.epam.pipeline.manager.security.GrantPermissionManager.deletePermissions(..))" +
             "|| execution(* com.epam.pipeline.manager.security.GrantPermissionManager.deleteAllPermissions(..))" +
             "|| execution(* com.epam.pipeline.manager.security.GrantPermissionManager.lockEntity(..))" +
             "|| execution(* com.epam.pipeline.manager.security.GrantPermissionManager.unlockEntity(..))" +
             "|| execution(* com.epam.pipeline.manager.security.GrantPermissionManager.changeOwner(..))";
 
+    public static final String USER_RELATED_METHODS_POINTCUT =
+            "execution(* com.epam.pipeline.manager.user.UserManager.update*(..)) " +
+            "|| execution(* com.epam.pipeline.manager.user.UserManager.delete*(..))" +
+            "|| execution(* com.epam.pipeline.manager.user.UserManager.create*(..))" +
+            "|| execution(* com.epam.pipeline.manager.user.RoleManager.assignRole(..))" +
+            "|| execution(* com.epam.pipeline.manager.user.RoleManager.removeRole(..))";
+
+
     public static final String ANONYMOUS = "Anonymous";
     public static final String KEY_USER = "user";
 
 
-    @Before(value = CHANGING_PERMISSION_POINTCUT)
+    @Before(value = PERMISSION_RELATED_METHODS_POINTCUT + " || " + USER_RELATED_METHODS_POINTCUT)
     public void addUserInfoFromSecurityContext() {
         SecurityContext context = SecurityContextHolder.getContext();
         if (context != null) {
@@ -80,7 +88,7 @@ public class SecurityLogAspect {
         ThreadContext.put(KEY_USER, decode.getSubject() != null ? decode.getSubject() : ANONYMOUS);
     }
 
-    @After(value = CHANGING_PERMISSION_POINTCUT +
+    @After(value = PERMISSION_RELATED_METHODS_POINTCUT +
             "|| execution(* com.epam.pipeline.security.saml.SAMLUserDetailsServiceImpl.loadUserBySAML(..)) " +
             "|| execution(* com.epam.pipeline.security.saml.SAMLProxyAuthenticationProvider.authenticate(..))" +
             "|| execution(* com.epam.pipeline.security.jwt.JwtFilterAuthenticationFilter.doFilterInternal(..))")
