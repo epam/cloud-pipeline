@@ -287,6 +287,8 @@ public final class MessageConstants {
     public static final String ERROR_PERMISSION_IS_NOT_GRANTED = "error.permission.is.not.granted";
     public static final String ERROR_ENTITY_IS_LOCKED = "error.entity.is.locked";
     public static final String ERROR_USER_NOT_AUTHORIZED = "error.user.not.authorized";
+    public static final String ERROR_USER_NOT_REGISTERED_EXPLICITLY = "user.not.registered.explicitly";
+    public static final String ERROR_USER_NOT_REGISTERED_GROUP_EXPLICITLY = "user.not.registered.group.explicitly";
 
     // Metadata
     public static final String ERROR_METADATA_NOT_FOUND = "error.metadata.not.found";

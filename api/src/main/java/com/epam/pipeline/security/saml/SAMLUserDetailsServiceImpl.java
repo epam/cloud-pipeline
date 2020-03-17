@@ -26,6 +26,7 @@ import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -50,6 +51,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
 
@@ -96,6 +98,7 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
             userManager.updateUserBlockingStatus(userContext.getUserId(), true);
             throwUserIsBlocked(userName);
         }
+        LOGGER.info("Successfully authenticate user: " + userContext.getUsername());
         return userContext;
     }
 
@@ -151,7 +154,7 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
     }
 
     private void throwUserIsBlocked(final String userName) {
-        LOGGER.debug("User {} is blocked!", userName);
+        LOGGER.debug("Authentication failed! User {} is blocked!", userName);
         throw new LockedException("User is blocked!");
     }
 
@@ -208,12 +211,16 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
     private void checkAbilityToCreate(final String userName, final List<String> groups) {
         switch (autoCreateUsers) {
             case EXPLICIT:
+                log.error(messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_EXPLICITLY, userName));
                 throw new UsernameNotFoundException(
-                        messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, userName));
+                        messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_EXPLICITLY, userName));
             case EXPLICIT_GROUP:
                 if (!permissionManager.isGroupRegistered(groups)) {
+                    log.error(messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_GROUP_EXPLICITLY,
+                            userName));
                     throw new UsernameNotFoundException(
-                            messageHelper.getMessage(MessageConstants.ERROR_NO_GROUP_WAS_FOUND, userName));
+                            messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_GROUP_EXPLICITLY,
+                                    String.join(", ", groups), userName));
                 }
                 break;
             default:
