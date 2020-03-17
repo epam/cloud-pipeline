@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.security;
 
+import com.auth0.jwt.JWT;
 import com.epam.pipeline.security.saml.SAMLProxyAuthentication;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.ThreadContext;
@@ -73,9 +74,16 @@ public class SecurityLogAspect {
         }
     }
 
+    @Before(value = "execution(* com.epam.pipeline.security.jwt.JwtTokenVerifier.readClaims(..)) && args(token,..)")
+    public void addUserInfoWhileAuthByJWT(JoinPoint joinPoint, String token) {
+        JWT decode = JWT.decode(token);
+        ThreadContext.put(KEY_USER, decode.getSubject() != null ? decode.getSubject() : ANONYMOUS);
+    }
+
     @After(value = CHANGING_PERMISSION_POINTCUT +
             "|| execution(* com.epam.pipeline.security.saml.SAMLUserDetailsServiceImpl.loadUserBySAML(..)) " +
-            "|| execution(* com.epam.pipeline.security.saml.SAMLProxyAuthenticationProvider.authenticate(..))")
+            "|| execution(* com.epam.pipeline.security.saml.SAMLProxyAuthenticationProvider.authenticate(..))" +
+            "|| execution(* com.epam.pipeline.security.jwt.JwtFilterAuthenticationFilter.doFilterInternal(..))")
     public void clearUserInfo() {
         ThreadContext.clearAll();
     }
