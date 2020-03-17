@@ -242,7 +242,7 @@ public class DockerContainerOperationManager {
             //TODO: change SystemPreferences.COMMIT_TIMEOUT in according to
             // f_EPMCMBIBPC-2025_add_lastStatusUpdate_time branche
             boolean isFinished = sshConnection.waitFor(
-                    preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT), TimeUnit.SECONDS);
+                    preferenceManager.getPreference(SystemPreferences.PAUSE_TIMEOUT), TimeUnit.SECONDS);
 
             if (isFinished && sshConnection.exitValue() == COMMAND_CANNOT_EXECUTE_CODE) {
                 //TODO: change in according to f_EPMCMBIBPC-2025_add_lastStatusUpdate_time branche
