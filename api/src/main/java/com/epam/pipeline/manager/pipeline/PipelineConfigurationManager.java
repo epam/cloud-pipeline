@@ -28,14 +28,18 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.datastorage.DataStorageApiService;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.PermissionsService;
 import com.epam.pipeline.security.acl.AclPermission;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -82,6 +86,9 @@ public class PipelineConfigurationManager {
 
     @Autowired
     private MessageHelper messageHelper;
+
+    @Autowired
+    private PreferenceManager preferenceManager;
 
     private Function<AbstractDataStorage, String> mountOptionsSupplier = (ds) -> {
         if (ds instanceof NFSDataStorage) {
@@ -222,8 +229,20 @@ public class PipelineConfigurationManager {
     public void updateWorkerConfiguration(String parentId, PipelineStart runVO,
             PipelineConfiguration configuration, boolean isNFS, boolean clearParams) {
         configuration.setEraseRunEndpoints(hasBooleanParameter(configuration, ERASE_WORKER_ENDPOINTS));
-        Map<String, PipeConfValueVO> updatedParams = clearParams ?
+        final Map<String, PipeConfValueVO> configParameters = MapUtils.isEmpty(configuration.getParameters()) ?
                 new HashMap<>() : configuration.getParameters();
+        final Map<String, PipeConfValueVO> updatedParams = clearParams ? new HashMap<>() : configParameters;
+        final List<DefaultSystemParameter> systemParameters = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_SYSTEM_PARAMETERS);
+        ListUtils.emptyIfNull(systemParameters)
+                .stream()
+                .filter(param -> param.isPassToWorkers() &&
+                        configParameters.containsKey(param.getName()))
+                .forEach(param -> {
+                    final String paramName = param.getName();
+                    updatedParams.put(paramName, configParameters.get(paramName));
+                });
+
         updatedParams.put(PipelineRun.PARENT_ID_PARAM, new PipeConfValueVO(parentId));
         if (isNFS) {
             updatedParams.put(NFS_CLUSTER_ROLE, new PipeConfValueVO("true"));
