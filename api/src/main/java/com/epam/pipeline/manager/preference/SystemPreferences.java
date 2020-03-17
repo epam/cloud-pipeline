@@ -116,6 +116,8 @@ public class SystemPreferences {
             "/root/pre_commit.sh", COMMIT_GROUP, PreferenceValidators.isNotBlank);
     public static final StringPreference POST_COMMIT_COMMAND_PATH = new StringPreference("commit.post.command.path",
             "/root/post_commit.sh", COMMIT_GROUP, PreferenceValidators.isNotBlank);
+    public static final IntPreference PAUSE_TIMEOUT = new IntPreference("pause.timeout", 24 * 60 * 60,
+            COMMIT_GROUP, isGreaterThan(0));
 
     // DATA_STORAGE_GROUP
     public static final IntPreference DATA_STORAGE_MAX_DOWNLOAD_SIZE = new IntPreference(
