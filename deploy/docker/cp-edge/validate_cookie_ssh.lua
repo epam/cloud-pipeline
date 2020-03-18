@@ -40,6 +40,8 @@ if token then
         ngx.exit(ngx.HTTP_UNAUTHORIZED)
     end
 
+    local username = jwt_obj["payload"]["sub"]
+
     -- If "bearer" is fine - allow nginx to proceed
     -- Pass authenticated user to the proxied resource as a header
     if string.match(ngx.var.route_location_root, "/ssh/pipeline") then
