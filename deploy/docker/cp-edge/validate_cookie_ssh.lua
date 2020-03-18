@@ -36,12 +36,15 @@ if token then
     if not jwt_obj["verified"] then
         ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
         ngx.status = ngx.HTTP_UNAUTHORIZED
-        ngx.log(ngx.WARN, jwt_obj.reason)
+        ngx.log(ngx.WARN, "Application: SSH; User: NotAuthorized; Status: Authentication failed; Message: " .. jwt_obj.reason)
         ngx.exit(ngx.HTTP_UNAUTHORIZED)
     end
 
     -- If "bearer" is fine - allow nginx to proceed
     -- Pass authenticated user to the proxied resource as a header
+    if string.match(ngx.var.route_location_root, "/ssh/pipeline") then
+        ngx.log(ngx.WARN,"Application: SSH; User: " .. username .. "; Status: Successfully autentificated.")
+    end
     ngx.req.set_header('token', token)
     return
 end

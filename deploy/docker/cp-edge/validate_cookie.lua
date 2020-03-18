@@ -24,7 +24,7 @@ local function arr_has_value (tab, val)
     return false
 end
 
-function arr_intersect(a, b)
+local function arr_intersect(a, b)
 	for index, value in ipairs(a) do
         if arr_has_value(b, value) then
             return true
@@ -34,17 +34,17 @@ function arr_intersect(a, b)
     return false
 end
 
-function arr_length(T)
+local function arr_length(T)
     local count = 0
     for _ in pairs(T) do count = count + 1 end
     return count
 end
 
-function split_str(inputstr, sep)
+local function split_str(inputstr, sep)
     if sep == nil then
         sep = "%s"
     end
-    local t={} ; i=1
+    local t={} ; local i=1
     for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
         t[i] = str
         i = i + 1
@@ -75,7 +75,7 @@ if token then
     if not jwt_obj["verified"] then
         ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
         ngx.status = ngx.HTTP_UNAUTHORIZED
-        ngx.log(ngx.WARN, jwt_obj.reason)
+        ngx.log(ngx.WARN, "Application: " .. ngx.var.route_location_root .. "; User: NotAuthorized; Status: Authentication failed; Message: " .. jwt_obj.reason)
         ngx.exit(ngx.HTTP_UNAUTHORIZED)
     end
     local username = jwt_obj["payload"]["sub"]
@@ -90,12 +90,15 @@ if token then
     if username ~= ngx.var.username and not arr_has_value(shared_with_users, username) and not arr_intersect(user_roles, shared_with_groups) then
         ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
         ngx.status = ngx.HTTP_UNAUTHORIZED
-        ngx.log(ngx.WARN, jwt_obj.reason)
+        ngx.log(ngx.WARN, "Application: " .. ngx.var.route_location_root .. "; User: " .. username .. "; Status:  Authentication failed; Message: Not an owner and access isn't shared.")
         ngx.exit(ngx.HTTP_UNAUTHORIZED)
     end
 
     -- If "bearer" is fine - allow nginx to proceed
     -- Pass authenticated user to the proxied resource as a header
+    if ngx.var.route_location_root == ngx.var.request_uri then
+        ngx.log(ngx.WARN,"Application: " .. ngx.var.route_location_root .. "; User: " .. username .. "; Status: Successfully autentificated.")
+    end
     ngx.req.set_header('X-Auth-User', username)
     return
 end
