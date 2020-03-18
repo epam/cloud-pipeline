@@ -44,7 +44,9 @@ public class SecurityLogAspect {
             "|| execution(* com.epam.pipeline.manager.security.GrantPermissionManager.changeOwner(..))";
 
     public static final String USER_RELATED_METHODS_POINTCUT =
-            "execution(* com.epam.pipeline.manager.user.UserManager.update*(..)) " +
+            "execution(* com.epam.pipeline.manager.user.UserManager.updateUser(..)) " +
+            "|| execution(* com.epam.pipeline.manager.user.UserManager.updateUserBlockingStatus(..))" +
+            "|| execution(* com.epam.pipeline.manager.user.UserManager.updateUserSAMLInfo(..))" +
             "|| execution(* com.epam.pipeline.manager.user.UserManager.delete*(..))" +
             "|| execution(* com.epam.pipeline.manager.user.UserManager.create*(..))" +
             "|| execution(* com.epam.pipeline.manager.user.RoleManager.assignRole(..))" +

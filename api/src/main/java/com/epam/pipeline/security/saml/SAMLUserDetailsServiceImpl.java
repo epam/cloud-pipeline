@@ -148,13 +148,13 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
                 .stream()
                 .noneMatch(GroupStatus::isBlocked);
         if (!isValidGroupList) {
-            LOGGER.debug("User {} is blocked due to one of his groups is blocked!", userName);
+            LOGGER.info("Authentication failed! User {} is blocked due to one of his groups is blocked!", userName);
             throw new LockedException("User is blocked!");
         }
     }
 
     private void throwUserIsBlocked(final String userName) {
-        LOGGER.debug("Authentication failed! User {} is blocked!", userName);
+        LOGGER.info("Authentication failed! User {} is blocked!", userName);
         throw new LockedException("User is blocked!");
     }
 
