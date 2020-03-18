@@ -226,7 +226,8 @@ function setup_common_spark_conf {
 SPARK_MASTER_SETUP_TASK="SparkMasterSetup"
 SPARK_MASTER_SETUP_TASK_WORKERS="SparkMasterSetupWorkers"
 
-export CP_CAP_SPARK_INSTALL_DIR="${CP_CAP_SPARK_INSTALL_DIR:-/common/spark}"
+export SHARED_FOLDER=${SHARED_FOLDER:-"/common"}
+export CP_CAP_SPARK_INSTALL_DIR="${CP_CAP_SPARK_INSTALL_DIR:-$SHARED_FOLDER/spark}"
 export CP_CAP_SPARK_VERSION="${CP_CAP_SPARK_VERSION:-2.4.3}"
 # INFO: A custom Spark distribution is built using https://github.com/sidoruka/cloud-pipeline-spark-build (see README and build script for the customization reasons)
 export CP_CAP_SPARK_DIST_URL="${CP_CAP_SPARK_DIST_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/spark/spark-$CP_CAP_SPARK_VERSION.tgz}"

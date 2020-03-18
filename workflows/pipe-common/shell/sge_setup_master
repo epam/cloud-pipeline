@@ -302,7 +302,8 @@ if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
 elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
     export SGE_ROOT="/opt/sge"
 fi
-CP_CAP_SCRIPTS_DIR="${CP_CAP_SCRIPTS_DIR:-/common/cap_scripts}"
+export SHARED_FOLDER=${SHARED_FOLDER:-"/common"}
+CP_CAP_SCRIPTS_DIR="${CP_CAP_SCRIPTS_DIR:-$SHARED_FOLDER/cap_scripts}"
 CP_CAP_SGE_MASTER_ENV_FILE="${CP_CAP_SCRIPTS_DIR}/sge_master_env.sh"
 mkdir -p "$CP_CAP_SCRIPTS_DIR"
 echo "export SGE_ROOT=$SGE_ROOT" > $CP_CAP_SGE_MASTER_ENV_FILE

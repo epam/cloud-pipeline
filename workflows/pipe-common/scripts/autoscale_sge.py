@@ -1055,15 +1055,16 @@ if __name__ == '__main__':
         if 'CP_CAP_AUTOSCALE_WORKERS' in os.environ else 3
     log_verbose = os.environ['CP_CAP_AUTOSCALE_VERBOSE'].strip().lower() == "true" \
         if 'CP_CAP_AUTOSCALE_VERBOSE' in os.environ else False
+    shared_work_dir = os.getenv('SHARED_WORK_FOLDER', '/common/workdir')
 
-    Logger.init(cmd=args.debug, log_file='/common/workdir/.autoscaler.log', task='GridEngineAutoscaling',
-                verbose=log_verbose)
+    Logger.init(cmd=args.debug, log_file=os.path.join(shared_work_dir, '.autoscaler.log'), 
+                task='GridEngineAutoscaling', verbose=log_verbose)
 
     cmd_executor = CmdExecutor()
     grid_engine = GridEngine(cmd_executor=cmd_executor)
-    host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file='/common/workdir/.autoscaler.storage')
+    host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=os.path.join(shared_work_dir, '.autoscaler.storage'))
     # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
-    pipe = PipelineAPI(api_url=pipeline_api, log_dir='/common/workdir/.pipe.log')
+    pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(shared_work_dir, '.pipe.log'))
     api = CloudPipelineAPI(pipe=pipe)
     scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default_value=30))
     scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default_value=30))
