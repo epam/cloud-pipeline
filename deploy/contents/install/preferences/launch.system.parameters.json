@@ -21,13 +21,15 @@
         "name": "CP_CAP_SGE_QUEUE_NAME",
         "type": "string",
         "description": "Overrides the default name of the Grid Engine queue",
-        "defaultValue": "main.q"
+        "defaultValue": "main.q",
+        "passToWorkers": true
     },
     {
         "name": "CP_CAP_SGE_PE_NAME",
         "type": "string",
         "description": "Overrides the default name of the Grid Engine PE",
-        "defaultValue": "local"
+        "defaultValue": "local",
+        "passToWorkers": true
     },
     {
         "name": "CP_CAP_MODULES",
@@ -51,19 +53,22 @@
         "name": "CP_S3_FUSE_TYPE",
         "type": "string",
         "description": "Allows to select which FUSE implementation to use for S3 buckets mounting. Allowed values are: goofys and s3fs",
-        "defaultValue": "goofys"
+        "defaultValue": "goofys",
+        "passToWorkers": true
     },
     {
         "name": "CP_S3_FUSE_STAT_CACHE",
         "type": "string",
         "description": "Applied to goofys FUSE. How long to cache StatObject results and inode attributes. Set this to 0 if you are experiencing issues with files consistency",
-        "defaultValue": "1m0s"
+        "defaultValue": "1m0s",
+        "passToWorkers": true
     },
     {
         "name": "CP_S3_FUSE_TYPE_CACHE",
         "type": "string",
         "description": "Applied to goofys FUSE. How long to cache name -> file/dir mappings in directory. Set this to 0 if you are experiencing issues with files consistency",
-        "defaultValue": "1m0s"
+        "defaultValue": "1m0s",
+        "passToWorkers": true
     },
     {
         "name": "CP_CAP_SGE_MASTER_CORES",
@@ -75,7 +80,8 @@
         "name": "CP_CAP_SGE_WORKER_FREE_CORES",
         "type": "string",
         "description": "Allow to keep the specified number of CPUs unused by the GE worker",
-        "defaultValue": "1"
+        "defaultValue": "1",
+        "passToWorkers": true
     },
     {
         "name": "CP_CAP_NFS",
@@ -99,37 +105,43 @@
         "name": "RUN_DIR",
         "type": "string",
         "description": "Defines a folder within a compute node, that holds all run-specific folders (ANALYSIS_DIR, INPUT_DIR, CONFIG_DIR, SCRIPTS_DIR)",
-        "defaultValue": ""
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "COMMON_DIR",
         "type": "string",
         "description": "Defines a folder within a compute node, that is typically used within custer runs and is mounted as a NFS across cluster nodes",
-        "defaultValue": ""
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "ANALYSIS_DIR",
         "type": "string",
         "description": "Defines a folder within a compute node, which is typically used as a Current Working Directory. When a batch run is finished - files from this directory are uploaded to the Output locations",
-        "defaultValue": ""
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "INPUT_DIR",
         "type": "string",
-        "description": "Defines a folder within a compute node, which is typically used for storing data, that is downloaded from the S3 buckets automatically",
-        "defaultValue": ""
+        "description": "Defines a folder within a compute node, which is typically used for storing data, that is downloaded from the datastorage automatically",
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "CONFIG_DIR",
         "type": "string",
         "description": "Defines a folder within a compute node, which is typically used for storing configuration files",
-        "defaultValue": ""
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "SHARED_FOLDER",
         "type": "string",
         "description": "Defines a folder within a compute node, which is typically used for storing any data that can be shared across nodes within a cluster, that shall be separated from the COMMON_DIR",
-        "defaultValue": ""
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "CP_TRANSFER_BUCKET",

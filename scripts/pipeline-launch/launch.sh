@@ -936,7 +936,7 @@ echo "Checking if cluster configuration is needed"
 echo "-"
 ######################################################
 
-export CP_CAP_SCRIPTS_DIR=$COMMON_DIR/cap_scripts
+export CP_CAP_SCRIPTS_DIR="${SHARED_FOLDER}/cap_scripts"
 export CLOUD_PIPELINE_NODE_CORES=$(nproc)
 
 TOTAL_NODES=$(($node_count+1))
