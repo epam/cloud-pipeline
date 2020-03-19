@@ -74,6 +74,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             'name': instance_name,
             'machineType': machine_type,
             'scheduling': {
+                'onHostMaintenance': 'terminate',
                 'preemptible': is_spot
             },
             'canIpForward': True,
