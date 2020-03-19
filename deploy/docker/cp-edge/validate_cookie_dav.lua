@@ -114,7 +114,7 @@ if token then
         if not jwt_obj["verified"] then
             ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
             ngx.status = ngx.HTTP_UNAUTHORIZED
-            ngx.log(ngx.WARN, "Application: DAV; User: NotAuthorized; Status: Authentication failed; Message: " .. jwt_obj.reason)
+            ngx.log(ngx.WARN, "[SECURITY] Application: DAV; User: NotAuthorized; Status: Authentication failed; Message: " .. jwt_obj.reason)
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
         end
 
@@ -133,7 +133,7 @@ if token then
         local restricted_root_methods = { "PUT", "POST", "DELETE", "PROPPATCH", "MKCOL", "COPY", "MOVE", "LOCK", "UNLOCK", "PATCH" }
         if (uri_parts_len <= 3 and arr_has_value(restricted_root_methods, request_method)) then
             ngx.status = ngx.HTTP_UNAUTHORIZED
-            ngx.log(ngx.WARN, "Application: DAV; User: NotAuthorized; Status: Authentication failed; Message: Restrict writing to the root")
+            ngx.log(ngx.WARN, "[SECURITY] Application: DAV; User: NotAuthorized; Status: Authentication failed; Message: Restrict writing to the root")
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
         end
 
@@ -148,7 +148,7 @@ if token then
             uri_username = uri_parts[2]
         else
             ngx.status = ngx.HTTP_UNAUTHORIZED
-            ngx.log(ngx.WARN, "Application: DAV; User: NotAuthorized; Status: Authentication failed; Message: username is not provided")
+            ngx.log(ngx.WARN, "[SECURITY] Application: DAV; User: NotAuthorized; Status: Authentication failed; Message: username is not provided")
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
         end
 
@@ -157,14 +157,14 @@ if token then
         if jwt_username ~= uri_username then
             ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
             ngx.status = ngx.HTTP_UNAUTHORIZED
-            ngx.log(ngx.WARN, "Application: DAV; User: NotAuthorized; Status: Authentication failed; "
+            ngx.log(ngx.WARN, "[SECURITY] Application: DAV; User: NotAuthorized; Status: Authentication failed; "
                     .. "Message: JWT Subject is not equal to the uri_username - restrict connection")
             ngx.log(ngx.WARN, jwt_obj.reason)
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
         end
 
     -- If "bearer" is fine - allow nginx to proceed
-    ngx.log(ngx.WARN,"Application: DAV; User: " .. jwt_username .. "; Status: Successfully autentificated.")
+    ngx.log(ngx.WARN,"[SECURITY] Application: DAV; User: " .. jwt_username .. "; Status: Successfully autentificated.")
     return
 end
 
@@ -211,7 +211,3 @@ else
         ngx.say('<html><body><script>window.location.href = "' .. req_uri .. '"</script></body></html>')
         return
 end
-
--- No cookie, no POST param - 401
-ngx.status = ngx.HTTP_UNAUTHORIZED
-ngx.exit(ngx.HTTP_UNAUTHORIZED)

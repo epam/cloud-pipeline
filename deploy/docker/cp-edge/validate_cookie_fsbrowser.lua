@@ -80,7 +80,7 @@ if token then
     if not jwt_obj["verified"] then
         ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
         ngx.status = ngx.HTTP_UNAUTHORIZED
-        ngx.log(ngx.ERR, "Application: FSBrowser; User: NotAuthorized; Status: Authentication failed; Message: " .. jwt_obj.reason)
+        ngx.log(ngx.ERR, "[SECURITY] Application: FSBrowser; User: NotAuthorized; Status: Authentication failed; Message: " .. jwt_obj.reason)
         ngx.exit(ngx.HTTP_UNAUTHORIZED)
     end
 
@@ -135,7 +135,7 @@ if token then
         local run_api_token = os.getenv("API_TOKEN")
         -- Fail if the API connection parameters cannot be retrieved from the environment
         if not run_api_url or not run_api_token then
-            ngx.log(ngx.ERR, "Application: FSBrowser; User: NotAuthorized; Status: Authentication failed; Message: Cannot get API or API_TOKEN environment variables")
+            ngx.log(ngx.ERR, "[SECURITY] Application: FSBrowser; User: NotAuthorized; Status: Authentication failed; Message: Cannot get API or API_TOKEN environment variables")
             ngx.status = ngx.HTTP_UNAUTHORIZED
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
             return
@@ -155,7 +155,7 @@ if token then
 
         -- Fail if the request was not successful
         if not res then
-            ngx.log(ngx.ERR, "Application: FSBrowser; User: NotAuthorized; Status: Authentication failed; Message: " ..
+            ngx.log(ngx.ERR, "[SECURITY] Application: FSBrowser; User: NotAuthorized; Status: Authentication failed; Message: " ..
                     'Failed to request API for the Pod IP and SSH Pass. API - ' .. run_api_url .. ', Error - ' .. err)
             ngx.status = ngx.HTTP_UNAUTHORIZED
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
@@ -168,7 +168,7 @@ if token then
         if not dict_contains(data, 'payload') or 
            not dict_contains(data['payload'], 'sshPassword') or 
            not dict_contains(data['payload'], 'podIP') then
-            ngx.log(ngx.ERR, "Application: FSBrowser; User: NotAuthorized; Status: Authentication failed; Message: " ..
+            ngx.log(ngx.ERR, "[SECURITY] Application: FSBrowser; User: NotAuthorized; Status: Authentication failed; Message: " ..
                     'Cannot get podIP and sshPassword from the API response')
             ngx.status = ngx.HTTP_UNAUTHORIZED
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
@@ -208,7 +208,7 @@ if token then
 
     ngx.req.set_header('token', token)
     ngx.req.set_header('X-Auth-User', username)
-    ngx.log(ngx.WARN,"Application: FSBrowser; User: " .. username .. "; Status: Successfully autentificated.")
+    ngx.log(ngx.WARN,"[SECURITY] Application: FSBrowser; User: " .. username .. "; Status: Successfully autentificated.")
     return
     -- --------------------------------------------
 end
@@ -260,7 +260,3 @@ else
         ngx.say('<html><body><script>window.location.href = "' .. req_uri .. '"</script></body></html>')
         return
 end
-
--- No cookie, no POST param - 401
-ngx.status = ngx.HTTP_UNAUTHORIZED
-ngx.exit(ngx.HTTP_UNAUTHORIZED)

@@ -75,7 +75,7 @@ if token then
     if not jwt_obj["verified"] then
         ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
         ngx.status = ngx.HTTP_UNAUTHORIZED
-        ngx.log(ngx.WARN, "Application: " .. ngx.var.route_location_root .. "; User: NotAuthorized; Status: Authentication failed; Message: " .. jwt_obj.reason)
+        ngx.log(ngx.WARN, "[SECURITY] Application: " .. ngx.var.route_location_root .. "; User: NotAuthorized; Status: Authentication failed; Message: " .. jwt_obj.reason)
         ngx.exit(ngx.HTTP_UNAUTHORIZED)
     end
     local username = jwt_obj["payload"]["sub"]
@@ -90,7 +90,7 @@ if token then
     if username ~= ngx.var.username and not arr_has_value(shared_with_users, username) and not arr_intersect(user_roles, shared_with_groups) then
         ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
         ngx.status = ngx.HTTP_UNAUTHORIZED
-        ngx.log(ngx.WARN, "Application: " .. ngx.var.route_location_root .. "; User: " .. username .. "; Status:  Authentication failed; Message: Not an owner and access isn't shared.")
+        ngx.log(ngx.WARN, "[SECURITY] Application: " .. ngx.var.route_location_root .. "; User: " .. username .. "; Status:  Authentication failed; Message: Not an owner and access isn't shared.")
         ngx.exit(ngx.HTTP_UNAUTHORIZED)
     end
 
@@ -150,7 +150,3 @@ else
         ngx.say('<html><body><script>window.location.href = "' .. req_uri .. '"</script></body></html>')
         return
 end
-
--- No cookie, no POST param - 401
-ngx.status = ngx.HTTP_UNAUTHORIZED
-ngx.exit(ngx.HTTP_UNAUTHORIZED)
