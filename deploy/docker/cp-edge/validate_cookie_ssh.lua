@@ -1,4 +1,4 @@
--- Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+-- Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ if token then
     if not jwt_obj["verified"] then
         ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
         ngx.status = ngx.HTTP_UNAUTHORIZED
-        ngx.log(ngx.WARN, "[SECURITY] Application: SSH; User: NotAuthorized; Status: Authentication failed; Message: " .. jwt_obj.reason)
+        ngx.log(ngx.WARN, "[SECURITY] RunId: ".. ngx.var.run_id .. " Application: SSH; User: NotAuthorized; Status: Authentication failed; Message: " .. jwt_obj.reason)
         ngx.exit(ngx.HTTP_UNAUTHORIZED)
     end
 
@@ -45,7 +45,7 @@ if token then
     -- If "bearer" is fine - allow nginx to proceed
     -- Pass authenticated user to the proxied resource as a header
     if string.match(ngx.var.request_uri, "ssh/pipeline") then
-        ngx.log(ngx.WARN,"[SECURITY] Application: SSH; User: " .. username .. "; Status: Successfully autentificated.")
+        ngx.log(ngx.WARN,"[SECURITY] RunId: ".. ngx.var.run_id .. " Application: SSH; User: " .. username .. "; Status: Successfully autentificated.")
     end
     ngx.req.set_header('token', token)
     return

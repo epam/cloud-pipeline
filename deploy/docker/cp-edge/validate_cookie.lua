@@ -1,4 +1,4 @@
--- Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+-- Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ if token then
     if not jwt_obj["verified"] then
         ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
         ngx.status = ngx.HTTP_UNAUTHORIZED
-        ngx.log(ngx.WARN, "[SECURITY] Application: " .. ngx.var.route_location_root .. "; User: NotAuthorized; Status: Authentication failed; Message: " .. jwt_obj.reason)
+        ngx.log(ngx.WARN, "[SECURITY] RunId: ".. ngx.var.run_id .. " Application: " .. ngx.var.route_location_root .. "; User: NotAuthorized; Status: Authentication failed; Message: " .. jwt_obj.reason)
         ngx.exit(ngx.HTTP_UNAUTHORIZED)
     end
     local username = jwt_obj["payload"]["sub"]
@@ -90,14 +90,14 @@ if token then
     if username ~= ngx.var.username and not arr_has_value(shared_with_users, username) and not arr_intersect(user_roles, shared_with_groups) then
         ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
         ngx.status = ngx.HTTP_UNAUTHORIZED
-        ngx.log(ngx.WARN, "[SECURITY] Application: " .. ngx.var.route_location_root .. "; User: " .. username .. "; Status:  Authentication failed; Message: Not an owner and access isn't shared.")
+        ngx.log(ngx.WARN, "[SECURITY] RunId: ".. ngx.var.run_id .. " Application: " .. ngx.var.route_location_root .. "; User: " .. username .. "; Status:  Authentication failed; Message: Not an owner and access isn't shared.")
         ngx.exit(ngx.HTTP_UNAUTHORIZED)
     end
 
     -- If "bearer" is fine - allow nginx to proceed
     -- Pass authenticated user to the proxied resource as a header
     if ngx.var.route_location_root == ngx.var.request_uri then
-        ngx.log(ngx.WARN,"[SECURITY] Application: " .. ngx.var.route_location_root .. "; User: " .. username .. "; Status: Successfully autentificated.")
+        ngx.log(ngx.WARN,"[SECURITY] RunId: ".. ngx.var.run_id .. " Application: " .. ngx.var.route_location_root .. "; User: " .. username .. "; Status: Successfully autentificated.")
     end
     ngx.req.set_header('X-Auth-User', username)
     return
