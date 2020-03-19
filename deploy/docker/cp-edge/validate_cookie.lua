@@ -97,7 +97,7 @@ if token then
     -- If "bearer" is fine - allow nginx to proceed
     -- Pass authenticated user to the proxied resource as a header
     if ngx.var.route_location_root == ngx.var.request_uri then
-        ngx.log(ngx.WARN,"Application: " .. ngx.var.route_location_root .. "; User: " .. username .. "; Status: Successfully autentificated.")
+        ngx.log(ngx.WARN,"[SECURITY] Application: " .. ngx.var.route_location_root .. "; User: " .. username .. "; Status: Successfully autentificated.")
     end
     ngx.req.set_header('X-Auth-User', username)
     return

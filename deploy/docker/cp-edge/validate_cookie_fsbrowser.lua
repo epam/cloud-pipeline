@@ -187,7 +187,8 @@ if token then
         local pod_cookie_parts = split_str(pod_cookie_val, ':')
         local pod_cookie_parts_len = arr_length(pod_cookie_parts)
         if (pod_cookie_parts_len ~= 2) then
-            ngx.log(ngx.ERR, 'Cannot parse cookie ' .. pod_cookie_name .. ' value ' .. pod_cookie_val .. 'into IP and Pass')
+            ngx.log(ngx.ERR, "[SECURITY] Application: FSBrowser; User: NotAuthorized; Status: Authentication failed; Message: "
+                    .. 'Cannot parse cookie ' .. pod_cookie_name .. ' value ' .. pod_cookie_val .. 'into IP and Pass')
             ngx.header['Set-Cookie'] = pod_cookie_name .. '=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
             ngx.status = ngx.HTTP_UNAUTHORIZED
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
