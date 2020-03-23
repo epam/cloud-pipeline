@@ -166,7 +166,7 @@ if token then
         if jwt_username ~= uri_username then
             ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
             ngx.status = ngx.HTTP_UNAUTHORIZED
-            ngx.log(ngx.WARN, "[SECURITY] Application: FSBrowser-" .. ngx.var.request_uri ..
+            ngx.log(ngx.WARN, "[SECURITY] Application: DAV-" .. ngx.var.request_uri ..
                     "; User: " .. jwt_username .. "; Status: Authentication failed; "
                     .. "Message: JWT Subject is not equal to the uri_username - restrict connection")
             ngx.log(ngx.WARN, jwt_obj.reason)
