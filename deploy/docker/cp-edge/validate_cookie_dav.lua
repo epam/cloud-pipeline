@@ -1,4 +1,4 @@
--- Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+-- Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -24,17 +24,17 @@ local function arr_has_value (tab, val)
 end
 
 
-function arr_length(T)
+local function arr_length(T)
     local count = 0
     for _ in pairs(T) do count = count + 1 end
     return count
 end
 
-function split_str(inputstr, sep)
+local function split_str(inputstr, sep)
     if sep == nil then
         sep = "%s"
     end
-    local t={} ; i=1
+    local t={} ; local i=1
     for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
         t[i] = str
         i = i + 1
@@ -42,11 +42,11 @@ function split_str(inputstr, sep)
     return t
 end
 
-function is_empty(str)
+local function is_empty(str)
     return str == nil or str == ''
 end
 
-function get_basic_token()
+local function get_basic_token()
     local authorization = ngx.var.http_authorization
     if is_empty(authorization) then
         return nil
@@ -110,11 +110,18 @@ if token then
 
         local jwt_obj = jwt:verify(cert, token, claim_spec)
 
+        local jwt_username = "NotAuthorized"
+        if jwt_obj["payload"] ~= nil and jwt_obj["payload"]["sub"] ~= nil then
+            jwt_username = jwt_obj["payload"]["sub"]
+        end
+
+
     -- If "bearer" token is not valid - return 401 and clear cookie
         if not jwt_obj["verified"] then
             ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
             ngx.status = ngx.HTTP_UNAUTHORIZED
-            ngx.log(ngx.WARN, jwt_obj.reason)
+            ngx.log(ngx.WARN, "[SECURITY] Application: DAV-" .. ngx.var.request_uri .. "; User: " .. jwt_username ..
+                    "; Status: Authentication failed; Message: " .. jwt_obj.reason)
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
         end
 
@@ -133,6 +140,8 @@ if token then
         local restricted_root_methods = { "PUT", "POST", "DELETE", "PROPPATCH", "MKCOL", "COPY", "MOVE", "LOCK", "UNLOCK", "PATCH" }
         if (uri_parts_len <= 3 and arr_has_value(restricted_root_methods, request_method)) then
             ngx.status = ngx.HTTP_UNAUTHORIZED
+            ngx.log(ngx.WARN, "[SECURITY] Application: DAV-" .. ngx.var.request_uri .. "; User: " .. jwt_username ..
+                    "; Status: Authentication failed; Message: Restrict writing to the root")
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
         end
 
@@ -147,6 +156,8 @@ if token then
             uri_username = uri_parts[2]
         else
             ngx.status = ngx.HTTP_UNAUTHORIZED
+            ngx.log(ngx.WARN, "[SECURITY] Application: DAV-" .. ngx.var.request_uri ..
+                    "; User: " .. jwt_username .. "; Status: Authentication failed; Message: username is not provided")
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
         end
 
@@ -155,11 +166,18 @@ if token then
         if jwt_username ~= uri_username then
             ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
             ngx.status = ngx.HTTP_UNAUTHORIZED
+            ngx.log(ngx.WARN, "[SECURITY] Application: DAV-" .. ngx.var.request_uri ..
+                    "; User: " .. jwt_username .. "; Status: Authentication failed; "
+                    .. "Message: JWT Subject is not equal to the uri_username - restrict connection")
             ngx.log(ngx.WARN, jwt_obj.reason)
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
         end
 
     -- If "bearer" is fine - allow nginx to proceed
+    if string.gmatch(ngx.var.request_uri, "^/webdav/[%w_-]+/$") then
+        ngx.log(ngx.WARN,"[SECURITY] Application: DAV-" .. ngx.var.request_uri ..
+                "; User: " .. jwt_username .. "; Status: Successfully autentificated.")
+    end
     return
 end
 
@@ -206,7 +224,3 @@ else
         ngx.say('<html><body><script>window.location.href = "' .. req_uri .. '"</script></body></html>')
         return
 end
-
--- No cookie, no POST param - 401
-ngx.status = ngx.HTTP_UNAUTHORIZED
-ngx.exit(ngx.HTTP_UNAUTHORIZED)

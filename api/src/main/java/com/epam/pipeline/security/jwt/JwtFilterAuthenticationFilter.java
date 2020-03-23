@@ -17,6 +17,7 @@
 package com.epam.pipeline.security.jwt;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -47,26 +48,38 @@ public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
-        JwtRawToken rawToken;
+        final JwtRawToken rawToken = fetchJwtRawToken(request);
+        try {
+            if (!StringUtils.isEmpty(rawToken)) {
+                JwtTokenClaims claims = tokenVerifier.readClaims(rawToken.getToken());
+                UserContext context = new UserContext(rawToken, claims);
+                JwtAuthenticationToken token = new JwtAuthenticationToken(context, context.getAuthorities());
+                token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(token);
+                LOGGER.info("Successfully authenticate user with name: " + context.getUsername());
+            }
+        } catch (TokenVerificationException e) {
+            LOGGER.info("JWT authentication failed!", e);
+        }
+        filterChain.doFilter(request, response);
+    }
+
+    private JwtRawToken fetchJwtRawToken(HttpServletRequest request) throws UnsupportedEncodingException {
+        JwtRawToken rawToken = null;
         String authorizationHeader = extractAuthHeader(request);
+        Cookie authCookie = extractAuthCookie(request);
         try {
             if (!StringUtils.isEmpty(authorizationHeader)) { // attempt obtain JWT token from HTTP header
                 rawToken = JwtRawToken.fromHeader(authorizationHeader);
                 LOGGER.trace("Extracted JWT token from authorization HTTP header");
-            } else {                                           // else try to get token from cookies
-                Cookie authCookie = extractAuthCookie(request);
+            } else if (!StringUtils.isEmpty(authCookie)) {   // else try to get token from cookies
                 rawToken = JwtRawToken.fromCookie(authCookie);
                 LOGGER.trace("Extracted JWT token from authorization cookie");
             }
-            JwtTokenClaims claims = tokenVerifier.readClaims(rawToken.getToken());
-            UserContext context = new UserContext(rawToken, claims);
-            JwtAuthenticationToken token = new JwtAuthenticationToken(context, context.getAuthorities());
-            token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(token);
-        } catch (AuthenticationServiceException | TokenVerificationException e) {
+        } catch (AuthenticationServiceException e) {
             LOGGER.trace(e.getMessage(), e);
         }
-        filterChain.doFilter(request, response);
+        return rawToken;
     }
 
     private String extractAuthHeader(HttpServletRequest request) {

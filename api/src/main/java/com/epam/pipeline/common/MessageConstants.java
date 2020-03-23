@@ -280,6 +280,15 @@ public final class MessageConstants {
     public static final String ERROR_MUTABLE_ACL_RETURN = "error.mutable.acl.return";
     public static final String ERROR_NO_GROUP_WAS_FOUND = "error.no.group.was.found";
     public static final String ERROR_GROUP_STATUS_EXISTS = "group.status.exists";
+    public static final String INFO_ASSIGN_ROLE = "info.assign.role";
+    public static final String INFO_UNASSIGN_ROLE = "info.unassign.role";
+    public static final String INFO_CREATE_USER = "info.create.user";
+    public static final String INFO_DELETE_USER = "info.delete.user";
+    public static final String INFO_UPDATE_USER_ROLES = "info.update.user.roles";
+    public static final String INFO_UPDATE_USER_DATASTORAGE = "info.update.user.datastorage";
+    public static final String INFO_UPDATE_USER_BLOCK_STATUS= "info.update.user.block.status";
+    public static final String INFO_UPDATE_USER_SAML_INFO = "info.update.user.saml.info";
+
 
     // Security
     public static final String ERROR_PERMISSION_PARAM_REQUIRED = "permission.param.is.required";
@@ -287,6 +296,8 @@ public final class MessageConstants {
     public static final String ERROR_PERMISSION_IS_NOT_GRANTED = "error.permission.is.not.granted";
     public static final String ERROR_ENTITY_IS_LOCKED = "error.entity.is.locked";
     public static final String ERROR_USER_NOT_AUTHORIZED = "error.user.not.authorized";
+    public static final String ERROR_USER_NOT_REGISTERED_EXPLICITLY = "user.not.registered.explicitly";
+    public static final String ERROR_USER_NOT_REGISTERED_GROUP_EXPLICITLY = "user.not.registered.group.explicitly";
 
     // Metadata
     public static final String ERROR_METADATA_NOT_FOUND = "error.metadata.not.found";

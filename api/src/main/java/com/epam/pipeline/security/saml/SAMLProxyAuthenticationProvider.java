@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opensaml.common.SAMLException;
@@ -40,6 +41,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
 
+@Slf4j
 public class SAMLProxyAuthenticationProvider implements AuthenticationProvider {
 
     private static final int RESPONSE_SKEW = 1200;
@@ -73,7 +75,9 @@ public class SAMLProxyAuthenticationProvider implements AuthenticationProvider {
                     .filter(e -> e.getEndpointId().equals(endpointId)).findFirst();
 
                 if (endpointOpt.isPresent()) {
-                    return validateAuthentication(auth, decoded, endpointId, endpointOpt.get());
+                    Authentication validated = validateAuthentication(auth, decoded, endpointId, endpointOpt.get());
+                    log.debug("Successfully authenticate user with name: " + auth.getName());
+                    return validated;
                 } else {
                     throw new AuthenticationServiceException("Authentication error: unexpected external service");
                 }

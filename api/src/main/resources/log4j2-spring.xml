@@ -47,6 +47,26 @@
                 </pattern>
             </PatternLayout>
         </RollingFile >
+        <RollingFile  name="JSONSecurityLogsAppender" fileName="${log-path}/security.json"
+                      filePattern="${log-path}/security-%d{yyyyMMdd}.json">
+            <DefaultRolloverStrategy>
+                <Delete basePath="${log-path}" maxDepth="1">
+                    <IfFileName glob="security-*.json">
+                        <IfAny>
+                            <IfAccumulatedFileCount exceeds="20"/>
+                        </IfAny>
+                    </IfFileName>
+                </Delete>
+            </DefaultRolloverStrategy>
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+            </Policies>
+            <JsonLayout complete="false" compact="true" eventEol="true" stacktraceAsString="true">
+                <KeyValuePair key="user" value="$${ctx:user:-NotAuthorized}" />
+                <KeyValuePair key="log_context" value="Security" />
+                <KeyValuePair key="timestamp" value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSSZ}" />
+            </JsonLayout>
+        </RollingFile >
         <RollingFile  name="Spring-Appender" fileName="${log-path}/spring.log"
                       filePattern="${log-path}/spring-%d{yyyyMMdd}.log">
             <DefaultRolloverStrategy>
@@ -114,6 +134,18 @@
     <Loggers>
         <Logger name="com.epam.pipeline" level="debug" additivity="true">
             <AppenderRef ref="App-Appender"/>
+        </Logger>
+        <Logger name="com.epam.pipeline.security" level="info" additivity="true">
+            <AppenderRef ref="JSONSecurityLogsAppender"/>
+        </Logger>
+        <Logger name="com.epam.pipeline.manager.security" level="info" additivity="true">
+            <AppenderRef ref="JSONSecurityLogsAppender"/>
+        </Logger>
+        <Logger name="com.epam.pipeline.manager.user" level="info" additivity="true">
+            <AppenderRef ref="JSONSecurityLogsAppender"/>
+        </Logger>
+        <Logger name="org.springframework.security.saml" level="error" additivity="true">
+            <AppenderRef ref="JSONSecurityLogsAppender"/>
         </Logger>
         <Logger name="org.springframework.security.saml" level="debug" additivity="false">
             <AppenderRef ref="Spring-Appender"/>

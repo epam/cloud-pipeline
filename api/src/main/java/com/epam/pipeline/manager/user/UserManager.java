@@ -35,6 +35,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.UserContext;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -56,6 +57,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class UserManager {
 
@@ -99,6 +101,7 @@ public class UserManager {
         user.setAttributes(attributes);
         user.setDefaultStorageId(defaultStorageId);
         storageValidator.validate(user);
+        log.info(messageHelper.getMessage(MessageConstants.INFO_CREATE_USER, userName));
         return userDao.createUser(user, userRoles);
     }
 
@@ -153,6 +156,7 @@ public class UserManager {
         PipelineUser userContext = loadUserById(id);
         userDao.deleteUserRoles(id);
         userDao.deleteUser(id);
+        log.info(messageHelper.getMessage(MessageConstants.INFO_DELETE_USER, userContext.getUserName(), id));
         return userContext;
     }
 
@@ -160,6 +164,8 @@ public class UserManager {
     public PipelineUser updateUser(Long id, List<Long> roles) {
         loadUserById(id);
         updateUserRoles(id, roles);
+        log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_ROLES,
+                id, roles.stream().map(Object::toString).collect(Collectors.joining(", "))));
         return loadUserById(id);
     }
 
@@ -175,6 +181,8 @@ public class UserManager {
         PipelineUser user = loadUserById(id);
         user.setDefaultStorageId(userVO.getDefaultStorageId());
         storageValidator.validate(user);
+        log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_DATASTORAGE,
+                id, userVO.getDefaultStorageId()));
         return userDao.updateUser(user);
     }
 
@@ -182,6 +190,7 @@ public class UserManager {
     public PipelineUser updateUserBlockingStatus(final Long id, final boolean blockStatus) {
         final PipelineUser user = loadUserById(id);
         user.setBlocked(blockStatus);
+        log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_BLOCK_STATUS, id, blockStatus));
         return userDao.updateUser(user);
     }
 
@@ -223,8 +232,10 @@ public class UserManager {
             userDao.updateUser(user);
         }
         updateUserRoles(id, roles);
+        log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_SAML_INFO, user.getUserName(), id));
         return loadUserById(id);
     }
+
 
     public PipelineUser loadUserByNameOrId(String identifier) {
         PipelineUser user;

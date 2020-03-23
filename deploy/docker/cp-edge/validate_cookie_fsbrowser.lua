@@ -1,4 +1,4 @@
--- Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+-- Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -12,11 +12,11 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-function is_int(n)
+local function is_int(n)
     return tonumber(n) ~= nil
 end
 
-function split_str(inputstr, sep)
+local function split_str(inputstr, sep)
     if sep == nil then
         sep = "%s"
     end
@@ -29,13 +29,13 @@ function split_str(inputstr, sep)
     return t
 end
 
-function arr_length(T)
+local function arr_length(T)
     local count = 0
     for _ in pairs(T) do count = count + 1 end
     return count
 end
 
-function arr_to_string(T, sep)
+local function arr_to_string(T, sep)
     if sep == nil then
         sep = ''
     end
@@ -46,7 +46,7 @@ function arr_to_string(T, sep)
     return r
 end
 
-function dict_contains(dict, key)
+local function dict_contains(dict, key)
     return dict[key] ~= nil
 end
 
@@ -76,11 +76,18 @@ if token then
 
     local jwt_obj = jwt:verify(cert, token, claim_spec)
 
+    local username = "NotAuthorized"
+    if jwt_obj["payload"] ~= nil and jwt_obj["payload"]["sub"] ~= nil then
+        username = jwt_obj["payload"]["sub"]
+    end
+
+
     -- If "bearer" token is not valid - return 401 and clear cookie
     if not jwt_obj["verified"] then
         ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
         ngx.status = ngx.HTTP_UNAUTHORIZED
-        ngx.log(ngx.ERR, 'Cannot verify a token: ' .. jwt_obj.reason)
+        ngx.log(ngx.ERR, "[SECURITY] Application: FSBrowser-" .. ngx.var.request_uri .. "; User: " .. username ..
+                "; Status: Authentication failed; Message: " .. jwt_obj.reason)
         ngx.exit(ngx.HTTP_UNAUTHORIZED)
     end
 
@@ -133,7 +140,8 @@ if token then
         local run_api_token = os.getenv("API_TOKEN")
         -- Fail if the API connection parameters cannot be retrieved from the environment
         if not run_api_url or not run_api_token then
-            ngx.log(ngx.ERR, 'Cannot get API or API_TOKEN environment variables')
+            ngx.log(ngx.ERR, "[SECURITY] Application: FSBrowser-" .. ngx.var.request_uri .. "; User: " .. username ..
+                    "; Status: Authentication failed; Message: Cannot get API or API_TOKEN environment variables")
             ngx.status = ngx.HTTP_UNAUTHORIZED
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
             return
@@ -153,7 +161,9 @@ if token then
 
         -- Fail if the request was not successful
         if not res then
-            ngx.log(ngx.ERR, 'Failed to request API for the Pod IP and SSH Pass. API: ' .. run_api_url .. ', Error: ' .. err)
+            ngx.log(ngx.ERR, "[SECURITY] Application: FSBrowser-" .. ngx.var.request_uri .. "; User: " .. username ..
+                    "; Status: Authentication failed; Message: " ..
+                    'Failed to request API for the Pod IP and SSH Pass. API - ' .. run_api_url .. ', Error - ' .. err)
             ngx.status = ngx.HTTP_UNAUTHORIZED
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
             return
@@ -165,7 +175,9 @@ if token then
         if not dict_contains(data, 'payload') or 
            not dict_contains(data['payload'], 'sshPassword') or 
            not dict_contains(data['payload'], 'podIP') then
-            ngx.log(ngx.ERR, 'Cannot get podIP and sshPassword from the API response')
+            ngx.log(ngx.ERR, "[SECURITY] Application: FSBrowser-" .. ngx.var.request_uri .. "; User: " .. username ..
+                    "; Status: Authentication failed; Message: " ..
+                    'Cannot get podIP and sshPassword from the API response')
             ngx.status = ngx.HTTP_UNAUTHORIZED
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
             return
@@ -183,7 +195,9 @@ if token then
         local pod_cookie_parts = split_str(pod_cookie_val, ':')
         local pod_cookie_parts_len = arr_length(pod_cookie_parts)
         if (pod_cookie_parts_len ~= 2) then
-            ngx.log(ngx.ERR, 'Cannot parse cookie ' .. pod_cookie_name .. ' value ' .. pod_cookie_val .. 'into IP and Pass')
+            ngx.log(ngx.ERR, "[SECURITY] Application: FSBrowser-" .. ngx.var.request_uri .. "; User: " .. username ..
+                    "; Status: Authentication failed; Message: "
+                    .. 'Cannot parse cookie ' .. pod_cookie_name .. ' value ' .. pod_cookie_val .. 'into IP and Pass')
             ngx.header['Set-Cookie'] = pod_cookie_name .. '=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
             ngx.status = ngx.HTTP_UNAUTHORIZED
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
@@ -204,6 +218,10 @@ if token then
 
     ngx.req.set_header('token', token)
     ngx.req.set_header('X-Auth-User', username)
+    if string.match(ngx.var.request_uri, "^/fsbrowser/[%w_-]+/$") then
+      ngx.log(ngx.WARN,"[SECURITY] Application: FSBrowser-" .. ngx.var.request_uri .. "; User: " .. username ..
+              "; Status: Successfully autentificated.")
+    end
     return
     -- --------------------------------------------
 end
@@ -255,7 +273,3 @@ else
         ngx.say('<html><body><script>window.location.href = "' .. req_uri .. '"</script></body></html>')
         return
 end
-
--- No cookie, no POST param - 401
-ngx.status = ngx.HTTP_UNAUTHORIZED
-ngx.exit(ngx.HTTP_UNAUTHORIZED)
