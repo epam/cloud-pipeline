@@ -119,6 +119,7 @@ function getFormItemClassName (rootClass, key) {
   return {};
 })
 @localization.localizedComponent
+@roleModel.authenticationInfo
 @observer
 class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
@@ -130,6 +131,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       .filter(config => config.name === props.currentConfigurationName);
 
     return currentConfiguration && currentConfiguration.executionEnvironment === DTS_ENVIRONMENT;
+  };
+
+  isAdmin = () => {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return false;
+    }
+    return this.props.authenticatedUserInfo.value.admin;
   };
 
   static propTypes = {
@@ -2637,7 +2645,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderPrettyUrlFormItem = () => {
-    if (this.prettyUrlEnabled) {
+    if (this.prettyUrlEnabled && this.isAdmin()) {
       return (
         <FormItem
           className={getFormItemClassName(styles.formItemRow, 'prettyUrl')}
