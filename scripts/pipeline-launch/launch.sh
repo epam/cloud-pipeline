@@ -1339,11 +1339,21 @@ fi
 echo "Check if output vars exist and upload data to remote"
 FINALIZATION_TASK_NAME="OutputData"
 
+CP_OUTPUTS_RESULT=0
 if [[ -s $DATA_STORAGE_RULES_PATH ]] && [[ ! -z "$(ls -A ${ANALYSIS_DIR})" ]];
 then 
       download_outputs $DATA_STORAGE_RULES_PATH $FINALIZATION_TASK_NAME
+      CP_OUTPUTS_RESULT=$?
 else
       echo "No data storage rules defined, skipping ${FINALIZATION_TASK_NAME} step"
+fi
+
+if [ "$CP_CAP_KEEP_FAILED_RUN" ] && \
+   ([ $CP_EXEC_RESULT -ne 0 ] || \
+   [ $CP_OUTPUTS_RESULT -ne 0 ]); then
+      echo "Script execution has failed or the outputs were not tansferred. The job will keep running for $CP_CAP_KEEP_FAILED_RUN"
+      sleep $CP_CAP_KEEP_FAILED_RUN
+      echo "Failure waiting timeout has been reached, proceeding with the cleanup and termination"
 fi
 
 if [ "$SINGLE_RUN" = true ] ;
