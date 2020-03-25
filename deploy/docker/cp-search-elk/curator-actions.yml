@@ -40,4 +40,4 @@ actions:
         source: creation_date
         direction: older
         unit: days
-        unit_count: 30
+        unit_count: ${CP_SECURITY_LOGS_ELASTIC_BACKUP_DAYS:-365}

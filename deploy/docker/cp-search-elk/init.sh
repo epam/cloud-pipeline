@@ -32,25 +32,25 @@ while [ $not_initialized ] && [ $try_count -lt 60 ]; do
 done
 
 
-ILM_POLICY='{
-  "policy": {
-    "phases": {
-      "hot": {
-        "actions": {
-          "rollover": {
-            "max_age": "1d"
+ILM_POLICY="{
+  \"policy\": {
+    \"phases\": {
+      \"hot\": {
+        \"actions\": {
+          \"rollover\": {
+            \"max_age\": \"1d\"
           }
         }
       },
-      "delete": {
-        "min_age": "20d",
-        "actions": {
-          "delete": {}
+      \"delete\": {
+        \"min_age\": \"${CP_SECURITY_LOGS_ROLLOVER_DAYS:-20}d\",
+        \"actions\": {
+          \"delete\": {}
         }
       }
     }
   }
-}'
+}"
 
 curl -H 'Content-Type: application/json' -XPUT localhost:9200/_ilm/policy/security_log_policy -d "$ILM_POLICY"
 
