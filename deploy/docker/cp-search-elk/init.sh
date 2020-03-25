@@ -60,7 +60,7 @@ INDEX_TEMPLATE="{
     \"number_of_shards\": 1,
     \"number_of_replicas\": 0,
     \"index.lifecycle.name\": \"security_log_policy\",
-    \"index.lifecycle.rollover_alias\": \"security_log\"
+    \"index.lifecycle.rollover_alias\": \"${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}\"
   }
 }"
 
@@ -72,7 +72,7 @@ INDEX="{
   }
 }"
 
-curl -H 'Content-Type: application/json' -XPUT localhost:9200/%3C${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-0000001%3E -d "$INDEX_TEMPLATE"
+curl -H 'Content-Type: application/json' -XPUT localhost:9200/%3C${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-0000001%3E -d "$INDEX"
 
 EDGE_PIPELINE='{
 
