@@ -172,5 +172,11 @@
         "type": "boolean",
         "description": "Enables filesystem autoscaling",
         "defaultValue": "false"
+    },
+    {
+        "name": "CP_CAP_KEEP_FAILED_RUN",
+        "type": "string",
+        "description": "Any job, that is failed due to the \"command\" or output upload errors, will be kept for this amount of time before terminated. \"sleep\" format is accepted",
+        "defaultValue": "36000s"
     }
 ]
