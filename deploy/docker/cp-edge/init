@@ -104,6 +104,9 @@ env > /etc/sync-routes/env.sh
 # Start cron
 crond
 
+#Start Filebeat
+nohup filebeat &
+
 # Start nginx
 nginx -p /etc/nginx/ -c /etc/nginx/nginx.conf
 

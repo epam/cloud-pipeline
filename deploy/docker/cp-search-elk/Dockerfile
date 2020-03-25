@@ -18,11 +18,11 @@ RUN ES_JAVA_OPTS=""; echo "y" | bin/elasticsearch-plugin install repository-s3
 
 RUN wget https://packages.elastic.co/curator/5/centos/7/Packages/elasticsearch-curator-5.8.1-1.x86_64.rpm && \
     rpm -vi elasticsearch-curator-5.8.1-1.x86_64.rpm && \
-    rm elasticsearch-curator-5.8.1-1.x86_64.rpm && mkdir ~/.curator
+    rm elasticsearch-curator-5.8.1-1.x86_64.rpm && mkdir /root/.curator
 RUN yum install cronie -q -y
 
-ADD curator.yml ~/.curator/curator.yml
-ADD curator-actions.yml ~/.curator/curator-actions.yml
+ADD curator.yml /root/.curator/curator.yml
+ADD curator-actions.yml /root/.curator/curator-actions.yml
 
 ADD get-aws-profile.sh /usr/local/bin/get-aws-profile
 RUN chmod +x /usr/local/bin/get-aws-profile

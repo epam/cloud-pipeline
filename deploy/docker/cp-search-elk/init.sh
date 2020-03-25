@@ -21,7 +21,7 @@ not_initialized=true
 try_count=0
 while [ $not_initialized ] && [ $try_count -lt 60 ]; do
     echo "Tring to curl health endpoint of Elastic..."
-    curl http://localhost:9200/_cluster/health --fail "$EDGE_HEALTH_ENDPOINT" > /dev/null 2>&1 && unset not_initialized
+    curl http://localhost:9200/_cluster/health > /dev/null 2>&1 && unset not_initialized
     if [ $not_initialized ]; then
       echo "...Failed."
     else
@@ -136,7 +136,7 @@ LOG_BACKUP_REPO="{
 curl -H 'Content-Type: application/json' -XPUT localhost:9200/_snapshot/log_backup_repo -d "$LOG_BACKUP_REPO"
 
 cat > /etc/cron.d/curator-cron <<EOL
-0 0 * * * curator --config ~/.curator/curator.yml ~/.curator/curator-actions.yml
+0 0 * * * curator --config /root/.curator/curator.yml /root/.curator/curator-actions.yml
 EOL
 
 chmod 0644 /etc/cron.d/curator-cron
