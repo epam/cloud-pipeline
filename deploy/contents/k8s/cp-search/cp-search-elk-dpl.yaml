@@ -18,12 +18,12 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-search-elk
-          image: elasticsearch:6.8.3
+          image: lifescience/cloud-pipeline:elasticsearch-$CP_VERSION
           securityContext:
             privileged: true
           imagePullPolicy: "IfNotPresent"
           command: ["bash"]
-          args: ["-c", "ulimit -n 65536 && sysctl -w vm.max_map_count=262144 && /usr/local/bin/docker-entrypoint.sh"]
+          args: ["-c", "/init.sh"]
           env:
           - name: ES_JAVA_OPTS
             value: "-Xmx4g -Xms4g -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly"
