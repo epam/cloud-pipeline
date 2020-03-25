@@ -129,12 +129,13 @@ curl -H 'Content-Type: application/json' -XPUT localhost:9200/_ingest/pipeline/a
 LOG_BACKUP_REPO="{
   \"type\": \"s3\",
   \"settings\": {
-    \"bucket\": \"${CP_LOG_ELASTIC_BACKUP_REPO:-log_backup_repo}\"
+    \"bucket\": \"${CP_LOG_ELASTIC_BACKUP_REPO:-cloud-pipeline-security-log-storage}\"
   }
 }"
 
 curl -H 'Content-Type: application/json' -XPUT localhost:9200/_snapshot/log_backup_repo -d "$LOG_BACKUP_REPO"
 
+envsubst < /root/.curator/curator-actions.yml
 cat > /etc/cron.d/curator-cron <<EOL
 0 0 * * * curator --config /root/.curator/curator.yml /root/.curator/curator-actions.yml
 EOL
