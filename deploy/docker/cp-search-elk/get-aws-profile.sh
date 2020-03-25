@@ -1,22 +1,5 @@
 #!/bin/bash
 
-#
-# Fetch the AWS access key and/or secret for an AWS profile
-# stored in the ~/.aws/credentials file ini format
-#
-# Aaron Roydhouse <aaron@roydhouse.com>, 2017
-# https://github.com/whereisaaron/get-aws-profile-bash/
-#
-
-#
-# cfg_parser - Parse and ini files into variables
-# By Andres J. Diaz
-# http://theoldschooldevops.com/2008/02/09/bash-ini-parser/
-# Use pastebin link only and WordPress corrupts it
-# http://pastebin.com/f61ef4979 (original)
-# http://pastebin.com/m4fe6bdaf (supports spaces in values)
-#
-
 cfg_parser ()
 {
   IFS=$'\n' && ini=( $(<$1) ) # convert to line-array
@@ -101,7 +84,7 @@ done
 # Check options
 #
 
-CREDENTIALS=${CREDENTIALS:-~/.aws/credentials}
+CREDENTIALS=${CREDENTIALS:-/root/.cloud/credentials}
 PROFILE=${PROFILE:-default}
 SHOW_KEY=${SHOW_KEY:-false}
 SHOW_SECRET=${SHOW_SECRET:-false}
@@ -139,8 +122,8 @@ if [[ "${SHOW_KEY}" = false && "${SHOW_SECRET}" = false && "${SHOW_SESSION_TOKEN
   echo "export AWS_SECRET_ACCESS_KEY=${aws_secret_access_key}"
   echo "export AWS_SESSION_TOKEN=${aws_session_token}"
 elif [[ "${SHOW_KEY}" = true ]]; then
+    echo -n "${aws_access_key_id}"
 elif [[ "${SHOW_SECRET}" = true ]]; then
-  echo -n "${aws_access_key_id}"
   echo -n "${aws_secret_access_key}"
 elif [[ "${SHOW_SESSION_TOKEN}" = true ]]; then
   echo -n "${aws_session_token}"
