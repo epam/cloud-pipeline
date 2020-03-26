@@ -218,6 +218,11 @@ CP_SEARCH_KUBE_NODE_NAME=${CP_SEARCH_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-search-srv to $CP_SEARCH_KUBE_NODE_NAME"
 kubectl label nodes "$CP_SEARCH_KUBE_NODE_NAME" cloud-pipeline/cp-search-srv="true" --overwrite
 
+# Allow to schedule Kibana service to the master
+CP_SEARCH_KUBE_NODE_NAME=${CP_SEARCH_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-search-kibana to $CP_SEARCH_KUBE_NODE_NAME"
+kubectl label nodes "$CP_SEARCH_KUBE_NODE_NAME" cloud-pipeline/cp-search-kibana="true" --overwrite
+
 # Allow to schedule Heapster ELK to the master
 CP_HEAPSTER_ELK_KUBE_NODE_NAME=${CP_HEAPSTER_ELK_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-heapster-elk to $CP_HEAPSTER_ELK_KUBE_NODE_NAME"

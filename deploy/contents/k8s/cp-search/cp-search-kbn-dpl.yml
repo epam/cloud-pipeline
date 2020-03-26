@@ -1,7 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: cp-log-store-kibana
+  name: cp-search-kibana
   namespace: default
 spec:
   replicas: 1
@@ -9,15 +9,15 @@ spec:
     metadata:
       namespace: default
       labels:
-        cloud-pipeline/cp-log-store-kibana: "true"
+        cloud-pipeline/cp-search-kibana: "true"
     spec:
       nodeSelector:
-        cloud-pipeline/cp-log-store-kibana: "true"
+        cloud-pipeline/cp-search-kibana: "true"
       tolerations:
         - key: node-role.kubernetes.io/master
           effect: NoSchedule
       containers:
-        - name: cp-log-store-kibana
+        - name: cp-search-kibana
           image: docker.elastic.co/kibana/kibana:6.8.3
           securityContext:
             privileged: true
