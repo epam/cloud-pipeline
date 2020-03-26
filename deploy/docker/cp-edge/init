@@ -104,8 +104,8 @@ env > /etc/sync-routes/env.sh
 # Start cron
 crond
 
-#Start Filebeat
-envsubst < /etc/filebeat/filebeat.yml
+#Run Filebeat
+envsubst < /etc/filebeat/filebeat.yml > /etc/filebeat/filebeat-template.yml
 nohup filebeat &
 
 # Start nginx

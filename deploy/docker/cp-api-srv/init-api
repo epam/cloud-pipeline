@@ -260,7 +260,7 @@ APP_PID="$!"
 sleep 5
 
 #Run Filebeat
-envsubst < /etc/filebeat/filebeat.yml
+envsubst < /etc/filebeat/filebeat-template.yml > /etc/filebeat/filebeat-template.yml
 nohup filebeat &
 
 # Workaround the container hanging when being terminated

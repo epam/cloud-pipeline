@@ -153,7 +153,7 @@ curl -H 'Content-Type: application/json' -XPUT localhost:9200/_ingest/pipeline/a
 LOG_BACKUP_REPO="{
   \"type\": \"s3\",
   \"settings\": {
-    \"bucket\": \"${CP_LOG_ELASTIC_BACKUP_REPO:-cloud-pipeline-security-log-storage}\"
+    \"bucket\": \"${CP_LOG_ELASTIC_BACKUP_REPO:-cloud-pipeline-log-storage}\"
   }
 }"
 
