@@ -81,7 +81,7 @@ EDGE_PIPELINE='{
       {
         "grok": {
           "field": "message",
-          "patterns": [".* \\[SECURITY\\] Application: %{GREEDYDATA:application}; User: %{DATA:user};.*"]
+          "patterns": ["%{DATESTAMP:log_timestamp} %{GREEDYDATA} Application: %{GREEDYDATA:application}; User: %{DATA:user}; %{GREEDYDATA}"]
         }
       },
        {
@@ -95,34 +95,58 @@ EDGE_PIPELINE='{
            "field": "fields.service",
            "target_field": "service_name"
          }
+       },
+       {
+         "date": {
+            "field" : "log_timestamp",
+            "target_field" : "message_timestamp",
+            "formats" : ["yy/MM/dd HH:mm:ss"]
+         }
+       },
+       {
+         "remove": {
+           "field": "log_timestamp",
+           "ignore_missing": true,
+           "ignore_failure": true
+          }
        }
-
     ]
-
 }'
 
 curl -H 'Content-Type: application/json' -XPUT localhost:9200/_ingest/pipeline/edge -d "$EDGE_PIPELINE"
 
-API_SRV_PIPELINE='{
+API_SRV_PIPELINE="{
 
-    "description" : "Log data extraction pipeline from API server",
-    "processors": [
+    \"description\" : \"Log data extraction pipeline from API server\",
+    \"processors\": [
        {
-         "rename": {
-           "field": "fields.type",
-           "target_field": "type"
+         \"rename\": {
+           \"field\": \"fields.type\",
+           \"target_field\": \"type\"
          }
        },
        {
-         "rename": {
-           "field": "fields.service",
-           "target_field": "service_name"
+         \"rename\": {
+           \"field\": \"fields.service\",
+           \"target_field\": \"service_name\"
          }
+       },
+       {
+         \"date\": {
+            \"field\" : \"timestamp\",
+            \"target_field\" : \"message_timestamp\",
+            \"formats\" : [\"yyyy-MM-dd'T'HH:mm:ss.SSSZ\"]
+         }
+       },
+       {
+         \"remove\": {
+           \"field\": \"timestamp\",
+           \"ignore_missing\": true,
+           \"ignore_failure\": true
+          }
        }
-
     ]
-
-}'
+}"
 
 curl -H 'Content-Type: application/json' -XPUT localhost:9200/_ingest/pipeline/api_server -d "$API_SRV_PIPELINE"
 
