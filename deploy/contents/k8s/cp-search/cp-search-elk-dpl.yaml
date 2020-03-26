@@ -33,6 +33,9 @@ spec:
           volumeMounts:
             - mountPath: /var/lib/elasticsearch
               name: search-elk-data
+            - name: cp-cloud-credentials
+              mountPath: "/root/.cloud"
+              readOnly: true
           readinessProbe:
             httpGet:
               path: /
@@ -44,5 +47,8 @@ spec:
         - name: search-elk-data
           hostPath:
             path: /opt/search-elk/data
+        - name: cp-cloud-credentials
+          secret:
+            secretName: cp-cloud-credentials
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
