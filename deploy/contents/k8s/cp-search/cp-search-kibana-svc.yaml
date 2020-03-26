@@ -8,7 +8,7 @@ metadata:
 spec:
   ports:
     - protocol: TCP
-      port: ${CP_SEARCH_KIBANA_INTERNAL_PORT:-45601}
+      port: ${CP_SEARCH_KIBANA_INTERNAL_PORT}
       targetPort: 5601
       name: cp-search-kibana-port
   selector:

@@ -26,7 +26,7 @@ spec:
           args: ["-c", "/usr/local/bin/kibana-docker"]
           env:
             - name: ELASTICSEARCH_HOSTS
-              value: "http://${CP_SEARCH_ELK_ELASTIC_INTERNAL_HOST:-cp-search-elk.default.svc.cluster.local}:${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT:-30091}"
+              value: "http://${CP_SEARCH_ELK_INTERNAL_HOST}:${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT}"
           readinessProbe:
             httpGet:
               path: /

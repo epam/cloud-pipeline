@@ -979,8 +979,8 @@ if is_service_requested cp-search; then
         wait_for_deployment "cp-search-elk"
 
         print_info "-> Deploying Search KIBANA service"
-        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-elk-dpl.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-elk-svc.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-kibana-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-kibana-svc.yaml
 
         print_info "-> Waiting for Search KIBANA service to initialize"
         wait_for_deployment "cp-search-kibana"
