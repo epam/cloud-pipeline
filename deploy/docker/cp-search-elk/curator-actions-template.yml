@@ -6,7 +6,7 @@ actions:
       creation_date).
     options:
       allow_ilm_indices: True
-      repository: ${CP_LOGS_ELASTIC_BACKUP_REPO:-logs_backup_repo}
+      repository: ${CP_LOGS_ELASTIC_BACKUP_REPO}
       name: snapshot-%Y%m%d%H
       ignore_unavailable: False
       include_global_state: True
@@ -17,7 +17,7 @@ actions:
     filters:
       - filtertype: pattern
         kind: prefix
-        value: ${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}
+        value: ${CP_SECURITY_LOGS_ELASTIC_PREFIX}
       - filtertype: age
         source: creation_date
         direction: older
@@ -29,7 +29,7 @@ actions:
       Delete snapshots from the selected repository older than 30 days
       (based on creation_date), for 'snapshot-' prefixed snapshots.
     options:
-      repository: ${CP_LOGS_ELASTIC_BACKUP_REPO:-logs_backup_repo}
+      repository: ${CP_LOGS_ELASTIC_BACKUP_REPO}
       disable_action: False
     filters:
       - filtertype: pattern
@@ -40,4 +40,4 @@ actions:
         source: creation_date
         direction: older
         unit: days
-        unit_count: ${CP_SECURITY_LOGS_ELASTIC_BACKUP_DAYS:-365}
+        unit_count: ${CP_SECURITY_LOGS_ELASTIC_BACKUP_DAYS}
