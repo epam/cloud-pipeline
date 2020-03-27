@@ -26,6 +26,8 @@ from googleapiclient import discovery
 
 from pipeline.autoscaling import utils
 
+DISABLE_ACCESS = 'disable_external_access'
+
 OS_DISK_SIZE = 10
 INSTANCE_USER_NAME = "pipeline"
 NO_BOOT_DEVICE_NAME = 'sdb1'
@@ -53,21 +55,11 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img,
                                                       kube_ip, kubeadm_token, swap_size)
 
-        allowed_networks = utils.get_networks_config(self.cloud_region)
-        subnet_id = 'default'
-        network_name = 'default'
-        if allowed_networks and len(allowed_networks) > 0:
-            network_num = randint(0, len(allowed_networks) - 1)
-            network_name = allowed_networks.items()[network_num][0]
-            subnet_id = allowed_networks.items()[network_num][1]
-            utils.pipe_log('- Networks list found, subnet {} in Network {} will be used'.format(subnet_id, network_name))
-        else:
-            utils.pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
         instance_type, gpu_type, gpu_count = self.parse_instance_type(ins_type)
         machine_type = 'zones/{}/machineTypes/{}'.format(self.cloud_region, instance_type)
         instance_name = "gcp-" + uuid.uuid4().hex[0:16]
-        region_name = self.cloud_region[:self.cloud_region.rfind('-')]
 
+        network_interfaces = self.__build_networks()
         if is_spot:
             utils.pipe_log('Preemptible instance with run id: ' + run_id + ' will be launched')
         body = {
@@ -79,21 +71,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             },
             'canIpForward': True,
             'disks': self.__get_disk_devices(ins_img, OS_DISK_SIZE, ins_hdd, swap_size),
-            'networkInterfaces': [
-                {
-                    'accessConfigs': [
-                        {
-                            'name': 'External NAT',
-                            'type': 'ONE_TO_ONE_NAT'
-                        }
-                    ],
-                    'network': 'projects/{project}/global/networks/{network}'.format(project=self.project_id,
-                                                                                     network=network_name),
-                    'subnetwork': 'projects/{project}/regions/{region}/subnetworks/{subnet}'.format(
-                        project=self.project_id, subnet=subnet_id, region=region_name)
-                }
-            ],
-
+            'networkInterfaces': network_interfaces,
             'labels': GCPInstanceProvider.get_tags(run_id),
             "metadata": {
                 "items": [
@@ -304,6 +282,40 @@ class GCPInstanceProvider(AbstractInstanceProvider):
 
             time.sleep(1)
 
+    def __build_networks(self):
+        region_name = self.cloud_region[:self.cloud_region.rfind('-')]
+        allowed_networks = utils.get_networks_config(self.cloud_region)
+        subnet_id = 'default'
+        network_name = 'default'
+        if allowed_networks and len(allowed_networks) > 0:
+            network_num = randint(0, len(allowed_networks) - 1)
+            network_name = allowed_networks.items()[network_num][0]
+            subnet_id = allowed_networks.items()[network_num][1]
+            utils.pipe_log(
+                '- Networks list found, subnet {} in Network {} will be used'.format(subnet_id, network_name))
+        else:
+            utils.pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
+
+        access_config = utils.get_access_config(self.cloud_region)
+        disable_external_access = False
+        if access_config is not None:
+            disable_external_access = DISABLE_ACCESS in access_config and access_config[DISABLE_ACCESS]
+
+        network = {
+            'network': 'projects/{project}/global/networks/{network}'.format(project=self.project_id,
+                                                                             network=network_name),
+            'subnetwork': 'projects/{project}/regions/{region}/subnetworks/{subnet}'.format(
+                project=self.project_id, subnet=subnet_id, region=region_name)
+        }
+        if not disable_external_access:
+            network['accessConfigs'] = [
+                {
+                    'name': 'External NAT',
+                    'type': 'ONE_TO_ONE_NAT'
+                }
+            ]
+        return [network]
+
     @staticmethod
     def resource_tags():
         tags = {}
@@ -327,3 +339,4 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         for key in res_tags:
             tags[key.lower()] = res_tags[key].lower()
         return tags
+
