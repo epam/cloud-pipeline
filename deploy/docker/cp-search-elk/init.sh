@@ -97,6 +97,12 @@ EDGE_PIPELINE='{
          }
        },
        {
+         "rename": {
+           "field": "host.name",
+           "target_field": "hostname"
+         }
+       },
+       {
          "date": {
             "field" : "log_timestamp",
             "target_field" : "message_timestamp",
@@ -106,6 +112,20 @@ EDGE_PIPELINE='{
        {
          "remove": {
            "field": "log_timestamp",
+           "ignore_missing": true,
+           "ignore_failure": true
+          }
+       },
+       {
+         "remove": {
+           "field": "fields",
+           "ignore_missing": true,
+           "ignore_failure": true
+          }
+       },
+       {
+         "remove": {
+           "field": "host",
            "ignore_missing": true,
            "ignore_failure": true
           }
@@ -132,6 +152,12 @@ API_SRV_PIPELINE="{
          }
        },
        {
+         \"rename\": {
+           \"field\": \"host.name\",
+           \"target_field\": \"hostname\"
+         }
+       },
+       {
          \"date\": {
             \"field\" : \"timestamp\",
             \"target_field\" : \"message_timestamp\",
@@ -141,6 +167,20 @@ API_SRV_PIPELINE="{
        {
          \"remove\": {
            \"field\": \"timestamp\",
+           \"ignore_missing\": true,
+           \"ignore_failure\": true
+          }
+       },
+       {
+         \"remove\": {
+           \"field\": \"fields\",
+           \"ignore_missing\": true,
+           \"ignore_failure\": true
+          }
+       },
+       {
+         \"remove\": {
+           \"field\": \"host\",
            \"ignore_missing\": true,
            \"ignore_failure\": true
           }
