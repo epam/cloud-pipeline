@@ -133,6 +133,10 @@ def get_allowed_zones(cloud_region):
     return list(get_networks_config(cloud_region).keys())
 
 
+def get_region_tags(cloud_region):
+    return get_cloud_config_section(cloud_region, "tags")
+
+
 def get_security_groups(cloud_region):
     config = get_cloud_config_section(cloud_region, "security_group_ids")
     if not config:

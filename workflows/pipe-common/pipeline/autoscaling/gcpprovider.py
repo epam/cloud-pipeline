@@ -72,7 +72,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             'canIpForward': True,
             'disks': self.__get_disk_devices(ins_img, OS_DISK_SIZE, ins_hdd, swap_size),
             'networkInterfaces': network_interfaces,
-            'labels': GCPInstanceProvider.get_tags(run_id),
+            'labels': GCPInstanceProvider.get_tags(run_id, self.cloud_region),
             "metadata": {
                 "items": [
                     {
@@ -340,10 +340,15 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         }
 
     @staticmethod
-    def get_tags(run_id):
+    def get_tags(run_id, cloud_region):
         tags = GCPInstanceProvider.run_id_tag(run_id)
-        res_tags = GCPInstanceProvider.resource_tags()
-        for key in res_tags:
-            tags[key.lower()] = res_tags[key].lower()
+        GCPInstanceProvider.append_tags(tags, GCPInstanceProvider.resource_tags())
+        GCPInstanceProvider.append_tags(tags, utils.get_region_tags(cloud_region))
         return tags
 
+    @staticmethod
+    def append_tags(tags, tags_to_add):
+        if tags_to_add is None:
+            return
+        for key in tags_to_add:
+            tags[key.lower()] = tags_to_add[key].lower()
