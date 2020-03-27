@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ES_JAVA_OPTS=""; echo `get-aws-profile --key` | bin/elasticsearch-keystore add s3.client.default.access_key -f
-ES_JAVA_OPTS=""; echo `get-aws-profile --secret` | bin/elasticsearch-keystore add s3.client.default.secret_key -f
+ES_JAVA_OPTS=""; echo $(get-aws-profile.sh --key) | bin/elasticsearch-keystore add s3.client.default.access_key -f
+ES_JAVA_OPTS=""; echo $(get-aws-profile.sh --secret) | bin/elasticsearch-keystore add s3.client.default.secret_key -f
 
 ulimit -n 65536 && sysctl -w vm.max_map_count=262144 && /usr/local/bin/docker-entrypoint.sh &
 

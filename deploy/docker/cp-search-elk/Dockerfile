@@ -21,11 +21,11 @@ RUN wget https://packages.elastic.co/curator/5/centos/7/Packages/elasticsearch-c
     rm elasticsearch-curator-5.8.1-1.x86_64.rpm && mkdir /root/.curator
 RUN yum install cronie gettext -q -y
 
-ADD curator.yml /root/.curator/curator.yml
-ADD curator-actions-template.yml /root/.curator/curator-actions-template.yml
+COPY curator.yml /root/.curator/
+COPY curator-actions-template.yml /root/.curator/
 
-ADD get-aws-profile.sh /usr/local/bin/get-aws-profile
-RUN chmod +x /usr/local/bin/get-aws-profile
+COPY get-aws-profile.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/get-aws-profile.sh
 
-ADD init.sh /init.sh
+COPY init.sh /
 RUN chmod +x /init.sh

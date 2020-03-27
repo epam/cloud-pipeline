@@ -114,7 +114,7 @@ RUN chmod +x /liveness.sh
 
 ADD ingress-config /etc/nginx/ingress
 
-RUN curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-6.8.3-x86_64.rpm \
+RUN wget -q https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-6.8.3-x86_64.rpm \
     && rpm -vi filebeat-6.8.3-x86_64.rpm && rm -rf filebeat-6.8.3-x86_64.rpm
 
-ADD filebeat-template.yml /etc/filebeat/filebeat-template.yml
+COPY filebeat-template.yml /etc/filebeat/
