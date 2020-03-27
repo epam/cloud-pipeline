@@ -256,13 +256,20 @@ class GCPInstanceProvider(AbstractInstanceProvider):
     def __get_boot_device(self, disk_size, image_family):
         project_and_family = image_family.split("/")
         if len(project_and_family) != 2:
+            # TODO: missing exception?
             print("node_image parameter doesn't match to Google image name convention: <project>/<imageFamily>")
+        image = self.client.images().get(project=project_and_family[0], image=project_and_family[1])
+        if image is None or 'diskSizeGb' not in image:
+            utils.pipe_log('Failed to get image disk size info. Falling back to default size %d ' % disk_size)
+            image_disk_size = disk_size
+        else:
+            image_disk_size = image['diskSizeGb']
         return {
             'boot': True,
             'autoDelete': True,
             'deviceName': 'sda1',
             'initializeParams': {
-                'diskSizeGb': disk_size,
+                'diskSizeGb': image_disk_size,
                 'diskType': 'projects/{}/zones/{}/diskTypes/pd-ssd'.format(self.project_id, self.cloud_region),
                 'sourceImage': 'projects/{}/global/images/{}'.format(project_and_family[0], project_and_family[1])
             },
