@@ -122,6 +122,9 @@ def get_networks_config(cloud_region):
     return get_cloud_config_section(cloud_region, "networks")
 
 
+def get_access_config(cloud_region):
+    return get_cloud_config_section(cloud_region, "access_config")
+
 def get_instance_images_config(cloud_region):
     return get_cloud_config_section(cloud_region, "amis")
 
