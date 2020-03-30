@@ -31,3 +31,4 @@ org.owasp.dependencycheck.analyzer.CocoaPodsAnalyzer
 org.owasp.dependencycheck.analyzer.SwiftPackageManagerAnalyzer
 org.owasp.dependencycheck.analyzer.VersionFilterAnalyzer
 com.epam.dockercompscan.owasp.analyzer.RPackageAnalyzer
+com.epam.dockercompscan.owasp.analyzer.OSVersionAnalyzer

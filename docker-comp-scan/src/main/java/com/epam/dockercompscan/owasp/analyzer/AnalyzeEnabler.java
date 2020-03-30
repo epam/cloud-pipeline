@@ -55,7 +55,9 @@ public enum AnalyzeEnabler {
     ANALYZER_RUBY_GEMSPEC("analyzer.ruby.gemspec.enabled", RubyGemspecAnalyzer.DEPENDENCY_ECOSYSTEM),
     ANALYZER_CENTRAL("analyzer.central.enabled", AnalyzerConstants.SYSTEM),
     ANALYZER_NEXUS("analyzer.nexus.enabled", AnalyzerConstants.SYSTEM),
-    ANALYZER_R_PACKAGE("analyzer.r.package.enabled", "R.Pkg");
+    ANALYZER_R_PACKAGE("analyzer.r.package.enabled", "R.Pkg"),
+    ANALYZER_OS_PACKAGE("analyzer.os.enabled", "OS");
+
 
     private final String value;
     private final String ecosystem;
