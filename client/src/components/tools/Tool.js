@@ -74,7 +74,7 @@ import ToolScan from '../../models/tools/ToolScan';
 import VersionScanResult from './elements/VersionScanResult';
 import {submitsRun, modifyPayloadForAllowedInstanceTypes, run, runPipelineActions} from '../runs/actions';
 import InstanceTypesManagementForm
-  from '../main/navigation/instance-types-management/InstanceTypesManagementForm';
+  from '../settings/forms/InstanceTypesManagementForm';
 import deleteToolConfirmModal from './tool-deletion-warning';
 
 const MarkdownRenderer = new Remarkable('full', {

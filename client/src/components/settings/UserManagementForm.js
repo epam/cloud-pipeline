@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,25 +33,26 @@ import {
   Select,
   Menu
 } from 'antd';
-import Roles from '../../../models/user/Roles';
-import UserFind from '../../../models/user/UserFind';
-import RoleCreate from '../../../models/user/RoleCreate';
-import RoleRemove from '../../../models/user/RoleRemove';
-import UserCreate from '../../../models/user/UserCreate';
-import UserDelete from '../../../models/user/UserDelete';
+import Roles from '../../models/user/Roles';
+import UserFind from '../../models/user/UserFind';
+import RoleCreate from '../../models/user/RoleCreate';
+import RoleRemove from '../../models/user/RoleRemove';
+import UserCreate from '../../models/user/UserCreate';
+import UserDelete from '../../models/user/UserDelete';
 import EditUserRolesDialog from './forms/EditUserRolesDialog';
 import ExportUserForm, {doExport, DefaultValues} from './forms/ExportUserForm';
 import CreateUserForm from './forms/CreateUserForm';
 import EditRoleDialog from './forms/EditRoleDialog';
-import LoadingView from '../../special/LoadingView';
+import LoadingView from '../special/LoadingView';
 import styles from './UserManagementForm.css';
-import roleModel from '../../../utils/roleModel';
+import roleModel from '../../utils/roleModel';
 
 const PAGE_SIZE = 20;
 
 @inject('dataStorages', 'users')
-@inject(({users}) => ({
+@inject(({users, authenticatedUserInfo}) => ({
   users,
+  authenticatedUserInfo,
   roles: new Roles()
 }))
 @observer
@@ -84,6 +85,13 @@ export default class UserManagementForm extends React.Component {
     createGroupDefaultDataStorage: null,
     operationInProgress: false,
     userDataToExport: []
+  };
+
+  get isAdmin () {
+    const {authenticatedUserInfo} = this.props;
+    return authenticatedUserInfo.loaded
+      ? authenticatedUserInfo.value.admin
+      : false;
   };
 
   operationWrapper = (operation) => (...props) => {
@@ -304,7 +312,6 @@ export default class UserManagementForm extends React.Component {
   };
 
   renderUsersTableControls = () => {
-    const {isAdmin} = this.props;
     const exportUserMenu = (
       <Menu
         onClick={this.handleExportUsersMenu}
@@ -335,7 +342,7 @@ export default class UserManagementForm extends React.Component {
         >
           <Icon type="plus" />Create user
         </Button>
-        { isAdmin &&
+        { this.isAdmin &&
           <Dropdown.Button
             size="small"
             style={{marginLeft: 5}}

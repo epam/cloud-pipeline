@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {API_PATH, SERVER} from '../../../config';
+import {API_PATH, SERVER} from '../../config';
 import {
   Alert,
   Button,
@@ -28,17 +28,17 @@ import {
   Select,
   Table
 } from 'antd';
-import styles from './SettingsForm.css';
-import UserToken from '../../../models/user/UserToken';
-import PipelineGitCredentials from '../../../models/pipelines/PipelineGitCredentials';
-import Notifications from '../../../models/notifications/Notifications';
+import styles from './styles.css';
+import UserToken from '../../models/user/UserToken';
+import PipelineGitCredentials from '../../models/pipelines/PipelineGitCredentials';
+import Notifications from '../../models/notifications/Notifications';
 import moment from 'moment-timezone';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
-import LoadingView from '../../special/LoadingView';
+import LoadingView from '../special/LoadingView';
 import DriveMappingWindowsForm from './DriveMappingWindowsForm';
-import {getOS} from '../../../utils/OSDetection';
-import roleModel from '../../../utils/roleModel';
+import {getOS} from '../../utils/OSDetection';
+import roleModel from '../../utils/roleModel';
 
 const CLI_KEY = 'cli';
 const GIT_CLI_KEY = 'git cli';
