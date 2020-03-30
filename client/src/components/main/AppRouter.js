@@ -39,6 +39,7 @@ import ClusterNodePods from '../cluster/ClusterNodePods';
 import ClusterNodeMonitor from '../cluster/ClusterNodeMonitor';
 import Tool from '../tools/Tool';
 import Tools from '../tools/Tools';
+import SettingsForm from '../main/navigation/SettingsForm';
 import AllRuns from '../runs/AllRuns';
 import RunsFilter from '../runs/RunsFilter';
 import RunsSearch from '../runs/RunsSearch';
@@ -61,6 +62,7 @@ export default class AppRouter extends React.Component {
     return <Router history={this.props.history}>
       <Route component={App}>
         <Route path="search" component={RunsSearch} />
+        <Route path="/settings" component={SettingsForm} />
         <Route path="/cluster" component={Cluster} />
         <Redirect from="/cluster/:nodeName" to="/cluster/:nodeName/info" />
         <Route path="/cluster/:nodeName" component={ClusterNode}>

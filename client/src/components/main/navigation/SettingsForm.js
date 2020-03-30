@@ -17,7 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {
-  Button,
+  Button, Card,
   Checkbox,
   Icon,
   message,
@@ -26,7 +26,6 @@ import {
   Table,
   Tabs
 } from 'antd';
-import PropTypes from 'prop-types';
 import styles from './SettingsForm.css';
 import PipelineGitCredentials from '../../../models/pipelines/PipelineGitCredentials';
 import Notifications from '../../../models/notifications/Notifications';
@@ -49,7 +48,6 @@ import 'highlight.js/styles/github.css';
 }))
 @observer
 export default class SettingsForm extends React.Component {
-
   state = {
     notification: {
       updateNotification: null,
@@ -59,24 +57,18 @@ export default class SettingsForm extends React.Component {
     operationSystems: null
   };
 
-  static propTypes = {
-    visible: PropTypes.bool,
-    onClose: PropTypes.func
-  };
-
   onOkClicked = () => {
     const close = () => {
-      if (this.props.onClose) {
-        this.props.onClose();
-      }
       this.emailNotificationSettingsForm && this.emailNotificationSettingsForm.reload(true);
       this.preferencesForm && this.preferencesForm.reload(true);
       this.awsRegionsForm && this.awsRegionsForm.reload(true);
       this.setState({activeKey: 'cli'});
     };
-    if ((this.emailNotificationSettingsForm && this.emailNotificationSettingsForm.templateModified) ||
-        (this.preferencesForm && this.preferencesForm.templateModified) ||
-        (this.awsRegionsForm && this.awsRegionsForm.regionModified)) {
+    if (
+      (this.emailNotificationSettingsForm && this.emailNotificationSettingsForm.templateModified) ||
+      (this.preferencesForm && this.preferencesForm.templateModified) ||
+      (this.awsRegionsForm && this.awsRegionsForm.regionModified)
+    ) {
       Modal.confirm({
         title: 'You have unsaved changes. Continue?',
         style: {
@@ -184,7 +176,11 @@ export default class SettingsForm extends React.Component {
   };
 
   renderSystemEvents = () => {
-    const data = (this.props.notifications.loaded ? (this.props.notifications.value || []).map(n => n) : []).sort(
+    const data = (
+      this.props.notifications.loaded
+        ? (this.props.notifications.value || []).map(n => n)
+        : []
+    ).sort(
       (a, b) => {
         if (a.title > b.title) {
           return 1;
@@ -312,10 +308,18 @@ export default class SettingsForm extends React.Component {
           loading={this.props.notifications.pending}
           columns={columns}
           dataSource={data}
-          expandedRowClassName={notification => `notification-${notification.notificationId}-expanded-row`}
+          expandedRowClassName={
+            notification => `notification-${notification.notificationId}-expanded-row`
+          }
           expandedRowRender={
             notification =>
-              <p className={`notification-${notification.notificationId}-body`}>{notification.body}</p>
+              (
+                <p
+                  className={`notification-${notification.notificationId}-body`}
+                >
+                  {notification.body}
+                </p>
+              )
           }
           size="small" />
         <EditSystemNotificationForm
@@ -456,25 +460,18 @@ export default class SettingsForm extends React.Component {
 
   render () {
     return (
-      <Modal
-        width="80%"
-        closable={false}
-        visible={this.props.visible}
-        footer={
-          <Row type="flex" justify="end">
-            <Button type="primary" id="settings-form-ok-button" onClick={this.onOkClicked}>
-              OK
-            </Button>
-          </Row>
-        }>
+      <Card
+        id="settings-container"
+        style={{overflowY: 'auto'}}
+        className={styles.container}
+        bodyStyle={{padding: 5}}>
         <Tabs
           className="settings-tabs"
           activeKey={this.state.activeKey}
           onChange={this.onTabChanged}>
           {this.getTabs()}
         </Tabs>
-      </Modal>
+      </Card>
     );
   }
-
 }
