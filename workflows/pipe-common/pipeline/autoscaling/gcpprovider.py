@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,6 +73,9 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             'disks': self.__get_disk_devices(ins_img, OS_DISK_SIZE, ins_hdd, swap_size),
             'networkInterfaces': network_interfaces,
             'labels': GCPInstanceProvider.get_tags(run_id, self.cloud_region),
+            'tags': {
+                'items': utils.get_network_tags(self.cloud_region)
+            },
             "metadata": {
                 "items": [
                     {
