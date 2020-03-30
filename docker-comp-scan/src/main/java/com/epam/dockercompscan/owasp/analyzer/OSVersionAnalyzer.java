@@ -72,10 +72,11 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
      */
     private static final FileFilter FILTER = FileFilterBuilder.newInstance().addFileFilters(NAME_FILE_FILTER).build();
 
-    private static final Pattern VERSION_PATTERN = Pattern.compile(".*VERSION_ID=\"([^\n]*)\"\n.*");
-    private static final Pattern NAME_TITLE_PATTERN = Pattern.compile(".*ID=\"([^\n]*)\"\n.*");
+    private static final Pattern VERSION_PATTERN = Pattern.compile(".*\nVERSION_ID=\"?([^\n\"]*)\"?\n.*");
+    private static final Pattern NAME_TITLE_PATTERN = Pattern.compile(".*\nID=\"?([^\n\"]*)\"?\n.*");
     private static final Pattern SYSTEM_NAME_TITLE_PATTERN = Pattern.compile("([^ ]+).*");
     private static final Pattern SYSTEM_VERSION_PATTERN = Pattern.compile("[^ ]+ [^ ]+ ([^ ]+).*");
+
     @Override
     protected FileFilter getFileFilter() {
         return FILTER;
@@ -105,7 +106,6 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
         final File actualFile = dependency.getActualFile();
         try {
             String contents = FileUtils.readFileToString(actualFile, Charset.defaultCharset()).trim();
-            dependency.setEcosystem(DEPENDENCY_ECOSYSTEM);
             collectDescriptionData(dependency, actualFile.getName(), contents);
         } catch (IOException e) {
             throw new AnalysisException("Problem occurred while reading dependency file.", e);
@@ -122,6 +122,7 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
                     source, "Version", Confidence.HIGH);
             gatherEvidence(dependency, EvidenceType.PRODUCT, namePattern, contents,
                     source, "Name", Confidence.HIGH);
+            dependency.setEcosystem(DEPENDENCY_ECOSYSTEM);
             if (dependency.getName() != null && dependency.getVersion() != null) {
                 dependency.setDisplayFileName(dependency.getName() + ":" + dependency.getVersion());
             }
