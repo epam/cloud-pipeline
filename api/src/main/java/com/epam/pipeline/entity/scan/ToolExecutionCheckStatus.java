@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,22 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.docker;
+package com.epam.pipeline.entity.scan;
 
-import com.epam.pipeline.entity.scan.ToolVersionScanResultView;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
-public class ToolVersionAttributes {
-    private String version;
-    private ToolVersion attributes;
-    private ToolVersionScanResultView scanResult;
+@Getter
+@RequiredArgsConstructor
+public class ToolExecutionCheckStatus {
+    private final boolean allowed;
+    private final String reason;
+
+    public static ToolExecutionCheckStatus success() {
+        return new ToolExecutionCheckStatus(true, null);
+    }
+
+    public static ToolExecutionCheckStatus fail(final String reason) {
+        return new ToolExecutionCheckStatus(false, reason);
+    }
 }

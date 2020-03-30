@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ public class ToolDependency {
         PYTHON_DIST("Python.Dist"),
         PYTHON_PKG("Python.Pkg"),
         R_PKG("R.Pkg"),
+        OS("OS"),
         SYSTEM("System"),
         JAVA("Java"),
         NMP("npm"),
@@ -60,6 +61,7 @@ public class ToolDependency {
             map = new HashMap<>();
             map.put(PYTHON_DIST.value, PYTHON_DIST);
             map.put(R_PKG.value, R_PKG);
+            map.put(OS.value, OS);
             map.put(SYSTEM.value, SYSTEM);
         }
 

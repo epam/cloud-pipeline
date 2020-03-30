@@ -23,7 +23,9 @@ import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.scan.ToolScanPolicy;
 import com.epam.pipeline.entity.scan.ToolScanResult;
+import com.epam.pipeline.entity.scan.ToolScanResultView;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
+import com.epam.pipeline.entity.scan.ToolVersionScanResultView;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
@@ -38,6 +40,7 @@ import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ToolApiService {
@@ -123,8 +126,16 @@ public class ToolApiService {
     }
 
     @PreAuthorize("hasRole('ADMIN') or @grantPermissionManager.toolPermission(#registry, #image, 'READ')")
-    public ToolScanResult loadToolScanResult(String registry, String image) {
-        return toolManager.loadToolScanResult(registry, image);
+    public ToolScanResultView loadToolScanResult(String registry, String image) {
+        ToolScanResult toolScanResult = toolManager.loadToolScanResult(registry, image);
+        if (toolScanResult != null) {
+            return new ToolScanResultView(toolScanResult.getToolId(),
+                    toolScanResult.getToolVersionScanResults().values().stream().map(vsr ->
+                            ToolVersionScanResultView.from(vsr, toolManager.isToolOSVersionAllowed(vsr.getToolOSVersion()))
+                    ).collect(Collectors.toMap(ToolVersionScanResultView::getVersion, vsrv -> vsrv)));
+        } else {
+            return null;
+        }
     }
 
     public ToolScanPolicy loadSecurityPolicy() {

@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.docker;
+package com.epam.pipeline.entity.scan;
 
-import com.epam.pipeline.entity.scan.ToolVersionScanResultView;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
-@Data
+import java.util.Map;
+
+@Getter
 @AllArgsConstructor
-@NoArgsConstructor
-@Builder
-public class ToolVersionAttributes {
-    private String version;
-    private ToolVersion attributes;
-    private ToolVersionScanResultView scanResult;
+public class ToolScanResultView {
+
+    private final long toolId;
+    private final Map<String, ToolVersionScanResultView> toolVersionScanResults;
+
+
 }
