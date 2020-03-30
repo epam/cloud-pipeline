@@ -54,7 +54,47 @@ export default class SettingsForm extends React.Component {
       createNotification: false
     },
     activeKey: 'cli',
-    operationSystems: null
+    operationSystems: null,
+    changesCanBeSkipped: false
+  };
+
+  componentDidMount () {
+    const {route, router} = this.props;
+    if (route && router) {
+      router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
+    }
+  };
+
+  get templatesAreModified () {
+    return (this.emailNotificationSettingsForm && this.emailNotificationSettingsForm.templateModified) ||
+    (this.preferencesForm && this.preferencesForm.templateModified) ||
+    (this.awsRegionsForm && this.awsRegionsForm.regionModified);
+  };
+
+  checkSettingsBeforeLeave = (nextLocation) => {
+    const {router} = this.props;
+    const {changesCanBeSkipped} = this.state;
+
+    const makeTransition = nextLocation => {
+      this.setState({changesCanBeSkipped: true},
+        () => router.push(nextLocation)
+      );
+    };
+
+    if (this.templatesAreModified && !changesCanBeSkipped) {
+      Modal.confirm({
+        title: 'You have unsaved changes. Continue?',
+        style: {
+          wordWrap: 'break-word'
+        },
+        onOk () {
+          makeTransition(nextLocation);
+        },
+        okText: 'Yes',
+        cancelText: 'No'
+      });
+      return false;
+    }
   };
 
   onOkClicked = () => {
@@ -64,11 +104,7 @@ export default class SettingsForm extends React.Component {
       this.awsRegionsForm && this.awsRegionsForm.reload(true);
       this.setState({activeKey: 'cli'});
     };
-    if (
-      (this.emailNotificationSettingsForm && this.emailNotificationSettingsForm.templateModified) ||
-      (this.preferencesForm && this.preferencesForm.templateModified) ||
-      (this.awsRegionsForm && this.awsRegionsForm.regionModified)
-    ) {
+    if (this.templatesAreModified) {
       Modal.confirm({
         title: 'You have unsaved changes. Continue?',
         style: {
