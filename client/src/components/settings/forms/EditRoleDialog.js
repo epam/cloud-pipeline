@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,21 +19,21 @@ import {computed} from 'mobx';
 import {observer, inject} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {Modal, Row, Button, message, Icon, Table, AutoComplete, Select} from 'antd';
-import Role from '../../../../models/user/Role';
-import UserFind from '../../../../models/user/UserFind';
-import RoleAssign from '../../../../models/user/RoleAssign';
-import RoleRemove from '../../../../models/user/RoleRemoveFromUser';
-import RoleUpdate from '../../../../models/user/RoleUpdate';
-import GroupBlock from '../../../../models/user/GroupBlock';
+import Role from '../../../models/user/Role';
+import UserFind from '../../../models/user/UserFind';
+import RoleAssign from '../../../models/user/RoleAssign';
+import RoleRemove from '../../../models/user/RoleRemoveFromUser';
+import RoleUpdate from '../../../models/user/RoleUpdate';
+import GroupBlock from '../../../models/user/GroupBlock';
 import styles from './UserManagement.css';
-import roleModel from '../../../../utils/roleModel';
+import roleModel from '../../../utils/roleModel';
 import {
   SplitPanel,
   CONTENT_PANEL_KEY,
   METADATA_PANEL_KEY
-} from '../../../special/splitPanel';
-import Metadata from '../../../special/metadata/Metadata';
-import InstanceTypesManagementForm from '../instance-types-management/InstanceTypesManagementForm';
+} from '../../special/splitPanel';
+import Metadata from '../../special/metadata/Metadata';
+import InstanceTypesManagementForm from './InstanceTypesManagementForm';
 
 @roleModel.authenticationInfo
 @inject('dataStorages')

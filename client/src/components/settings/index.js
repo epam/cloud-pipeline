@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,18 +26,19 @@ import {
   Table,
   Tabs
 } from 'antd';
-import styles from './SettingsForm.css';
-import PipelineGitCredentials from '../../../models/pipelines/PipelineGitCredentials';
-import Notifications from '../../../models/notifications/Notifications';
-import UpdateNotification from '../../../models/notifications/UpdateNotification';
-import DeleteNotification from '../../../models/notifications/DeleteNotification';
+import styles from './styles.css';
+import PipelineGitCredentials from '../../models/pipelines/PipelineGitCredentials';
+import Notifications from '../../models/notifications/Notifications';
+import UpdateNotification from '../../models/notifications/UpdateNotification';
+import DeleteNotification from '../../models/notifications/DeleteNotification';
 import EditSystemNotificationForm from './forms/EditSystemNotificationForm';
 import UserManagementForm from './UserManagementForm';
 import EmailNotificationSettings from './EmailNotificationSettings';
 import AWSRegionsForm from './AWSRegionsForm';
 import CLIForm from './CLIForm';
 import Preferences from './Preferences';
-import displayDate from '../../../utils/displayDate';
+import SystemLogs from './SystemLogs';
+import displayDate from '../../utils/displayDate';
 import 'highlight.js/styles/github.css';
 
 @inject(({authenticatedUserInfo, preferences}) => ({
@@ -47,7 +48,7 @@ import 'highlight.js/styles/github.css';
   pipelineGitCredentials: new PipelineGitCredentials()
 }))
 @observer
-export default class SettingsForm extends React.Component {
+export default class Index extends React.Component {
   state = {
     notification: {
       updateNotification: null,
@@ -444,6 +445,11 @@ export default class SettingsForm extends React.Component {
         <Tabs.TabPane tab="Cloud Regions" key="cloud regions">
           <AWSRegionsForm
             onInitialize={this.initializeAWSRegionsForm} />
+        </Tabs.TabPane>
+      );
+      tabs.push(
+        <Tabs.TabPane tab="System Logs" key="system logs">
+          <SystemLogs />
         </Tabs.TabPane>
       );
     }

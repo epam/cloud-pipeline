@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
-import LoadingView from '../../special/LoadingView';
-import {SplitPanel} from '../../special/splitPanel';
+import LoadingView from '../special/LoadingView';
+import {SplitPanel} from '../special/splitPanel';
 import {
   Alert,
   Button,
@@ -37,21 +37,21 @@ import {
   Table,
   Tooltip, Col, AutoComplete
 } from 'antd';
-import AWSRegionUpdate from '../../../models/dataStorage/AWSRegionUpdate';
-import AWSRegionDelete from '../../../models/dataStorage/AWSRegionDelete';
-import AWSRegionCreate from '../../../models/dataStorage/AWSRegionCreate';
-import FileShareMountUpdate from '../../../models/fileShareMount/FileShareMountUpdate';
-import FileShareMountDelete from '../../../models/fileShareMount/FileShareMountDelete';
-import GrantGet from '../../../models/grant/GrantGet';
-import GrantPermission from '../../../models/grant/GrantPermission';
-import GrantRemove from '../../../models/grant/GrantRemove';
-import Roles from '../../../models/user/Roles';
-import UserFind from '../../../models/user/UserFind';
-import GroupFind from '../../../models/user/GroupFind';
-import UserName from '../../special/UserName';
-import CodeEditorFormItem from '../../special/CodeEditorFormItem';
-import AWSRegionTag from '../../special/AWSRegionTag';
-import highlightText from '../../special/highlightText';
+import AWSRegionUpdate from '../../models/dataStorage/AWSRegionUpdate';
+import AWSRegionDelete from '../../models/dataStorage/AWSRegionDelete';
+import AWSRegionCreate from '../../models/dataStorage/AWSRegionCreate';
+import FileShareMountUpdate from '../../models/fileShareMount/FileShareMountUpdate';
+import FileShareMountDelete from '../../models/fileShareMount/FileShareMountDelete';
+import GrantGet from '../../models/grant/GrantGet';
+import GrantPermission from '../../models/grant/GrantPermission';
+import GrantRemove from '../../models/grant/GrantRemove';
+import Roles from '../../models/user/Roles';
+import UserFind from '../../models/user/UserFind';
+import GroupFind from '../../models/user/GroupFind';
+import UserName from '../special/UserName';
+import CodeEditorFormItem from '../special/CodeEditorFormItem';
+import AWSRegionTag from '../special/AWSRegionTag';
+import highlightText from '../special/highlightText';
 import styles from './AWSRegionsForm.css';
 
 const AWS_REGION_ITEM_TYPE = 'CLOUD_REGION';

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import NotificationSettings from '../../../models/settings/NotificationSettings';
-import NotificationSettingUpdate from '../../../models/settings/NotificationSettingUpdate';
-import NotificationTemplateUpdate from '../../../models/settings/NotificationTemplateUpdate';
-import NotificationTemplates from '../../../models/settings/NotificationTemplates';
-import LoadingView from '../../special/LoadingView';
-import {SplitPanel} from '../../special/splitPanel/SplitPanel';
-import Users from '../../../models/user/Users';
+import NotificationSettings from '../../models/settings/NotificationSettings';
+import NotificationSettingUpdate from '../../models/settings/NotificationSettingUpdate';
+import NotificationTemplateUpdate from '../../models/settings/NotificationTemplateUpdate';
+import NotificationTemplates from '../../models/settings/NotificationTemplates';
+import LoadingView from '../special/LoadingView';
+import {SplitPanel} from '../special/splitPanel/SplitPanel';
+import Users from '../../models/user/Users';
 import {Alert, message, Modal, Table} from 'antd';
 import EditEmailNotification from './forms/EditEmailNotification';
 import styles from './EmailNotificationSettings.css';

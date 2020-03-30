@@ -39,7 +39,7 @@ import ClusterNodePods from '../cluster/ClusterNodePods';
 import ClusterNodeMonitor from '../cluster/ClusterNodeMonitor';
 import Tool from '../tools/Tool';
 import Tools from '../tools/Tools';
-import SettingsForm from '../main/navigation/SettingsForm';
+import SettingsForm from '../settings';
 import AllRuns from '../runs/AllRuns';
 import RunsFilter from '../runs/RunsFilter';
 import RunsSearch from '../runs/RunsSearch';
