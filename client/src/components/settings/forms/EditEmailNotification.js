@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
-import CodeEditor from '../../../special/CodeEditor';
-import compareArrays from '../../../../utils/compareArrays';
+import CodeEditor from '../../special/CodeEditor';
+import compareArrays from '../../../utils/compareArrays';
 import EmailPreview from './EmailPreview';
 import {Button, Checkbox, Col, Form, Icon, Input, Row, Select} from 'antd';
 import styles from './EditEmailNotification.css';

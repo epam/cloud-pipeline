@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import {observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {Button, Checkbox, Form, Icon, Input, Row} from 'antd';
-import CodeEditor from '../../../special/CodeEditor';
-import highlightText from '../../../special/highlightText';
+import CodeEditor from '../../special/CodeEditor';
+import highlightText from '../../special/highlightText';
 import styles from './PreferenceGroup.css';
 
 const formatJson = (string, presentation = true, catchError = true) => {

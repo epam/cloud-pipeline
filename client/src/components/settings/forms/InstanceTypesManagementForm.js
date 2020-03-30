@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import {
   ContextualPreferenceUpdate,
   ContextualPreferenceDelete,
   names
-} from '../../../../models/utils/ContextualPreference';
+} from '../../../models/utils/ContextualPreference';
 import {
   Button,
   Input,
@@ -31,7 +31,7 @@ import {
   Row,
   Select
 } from 'antd';
-import LoadingView from '../../../special/LoadingView';
+import LoadingView from '../../special/LoadingView';
 
 const valueNames = {
   allowedInstanceTypes: 'allowedInstanceTypes',

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Alert, Input, message, Modal, Row, Table} from 'antd';
-import PreferencesUpdate from '../../../models/preferences/PreferencesUpdate';
+import PreferencesUpdate from '../../models/preferences/PreferencesUpdate';
 import PreferenceGroup from './forms/PreferenceGroup';
-import LoadingView from '../../special/LoadingView';
-import {SplitPanel} from '../../special/splitPanel/SplitPanel';
+import LoadingView from '../special/LoadingView';
+import {SplitPanel} from '../special/splitPanel/SplitPanel';
 import styles from './Preferences.css';
 
 @inject('preferences')

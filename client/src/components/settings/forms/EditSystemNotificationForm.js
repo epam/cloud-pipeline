@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, Modal, Form, Input, Row, Col, Spin, Select, Icon, Checkbox, Tabs} from 'antd';
-import NotificationView from '../../../special/notifications/controls/NotificationView';
+import NotificationView from '../../special/notifications/controls/NotificationView';
 import styles from './EditSystemNotificationForm.css';
 
 @Form.create()
 export default class EditSystemNotificationForm extends React.Component {
-
   static propTypes = {
     notification: PropTypes.shape({
       notificationId: PropTypes.oneOfType([
