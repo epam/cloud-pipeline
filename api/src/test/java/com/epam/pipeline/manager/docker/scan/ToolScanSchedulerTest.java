@@ -147,7 +147,8 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
                 ToolDependency.Ecosystem.SYSTEM, null);
 
         when(toolScanManager.scanTool(Mockito.any(Tool.class), Mockito.anyString(), Mockito.anyBoolean()))
-            .thenReturn(new ToolVersionScanResult(LATEST_VERSION, Collections.singletonList(vulnerability),
+            .thenReturn(new ToolVersionScanResult(LATEST_VERSION, new ToolOSVersion("test", "0.1"),
+                    Collections.singletonList(vulnerability),
                     Collections.singletonList(dependency),
                     ToolScanStatus.COMPLETED, TEST_LAYER_REF, TEST_LAYER_DIGEST));
 
@@ -268,8 +269,8 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
         }
 
         @Override
-        public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate,
-                                                String version, String layerRef, String digest) {
+        public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate, String version,
+                                                ToolOSVersion toolOSVersion, String layerRef, String digest) {
             Assert.assertNotNull(version);
 
             ToolVersionScanResult versionScan = new ToolVersionScanResult();

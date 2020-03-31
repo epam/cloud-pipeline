@@ -130,19 +130,20 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
                                                                   tool.getId(), version);
                             toolManager.updateToolDependencies(result.getDependencies(), tool.getId(), version);
                             toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED, new Date(),
-                                                             version, result.getLastLayerRef(), result.getDigest());
+                                                             version, result.getToolOSVersion(),
+                                                             result.getLastLayerRef(), result.getDigest());
                             updateToolVersion(tool, version, registry, dockerClient);
                         } catch (ToolScanExternalServiceException e) {
                             LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED,
                                                                   tool.getImage(), version), e);
                             toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                                                             version, null, null);
+                                                             version, null, null, null);
                         }
                     }
                 } catch (Exception e) {
                     LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage()), e);
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                                                     "latest", null, null);
+                                                     "latest", null, null, null);
                 }
             }
         }
@@ -179,7 +180,7 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
                     .map(ToolVersionScanResult::getDigest)
                     .orElse(null);
             toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.PENDING, null,
-                                             version, layerRef, digest);
+                                             version, null, layerRef, digest);
             return forceScanExecutor.submit(new DelegatingSecurityContextCallable<>(() -> {
                 LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_TOOL_FORCE_SCAN_STARTED, tool.getImage()));
 
@@ -189,19 +190,21 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
                             version);
                     toolManager.updateToolDependencies(scanResult.getDependencies(), tool.getId(), version);
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED,
-                            scanResult.getScanDate(), version, scanResult.getLastLayerRef(), scanResult.getDigest());
+                            scanResult.getScanDate(), version, scanResult.getToolOSVersion(),
+                            scanResult.getLastLayerRef(), scanResult.getDigest());
                     return scanResult;
                 } catch (Exception e) {
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                            version, null, null);
+                            version, null, null, null);
                     LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage()), e);
                     throw new PipelineException(e);
                 }
             }, SecurityContextHolder.getContext()));
         }
 
-        return CompletableFuture.completedFuture(new ToolVersionScanResult(ToolScanStatus.PENDING, null,
-                                                                    Collections.emptyList(), Collections.emptyList()));
+        return CompletableFuture.completedFuture(
+                new ToolVersionScanResult(ToolScanStatus.PENDING, null, Collections.emptyList(),
+                        Collections.emptyList(), null));
     }
 
     private void updateToolVersion(Tool tool, String version, DockerRegistry registry, DockerClient dockerClient) {

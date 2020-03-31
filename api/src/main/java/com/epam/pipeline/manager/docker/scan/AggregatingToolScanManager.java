@@ -22,11 +22,7 @@ import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
-import com.epam.pipeline.entity.scan.ToolDependency;
-import com.epam.pipeline.entity.scan.ToolScanPolicy;
-import com.epam.pipeline.entity.scan.ToolVersionScanResult;
-import com.epam.pipeline.entity.scan.Vulnerability;
-import com.epam.pipeline.entity.scan.VulnerabilitySeverity;
+import com.epam.pipeline.entity.scan.*;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.ToolScanExternalServiceException;
 import com.epam.pipeline.manager.docker.DockerClient;
@@ -87,6 +83,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
 
     private static final int DISABLED = -1;
     private static final long SECONDS_IN_HOUR = 3600;
+    public static final String NOT_DETERMINED = "NotDetermined";
 
     @Autowired
     private PreferenceManager preferenceManager;
@@ -233,6 +230,11 @@ public class AggregatingToolScanManager implements ToolScanManager {
                     SystemPreferences.DOCKER_SECURITY_TOOL_POLICY_MAX_MEDIUM_VULNERABILITIES);
             if (maxMediumVulnerabilities != DISABLED &&
                     maxMediumVulnerabilities < severityCounters.getOrDefault(VulnerabilitySeverity.Medium, 0)) {
+                return false;
+            }
+
+            if (toolVersionScanResult.getToolOSVersion() != null
+                    && !toolVersionScanResult.getToolOSVersion().getIsAllowed()) {
                 return false;
             }
         }
@@ -437,8 +439,12 @@ public class AggregatingToolScanManager implements ToolScanManager {
 
         LOGGER.debug("Found: " + dependencies.size() + " dependencies for " + tool.getImage() + ":" + tag);
 
+        final ToolOSVersion osVersion = dependencies.stream()
+                .filter(td -> td.getEcosystem() == ToolDependency.Ecosystem.OS)
+                .findFirst().map(td -> new ToolOSVersion(td.getName(), td.getVersion()))
+                .orElse(new ToolOSVersion(NOT_DETERMINED, NOT_DETERMINED));
 
-        return new ToolVersionScanResult(tag, vulnerabilities, dependencies, ToolScanStatus.COMPLETED,
+        return new ToolVersionScanResult(tag, osVersion, vulnerabilities, dependencies, ToolScanStatus.COMPLETED,
                 clairScanResult.getName(), digest);
     }
 }

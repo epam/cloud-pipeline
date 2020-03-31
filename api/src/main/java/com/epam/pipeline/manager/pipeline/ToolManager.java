@@ -33,10 +33,7 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.pipeline.ToolWithIssuesCount;
-import com.epam.pipeline.entity.scan.ToolDependency;
-import com.epam.pipeline.entity.scan.ToolScanResult;
-import com.epam.pipeline.entity.scan.ToolVersionScanResult;
-import com.epam.pipeline.entity.scan.Vulnerability;
+import com.epam.pipeline.entity.scan.*;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.docker.DockerConnectionException;
@@ -66,13 +63,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -167,7 +158,7 @@ public class ToolManager implements SecuredEntityManager {
                 String digest = dockerRegistryManager.getDockerClient(registry, tool.getImage())
                         .getVersionAttributes(registry, tool.getImage(), tag).getDigest();
                 updateToolVersionScanStatus(tool.getId(), ToolScanStatus.NOT_SCANNED,
-                        DateUtils.now(), tag, null, digest);
+                        DateUtils.now(), tag, null, null, digest);
             }
         } catch (DockerConnectionException e) {
             throw new IllegalArgumentException(
@@ -415,7 +406,8 @@ public class ToolManager implements SecuredEntityManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate,
-                                            String version, String layerRef, String digest) {
+                                            String version, ToolOSVersion toolOSVersion,
+                                            String layerRef, String digest) {
         Optional<ToolVersionScanResult> prev = loadToolVersionScan(toolId, version);
         if(prev.isPresent()) {
             ToolVersionScanResult scanResult = prev.get();
@@ -424,10 +416,11 @@ public class ToolManager implements SecuredEntityManager {
                 log.debug("Digests are not match! If version was from white list, it will be deleted!");
                 whiteList = false;
             }
-            toolVulnerabilityDao.updateToolVersionScan(toolId, version, layerRef, digest, newStatus,
+            toolVulnerabilityDao.updateToolVersionScan(toolId, version, toolOSVersion, layerRef, digest, newStatus,
                     scanDate, whiteList);
         } else {
-            toolVulnerabilityDao.insertToolVersionScan(toolId, version, layerRef, digest, newStatus, scanDate);
+            toolVulnerabilityDao.insertToolVersionScan(toolId, version, toolOSVersion, layerRef,
+                    digest, newStatus, scanDate);
         }
     }
 
@@ -436,7 +429,7 @@ public class ToolManager implements SecuredEntityManager {
                                                                       boolean fromWhiteList) {
         Optional<ToolVersionScanResult> toolVersionScanResult = loadToolVersionScan(toolId, version);
         if (!toolVersionScanResult.isPresent()) {
-            toolVulnerabilityDao.insertToolVersionScan(toolId, version, null, null, ToolScanStatus.NOT_SCANNED,
+            toolVulnerabilityDao.insertToolVersionScan(toolId, version, null, null, null, ToolScanStatus.NOT_SCANNED,
                     DateUtils.now());
         }
         toolVulnerabilityDao.updateWhiteListWithToolVersion(toolId, version, fromWhiteList);
@@ -444,12 +437,31 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     public Optional<ToolVersionScanResult> loadToolVersionScan(long toolId, String version) {
-        Optional<ToolVersionScanResult> result = toolVulnerabilityDao.loadToolVersionScan(toolId, version);
+        final Optional<ToolVersionScanResult> result = toolVulnerabilityDao.loadToolVersionScan(toolId, version);
         result.ifPresent(scanResult -> {
             if (scanResult.getScanDate() != null) {
                 int graceHours = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_GRACE_HOURS);
                 scanResult.setGracePeriod(
                         Date.from(scanResult.getScanDate().toInstant().plusSeconds(graceHours * SECONDS_IN_HOUR)));
+            }
+
+            final ToolOSVersion toolOSVersion = scanResult.getToolOSVersion();
+            if (toolOSVersion != null) {
+                final boolean allowed = Optional.ofNullable(
+                        preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS)
+                ).map(osList -> Arrays.stream(osList.split(",")).anyMatch(os -> {
+                    String[] distroVersion = os.split(":");
+                    // if distro name is not equals allowed return false (allowed: centos, actual: ubuntu)
+                    if (!distroVersion[0].equalsIgnoreCase(toolOSVersion.getDistribution())) {
+                        return false;
+                    }
+                    // return false only if version of allowed exists (e.g. centos:6)
+                    // and actual version contains allowed (e.g. : allowed centos:6, actual centos:6.10)
+                    return distroVersion.length != 2 || toolOSVersion.getVersion().toLowerCase()
+                            .contains(distroVersion[1].toLowerCase());
+                })).orElse(true);
+
+                toolOSVersion.setIsAllowed(allowed);
             }
         });
         return result;

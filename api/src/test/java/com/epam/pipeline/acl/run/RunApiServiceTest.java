@@ -46,6 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.acls.model.AclCache;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -67,6 +68,7 @@ import static org.mockito.Mockito.doReturn;
 @ContextConfiguration(classes = AclTestConfiguration.class)
 @TestPropertySource(value = {"classpath:test-application.properties"})
 @Transactional
+@DirtiesContext
 public class RunApiServiceTest {
 
     private static final String TEST_OWNER = "OWNER";
