@@ -229,26 +229,26 @@ class InputDataTask:
                 param_type = os.environ[param_type_name]
                 if param_type in parameter_types:
                     value = os.environ[env].strip()
-                    Logger.info('Found remote parameter %s with type %s' % (value, param_type),
+                    resolved_value = replace_all_system_variables_in_path(value)
+                    Logger.info('Found remote parameter %s (%s) with type %s' % (resolved_value, value, param_type),
                                 task_name=self.task_name)
-                    original_paths = [value]
+                    original_paths = [resolved_value]
                     delimiter = ''
                     for supported_delimiter in VALUE_DELIMITERS:
-                        if value.find(supported_delimiter) != -1:
-                            original_paths = re.split(supported_delimiter, value)
+                        if resolved_value.find(supported_delimiter) != -1:
+                            original_paths = re.split(supported_delimiter, resolved_value)
                             delimiter = supported_delimiter
                             break
                     paths = []
                     for path in original_paths:
-                        resolved_path = replace_all_system_variables_in_path(path).strip()
-                        if self.match_dts_path(resolved_path, dts_registry):
-                            paths.append(self.build_dts_path(resolved_path, dts_registry, param_type))
-                        elif self.match_cloud_path(resolved_path):
-                            paths.append(self.build_cloud_path(resolved_path, param_type))
-                        elif self.match_ftp_or_http_path(resolved_path):
-                            paths.append(self.build_ftp_or_http_path(resolved_path, param_type))
+                        if self.match_dts_path(path, dts_registry):
+                            paths.append(self.build_dts_path(path, dts_registry, param_type))
+                        elif self.match_cloud_path(path):
+                            paths.append(self.build_cloud_path(path, param_type))
+                        elif self.match_ftp_or_http_path(path):
+                            paths.append(self.build_ftp_or_http_path(path, param_type))
                     if len(paths) != 0:
-                        remote_locations.append(RemoteLocation(env, value, param_type, paths, delimiter))
+                        remote_locations.append(RemoteLocation(env, resolved_value, param_type, paths, delimiter))
 
         return remote_locations
 
@@ -457,4 +457,3 @@ if __name__ == '__main__':
     main()
     end = timer()
     print("Elapsed %d seconds" % (end - start))
-
