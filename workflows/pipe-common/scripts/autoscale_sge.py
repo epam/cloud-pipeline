@@ -25,6 +25,7 @@ import requests
 import re
 import sys
 
+
 class ExecutionError(RuntimeError):
     pass
 
@@ -269,14 +270,14 @@ class GridEngine:
     def is_job_valid(self, job):
         result = True
         allocation_rule = self.get_pe_allocation_rule(job.pe) if job.pe else AllocationRule.pe_slots()
-        Logger.info('Validation of job # {job_id} allocation rule: {alloc_rule} job slots: {slots}'.format(
+        Logger.info('Validation of job #{job_id} allocation rule: {alloc_rule} job slots: {slots}'.format(
             job_id=job.id, alloc_rule=allocation_rule.value, slots=job.slots))
-        if job.slots and allocation_rule:
+        if job.slots:
             if allocation_rule == AllocationRule.pe_slots():
                 result = job.slots <= self.max_instance_cores
             elif allocation_rule in [AllocationRule.fill_up(), AllocationRule.round_robin()]:
                 result = job.slots <= self.max_cluster_cores
-        Logger.info('Validation of job # {job_id}: {res}'.format(job_id=job.id, res=result))
+        Logger.info('Validation of job #{job_id}: {res}'.format(job_id=job.id, res=result))
         return result
 
     def disable_host(self, host, queue=_MAIN_Q):
@@ -729,8 +730,9 @@ class GridEngineScaleDownHandler:
             Logger.info('Enable additional worker with host=%s again.' % child_host)
             self.grid_engine.enable_host(child_host)
             return False
+        child_host_slots = self.grid_engine.get_host_resource(child_host).cpu
         self._remove_host_from_grid_engine_configuration(child_host)
-        self._decrease_parallel_environment_slots(self.grid_engine.get_host_resource(child_host).cpu)
+        self._decrease_parallel_environment_slots(child_host_slots)
         self._stop_pipeline(child_host)
         self._remove_host_from_hosts(child_host)
         self._remove_host_from_default_hostfile(child_host)
@@ -1230,7 +1232,7 @@ class GridEngineAutoscalingDaemon:
                 self.worker_validator.validate_hosts()
                 self.autoscaler.scale()
             except KeyboardInterrupt:
-                Logger.warn('Manual stop of the autoscaler daemon.')
+                Logger.warn('Manual stop of the autoscaler daemon.', crucial=True)
                 break
             except Exception as e:
                 Logger.warn('Scaling step has failed due to %s.' % e, crucial=True)
@@ -1365,11 +1367,12 @@ if __name__ == '__main__':
 
     grid_engine = GridEngine(cmd_executor=cmd_executor, max_instance_cores=max_instance_cores,
                              max_cluster_cores=max_cluster_cores)
-    host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=os.path.join(shared_work_dir, '.autoscaler.storage'))
-    scale_up_timeout = int(_retrieve_preference(pipe, 'ge.autoscaling.scale.up.timeout', default_value=30))
-    scale_down_timeout = int(_retrieve_preference(pipe, 'ge.autoscaling.scale.down.timeout', default_value=30))
-    scale_up_polling_timeout = int(_retrieve_preference(pipe, 'ge.autoscaling.scale.up.polling.timeout',
-                                                        default_value=600))
+    host_storage = FileSystemHostStorage(cmd_executor=cmd_executor,
+                                         storage_file=os.path.join(shared_work_dir, '.autoscaler.storage'))
+    scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default_value=30))
+    scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default_value=30))
+    scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout',
+                                                           default_value=600))
     scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, pipe=pipe, grid_engine=grid_engine,
                                                 host_storage=host_storage, parent_run_id=master_run_id,
                                                 default_hostfile=default_hostfile, instance_disk=instance_disk,
