@@ -396,6 +396,8 @@ public class SystemPreferences {
             isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
     public static final StringPreference UI_SUPPORT_TEMPLATE = new StringPreference("ui.support.template",
             "", UI_GROUP, pass);
+    public static final BooleanPreference UI_LIBRARY_DRAG = new BooleanPreference("ui.library.drag",
+            true, UI_GROUP, pass);
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
