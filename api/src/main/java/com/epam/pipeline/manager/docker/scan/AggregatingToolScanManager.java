@@ -233,8 +233,13 @@ public class AggregatingToolScanManager implements ToolScanManager {
                 return false;
             }
 
+            LOGGER.debug("Tool: " + tool.getId() + " version: " + tag +
+                    "Check tool os version.");
             if (toolVersionScanResult.getToolOSVersion() != null
                     && !toolVersionScanResult.getToolOSVersion().getIsAllowed()) {
+                LOGGER.warn("Tool: " + tool.getId() + " version: " + tag +
+                        ". Tool os version isn't allowed, check preference " +
+                        SystemPreferences.DOCKER_SECURITY_TOOL_OS.getKey() + " ! Cancel run.");
                 return false;
             }
         }
