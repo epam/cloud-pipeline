@@ -142,7 +142,7 @@ public final class PreferenceValidators {
                     || "/".equals(s) || "\\".equals(s));
 
     public static final BiPredicate<String, Map<String, Preference>> isEmptyOrValidBatchOfOSes = (pref, dependencies) ->
-            pref.isEmpty() || Arrays.stream(pref.split(",")).allMatch(s -> s.matches("/w+:[/d.]+"));
+            pref.isEmpty() || Arrays.stream(pref.split(",")).allMatch(s -> s.matches("\\w+:?[\\w.\\-_]*"));
 
     public static BiPredicate<String, Map<String, Preference>> isGreaterThan(long x) {
         return (pref, dependencies) -> StringUtils.isNumeric(pref) && Long.parseLong(pref) > x;

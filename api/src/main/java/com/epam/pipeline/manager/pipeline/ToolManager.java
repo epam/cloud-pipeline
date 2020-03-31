@@ -447,21 +447,7 @@ public class ToolManager implements SecuredEntityManager {
 
             final ToolOSVersion toolOSVersion = scanResult.getToolOSVersion();
             if (toolOSVersion != null) {
-                final boolean allowed = Optional.ofNullable(
-                        preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS)
-                ).map(osList -> Arrays.stream(osList.split(",")).anyMatch(os -> {
-                    String[] distroVersion = os.split(":");
-                    // if distro name is not equals allowed return false (allowed: centos, actual: ubuntu)
-                    if (!distroVersion[0].equalsIgnoreCase(toolOSVersion.getDistribution())) {
-                        return false;
-                    }
-                    // return false only if version of allowed exists (e.g. centos:6)
-                    // and actual version contains allowed (e.g. : allowed centos:6, actual centos:6.10)
-                    return distroVersion.length != 2 || toolOSVersion.getVersion().toLowerCase()
-                            .contains(distroVersion[1].toLowerCase());
-                })).orElse(true);
-
-                toolOSVersion.setIsAllowed(allowed);
+                toolOSVersion.setIsAllowed(isToolOSVersionAllowed(toolOSVersion));
             }
         });
         return result;
@@ -624,6 +610,22 @@ public class ToolManager implements SecuredEntityManager {
         }
     }
 
+    private boolean isToolOSVersionAllowed(ToolOSVersion toolOSVersion) {
+        return Optional.ofNullable(
+                preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS)
+        ).map(osList -> Arrays.stream(osList.split(",")).anyMatch(os -> {
+            String[] distroVersion = os.split(":");
+            // if distro name is not equals allowed return false (allowed: centos, actual: ubuntu)
+            if (!distroVersion[0].equalsIgnoreCase(toolOSVersion.getDistribution())) {
+                return false;
+            }
+            // return false only if version of allowed exists (e.g. centos:6)
+            // and actual version contains allowed (e.g. : allowed centos:6, actual centos:6.10)
+            return distroVersion.length != 2 || toolOSVersion.getVersion().toLowerCase()
+                    .contains(distroVersion[1].toLowerCase());
+        })).orElse(true);
+    }
+
     private ToolVersion getToolVersion(Long toolId, String version) {
         return toolVersionManager.loadToolVersion(toolId, version);
     }
@@ -637,6 +639,10 @@ public class ToolManager implements SecuredEntityManager {
             int graceHours = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_GRACE_HOURS);
             versionScan.setGracePeriod(
                     Date.from(versionScan.getScanDate().toInstant().plusSeconds(graceHours * SECONDS_IN_HOUR)));
+        }
+        final ToolOSVersion toolOSVersion = versionScan.getToolOSVersion();
+        if (toolOSVersion != null) {
+            toolOSVersion.setIsAllowed(isToolOSVersionAllowed(toolOSVersion));
         }
         return versionScan;
     }
