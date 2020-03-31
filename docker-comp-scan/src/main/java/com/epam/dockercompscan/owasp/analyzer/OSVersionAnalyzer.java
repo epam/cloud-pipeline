@@ -83,7 +83,7 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
     }
 
     @Override
-    protected void prepareFileTypeAnalyzer(Engine engine) throws InitializationException {
+    protected void prepareFileTypeAnalyzer(final Engine engine) throws InitializationException {
     }
 
     @Override
@@ -102,7 +102,7 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
     }
 
     @Override
-    protected void analyzeDependency(Dependency dependency, Engine engine) throws AnalysisException {
+    protected void analyzeDependency(final Dependency dependency, final Engine engine) throws AnalysisException {
         final File actualFile = dependency.getActualFile();
         try {
             String contents = FileUtils.readFileToString(actualFile, Charset.defaultCharset()).trim();
@@ -112,15 +112,15 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
         }
     }
 
-    private void collectDescriptionData(Dependency dependency, String source, String contents) {
+    private void collectDescriptionData(final Dependency dependency, final String source, final String contents) {
         if (!contents.isEmpty()) {
-            contents = contents.replaceAll("\n\\s+", " ");
+            final String cleanContent = contents.replaceAll("\n\\s+", " ");
             Pattern namePattern = source.equals(OS_RELEASE) ? NAME_TITLE_PATTERN : SYSTEM_NAME_TITLE_PATTERN;
             Pattern versionPattern = source.equals(OS_RELEASE) ? VERSION_PATTERN : SYSTEM_VERSION_PATTERN;
 
-            gatherEvidence(dependency, EvidenceType.VERSION, versionPattern, contents,
+            gatherEvidence(dependency, EvidenceType.VERSION, versionPattern, cleanContent,
                     source, "Version", Confidence.HIGH);
-            gatherEvidence(dependency, EvidenceType.PRODUCT, namePattern, contents,
+            gatherEvidence(dependency, EvidenceType.PRODUCT, namePattern, cleanContent,
                     source, "Name", Confidence.HIGH);
             dependency.setEcosystem(DEPENDENCY_ECOSYSTEM);
             if (dependency.getName() != null && dependency.getVersion() != null) {
@@ -141,8 +141,8 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
      * @param name of evidence
      * @param confidence in evidence
      */
-    private void gatherEvidence(Dependency dependency, EvidenceType type, Pattern pattern, String contents,
-                                String source, String name, Confidence confidence) {
+    private void gatherEvidence(final Dependency dependency, final EvidenceType type, final Pattern pattern,
+                                final String contents, final String source, String name, final Confidence confidence) {
         final Matcher matcher = pattern.matcher(contents);
         final boolean found = matcher.find();
         if (found) {
