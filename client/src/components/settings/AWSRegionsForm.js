@@ -501,7 +501,6 @@ export default class AWSRegionsForm extends React.Component {
           <div
             key="content"
             style={{
-              height: '50vh',
               display: 'flex',
               flexDirection: 'column'
             }}>

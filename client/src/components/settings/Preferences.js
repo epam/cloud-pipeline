@@ -254,7 +254,6 @@ export default class Preferences extends React.Component {
           <div
             key="preferences"
             style={{
-              height: '50vh',
               display: 'flex',
               flexDirection: 'column'
             }}>
