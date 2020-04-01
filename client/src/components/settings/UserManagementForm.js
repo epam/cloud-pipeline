@@ -50,8 +50,9 @@ import roleModel from '../../utils/roleModel';
 const PAGE_SIZE = 20;
 
 @inject('dataStorages', 'users')
-@inject(({users}) => ({
+@inject(({users, authenticatedUserInfo}) => ({
   users,
+  authenticatedUserInfo,
   roles: new Roles()
 }))
 @observer
@@ -84,6 +85,13 @@ export default class UserManagementForm extends React.Component {
     createGroupDefaultDataStorage: null,
     operationInProgress: false,
     userDataToExport: []
+  };
+
+  get isAdmin () {
+    const {authenticatedUserInfo} = this.props;
+    return authenticatedUserInfo.loaded
+      ? authenticatedUserInfo.value.admin
+      : false;
   };
 
   operationWrapper = (operation) => (...props) => {
@@ -304,7 +312,6 @@ export default class UserManagementForm extends React.Component {
   };
 
   renderUsersTableControls = () => {
-    const {isAdmin} = this.props;
     const exportUserMenu = (
       <Menu
         onClick={this.handleExportUsersMenu}
@@ -335,7 +342,7 @@ export default class UserManagementForm extends React.Component {
         >
           <Icon type="plus" />Create user
         </Button>
-        { isAdmin &&
+        { this.isAdmin &&
           <Dropdown.Button
             size="small"
             style={{marginLeft: 5}}

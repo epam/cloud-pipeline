@@ -15,7 +15,11 @@
  */
 
 .container {
+  display: flex;
+  flex-direction: column;
   height: 100%;
+  background-color: #ffffff;
+  padding: 10px;
 }
 
 .info {
@@ -108,4 +112,20 @@
 .tab td,
 .tab-selected td {
   padding: 8px 4px !important;
+}
+
+.row-menu {
+  margin-bottom: 10px;
+}
+
+.tabs-menu {
+  text-transform: uppercase;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  border-bottom: 1px solid #e9e9e9;
+}
+
+.tabs-menu li a {
+  height: 36px;
 }

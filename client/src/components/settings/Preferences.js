@@ -24,14 +24,32 @@ import LoadingView from '../special/LoadingView';
 import {SplitPanel} from '../special/splitPanel/SplitPanel';
 import styles from './Preferences.css';
 
-@inject('preferences')
+@inject('preferences', 'router')
 @observer
 export default class Preferences extends React.Component {
 
   state = {
     selectedPreferenceGroup: null,
     operationInProgress: false,
-    search: null
+    search: null,
+    changesCanBeSkipped: false
+  };
+
+  componentDidMount () {
+    const {route, router} = this.props;
+    const {selectedPreferenceGroup} = this.state;
+    if (!selectedPreferenceGroup && this.preferencesGroups.length > 0) {
+      this.selectPreferenceGroup(this.preferencesGroups[0]);
+    }
+    if (route && router) {
+      router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
+    }
+  };
+
+  componentDidUpdate () {
+    if (!this.state.selectedPreferenceGroup && this.preferencesGroups.length > 0) {
+      this.selectPreferenceGroup(this.preferencesGroups[0]);
+    }
   };
 
   operationWrapper = (operation) => (...props) => {
@@ -77,6 +95,30 @@ export default class Preferences extends React.Component {
     }
     return [];
   }
+
+  checkSettingsBeforeLeave = (nextLocation) => {
+    const {router} = this.props;
+    const {changesCanBeSkipped} = this.state;
+    const makeTransition = nextLocation => {
+      this.setState({changesCanBeSkipped: true},
+        () => router.push(nextLocation)
+      );
+    };
+    if (this.templateModified && !changesCanBeSkipped) {
+      Modal.confirm({
+        title: 'You have unsaved changes. Continue?',
+        style: {
+          wordWrap: 'break-word'
+        },
+        onOk () {
+          makeTransition(nextLocation);
+        },
+        okText: 'Yes',
+        cancelText: 'No'
+      });
+      return false;
+    }
+  };
 
   selectPreferenceGroup = (name) => {
     const changePreferenceGroup = () => {
@@ -227,17 +269,5 @@ export default class Preferences extends React.Component {
         </SplitPanel>
       </div>
     );
-  }
-
-  componentDidMount () {
-    if (!this.state.selectedPreferenceGroup && this.preferencesGroups.length > 0) {
-      this.selectPreferenceGroup(this.preferencesGroups[0]);
-    }
-  }
-
-  componentDidUpdate () {
-    if (!this.state.selectedPreferenceGroup && this.preferencesGroups.length > 0) {
-      this.selectPreferenceGroup(this.preferencesGroups[0]);
-    }
   }
 }

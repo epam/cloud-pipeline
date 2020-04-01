@@ -87,7 +87,7 @@ function fromJSON (obj, defaultValue) {
   return defaultValue;
 }
 
-@inject('awsRegions', 'availableCloudRegions', 'cloudProviders')
+@inject('awsRegions', 'availableCloudRegions', 'cloudProviders', 'router')
 @observer
 export default class AWSRegionsForm extends React.Component {
 
@@ -100,11 +100,27 @@ export default class AWSRegionsForm extends React.Component {
     currentProvider: null,
     search: null,
     operationInProgress: false,
-    newRegion: null
+    newRegion: null,
+    changesCanBeSkipped: false
   };
 
   @observable awsRegionForm;
   @observable awsRegionIds;
+
+  componentDidMount () {
+    const {route, router} = this.props;
+    this.props.onInitialize && this.props.onInitialize(this);
+    if (route && router) {
+      router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
+    }
+  };
+
+  componentDidUpdate () {
+    const {currentRegionId} = this.state;
+    if (!currentRegionId && this.regions.length > 0) {
+      this.selectDefaultRegion();
+    }
+  };
 
   operationWrapper = (fn) => {
     return (...opts) => {
@@ -516,9 +532,29 @@ export default class AWSRegionsForm extends React.Component {
     }, this.loadAvailableRegionIds);
   };
 
-  componentDidMount () {
-    this.props.onInitialize && this.props.onInitialize(this);
-  }
+  checkSettingsBeforeLeave = (nextLocation) => {
+    const {router} = this.props;
+    const {changesCanBeSkipped} = this.state;
+    const makeTransition = nextLocation => {
+      this.setState({changesCanBeSkipped: true},
+        () => router.push(nextLocation)
+      );
+    };
+    if (this.regionModified && !changesCanBeSkipped) {
+      Modal.confirm({
+        title: 'You have unsaved changes. Continue?',
+        style: {
+          wordWrap: 'break-word'
+        },
+        onOk () {
+          makeTransition(nextLocation);
+        },
+        okText: 'Yes',
+        cancelText: 'No'
+      });
+      return false;
+    }
+  };
 
   selectRegion = (region) => {
     if (region) {
@@ -538,13 +574,7 @@ export default class AWSRegionsForm extends React.Component {
     const [defaultRegion] = this.regions.filter(r => r.default);
     this.selectRegion(defaultRegion || this.regions[0]);
   };
-
-  componentDidUpdate () {
-    if (!this.state.currentRegionId && this.regions.length > 0) {
-      this.selectDefaultRegion();
-    }
-  }
-}
+};
 
 @inject(() => {
   const roles = new Roles();
@@ -1928,7 +1958,7 @@ const MountRootFormat = {
       mask: /^[^:]+(:[\d]+)?:\/.+$/i,
       format: 'server:port:/root'
     }
-  },
+  }
 };
 
 @observer
