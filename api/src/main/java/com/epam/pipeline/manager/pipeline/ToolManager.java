@@ -622,13 +622,13 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     private boolean isToolOSVersionAllowed(ToolOSVersion toolOSVersion) {
-        String alloweOSes = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS);
+        String allowedOSes = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS);
 
-        if (StringUtils.isEmpty(alloweOSes)) {
+        if (StringUtils.isEmpty(allowedOSes)) {
             return true;
         }
 
-        return Arrays.stream(alloweOSes.split(",")).anyMatch(os -> {
+        return Arrays.stream(allowedOSes.split(",")).anyMatch(os -> {
             String[] distroVersion = os.split(":");
             // if distro name is not equals allowed return false (allowed: centos, actual: ubuntu)
             if (!distroVersion[0].equalsIgnoreCase(toolOSVersion.getDistribution())) {
@@ -637,7 +637,7 @@ public class ToolManager implements SecuredEntityManager {
             // return false only if version of allowed exists (e.g. centos:6)
             // and actual version contains allowed (e.g. : allowed centos:6, actual centos:6.10)
             return distroVersion.length != 2 || toolOSVersion.getVersion().toLowerCase()
-                    .contains(distroVersion[1].toLowerCase());
+                    .startsWith(distroVersion[1].toLowerCase());
         });
     }
 
