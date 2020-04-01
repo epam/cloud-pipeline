@@ -15,11 +15,279 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
+import {inject, observer} from 'mobx-react';
+import styles from './SystemLogs.css';
+import {
+  Button,
+  DatePicker,
+  Input,
+  Select
+} from 'antd';
+import moment from 'moment-timezone';
+import UserName from '../special/UserName';
 
-export default function () {
+const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss';
+
+function Filter ({label, children, display = true}) {
+  if (!display) {
+    return null;
+  }
   return (
-    <div>
-      {'\u00A0'}
+    <div className={styles.filter}>
+      <span className={styles.label}>{label}:</span>
+      {children}
     </div>
   );
 }
+
+@inject('users')
+@observer
+class Filters extends React.Component {
+  state = {
+    showAdvanced: false
+  };
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (prevProps.filters !== this.props.filters) {
+      this.updateFilters(this.props.filters);
+    }
+  }
+
+  updateFilters = (filters) => {
+    this.setState({filters});
+  };
+
+  get users () {
+    const {users} = this.props;
+    if (users.loaded) {
+      return (users.value || []);
+    }
+    return [];
+  }
+
+  toggleAdvanced = () => {
+    const {showAdvanced} = this.state;
+    this.setState({
+      showAdvanced: !showAdvanced
+    });
+  };
+
+  render () {
+    const {showAdvanced, filters = {}} = this.state;
+    const {onChange, filters: initialFilters = {}} = this.props;
+    const {
+      timestampFrom,
+      timestampTo,
+      messageTimestampFrom,
+      messageTimestampTo,
+      user,
+      service,
+      type,
+      message,
+      source
+    } = filters;
+    const onFieldChanged = (field, submit = false, converter = (o => o)) => (event) => {
+      let value = event;
+      if (event && event.target) {
+        value = event.target.value;
+      }
+      const newFilters = Object.assign({}, filters, {[field]: converter(value)});
+      if (!value) {
+        delete newFilters[field];
+      }
+      this.setState({filters: newFilters}, () => {
+        submit && onChange && onChange(newFilters);
+      });
+    };
+    const submitFilters = (checkField) => () => {
+      if (checkField) {
+        const initial = initialFilters[checkField];
+        const actual = filters[checkField];
+        if (initial === actual) {
+          return;
+        }
+      }
+      onChange && onChange(filters);
+    };
+    const momentDateConverter = d => d ? moment.utc(d).format(DATE_FORMAT) : undefined;
+    const momentDateParser = d => d ? moment.utc(d, DATE_FORMAT) : undefined;
+    const commonStyle = {flex: 1};
+    const getDisabledDate = ({min, max}) => (date) => {
+      let disabled = false;
+      if (min) {
+        disabled = disabled || date < min;
+      }
+      if (max) {
+        disabled = disabled || date > max;
+      }
+      return disabled;
+    };
+    return (
+      <div className={styles.filters}>
+        <Filter label="From">
+          <DatePicker
+            showTime
+            format="YYYY-MM-DD HH:mm:ss"
+            placeholder="From"
+            style={commonStyle}
+            value={momentDateParser(timestampFrom)}
+            onChange={onFieldChanged('timestampFrom', true, momentDateConverter)}
+            disabledDate={getDisabledDate({max: momentDateParser(timestampTo)})}
+          />
+        </Filter>
+        <Filter label="To">
+          <DatePicker
+            showTime
+            format="YYYY-MM-DD HH:mm:ss"
+            placeholder="To"
+            style={commonStyle}
+            value={momentDateParser(timestampTo)}
+            onChange={onFieldChanged('timestampTo', true, momentDateConverter)}
+            disabledDate={getDisabledDate({min: momentDateParser(timestampFrom)})}
+          />
+        </Filter>
+        <Filter label="Service">
+          <Select
+            showSearch
+            placeholder="Service"
+            style={commonStyle}
+            filterOption={
+              (input, option) =>
+                option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+            }
+            value={service}
+            onChange={onFieldChanged('service', true)}
+          >
+            <Select.Option key="EDGE" value="EDGE">EDGE</Select.Option>
+            <Select.Option key="API" value="API">API</Select.Option>
+          </Select>
+        </Filter>
+        <Filter label="User">
+          <Select
+            showSearch
+            placeholder="User"
+            style={commonStyle}
+            filterOption={
+              (input, option) =>
+                option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
+            }
+            value={user}
+            onChange={onFieldChanged('user', true)}
+          >
+            {
+              this.users.map((user) => (
+                <Select.Option key={user.userName} value={user.userName}>
+                  <UserName userName={user.userName} />
+                </Select.Option>
+              ))
+            }
+          </Select>
+        </Filter>
+        <Filter label="Message">
+          <Input
+            style={commonStyle}
+            value={message}
+            onChange={onFieldChanged('message')}
+            onPressEnter={submitFilters('message')}
+            onBlur={submitFilters('message')}
+          />
+        </Filter>
+        <Filter label="Hostname" display={showAdvanced}>
+          <Select
+            placeholder="Hostname"
+            style={commonStyle}
+          />
+        </Filter>
+        <Filter label="Source" display={showAdvanced}>
+          <Input
+            placeholder="Source"
+            style={commonStyle}
+            value={source}
+            onChange={onFieldChanged('source')}
+            onPressEnter={submitFilters('source')}
+            onBlur={submitFilters('source')}
+          />
+        </Filter>
+        <Filter label="Type" display={showAdvanced}>
+          <Select
+            showSearch
+            placeholder="Type"
+            style={commonStyle}
+            filterOption={
+              (input, option) =>
+                option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+            }
+            value={type}
+            onChange={onFieldChanged('type', true)}
+          >
+            <Select.Option key="Security" value="Security">Security</Select.Option>
+          </Select>
+        </Filter>
+        <Filter label="Message From" display={showAdvanced}>
+          <DatePicker
+            showTime
+            format="YYYY-MM-DD HH:mm:ss"
+            placeholder="Message From"
+            style={commonStyle}
+            value={momentDateParser(messageTimestampFrom)}
+            onChange={onFieldChanged('messageTimestampFrom', true, momentDateConverter)}
+            disabledDate={getDisabledDate({max: momentDateParser(messageTimestampTo)})}
+          />
+        </Filter>
+        <Filter label="Message To" display={showAdvanced}>
+          <DatePicker
+            showTime
+            format="YYYY-MM-DD HH:mm:ss"
+            placeholder="Message To"
+            style={commonStyle}
+            value={momentDateParser(messageTimestampTo)}
+            onChange={onFieldChanged('messageTimestampTo', true, momentDateConverter)}
+            disabledDate={getDisabledDate({min: momentDateParser(messageTimestampFrom)})}
+          />
+        </Filter>
+        <div className={styles.filter} style={{minWidth: 'unset'}}>
+          <Button
+            onClick={this.toggleAdvanced}
+            size="small"
+            style={{lineHeight: 1}}
+          >
+            {showAdvanced ? 'Hide' : 'Show'} advanced
+          </Button>
+        </div>
+      </div>
+    );
+  }
+}
+
+Filters.propTypes = {
+  filters: PropTypes.object,
+  onChange: PropTypes.func
+};
+
+class SystemLogs extends React.Component {
+  state = {
+    filters: {}
+  };
+
+  onFiltersChange = (newFilters) => {
+    console.log(newFilters);
+    this.setState({
+      filters: newFilters
+    });
+  };
+
+  render () {
+    const {filters} = this.state;
+    return (
+      <div>
+        <Filters
+          filters={filters}
+          onChange={this.onFiltersChange}
+        />
+      </div>
+    );
+  }
+}
+
+export default SystemLogs;
