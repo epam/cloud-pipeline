@@ -44,49 +44,49 @@ export default class Index extends React.Component {
         >
           <Menu.Item key="cli">
             <AdaptedLink
-              to={`settings/cli`}
+              to={`/settings/cli`}
               location={location}>
               CLI
             </AdaptedLink>
           </Menu.Item>
           <Menu.Item key="events">
             <AdaptedLink
-              to={`settings/events`}
+              to={`/settings/events`}
               location={location}>
               System events
             </AdaptedLink>
           </Menu.Item>
           <Menu.Item key="user">
             <AdaptedLink
-              to={`settings/user`}
+              to={`/settings/user`}
               location={location}>
               User management
             </AdaptedLink>
           </Menu.Item>
           <Menu.Item key="email">
             <AdaptedLink
-              to={`settings/email`}
+              to={`/settings/email`}
               location={location}>
               Email notifications
             </AdaptedLink>
           </Menu.Item>
           <Menu.Item key="preferences">
             <AdaptedLink
-              to={`settings/preferences`}
+              to={`/settings/preferences`}
               location={location}>
               Preferences
             </AdaptedLink>
           </Menu.Item>
           <Menu.Item key="regions">
             <AdaptedLink
-              to={`settings/regions`}
+              to={`/settings/regions`}
               location={location}>
               Cloud Regions
             </AdaptedLink>
           </Menu.Item>
           <Menu.Item key="logs">
             <AdaptedLink
-              to={`settings/logs`}
+              to={`/settings/logs`}
               location={location}>
               System logs
             </AdaptedLink>
