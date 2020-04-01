@@ -69,13 +69,22 @@ export CP_DAV_INTERNAL_PORT="${CP_DAV_INTERNAL_PORT:-31085}"
 export CP_DAV_AUTH_URL_PATH="${CP_DAV_AUTH_URL_PATH:-webdav/auth-sso}"
 export CP_DAV_EXTERNAL_MAPPING_URL="${CP_DAV_EXTERNAL_MAPPING_URL:-$EDGE_EXTERNAL_SCHEMA://$CP_EDGE_EXTERNAL_HOST:$CP_EDGE_EXTERNAL_PORT/$CP_DAV_URL_PATH/}"
 export CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME="${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME:-CloudPipeline}"
-# FIXME: !!! For Windows - EDGE shall be added to the "Trusted sites", otherwise Windows WebClient won't send the auth cookie for DAV !!!
+export CP_EDGE_SSL_PROTOCOLS="${CP_EDGE_SSL_PROTOCOLS:-TLSv1.1 TLSv1.2}"
+export CP_EDGE_SSL_CIPHERS="EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH"
+# FIXME: !!! WebDAV tips For Windows Drive Mapping: 
+#        !!! - EDGE shall be added to the "Trusted sites", otherwise Windows WebClient won't send the auth cookie for DAV !!!
+#        !!! - File size/timout restrictions which require registry to be modified !!!
+#        !!!    - HKLM\SYSTEM\CurrentControlSet\Services\WebClient\Parameters -> FileSizeLimitInBytes (default: 50,000,000) !!!
+#        !!!    - HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\services\MRxDAV\Parameters -> FsCtlRequestTimeoutInSec (default: 30 min) !!!
+#        !!! - Make sure that corresponding TLS versions are set in Internet Options otherwise (if the protocl versions do not match) - "Error 67: network name cannot be found" will be thrown by Windows Explorer !!!
 #        !!! Reflect this in the documentation !!!
-#        !!! Anothing thing is the file size/timoute restrictions which require registry to be modified - reflect this is docs as well !!!
 export CP_DAV_INSTRUCTIONS_URL=${CP_DAV_INSTRUCTIONS_URL:-"#"}
 
 AUTH_HTML="$(envsubst '${CP_DAV_EXTERNAL_MAPPING_URL} ${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME} ${CP_DAV_INSTRUCTIONS_URL}' < /etc/nginx/dav/webdav/auth-sso/index.html)"
 echo "$AUTH_HTML" > /etc/nginx/dav/webdav/auth-sso/index.html
+
+NGINX_COMMON_CONF="$(envsubst '${CP_EDGE_SSL_PROTOCOLS} ${CP_EDGE_SSL_CIPHERS}' < /etc/nginx/endpoints-config/server.common.conf)"
+echo "$NGINX_COMMON_CONF" > /etc/nginx/endpoints-config/server.common.conf
 
 NGINX_CONF="$(envsubst '${CP_EDGE_WEB_CLIENT_MAX_SIZE} ${CP_DAV_URL_PATH} ${CP_DAV_INTERNAL_HOST} ${CP_DAV_INTERNAL_PORT} ${CP_DAV_AUTH_URL_PATH} ${EDGE_EXTERNAL_SCHEMA} ${CP_EDGE_CLUSTER_RESOLVER} ${CP_EDGE_CLUSTER_RESOLVER_TIMEOUT_SEC}' < /etc/nginx/nginx.conf)"
 echo "$NGINX_CONF" > /etc/nginx/nginx.conf
