@@ -53,5 +53,8 @@ envsubst < /tmp/httpd.conf > ${APACHE_HOME}/conf/httpd.conf
 envsubst < /tmp/webdav.conf > ${APACHE_HOME}/conf/extra/webdav.conf
 rm -rf /tmp/*.conf
 
+# Apache shall use 0002 mask to allow owner and group rw access
+umask ${CP_DAV_UMASK:-0002}
+
 # Start Apache in the foreground
 ${APACHE_HOME}/bin/apachectl -DFOREGROUND
