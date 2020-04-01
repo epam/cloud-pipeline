@@ -85,7 +85,7 @@ export default class AppRouter extends React.Component {
           <Route path="info" component={ClusterNodeGeneralInfo} />
           <Route path="jobs" component={ClusterNodePods} />
           <Route path="monitor" component={ClusterNodeMonitor} />
-        </Route>git
+        </Route>
         <Route path="/runs/filter" component={RunsFilter} />
         <Redirect from="/runs" to="runs/active" />
         <Route path="/runs/:status" component={AllRuns} />
