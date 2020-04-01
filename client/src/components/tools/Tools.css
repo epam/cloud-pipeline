@@ -445,6 +445,11 @@
 .name-column {
 }
 
+.os-column {
+  min-width: 100px;
+  white-space: nowrap;
+}
+
 .scanning-status-column {
 }
 
