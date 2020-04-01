@@ -26,7 +26,7 @@ And only the CPU requirements of the SGE jobs are considered while calculating c
 ## How it works
 
 The cluster autoscaling tries to be intuitive and is pretty straightforward in most cases.  
-Nevertheless it can get cumbersome with all the all allowed customization parameters.
+Nevertheless it can get cumbersome with all the allowed customization parameters.
 
 The overall autoscaling approach is briefly described below.  
 Please notice that all the described steps are executed repeatedly for all the cluster lifetime depending on the current situation.  
@@ -72,11 +72,11 @@ The autoscaler will detect such situations and replace weak addition workers wit
 
 | Pipeline parameter                  | System preference                   | Description |
 | ----------------------------------- | ----------------------------------- | ----------- |
-| `GE_AUTOSCALING_SCALE_UP_TIMEOUT`   | `ge.autoscaling.scale.up.timeout`   | Amount of seconds before any pending job is considered as expired. |
-| `GE_AUTOSCALING_SCALE_DOWN_TIMEOUT` | `ge.autoscaling.scale.down.timeout` | Amount of seconds all queue should be empty before autoscaler tries to find excessive additional workers. |
+|                                     | `ge.autoscaling.scale.up.timeout`   | Amount of seconds before any pending job is considered expired. |
+|                                     | `ge.autoscaling.scale.down.timeout` | Amount of seconds all queue should be empty before autoscaler tries to find excessive additional workers. |
 | `CP_CAP_AUTOSCALE_HYBRID`           |                                     | Enables hybrid cluster mode. It means that additional worker type can vary within either master instance type family or `CP_CAP_AUTOSCALE_HYBRID_FAMILY` if specified. |
 | `CP_CAP_AUTOSCALE_HYBRID_FAMILY`    |                                     | Explicit hybrid cluster additional worker instance type family. |
-| `CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE` |                             | The maximum amount of cores that the hybrid cluster additional worker could have |
+| `CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE` |                             | The maximum amount of cores that the hybrid cluster additional worker could have. |
 
 ## Example
 

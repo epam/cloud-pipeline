@@ -40,8 +40,7 @@ scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, pipe=pipe
                                             host_storage=host_storage, parent_run_id=parent_run_id, instance_helper=instance_helper,
                                             default_hostfile=default_hostfile, instance_disk=instance_disk,
                                             instance_image=instance_image,  price_type=price_type, region_id=region_id,
-                                            polling_timeout=polling_timeout, polling_delay=0, instance_family='c5',
-                                            hybrid_autoscale=True)
+                                            polling_timeout=polling_timeout, polling_delay=0, instance_family='c5')
 
 
 def setup_function():

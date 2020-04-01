@@ -296,6 +296,7 @@ export SGE_CLUSTER_NAME="CLOUD_PIPELINE"
 export CP_CAP_SGE_QUEUE_NAME="${CP_CAP_SGE_QUEUE_NAME:-main.q}"
 export CP_CAP_SGE_PE_NAME="${CP_CAP_SGE_PE_NAME:-local}"
 export CP_CAP_SGE_PE_MPI_NAME="${CP_CAP_SGE_PE_MPI_NAME:-mpi}"
+export CP_CAP_SGE_WORKER_FREE_CORES="${CP_CAP_SGE_WORKER_FREE_CORES:-0}"
 
 if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
     export SGE_ROOT="/var/lib/gridengine"

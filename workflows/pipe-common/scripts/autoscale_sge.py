@@ -531,12 +531,13 @@ class Clock:
 
 
 class GridEngineScaleUpHandler:
+    _POLL_TIMEOUT = 900
     _POLL_ATTEMPTS = 60
     _POLL_DELAY = 10
 
-    def __init__(self, cmd_executor, pipe, grid_engine, host_storage, parent_run_id, default_hostfile, instance_disk,
-                 instance_image, price_type, region_id, polling_timeout, instance_helper, polling_delay=_POLL_DELAY,
-                 instance_family=None, hybrid_autoscale=False):
+    def __init__(self, cmd_executor, pipe, grid_engine, host_storage, instance_helper, parent_run_id, default_hostfile, instance_disk,
+                 instance_image, price_type, region_id, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
+                 instance_family=None):
         """
         Grid engine scale up implementation. It handles additional nodes launching and hosts configuration (/etc/hosts
         and self.default_hostfile).
@@ -545,6 +546,7 @@ class GridEngineScaleUpHandler:
         :param pipe: Cloud pipeline raw client.
         :param grid_engine: Grid engine client.
         :param host_storage: Additional hosts storage.
+        :param instance_helper: Object to get information from CloupPipeline about instance types.
         :param parent_run_id: Additional nodes parent run id.
         :param default_hostfile: Default host file location.
         :param instance_disk: Additional nodes disk size.
@@ -552,16 +554,15 @@ class GridEngineScaleUpHandler:
         :param price_type: Additional nodes price type.
         :param region_id: Additional nodes Cloud Region id.
         :param polling_timeout: Kubernetes and Pipeline APIs polling timeout - in seconds.
-        :param instance_helper: Object to get information from CloupPipeline about instance types
         :param polling_delay: Polling delay - in seconds.
         :param instance_family: Instance family for launching additional instance,
                 e.g. c5 means that you can run instances like c5.large, c5.xlarge etc.
-        :param hybrid_autoscale: If True not only master instance type can be run for additional instance
         """
         self.executor = cmd_executor
         self.pipe = pipe
         self.grid_engine = grid_engine
         self.host_storage = host_storage
+        self.instance_helper = instance_helper
         self.parent_run_id = parent_run_id
         self.default_hostfile = default_hostfile
         self.instance_disk = instance_disk
@@ -569,10 +570,8 @@ class GridEngineScaleUpHandler:
         self.price_type = price_type
         self.region_id = region_id
         self.polling_timeout = polling_timeout
-        self.instance_helper = instance_helper
         self.polling_delay = polling_delay
         self.instance_family = instance_family
-        self.hybrid_autoscale = hybrid_autoscale
 
     def scale_up(self, resource):
         """
@@ -587,7 +586,7 @@ class GridEngineScaleUpHandler:
 
         :return: Host name of the launched pipeline.
         """
-        instance_to_run = self.instance_helper.select_instance(resource, self.price_type, self.hybrid_autoscale)
+        instance_to_run = self.instance_helper.select_instance(resource, self.price_type)
         Logger.info('The next instance is matched according to allowed: %s' % instance_to_run.name)
         run_id = self._launch_additional_worker(instance_to_run.name)
         host = self._retrieve_pod_name(run_id)
@@ -958,19 +957,20 @@ class GridEngineAutoscaler:
     def _filter_pending_job(self, updated_jobs):
         # kill jobs that are pending and can't be satisfied with requested resource
         # f.i. we have only 3 instance max and the biggest possible type has 10 cores but job requests 40 coresf
-        pending_jobs = []
-        invalid_jobs = []
-        for pending_job in [job for job in updated_jobs if job.state == GridEngineJobState.PENDING]:
+        pending_jobs = [job for job in updated_jobs if job.state == GridEngineJobState.PENDING]
+        valid_pending_jobs = []
+        invalid_pending_jobs = []
+        for pending_job in pending_jobs:
             if not self.grid_engine.is_job_valid(pending_job):
-                Logger.warn('Job with id: {job_id} cannot be satisfied with requested resources, '
-                            'it will rejected.'.format(job_id=pending_job.id), crucial=True)
-                invalid_jobs.append(pending_job)
+                invalid_pending_jobs.append(pending_job)
             else:
-                pending_jobs.append(pending_job)
-
-        if invalid_jobs:
-            self.grid_engine.kill_jobs(invalid_jobs)
-        return pending_jobs
+                valid_pending_jobs.append(pending_job)
+        if invalid_pending_jobs:
+            Logger.warn('The following jobs cannot be satisfied with the requested resources '
+                        'and therefore they will be rejected: %s' % ', '.join(job.id for job in invalid_pending_jobs),
+                        crucial=True)
+            self.grid_engine.kill_jobs(invalid_pending_jobs)
+        return valid_pending_jobs
 
     def scale_up(self, resource):
         """
@@ -1098,53 +1098,60 @@ class GridEngineWorkerValidator:
 
 class CloudPipelineInstanceHelper:
 
-    def __init__(self, cloud_provider, region_id, master_instance_type, instance_family, max_core_per_instance, pipe, pipeline_version):
-        self.region_id = region_id
+    def __init__(self, pipe, cloud_provider, region_id, master_instance_type, instance_family,
+                 hybrid_autoscale, hybrid_instance_cores, free_cores):
         self.pipe = pipe
-        self.instance_family = instance_family
-        self.master_instance_type = master_instance_type
         self.cloud_provider = cloud_provider
-        self.max_core_per_instance = max_core_per_instance
-        self.pipeline_version = pipeline_version
+        self.region_id = region_id
+        self.master_instance_type = master_instance_type
+        self.instance_family = instance_family
+        self.hybrid_autoscale = hybrid_autoscale
+        self.hybrid_instance_cores = hybrid_instance_cores
+        self.free_cores = free_cores
 
-    def select_instance(self, resource, price_type, hybrid_autoscale):
-        allowed = self._get_allowed_instances(price_type, hybrid_autoscale)
+    def select_instance(self, resource, price_type):
+        allowed = self._get_allowed_instances(price_type)
         for instance in allowed:
-            if instance.cpu >= resource.cpu:
+            if instance.cpu - self.free_cores >= resource.cpu:
                 return instance
         return allowed.pop()
 
-    def get_max_allowed(self, price_type, hybrid_autoscale):
-        return self._get_allowed_instances(price_type, hybrid_autoscale).pop()
+    def get_max_allowed(self, price_type):
+        return self._get_allowed_instances(price_type).pop()
 
-    def _get_allowed_instances(self, price_type, hybrid_autoscale):
-        is_spot = price_type == "on-demand" or price_type == "on_demand"
-        all_types = pipe.get_allowed_instance_types(self.region_id, is_spot)
-        allowed = all_types["cluster.allowed.instance.types"] if self.pipeline_version \
-                  else all_types["cluster.allowed.instance.types.docker"]
-        cp_instances = [CPInstance.from_cp_response(i) for i in allowed]
-        if hybrid_autoscale and self.instance_family:
-            return sorted(self._filter_instance_types(cp_instances), cmp=lambda i1, i2: i1.cpu - i2.cpu)
+    def _get_allowed_instances(self, price_type):
+        if self.hybrid_autoscale and self.instance_family:
+            return self._get_hybrid_instances(price_type)
         else:
-            Logger.info("Hybrid autoscaling is disabled, allowed list of instances will be trimmed to master instance type: {type}"
-                        .format(type=self.master_instance_type))
-            return [instance for instance in cp_instances if instance.name == self.master_instance_type]
+            Logger.info('Hybrid autoscaling is disabled, allowed list of instances will be trimmed '
+                        'to master instance type: {type}'.format(type=self.master_instance_type))
+            return self._get_master_instance(price_type)
 
-    def _filter_instance_types(self, allowed):
-        return [instance for instance in allowed if self._is_instance_from_family(instance.name)
-                and instance.cpu <= self.max_core_per_instance]
+    def _get_master_instance(self, price_type):
+        return [instance for instance in self._get_existing_instances(price_type)
+                if instance.name == self.master_instance_type]
+
+    def _get_hybrid_instances(self, price_type):
+        return sorted([instance for instance in self._get_existing_instances(price_type)
+                       if self._is_instance_from_family(instance.name) and instance.cpu <= self.hybrid_instance_cores],
+                      key=lambda instance: instance.cpu)
+
+    def _get_existing_instances(self, price_type):
+        allowed_instance_types = pipe.get_allowed_instance_types(self.region_id, price_type == 'spot')
+        docker_instance_types = allowed_instance_types['cluster.allowed.instance.types.docker']
+        return [CPInstance.from_cp_response(instance) for instance in docker_instance_types]
 
     @staticmethod
     def get_family_from_type(cloud_provider, instance_type):
         if cloud_provider == CloudProvider.aws():
-            search = re.search("^([a-z]\d+)\..*", instance_type)
+            search = re.search('^([a-z]\d+)\..*', instance_type)
             return search.group(1) if search else None
         elif cloud_provider == CloudProvider.gcp():
-            search = re.search("^\w\d\-(\w+)-.*", instance_type)
+            search = re.search('^\w\d\-(\w+)-.*', instance_type)
             return search.group(1) if search else None
         elif cloud_provider == CloudProvider.azure():
             # will return Bms for Standard_B1ms or Dsv3 for Standard_D2s_v3 instance types
-            search = re.search("^([a-zA-Z]+)\d+(.*)", instance_type.split('_', 1)[1].replace("_", ""))
+            search = re.search('^([a-zA-Z]+)\d+(.*)', instance_type.split('_', 1)[1].replace('_', ''))
             return search.group(1) + search.group(2) if search else None
         else:
             return None
@@ -1155,25 +1162,25 @@ class CloudPipelineInstanceHelper:
 
 class CloudProvider:
 
-    ALLOWED_VALUES = ["AWS", "GCP", "AZURE"]
+    ALLOWED_VALUES = ['AWS', 'GCP', 'AZURE']
 
     def __init__(self, value):
         if value in CloudProvider.ALLOWED_VALUES:
             self.value = value
         else:
-            raise ParsingError("Wrong CloudProvider value, only %s is available!" % CloudProvider.ALLOWED_VALUES)
+            raise ParsingError('Wrong CloudProvider value, only %s is available!' % CloudProvider.ALLOWED_VALUES)
 
     @staticmethod
     def aws():
-        return CloudProvider("AWS")
+        return CloudProvider('AWS')
 
     @staticmethod
     def gcp():
-        return CloudProvider("GCP")
+        return CloudProvider('GCP')
 
     @staticmethod
     def azure():
-        return CloudProvider("AZURE")
+        return CloudProvider('AZURE')
 
     def __eq__(self, other):
         if not isinstance(other, CloudProvider):
@@ -1184,25 +1191,25 @@ class CloudProvider:
 
 class AllocationRule:
 
-    ALLOWED_VALUES = ["$pe_slots", "$fill_up", "$round_robin"]
+    ALLOWED_VALUES = ['$pe_slots', '$fill_up', '$round_robin']
 
     def __init__(self, value):
         if value in AllocationRule.ALLOWED_VALUES:
             self.value = value
         else:
-            raise ParsingError("Wrong AllocationRule value, only %s is available!" % AllocationRule.ALLOWED_VALUES)
+            raise ParsingError('Wrong AllocationRule value, only %s is available!' % AllocationRule.ALLOWED_VALUES)
 
     @staticmethod
     def pe_slots():
-        return AllocationRule("$pe_slots")
+        return AllocationRule('$pe_slots')
 
     @staticmethod
     def fill_up():
-        return AllocationRule("$fill_up")
+        return AllocationRule('$fill_up')
 
     @staticmethod
     def round_robin():
-        return AllocationRule("$round_robin")
+        return AllocationRule('$round_robin')
 
     def __eq__(self, other):
         if not isinstance(other, AllocationRule):
@@ -1305,13 +1312,6 @@ class CloudPipelineAPI:
         raise exceptions[-1]
 
 
-def get_pipeline_version():
-    pipeline_version = os.getenv('PIPELINE_VERSION')
-    if not pipeline_version:
-        pipeline_version = os.getenv('VERSION')
-    return pipeline_version
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Launches grid engine autoscaler long running process.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -1332,35 +1332,37 @@ if __name__ == '__main__':
     instance_image = os.environ['docker_image']
     price_type = os.environ['price_type']
     region_id = os.environ['CLOUD_REGION_ID']
-    instance_cores = int(os.environ['CLOUD_PIPELINE_NODE_CORES']) \
-        if 'CLOUD_PIPELINE_NODE_CORES' in os.environ else multiprocessing.cpu_count()
-    max_additional_hosts = int(os.environ['CP_CAP_AUTOSCALE_WORKERS']) \
-        if 'CP_CAP_AUTOSCALE_WORKERS' in os.environ else 3
-    log_verbose = os.environ['CP_CAP_AUTOSCALE_VERBOSE'].strip().lower() == "true" \
-        if 'CP_CAP_AUTOSCALE_VERBOSE' in os.environ else False
+    instance_cores = int(os.getenv('CLOUD_PIPELINE_NODE_CORES', multiprocessing.cpu_count()))
+    additional_hosts = int(os.getenv('CP_CAP_AUTOSCALE_WORKERS', 3))
+    log_verbose = os.getenv('CP_CAP_AUTOSCALE_VERBOSE', 'false').strip().lower() == 'true'
+    # TODO: Remove "or 0" before merge
+    free_cores = int(os.getenv('CP_CAP_SGE_WORKER_FREE_CORES', 0) or 0)
+    master_cores = int(os.getenv('CP_CAP_SGE_MASTER_CORES', instance_cores))
+    master_cores = master_cores - free_cores if master_cores - free_cores > 0 else master_cores
     shared_work_dir = os.getenv('SHARED_WORK_FOLDER', '/common/workdir')
-    hybrid_autoscale = os.environ['CP_CAP_AUTOSCALE_HYBRID'].strip().lower() == "true" \
-        if 'CP_CAP_AUTOSCALE_HYBRID' in os.environ else False
-    autoscale_max_core_per_instance = int(os.getenv('CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE', sys.maxint))
+    hybrid_autoscale = os.getenv('CP_CAP_AUTOSCALE_HYBRID', 'false').strip().lower() == 'true'
+    hybrid_instance_cores = int(os.getenv('CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE', sys.maxint))
     instance_family = os.getenv('CP_CAP_AUTOSCALE_HYBRID_FAMILY',
                                 CloudPipelineInstanceHelper.get_family_from_type(cloud_provider, instance_type))
 
-    pipeline_version = get_pipeline_version()
-    
     # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
     pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(shared_work_dir, '.pipe.log'))
     api = CloudPipelineAPI(pipe=pipe)
-    
+
     instance_helper = CloudPipelineInstanceHelper(cloud_provider=cloud_provider, region_id=region_id,
                                                   instance_family=instance_family, master_instance_type=instance_type,
-                                                  pipe=pipe, pipeline_version=pipeline_version,
-                                                  max_core_per_instance=autoscale_max_core_per_instance)
+                                                  pipe=pipe, hybrid_autoscale=hybrid_autoscale,
+                                                  hybrid_instance_cores=hybrid_instance_cores,
+                                                  free_cores=free_cores)
 
-    default_worker_nodes_number = int(os.getenv('node_count', 0))
-    max_instance_cores = instance_helper.get_max_allowed(price_type, hybrid_autoscale).cpu
-    max_cluster_cores = max_instance_cores * max_additional_hosts + instance_cores * (1 + default_worker_nodes_number)
+    default_hosts = int(os.getenv('node_count', 0))
 
-    Logger.init(cmd=args.debug, log_file=os.path.join(shared_work_dir, '.autoscaler.log'), 
+    max_instance_cores = instance_helper.get_max_allowed(price_type).cpu - free_cores
+    max_cluster_cores = max_instance_cores * additional_hosts \
+                        + (instance_cores - free_cores) * default_hosts \
+                        + master_cores
+
+    Logger.init(cmd=args.debug, log_file=os.path.join(shared_work_dir, '.autoscaler.log'),
                 task='GridEngineAutoscaling', verbose=log_verbose)
 
     cmd_executor = CmdExecutor()
@@ -1372,14 +1374,14 @@ if __name__ == '__main__':
     scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default_value=30))
     scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default_value=30))
     scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout',
-                                                           default_value=600))
+                                                           default_value=900))
     scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, pipe=pipe, grid_engine=grid_engine,
-                                                host_storage=host_storage, parent_run_id=master_run_id,
-                                                default_hostfile=default_hostfile, instance_disk=instance_disk,
-                                                instance_image=instance_image, instance_helper=instance_helper,
+                                                host_storage=host_storage, instance_helper=instance_helper,
+                                                parent_run_id=master_run_id, default_hostfile=default_hostfile,
+                                                instance_disk=instance_disk, instance_image=instance_image,
                                                 price_type=price_type, region_id=region_id,
                                                 polling_timeout=scale_up_polling_timeout,
-                                                instance_family=instance_family, hybrid_autoscale=hybrid_autoscale)
+                                                instance_family=instance_family)
     scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
                                                     default_hostfile=default_hostfile)
     worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,
@@ -1387,7 +1389,7 @@ if __name__ == '__main__':
     autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, cmd_executor=cmd_executor,
                                       scale_up_handler=scale_up_handler, scale_down_handler=scale_down_handler,
                                       host_storage=host_storage, scale_up_timeout=scale_up_timeout,
-                                      scale_down_timeout=scale_down_timeout, max_additional_hosts=max_additional_hosts)
+                                      scale_down_timeout=scale_down_timeout, max_additional_hosts=additional_hosts)
     daemon = GridEngineAutoscalingDaemon(autoscaler=autoscaler, worker_validator=worker_validator,
                                          polling_timeout=args.polling_interval)
     daemon.start()
