@@ -906,8 +906,6 @@ class GridEngineAutoscaler:
         running_jobs = [job for job in updated_jobs if job.state == GridEngineJobState.RUNNING]
         pending_jobs = self._filter_pending_job(updated_jobs)
 
-        self._resolve_deadlock(running_jobs, pending_jobs, additional_hosts)
-
         if running_jobs:
             self.latest_running_job = sorted(running_jobs, key=lambda job: job.datetime, reverse=True)[0]
         if pending_jobs:
@@ -928,6 +926,8 @@ class GridEngineAutoscaler:
                 else:
                     Logger.info('There are %s/%s additional child pipelines. Scaling up is aborted.' %
                                 (len(additional_hosts), self.max_additional_hosts))
+                    Logger.info('Probable deadlock situation observed. Scaling down will be attempted.')
+                    self._scale_down(running_jobs, additional_hosts)
             else:
                 Logger.info('There are no waiting jobs that are in queue for more than %s seconds. '
                             'Scaling up is not required.' % self.scale_up_timeout.seconds)
@@ -949,11 +949,6 @@ class GridEngineAutoscaler:
         post_scale_additional_hosts = self.host_storage.load_hosts()
         Logger.info('There are %s additional pipelines.' % len(post_scale_additional_hosts))
 
-    def _resolve_deadlock(self, running_jobs, pending_jobs, additional_hosts):
-        if not running_jobs and pending_jobs and len(additional_hosts) >= self.max_additional_hosts:
-            Logger.info('Deadlock is observed, weakest host will be scaled down.', crucial=True)
-            self._scale_down(running_jobs, additional_hosts)
-
     def _filter_pending_job(self, updated_jobs):
         # kill jobs that are pending and can't be satisfied with requested resource
         # f.i. we have only 3 instance max and the biggest possible type has 10 cores but job requests 40 coresf
@@ -967,7 +962,8 @@ class GridEngineAutoscaler:
                 valid_pending_jobs.append(pending_job)
         if invalid_pending_jobs:
             Logger.warn('The following jobs cannot be satisfied with the requested resources '
-                        'and therefore they will be rejected: %s' % ', '.join(job.id for job in invalid_pending_jobs),
+                        'and therefore they will be rejected: %s'
+                        % ', '.join('%s (%s cpu)' % (job.id, job.slots) for job in invalid_pending_jobs),
                         crucial=True)
             self.grid_engine.kill_jobs(invalid_pending_jobs)
         return valid_pending_jobs
