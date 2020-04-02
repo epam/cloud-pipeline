@@ -153,7 +153,7 @@
         "name": "CP_CAP_AUTOSCALE",
         "type": "boolean",
         "description": "Enables cluster autoscaling",
-        "defaultValue": "false"
+        "defaultValue": "true"
     },
     {
         "name": "CP_CAP_AUTOSCALE_WORKERS",
@@ -162,16 +162,34 @@
         "defaultValue": "3"
     },
     {
+        "name": "CP_CAP_AUTOSCALE_VERBOSE",
+        "type": "boolean",
+        "description": "Enables cluster autoscaling verbose logging",
+        "defaultValue": "true"
+    },
+    {
+        "name": "CP_CAP_AUTOSCALE_HYBRID",
+        "type": "boolean",
+        "description": "Enables hybrid cluster autoscaling",
+        "defaultValue": "true"
+    },
+    {
+        "name": "CP_CAP_AUTOSCALE_HYBRID_FAMILY",
+        "type": "string",
+        "description": "Instance type family that will be used for hybrid autoscaling cluster workers",
+        "defaultValue": ""
+    },
+    {
+        "name": "CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE",
+        "type": "int",
+        "description": "Maximum number of cores that hybrid autoscaling cluster worker instances can have",
+        "defaultValue": "2"
+    },
+    {
         "name": "CP_CAP_DIND_CONTAINER",
         "type": "boolean",
         "description": "Enable docker engine for a current run using a containerized approach",
         "defaultValue": "true"
-    },
-    {
-        "name": "CP_CAP_FS_AUTOSCALE",
-        "type": "boolean",
-        "description": "Enables filesystem autoscaling",
-        "defaultValue": "false"
     },
     {
         "name": "CP_CAP_KEEP_FAILED_RUN",
