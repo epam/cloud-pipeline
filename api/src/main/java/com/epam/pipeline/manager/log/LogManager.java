@@ -18,52 +18,61 @@ package com.epam.pipeline.manager.log;
 
 import com.epam.pipeline.entity.log.LogEntry;
 import com.epam.pipeline.entity.log.LogFilter;
-import com.epam.pipeline.entity.log.LogPagination;
-import com.epam.pipeline.entity.log.LogPaginationRequest;
-import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.exception.PipelineException;
+import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.IndicesOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.Collection;
-import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class LogManager {
 
-    private static final String[] USERS = new String[]{"user", "pipe_admin"};
-    private static final Random RANDOM = new Random();
+    private static final IndicesOptions INDICES_OPTIONS = IndicesOptions.fromOptions(true,
+            SearchRequest.DEFAULT_INDICES_OPTIONS.allowNoIndices(),
+            SearchRequest.DEFAULT_INDICES_OPTIONS.expandWildcardsOpen(),
+            SearchRequest.DEFAULT_INDICES_OPTIONS.expandWildcardsClosed(),
+            SearchRequest.DEFAULT_INDICES_OPTIONS);
+
+
+    private final GlobalSearchElasticHelper elasticHelper;
 
     public Collection<LogEntry> filter(LogFilter logFilter) {
-        return generateStub(logFilter);
+        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+                .query(QueryBuilders.boolQuery()
+                        .filter(QueryBuilders.termsQuery(path("user"), "pavel_silin")));
+//                        .filter(QueryBuilders.rangeQuery("@timestamp")
+//                                .from(logFilter.getTimestampFrom().toInstant(ZoneOffset.UTC).toEpochMilli())
+//                                .to(logFilter.getTimestampTo().toInstant(ZoneOffset.UTC).toEpochMilli())))
+//                        .filter(QueryBuilders.rangeQuery("messageTimestamp")
+//                                .from(logFilter.getMessageTimestampFrom().toInstant(ZoneOffset.UTC).toEpochMilli())
+//                                .to(logFilter.getMessageTimestampTo().toInstant(ZoneOffset.UTC).toEpochMilli()));
+
+        SearchResponse security_log = executeRequest(new SearchRequest("security_log")
+                                                            .source(searchSourceBuilder)
+                                                            .indicesOptions(INDICES_OPTIONS));
+        return null;
     }
 
-    private Collection<LogEntry> generateStub(LogFilter logFilter) {
-        final LogPaginationRequest pagination = logFilter.getPagination() == null ?
-                LogPaginationRequest.builder().token(1L).pageSize(100L).build()
-                : logFilter.getPagination() ;
-        final long pageSize = pagination.getPageSize();
-        return Stream.generate(
-                () -> LogEntry.builder()
-                        .hostname("cp-api-srv.internal")
-                        .message(getMessage())
-                        .messageTimestamp(DateUtils.nowUTC())
-                        .timestamp(DateUtils.nowUTC())
-                        .serviceName("api-srv")
-                        .source("/opt/api/log/security.json")
-                        .type("Security")
-                        .user(getUser())
-                        .severity("INFO")
-                        .logger("JwtFilterAuthenticationFilter")
-                        .build()
-        ).limit(pageSize).collect(Collectors.toList());
+    protected static String path(final String ...parts) {
+        return String.join(".", parts);
     }
 
-    private String getMessage() {
-        return "Message " + RANDOM.nextInt();
-    }
-
-    private String getUser() {
-        return USERS[RANDOM.nextInt(USERS.length -1)];
+    protected SearchResponse executeRequest(final SearchRequest searchRequest) {
+        try {
+            return elasticHelper.buildClient().search(searchRequest);
+        } catch (IOException e) {
+            throw new PipelineException(e);
+        }
     }
 }
