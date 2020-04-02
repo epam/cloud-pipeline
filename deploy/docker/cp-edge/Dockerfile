@@ -59,6 +59,8 @@ RUN     cd /tmp && \
 RUN opm get cdbattags/lua-resty-jwt=0.2.0
 # Install LUA HTTP Client
 RUN opm get pintsized/lua-resty-http=0.12
+# Install URL parsing library
+RUN opm get 3scale/lua-resty-url=0.3.3
 
 # Configure cron and sync routes script
 ADD	crontab /etc/cron.d/sync-routes
