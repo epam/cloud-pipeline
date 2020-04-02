@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -542,7 +542,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolOSPref.setValue("centos:6,ubuntu:14.04");
         preferenceManager.update(Collections.singletonList(toolOSPref));
 
-        String latestVersion = "latest", testRef = "testRef", prevVersion = "prev";
+        String latestVersion = LATEST_TAG, testRef = "testRef", prevVersion = "prev";
         Date scanDate = new Date();
 
         Mockito.doReturn(Arrays.asList(latestVersion, prevVersion)).when(dockerClient).getImageTags(any(), anyString());
@@ -556,7 +556,7 @@ public class ToolManagerTest extends AbstractManagerTest {
                 latestVersion, new ToolOSVersion(CENTOS, CENTOS_VERSION), testRef, testRef);
 
         ToolScanResult loaded = toolManager.loadToolScanResult(tool);
-        ToolOSVersion toolOSVersion = loaded.getToolVersionScanResults().get("latest").getToolOSVersion();
+        ToolOSVersion toolOSVersion = loaded.getToolVersionScanResults().get(LATEST_TAG).getToolOSVersion();
         Assert.assertNotNull(toolOSVersion);
         Assert.assertEquals(CENTOS, toolOSVersion.getDistribution());
         Assert.assertEquals(CENTOS_VERSION, toolOSVersion.getVersion());
@@ -566,7 +566,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolOSPref.setValue("ubuntu:14.04");
         preferenceManager.update(Collections.singletonList(toolOSPref));
         loaded = toolManager.loadToolScanResult(tool);
-        toolOSVersion = loaded.getToolVersionScanResults().get("latest").getToolOSVersion();
+        toolOSVersion = loaded.getToolVersionScanResults().get(LATEST_TAG).getToolOSVersion();
         Assert.assertNotNull(toolOSVersion);
         Assert.assertEquals(CENTOS, toolOSVersion.getDistribution());
         Assert.assertEquals(CENTOS_VERSION, toolOSVersion.getVersion());
@@ -576,7 +576,7 @@ public class ToolManagerTest extends AbstractManagerTest {
     @Test()
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testLoadToolScanResult() {
-        String latestVersion = "latest", testRef = "testRef", prevVersion = "prev";
+        String latestVersion = LATEST_TAG, testRef = "testRef", prevVersion = "prev";
         Date scanDate = new Date();
 
         Mockito.doReturn(Arrays.asList(latestVersion, prevVersion)).when(dockerClient).getImageTags(any(), anyString());
@@ -662,7 +662,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         Date now = new Date();
         ToolScanStatus status = ToolScanStatus.FAILED;
 
-        toolManager.updateToolVersionScanStatus(tool.getId(), status, now, LATEST_TAG, null, layerRef, digest);
+        toolManager.updateToolVersionScanStatus(tool.getId(), status, now, LATEST_TAG, layerRef, digest);
         ToolVersionScanResult versionScan = toolManager.loadToolVersionScan(
                 tool.getId(), LATEST_TAG).get();
         Assert.assertEquals(status, versionScan.getStatus());
@@ -699,7 +699,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         Date newScanDate = new Date();
 
         toolManager.updateToolVersionScanStatus(
-                tool.getId(), status, newScanDate, LATEST_TAG, null, layerRef, digest);
+                tool.getId(), status, newScanDate, LATEST_TAG, layerRef, digest);
         Assert.assertEquals(1, toolManager.loadToolScanResult(tool).getToolVersionScanResults().values().size());
         versionScan = toolManager.loadToolVersionScan(tool.getId(), LATEST_TAG).get();
         Assert.assertEquals(newScanDate, versionScan.getScanDate());

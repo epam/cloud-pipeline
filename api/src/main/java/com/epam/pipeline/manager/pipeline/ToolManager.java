@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -169,7 +169,7 @@ public class ToolManager implements SecuredEntityManager {
                 String digest = dockerRegistryManager.getDockerClient(registry, tool.getImage())
                         .getVersionAttributes(registry, tool.getImage(), tag).getDigest();
                 updateToolVersionScanStatus(tool.getId(), ToolScanStatus.NOT_SCANNED,
-                        DateUtils.now(), tag, null, null, digest);
+                        DateUtils.now(), tag, null, digest);
             }
         } catch (DockerConnectionException e) {
             throw new IllegalArgumentException(
@@ -436,6 +436,12 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
+    public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate,
+                                            String version, String layerRef, String digest) {
+        updateToolVersionScanStatus(toolId, newStatus, scanDate, version, null, layerRef, digest);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
     public ToolVersionScanResult updateWhiteListWithToolVersionStatus(long toolId, String version,
                                                                       boolean fromWhiteList) {
         Optional<ToolVersionScanResult> toolVersionScanResult = loadToolVersionScan(toolId, version);
@@ -621,8 +627,8 @@ public class ToolManager implements SecuredEntityManager {
         }
     }
 
-    private boolean isToolOSVersionAllowed(ToolOSVersion toolOSVersion) {
-        String allowedOSes = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS);
+    private boolean isToolOSVersionAllowed(final ToolOSVersion toolOSVersion) {
+        final String allowedOSes = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS);
 
         if (StringUtils.isEmpty(allowedOSes)) {
             return true;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -238,13 +238,11 @@ public class AggregatingToolScanManager implements ToolScanManager {
                 return false;
             }
 
-            LOGGER.debug("Tool: " + tool.getId() + " version: " + tag +
-                    "Check tool os version.");
+            LOGGER.debug("Tool: {} version: {} Check tool os version.", tool.getId(), tag);
             if (toolVersionScanResult.getToolOSVersion() != null
                     && !toolVersionScanResult.getToolOSVersion().getIsAllowed()) {
-                LOGGER.warn("Tool: " + tool.getId() + " version: " + tag +
-                        ". Tool os version isn't allowed, check preference " +
-                        SystemPreferences.DOCKER_SECURITY_TOOL_OS.getKey() + " ! Cancel run.");
+                LOGGER.warn("Tool: {} version: {}. Tool os version isn't allowed, check preference {} ! Cancel run.",
+                        tool.getId(), tag, SystemPreferences.DOCKER_SECURITY_TOOL_OS.getKey());
                 return false;
             }
         }

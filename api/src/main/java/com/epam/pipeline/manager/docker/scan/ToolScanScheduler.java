@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,13 +137,13 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
                             LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED,
                                                                   tool.getImage(), version), e);
                             toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                                                             version, null, null, null);
+                                                             version, null, null);
                         }
                     }
                 } catch (Exception e) {
                     LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage()), e);
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                                                     "latest", null, null, null);
+                                                     "latest", null, null);
                 }
             }
         }
@@ -180,7 +180,7 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
                     .map(ToolVersionScanResult::getDigest)
                     .orElse(null);
             toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.PENDING, null,
-                                             version, null, layerRef, digest);
+                                             version, layerRef, digest);
             return forceScanExecutor.submit(new DelegatingSecurityContextCallable<>(() -> {
                 LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_TOOL_FORCE_SCAN_STARTED, tool.getImage()));
 
@@ -195,16 +195,15 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
                     return scanResult;
                 } catch (Exception e) {
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                            version, null, null, null);
+                            version, null, null);
                     LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage()), e);
                     throw new PipelineException(e);
                 }
             }, SecurityContextHolder.getContext()));
         }
 
-        return CompletableFuture.completedFuture(
-                new ToolVersionScanResult(ToolScanStatus.PENDING, null, Collections.emptyList(),
-                        Collections.emptyList(), null));
+        return CompletableFuture.completedFuture(new ToolVersionScanResult(ToolScanStatus.PENDING, null,
+                                                                    Collections.emptyList(), Collections.emptyList()));
     }
 
     private void updateToolVersion(Tool tool, String version, DockerRegistry registry, DockerClient dockerClient) {

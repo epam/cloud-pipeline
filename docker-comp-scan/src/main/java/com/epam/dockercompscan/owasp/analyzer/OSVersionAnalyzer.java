@@ -105,7 +105,7 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
     protected void analyzeDependency(final Dependency dependency, final Engine engine) throws AnalysisException {
         final File actualFile = dependency.getActualFile();
         try {
-            String contents = FileUtils.readFileToString(actualFile, Charset.defaultCharset()).trim();
+            final String contents = FileUtils.readFileToString(actualFile, Charset.defaultCharset()).trim();
             collectDescriptionData(dependency, actualFile.getName(), contents);
         } catch (IOException e) {
             throw new AnalysisException("Problem occurred while reading dependency file.", e);
@@ -113,19 +113,20 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
     }
 
     private void collectDescriptionData(final Dependency dependency, final String source, final String contents) {
-        if (!contents.isEmpty()) {
-            final String cleanContent = contents.replaceAll("\n\\s+", " ");
-            Pattern namePattern = source.equals(OS_RELEASE) ? NAME_TITLE_PATTERN : SYSTEM_NAME_TITLE_PATTERN;
-            Pattern versionPattern = source.equals(OS_RELEASE) ? VERSION_PATTERN : SYSTEM_VERSION_PATTERN;
+        if (contents.isEmpty()) {
+            return;
+        }
+        final String cleanContent = contents.replaceAll("\n\\s+", " ");
+        final Pattern namePattern = source.equals(OS_RELEASE) ? NAME_TITLE_PATTERN : SYSTEM_NAME_TITLE_PATTERN;
+        final Pattern versionPattern = source.equals(OS_RELEASE) ? VERSION_PATTERN : SYSTEM_VERSION_PATTERN;
 
-            gatherEvidence(dependency, EvidenceType.VERSION, versionPattern, cleanContent,
-                    source, "Version", Confidence.HIGH);
-            gatherEvidence(dependency, EvidenceType.PRODUCT, namePattern, cleanContent,
-                    source, "Name", Confidence.HIGH);
-            dependency.setEcosystem(DEPENDENCY_ECOSYSTEM);
-            if (dependency.getName() != null && dependency.getVersion() != null) {
-                dependency.setDisplayFileName(dependency.getName() + ":" + dependency.getVersion());
-            }
+        gatherEvidence(dependency, EvidenceType.VERSION, versionPattern, cleanContent,
+                source, "Version", Confidence.HIGH);
+        gatherEvidence(dependency, EvidenceType.PRODUCT, namePattern, cleanContent,
+                source, "Name", Confidence.HIGH);
+        dependency.setEcosystem(DEPENDENCY_ECOSYSTEM);
+        if (dependency.getName() != null && dependency.getVersion() != null) {
+            dependency.setDisplayFileName(dependency.getName() + ":" + dependency.getVersion());
         }
     }
 

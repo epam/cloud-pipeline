@@ -490,7 +490,7 @@ public class DockerRegistryManager implements SecuredEntityManager {
                     toolGroup.getName()));
             toolManager.updateToolVersionScanStatus(toolInGroup.get().getId(),
                     ToolScanStatus.NOT_SCANNED, DateUtils.now(), event.getTarget().getTag(),
-                    null, null, event.getTarget().getDigest());
+                    null, event.getTarget().getDigest());
             return toolInGroup;
         }
         if (!permissionManager.isActionAllowedForUser(toolGroup, actor, AclPermission.WRITE)) {

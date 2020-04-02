@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -289,6 +289,12 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
                     .computeIfAbsent(toolId, key -> new HashMap<>());
             versionScanMap.put(version, versionScan); // Rewrite it
             imageRefByToolId.put(toolId, layerRef);
+        }
+
+        @Override
+        public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate, String version,
+                                                String layerRef, String digest) {
+            updateToolVersionScanStatus(toolId, newStatus, scanDate, version, null, layerRef, digest);
         }
 
         @Override
