@@ -748,6 +748,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           status: scanResult.status,
           successScanDate: scanResult.successScanDate || '',
           allowedToExecute: scanResult.allowedToExecute,
+          toolOSVersion: scanResult.toolOSVersion,
           vulnerabilitiesStatistics: scanResult.status === ScanStatuses.notScanned ? null : {
             critical: countCriticalVulnerabilities,
             high: countHighVulnerabilities,
@@ -853,6 +854,25 @@ export default class Tool extends localization.LocalizedReactComponent {
             </tbody>
           </table>
         );
+      }
+    }, {
+      dataIndex: 'toolOSVersion',
+      key: 'tool os version',
+      title: 'OS',
+      className: styles.osColumn,
+      render: (toolOSVersion) => {
+        if (toolOSVersion) {
+          const {distribution, version} = toolOSVersion;
+          if (distribution) {
+            return (
+              <div>
+                <span>{distribution}</span>
+                {version && (<span style={{marginLeft: 5}}>{version}</span>)}
+              </div>
+            );
+          }
+        }
+        return null;
       }
     }, {
       dataIndex: 'digest',

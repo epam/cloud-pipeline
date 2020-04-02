@@ -339,6 +339,33 @@ public class AggregatingToolScanManagerTest {
     }
 
     @Test
+    public void testDenyOnNotAllowedOS() {
+        when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS))
+                .thenReturn("centos:6");
+        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES + 1, MAX_HIGH_VULNERABILITIES,
+                1, toolScanResult, new ToolOSVersion("ubuntu", "14"));
+        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION));
+    }
+
+    @Test
+    public void testDenyOnNotAllowedOSVersion() {
+        when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS))
+                .thenReturn("centos:6");
+        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES + 1, MAX_HIGH_VULNERABILITIES,
+                1, toolScanResult, new ToolOSVersion("centos", "7"));
+        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION));
+    }
+
+    @Test
+    public void testAllowOnAllowedOSVersion() {
+        when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS))
+                .thenReturn("centos");
+        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES + 1, MAX_HIGH_VULNERABILITIES,
+                1, toolScanResult, new ToolOSVersion("centos", "7"));
+        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION));
+    }
+
+    @Test
     public void testDenyOnHigh() {
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES + 1,
                 1, toolScanResult);

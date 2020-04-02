@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.scan.ToolDependency;
+import com.epam.pipeline.entity.scan.ToolOSVersion;
 import com.epam.pipeline.entity.scan.ToolScanPolicy;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.Vulnerability;
@@ -87,6 +88,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
 
     private static final int DISABLED = -1;
     private static final long SECONDS_IN_HOUR = 3600;
+    public static final String NOT_DETERMINED = "NotDetermined";
 
     @Autowired
     private PreferenceManager preferenceManager;
@@ -233,6 +235,14 @@ public class AggregatingToolScanManager implements ToolScanManager {
                     SystemPreferences.DOCKER_SECURITY_TOOL_POLICY_MAX_MEDIUM_VULNERABILITIES);
             if (maxMediumVulnerabilities != DISABLED &&
                     maxMediumVulnerabilities < severityCounters.getOrDefault(VulnerabilitySeverity.Medium, 0)) {
+                return false;
+            }
+
+            LOGGER.debug("Tool: {} version: {} Check tool os version.", tool.getId(), tag);
+            if (toolVersionScanResult.getToolOSVersion() != null
+                    && !toolManager.isToolOSVersionAllowed(toolVersionScanResult.getToolOSVersion())) {
+                LOGGER.warn("Tool: {} version: {}. Tool os version isn't allowed, check preference {} ! Cancel run.",
+                        tool.getId(), tag, SystemPreferences.DOCKER_SECURITY_TOOL_OS.getKey());
                 return false;
             }
         }
@@ -437,8 +447,12 @@ public class AggregatingToolScanManager implements ToolScanManager {
 
         LOGGER.debug("Found: " + dependencies.size() + " dependencies for " + tool.getImage() + ":" + tag);
 
+        final ToolOSVersion osVersion = dependencies.stream()
+                .filter(td -> td.getEcosystem() == ToolDependency.Ecosystem.OS)
+                .findFirst().map(td -> new ToolOSVersion(td.getName(), td.getVersion()))
+                .orElse(new ToolOSVersion(NOT_DETERMINED, NOT_DETERMINED));
 
-        return new ToolVersionScanResult(tag, vulnerabilities, dependencies, ToolScanStatus.COMPLETED,
+        return new ToolVersionScanResult(tag, osVersion, vulnerabilities, dependencies, ToolScanStatus.COMPLETED,
                 clairScanResult.getName(), digest);
     }
 }

@@ -191,6 +191,9 @@ public class SystemPreferences {
     public static final StringPreference DOCKER_SECURITY_TOOL_SCAN_CLAIR_ROOT_URL = new StringPreference(
             "security.tools.scan.clair.root.url", null, DOCKER_SECURITY_GROUP,
             PreferenceValidators.isValidUrlOrBlank);
+    public static final StringPreference DOCKER_SECURITY_TOOL_OS = new StringPreference(
+            "security.tools.os", "", DOCKER_SECURITY_GROUP,
+            PreferenceValidators.isEmptyOrValidBatchOfOSes);
     public static final StringPreference DOCKER_COMP_SCAN_ROOT_URL = new StringPreference(
             "security.tools.docker.comp.scan.root.url", null, DOCKER_SECURITY_GROUP,
             PreferenceValidators.isValidUrlOrBlank);

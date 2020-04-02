@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,10 @@ import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.*;
+import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.scan.ToolOSVersion;
 import com.epam.pipeline.entity.scan.ToolScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.cluster.InstanceType;
@@ -31,6 +33,8 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.util.TestUtils;
 import org.junit.After;
@@ -51,7 +55,8 @@ import static org.mockito.Matchers.anyString;
 
 public class ToolManagerTest extends AbstractManagerTest {
 
-    private static final String TEST_USER = "test";
+    private static final String TEST = "test";
+    private static final String TEST_USER = TEST;
     private static final String TEST_IMAGE = "library/image";
     private static final String TEST_CPU = "500m";
     private static final String CHANGED_TEST_CPU = "500m";
@@ -64,7 +69,7 @@ public class ToolManagerTest extends AbstractManagerTest {
     private static final String LABEL_1 = "label1";
     private static final String LABEL_2 = "label2";
     private static final String TEST_IMAGE_2 = "image2";
-    private static final String TEST_GROUP_NAME = "test";
+    private static final String TEST_GROUP_NAME = TEST;
     private static final String TEST_GROUP_ID1 = "repository/test";
     private static final String TEST_GROUP_ID2 = "repository2/test";
     private static final String TEST_ALLOWED_INSTANCE_TYPE = "m5.large";
@@ -78,6 +83,8 @@ public class ToolManagerTest extends AbstractManagerTest {
     private static final String REGION_NAME = "region";
     private static final String REGION_CODE = "us-east-1";
     private static final String ON_DEMAND = "OnDemand";
+    public static final String CENTOS = "centos";
+    public static final String CENTOS_VERSION = "6.10";
 
     @Autowired
     private DockerRegistryDao registryDao;
@@ -100,6 +107,9 @@ public class ToolManagerTest extends AbstractManagerTest {
 
     @Autowired
     private ToolGroupManager toolGroupManager;
+
+    @Autowired
+    private PreferenceManager preferenceManager;
 
     private DockerRegistry firstRegistry;
     private DockerRegistry secondRegistry;
@@ -453,7 +463,8 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolManager.create(tool, true);
 
         toolManager.updateToolVersionScanStatus(
-                tool.getId(), ToolScanStatus.COMPLETED, new Date(), LATEST_TAG, LAYER_REF, DIGEST
+                tool.getId(), ToolScanStatus.COMPLETED, new Date(), LATEST_TAG,
+                new ToolOSVersion(TEST, TEST), LAYER_REF, DIGEST
         );
         toolManager.updateToolVulnerabilities(Collections.emptyList(), tool.getId(), LATEST_TAG);
         toolManager.updateToolDependencies(Collections.emptyList(), tool.getId(), LATEST_TAG);
@@ -500,7 +511,8 @@ public class ToolManagerTest extends AbstractManagerTest {
         Date now = new Date();
         ToolScanStatus status = ToolScanStatus.COMPLETED;
 
-        toolManager.updateToolVersionScanStatus(tool.getId(), status, now, LATEST_TAG, layerRef, digest);
+        toolManager.updateToolVersionScanStatus(tool.getId(), status, now, LATEST_TAG, new ToolOSVersion(TEST, TEST),
+                layerRef, digest);
         toolManager.updateWhiteListWithToolVersionStatus(tool.getId(), LATEST_TAG, true);
         ToolVersionScanResult versionScan = toolManager.loadToolVersionScan(
                 tool.getId(), LATEST_TAG).get();
@@ -513,7 +525,8 @@ public class ToolManagerTest extends AbstractManagerTest {
         digest = "newdigest";
         now = new Date();
 
-        toolManager.updateToolVersionScanStatus(tool.getId(), status, now, LATEST_TAG, layerRef, digest);
+        toolManager.updateToolVersionScanStatus(tool.getId(), status, now, LATEST_TAG, new ToolOSVersion(TEST, TEST),
+                layerRef, digest);
         Assert.assertEquals(1, toolManager.loadToolScanResult(tool).getToolVersionScanResults().values().size());
         versionScan = toolManager.loadToolVersionScan(tool.getId(), LATEST_TAG).get();
         Assert.assertEquals(now, versionScan.getScanDate());
@@ -522,10 +535,14 @@ public class ToolManagerTest extends AbstractManagerTest {
         Assert.assertFalse(versionScan.isFromWhiteList());
     }
 
-    @Test()
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void testLoadToolScanResult() {
-        String latestVersion = "latest", testRef = "testRef", prevVersion = "prev";
+    public void loadToolVesrionScanShouldCorrectCalculateIfToolOSVersionIsAllowed() {
+        Preference toolOSPref = SystemPreferences.DOCKER_SECURITY_TOOL_OS.toPreference();
+        toolOSPref.setValue("centos:6,ubuntu:14.04");
+        preferenceManager.update(Collections.singletonList(toolOSPref));
+
+        String latestVersion = LATEST_TAG, testRef = "testRef", prevVersion = "prev";
         Date scanDate = new Date();
 
         Mockito.doReturn(Arrays.asList(latestVersion, prevVersion)).when(dockerClient).getImageTags(any(), anyString());
@@ -536,7 +553,39 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolManager.create(tool, true);
 
         toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED, scanDate,
-                latestVersion, testRef, testRef);
+                latestVersion, new ToolOSVersion(CENTOS, CENTOS_VERSION), testRef, testRef);
+
+        ToolScanResult loaded = toolManager.loadToolScanResult(tool);
+        ToolOSVersion toolOSVersion = loaded.getToolVersionScanResults().get(LATEST_TAG).getToolOSVersion();
+        Assert.assertNotNull(toolOSVersion);
+        Assert.assertEquals(CENTOS, toolOSVersion.getDistribution());
+        Assert.assertEquals(CENTOS_VERSION, toolOSVersion.getVersion());
+
+        toolOSPref = SystemPreferences.DOCKER_SECURITY_TOOL_OS.toPreference();
+        toolOSPref.setValue("ubuntu:14.04");
+        preferenceManager.update(Collections.singletonList(toolOSPref));
+        loaded = toolManager.loadToolScanResult(tool);
+        toolOSVersion = loaded.getToolVersionScanResults().get(LATEST_TAG).getToolOSVersion();
+        Assert.assertNotNull(toolOSVersion);
+        Assert.assertEquals(CENTOS, toolOSVersion.getDistribution());
+        Assert.assertEquals(CENTOS_VERSION, toolOSVersion.getVersion());
+    }
+
+    @Test()
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testLoadToolScanResult() {
+        String latestVersion = LATEST_TAG, testRef = "testRef", prevVersion = "prev";
+        Date scanDate = new Date();
+
+        Mockito.doReturn(Arrays.asList(latestVersion, prevVersion)).when(dockerClient).getImageTags(any(), anyString());
+
+        Tool tool = generateTool(TEST_GROUP_ID1);
+
+        tool.setToolGroupId(firstToolGroup.getId());
+        toolManager.create(tool, true);
+
+        toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED, scanDate,
+                latestVersion, new ToolOSVersion(TEST, TEST), testRef, testRef);
 
         ToolScanResult loaded = toolManager.loadToolScanResult(tool);
         Assert.assertEquals(
@@ -589,7 +638,7 @@ public class ToolManagerTest extends AbstractManagerTest {
 
         byte[] randomBytes = new byte[10];
         new Random().nextBytes(randomBytes);
-        String testFileName = "test";
+        String testFileName = TEST;
 
         toolManager.updateToolIcon(tool.getId(), testFileName, randomBytes);
         Assert.assertNotNull(toolManager.loadToolIcon(tool.getId()));
@@ -635,7 +684,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         ToolScanStatus status = ToolScanStatus.COMPLETED;
 
         toolManager.updateToolVersionScanStatus(
-                tool.getId(), status, scanDate, LATEST_TAG, layerRef, digest);
+                tool.getId(), status, scanDate, LATEST_TAG, new ToolOSVersion(TEST, TEST), layerRef, digest);
         ToolVersionScanResult versionScan =
                 toolManager.loadToolVersionScan(tool.getId(), LATEST_TAG).get();
         Assert.assertEquals(status, versionScan.getStatus());
