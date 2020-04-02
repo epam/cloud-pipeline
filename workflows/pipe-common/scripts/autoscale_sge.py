@@ -1331,8 +1331,7 @@ if __name__ == '__main__':
     instance_cores = int(os.getenv('CLOUD_PIPELINE_NODE_CORES', multiprocessing.cpu_count()))
     additional_hosts = int(os.getenv('CP_CAP_AUTOSCALE_WORKERS', 3))
     log_verbose = os.getenv('CP_CAP_AUTOSCALE_VERBOSE', 'false').strip().lower() == 'true'
-    # TODO: Remove "or 0" before merge
-    free_cores = int(os.getenv('CP_CAP_SGE_WORKER_FREE_CORES', 0) or 0)
+    free_cores = int(os.getenv('CP_CAP_SGE_WORKER_FREE_CORES', 0))
     master_cores = int(os.getenv('CP_CAP_SGE_MASTER_CORES', instance_cores))
     master_cores = master_cores - free_cores if master_cores - free_cores > 0 else master_cores
     shared_work_dir = os.getenv('SHARED_WORK_FOLDER', '/common/workdir')
