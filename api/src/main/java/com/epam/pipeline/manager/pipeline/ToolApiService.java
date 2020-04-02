@@ -128,10 +128,14 @@ public class ToolApiService {
     @PreAuthorize("hasRole('ADMIN') or @grantPermissionManager.toolPermission(#registry, #image, 'READ')")
     public ToolScanResultView loadToolScanResult(String registry, String image) {
         ToolScanResult toolScanResult = toolManager.loadToolScanResult(registry, image);
-        return new ToolScanResultView(toolScanResult.getToolId(),
-                toolScanResult.getToolVersionScanResults().values().stream().map(vsr ->
-                    ToolVersionScanResultView.from(vsr, toolManager.isToolOSVersionAllowed(vsr.getToolOSVersion()))
-                ).collect(Collectors.toMap(ToolVersionScanResultView::getVersion, vsrv -> vsrv)));
+        if (toolScanResult != null) {
+            return new ToolScanResultView(toolScanResult.getToolId(),
+                    toolScanResult.getToolVersionScanResults().values().stream().map(vsr ->
+                            ToolVersionScanResultView.from(vsr, toolManager.isToolOSVersionAllowed(vsr.getToolOSVersion()))
+                    ).collect(Collectors.toMap(ToolVersionScanResultView::getVersion, vsrv -> vsrv)));
+        } else {
+            return null;
+        }
     }
 
     public ToolScanPolicy loadSecurityPolicy() {

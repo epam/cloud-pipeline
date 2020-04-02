@@ -40,7 +40,8 @@ public class ToolVersionScanResultView {
     private Date gracePeriod;
 
     public static ToolVersionScanResultView from(final ToolVersionScanResult scanResult, final boolean isOSAllowed) {
-        return ToolVersionScanResultView.builder()
+        return scanResult != null
+                ? ToolVersionScanResultView.builder()
                     .toolId(scanResult.getToolId())
                     .version(scanResult.getVersion())
                     .toolOSVersion(ToolOSVersionView.from(scanResult.getToolOSVersion(), isOSAllowed))
@@ -51,7 +52,8 @@ public class ToolVersionScanResultView {
                     .dependencies(scanResult.getDependencies())
                     .isAllowedToExecute(scanResult.isAllowedToExecute())
                     .isAllowedToExecute(scanResult.isAllowedToExecute())
-                    .gracePeriod(scanResult.getGracePeriod()).build();
+                    .gracePeriod(scanResult.getGracePeriod()).build()
+                : null;
     }
 
 }

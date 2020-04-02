@@ -32,6 +32,8 @@ public class ToolOSVersionView {
     }
 
     public static ToolOSVersionView from(final ToolOSVersion osVersion, final boolean isAllowed) {
-        return new ToolOSVersionView(osVersion.getDistribution(), osVersion.getVersion(), isAllowed);
+        return osVersion != null
+                ? new ToolOSVersionView(osVersion.getDistribution(), osVersion.getVersion(), isAllowed)
+                : null;
     }
 }
