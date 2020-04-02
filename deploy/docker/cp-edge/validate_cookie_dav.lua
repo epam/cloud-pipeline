@@ -87,6 +87,21 @@ function get_basic_token()
     return pass
 end
 
+-- Here we replace the host and port of the Destination header to the cluster internal host:port
+-- Reasons for this are descibed in nginx.conf
+-- Previously this was hapenning in the nginx.conf itself, but caused "double url encoding" for urls with whitespaces (and other special symbols), e.g.:
+-- - This URL was specific in Destination by a client /webdav/folder%201
+-- - Then it was processed and passed to the underlying DAV server as /webdav/folder%25201
+-- - I.e. "%" was encoded into %25
+local move_dest = ngx.var.http_destination
+if move_dest ~= nil then
+  local resty_url = require 'resty.url'
+  local move_dest_parsed = resty_url.parse(move_dest)
+  local move_dest_internal = resty_url.join(ngx.var.cp_dav_backend, move_dest_parsed.path)
+  ngx.var.dav_dest_path = move_dest_internal
+end
+
+
 -- First try to get the HTTP Basic auth from the request
 local token = get_basic_token()
 if is_empty(token) then

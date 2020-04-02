@@ -54,6 +54,8 @@ RUN     cd /tmp && \
 
 # Install LUA JWT
 RUN opm get cdbattags/lua-resty-jwt
+# Install URL parsing library
+RUN opm get 3scale/lua-resty-url
 
 # Configure cron and sync routes script
 ADD	crontab /etc/cron.d/sync-routes
