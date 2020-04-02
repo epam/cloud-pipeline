@@ -33,11 +33,7 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.pipeline.ToolWithIssuesCount;
-import com.epam.pipeline.entity.scan.ToolDependency;
-import com.epam.pipeline.entity.scan.ToolOSVersion;
-import com.epam.pipeline.entity.scan.ToolScanResult;
-import com.epam.pipeline.entity.scan.ToolVersionScanResult;
-import com.epam.pipeline.entity.scan.Vulnerability;
+import com.epam.pipeline.entity.scan.*;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.docker.DockerConnectionException;
@@ -461,11 +457,6 @@ public class ToolManager implements SecuredEntityManager {
                 scanResult.setGracePeriod(
                         Date.from(scanResult.getScanDate().toInstant().plusSeconds(graceHours * SECONDS_IN_HOUR)));
             }
-
-            final ToolOSVersion toolOSVersion = scanResult.getToolOSVersion();
-            if (toolOSVersion != null) {
-                toolOSVersion.setIsAllowed(isToolOSVersionAllowed(toolOSVersion));
-            }
         });
         return result;
     }
@@ -583,14 +574,39 @@ public class ToolManager implements SecuredEntityManager {
         toolDescription.setToolId(toolId);
         List<ToolVersionAttributes> versions = ListUtils
                 .emptyIfNull(loadTags(toolId)).stream()
-                .map(version -> ToolVersionAttributes.builder()
-                        .version(version)
-                        .attributes(getToolVersion(toolId, version))
-                        .scanResult(getToolVersionScanResult(tool, versionScanResults, version))
-                        .build())
+                .map(version -> {
+                    ToolVersionScanResult vScanResult = getToolVersionScanResult(tool, versionScanResults, version);
+                    return ToolVersionAttributes.builder()
+                            .version(version)
+                            .attributes(getToolVersion(toolId, version))
+                            .scanResult(ToolVersionScanResultView.from(vScanResult,
+                                            isToolOSVersionAllowed(vScanResult.getToolOSVersion()))
+                            )
+                            .build();
+                })
                 .collect(Collectors.toList());
         toolDescription.setVersions(versions);
         return toolDescription;
+    }
+
+    public boolean isToolOSVersionAllowed(final ToolOSVersion toolOSVersion) {
+        final String allowedOSes = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS);
+
+        if (StringUtils.isEmpty(allowedOSes)) {
+            return true;
+        }
+
+        return Arrays.stream(allowedOSes.split(",")).anyMatch(os -> {
+            String[] distroVersion = os.split(":");
+            // if distro name is not equals allowed return false (allowed: centos, actual: ubuntu)
+            if (!distroVersion[0].equalsIgnoreCase(toolOSVersion.getDistribution())) {
+                return false;
+            }
+            // return false only if version of allowed exists (e.g. centos:6)
+            // and actual version contains allowed (e.g. : allowed centos:6, actual centos:6.10)
+            return distroVersion.length != 2 || toolOSVersion.getVersion().toLowerCase()
+                    .startsWith(distroVersion[1].toLowerCase());
+        });
     }
 
     /**
@@ -627,26 +643,6 @@ public class ToolManager implements SecuredEntityManager {
         }
     }
 
-    private boolean isToolOSVersionAllowed(final ToolOSVersion toolOSVersion) {
-        final String allowedOSes = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS);
-
-        if (StringUtils.isEmpty(allowedOSes)) {
-            return true;
-        }
-
-        return Arrays.stream(allowedOSes.split(",")).anyMatch(os -> {
-            String[] distroVersion = os.split(":");
-            // if distro name is not equals allowed return false (allowed: centos, actual: ubuntu)
-            if (!distroVersion[0].equalsIgnoreCase(toolOSVersion.getDistribution())) {
-                return false;
-            }
-            // return false only if version of allowed exists (e.g. centos:6)
-            // and actual version contains allowed (e.g. : allowed centos:6, actual centos:6.10)
-            return distroVersion.length != 2 || toolOSVersion.getVersion().toLowerCase()
-                    .startsWith(distroVersion[1].toLowerCase());
-        });
-    }
-
     private ToolVersion getToolVersion(Long toolId, String version) {
         return toolVersionManager.loadToolVersion(toolId, version);
     }
@@ -660,10 +656,6 @@ public class ToolManager implements SecuredEntityManager {
             int graceHours = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_GRACE_HOURS);
             versionScan.setGracePeriod(
                     Date.from(versionScan.getScanDate().toInstant().plusSeconds(graceHours * SECONDS_IN_HOUR)));
-        }
-        final ToolOSVersion toolOSVersion = versionScan.getToolOSVersion();
-        if (toolOSVersion != null) {
-            toolOSVersion.setIsAllowed(isToolOSVersionAllowed(toolOSVersion));
         }
         return versionScan;
     }

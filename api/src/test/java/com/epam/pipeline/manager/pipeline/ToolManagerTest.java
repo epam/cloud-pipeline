@@ -560,7 +560,6 @@ public class ToolManagerTest extends AbstractManagerTest {
         Assert.assertNotNull(toolOSVersion);
         Assert.assertEquals(CENTOS, toolOSVersion.getDistribution());
         Assert.assertEquals(CENTOS_VERSION, toolOSVersion.getVersion());
-        Assert.assertTrue(toolOSVersion.getIsAllowed());
 
         toolOSPref = SystemPreferences.DOCKER_SECURITY_TOOL_OS.toPreference();
         toolOSPref.setValue("ubuntu:14.04");
@@ -570,7 +569,6 @@ public class ToolManagerTest extends AbstractManagerTest {
         Assert.assertNotNull(toolOSVersion);
         Assert.assertEquals(CENTOS, toolOSVersion.getDistribution());
         Assert.assertEquals(CENTOS_VERSION, toolOSVersion.getVersion());
-        Assert.assertFalse(toolOSVersion.getIsAllowed());
     }
 
     @Test()

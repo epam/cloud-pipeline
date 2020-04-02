@@ -16,12 +16,22 @@
 
 package com.epam.pipeline.entity.scan;
 
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.Getter;
 
-@Data
-@RequiredArgsConstructor
-public class ToolOSVersion {
+@Getter
+public class ToolOSVersionView {
+
     private final String distribution;
     private final String version;
+    private final Boolean isAllowed;
+
+    private ToolOSVersionView(String distribution, String version, Boolean isAllowed) {
+        this.distribution = distribution;
+        this.version = version;
+        this.isAllowed = isAllowed;
+    }
+
+    public static ToolOSVersionView from(final ToolOSVersion osVersion, final boolean isAllowed) {
+        return new ToolOSVersionView(osVersion.getDistribution(), osVersion.getVersion(), isAllowed);
+    }
 }

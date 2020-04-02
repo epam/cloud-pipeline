@@ -240,7 +240,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
 
             LOGGER.debug("Tool: {} version: {} Check tool os version.", tool.getId(), tag);
             if (toolVersionScanResult.getToolOSVersion() != null
-                    && !toolVersionScanResult.getToolOSVersion().getIsAllowed()) {
+                    && !toolManager.isToolOSVersionAllowed(toolVersionScanResult.getToolOSVersion())) {
                 LOGGER.warn("Tool: {} version: {}. Tool os version isn't allowed, check preference {} ! Cancel run.",
                         tool.getId(), tag, SystemPreferences.DOCKER_SECURITY_TOOL_OS.getKey());
                 return false;

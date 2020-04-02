@@ -24,7 +24,7 @@ import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.scan.ToolScanPolicy;
-import com.epam.pipeline.entity.scan.ToolScanResult;
+import com.epam.pipeline.entity.scan.ToolScanResultView;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.manager.pipeline.ToolApiService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
@@ -201,8 +201,8 @@ public class ToolController extends AbstractRestController {
 
     @RequestMapping(value = "/tool/scan", method = RequestMethod.GET)
     @ResponseBody
-    public Result<ToolScanResult> loadVulnerabilities(@RequestParam(required = false) String registry,
-                                                      @RequestParam String tool) {
+    public Result<ToolScanResultView> loadVulnerabilities(@RequestParam(required = false) String registry,
+                                                          @RequestParam String tool) {
         return Result.success(toolApiService.loadToolScanResult(registry, tool));
     }
 
