@@ -45,7 +45,7 @@ import UserManagementForm from '../settings/UserManagementForm';
 import EmailNotificationSettings from '../settings/EmailNotificationSettings';
 import Preferences from '../settings/Preferences';
 import AWSRegionsForm from '../settings/AWSRegionsForm';
-import SystemLogs from '../settings/SystemLogs';
+import SystemLogs from '../settings/system-logs';
 import SystemEvents from '../settings/SystemEvents';
 import AllRuns from '../runs/AllRuns';
 import RunsFilter from '../runs/RunsFilter';

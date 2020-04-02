@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import styles from './SystemLogs.css';
+import styles from './filters.css';
 import {
   Button,
   DatePicker,
@@ -25,7 +25,7 @@ import {
   Select
 } from 'antd';
 import moment from 'moment-timezone';
-import UserName from '../special/UserName';
+import UserName from '../../special/UserName';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
@@ -48,6 +48,11 @@ class Filters extends React.Component {
     showAdvanced: false
   };
 
+  componentDidMount () {
+    const {onInitialized} = this.props;
+    onInitialized && onInitialized(this);
+  }
+
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.filters !== this.props.filters) {
       this.updateFilters(this.props.filters);
@@ -68,8 +73,11 @@ class Filters extends React.Component {
 
   toggleAdvanced = () => {
     const {showAdvanced} = this.state;
+    const {onExpand} = this.props;
     this.setState({
       showAdvanced: !showAdvanced
+    }, () => {
+      onExpand && onExpand(!showAdvanced);
     });
   };
 
@@ -149,6 +157,7 @@ class Filters extends React.Component {
         </Filter>
         <Filter label="Service">
           <Select
+            allowClear
             showSearch
             placeholder="Service"
             style={commonStyle}
@@ -165,6 +174,7 @@ class Filters extends React.Component {
         </Filter>
         <Filter label="User">
           <Select
+            allowClear
             showSearch
             placeholder="User"
             style={commonStyle}
@@ -195,6 +205,7 @@ class Filters extends React.Component {
         </Filter>
         <Filter label="Hostname" display={showAdvanced}>
           <Select
+            allowClear
             placeholder="Hostname"
             style={commonStyle}
           />
@@ -211,6 +222,7 @@ class Filters extends React.Component {
         </Filter>
         <Filter label="Type" display={showAdvanced}>
           <Select
+            allowClear
             showSearch
             placeholder="Type"
             style={commonStyle}
@@ -248,6 +260,7 @@ class Filters extends React.Component {
         </Filter>
         <div className={styles.filter} style={{minWidth: 'unset'}}>
           <Button
+            id="show-hide-advanced"
             onClick={this.toggleAdvanced}
             size="small"
             style={{lineHeight: 1}}
@@ -262,32 +275,9 @@ class Filters extends React.Component {
 
 Filters.propTypes = {
   filters: PropTypes.object,
-  onChange: PropTypes.func
+  onChange: PropTypes.func,
+  onExpand: PropTypes.func,
+  onInitialized: PropTypes.func
 };
 
-class SystemLogs extends React.Component {
-  state = {
-    filters: {}
-  };
-
-  onFiltersChange = (newFilters) => {
-    console.log(newFilters);
-    this.setState({
-      filters: newFilters
-    });
-  };
-
-  render () {
-    const {filters} = this.state;
-    return (
-      <div>
-        <Filters
-          filters={filters}
-          onChange={this.onFiltersChange}
-        />
-      </div>
-    );
-  }
-}
-
-export default SystemLogs;
+export default Filters;
