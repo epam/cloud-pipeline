@@ -16,13 +16,16 @@
 
 package com.epam.pipeline.entity.log;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
+@Builder
 public class LogPagination {
-    private Long token;
-    private Long pageSize;
+    private Integer token;
+    private Integer pageSize;
     private List<LogEntry> logEntries;
+    private Long totalHits;
 }

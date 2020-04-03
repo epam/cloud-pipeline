@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.log;
 
 import com.epam.pipeline.entity.log.LogEntry;
 import com.epam.pipeline.entity.log.LogFilter;
+import com.epam.pipeline.entity.log.LogPagination;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -39,7 +39,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -60,15 +59,13 @@ public class LogManager {
     public static final String HOSTNAME = "hostname";
     public static final String SERVICE_NAME = "service_name";
     public static final String TYPE = "type";
-    public static final String SOURCE = "source";
     public static final String MESSAGE = "message";
-    public static final String LOGGER_NAME = "loggerName";
     public static final String SEVERITY = "severity";
 
     private final GlobalSearchElasticHelper elasticHelper;
     private String indexTemplate = "security_log*";
 
-    public Collection<LogEntry> filter(LogFilter logFilter) {
+    public LogPagination filter(LogFilter logFilter) {
         BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
 
         if (!CollectionUtils.isEmpty(logFilter.getUsers())) {
@@ -83,9 +80,6 @@ public class LogManager {
         if (!CollectionUtils.isEmpty(logFilter.getTypes())) {
             boolQuery = boolQuery.filter(QueryBuilders.termsQuery(TYPE, logFilter.getTypes()));
         }
-        if (!CollectionUtils.isEmpty(logFilter.getSources())) {
-            boolQuery = boolQuery.filter(QueryBuilders.termsQuery(SOURCE, logFilter.getSources()));
-        }
 
         boolQuery = addRageFilter(boolQuery, TIMESTAMP, logFilter.getTimestampFrom(), logFilter.getTimestampTo());
         boolQuery = addRageFilter(boolQuery, MESSAGE_TIMESTAMP, logFilter.getMessageTimestampFrom(), logFilter.getMessageTimestampTo());
@@ -94,15 +88,18 @@ public class LogManager {
                 executeRequest(new SearchRequest(indexTemplate)
                         .source(new SearchSourceBuilder()
                                 .query(boolQuery)
-                                .from(logFilter.getPagination().getPageSize() +
-                                        logFilter.getPagination().getToken() * logFilter.getPagination().getPageSize())
+                                .from(logFilter.getPagination().getToken() * logFilter.getPagination().getPageSize())
                                 .size(logFilter.getPagination().getPageSize()))
                         .indicesOptions(INDICES_OPTIONS));
 
-        return Arrays.stream(securityLog.getHits().getHits())
-                .map(SearchHit::getSourceAsMap)
-                .map(this::mapHitToLogEntry)
-                .collect(Collectors.toList());
+        return LogPagination.builder().logEntries(
+                Arrays.stream(securityLog.getHits().getHits())
+                    .map(SearchHit::getSourceAsMap)
+                    .map(this::mapHitToLogEntry)
+                    .collect(Collectors.toList()))
+                .pageSize(logFilter.getPagination().getPageSize())
+                .token(logFilter.getPagination().getToken())
+                .totalHits(securityLog.getHits().totalHits).build();
     }
 
     private BoolQueryBuilder addRageFilter(BoolQueryBuilder boolQuery, String timestamp,
@@ -132,10 +129,8 @@ public class LogManager {
                 .hostname((String) hit.get(HOSTNAME))
                 .serviceName((String) hit.get(SERVICE_NAME))
                 .type((String) hit.get(TYPE))
-                .source((String) hit.get(SOURCE))
                 .user((String) hit.get(USER))
                 .message((String) hit.get(MESSAGE))
-                .logger((String) hit.getOrDefault(LOGGER_NAME, "Default"))
                 .severity((String) hit.getOrDefault(SEVERITY, "INFO"))
                 .build();
     }

@@ -16,13 +16,11 @@
 
 package com.epam.pipeline.manager.log;
 
-import com.epam.pipeline.entity.log.LogEntry;
 import com.epam.pipeline.entity.log.LogFilter;
+import com.epam.pipeline.entity.log.LogPagination;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
-
-import java.util.Collection;
 
 @Service
 public class LogApiService {
@@ -31,7 +29,7 @@ public class LogApiService {
     private LogManager logManager;
 
     @PreAuthorize("hasRole('ADMIN')")
-    public Collection<LogEntry> filter(final LogFilter logFilter) {
+    public LogPagination filter(final LogFilter logFilter) {
         return logManager.filter(logFilter);
     }
 

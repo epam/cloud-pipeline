@@ -29,9 +29,7 @@ public class LogEntry {
     private String message;
     private LocalDateTime messageTimestamp;
     private String serviceName;
-    private String source;
     private String type;
     private String user;
     private String severity;
-    private String logger;
 }

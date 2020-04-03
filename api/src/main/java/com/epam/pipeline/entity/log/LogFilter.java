@@ -30,7 +30,6 @@ public class LogFilter {
     private LocalDateTime messageTimestampFrom;
     private LocalDateTime messageTimestampTo;
     private List<String> serviceNames;
-    private List<String> sources;
     private List<String> types;
     private List<String> users;
     private LogPaginationRequest pagination;
