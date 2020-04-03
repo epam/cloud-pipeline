@@ -239,6 +239,11 @@ class InputDataTask:
                             original_paths = re.split(supported_delimiter, resolved_value)
                             delimiter = supported_delimiter
                             break
+                    # Strip spaces, which may arise if the parameter was splitted by comma
+                    # e.g. "s3://bucket1/f1, s3://bucket2/f2" will be splitted into
+                    # "s3://bucket1/f1"
+                    # " s3://bucket2/f2"
+                    original_paths = map(str.strip, original_paths)
                     paths = []
                     for path in original_paths:
                         if self.match_dts_path(path, dts_registry):
