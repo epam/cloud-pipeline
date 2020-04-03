@@ -568,7 +568,11 @@
 </ul>
 </li>
 <li><a href="#configurations">Configurations</a></li>
-<li><a href="#example">Example</a></li>
+<li><a href="#examples">Examples</a><ul>
+<li><a href="#homogeneous-cluster">Homogeneous cluster</a></li>
+<li><a href="#hybrid-cluster">Hybrid cluster</a></li>
+</ul>
+</li>
 </ul>
 <h2 id="overview">Overview</h2>
 <p>Cloud Pipeline has support for launching runs using a single machine or a cluster of machines.<br />
@@ -624,7 +628,7 @@ The autoscaler will detect such situations and replace weak addition workers wit
 </tr>
 <tr>
 <td><code>CP_CAP_AUTOSCALE_HYBRID_FAMILY</code></td>
-<td>Hybrid cluster additional worker instance type family. For instance one can specify <code>c5</code> or <code>r5</code> for AWS.</td>
+<td>Hybrid cluster additional worker instance type family. For example <code>c5</code> or <code>r5</code> instance families can be used for AWS.</td>
 </tr>
 <tr>
 <td><code>CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE</code></td>
@@ -678,27 +682,27 @@ You can find information on how to do that <a href="../../06_Manage_Pipeline/6._
 <li>To start a hybrid cluster you have to configure a regular autoscaling cluster as described <a href="../../06_Manage_Pipeline/6._Manage_Pipeline/#configuration">here</a>.
 Only the additional system parameter <code>CP_CAP_AUTOSCALE_HYBRID</code> have to be specified.
 Open the <strong>Advanced</strong> tab on the <strong>launch page</strong> and click <strong>Add system parameter</strong> button.
-    <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_10.PNG" /></li>
+    <br/><img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_10.PNG" /></li>
 <li>Then type down <em>HYBRID</em> into the search field of the opened popup and select <em>CP_CAP_AUTOSCALE_HYBRID</em> system parameter. 
 Once the parameter is selected click <strong>OK (1)</strong> button.
-    <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_11.PNG" /></li>
+    <br/><img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_11.PNG" /></li>
 <li>Configure an autoscaled cluster with the same configuration as in the example above and launch the run.</li>
 <li>On the <strong>Runs</strong> page click on the launched run.
-    <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_12.PNG" /></li>
+    <br/><img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_12.PNG" /></li>
 <li>Wait for the <strong>SSH</strong> button to appear and click on it.</li>
 <li>In the opened terminal submit 10 single-core jobs to SGE queue using the following command <code>qsub -b y -t 1:10 sleep 10m</code>.</li>
 <li>Check that the jobs have been successfully submitted using <code>qstat</code> command:
-    <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_13.PNG" /></li>
+    <br/><img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_13.PNG" /></li>
 <li>If you go back to the <strong>run page</strong> and wait for a few minutes then you will see that an additional worker is launched. 
 Click on the additional worker run link to find out what instance type it uses.
-    <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_14.PNG" /></li>
+    <br/><img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_14.PNG" /></li>
 <li>The additional worker instance type in this case is <em>m5.2xlarge</em> which has 8 CPUs and 32GB of RAM.
 Please notice that the instance type selecting mechanism is highly situational and the resulting instance type can be different between launches.
-    <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_15.PNG" /></li>
+    <br/><img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_15.PNG" /></li>
 <li>Once the additional worker is initialized it will grab all the remaining jobs from the queue.
     <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_16.PNG" /></li>
 <li>And after about 10 minutes an additional worker will be scaled down since there are no pending jobs anymore.
-    <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_17.PNG" /></li>
+    <br/><img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_17.PNG" /></li>
 <li>From this point the cluster can scale up and down again and again depending on the workload.</li>
 </ol>
               
