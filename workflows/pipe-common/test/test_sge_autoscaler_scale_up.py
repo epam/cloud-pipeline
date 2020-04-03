@@ -47,6 +47,7 @@ def setup_function():
         return host
 
     autoscaler.scale_up = MagicMock(side_effect=add_host)
+    autoscaler._scale_down = MagicMock()
     autoscaler.host_storage.clear()
 
 
@@ -129,7 +130,36 @@ def test_that_scale_up_will_not_launch_more_additional_workers_than_limit():
     for _ in range(0, max_additional_hosts * 2):
         autoscaler.scale()
 
-    assert autoscaler.scale_up.call_count == 2
+    assert autoscaler.scale_up.call_count == max_additional_hosts
+    assert len(autoscaler.host_storage.load_hosts()) == max_additional_hosts
+
+
+def test_that_scale_up_will_try_to_scale_down_smallest_host_if_additional_workers_limit_has_been_reached():
+    submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
+    jobs = [
+        GridEngineJob(
+            id=1,
+            name='name1',
+            user='user',
+            state=GridEngineJobState.RUNNING,
+            datetime=submit_datetime,
+            hosts=[MASTER_HOST]
+        ),
+        GridEngineJob(
+            id=2,
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime
+        )
+    ]
+    grid_engine.get_jobs = MagicMock(return_value=jobs)
+    clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
+
+    for _ in range(0, max_additional_hosts * 2):
+        autoscaler.scale()
+
+    assert autoscaler._scale_down.call_count == max_additional_hosts
     assert len(autoscaler.host_storage.load_hosts()) == max_additional_hosts
 
 
