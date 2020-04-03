@@ -111,7 +111,7 @@ You can find information on how to do that [in the corresponding page](../06_Man
     ![CP_AppendixC](attachments/WorkWithAutoscaledCluster_9.PNG)
 13. From this point the cluster can scale up and down again and again depending on the workload.
 
-### Hybrid clusters
+### Hybrid cluster
 
 In this example we will see how a hybrid cluster behaves on different workloads.
 
