@@ -9,7 +9,9 @@
     - [Killing excessive workers](#killing-excessive-workers)
     - [Preventing deadlocks](#preventing-deadlocks)
 - [Configurations](#configurations)
-- [Example](#example)
+- [Examples](#examples)
+    - [Homogeneous cluster](#homogeneous-cluster)
+    - [Hybrid cluster](#hybrid-cluster)
 
 ## Overview
 
@@ -75,7 +77,7 @@ The autoscaler will detect such situations and replace weak addition workers wit
 | System parameter                            | Description |
 | ------------------------------------------- | ----------- |
 | `CP_CAP_AUTOSCALE_HYBRID`                   | Enables hybrid cluster mode. It means that additional worker type can vary within either master instance type family or `CP_CAP_AUTOSCALE_HYBRID_FAMILY` if specified. |
-| `CP_CAP_AUTOSCALE_HYBRID_FAMILY`            | Hybrid cluster additional worker instance type family. For instance one can specify `c5` or `r5` for AWS. |
+| `CP_CAP_AUTOSCALE_HYBRID_FAMILY`            | Hybrid cluster additional worker instance type family. For example `c5` or `r5` instance families can be used for AWS. |
 | `CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE` | The maximum number of cores that hybrid cluster additional worker instances can have. |
 | `CP_CAP_AUTOSCALE_VERBOSE`                  | Enables verbose logging. |
 | `CP_CAP_SGE_MASTER_CORES`                   | The number of cores that master run can use for job submissions. If set to 0 then no jobs will be executed on the master. Defaults to all the master instance cores. |
@@ -118,25 +120,25 @@ In this example we will see how a hybrid cluster behaves on different workloads.
 1. To start a hybrid cluster you have to configure a regular autoscaling cluster as described [here](../06_Manage_Pipeline/6._Manage_Pipeline.md#configuration).
 Only the additional system parameter `CP_CAP_AUTOSCALE_HYBRID` have to be specified.
 Open the **Advanced** tab on the **launch page** and click **Add system parameter** button.
-    ![CP_AppendixC](attachments/WorkWithAutoscaledCluster_10.PNG)
+    <br/>![CP_AppendixC](attachments/WorkWithAutoscaledCluster_10.PNG)
 2. Then type down *HYBRID* into the search field of the opened popup and select *CP_CAP_AUTOSCALE_HYBRID* system parameter. 
 Once the parameter is selected click **OK (1)** button.
-    ![CP_AppendixC](attachments/WorkWithAutoscaledCluster_11.PNG)
+    <br/>![CP_AppendixC](attachments/WorkWithAutoscaledCluster_11.PNG)
 3. Configure an autoscaled cluster with the same configuration as in the example above and launch the run.
 4. On the **Runs** page click on the launched run.
-    ![CP_AppendixC](attachments/WorkWithAutoscaledCluster_12.PNG)
+    <br/>![CP_AppendixC](attachments/WorkWithAutoscaledCluster_12.PNG)
 5. Wait for the **SSH** button to appear and click on it.
 6. In the opened terminal submit 10 single-core jobs to SGE queue using the following command `qsub -b y -t 1:10 sleep 10m`.
 7. Check that the jobs have been successfully submitted using `qstat` command:
-    ![CP_AppendixC](attachments/WorkWithAutoscaledCluster_13.PNG)
+    <br/>![CP_AppendixC](attachments/WorkWithAutoscaledCluster_13.PNG)
 8. If you go back to the **run page** and wait for a few minutes then you will see that an additional worker is launched. 
 Click on the additional worker run link to find out what instance type it uses.
-    ![CP_AppendixC](attachments/WorkWithAutoscaledCluster_14.PNG)
+    <br/>![CP_AppendixC](attachments/WorkWithAutoscaledCluster_14.PNG)
 9. The additional worker instance type in this case is *m5.2xlarge* which has 8 CPUs and 32GB of RAM.
 Please notice that the instance type selecting mechanism is highly situational and the resulting instance type can be different between launches.
-    ![CP_AppendixC](attachments/WorkWithAutoscaledCluster_15.PNG)
+    <br/>![CP_AppendixC](attachments/WorkWithAutoscaledCluster_15.PNG)
 10. Once the additional worker is initialized it will grab all the remaining jobs from the queue.
     ![CP_AppendixC](attachments/WorkWithAutoscaledCluster_16.PNG)
 11. And after about 10 minutes an additional worker will be scaled down since there are no pending jobs anymore.
-    ![CP_AppendixC](attachments/WorkWithAutoscaledCluster_17.PNG)
+    <br/>![CP_AppendixC](attachments/WorkWithAutoscaledCluster_17.PNG)
 12. From this point the cluster can scale up and down again and again depending on the workload.
