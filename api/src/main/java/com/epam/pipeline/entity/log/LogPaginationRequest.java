@@ -22,6 +22,6 @@ import lombok.Data;
 @Data
 @Builder
 public class LogPaginationRequest {
-    private Long token;
-    private Long pageSize;
+    private Integer token;
+    private Integer pageSize;
 }

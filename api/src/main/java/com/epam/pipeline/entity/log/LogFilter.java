@@ -29,7 +29,7 @@ public class LogFilter {
     private String message;
     private LocalDateTime messageTimestampFrom;
     private LocalDateTime messageTimestampTo;
-    private List<String> serviceName;
+    private List<String> serviceNames;
     private List<String> sources;
     private List<String> types;
     private List<String> users;
