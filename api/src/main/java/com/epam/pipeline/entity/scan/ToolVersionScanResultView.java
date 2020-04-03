@@ -51,7 +51,7 @@ public class ToolVersionScanResultView {
                     .vulnerabilities(scanResult.getVulnerabilities())
                     .dependencies(scanResult.getDependencies())
                     .isAllowedToExecute(scanResult.isAllowedToExecute())
-                    .isAllowedToExecute(scanResult.isAllowedToExecute())
+                    .fromWhiteList(scanResult.isFromWhiteList())
                     .gracePeriod(scanResult.getGracePeriod()).build()
                 : null;
     }
