@@ -43,6 +43,7 @@ def setup_function():
     autoscaler.scale_down = MagicMock()
     autoscaler.host_storage.clear()
     autoscaler.host_storage.add_host(ADDITIONAL_HOST)
+    grid_engine.get_host_to_scale_down = MagicMock(return_value=ADDITIONAL_HOST)
 
 
 def test_scale_down_if_all_jobs_are_running_for_more_than_scale_down_timeout():
@@ -54,7 +55,7 @@ def test_scale_down_if_all_jobs_are_running_for_more_than_scale_down_timeout():
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         )
     ]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
@@ -74,7 +75,7 @@ def test_not_scale_down_if_all_jobs_are_running_for_less_than_scale_down_timeout
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         )
     ]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
@@ -94,7 +95,7 @@ def test_not_scale_down_if_all_jobs_are_running_for_more_than_scale_down_timeout
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=ADDITIONAL_HOST
+            hosts=[ADDITIONAL_HOST]
         )
     ]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
@@ -114,7 +115,7 @@ def test_that_scale_down_only_stops_inactive_additional_hosts():
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=ADDITIONAL_HOST
+            hosts=[ADDITIONAL_HOST]
         )
     ]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
@@ -123,7 +124,9 @@ def test_that_scale_down_only_stops_inactive_additional_hosts():
     for inactive_host in inactive_hosts:
         autoscaler.host_storage.add_host(inactive_host)
 
-    for _ in range(0, len(inactive_hosts) * 2):
+    for i in range(0, len(inactive_hosts) * 2):
+        grid_engine.get_host_to_scale_down = MagicMock(return_value=inactive_hosts[i % 2])
+        print inactive_hosts[i % 2]
         autoscaler.scale()
 
     for inactive_host in inactive_hosts:
@@ -132,6 +135,32 @@ def test_that_scale_down_only_stops_inactive_additional_hosts():
     hosts = autoscaler.host_storage.load_hosts()
     assert len(hosts) == 1
     assert ADDITIONAL_HOST in hosts
+
+
+def test_that_deadlock_can_be_resolved():
+    submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
+    jobs = [
+        GridEngineJob(
+            id=1,
+            name='name1',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+            hosts=[]
+        )
+    ]
+    grid_engine.get_jobs = MagicMock(return_value=jobs)
+    clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_down_timeout))
+    inactive_hosts = ['inactive-host-1', 'inactive-host-2']
+    for inactive_host in inactive_hosts:
+        autoscaler.host_storage.add_host(inactive_host)
+
+    grid_engine.get_host_to_scale_down = MagicMock(return_value='inactive-host-1')
+    autoscaler.scale()
+
+    hosts = autoscaler.host_storage.load_hosts()
+    assert len(hosts) == 2
+    assert 'inactive-host-1' not in hosts
 
 
 def test_scale_down_if_there_are_no_pending_and_running_jobs_for_more_than_scale_down_timeout():
@@ -143,7 +172,7 @@ def test_scale_down_if_there_are_no_pending_and_running_jobs_for_more_than_scale
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         )
     ]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
@@ -174,7 +203,7 @@ def test_not_scale_down_if_there_are_pending_jobs_and_running_jobs():
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         ),
         GridEngineJob(
             id=2,
@@ -220,7 +249,7 @@ def test_host_is_not_removed_from_storage_if_scaling_down_is_aborted():
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         )
     ]
     grid_engine.get_jobs = MagicMock(return_value=jobs)

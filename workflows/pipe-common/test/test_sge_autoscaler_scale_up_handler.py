@@ -15,7 +15,7 @@
 from mock import MagicMock, Mock
 from utils import assert_first_argument_contained
 
-from scripts.autoscale_sge import GridEngineScaleUpHandler, MemoryHostStorage
+from scripts.autoscale_sge import GridEngineScaleUpHandler, MemoryHostStorage, ComputeResource, CPInstance
 
 HOSTNAME = 'hostname'
 POD_IP = '127.0.0.1'
@@ -25,6 +25,7 @@ cmd_executor = Mock()
 grid_engine = Mock()
 pipe = Mock()
 host_storage = MemoryHostStorage()
+instance_helper = Mock()
 parent_run_id = 'parent_run_id'
 default_hostfile = 'default_hostfile'
 instance_disk = 'instance_disk'
@@ -34,12 +35,12 @@ price_type = 'price_type'
 region_id = 1
 instance_cores = 4
 polling_timeout = 600
+compute_resource = ComputeResource(4)
 scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, pipe=pipe, grid_engine=grid_engine,
-                                            host_storage=host_storage, parent_run_id=parent_run_id,
+                                            host_storage=host_storage, parent_run_id=parent_run_id, instance_helper=instance_helper,
                                             default_hostfile=default_hostfile, instance_disk=instance_disk,
-                                            instance_type=instance_type, instance_image=instance_image,
-                                            price_type=price_type, region_id=region_id, instance_cores=instance_cores,
-                                            polling_timeout=polling_timeout, polling_delay=0)
+                                            instance_image=instance_image,  price_type=price_type, region_id=region_id,
+                                            polling_timeout=polling_timeout, polling_delay=0, instance_family='c5')
 
 
 def setup_function():
@@ -48,45 +49,58 @@ def setup_function():
     initialized_run = {'initialized': True, 'podId': HOSTNAME, 'podIP': POD_IP}
     pipe.load_run = MagicMock(side_effect=[not_initialized_run] * 4 + [initialized_pod_run] * 4 + [initialized_run])
     cmd_executor.execute_to_lines = MagicMock(return_value=[RUN_ID])
+    instance_helper.select_instance = MagicMock(return_value=
+        CPInstance.from_cp_response({
+            "sku": "78J32SRETMXEPY86",
+            "name": "c5.xlarge",
+            "termType": "OnDemand",
+            "operatingSystem": "Linux",
+            "memory": 96,
+            "memoryUnit": "GiB",
+            "instanceFamily": "Compute optimized",
+            "gpu": 0,
+            "regionId": 1,
+            "vcpu": instance_cores
+        }))
     cmd_executor.execute = MagicMock()
     grid_engine.enable_host = MagicMock()
     host_storage.clear()
 
 
 def test_waiting_for_run_to_initialize():
-    scale_up_handler.scale_up()
+    scale_up_handler.scale_up(compute_resource)
 
     pipe.load_run.assert_called()
     assert pipe.load_run.call_count == 9
 
 
 def test_enabling_worker_in_grid_engine():
-    scale_up_handler.scale_up()
+    scale_up_handler.scale_up(compute_resource)
 
     grid_engine.enable_host.assert_called_with(HOSTNAME)
 
 
 def test_updating_hosts():
-    scale_up_handler.scale_up()
+    scale_up_handler.scale_up(compute_resource)
 
     assert_first_argument_contained(cmd_executor.execute, '%s\t%s' % (POD_IP, HOSTNAME))
     assert_first_argument_contained(cmd_executor.execute, '/etc/hosts')
 
 
 def test_updating_default_hostfile():
-    scale_up_handler.scale_up()
+    scale_up_handler.scale_up(compute_resource)
 
     assert_first_argument_contained(cmd_executor.execute, HOSTNAME)
     assert_first_argument_contained(cmd_executor.execute, default_hostfile)
 
 
 def test_scale_up_add_host_to_storage():
-    scale_up_handler.scale_up()
+    scale_up_handler.scale_up(compute_resource)
 
     assert [HOSTNAME] == host_storage.load_hosts()
 
 
 def test_scale_up_increase_parallel_environment_slots():
-    scale_up_handler.scale_up()
+    scale_up_handler.scale_up(compute_resource)
 
     grid_engine.increase_parallel_environment_slots.assert_called_with(instance_cores)
