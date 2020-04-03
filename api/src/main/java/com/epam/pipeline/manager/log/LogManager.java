@@ -25,12 +25,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.ShardSearchFailure;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -91,6 +93,19 @@ public class LogManager {
                                 .from(logFilter.getPagination().getToken() * logFilter.getPagination().getPageSize())
                                 .size(logFilter.getPagination().getPageSize()))
                         .indicesOptions(INDICES_OPTIONS));
+
+        if (securityLog.status().getStatus() != HttpStatus.OK.value()) {
+            throw new IllegalStateException(
+                    "Illegal Rest status: "  + securityLog.status().name()
+                            + " code: " + securityLog.status().getStatus());
+        }
+
+        if (securityLog.getTotalShards() > securityLog.getSuccessfulShards()) {
+            final String shardsFailCause = Arrays.stream(securityLog.getShardFailures())
+                    .map(ShardSearchFailure::getCause)
+                    .map(Throwable::getMessage).collect(Collectors.joining("\n"));
+            throw new IllegalStateException(shardsFailCause);
+        }
 
         return LogPagination.builder().logEntries(
                 Arrays.stream(securityLog.getHits().getHits())
