@@ -478,7 +478,7 @@
         
             <li><a class="toctree-l4" href="#configurations">Configurations</a></li>
         
-            <li><a class="toctree-l4" href="#example">Example</a></li>
+            <li><a class="toctree-l4" href="#examples">Examples</a></li>
         
         </ul>
     
@@ -580,7 +580,7 @@ By the way an autoscaled cluster can have so-called <em>persistent</em> workers 
 And only the CPU requirements of the SGE jobs are considered while calculating cluster unsatisfied resources.</p>
 <h2 id="how-it-works">How it works</h2>
 <p>The cluster autoscaling tries to be intuitive and is pretty straightforward in most cases.<br />
-Nevertheless it can get cumbersome with all the all allowed customization parameters.</p>
+Nevertheless it can get cumbersome with all the allowed customization parameters.</p>
 <p>The overall autoscaling approach is briefly described below.<br />
 Please notice that all the described steps are executed repeatedly for all the cluster lifetime depending on the current situation.  </p>
 <h3 id="finding-expired-jobs">Finding expired jobs</h3>
@@ -594,7 +594,9 @@ The only case additional worker won't be launched is if all allowed additional w
 Therefore there are <em>homogeneous clusters</em> that launches only the master instance type machines and <em>hybrid clusters</em> which
 launches instance types from some instance type family.<br />
 By default all autoscaled clusters are homogeneous.</p>
-<p>If an autoscaled cluster is hybrid and it is launching an additional worker then its instance type will be resolved based on the amount of unsatisfied CPU requirements of all pending jobs.</p>
+<p>If an autoscaled cluster is hybrid and it is launching an additional worker then its instance type will be resolved based on the amount of unsatisfied CPU requirements of all pending jobs.
+The autoscaler will try to launch the smallest allowed instance from a specific instance type family that can process all the pending jobs simultaneously.
+For instance if there are two pending jobs with the CPU requirements of 4 and 8 then the autoscaler will try to launch the instance which has at least 12 CPUs.</p>
 <h3 id="killing-excessive-workers">Killing excessive workers</h3>
 <p>Once required additional workers are set up the cluster gets bigger and more jobs can be executed simultaneously.<br />
 At some point while jobs finish their execution some additional workers may become excessive.<br />
@@ -611,53 +613,52 @@ The autoscaler will detect such situations and replace weak addition workers wit
 <table>
 <thead>
 <tr>
-<th>Pipeline parameter</th>
-<th>System preference</th>
+<th>System parameter</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>GE_AUTOSCALING_SCALE_UP_TIMEOUT</code></td>
-<td><code>ge.autoscaling.scale.up.timeout</code></td>
-<td>Amount of seconds before any pending job is considered as expired.</td>
-</tr>
-<tr>
-<td><code>GE_AUTOSCALING_SCALE_DOWN_TIMEOUT</code></td>
-<td><code>ge.autoscaling.scale.down.timeout</code></td>
-<td>Amount of seconds all queue should be empty before autoscaler tries to find excessive additional workers.</td>
-</tr>
-<tr>
 <td><code>CP_CAP_AUTOSCALE_HYBRID</code></td>
-<td></td>
 <td>Enables hybrid cluster mode. It means that additional worker type can vary within either master instance type family or <code>CP_CAP_AUTOSCALE_HYBRID_FAMILY</code> if specified.</td>
 </tr>
 <tr>
 <td><code>CP_CAP_AUTOSCALE_HYBRID_FAMILY</code></td>
-<td></td>
-<td>Explicit hybrid cluster additional worker instance type family.</td>
+<td>Hybrid cluster additional worker instance type family. For instance one can specify <code>c5</code> or <code>r5</code> for AWS.</td>
 </tr>
 <tr>
 <td><code>CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE</code></td>
-<td></td>
-<td>The maximum amount of cores that the hybrid cluster additional worker could have</td>
+<td>The maximum number of cores that hybrid cluster additional worker instances can have.</td>
+</tr>
+<tr>
+<td><code>CP_CAP_AUTOSCALE_VERBOSE</code></td>
+<td>Enables verbose logging.</td>
+</tr>
+<tr>
+<td><code>CP_CAP_SGE_MASTER_CORES</code></td>
+<td>The number of cores that master run can use for job submissions. If set to 0 then no jobs will be executed on the master. Defaults to all the master instance cores.</td>
+</tr>
+<tr>
+<td><code>CP_CAP_SGE_WORKER_FREE_CORES</code></td>
+<td>The number of cores that all worker and master runs have to reserve from job submissions. Defaults to 0 which means that all instance cores will be used for job submissions.</td>
 </tr>
 </tbody>
 </table>
-<h2 id="example">Example</h2>
+<h2 id="examples">Examples</h2>
+<h3 id="homogeneous-cluster">Homogeneous cluster</h3>
 <p>In this example we will see how an autoscaled cluster behaves on different conditions.</p>
 <ol>
-<li>Let's say we have launch a homogeneous autoscaled cluster of <code>m5.large</code> instances (2 CPUs per instance) with no persistent workers which can scale up to 2 workers.<br />
+<li>Let's say we have launch an autoscaled cluster of <code>m5.large</code> instances (2 CPUs per instance) with no persistent workers which can scale up to 2 workers.<br />
 You can find information on how to do that <a href="../../06_Manage_Pipeline/6._Manage_Pipeline/#configuration">in the corresponding page</a>.</li>
 <li>On the <strong>Runs</strong> page we can see that the launched run doesn't have any workers.<br />
 <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_1.PNG" /></li>
-<li>On the <strong>Run logs page</strong> click the <strong>SSH</strong> button.</li>
+<li>On the <strong>Run logs page</strong> click the <strong>SSH</strong> button when it will become available.</li>
 <li>In the opened terminal submit 10 single-core jobs to SGE queue using the following command <code>qsub -b y -t 1:10 sleep 10m</code>.</li>
 <li>Check that the jobs have been successfully submitted using <code>qstat</code> command:<br />
 <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_2.PNG" /></li>
 <li>Within several minutes an additional worker will be automatically added to out cluster:<br />
 <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_3.PNG" /></li>
-<li>Once the addition worker is fully initialized we can see that it takes several jobs from the queue:<br />
+<li>Once the additional worker is fully initialized we can see that it takes several jobs from the queue:<br />
 <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_4.PNG" /></li>
 <li>A few moments later if there are still pending jobs in the queue a second additional worker will be created:<br />
 <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_5.PNG" /></li>
@@ -669,7 +670,36 @@ You can find information on how to do that <a href="../../06_Manage_Pipeline/6._
 <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_8.PNG" /></li>
 <li>And then the last one becomes stopped too:<br />
 <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_9.PNG" /></li>
-<li>From this point the cluster can scale up and down again and again depending on the pipeline usage.</li>
+<li>From this point the cluster can scale up and down again and again depending on the workload.</li>
+</ol>
+<h3 id="hybrid-cluster">Hybrid cluster</h3>
+<p>In this example we will see how a hybrid cluster behaves on different workloads.</p>
+<ol>
+<li>To start a hybrid cluster you have to configure a regular autoscaling cluster as described <a href="../../06_Manage_Pipeline/6._Manage_Pipeline/#configuration">here</a>.
+Only the additional system parameter <code>CP_CAP_AUTOSCALE_HYBRID</code> have to be specified.
+Open the <strong>Advanced</strong> tab on the <strong>launch page</strong> and click <strong>Add system parameter</strong> button.
+    <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_10.PNG" /></li>
+<li>Then type down <em>HYBRID</em> into the search field of the opened popup and select <em>CP_CAP_AUTOSCALE_HYBRID</em> system parameter. 
+Once the parameter is selected click <strong>OK (1)</strong> button.
+    <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_11.PNG" /></li>
+<li>Configure an autoscaled cluster with the same configuration as in the example above and launch the run.</li>
+<li>On the <strong>Runs</strong> page click on the launched run.
+    <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_12.PNG" /></li>
+<li>Wait for the <strong>SSH</strong> button to appear and click on it.</li>
+<li>In the opened terminal submit 10 single-core jobs to SGE queue using the following command <code>qsub -b y -t 1:10 sleep 10m</code>.</li>
+<li>Check that the jobs have been successfully submitted using <code>qstat</code> command:
+    <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_13.PNG" /></li>
+<li>If you go back to the <strong>run page</strong> and wait for a few minutes then you will see that an additional worker is launched. 
+Click on the additional worker run link to find out what instance type it uses.
+    <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_14.PNG" /></li>
+<li>The additional worker instance type in this case is <em>m5.2xlarge</em> which has 8 CPUs and 32GB of RAM.
+Please notice that the instance type selecting mechanism is highly situational and the resulting instance type can be different between launches.
+    <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_15.PNG" /></li>
+<li>Once the additional worker is initialized it will grab all the remaining jobs from the queue.
+    <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_16.PNG" /></li>
+<li>And after about 10 minutes an additional worker will be scaled down since there are no pending jobs anymore.
+    <img alt="CP_AppendixC" src="../attachments/WorkWithAutoscaledCluster_17.PNG" /></li>
+<li>From this point the cluster can scale up and down again and again depending on the workload.</li>
 </ol>
               
             </div>
