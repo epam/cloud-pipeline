@@ -56,6 +56,7 @@ setenforce 0 || true
 sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
 #6.1 - Docker
+set +e
 yum install -y yum-utils \
   device-mapper-persistent-data \
   lvm2 && \
@@ -75,6 +76,7 @@ if [ $? -ne 0 ]; then
     exit 1
   fi
 fi
+set -e
 
 if [ "$CP_KUBE_MASTER_DOCKER_PATH" ]; then
   echo "CP_KUBE_MASTER_DOCKER_PATH is specified - docker will be configured to store data in $CP_KUBE_MASTER_DOCKER_PATH"
