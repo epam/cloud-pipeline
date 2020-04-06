@@ -493,16 +493,16 @@ class DataStorageOperations(object):
                 yield ('File', os.path.join(source_path, path), path, size)
 
     @classmethod
-    def mount_storage(cls, mountpoint, file=False, bucket=None, log_file=None, log_level=None, options=None, quiet=False,
-                      threading=False, mode=700):
+    def mount_storage(cls, mountpoint, file=False, bucket=None, log_file=None, log_level=None, options=None,
+                      custom_options=None, quiet=False, threading=False, mode=700):
         try:
             if not file and not bucket:
                 click.echo('Either file system mode should be enabled (-f/--file) '
                            'or bucket name should be specified (-b/--bucket BUCKET).', err=True)
                 sys.exit(1)
             cls.check_platform("mount")
-            Mount().mount_storages(mountpoint, file, bucket, options, quiet=quiet, log_file=log_file,
-                                   log_level=log_level,  threading=threading, mode=mode)
+            Mount().mount_storages(mountpoint, file, bucket, options, custom_options=custom_options, quiet=quiet,
+                                   log_file=log_file, log_level=log_level,  threading=threading, mode=mode)
         except ALL_ERRORS as error:
             click.echo('Error: %s' % str(error), err=True)
             sys.exit(1)
