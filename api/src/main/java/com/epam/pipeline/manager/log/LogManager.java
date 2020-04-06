@@ -21,7 +21,9 @@ import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -31,7 +33,9 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -44,9 +48,11 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Service
-@RequiredArgsConstructor
 @Slf4j
+@Service
+@Getter
+@Setter
+@RequiredArgsConstructor
 public class LogManager {
 
     private static final IndicesOptions INDICES_OPTIONS = IndicesOptions.fromOptions(true,
@@ -55,19 +61,46 @@ public class LogManager {
             SearchRequest.DEFAULT_INDICES_OPTIONS.expandWildcardsClosed(),
             SearchRequest.DEFAULT_INDICES_OPTIONS);
 
-    public static final String USER = "user";
-    public static final String TIMESTAMP = "@timestamp";
-    public static final String MESSAGE_TIMESTAMP = "message_timestamp";
-    public static final String HOSTNAME = "hostname";
-    public static final String SERVICE_NAME = "service_name";
-    public static final String TYPE = "type";
-    public static final String MESSAGE = "message";
-    public static final String SEVERITY = "severity";
+    private static final String USER = "user";
+    private static final String TIMESTAMP = "@timestamp";
+    private static final String MESSAGE_TIMESTAMP = "message_timestamp";
+    private static final String HOSTNAME = "hostname";
+    private static final String SERVICE_NAME = "service_name";
+    private static final String TYPE = "type";
+    private static final String MESSAGE = "message";
+    private static final String SEVERITY = "level";
+    private static final DateTimeFormatter DATE_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    private static final String DEFAULT_SEVERITY = "INFO";
 
     private final GlobalSearchElasticHelper elasticHelper;
-    private String indexTemplate = "security_log*";
+
+    @Value("log.security.elastic.index.prefix")
+    private String indexTemplate;
 
     public LogPagination filter(LogFilter logFilter) {
+
+        final int offset = logFilter.getPagination().getToken() * logFilter.getPagination().getPageSize();
+        final SearchHits hits = verifyResponse(
+                                    executeRequest(new SearchRequest(indexTemplate)
+                                            .source(new SearchSourceBuilder()
+                                                    .query(constructQueryFilter(logFilter))
+                                                    .from(offset)
+                                                    .size(logFilter.getPagination().getPageSize()))
+                                            .indicesOptions(INDICES_OPTIONS))
+                                ).getHits();
+
+        return LogPagination.builder().logEntries(
+                Arrays.stream(hits.getHits())
+                    .map(SearchHit::getSourceAsMap)
+                    .map(this::mapHitToLogEntry)
+                    .collect(Collectors.toList()))
+                .pageSize(logFilter.getPagination().getPageSize())
+                .token(logFilter.getPagination().getToken())
+                .totalHits(hits.totalHits).build();
+    }
+
+    private BoolQueryBuilder constructQueryFilter(LogFilter logFilter) {
         BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
 
         if (!CollectionUtils.isEmpty(logFilter.getUsers())) {
@@ -85,36 +118,7 @@ public class LogManager {
 
         boolQuery = addRageFilter(boolQuery, TIMESTAMP, logFilter.getTimestampFrom(), logFilter.getTimestampTo());
         boolQuery = addRageFilter(boolQuery, MESSAGE_TIMESTAMP, logFilter.getMessageTimestampFrom(), logFilter.getMessageTimestampTo());
-
-        final SearchResponse securityLog =
-                executeRequest(new SearchRequest(indexTemplate)
-                        .source(new SearchSourceBuilder()
-                                .query(boolQuery)
-                                .from(logFilter.getPagination().getToken() * logFilter.getPagination().getPageSize())
-                                .size(logFilter.getPagination().getPageSize()))
-                        .indicesOptions(INDICES_OPTIONS));
-
-        if (securityLog.status().getStatus() != HttpStatus.OK.value()) {
-            throw new IllegalStateException(
-                    "Illegal Rest status: "  + securityLog.status().name()
-                            + " code: " + securityLog.status().getStatus());
-        }
-
-        if (securityLog.getTotalShards() > securityLog.getSuccessfulShards()) {
-            final String shardsFailCause = Arrays.stream(securityLog.getShardFailures())
-                    .map(ShardSearchFailure::getCause)
-                    .map(Throwable::getMessage).collect(Collectors.joining("\n"));
-            throw new IllegalStateException(shardsFailCause);
-        }
-
-        return LogPagination.builder().logEntries(
-                Arrays.stream(securityLog.getHits().getHits())
-                    .map(SearchHit::getSourceAsMap)
-                    .map(this::mapHitToLogEntry)
-                    .collect(Collectors.toList()))
-                .pageSize(logFilter.getPagination().getPageSize())
-                .token(logFilter.getPagination().getToken())
-                .totalHits(securityLog.getHits().totalHits).build();
+        return boolQuery;
     }
 
     private BoolQueryBuilder addRageFilter(BoolQueryBuilder boolQuery, String timestamp,
@@ -135,18 +139,33 @@ public class LogManager {
         return boolQuery.filter(rangeQueryBuilder);
     }
 
+    private SearchResponse verifyResponse(SearchResponse logsResponse) {
+        if (logsResponse.status().getStatus() != HttpStatus.OK.value()) {
+            throw new IllegalStateException(
+                    "Illegal Rest status: "  + logsResponse.status().name()
+                            + " code: " + logsResponse.status().getStatus());
+        }
+
+        if (logsResponse.getTotalShards() > logsResponse.getSuccessfulShards()) {
+            final String shardsFailCause = Arrays.stream(logsResponse.getShardFailures())
+                    .map(ShardSearchFailure::getCause)
+                    .map(Throwable::getMessage).collect(Collectors.joining("\n"));
+            throw new IllegalStateException(shardsFailCause);
+        }
+
+        return logsResponse;
+    }
+
     private LogEntry mapHitToLogEntry(Map<String, Object> hit) {
         return LogEntry.builder()
-                .timestamp(LocalDateTime.parse((String) hit.get(TIMESTAMP),
-                        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")))
-                .messageTimestamp(LocalDateTime.parse((String) hit.get(MESSAGE_TIMESTAMP),
-                        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")))
+                .timestamp(LocalDateTime.parse((String) hit.get(TIMESTAMP), DATE_TIME_FORMATTER))
+                .messageTimestamp(LocalDateTime.parse((String) hit.get(MESSAGE_TIMESTAMP), DATE_TIME_FORMATTER))
                 .hostname((String) hit.get(HOSTNAME))
                 .serviceName((String) hit.get(SERVICE_NAME))
                 .type((String) hit.get(TYPE))
                 .user((String) hit.get(USER))
                 .message((String) hit.get(MESSAGE))
-                .severity((String) hit.getOrDefault(SEVERITY, "INFO"))
+                .severity((String) hit.getOrDefault(SEVERITY, DEFAULT_SEVERITY))
                 .build();
     }
 
