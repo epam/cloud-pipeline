@@ -272,8 +272,8 @@ class RecordingFS:
             attr = getattr(self._inner, name)
             if callable(attr):
                 def _wrapped_attr(method_name, *args, **kwargs):
-                    args_string = ', '.join(str(v) for v in args)
-                    kwargs_string = ', '.join(str(k) + '=' + str(v) for k, v in kwargs.items())
+                    args_string = self._args_string(args)
+                    kwargs_string = self._kwargs_string(kwargs)
                     if args_string and kwargs_string:
                         complete_args_string = args_string + ', ' + kwargs_string
                     elif args_string:
@@ -282,9 +282,17 @@ class RecordingFS:
                         complete_args_string = kwargs_string
                     logging.debug('[FSRecorder] %s (%s)' % (method_name, complete_args_string))
                     return attr(method_name, *args, **kwargs)
-
                 return _wrapped_attr
             else:
                 return attr
         else:
             return getattr(self._inner, name)
+
+    def _args_string(self, args):
+        return ', '.join(self._trimmed(v) for v in args)
+
+    def _kwargs_string(self, kwargs):
+        return ', '.join(str(k) + '=' + self._trimmed(v) for k, v in kwargs.items())
+
+    def _trimmed(self, value):
+        return 'BYTES' if isinstance(value, str) else str(value)
