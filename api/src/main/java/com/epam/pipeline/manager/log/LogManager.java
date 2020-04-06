@@ -50,8 +50,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -88,8 +90,8 @@ public class LogManager {
         final LogPaginationRequest pagination = logFilter.getPagination();
 
         Assert.notNull(pagination, messageHelper.getMessage(MessageConstants.ERROR_PAGINATION_IS_NOT_PROVIDED));
-        Assert.isTrue(pagination.getToken() >= 0, messageHelper.getMessage(MessageConstants.ERROR_PAGE_INDEX));
-        Assert.isTrue(pagination.getPageSize() > 0, messageHelper.getMessage(MessageConstants.ERROR_PAGE_SIZE));
+        Assert.isTrue(pagination.getToken() >= 0 && pagination.getPageSize() > 0,
+                messageHelper.getMessage(MessageConstants.ERROR_INVALID_PAGE_INDEX_OR_SIZE));
 
         final int offset = pagination.getToken() * pagination.getPageSize();
         final SearchHits hits = verifyResponse(
@@ -115,7 +117,10 @@ public class LogManager {
         BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
 
         if (!CollectionUtils.isEmpty(logFilter.getUsers())) {
-            boolQuery = boolQuery.filter(QueryBuilders.termsQuery(USER, logFilter.getUsers()));
+            List<String> formattedUsers = logFilter.getUsers().stream()
+                    .flatMap(user -> Stream.of(user.toLowerCase(), user.toUpperCase()))
+                    .collect(Collectors.toList());
+            boolQuery = boolQuery.filter(QueryBuilders.termsQuery(USER, formattedUsers));
         }
         if (!CollectionUtils.isEmpty(logFilter.getHostnames())) {
             boolQuery = boolQuery.filter(QueryBuilders.termsQuery(HOSTNAME, logFilter.getHostnames()));
