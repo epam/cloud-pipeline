@@ -114,29 +114,29 @@ public class LogManager {
     }
 
     private BoolQueryBuilder constructQueryFilter(LogFilter logFilter) {
-        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+        final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
 
         if (!CollectionUtils.isEmpty(logFilter.getUsers())) {
             List<String> formattedUsers = logFilter.getUsers().stream()
                     .flatMap(user -> Stream.of(user.toLowerCase(), user.toUpperCase()))
                     .collect(Collectors.toList());
-            boolQuery = boolQuery.filter(QueryBuilders.termsQuery(USER, formattedUsers));
+            boolQuery.filter(QueryBuilders.termsQuery(USER, formattedUsers));
         }
         if (!CollectionUtils.isEmpty(logFilter.getHostnames())) {
-            boolQuery = boolQuery.filter(QueryBuilders.termsQuery(HOSTNAME, logFilter.getHostnames()));
+            boolQuery.filter(QueryBuilders.termsQuery(HOSTNAME, logFilter.getHostnames()));
         }
         if (!CollectionUtils.isEmpty(logFilter.getServiceNames())) {
-            boolQuery = boolQuery.filter(QueryBuilders.termsQuery(SERVICE_NAME, logFilter.getServiceNames()));
+            boolQuery.filter(QueryBuilders.termsQuery(SERVICE_NAME, logFilter.getServiceNames()));
         }
         if (!CollectionUtils.isEmpty(logFilter.getTypes())) {
-            boolQuery = boolQuery.filter(QueryBuilders.termsQuery(TYPE, logFilter.getTypes()));
+            boolQuery.filter(QueryBuilders.termsQuery(TYPE, logFilter.getTypes()));
         }
         if (!StringUtils.isEmpty(logFilter.getMessage())) {
-            boolQuery = boolQuery.filter(QueryBuilders.matchQuery(MESSAGE, logFilter.getMessage()));
+            boolQuery.filter(QueryBuilders.matchQuery(MESSAGE, logFilter.getMessage()));
         }
 
-        boolQuery = addRageFilter(boolQuery, TIMESTAMP, logFilter.getTimestampFrom(), logFilter.getTimestampTo());
-        boolQuery = addRageFilter(boolQuery, MESSAGE_TIMESTAMP, logFilter.getMessageTimestampFrom(), logFilter.getMessageTimestampTo());
+        addRageFilter(boolQuery, TIMESTAMP, logFilter.getTimestampFrom(), logFilter.getTimestampTo());
+        addRageFilter(boolQuery, MESSAGE_TIMESTAMP, logFilter.getMessageTimestampFrom(), logFilter.getMessageTimestampTo());
         return boolQuery;
     }
 
