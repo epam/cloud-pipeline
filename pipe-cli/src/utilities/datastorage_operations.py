@@ -493,7 +493,7 @@ class DataStorageOperations(object):
                 yield ('File', os.path.join(source_path, path), path, size)
 
     @classmethod
-    def mount_storage(cls, mountpoint, file=False, bucket=None, log_file=None, options=None, quiet=False,
+    def mount_storage(cls, mountpoint, file=False, bucket=None, log_file=None, log_level=None, options=None, quiet=False,
                       threading=False, mode=700):
         try:
             if not file and not bucket:
@@ -502,7 +502,7 @@ class DataStorageOperations(object):
                 sys.exit(1)
             cls.check_platform("mount")
             Mount().mount_storages(mountpoint, file, bucket, options, quiet=quiet, log_file=log_file,
-                                   threading=threading, mode=mode)
+                                   log_level=log_level,  threading=threading, mode=mode)
         except ALL_ERRORS as error:
             click.echo('Error: %s' % str(error), err=True)
             sys.exit(1)

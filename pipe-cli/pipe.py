@@ -981,11 +981,12 @@ def storage_delete_object_tags(path, tags, version):
 @click.option('-b', '--bucket', required=False, help='Bucket name')
 @click.option('-o', '--options', required=False, help='Specify mount options')
 @click.option('-l', '--log-file', required=False, help='Specify log file for mount operation')
+@click.option('-v', '--log-level', required=False, help='Specify log level for mount')
 @click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
 @click.option('-t', '--threads', help='Enables multithreading', is_flag=True)
 @click.option('-m', '--mode', required=False, help='Default file permissions',  default=700, type=int)
 @Config.validate_access_token
-def mount_storage(mountpoint, file, bucket, options, log_file, quiet, threads, mode):
+def mount_storage(mountpoint, file, bucket, options, log_file, log_level, quiet, threads, mode):
     """ Mounts either all available file systems or a single bucket into a local folder.
         Either -f\\--file flag or -b\\--bucket argument should be specified.
         Command is supported for Linux distributions and MacOS and requires
@@ -995,10 +996,11 @@ def mount_storage(mountpoint, file, bucket, options, log_file, quiet, threads, m
         - bucket - name of the bucket to mount.
         - options - any mount options supported by underlying FUSE implementation.
         - log-file - path to FUSE log file.
+        - log-level - FUSE log level.
         - threads - start FUSE in a multithreaded mode.
         - mode - file permissions mask
     """
-    DataStorageOperations.mount_storage(mountpoint, file=file, log_file=log_file,
+    DataStorageOperations.mount_storage(mountpoint, file=file, log_file=log_file, log_level=log_level,
                                         bucket=bucket, options=options, quiet=quiet,
                                         threading=threads, mode=mode)
 
