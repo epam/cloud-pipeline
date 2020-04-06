@@ -167,6 +167,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                                 .validateReportTableColumns()
                                 .selectComponent("kernel-headers")
                                 .click(versionTab("PACKAGES"))
+                                .selectEcosystem("Python.Dist")
                                 .validatePackageList(Arrays.asList("pip", "py"), true)
                                 .validateEcosystem(Arrays.asList("Python.Dist", "System"))
                                 .selectEcosystem("System")
