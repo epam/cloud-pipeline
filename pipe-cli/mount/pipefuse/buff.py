@@ -158,7 +158,6 @@ class BufferedFileSystemClient(FileSystemClientDecorator):
             return read_ahead_buf.getvalue()
 
     def upload_range(self, fh, buf, path, offset=0):
-        logging.debug('Uploading range %d-%d for %d:%s' % (offset, offset + len(buf), fh, path))
         file_buf = self._write_file_buffs.get(path)
         if not file_buf:
             file_buf = self._new_write_buf(self._capacity, offset)
