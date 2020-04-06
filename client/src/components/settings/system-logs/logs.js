@@ -72,31 +72,43 @@ const columns = [
 class Logs extends React.Component {
   state = {
     logs: [],
-    page: 0
+    page: 1
   };
 
   @observable logs = new SystemLogsFilter();
 
   get logMessages () {
     if (this.logs.loaded) {
-      return (this.logs.value || []);
+      return (this.logs.value.logEntries || []);
     }
     return [];
+  }
+
+  get pages () {
+    if (this.logs.loaded) {
+      return this.logs.value.totalHits || 0;
+    }
+    return 0;
   }
 
   componentDidMount () {
     const {onInitialized} = this.props;
     onInitialized && onInitialized(this);
-    this.onFiltersChanged(0);
+    this.onFiltersChanged();
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.filters !== this.props.filters) {
-      this.onFiltersChanged(0);
+      this.setPage(1);
     }
   }
 
-  onFiltersChanged = (page) => {
+  setPage = (page) => {
+    this.setState({page}, this.onFiltersChanged);
+  };
+
+  onFiltersChanged = () => {
+    const {page} = this.state;
     const {filters} = this.props;
     this.logs.send(
       {
@@ -122,6 +134,7 @@ class Logs extends React.Component {
     if (!height) {
       return null;
     }
+    const {page} = this.state;
     return (
       <div style={{height, width: '100%'}}>
         <Table
@@ -129,9 +142,14 @@ class Logs extends React.Component {
           columns={columns}
           dataSource={this.logMessages}
           loading={this.logs.pending}
-          pagination={false}
           size="small"
           scroll={{y: height - 75}}
+          pagination={{
+            total: this.pages,
+            pageSize: PAGE_SIZE,
+            current: page,
+            onChange: this.setPage
+          }}
         />
       </div>
     );

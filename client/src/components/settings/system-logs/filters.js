@@ -93,7 +93,6 @@ class Filters extends React.Component {
       serviceName,
       types,
       message,
-      sources = [],
       hostnames = []
     } = filters;
     const onFieldChanged = (field, submit = false, converter = (o => o)) => (event) => {
@@ -121,8 +120,6 @@ class Filters extends React.Component {
     };
     const momentDateConverter = d => d ? moment.utc(d).format(DATE_FORMAT) : undefined;
     const momentDateParser = d => d ? moment.utc(d, DATE_FORMAT) : undefined;
-    const arrayToStringConverter = d => d && d.length ? d[0] : undefined;
-    const stringToArrayConverter = d => d ? [d] : [];
     const commonStyle = {flex: 1};
     const getDisabledDate = ({min, max}) => (date) => {
       let disabled = false;
@@ -214,16 +211,6 @@ class Filters extends React.Component {
             placeholder="Hostname"
             style={commonStyle}
             value={hostnames}
-          />
-        </Filter>
-        <Filter label="Source" display={showAdvanced}>
-          <Input
-            placeholder="Source"
-            style={commonStyle}
-            value={arrayToStringConverter(sources)}
-            onChange={onFieldChanged('sources', false, stringToArrayConverter)}
-            onPressEnter={submitFilters('sources')}
-            onBlur={submitFilters('sources')}
           />
         </Filter>
         <Filter label="Type" display={showAdvanced}>
