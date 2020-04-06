@@ -16,9 +16,12 @@
 
 package com.epam.pipeline.manager.log;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.log.LogEntry;
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
+import com.epam.pipeline.entity.log.LogPaginationRequest;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.Getter;
@@ -38,7 +41,9 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -74,19 +79,25 @@ public class LogManager {
     private static final String DEFAULT_SEVERITY = "INFO";
 
     private final GlobalSearchElasticHelper elasticHelper;
+    private final MessageHelper messageHelper;
 
-    @Value("log.security.elastic.index.prefix")
+    @Value("${log.security.elastic.index.prefix}")
     private String indexTemplate;
 
     public LogPagination filter(LogFilter logFilter) {
+        final LogPaginationRequest pagination = logFilter.getPagination();
 
-        final int offset = logFilter.getPagination().getToken() * logFilter.getPagination().getPageSize();
+        Assert.notNull(pagination, messageHelper.getMessage(MessageConstants.ERROR_PAGINATION_IS_NOT_PROVIDED));
+        Assert.isTrue(pagination.getToken() >= 0, messageHelper.getMessage(MessageConstants.ERROR_PAGE_INDEX));
+        Assert.isTrue(pagination.getPageSize() > 0, messageHelper.getMessage(MessageConstants.ERROR_PAGE_SIZE));
+
+        final int offset = pagination.getToken() * pagination.getPageSize();
         final SearchHits hits = verifyResponse(
                                     executeRequest(new SearchRequest(indexTemplate)
                                             .source(new SearchSourceBuilder()
                                                     .query(constructQueryFilter(logFilter))
                                                     .from(offset)
-                                                    .size(logFilter.getPagination().getPageSize()))
+                                                    .size(pagination.getPageSize()))
                                             .indicesOptions(INDICES_OPTIONS))
                                 ).getHits();
 
@@ -95,8 +106,8 @@ public class LogManager {
                     .map(SearchHit::getSourceAsMap)
                     .map(this::mapHitToLogEntry)
                     .collect(Collectors.toList()))
-                .pageSize(logFilter.getPagination().getPageSize())
-                .token(logFilter.getPagination().getToken())
+                .pageSize(pagination.getPageSize())
+                .token(pagination.getToken())
                 .totalHits(hits.totalHits).build();
     }
 
@@ -114,6 +125,9 @@ public class LogManager {
         }
         if (!CollectionUtils.isEmpty(logFilter.getTypes())) {
             boolQuery = boolQuery.filter(QueryBuilders.termsQuery(TYPE, logFilter.getTypes()));
+        }
+        if (!StringUtils.isEmpty(logFilter.getMessage())) {
+            boolQuery = boolQuery.filter(QueryBuilders.matchQuery(MESSAGE, logFilter.getMessage()));
         }
 
         boolQuery = addRageFilter(boolQuery, TIMESTAMP, logFilter.getTimestampFrom(), logFilter.getTimestampTo());
