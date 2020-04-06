@@ -190,6 +190,7 @@ if __name__ == '__main__':
     recording = args.logging_level == _debug_logging_level
     logging.basicConfig(format='[%(levelname)s] %(asctime)s %(filename)s - %(message)s',
                         level=_allowed_logging_level_names[args.logging_level])
+    logging.getLogger('botocore').setLevel(logging.ERROR)
 
     if is_frozen:
         logging.info('Frozen installation found. Bundled libfuse will be used.')
