@@ -18,10 +18,7 @@ package com.epam.pipeline.manager.log;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.entity.log.LogEntry;
-import com.epam.pipeline.entity.log.LogFilter;
-import com.epam.pipeline.entity.log.LogPagination;
-import com.epam.pipeline.entity.log.LogPaginationRequest;
+import com.epam.pipeline.entity.log.*;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.Getter;
@@ -79,6 +76,7 @@ public class LogManager {
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     private static final String DEFAULT_SEVERITY = "INFO";
+    public static final int ELASTIC_MAX_SCROLL_SIZE = 9999;
 
     private final GlobalSearchElasticHelper elasticHelper;
     private final MessageHelper messageHelper;
@@ -90,16 +88,19 @@ public class LogManager {
         final LogPaginationRequest pagination = logFilter.getPagination();
 
         Assert.notNull(pagination, messageHelper.getMessage(MessageConstants.ERROR_PAGINATION_IS_NOT_PROVIDED));
-        Assert.isTrue(pagination.getToken() >= 0 && pagination.getPageSize() > 0,
+        Assert.isTrue(pagination.getToken() > 0 && pagination.getPageSize() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_PAGE_INDEX_OR_SIZE));
 
-        final int offset = pagination.getToken() * pagination.getPageSize();
+        final int offset = (pagination.getToken() - 1) * pagination.getPageSize();
+        final int size = pagination.getPageSize() + offset < ELASTIC_MAX_SCROLL_SIZE
+                ? pagination.getPageSize()
+                : ELASTIC_MAX_SCROLL_SIZE - offset;
         final SearchHits hits = verifyResponse(
                                     executeRequest(new SearchRequest(indexTemplate)
                                             .source(new SearchSourceBuilder()
                                                     .query(constructQueryFilter(logFilter))
                                                     .from(offset)
-                                                    .size(pagination.getPageSize()))
+                                                    .size(size))
                                             .indicesOptions(INDICES_OPTIONS))
                                 ).getHits();
 
@@ -110,7 +111,10 @@ public class LogManager {
                     .collect(Collectors.toList()))
                 .pageSize(pagination.getPageSize())
                 .token(pagination.getToken())
-                .totalHits(hits.totalHits).build();
+                .totalHits(hits.totalHits <= ELASTIC_MAX_SCROLL_SIZE
+                        ? hits.totalHits
+                        : ELASTIC_MAX_SCROLL_SIZE)
+                .build();
     }
 
     private BoolQueryBuilder constructQueryFilter(LogFilter logFilter) {
@@ -126,7 +130,8 @@ public class LogManager {
             boolQuery.filter(QueryBuilders.termsQuery(HOSTNAME, logFilter.getHostnames()));
         }
         if (!CollectionUtils.isEmpty(logFilter.getServiceNames())) {
-            boolQuery.filter(QueryBuilders.termsQuery(SERVICE_NAME, logFilter.getServiceNames()));
+            boolQuery.filter(QueryBuilders.termsQuery(SERVICE_NAME, logFilter.getServiceNames()
+                    .stream().map(ServiceName::getService).collect(Collectors.toList())));
         }
         if (!CollectionUtils.isEmpty(logFilter.getTypes())) {
             boolQuery.filter(QueryBuilders.termsQuery(TYPE, logFilter.getTypes()));
@@ -180,7 +185,7 @@ public class LogManager {
                 .timestamp(LocalDateTime.parse((String) hit.get(TIMESTAMP), DATE_TIME_FORMATTER))
                 .messageTimestamp(LocalDateTime.parse((String) hit.get(MESSAGE_TIMESTAMP), DATE_TIME_FORMATTER))
                 .hostname((String) hit.get(HOSTNAME))
-                .serviceName((String) hit.get(SERVICE_NAME))
+                .serviceName(ServiceName.getByService((String) hit.get(SERVICE_NAME)))
                 .type((String) hit.get(TYPE))
                 .user((String) hit.get(USER))
                 .message((String) hit.get(MESSAGE))

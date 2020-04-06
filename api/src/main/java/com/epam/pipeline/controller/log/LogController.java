@@ -48,7 +48,7 @@ public class LogController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<LogPagination> search(@RequestBody LogFilter logFilter) {
+    public Result<LogPagination> filter(@RequestBody LogFilter logFilter) {
         return Result.success(logApiService.filter(logFilter));
     }
 
