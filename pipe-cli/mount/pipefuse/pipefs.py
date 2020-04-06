@@ -253,3 +253,38 @@ class PipeFS(Operations):
             logging.warn('Fallocate mode (%s) is not supported yet.' % mode)
         if offset + length >= props.size:
             self.client.truncate(fh, path, offset + length)
+
+
+class RecordingFS:
+
+    def __init__(self, inner):
+        """
+        Recording File System.
+
+        It records any call to the inner file system.
+
+        :param inner: Recording file system.
+        """
+        self._inner = inner
+
+    def __getattr__(self, name):
+        if hasattr(self._inner, name):
+            attr = getattr(self._inner, name)
+            if callable(attr):
+                def _wrapped_attr(method_name, *args, **kwargs):
+                    args_string = ', '.join(str(v) for v in args)
+                    kwargs_string = ', '.join(str(k) + '=' + str(v) for k, v in kwargs.items())
+                    if args_string and kwargs_string:
+                        complete_args_string = args_string + ', ' + kwargs_string
+                    elif args_string:
+                        complete_args_string = args_string
+                    else:
+                        complete_args_string = kwargs_string
+                    logging.debug('[FSRecorder] %s (%s)' % (method_name, complete_args_string))
+                    return attr(method_name, *args, **kwargs)
+
+                return _wrapped_attr
+            else:
+                return attr
+        else:
+            return getattr(self._inner, name)
