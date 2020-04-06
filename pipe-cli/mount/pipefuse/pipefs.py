@@ -295,4 +295,4 @@ class RecordingFS:
         return ', '.join(str(k) + '=' + self._trimmed(v) for k, v in kwargs.items())
 
     def _trimmed(self, value):
-        return 'BYTES' if isinstance(value, str) else str(value)
+        return 'BYTES#' + str(len(value)) if isinstance(value, str) else str(value)
