@@ -90,7 +90,7 @@ class Filters extends React.Component {
       messageTimestampFrom,
       messageTimestampTo,
       users,
-      serviceName,
+      serviceNames,
       types,
       message,
       hostnames = []
@@ -166,8 +166,8 @@ class Filters extends React.Component {
               (input, option) =>
                 option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
-            value={serviceName}
-            onChange={onFieldChanged('serviceName', true)}
+            value={serviceNames}
+            onChange={onFieldChanged('serviceNames', true)}
           >
             <Select.Option key="EDGE" value="EDGE">EDGE</Select.Option>
             <Select.Option key="API" value="API">API</Select.Option>

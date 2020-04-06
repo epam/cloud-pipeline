@@ -60,12 +60,6 @@ const columns = [
     title: 'Type',
     width: 100
   },
-  {
-    key: 'source',
-    dataIndex: 'source',
-    title: 'Source',
-    width: 300
-  }
 ];
 
 @observer
