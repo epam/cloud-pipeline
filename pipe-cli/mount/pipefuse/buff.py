@@ -154,6 +154,7 @@ class BufferedFileSystemClient(FileSystemClientDecorator):
     def _read_ahead(self, fh, path, offset, length):
         size = max(self._READ_AHEAD_SIZE, int(length * self._READ_AHEAD_MULTIPLIER))
         with io.BytesIO() as read_ahead_buf:
+            logging.info('Downloading buffer range %d-%d for %d:%s' % (offset, offset + size, fh, path))
             self._inner.download_range(fh, read_ahead_buf, path, offset, length=size)
             return read_ahead_buf.getvalue()
 
@@ -165,12 +166,12 @@ class BufferedFileSystemClient(FileSystemClientDecorator):
         if file_buf.suits(offset):
             file_buf.append(buf)
         else:
-            logging.info('Uploading buffer is not sequential for %s. Buffer will be cleared.' % path)
+            logging.info('Upload buffer is not sequential for %d:%s. Buffer will be cleared.' % (fh, path))
             old_file_buf = self._flush_write_buf(fh, path)
             file_buf = self._new_write_buf(self._capacity, offset, buf, old_file_buf)
             self._write_file_buffs[path] = file_buf
         if file_buf.is_full():
-            logging.info('Uploading buffer is full for %s. Buffer will be cleared.' % path)
+            logging.info('Upload buffer is full for %d:%s. Buffer will be cleared.' % (fh, path))
             self._flush_write_buf(fh, path)
             file_buf = self._new_write_buf(self._capacity, file_buf.offset, buf=None, old_write_buf=file_buf)
             self._write_file_buffs[path] = file_buf
@@ -186,6 +187,8 @@ class BufferedFileSystemClient(FileSystemClientDecorator):
         if write_buf:
             collected_buf, collected_offset = write_buf.collect()
             if collected_buf:
+                logging.info('Uploading buffer range %d-%d for %d:%s'
+                             % (collected_offset, collected_offset + len(collected_buf), fh, path))
                 self._inner.upload_range(fh, collected_buf, path, collected_offset)
         return write_buf
 

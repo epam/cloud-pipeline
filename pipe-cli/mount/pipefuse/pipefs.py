@@ -113,7 +113,7 @@ class PipeFS(Operations):
         try:
             props = self.client.attrs(path)
             if not props:
-                raise RuntimeError('Cannot read attributes for a path because it doesn\'t exist %s' % path)
+                raise FuseOSError(errno.ENOENT)
             if path == self.root or props.is_dir:
                 mode = stat.S_IFDIR
             else:
@@ -131,6 +131,8 @@ class PipeFS(Operations):
             if props.ctime:
                 attrs['st_ctime'] = props.ctime
             return attrs
+        except FuseOSError:
+            raise
         except Exception:
             if path not in self._system_files:
                 logging.exception('Error occurred while getting attributes for %s' % path)
