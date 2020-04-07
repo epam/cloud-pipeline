@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.scan.ToolDependency;
+import com.epam.pipeline.entity.scan.ToolExecutionCheckStatus;
 import com.epam.pipeline.entity.scan.ToolOSVersion;
 import com.epam.pipeline.entity.scan.ToolScanPolicy;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
@@ -184,7 +185,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
         return scanTool(tool, tag, rescan);
     }
 
-    public boolean checkTool(Tool tool, String tag) {
+    public ToolExecutionCheckStatus checkTool(Tool tool, String tag) {
         Optional<ToolVersionScanResult> versionScanOp = toolManager.loadToolVersionScan(tool.getId(), tag);
 
         int graceHours = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_GRACE_HOURS);
@@ -195,7 +196,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
         if (isGracePeriodOrWhiteList) {
             LOGGER.debug("Tool: " + tool.getId() + " version: " + tag +
                     " is from White list or Grace period still active! Proceed with running!");
-            return true;
+            return ToolExecutionCheckStatus.success();
         }
 
         boolean denyNotScanned = preferenceManager.getPreference(
@@ -203,7 +204,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
         if (denyNotScanned && (!versionScanOp.isPresent()
                 || versionScanOp.get().getStatus() == ToolScanStatus.NOT_SCANNED
                 || versionScanOp.get().getSuccessScanDate() == null)) {
-            return false;
+            return ToolExecutionCheckStatus.fail("Tool is not scanned.");
         }
 
         if (versionScanOp.isPresent()) {
@@ -223,19 +224,19 @@ public class AggregatingToolScanManager implements ToolScanManager {
                     SystemPreferences.DOCKER_SECURITY_TOOL_POLICY_MAX_CRITICAL_VULNERABILITIES);
             if (maxCriticalVulnerabilities != DISABLED &&
                     maxCriticalVulnerabilities < severityCounters.getOrDefault(VulnerabilitySeverity.Critical, 0)) {
-                return false;
+                return ToolExecutionCheckStatus.fail("Max number of CRITICAL vulnerabilities is reached");
             }
             int maxHighVulnerabilities = preferenceManager.getPreference(
                     SystemPreferences.DOCKER_SECURITY_TOOL_POLICY_MAX_HIGH_VULNERABILITIES);
             if (maxHighVulnerabilities != DISABLED &&
                     maxHighVulnerabilities < severityCounters.getOrDefault(VulnerabilitySeverity.High, 0)) {
-                return false;
+                return ToolExecutionCheckStatus.fail("Max number of HIGH vulnerabilities is reached");
             }
             int maxMediumVulnerabilities = preferenceManager.getPreference(
                     SystemPreferences.DOCKER_SECURITY_TOOL_POLICY_MAX_MEDIUM_VULNERABILITIES);
             if (maxMediumVulnerabilities != DISABLED &&
                     maxMediumVulnerabilities < severityCounters.getOrDefault(VulnerabilitySeverity.Medium, 0)) {
-                return false;
+                return ToolExecutionCheckStatus.fail("Max number of MEDIUM vulnerabilities is reached");
             }
 
             LOGGER.debug("Tool: {} version: {} Check tool os version.", tool.getId(), tag);
@@ -243,10 +244,10 @@ public class AggregatingToolScanManager implements ToolScanManager {
                     && !toolManager.isToolOSVersionAllowed(toolVersionScanResult.getToolOSVersion())) {
                 LOGGER.warn("Tool: {} version: {}. Tool os version isn't allowed, check preference {} ! Cancel run.",
                         tool.getId(), tag, SystemPreferences.DOCKER_SECURITY_TOOL_OS.getKey());
-                return false;
+                return ToolExecutionCheckStatus.fail("This type of OS is not supported.");
             }
         }
-        return true;
+        return ToolExecutionCheckStatus.success();
     }
 
     private boolean gracePeriodIsActive(ToolVersionScanResult versionScan, int graceHours) {

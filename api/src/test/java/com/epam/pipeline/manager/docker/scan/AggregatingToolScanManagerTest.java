@@ -307,7 +307,7 @@ public class AggregatingToolScanManagerTest {
 
     @Test
     public void testDenyNotScanned() {
-        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION));
+        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
@@ -317,7 +317,7 @@ public class AggregatingToolScanManagerTest {
         ToolVersionScanResult scanResult = new ToolVersionScanResult(LATEST_VERSION);
         scanResult.setScanDate(DateUtils.now());
         when(toolManager.loadToolVersionScan(testTool.getId(), LATEST_VERSION)).thenReturn(Optional.of(scanResult));
-        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION));
+        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
@@ -328,14 +328,14 @@ public class AggregatingToolScanManagerTest {
         scanResult.setScanDate(DateUtils.now());
         scanResult.setVulnerabilities(Collections.emptyList());
         when(toolManager.loadToolVersionScan(testTool.getId(), LATEST_VERSION)).thenReturn(Optional.of(scanResult));
-        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION));
+        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
     public void testDenyOnCritical() {
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES + 1, MAX_HIGH_VULNERABILITIES,
                 1, toolScanResult);
-        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION));
+        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
@@ -344,7 +344,7 @@ public class AggregatingToolScanManagerTest {
                 .thenReturn("centos:6");
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES + 1, MAX_HIGH_VULNERABILITIES,
                 1, toolScanResult, new ToolOSVersion("ubuntu", "14"));
-        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION));
+        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
@@ -353,7 +353,7 @@ public class AggregatingToolScanManagerTest {
                 .thenReturn("centos:6");
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES + 1, MAX_HIGH_VULNERABILITIES,
                 1, toolScanResult, new ToolOSVersion("centos", "7"));
-        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION));
+        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
@@ -362,14 +362,14 @@ public class AggregatingToolScanManagerTest {
                 .thenReturn("centos");
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES + 1, MAX_HIGH_VULNERABILITIES,
                 1, toolScanResult, new ToolOSVersion("centos", "7"));
-        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION));
+        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
     public void testDenyOnHigh() {
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES + 1,
                 1, toolScanResult);
-        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION));
+        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
@@ -378,14 +378,14 @@ public class AggregatingToolScanManagerTest {
                 .thenReturn(0);
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES,
                 1, toolScanResult);
-        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION));
+        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
     public void testAllow() {
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES,
                 1, toolScanResult);
-        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION));
+        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test

@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.docker.scan;
 
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.scan.ToolExecutionCheckStatus;
 import com.epam.pipeline.entity.scan.ToolScanPolicy;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.exception.ToolScanExternalServiceException;
@@ -43,7 +44,7 @@ public interface ToolScanManager {
      */
     ToolVersionScanResult scanTool(Tool tool, String tag, Boolean rescan) throws ToolScanExternalServiceException;
 
-    boolean checkTool(Tool tool, String tag);
+    ToolExecutionCheckStatus checkTool(Tool tool, String tag);
 
     /**
      * Loads current security policy.

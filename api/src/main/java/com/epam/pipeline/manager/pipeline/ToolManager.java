@@ -656,7 +656,7 @@ public class ToolManager implements SecuredEntityManager {
                                                            Map<String, ToolVersionScanResult> versionScanResults,
                                                            String tag) {
         ToolVersionScanResult versionScan = versionScanResults.getOrDefault(tag, new ToolVersionScanResult(tag));
-        versionScan.setAllowedToExecute(toolScanManager.checkTool(tool, tag));
+        versionScan.setAllowedToExecute(toolScanManager.checkTool(tool, tag).isAllowed());
         if (versionScan.getScanDate() != null) {
             int graceHours = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_GRACE_HOURS);
             versionScan.setGracePeriod(
