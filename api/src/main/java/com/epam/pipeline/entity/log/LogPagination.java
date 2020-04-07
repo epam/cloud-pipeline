@@ -24,9 +24,8 @@ import java.util.List;
 @Data
 @Builder
 public class LogPagination {
-    private Integer token;
+    private PageMarker token;
     private Integer pageSize;
     private List<LogEntry> logEntries;
     private Long totalHits;
-    private Boolean overflow;
 }
