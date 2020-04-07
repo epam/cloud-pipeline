@@ -52,6 +52,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Manager to work with ElasticSearch engine in order to search for system logs.
+ * */
 @Slf4j
 @Service
 @Getter
@@ -84,7 +87,14 @@ public class LogManager {
     @Value("${log.security.elastic.index.prefix}")
     private String indexTemplate;
 
-    public LogPagination filter(LogFilter logFilter) {
+    /**
+     * Searches log according to specified log filter.
+     * Max depth of a search is 10000 total. If ElasticSearch result contains totalHits > that max number
+     * flag overflow will be set to {@code true} and totalHits will be set to max value (10000)
+     * @param logFilter - filter for constructing elasticsearch query
+     * @return {@link LogPagination} object with related search result and additional information
+     * */
+    public LogPagination filter(final LogFilter logFilter) {
         final LogPaginationRequest pagination = logFilter.getPagination();
 
         Assert.notNull(pagination, messageHelper.getMessage(MessageConstants.ERROR_PAGINATION_IS_NOT_PROVIDED));
@@ -114,6 +124,7 @@ public class LogManager {
                 .totalHits(hits.totalHits <= ELASTIC_MAX_SCROLL_SIZE
                         ? hits.totalHits
                         : ELASTIC_MAX_SCROLL_SIZE)
+                .overflow(hits.totalHits > ELASTIC_MAX_SCROLL_SIZE)
                 .build();
     }
 
@@ -145,10 +156,10 @@ public class LogManager {
         return boolQuery;
     }
 
-    private BoolQueryBuilder addRageFilter(BoolQueryBuilder boolQuery, String timestamp,
-                                           LocalDateTime timestampFrom, LocalDateTime timestampTo) {
+    private void addRageFilter(BoolQueryBuilder boolQuery, String timestamp,
+                               LocalDateTime timestampFrom, LocalDateTime timestampTo) {
         if (timestampFrom == null && timestampTo == null) {
-            return boolQuery;
+            return;
         }
 
         RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(timestamp);
@@ -160,7 +171,7 @@ public class LogManager {
             rangeQueryBuilder = rangeQueryBuilder.to(timestampTo.toInstant(ZoneOffset.UTC));
         }
 
-        return boolQuery.filter(rangeQueryBuilder);
+        boolQuery.filter(rangeQueryBuilder);
     }
 
     private SearchResponse verifyResponse(SearchResponse logsResponse) {
