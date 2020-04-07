@@ -152,7 +152,8 @@ public class LogManager {
             boolQuery.filter(QueryBuilders.termsQuery(HOSTNAME, logFilter.getHostnames()));
         }
         if (!CollectionUtils.isEmpty(logFilter.getServiceNames())) {
-            boolQuery.filter(QueryBuilders.termsQuery(SERVICE_NAME, logFilter.getServiceNames()));
+            boolQuery.filter(QueryBuilders.termsQuery(SERVICE_NAME, logFilter.getServiceNames()
+                    .stream().map(ServiceName::getService).collect(Collectors.toList())));
         }
         if (!CollectionUtils.isEmpty(logFilter.getTypes())) {
             boolQuery.filter(QueryBuilders.termsQuery(TYPE, logFilter.getTypes()));
