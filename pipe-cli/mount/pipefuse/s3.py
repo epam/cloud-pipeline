@@ -306,7 +306,6 @@ class S3Client(FileSystemClient):
             buf.write(chunk)
 
     def upload_range(self, fh, buf, path, offset=0):
-        logging.info('Uploading range %d-%d for %s' % (offset, offset + len(buf), path))
         source_path = path.lstrip(self._delimiter)
         mpu = self._mpus.get(path, None)
         try:
@@ -314,8 +313,10 @@ class S3Client(FileSystemClient):
                 file_size = self.attrs(path).size
                 buf_size = len(buf)
                 if buf_size < self._SINGLE_UPLOAD_SIZE and file_size < self._SINGLE_UPLOAD_SIZE:
+                    logging.info('Using single range upload approach')
                     self._upload_single_range(fh, buf, source_path, offset)
                 else:
+                    logging.info('Using multipart upload approach')
                     mpu = self._new_mpu(source_path, file_size, offset)
                     self._mpus[path] = mpu
                     mpu.initiate()
@@ -343,12 +344,12 @@ class S3Client(FileSystemClient):
         return download_func
 
     def _upload_single_range(self, fh, buf, path, offset):
-        logging.info('Uploading a single range %d-%d for %s' % (offset, offset + len(buf), path))
         with io.BytesIO() as original_buf:
             self.download_range(fh, original_buf, path)
             modified_bytes = bytearray(original_buf.getvalue())
         modified_bytes[offset: offset + len(buf)] = buf
         with io.BytesIO(modified_bytes) as body:
+            logging.info('Uploading range %d-%d for %s' % (offset, offset + len(buf), path))
             self._s3.put_object(Bucket=self.bucket, Key=path, Body=body)
 
     def flush(self, fh, path):
@@ -363,7 +364,7 @@ class S3Client(FileSystemClient):
                 del self._mpus[path]
 
     def truncate(self, fh, path, length):
-        logging.info('Truncating %d:%s to %d' % (fh, path, length))
+        logging.info('Truncating %s to %d' % (path, length))
         file_size = self.attrs(path).size
         if not length:
             self.upload(bytearray(), path)

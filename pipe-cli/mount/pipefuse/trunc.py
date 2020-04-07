@@ -35,7 +35,7 @@ class CopyOnDownTruncateFileSystemClient(FileSystemClientDecorator):
         self._capacity = capacity
 
     def truncate(self, fh, path, length):
-        logging.info('Truncating %d:%s to %d' % (fh, path, length))
+        logging.info('Truncating %s to %d' % (path, length))
         file_size = self.attrs(path).size
         if not length:
             self._inner.upload(bytearray(), path)
@@ -83,7 +83,7 @@ class WriteNullsOnUpTruncateFileSystemClient(FileSystemClientDecorator):
         self._capacity = capacity
 
     def truncate(self, fh, path, length):
-        logging.info('Truncating %d:%s to %d' % (fh, path, length))
+        logging.info('Truncating %s to %d' % (path, length))
         file_size = self.attrs(path).size
         if not length:
             self._inner.upload(bytearray(), path)
@@ -116,7 +116,7 @@ class WriteLastNullOnUpTruncateFileSystemClient(FileSystemClientDecorator):
         self._inner = inner
 
     def truncate(self, fh, path, length):
-        logging.info('Truncating %d:%s to %d' % (fh, path, length))
+        logging.info('Truncating %s to %d' % (path, length))
         file_size = self.attrs(path).size
         if not length:
             self._inner.upload(bytearray(), path)

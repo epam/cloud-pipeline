@@ -83,7 +83,6 @@ class PipeFS(Operations):
         self.delimiter = '/'
         self.root = '/'
         self.is_mac = platform.system() == 'Darwin'
-        self._system_files = ['/.Trash', '/.Trash-1000', '/.xdg-volume-info', '/autorun.inf']
         self._lock = lock
 
     def is_skipped_mac_files(self, path):
@@ -108,9 +107,9 @@ class PipeFS(Operations):
         pass
 
     def getattr(self, path, fh=None):
-        if self.is_skipped_mac_files(path):
-            raise FuseOSError(errno.ENOENT)
         try:
+            if self.is_skipped_mac_files(path):
+                raise FuseOSError(errno.ENOENT)
             props = self.client.attrs(path)
             if not props:
                 raise FuseOSError(errno.ENOENT)
@@ -134,8 +133,6 @@ class PipeFS(Operations):
         except FuseOSError:
             raise
         except Exception:
-            if path not in self._system_files:
-                logging.exception('Error occurred while getting attributes for %s' % path)
             raise FuseOSError(errno.ENOENT)
 
     def readdir(self, path, fh):
@@ -255,46 +252,3 @@ class PipeFS(Operations):
             logging.warn('Fallocate mode (%s) is not supported yet.' % mode)
         if offset + length >= props.size:
             self.client.truncate(fh, path, offset + length)
-
-
-class RecordingFS:
-
-    def __init__(self, inner):
-        """
-        Recording File System.
-
-        It records any call to the inner file system.
-
-        :param inner: Recording file system.
-        """
-        self._inner = inner
-
-    def __getattr__(self, name):
-        if hasattr(self._inner, name):
-            attr = getattr(self._inner, name)
-            if callable(attr):
-                def _wrapped_attr(method_name, *args, **kwargs):
-                    args_string = self._args_string(args)
-                    kwargs_string = self._kwargs_string(kwargs)
-                    if args_string and kwargs_string:
-                        complete_args_string = args_string + ', ' + kwargs_string
-                    elif args_string:
-                        complete_args_string = args_string
-                    else:
-                        complete_args_string = kwargs_string
-                    logging.debug('[FSRecorder] %s (%s)' % (method_name, complete_args_string))
-                    return attr(method_name, *args, **kwargs)
-                return _wrapped_attr
-            else:
-                return attr
-        else:
-            return getattr(self._inner, name)
-
-    def _args_string(self, args):
-        return ', '.join(self._trimmed(v) for v in args)
-
-    def _kwargs_string(self, kwargs):
-        return ', '.join(str(k) + '=' + self._trimmed(v) for k, v in kwargs.items())
-
-    def _trimmed(self, value):
-        return 'BYTES#' + str(len(value)) if isinstance(value, str) else str(value)

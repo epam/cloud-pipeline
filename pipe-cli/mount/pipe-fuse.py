@@ -18,6 +18,7 @@ import logging
 import os
 import sys
 
+
 is_frozen = getattr(sys, 'frozen', False)
 
 if is_frozen:
@@ -41,7 +42,8 @@ from pipefuse.trunc import CopyOnDownTruncateFileSystemClient, \
 from pipefuse.api import CloudPipelineClient
 from pipefuse.webdav import CPWebDavClient
 from pipefuse.s3 import S3Client
-from pipefuse.pipefs import PipeFS, RecordingFS
+from pipefuse.pipefs import PipeFS
+from pipefuse.record import RecordingFS, RecordingFileSystemClient
 from pipefuse.fslock import get_lock
 import ctypes
 import fuse
@@ -53,6 +55,7 @@ _allowed_logging_levels = filter(lambda name: isinstance(name, str), _allowed_lo
 _allowed_logging_levels_string = ', '.join(_allowed_logging_levels)
 _default_logging_level = _allowed_logging_level_names[logging.ERROR]
 _debug_logging_level = _allowed_logging_level_names[logging.DEBUG]
+_info_logging_level = _allowed_logging_level_names[logging.INFO]
 
 
 def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size, cache_ttl, cache_size, default_mode,
@@ -77,6 +80,8 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
             raise RuntimeError("Cloud Pipeline API should be specified.")
         pipe = CloudPipelineClient(api=api, token=bearer)
         client = S3Client(bucket, pipe=pipe, chunk_size=chunk_size)
+    if recording:
+        client = RecordingFileSystemClient(client)
     if cache_ttl > 0 and cache_size > 0:
         cache = TTLCache(maxsize=cache_size, ttl=cache_ttl)
         client = CachingFileSystemClient(client, cache)
@@ -187,7 +192,7 @@ if __name__ == '__main__':
         parser.error('Chunk size can vary from 5 MB to 5 GB due to AWS s3 multipart upload limitations.')
     if args.logging_level not in _allowed_logging_levels:
         parser.error('Only the following logging level are allowed: %s.' % _allowed_logging_levels_string)
-    recording = args.logging_level == _debug_logging_level
+    recording = args.logging_level in [_info_logging_level, _debug_logging_level]
     logging.basicConfig(format='[%(levelname)s] %(asctime)s %(filename)s - %(message)s',
                         level=_allowed_logging_level_names[args.logging_level])
     logging.getLogger('botocore').setLevel(logging.ERROR)
