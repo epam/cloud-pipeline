@@ -88,8 +88,6 @@ public class LogManager {
 
     /**
      * Searches log according to specified log filter.
-     * This method allows to navigate forward and backward trough search result, see {@link LogPaginationRequest}
-     * for more information about navigation
      * @param logFilter - filter for constructing elasticsearch query
      * @return {@link LogPagination} object with related search result and additional information
      * */
@@ -100,12 +98,12 @@ public class LogManager {
         Assert.isTrue(pagination.getPageSize() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_PAGE_INDEX_OR_SIZE));
 
-        SortOrder sortOrder = logFilter.getPagination().getForward() ? SortOrder.ASC : SortOrder.DESC;
         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
                 .query(constructQueryFilter(logFilter))
-                .sort(MESSAGE_TIMESTAMP, sortOrder)
-                .sort(ID, sortOrder)
-                .size(pagination.getPageSize());
+                .sort(MESSAGE_TIMESTAMP, SortOrder.ASC)
+                .sort(ID, SortOrder.ASC)
+                .size(pagination.getPageSize() + 1);
+
         if (logFilter.getPagination().getToken() != null) {
             searchSourceBuilder.searchAfter(
                     new Object[]{
@@ -115,22 +113,30 @@ public class LogManager {
             );
         }
 
-
         final SearchHits hits = verifyResponse(
                                     executeRequest(new SearchRequest(indexTemplate)
                                             .source(searchSourceBuilder)
                                             .indicesOptions(INDICES_OPTIONS))
                                 ).getHits();
 
-        return LogPagination.builder().logEntries(
-                Arrays.stream(hits.getHits())
-                    .map(this::mapHitToLogEntry)
-                    .sorted(Comparator.comparing(LogEntry::getMessageTimestamp))
-                    .collect(Collectors.toList()))
+        final List<LogEntry> entries = Arrays.stream(hits.getHits())
+                .map(this::mapHitToLogEntry)
+                .collect(Collectors.toList());
+
+        return LogPagination.builder()
+                .logEntries(entries.stream().limit(pagination.getPageSize()).collect(Collectors.toList()))
                 .pageSize(pagination.getPageSize())
-                .token(pagination.getToken())
-                .forward(pagination.getForward())
-                .totalHits(hits.totalHits).build();
+                .token(getToken(entries, pagination.getPageSize()))
+                .totalHits(hits.totalHits)
+                .build();
+    }
+
+    private PageMarker getToken(List<LogEntry> items, int pageSize) {
+        if (items == null || items.size() <= pageSize) {
+            return null;
+        }
+        final LogEntry entry = items.get(items.size() - 1);
+        return new PageMarker(entry.getId(), entry.getMessageTimestamp());
     }
 
     private BoolQueryBuilder constructQueryFilter(LogFilter logFilter) {

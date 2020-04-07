@@ -16,17 +16,14 @@
 
 package com.epam.pipeline.entity.log;
 
-import lombok.Builder;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
-/**
- * Class that contains information about ElasticSearch result page parameters.
- * pageSize - number of entries to be sent back as a search response
- * token - {@link LogEntry} object that represent start of the current page
- * */
+import java.time.LocalDateTime;
+
 @Data
-@Builder
-public class LogPaginationRequest {
-    private PageMarker token;
-    private Integer pageSize;
+@AllArgsConstructor
+public class PageMarker {
+    private String id;
+    private LocalDateTime messageTimestamp;
 }
