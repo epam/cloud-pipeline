@@ -30,7 +30,7 @@ const TABLE_HEADER_HEIGHT = 40;
 const columns = [
   {
     key: 'date',
-    dataIndex: 'timestamp',
+    dataIndex: 'messageTimestamp',
     title: 'Date',
     render: d => displayDate(d),
     width: 150
