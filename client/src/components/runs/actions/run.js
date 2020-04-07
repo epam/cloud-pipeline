@@ -44,6 +44,7 @@ import {
   PermissionErrors,
   PermissionErrorsTitle
 } from './execution-allowed-check';
+import SensitiveBucketsWarning from './sensitive-buckets-warning';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => inject('instanceTypes')(...opts);
@@ -690,6 +691,10 @@ export class RunConfirmation extends React.Component {
           parameters={this.props.parameters}
           hddSize={this.props.hddSize}
           onDiskSizeChanged={this.props.onChangeHddSize}
+        />
+        <SensitiveBucketsWarning
+          parameters={this.props.parameters}
+          style={{margin: 2}}
         />
       </div>
     );

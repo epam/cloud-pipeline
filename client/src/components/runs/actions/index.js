@@ -23,3 +23,4 @@ export {
   getOutputPaths,
   performAsyncCheck
 } from './execution-allowed-check';
+export {default as SensitiveBucketsWarning} from './sensitive-buckets-warning';

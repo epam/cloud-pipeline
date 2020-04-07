@@ -18,11 +18,16 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import AvailableStoragesBrowser from '../dialogs/AvailableStoragesBrowser';
+import AvailableStoragesBrowser, {LIMIT_MOUNTS_PARAMETER}
+  from '../dialogs/AvailableStoragesBrowser';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import styles from './LimitMountsInput.css';
 
-export const LIMIT_MOUNTS_PARAMETER = 'CP_CAP_LIMIT_MOUNTS';
+function filterUniqueIdentifiers (o, i, a) {
+  return a.indexOf(+o) === i;
+}
+
+export {LIMIT_MOUNTS_PARAMETER};
 
 @inject('dataStorageAvailable')
 @observer
@@ -113,7 +118,17 @@ export class LimitMountsInput extends React.Component {
         }
         {
           !this.state.value &&
-          <span>All available storages</span>
+          <span>All available non-sensitive storages</span>
+        }
+        {
+          this.state.value &&
+          (this.state.value || '')
+            .split(',')
+            .filter(filterUniqueIdentifiers)
+            .length === this.availableStorages.length &&
+          (
+            <span>All available storages</span>
+          )
         }
         <AvailableStoragesBrowser
           visible={this.state.limitMountsDialogVisible}
@@ -121,7 +136,7 @@ export class LimitMountsInput extends React.Component {
           selectedStorages={
             this.selectedStorages.length
               ? this.selectedStorages.map(s => s.id)
-              : this.availableStorages.map(s => s.id)
+              : this.availableStorages.filter(s => !s.sensitive).map(s => s.id)
           }
           onCancel={this.onCancelLimitMountsDialog}
           onSave={this.onSaveLimitMountsDialog}

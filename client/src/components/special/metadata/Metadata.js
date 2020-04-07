@@ -132,7 +132,14 @@ export default class Metadata extends localization.LocalizedReactComponent {
     entityVersion: PropTypes.string,
     canNavigateBack: PropTypes.bool,
     onNavigateBack: PropTypes.func,
-    fileIsEmpty: PropTypes.bool
+    fileIsEmpty: PropTypes.bool,
+    downloadable: PropTypes.bool,
+    showContent: PropTypes.bool
+  };
+
+  static defaultProps = {
+    downloadable: true,
+    showContent: true
   };
 
   state = {
@@ -959,14 +966,17 @@ export default class Metadata extends localization.LocalizedReactComponent {
     }
     const renderDownloadLink = (downloadUrl) => {
       return (
-        <a
-          href={downloadUrl}
-          target="_blank"
-          download={this.props.entityId}
-          style={{marginLeft: 5, marginRight: 5}}
-        >
-          Download file
-        </a>
+        <span>
+          <a
+            href={downloadUrl}
+            target="_blank"
+            download={this.props.entityId}
+            style={{marginLeft: 5, marginRight: 5}}
+          >
+            Download file
+          </a>
+          to view full contents
+        </span>
       );
     };
     if (mayBeBinary) {
@@ -974,7 +984,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
       if (downloadUrl) {
         previewRes.push(
           <Row type="flex" key="preview footer" style={{color: '#777', marginTop: 5, marginBottom: 5}}>
-            File preview is not available. {renderDownloadLink(downloadUrl)} to view full contents
+            File preview is not available. {this.props.downloadable && renderDownloadLink(downloadUrl)}
           </Row>
         );
       }
@@ -983,7 +993,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
       if (downloadUrl) {
         previewRes.push(
           <Row type="flex" key="preview footer" style={{color: '#777', marginTop: 5, marginBottom: 5}}>
-            File is too large to be shown. {renderDownloadLink(downloadUrl)} to view full contents
+            File is too large to be shown. {this.props.downloadable && renderDownloadLink(downloadUrl)}
           </Row>
         );
       }
@@ -1110,7 +1120,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
       );
     }
     const result = [header];
-    if (this.props.dataStorageTags) {
+    if (this.props.dataStorageTags && this.props.showContent) {
       result.push(
         <SplitPanel
           key="split"

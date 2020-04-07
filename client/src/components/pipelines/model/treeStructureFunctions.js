@@ -168,6 +168,7 @@ export function generateTreeData ({
         childFoldersSorted[i].objectMetadata.type.value &&
         childFoldersSorted[i].objectMetadata.type.value.toLowerCase() === 'project');
       const folder = {
+        ...childFoldersSorted[i],
         id: childFoldersSorted[i].id,
         key: `${ItemTypes.folder}_${childFoldersSorted[i].id}`,
         name: childFoldersSorted[i].name,
@@ -212,6 +213,7 @@ export function generateTreeData ({
         continue;
       }
       const storage = {
+        ...childStoragesSorted[i],
         id: childStoragesSorted[i].id,
         key: `${ItemTypes.storage}_${childStoragesSorted[i].id}`,
         name: childStoragesSorted[i].name,
@@ -236,6 +238,7 @@ export function generateTreeData ({
         fileShareMountId: childStoragesSorted[i].fileShareMountId,
         mountPoint: childStoragesSorted[i].mountPoint,
         mountOptions: childStoragesSorted[i].mountOptions,
+        sensitive: childStoragesSorted[i].sensitive,
         url () {
           return generateUrl(this);
         },
@@ -259,6 +262,7 @@ export function generateTreeData ({
         continue;
       }
       const pipeline = {
+        ...pipelinesSorted[i],
         id: pipelinesSorted[i].id,
         key: `${ItemTypes.pipeline}_${pipelinesSorted[i].id}`,
         name: pipelinesSorted[i].name,
@@ -296,6 +300,7 @@ export function generateTreeData ({
         continue;
       }
       children.push({
+        ...versions[i],
         id: versions[i].commitId,
         key: `${ItemTypes.version}_${versions[i].commitId}`,
         name: versions[i].name,
@@ -327,6 +332,7 @@ export function generateTreeData ({
         continue;
       }
       const configuration = {
+        ...configurationsSorted[i],
         id: configurationsSorted[i].id,
         key: `${ItemTypes.configuration}_${configurationsSorted[i].id}`,
         name: configurationsSorted[i].name,
