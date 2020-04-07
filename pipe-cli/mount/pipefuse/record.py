@@ -50,7 +50,7 @@ class RecordingFS:
             if callable(attr):
                 def _wrapped_attr(method_name, *args, **kwargs):
                     complete_args_string = _merge_arguments(args, kwargs)
-                    if method_name in ['read', 'write']:
+                    if method_name in ['read', 'write', 'getxattr']:
                         logging.debug('[%s] %s (%s)' % (self._tag, method_name, complete_args_string))
                     else:
                         logging.info('[%s] %s (%s)' % (self._tag, method_name, complete_args_string))
