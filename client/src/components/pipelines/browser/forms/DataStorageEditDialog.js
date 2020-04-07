@@ -67,7 +67,8 @@ export class DataStorageEditDialog extends React.Component {
     deleteDialogVisible: false,
     activeTab: 'info',
     versioningEnabled: false,
-    sharingEnabled: false
+    sharingEnabled: false,
+    sensitive: false
   };
 
   formItemLayout = {
@@ -107,6 +108,9 @@ export class DataStorageEditDialog extends React.Component {
         } else {
           values.backupDuration = undefined;
           values.versioningEnabled = false;
+        }
+        if (!this.isNfsMount) {
+          values.sensitive = this.state.sensitive;
         }
         values.shared = !this.isNfsMount && this.state.sharingEnabled;
         values.regionId = +values.regionId;
@@ -406,6 +410,22 @@ export class DataStorageEditDialog extends React.Component {
                   </Form.Item>
                 }
                 {
+                  !this.isNfsMount &&
+                  <Row>
+                    <Col xs={24} sm={6} />
+                    <Col xs={24} sm={18}>
+                      <Form.Item className={styles.dataStorageFormItem}>
+                        <Checkbox
+                          disabled={this.props.pending || isReadOnly || !!this.props.dataStorage}
+                          onChange={(e) => this.setState({sensitive: e.target.checked})}
+                          checked={this.state.sensitive}>
+                          Sensitive storage
+                        </Checkbox>
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                }
+                {
                   !this.isNfsMount && this.props.policySupported && this.currentRegionSupportsPolicy &&
                   <Row>
                     <Col xs={24} sm={6} />
@@ -512,10 +532,13 @@ export class DataStorageEditDialog extends React.Component {
     if (!prevProps || prevProps.dataStorage !== this.props.dataStorage) {
       const versioningEnabled = this.props.dataStorage && this.props.dataStorage.storagePolicy ?
         this.props.dataStorage.storagePolicy.versioningEnabled: true;
+      const sensitive = this.props.dataStorage
+        ? this.props.dataStorage.sensitive
+        : false;
       const sharingEnabled = !this.isNfsMount && this.props.dataStorage
         ? this.props.dataStorage.shared
         : false;
-      this.setState({versioningEnabled, sharingEnabled});
+      this.setState({versioningEnabled, sharingEnabled, sensitive});
     }
   };
 

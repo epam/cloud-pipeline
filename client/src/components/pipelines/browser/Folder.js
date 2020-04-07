@@ -674,7 +674,8 @@ export default class Folder extends localization.LocalizedReactComponent {
       fileShareMountId: storage.fileShareMountId,
       regionId: storage.serviceType === ServiceTypes.objectStorage && storage.regionId
         ? storage.regionId
-        : undefined
+        : undefined,
+      sensitive: storage.sensitive
     });
     hide();
     if (request.error) {
@@ -704,7 +705,8 @@ export default class Folder extends localization.LocalizedReactComponent {
       parentFolderId: this.state.editableStorage.parentId,
       name: storage.name,
       description: storage.description,
-      path: storage.path
+      path: storage.path,
+      sensitive: storage.sensitive
     };
     if (storage.mountPoint) {
       payload.mountPoint = storage.mountPoint;

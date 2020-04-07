@@ -19,12 +19,17 @@ import {observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {Button, Checkbox, Input, Modal, Row, Table} from 'antd';
-
+import {SensitiveBucketsWarning} from '../../../runs/actions';
 import styles from './Browser.css';
+
+export const LIMIT_MOUNTS_PARAMETER = 'CP_CAP_LIMIT_MOUNTS';
+
+function sensitiveSorter (a, b) {
+  return a.sensitive - b.sensitive;
+}
 
 @observer
 export default class AvailableStoragesBrowser extends Component {
-
   static propTypes = {
     visible: PropTypes.bool,
     availableStorages: PropTypes.array,
@@ -38,11 +43,30 @@ export default class AvailableStoragesBrowser extends Component {
     searchString: null
   };
 
+  get limitMountsParameter () {
+    return {
+      [LIMIT_MOUNTS_PARAMETER]: {
+        value: this.state.selectedStorages.join(',')
+      }
+    };
+  }
+
+  get availableNonSensitiveStorages () {
+    return (this.props.availableStorages || []).filter(s => !s.sensitive);
+  }
+
+  get allAvailableNonSensitiveStoragesAreSelected () {
+    const {selectedStorages} = this.state;
+    const ids = selectedStorages.map(id => +id);
+    return this.availableNonSensitiveStorages
+      .filter(s => ids.indexOf(+s.id) >= 0)
+      .length === this.availableNonSensitiveStorages.length;
+  }
+
   onSave = () => {
     if (this.props.onSave) {
       this.props.onSave(
-        this.state.selectedStorages.length === this.props.availableStorages.length
-          ? null : this.state.selectedStorages
+        this.allAvailableNonSensitiveStoragesAreSelected ? null : this.state.selectedStorages
       );
     }
   };
@@ -69,6 +93,13 @@ export default class AvailableStoragesBrowser extends Component {
       selectedStorages.push(selectedStorageId);
     }
     this.setState({selectedStorages});
+  };
+
+  selectAllNonSensitive = () => {
+    this.setState({
+      selectedStorages: this.availableNonSensitiveStorages.map(s => +(s.id)),
+      searchString: null
+    });
   };
 
   selectAll = () => {
@@ -103,7 +134,7 @@ export default class AvailableStoragesBrowser extends Component {
           storage.description.toLowerCase().includes(this.state.searchString.toLowerCase()));
     };
 
-    return this.props.availableStorages.filter(storageMatches);
+    return this.props.availableStorages.filter(storageMatches).sort(sensitiveSorter);
   }
 
   renderStoragesTable = () => {
@@ -126,8 +157,23 @@ export default class AvailableStoragesBrowser extends Component {
         render: (name, storage) => {
           return (
             <Row>
-              <Row>
+              <Row style={storage.sensitive ? {color: 'red'} : {}}>
                 {name}
+                {
+                  storage.sensitive && (
+                    <span
+                      style={{
+                        fontSize: 'smaller',
+                        marginLeft: 5,
+                        padding: '0 2px',
+                        border: '1px solid #ae1726',
+                        borderRadius: 2
+                      }}
+                    >
+                      SENSITIVE
+                    </span>
+                  )
+                }
               </Row>
               <Row style={{fontSize: 'smaller'}}>
                 {storage.pathMask}<span style={{marginLeft: 5}}>{storage.description}</span>
@@ -189,6 +235,12 @@ export default class AvailableStoragesBrowser extends Component {
           />
           <Button
             style={{marginLeft: 5}}
+            disabled={this.allAvailableNonSensitiveStoragesAreSelected}
+            onClick={this.selectAllNonSensitive}>
+            Select all non-sensitive
+          </Button>
+          <Button
+            style={{marginLeft: 5}}
             disabled={this.state.selectedStorages.length === this.props.availableStorages.length}
             onClick={this.selectAll}>
             Select all
@@ -203,6 +255,18 @@ export default class AvailableStoragesBrowser extends Component {
             </Button>
           }
         </Row>
+        <SensitiveBucketsWarning
+          parameters={this.limitMountsParameter}
+          style={{margin: '5px 0'}}
+          message={(
+            <div>
+              Selection contains <b>sensitive storages</b>.
+              This will apply a number of restrictions for the job: no Internet access,
+              all the storages will be available in a read-only mode,
+              you won't be able to extract the data from the running job and other.
+            </div>
+          )}
+        />
         {this.renderStoragesTable()}
       </Modal>
     );
