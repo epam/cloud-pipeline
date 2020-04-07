@@ -35,6 +35,7 @@ import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -47,14 +48,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * Manager to work with ElasticSearch engine in order to search for system logs.
- * */
 @Slf4j
 @Service
 @Getter
@@ -79,7 +78,7 @@ public class LogManager {
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     private static final String DEFAULT_SEVERITY = "INFO";
-    public static final int ELASTIC_MAX_SCROLL_SIZE = 9999;
+    public static final String ID = "_id";
 
     private final GlobalSearchElasticHelper elasticHelper;
     private final MessageHelper messageHelper;
@@ -89,8 +88,8 @@ public class LogManager {
 
     /**
      * Searches log according to specified log filter.
-     * Max depth of a search is 10000 total. If ElasticSearch result contains totalHits > that max number
-     * flag overflow will be set to {@code true} and totalHits will be set to max value (10000)
+     * This method allows to navigate forward and backward trough search result, see {@link LogPaginationRequest}
+     * for more information about navigation
      * @param logFilter - filter for constructing elasticsearch query
      * @return {@link LogPagination} object with related search result and additional information
      * */
@@ -98,34 +97,40 @@ public class LogManager {
         final LogPaginationRequest pagination = logFilter.getPagination();
 
         Assert.notNull(pagination, messageHelper.getMessage(MessageConstants.ERROR_PAGINATION_IS_NOT_PROVIDED));
-        Assert.isTrue(pagination.getToken() > 0 && pagination.getPageSize() > 0,
+        Assert.isTrue(pagination.getPageSize() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_PAGE_INDEX_OR_SIZE));
 
-        final int offset = (pagination.getToken() - 1) * pagination.getPageSize();
-        final int size = pagination.getPageSize() + offset < ELASTIC_MAX_SCROLL_SIZE
-                ? pagination.getPageSize()
-                : ELASTIC_MAX_SCROLL_SIZE - offset;
+        SortOrder sortOrder = logFilter.getPagination().getForward() ? SortOrder.ASC : SortOrder.DESC;
+        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+                .query(constructQueryFilter(logFilter))
+                .sort(MESSAGE_TIMESTAMP, sortOrder)
+                .sort(ID, sortOrder)
+                .size(pagination.getPageSize());
+        if (logFilter.getPagination().getToken() != null) {
+            searchSourceBuilder.searchAfter(
+                    new Object[]{
+                            logFilter.getPagination().getToken().getMessageTimestamp().toString(),
+                            logFilter.getPagination().getToken().getId()
+                    }
+            );
+        }
+
+
         final SearchHits hits = verifyResponse(
                                     executeRequest(new SearchRequest(indexTemplate)
-                                            .source(new SearchSourceBuilder()
-                                                    .query(constructQueryFilter(logFilter))
-                                                    .from(offset)
-                                                    .size(size))
+                                            .source(searchSourceBuilder)
                                             .indicesOptions(INDICES_OPTIONS))
                                 ).getHits();
 
         return LogPagination.builder().logEntries(
                 Arrays.stream(hits.getHits())
-                    .map(SearchHit::getSourceAsMap)
                     .map(this::mapHitToLogEntry)
+                    .sorted(Comparator.comparing(LogEntry::getMessageTimestamp))
                     .collect(Collectors.toList()))
                 .pageSize(pagination.getPageSize())
                 .token(pagination.getToken())
-                .totalHits(hits.totalHits <= ELASTIC_MAX_SCROLL_SIZE
-                        ? hits.totalHits
-                        : ELASTIC_MAX_SCROLL_SIZE)
-                .overflow(hits.totalHits > ELASTIC_MAX_SCROLL_SIZE)
-                .build();
+                .forward(pagination.getForward())
+                .totalHits(hits.totalHits).build();
     }
 
     private BoolQueryBuilder constructQueryFilter(LogFilter logFilter) {
@@ -141,8 +146,7 @@ public class LogManager {
             boolQuery.filter(QueryBuilders.termsQuery(HOSTNAME, logFilter.getHostnames()));
         }
         if (!CollectionUtils.isEmpty(logFilter.getServiceNames())) {
-            boolQuery.filter(QueryBuilders.termsQuery(SERVICE_NAME, logFilter.getServiceNames()
-                    .stream().map(ServiceName::getService).collect(Collectors.toList())));
+            boolQuery.filter(QueryBuilders.termsQuery(SERVICE_NAME, logFilter.getServiceNames()));
         }
         if (!CollectionUtils.isEmpty(logFilter.getTypes())) {
             boolQuery.filter(QueryBuilders.termsQuery(TYPE, logFilter.getTypes()));
@@ -152,14 +156,15 @@ public class LogManager {
         }
 
         addRageFilter(boolQuery, TIMESTAMP, logFilter.getTimestampFrom(), logFilter.getTimestampTo());
-        addRageFilter(boolQuery, MESSAGE_TIMESTAMP, logFilter.getMessageTimestampFrom(), logFilter.getMessageTimestampTo());
+        addRageFilter(boolQuery, MESSAGE_TIMESTAMP, logFilter.getMessageTimestampFrom(),
+                logFilter.getMessageTimestampTo());
         return boolQuery;
     }
 
-    private void addRageFilter(BoolQueryBuilder boolQuery, String timestamp,
-                               LocalDateTime timestampFrom, LocalDateTime timestampTo) {
+    private BoolQueryBuilder addRageFilter(BoolQueryBuilder boolQuery, String timestamp,
+                                           LocalDateTime timestampFrom, LocalDateTime timestampTo) {
         if (timestampFrom == null && timestampTo == null) {
-            return;
+            return boolQuery;
         }
 
         RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(timestamp);
@@ -171,7 +176,7 @@ public class LogManager {
             rangeQueryBuilder = rangeQueryBuilder.to(timestampTo.toInstant(ZoneOffset.UTC));
         }
 
-        boolQuery.filter(rangeQueryBuilder);
+        return boolQuery.filter(rangeQueryBuilder);
     }
 
     private SearchResponse verifyResponse(SearchResponse logsResponse) {
@@ -191,8 +196,10 @@ public class LogManager {
         return logsResponse;
     }
 
-    private LogEntry mapHitToLogEntry(Map<String, Object> hit) {
+    private LogEntry mapHitToLogEntry(SearchHit searchHit) {
+        Map<String, Object> hit = searchHit.getSourceAsMap();
         return LogEntry.builder()
+                .id(searchHit.getId())
                 .timestamp(LocalDateTime.parse((String) hit.get(TIMESTAMP), DATE_TIME_FORMATTER))
                 .messageTimestamp(LocalDateTime.parse((String) hit.get(MESSAGE_TIMESTAMP), DATE_TIME_FORMATTER))
                 .hostname((String) hit.get(HOSTNAME))

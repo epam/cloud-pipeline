@@ -19,9 +19,21 @@ package com.epam.pipeline.entity.log;
 import lombok.Builder;
 import lombok.Data;
 
+/**
+ * Class that contains information about ElasticSearch result page parameters,
+ * and also about navigation point and direction.
+ * pageSize - number of entries to be sent back as a search response
+ * forward - {@code true} if we should search for the next page of result
+ * token - {@link LogEntry} object that represent edge of last search regarding this request
+ * f.e. 1. We loaded first page and now send a request for the second one:
+ *         forward is true, token - last entry from previous search
+ *      2. We loaded second page and now send a request for the first one:
+ *         forward is false, token - first entry previous search
+ * */
 @Data
 @Builder
 public class LogPaginationRequest {
-    private Integer token;
+    private LogEntry token;
     private Integer pageSize;
+    private Boolean forward;
 }
