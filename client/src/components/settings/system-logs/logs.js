@@ -111,7 +111,7 @@ class Logs extends React.Component {
     const {pageIndex} = this.state;
     this.setState({
       pageIndex: pageIndex + 1
-    });
+    }, this.onFiltersChanged);
   };
 
   get pages () {
