@@ -8,6 +8,9 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
+
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -22,11 +25,17 @@ public class GlobalSearchElasticHelper {
     }
 
     private RestClient buildLowLevelClient() {
-        return RestClient.builder(new HttpHost(
-                preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_HOST),
-                preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_PORT),
-                preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_SCHEME)))
-                .build();
+        final String host = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_HOST);
+        final Integer port = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_PORT);
+        final String schema = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_SCHEME);
+
+        Assert.isTrue(Objects.nonNull(host) && Objects.nonNull(port) && Objects.nonNull(schema),
+                "One or more of the following parameters is not configured: "
+                        + SystemPreferences.SEARCH_ELASTIC_HOST.getKey() + ", "
+                        + SystemPreferences.SEARCH_ELASTIC_PORT.getKey() + ", "
+                        + SystemPreferences.SEARCH_ELASTIC_SCHEME.getKey()
+        );
+        return RestClient.builder(new HttpHost(host, port, schema)).build();
     }
 
 }
