@@ -139,9 +139,9 @@ class Filters extends React.Component {
             format="YYYY-MM-DD HH:mm:ss"
             placeholder="From"
             style={commonStyle}
-            value={momentDateParser(timestampFrom)}
-            onChange={onFieldChanged('timestampFrom', true, momentDateConverter)}
-            disabledDate={getDisabledDate({max: momentDateParser(timestampTo)})}
+            value={momentDateParser(messageTimestampFrom)}
+            onChange={onFieldChanged('messageTimestampFrom', true, momentDateConverter)}
+            disabledDate={getDisabledDate({max: momentDateParser(messageTimestampTo)})}
           />
         </Filter>
         <Filter label="To">
@@ -150,9 +150,9 @@ class Filters extends React.Component {
             format="YYYY-MM-DD HH:mm:ss"
             placeholder="To"
             style={commonStyle}
-            value={momentDateParser(timestampTo)}
-            onChange={onFieldChanged('timestampTo', true, momentDateConverter)}
-            disabledDate={getDisabledDate({min: momentDateParser(timestampFrom)})}
+            value={momentDateParser(messageTimestampTo)}
+            onChange={onFieldChanged('messageTimestampTo', true, momentDateConverter)}
+            disabledDate={getDisabledDate({min: momentDateParser(messageTimestampFrom)})}
           />
         </Filter>
         <Filter label="Service">
@@ -230,26 +230,26 @@ class Filters extends React.Component {
             <Select.Option key="Security" value="Security">Security</Select.Option>
           </Select>
         </Filter>
-        <Filter label="Message From" display={showAdvanced}>
+        <Filter label="Recorded From" display={showAdvanced}>
           <DatePicker
             showTime
             format="YYYY-MM-DD HH:mm:ss"
-            placeholder="Message From"
+            placeholder="Recorded From"
             style={commonStyle}
-            value={momentDateParser(messageTimestampFrom)}
-            onChange={onFieldChanged('messageTimestampFrom', true, momentDateConverter)}
-            disabledDate={getDisabledDate({max: momentDateParser(messageTimestampTo)})}
+            value={momentDateParser(timestampFrom)}
+            onChange={onFieldChanged('timestampFrom', true, momentDateConverter)}
+            disabledDate={getDisabledDate({max: momentDateParser(timestampTo)})}
           />
         </Filter>
-        <Filter label="Message To" display={showAdvanced}>
+        <Filter label="Recorded To" display={showAdvanced}>
           <DatePicker
             showTime
             format="YYYY-MM-DD HH:mm:ss"
-            placeholder="Message To"
+            placeholder="Recorded To"
             style={commonStyle}
-            value={momentDateParser(messageTimestampTo)}
-            onChange={onFieldChanged('messageTimestampTo', true, momentDateConverter)}
-            disabledDate={getDisabledDate({min: momentDateParser(messageTimestampFrom)})}
+            value={momentDateParser(timestampTo)}
+            onChange={onFieldChanged('timestampTo', true, momentDateConverter)}
+            disabledDate={getDisabledDate({min: momentDateParser(timestampFrom)})}
           />
         </Filter>
         <div className={styles.filter} style={{minWidth: 'unset'}}>
