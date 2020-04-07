@@ -36,7 +36,12 @@ export default class DataStorageCodeForm extends React.Component {
   static propTypes = {
     file: PropTypes.object,
     cancel: PropTypes.func,
-    save: PropTypes.func
+    save: PropTypes.func,
+    downloadable: PropTypes.bool
+  };
+
+  static defaultProps = {
+    downloadable: true
   };
 
   editor;
@@ -329,7 +334,19 @@ export default class DataStorageCodeForm extends React.Component {
           {
             this.codeTruncated && this.downloadUrl &&
             <Col>
-              File is too large to be shown. <a href={this.downloadUrl} target="_blank" download={this.props.file.name}>Download file</a> to view full contents
+              File is too large to be shown.
+              {this.props.downloadable && (
+                <span>
+                  <a
+                    href={this.downloadUrl}
+                    target="_blank"
+                    download={this.props.file.name}
+                  >
+                    {' Download file'}
+                  </a>
+                  {' to view full contents'}
+                </span>
+              )}
             </Col>
           }
           <Col>
