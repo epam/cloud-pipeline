@@ -18,11 +18,14 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {observable} from 'mobx';
-import {message, Table} from 'antd';
+import {Button, Icon, message, Table} from 'antd';
 import displayDate from '../../../utils/displayDate';
 import SystemLogsFilter from '../../../models/system-logs/filter';
+import styles from './logs.css';
 
 const PAGE_SIZE = 20;
+const PAGINATION_CONTROL_HEIGHT = 36;
+const TABLE_HEADER_HEIGHT = 40;
 
 const columns = [
   {
@@ -65,8 +68,8 @@ const columns = [
 @observer
 class Logs extends React.Component {
   state = {
-    logs: [],
-    page: 1
+    pageIndex: 0,
+    pages: [undefined]
   };
 
   @observable logs = new SystemLogsFilter();
@@ -77,6 +80,39 @@ class Logs extends React.Component {
     }
     return [];
   }
+
+  get currentPage () {
+    const {pageIndex, pages} = this.state;
+    if (pageIndex >= 0 && pageIndex < pages.length) {
+      return pages[pageIndex];
+    }
+    return undefined;
+  }
+
+  get canNavigateToPreviousPage () {
+    const {pageIndex} = this.state;
+    return pageIndex > 0;
+  }
+
+  get canNavigateToNextPage () {
+    const {pageIndex, pages} = this.state;
+    return pages.length > pageIndex + 1;
+  }
+
+  navigateToPreviousPage = () => {
+    const {pageIndex, pages} = this.state;
+    this.setState({
+      pages: pages.slice(0, pageIndex),
+      pageIndex: pageIndex - 1
+    }, this.onFiltersChanged);
+  };
+
+  navigateToNextPage = () => {
+    const {pageIndex} = this.state;
+    this.setState({
+      pageIndex: pageIndex + 1
+    });
+  };
 
   get pages () {
     if (this.logs.loaded) {
@@ -93,22 +129,22 @@ class Logs extends React.Component {
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.filters !== this.props.filters) {
-      this.setPage(1);
+      this.clearPagination();
     }
   }
 
-  setPage = (page) => {
-    this.setState({page}, this.onFiltersChanged);
+  clearPagination = () => {
+    this.setState({pageIndex: 0, pages: [undefined]}, this.onFiltersChanged);
   };
 
   onFiltersChanged = () => {
-    const {page} = this.state;
+    const {pages} = this.state;
     const {filters} = this.props;
     this.logs.send(
       {
         ...filters,
         pagination: {
-          token: page,
+          token: this.currentPage,
           pageSize: PAGE_SIZE
         }
       }
@@ -116,6 +152,10 @@ class Logs extends React.Component {
       .then(() => {
         if (this.logs.error) {
           message.error(this.logs.error, 5);
+        } else {
+          const {nextMarker} = this.logs.value;
+          pages.push(nextMarker);
+          this.setState({pages});
         }
       })
       .catch(error => {
@@ -128,23 +168,41 @@ class Logs extends React.Component {
     if (!height) {
       return null;
     }
-    const {page} = this.state;
     return (
       <div style={{height, width: '100%'}}>
         <Table
-          style={{height}}
+          style={{height: height - PAGINATION_CONTROL_HEIGHT}}
           columns={columns}
           dataSource={this.logMessages}
           loading={this.logs.pending}
           size="small"
-          scroll={{y: height - 75}}
-          pagination={{
-            total: this.pages,
-            pageSize: PAGE_SIZE,
-            current: page,
-            onChange: this.setPage
-          }}
+          scroll={{y: height - PAGINATION_CONTROL_HEIGHT - TABLE_HEADER_HEIGHT}}
+          pagination={false}
         />
+        <div
+          style={{
+            height: PAGINATION_CONTROL_HEIGHT,
+            lineHeight: `${PAGINATION_CONTROL_HEIGHT}px`
+          }}
+          className={styles.pagination}
+        >
+          <Button
+            className={styles.button}
+            size="small"
+            disabled={!this.canNavigateToPreviousPage}
+            onClick={this.navigateToPreviousPage}
+          >
+            <Icon type="caret-left" />
+          </Button>
+          <Button
+            className={styles.button}
+            size="small"
+            disabled={!this.canNavigateToNextPage}
+            onClick={this.navigateToNextPage}
+          >
+            <Icon type="caret-right" />
+          </Button>
+        </div>
       </div>
     );
   }
