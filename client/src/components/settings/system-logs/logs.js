@@ -153,8 +153,8 @@ class Logs extends React.Component {
         if (this.logs.error) {
           message.error(this.logs.error, 5);
         } else {
-          const {nextMarker} = this.logs.value;
-          pages.push(nextMarker);
+          const {token} = this.logs.value;
+          pages.push(token);
           this.setState({pages});
         }
       })
