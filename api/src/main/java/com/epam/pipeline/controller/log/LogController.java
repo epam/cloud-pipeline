@@ -52,4 +52,17 @@ public class LogController extends AbstractRestController {
         return Result.success(logApiService.filter(logFilter));
     }
 
+    @RequestMapping(value = "/log/filter", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Get possible values for filters.",
+            notes = "Get possible values for filters.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<LogFilter> filter() {
+        return Result.success(logApiService.getFilters());
+    }
+
 }

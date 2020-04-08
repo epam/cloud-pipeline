@@ -35,6 +35,9 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Value;
@@ -157,8 +160,7 @@ public class LogManager {
             boolQuery.filter(QueryBuilders.termsQuery(HOSTNAME, logFilter.getHostnames()));
         }
         if (!CollectionUtils.isEmpty(logFilter.getServiceNames())) {
-            boolQuery.filter(QueryBuilders.termsQuery(SERVICE_NAME, logFilter.getServiceNames()
-                    .stream().map(ServiceName::getService).collect(Collectors.toList())));
+            boolQuery.filter(QueryBuilders.termsQuery(SERVICE_NAME, logFilter.getServiceNames()));
         }
         if (!CollectionUtils.isEmpty(logFilter.getTypes())) {
             boolQuery.filter(QueryBuilders.termsQuery(TYPE, logFilter.getTypes().stream()
@@ -213,7 +215,7 @@ public class LogManager {
                 .id(searchHit.getId())
                 .messageTimestamp(LocalDateTime.parse((String) hit.get(MESSAGE_TIMESTAMP), DATE_TIME_FORMATTER))
                 .hostname((String) hit.get(HOSTNAME))
-                .serviceName(ServiceName.getBY_SERVICE((String) hit.get(SERVICE_NAME)))
+                .serviceName((String) hit.get(SERVICE_NAME))
                 .type((String) hit.get(TYPE))
                 .user((String) hit.get(USER))
                 .message((String) hit.get(MESSAGE))
@@ -227,5 +229,41 @@ public class LogManager {
         } catch (IOException e) {
             throw new PipelineException(e);
         }
+    }
+
+    public LogFilter getFilters() {
+        final LogFilter result = new LogFilter();
+        verifyResponse(
+                executeRequest(new SearchRequest(indexTemplate)
+                        .source(
+                                new SearchSourceBuilder()
+                                        .query(QueryBuilders.boolQuery())
+                                        .size(0)
+                                        .aggregation(AggregationBuilders.terms(TYPE).field(TYPE))
+                                        .aggregation(AggregationBuilders.terms(SERVICE_NAME).field(SERVICE_NAME))
+                                        .aggregation(AggregationBuilders.terms(HOSTNAME).field(HOSTNAME))
+                        ).indicesOptions(INDICES_OPTIONS)
+                )
+        ).getAggregations()
+                .asList()
+                .stream()
+                .map(Terms.class::cast)
+                .forEach(terms -> {
+                    List<String> values = terms.getBuckets().stream()
+                            .map(MultiBucketsAggregation.Bucket::getKey)
+                            .map(Object::toString)
+                            .collect(Collectors.toList());
+
+                    if (HOSTNAME.equals(terms.getName())) {
+                        result.setHostnames(values);
+                    } else if (SERVICE_NAME.equals(terms.getName())) {
+                        result.setServiceNames(values);
+                    } else if (TYPE.equals(terms.getName())) {
+                        result.setTypes(values);
+                    }
+                });
+
+
+        return result;
     }
 }

@@ -33,4 +33,9 @@ public class LogApiService {
         return logManager.filter(logFilter);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    public LogFilter getFilters() {
+        return logManager.getFilters();
+    }
+
 }

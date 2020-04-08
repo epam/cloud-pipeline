@@ -27,7 +27,7 @@ public class LogFilter {
     private String message;
     private LocalDateTime messageTimestampFrom;
     private LocalDateTime messageTimestampTo;
-    private List<ServiceName> serviceNames;
+    private List<String> serviceNames;
     private List<String> types;
     private List<String> users;
     private Boolean includeServiceAccountEvents;
