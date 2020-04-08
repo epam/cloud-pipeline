@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {computed, observable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import styles from './filters.css';
 import {
@@ -27,6 +28,7 @@ import {
 } from 'antd';
 import moment from 'moment-timezone';
 import UserName from '../../special/UserName';
+import SystemLogsFilterDictionaries from '../../../models/system-logs/filter-dictionaries';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
@@ -49,9 +51,36 @@ class Filters extends React.Component {
     showAdvanced: false
   };
 
+  @observable dictionaries = new SystemLogsFilterDictionaries();
+
+  @computed
+  get hostNames () {
+    if (this.dictionaries && this.dictionaries.loaded) {
+      return ((this.dictionaries.value || {}).hostnames || []).map(o => o);
+    }
+    return [];
+  }
+
+  @computed
+  get serviceNames () {
+    if (this.dictionaries && this.dictionaries.loaded) {
+      return ((this.dictionaries.value || {}).serviceNames || []).map(o => o);
+    }
+    return [];
+  }
+
+  @computed
+  get types () {
+    if (this.dictionaries && this.dictionaries.loaded) {
+      return ((this.dictionaries.value || {}).types || []).map(o => o);
+    }
+    return [];
+  }
+
   componentDidMount () {
     const {onInitialized} = this.props;
     onInitialized && onInitialized(this);
+    this.dictionaries.fetchIfNeededOrWait();
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -174,8 +203,16 @@ class Filters extends React.Component {
             value={serviceNames}
             onChange={onFieldChanged('serviceNames', true)}
           >
-            <Select.Option key="EDGE" value="EDGE">EDGE</Select.Option>
-            <Select.Option key="API" value="API">API</Select.Option>
+            {
+              this.serviceNames.map((name) => (
+                <Select.Option
+                  key={name}
+                  value={name}
+                >
+                  {name}
+                </Select.Option>
+              ))
+            }
           </Select>
         </Filter>
         <Filter label="User">
@@ -213,10 +250,28 @@ class Filters extends React.Component {
         <Filter label="Hostname" display={showAdvanced}>
           <Select
             allowClear
+            showSearch
             placeholder="Hostname"
+            mode="multiple"
             style={commonStyle}
+            filterOption={
+              (input, option) =>
+                option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+            }
             value={hostnames}
-          />
+            onChange={onFieldChanged('hostnames', true)}
+          >
+            {
+              this.hostNames.map((name) => (
+                <Select.Option
+                  key={name}
+                  value={name}
+                >
+                  {name}
+                </Select.Option>
+              ))
+            }
+          </Select>
         </Filter>
         <Filter label="Type" display={showAdvanced}>
           <Select
@@ -232,7 +287,16 @@ class Filters extends React.Component {
             value={types}
             onChange={onFieldChanged('types', true)}
           >
-            <Select.Option key="Security" value="Security">Security</Select.Option>
+            {
+              this.types.map((name) => (
+                <Select.Option
+                  key={name}
+                  value={name}
+                >
+                  {name}
+                </Select.Option>
+              ))
+            }
           </Select>
         </Filter>
         <Filter display={showAdvanced}>
