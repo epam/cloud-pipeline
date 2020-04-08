@@ -3,7 +3,7 @@ kind: Service
 metadata:
   labels:
     cloud-pipeline/cp-search-kibana: "true"
-  name: cp-log-store-kibana
+  name: cp-search-kibana
   namespace: default
 spec:
   ports:
