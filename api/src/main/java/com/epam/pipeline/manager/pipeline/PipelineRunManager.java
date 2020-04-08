@@ -316,7 +316,10 @@ public class PipelineRunManager {
             String instanceType, Long parentNodeId, String configurationName, String clusterId,
             Long parentRunId, List<Long> entityIds, Long configurationId, List<RunSid> runSids) {
         Optional<PipelineRun> parentRun = resolveParentRun(parentRunId, configuration);
-        AbstractCloudRegion region = resolveCloudRegion(parentRun.orElse(null), configuration);
+        Tool tool = getToolForRun(configuration);
+        PipelineConfiguration toolConfiguration = configurationManager.getConfigurationForTool(tool, configuration);
+        AbstractCloudRegion region = resolveCloudRegion(parentRun.orElse(null), configuration, toolConfiguration);
+        validateCloudRegion(toolConfiguration, region);
         validateInstanceAndPriceTypes(configuration, pipeline, region, instanceType);
         String instanceDisk = configuration.getInstanceDisk();
         if (StringUtils.hasText(instanceDisk)) {
@@ -324,7 +327,6 @@ public class PipelineRunManager {
                 Integer.parseInt(instanceDisk) > 0,
                     messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, instanceDisk));
         }
-        Tool tool = getToolForRun(configuration);
 
         adjustInstanceDisk(configuration);
 
@@ -347,16 +349,30 @@ public class PipelineRunManager {
     }
 
     private AbstractCloudRegion resolveCloudRegion(final PipelineRun parentRun,
-                                                   final PipelineConfiguration configuration) {
+                                                   final PipelineConfiguration configuration, 
+                                                   final PipelineConfiguration toolConfiguration) {
         final Optional<Long> configurationRegionId = Optional.ofNullable(configuration)
+                .map(PipelineConfiguration::getCloudRegionId);
+        final Optional<Long> toolConfigurationRegionId = Optional.ofNullable(toolConfiguration)
                 .map(PipelineConfiguration::getCloudRegionId);
         final Optional<Long> parentRunRegionId = Optional.ofNullable(parentRun)
                 .map(PipelineRun::getInstance)
                 .map(RunInstance::getCloudRegionId);
         return configurationRegionId.map(Optional::of)
-                .orElse(parentRunRegionId)
+                .orElse(parentRunRegionId).map(Optional::of)
+                .orElse(toolConfigurationRegionId)
                 .map(cloudRegionManager::load)
                 .orElseGet(cloudRegionManager::loadDefaultRegion);
+    }
+
+    private void validateCloudRegion(final PipelineConfiguration toolConfiguration,
+                                     final AbstractCloudRegion region) {
+        if (toolConfiguration.getCloudRegionId() != null) {
+            Assert.isTrue(toolConfiguration.getCloudRegionId().equals(region.getId()),
+                    messageHelper
+                            .getMessage(MessageConstants.ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED,
+                                    toolConfiguration.getCloudRegionId(), region.getId()));
+        }
     }
 
     private void validateInstanceAndPriceTypes(final PipelineConfiguration configuration,
