@@ -98,6 +98,11 @@ const MetadataDisplayOptions = {
   }
 };
 
+const ApplyChanges = {
+  callback: 'callback',
+  inline: 'inline'
+};
+
 @connect({
   dataStorageCache
 })
@@ -115,7 +120,6 @@ const MetadataDisplayOptions = {
 }))
 @observer
 export default class Metadata extends localization.LocalizedReactComponent {
-
   static propTypes = {
     readOnly: PropTypes.bool,
     hideMetadataTags: PropTypes.bool,
@@ -132,7 +136,17 @@ export default class Metadata extends localization.LocalizedReactComponent {
     entityVersion: PropTypes.string,
     canNavigateBack: PropTypes.bool,
     onNavigateBack: PropTypes.func,
-    fileIsEmpty: PropTypes.bool
+    fileIsEmpty: PropTypes.bool,
+    applyChanges: PropTypes.oneOf([
+      ApplyChanges.callback,
+      ApplyChanges.inline
+    ]),
+    value: PropTypes.object,
+    onChange: PropTypes.func
+  };
+
+  static defaultProps = {
+    applyChanges: ApplyChanges.inline
   };
 
   state = {
@@ -149,20 +163,11 @@ export default class Metadata extends localization.LocalizedReactComponent {
       okText: 'OK',
       cancelText: 'Cancel',
       onOk: async () => {
-        let request;
-        if (this.props.dataStorageTags) {
-          request = new DataStorageTagsDelete(this.props.entityParentId, this.props.entityId, this.props.entityVersion);
-          await request.send(this.metadata.map(m => m.key));
-        } else {
-          request = new MetadataDelete();
-          await request.send({
-            entityId: this.props.entityId,
-            entityClass: this.props.entityClass
-          });
+        const {error, refresh} = await this.applyRemoveChanges({all: true});
+        if (error) {
+          message.error(error, 5);
         }
-        if (request.error) {
-          message.error(request.error, 5);
-        } else {
+        if (refresh) {
           this.props.metadata.fetch();
         }
       }
@@ -179,20 +184,11 @@ export default class Metadata extends localization.LocalizedReactComponent {
       okText: 'OK',
       cancelText: 'Cancel',
       onOk: async () => {
-        let request;
-        if (this.props.dataStorageTags) {
-          request = new DataStorageTagsDelete(this.props.entityParentId, this.props.entityId, this.props.entityVersion);
-          await request.send([item.key]);
-        } else {
-          request = new MetadataDeleteKey(item.key);
-          await request.send({
-            entityId: this.props.entityId,
-            entityClass: this.props.entityClass
-          });
+        const {error, refresh} = await this.applyRemoveChanges({item});
+        if (error) {
+          message.error(error, 5);
         }
-        if (request.error) {
-          message.error(request.error, 5);
-        } else {
+        if (refresh) {
           this.props.metadata.fetch();
         }
       }
@@ -205,10 +201,159 @@ export default class Metadata extends localization.LocalizedReactComponent {
     }
   };
 
+  applyChanges = async (metadata, modified, ignoreKeys = []) => {
+    const {
+      applyChanges,
+      dataStorageTags,
+      onChange,
+      entityId,
+      entityParentId,
+      entityVersion,
+      entityClass
+    } = this.props;
+    const previousMetadata = {};
+    if (dataStorageTags) {
+      for (let i = 0; i < metadata.length; i++) {
+        if (ignoreKeys.indexOf(metadata[i].key) === -1) {
+          previousMetadata[metadata[i].key] = metadata[i].value;
+        }
+      }
+    } else {
+      for (let i = 0; i < metadata.length; i++) {
+        if (ignoreKeys.indexOf(metadata[i].key) === -1) {
+          previousMetadata[metadata[i].key] = {
+            value: metadata[i].value,
+            type: metadata[i].type
+          };
+        }
+      }
+    }
+    const payload = Object.assign(previousMetadata, modified || {});
+    if (applyChanges === ApplyChanges.callback && onChange) {
+      await onChange(payload);
+      return {refresh: false};
+    } else if (dataStorageTags) {
+      const request = new DataStorageTagsUpdate(
+        entityParentId,
+        entityId,
+        entityVersion
+      );
+      await request.send(payload);
+      return {error: request.error, refresh: !request.error};
+    } else {
+      const request = new MetadataUpdate();
+      await request.send({
+        entity: {
+          entityId,
+          entityClass
+        },
+        data: payload
+      });
+      return {error: request.error, refresh: !request.error};
+    }
+  };
+
+  applyRemoveChanges = async ({item, all = false}) => {
+    const {
+      applyChanges,
+      dataStorageTags,
+      onChange,
+      entityParentId,
+      entityId,
+      entityVersion,
+      entityClass
+    } = this.props;
+    if (applyChanges === ApplyChanges.callback && onChange) {
+      if (all) {
+        await onChange({});
+        return {refresh: false};
+      } else {
+        return this.applyChanges(this.metadata, {}, item ? [item.key] : []);
+      }
+    } else if (dataStorageTags) {
+      const request = new DataStorageTagsDelete(
+        entityParentId,
+        entityId,
+        entityVersion
+      );
+      await request.send(all ? this.metadata.map(m => m.key) : (item ? [item.key] : []));
+      return {error: request.error, refresh: !request.error};
+    } else {
+      if (all) {
+        const request = new MetadataDelete();
+        await request.send({
+          entityId,
+          entityClass
+        });
+        return {error: request.error, refresh: !request.error};
+      } else if (item) {
+        const request = new MetadataDeleteKey(item.key);
+        await request.send({
+          entityId,
+          entityClass
+        });
+        return {error: request.error, refresh: !request.error};
+      } else {
+        return {refresh: false};
+      }
+    }
+    const payload = Object.assign(previousMetadata, modified || {});
+    if (applyChanges === ApplyChanges.callback && onChange) {
+      await onChange(payload);
+      return {refresh: false};
+    } else if (this.props.dataStorageTags) {
+      const request = new DataStorageTagsUpdate(
+        this.props.entityParentId,
+        this.props.entityId,
+        this.props.entityVersion
+      );
+      await request.send(payload);
+      return {error: request.error, refresh: !request.error};
+    } else {
+      const request = new MetadataUpdate();
+      await request.send({
+        entity: {
+          entityId: this.props.entityId,
+          entityClass: this.props.entityClass,
+        },
+        data: payload
+      });
+      return {error: request.error, refresh: !request.error};
+    }
+  };
+
   saveMetadata = (opts) => async () => {
     const {index, field} = opts;
     const metadata = this.metadata;
     const [currentMetadataItem] = metadata.filter(m => m.index === index);
+    const modified = {};
+    if (this.state.addKey) {
+      if (
+        !this.state.addKey.key ||
+        !this.state.addKey.key.length ||
+        !this.state.addKey.key.trim().length
+      ) {
+        message.error('Enter key', 5);
+        return;
+      }
+      const [existedMetadataItem] = metadata.filter(m => m.key === this.state.addKey.key);
+      if (existedMetadataItem) {
+        message.error(`Key '${this.state.addKey.key}' already exists.`, 5);
+        return;
+      }
+      if (!this.state.addKey.value || !this.state.addKey.value.length) {
+        message.error('Enter value', 5);
+        return;
+      }
+      if (this.props.dataStorageTags) {
+        modified[this.state.addKey.key.trim()] = this.state.addKey.value;
+      } else {
+        modified[this.state.addKey.key] = {
+          value: this.state.addKey.value,
+          type: 'string'
+        };
+      }
+    }
     if (currentMetadataItem) {
       const value = this.state.editableText;
       if ((field === 'key' && currentMetadataItem.key === value) ||
@@ -230,87 +375,14 @@ export default class Metadata extends localization.LocalizedReactComponent {
       } else if (field === 'value') {
         currentMetadataItem.value = value;
       }
-      let request;
-      if (this.props.dataStorageTags) {
-        const payload = {};
-        for (let i = 0; i < metadata.length; i++) {
-          payload[metadata[i].key] = metadata[i].value;
-        }
-        request = new DataStorageTagsUpdate(this.props.entityParentId, this.props.entityId, this.props.entityVersion);
-        await request.send(payload);
-      } else {
-        const payload = {};
-        for (let i = 0; i < metadata.length; i++) {
-          payload[metadata[i].key] = {
-            value: metadata[i].value,
-            type: metadata[i].type
-          };
-        }
-        request = new MetadataUpdate();
-        await request.send({
-          entity: {
-            entityId: this.props.entityId,
-            entityClass: this.props.entityClass,
-          },
-          data: payload
-        });
-      }
-      if (request.error) {
-        message.error(request.error, 5);
-      } else {
-        this.props.metadata.fetch();
-      }
-    } else if (this.state.addKey) {
-      if (!this.state.addKey.key || !this.state.addKey.key.length || !this.state.addKey.key.trim().length) {
-        message.error('Enter key', 5);
-        return;
-      }
-      const [existedMetadataItem] = metadata.filter(m => m.key === this.state.addKey.key);
-      if (existedMetadataItem) {
-        message.error(`Key '${this.state.addKey.key}' already exists.`, 5);
-        return;
-      }
-      if (!this.state.addKey.value || !this.state.addKey.value.length) {
-        message.error('Enter value', 5);
-        return;
-      }
-      let request;
-      if (this.props.dataStorageTags) {
-        const payload = {
-          [this.state.addKey.key.trim()]: this.state.addKey.value
-        };
-        for (let i = 0; i < metadata.length; i++) {
-          payload[metadata[i].key] = metadata[i].value;
-        }
-        request = new DataStorageTagsUpdate(this.props.entityParentId, this.props.entityId, this.props.entityVersion);
-        await request.send(payload);
-      } else {
-        const payload = {
-          [this.state.addKey.key]: {
-            value: this.state.addKey.value,
-            type: 'string'
-          }
-        };
-        for (let i = 0; i < metadata.length; i++) {
-          payload[metadata[i].key] = {
-            value: metadata[i].value,
-            type: metadata[i].type
-          };
-        }
-        request = new MetadataUpdate();
-        await request.send({
-          entity: {
-            entityId: this.props.entityId,
-            entityClass: this.props.entityClass,
-          },
-          data: payload
-        });
-      }
-      if (request.error) {
-        message.error(request.error, 5);
-      } else {
-        this.props.metadata.fetch();
-      }
+    }
+    const {error, refresh} = await this.applyChanges(metadata, modified);
+    if (error) {
+      message.error(error, 5);
+      return;
+    }
+    if (refresh) {
+      this.props.metadata.fetch();
     }
     this.setState({
       addKey: null,
@@ -328,35 +400,12 @@ export default class Metadata extends localization.LocalizedReactComponent {
         return;
       }
       currentMetadataItem.value = value;
-      let request;
-      if (this.props.dataStorageTags) {
-        const payload = {};
-        for (let i = 0; i < metadata.length; i++) {
-          payload[metadata[i].key] = metadata[i].value;
-        }
-        request = new DataStorageTagsUpdate(this.props.entityParentId, this.props.entityId, this.props.entityVersion);
-        await request.send(payload);
-      } else {
-        const payload = {};
-        for (let i = 0; i < metadata.length; i++) {
-          payload[metadata[i].key] = {
-            value: metadata[i].value,
-            type: metadata[i].type
-          };
-        }
-        request = new MetadataUpdate();
-        await request.send({
-          entity: {
-            entityId: this.props.entityId,
-            entityClass: this.props.entityClass,
-          },
-          data: payload
-        });
-      }
-      if (request.error) {
-        message.error(request.error, 5);
+      const {error, refresh} = await this.applyChanges(metadata);
+      if (error) {
+        message.error(error, 5);
         return false;
-      } else {
+      }
+      if (refresh) {
         this.props.metadata.fetch();
       }
       return true;
@@ -699,11 +748,22 @@ export default class Metadata extends localization.LocalizedReactComponent {
 
   @computed
   get metadata () {
-    if (!this.props.metadata.loaded) {
+    if (!this.props.value && !this.props.metadata.loaded) {
       return [];
     }
     const value = [];
-    if (this.props.dataStorageTags) {
+    if (this.props.value) {
+      const data = this.props.value;
+      for (let property in data) {
+        if (data.hasOwnProperty(property)) {
+          value.push({
+            key: property,
+            value: data[property].value,
+            type: data[property].type
+          });
+        }
+      }
+    } else if (this.props.dataStorageTags) {
       const data = this.props.metadata.value;
       for (let property in data) {
         if (data.hasOwnProperty(property)) {
@@ -714,7 +774,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
         }
       }
     } else {
-      const [data] = (this.props.metadata.value || []).filter(key => key && key.data).map(key => key.data);
+      const [data] = (this.props.metadata.value || [])
+        .filter(key => key && key.data).map(key => key.data);
       if (data) {
         for (let property in data) {
           if (data.hasOwnProperty(property)) {
@@ -1182,3 +1243,5 @@ export default class Metadata extends localization.LocalizedReactComponent {
     }
   }
 }
+
+export {ApplyChanges};
