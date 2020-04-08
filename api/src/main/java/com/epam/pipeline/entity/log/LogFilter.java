@@ -23,8 +23,6 @@ import java.util.List;
 
 @Data
 public class LogFilter {
-    private LocalDateTime timestampFrom;
-    private LocalDateTime timestampTo;
     private List<String> hostnames;
     private String message;
     private LocalDateTime messageTimestampFrom;
@@ -32,5 +30,6 @@ public class LogFilter {
     private List<ServiceName> serviceNames;
     private List<String> types;
     private List<String> users;
+    private Boolean includeServiceAccountEvents;
     private LogPaginationRequest pagination;
 }

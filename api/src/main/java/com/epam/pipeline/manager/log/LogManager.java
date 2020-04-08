@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.BooleanUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.ShardSearchFailure;
@@ -48,7 +49,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -79,6 +79,7 @@ public class LogManager {
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     private static final String DEFAULT_SEVERITY = "INFO";
     public static final String ID = "_id";
+    public static final String SERVICE_ACCOUNT = "service_account";
 
     private final GlobalSearchElasticHelper elasticHelper;
     private final MessageHelper messageHelper;
@@ -142,6 +143,10 @@ public class LogManager {
     private BoolQueryBuilder constructQueryFilter(LogFilter logFilter) {
         final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
 
+        if (BooleanUtils.isNotTrue(logFilter.getIncludeServiceAccountEvents())) {
+            boolQuery.filter(QueryBuilders.termQuery(SERVICE_ACCOUNT, false));
+        }
+
         if (!CollectionUtils.isEmpty(logFilter.getUsers())) {
             List<String> formattedUsers = logFilter.getUsers().stream()
                     .flatMap(user -> Stream.of(user.toLowerCase(), user.toUpperCase()))
@@ -156,25 +161,24 @@ public class LogManager {
                     .stream().map(ServiceName::getService).collect(Collectors.toList())));
         }
         if (!CollectionUtils.isEmpty(logFilter.getTypes())) {
-            boolQuery.filter(QueryBuilders.termsQuery(TYPE, logFilter.getTypes()));
+            boolQuery.filter(QueryBuilders.termsQuery(TYPE, logFilter.getTypes().stream()
+                    .map(String::toLowerCase).collect(Collectors.toList())));
         }
         if (!StringUtils.isEmpty(logFilter.getMessage())) {
             boolQuery.filter(QueryBuilders.matchQuery(MESSAGE, logFilter.getMessage()));
         }
 
-        addRageFilter(boolQuery, TIMESTAMP, logFilter.getTimestampFrom(), logFilter.getTimestampTo());
-        addRageFilter(boolQuery, MESSAGE_TIMESTAMP, logFilter.getMessageTimestampFrom(),
+        addRageFilter(boolQuery, logFilter.getMessageTimestampFrom(),
                 logFilter.getMessageTimestampTo());
         return boolQuery;
     }
 
-    private BoolQueryBuilder addRageFilter(BoolQueryBuilder boolQuery, String timestamp,
-                                           LocalDateTime timestampFrom, LocalDateTime timestampTo) {
+    private void addRageFilter(BoolQueryBuilder boolQuery, LocalDateTime timestampFrom, LocalDateTime timestampTo) {
         if (timestampFrom == null && timestampTo == null) {
-            return boolQuery;
+            return;
         }
 
-        RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(timestamp);
+        RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(MESSAGE_TIMESTAMP);
 
         if (timestampFrom != null) {
             rangeQueryBuilder = rangeQueryBuilder.from(timestampFrom.toInstant(ZoneOffset.UTC));
@@ -183,7 +187,7 @@ public class LogManager {
             rangeQueryBuilder = rangeQueryBuilder.to(timestampTo.toInstant(ZoneOffset.UTC));
         }
 
-        return boolQuery.filter(rangeQueryBuilder);
+        boolQuery.filter(rangeQueryBuilder);
     }
 
     private SearchResponse verifyResponse(SearchResponse logsResponse) {
@@ -207,10 +211,9 @@ public class LogManager {
         Map<String, Object> hit = searchHit.getSourceAsMap();
         return LogEntry.builder()
                 .id(searchHit.getId())
-                .timestamp(LocalDateTime.parse((String) hit.get(TIMESTAMP), DATE_TIME_FORMATTER))
                 .messageTimestamp(LocalDateTime.parse((String) hit.get(MESSAGE_TIMESTAMP), DATE_TIME_FORMATTER))
                 .hostname((String) hit.get(HOSTNAME))
-                .serviceName(ServiceName.getByService((String) hit.get(SERVICE_NAME)))
+                .serviceName(ServiceName.getBY_SERVICE((String) hit.get(SERVICE_NAME)))
                 .type((String) hit.get(TYPE))
                 .user((String) hit.get(USER))
                 .message((String) hit.get(MESSAGE))

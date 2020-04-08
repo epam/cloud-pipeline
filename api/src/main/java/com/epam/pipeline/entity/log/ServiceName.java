@@ -10,15 +10,15 @@ public enum ServiceName {
     API("api-srv"), EDGE("edge");
 
     private final String service;
-    private static Map<String, ServiceName>  byService = new HashMap<>();
+    private static final Map<String, ServiceName> BY_SERVICE = new HashMap<>();
 
     static {
-        byService.put(API.service, API);
-        byService.put(EDGE.service, EDGE);
+        BY_SERVICE.put(API.service, API);
+        BY_SERVICE.put(EDGE.service, EDGE);
     }
 
-    public static ServiceName getByService(String service) {
-        ServiceName result = byService.get(service);
+    public static ServiceName getBY_SERVICE(String service) {
+        ServiceName result = BY_SERVICE.get(service);
         if (result == null) {
             throw new IllegalArgumentException("Wrong service name: " + service);
         }
