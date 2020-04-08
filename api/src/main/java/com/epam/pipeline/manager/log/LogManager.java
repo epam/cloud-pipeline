@@ -18,7 +18,11 @@ package com.epam.pipeline.manager.log;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.entity.log.*;
+import com.epam.pipeline.entity.log.LogEntry;
+import com.epam.pipeline.entity.log.LogFilter;
+import com.epam.pipeline.entity.log.LogPagination;
+import com.epam.pipeline.entity.log.LogPaginationRequest;
+import com.epam.pipeline.entity.log.PageMarker;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.Getter;
@@ -83,6 +87,7 @@ public class LogManager {
     private static final String DEFAULT_SEVERITY = "INFO";
     public static final String ID = "_id";
     public static final String SERVICE_ACCOUNT = "service_account";
+    public static final String KEYWORD = ".keyword";
 
     private final GlobalSearchElasticHelper elasticHelper;
     private final MessageHelper messageHelper;
@@ -240,9 +245,10 @@ public class LogManager {
                                 new SearchSourceBuilder()
                                         .query(QueryBuilders.boolQuery())
                                         .size(0)
-                                        .aggregation(AggregationBuilders.terms(TYPE).field(TYPE))
-                                        .aggregation(AggregationBuilders.terms(SERVICE_NAME).field(SERVICE_NAME))
-                                        .aggregation(AggregationBuilders.terms(HOSTNAME).field(HOSTNAME))
+                                        .aggregation(AggregationBuilders.terms(TYPE).field(TYPE + KEYWORD))
+                                        .aggregation(AggregationBuilders.terms(SERVICE_NAME)
+                                                .field(SERVICE_NAME + KEYWORD))
+                                        .aggregation(AggregationBuilders.terms(HOSTNAME).field(HOSTNAME + KEYWORD))
                         ).indicesOptions(INDICES_OPTIONS)
                 )
         ).getAggregations()
