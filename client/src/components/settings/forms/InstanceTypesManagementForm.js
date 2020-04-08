@@ -62,12 +62,24 @@ export default class InstanceTypesManagementForm extends React.Component {
   static propTypes = {
     disabled: PropTypes.bool,
     level: PropTypes.oneOf(['USER', 'TOOL', 'ROLE']),
-    resourceId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+    resourceId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    onModified: PropTypes.func,
+    showApplyButton: PropTypes.bool,
+    onInitialized: PropTypes.func
+  };
+
+  static defaultProps = {
+    showApplyButton: true
   };
 
   state = {
     operationInProgress: false
   };
+
+  componentDidMount () {
+    const {onInitialized} = this.props;
+    onInitialized && onInitialized(this);
+  }
 
   @computed
   get pending () {
@@ -90,7 +102,12 @@ export default class InstanceTypesManagementForm extends React.Component {
   onValueChanged = (field) => (e) => {
     const state = this.state;
     state[field] = e.target.value;
-    this.setState(state);
+    this.setState(state, this.reportModified);
+  };
+
+  reportModified = () => {
+    const {onModified} = this.props;
+    onModified && onModified(this.getModified());
   };
 
   getModified () {
@@ -144,7 +161,7 @@ export default class InstanceTypesManagementForm extends React.Component {
     if (value !== this.state[valueNames.allowedPriceTypes]) {
       this.setState({
         [valueNames.allowedPriceTypes]: value
-      });
+      }, this.reportModified);
     }
   };
 
@@ -152,7 +169,7 @@ export default class InstanceTypesManagementForm extends React.Component {
     if (jobsVisibility !== this.state[valueNames.jobsVisibility]) {
       this.setState({
         [valueNames.jobsVisibility]: jobsVisibility
-      });
+      }, this.reportModified);
     }
   };
 
@@ -202,6 +219,17 @@ export default class InstanceTypesManagementForm extends React.Component {
       await this.props[field].fetch();
     }
   };
+
+  reset = async () => {
+    this.setState({
+      [valueNames.allowedInstanceTypes]: undefined,
+      [valueNames.allowedToolInstanceTypes]: undefined,
+      [valueNames.allowedPriceTypes]: undefined,
+      [valueNames.jobsVisibility]: undefined
+    }, this.reportModified);
+  };
+
+  apply = () => this.onApplyClicked();
 
   onApplyClicked = async () => {
     const hide = message.loading('Updating launch options...', 0);
@@ -298,14 +326,18 @@ export default class InstanceTypesManagementForm extends React.Component {
               </Select.Option>
             </Select>
           </Row>
-          <Row type="flex" justify="end" style={{marginTop: 10}}>
-            <Button
-              type="primary"
-              onClick={this.operationWrapper(this.onApplyClicked)}
-              disabled={!this.getModified() || this.state.operationInProgress || disabled}>
-              APPLY
-            </Button>
-          </Row>
+          {
+            this.props.showApplyButton && (
+              <Row type="flex" justify="end" style={{marginTop: 10}}>
+                <Button
+                  type="primary"
+                  onClick={this.operationWrapper(this.onApplyClicked)}
+                  disabled={!this.getModified() || this.state.operationInProgress || disabled}>
+                  APPLY
+                </Button>
+              </Row>
+            )
+          }
         </div>
       </Row>
     );

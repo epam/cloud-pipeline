@@ -21,6 +21,7 @@ import PropTypes from 'prop-types';
 import {Modal, Row, Button, message, Icon, Table, Select} from 'antd';
 import User from '../../../models/user/User';
 import Roles from '../../../models/user/Roles';
+import MetadataUpdate from '../../../models/metadata/MetadataUpdate';
 import RoleAssign from '../../../models/user/RoleAssign';
 import RoleRemove from '../../../models/user/RoleRemoveFromUser';
 import UserUpdate from '../../../models/user/UserUpdate';
@@ -32,11 +33,11 @@ import {
   METADATA_PANEL_KEY,
   SplitPanel
 } from '../../special/splitPanel';
-import Metadata from '../../special/metadata/Metadata';
+import Metadata, {ApplyChanges} from '../../special/metadata/Metadata';
 import InstanceTypesManagementForm from './InstanceTypesManagementForm';
 
 @roleModel.authenticationInfo
-@inject('dataStorages')
+@inject('dataStorages', 'metadataCache')
 @inject((common, params) => ({
   userInfo: params.user ? new User(params.user.id) : null,
   userId: params.user ? params.user.id : null,
@@ -59,7 +60,47 @@ export default class EditUserRolesDialog extends React.Component {
 
   state = {
     selectedRole: null,
+    defaultStorageId: undefined,
+    defaultStorageIdInitial: undefined,
+    defaultStorageInitialized: false,
+    metadata: undefined,
+    roles: [],
+    rolesInitial: [],
+    rolesInitialized: false,
+    instanceTypesChanged: false,
     operationInProgress: false
+  };
+
+  instanceTypesForm;
+
+  componentDidMount () {
+    this.updateValues();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    this.updateValues();
+  }
+
+  onInstanceTypesFormInitialized = (form) => {
+    this.instanceTypesForm = form;
+  };
+
+  updateValues = () => {
+    const {defaultStorageInitialized, rolesInitialized} = this.state;
+    const state = {};
+    if (!defaultStorageInitialized && this.props.userInfo && this.props.userInfo.loaded) {
+      state.defaultStorageId = this.props.userInfo.value.defaultStorageId;
+      state.defaultStorageIdInitial = this.props.userInfo.value.defaultStorageId;
+      state.defaultStorageInitialized = true;
+    }
+    if (!rolesInitialized && this.props.userInfo && this.props.userInfo.loaded) {
+      state.roles = (this.props.userInfo.value.roles || []).map(r => r);
+      state.rolesInitial = (this.props.userInfo.value.roles || []).map(r => r);
+      state.rolesInitialized = true;
+    }
+    if (Object.keys(state).length > 0) {
+      this.setState(state);
+    }
   };
 
   splitRoleName = (name) => {
@@ -106,41 +147,37 @@ export default class EditUserRolesDialog extends React.Component {
     );
   };
 
-  assignRole = async () => {
-    const hide = message.loading('Assigning role...', 0);
-    const request = new RoleAssign(this.state.selectedRole, this.props.userInfo.value.id);
-    await request.send({});
-    hide();
-    if (request.error) {
-      message.error(request.error, 5);
-    } else {
-      this.setState({
-        selectedRole: null
-      }, async () => {
-        this.props.userInfo.fetch();
-        await roleModel.refreshAuthenticationInfo(this);
-      });
+  assignRole = () => {
+    if (!this.props.roles.loaded) {
+      return;
+    }
+    const {roles} = this.state;
+    const [role] = (this.props.roles.value || [])
+      .filter((r) => `${r.id}` === `${this.state.selectedRole}`);
+    if (role) {
+      roles.push(role);
+      this.setState({roles, selectedRole: null});
     }
   };
 
-  removeRole = async (roleId) => {
-    const hide = message.loading('Removing role...', 0);
-    const request = new RoleRemove(roleId, this.props.userInfo.value.id);
-    await request.fetch();
-    hide();
-    if (request.error) {
-      message.error(request.error, 5);
-    } else {
-      this.props.userInfo.fetch();
-      await roleModel.refreshAuthenticationInfo(this);
+  removeRole = (roleId) => {
+    const {roles} = this.state;
+    const [role] = roles
+      .filter((r) => `${r.id}` === `${roleId}`);
+    if (role) {
+      const index = roles.indexOf(role);
+      if (index >= 0) {
+        roles.splice(index, 1);
+        this.setState({roles});
+      }
     }
   };
 
   renderUserRolesList = () => {
-    if (!this.props.userInfo || !this.props.userInfo.loaded) {
+    const {roles, rolesInitialized} = this.state;
+    if (!rolesInitialized) {
       return null;
     }
-    const roles = (this.props.userInfo.value.roles || []).map(r => r);
     return this.renderRolesList(
       roles,
       (role) => {
@@ -163,26 +200,64 @@ export default class EditUserRolesDialog extends React.Component {
 
   onClose = () => {
     this.setState({
-      search: null
+      search: null,
+      defaultStorageId: undefined,
+      defaultStorageIdInitial: undefined,
+      defaultStorageInitialized: false,
+      metadata: undefined,
+      roles: [],
+      rolesInitial: [],
+      rolesInitialized: false,
+      instanceTypesChanged: false
     }, this.props.onClose);
   };
 
-  @computed
   get availableRoles () {
-    if (!this.props.userInfo || !this.props.userInfo.loaded || !this.props.roles.loaded) {
+    const {roles, rolesInitialized} = this.state;
+    if (!rolesInitialized || !this.props.roles.loaded) {
       return [];
     }
     return (this.props.roles.value || [])
       .map(r => r)
-      .filter(r => (this.props.userInfo.value.roles || []).filter(uR => uR.id === r.id).length === 0);
+      .filter(r => roles.filter(uR => uR.id === r.id).length === 0);
+  }
+
+  get addedRoles () {
+    const {roles, rolesInitial} = this.state;
+    return roles
+      .filter(r => rolesInitial.filter(rI => rI.id === r.id).length === 0);
+  }
+
+  get removedRoles () {
+    const {roles, rolesInitial} = this.state;
+    return rolesInitial
+      .filter(rI => roles.filter(r => r.id === rI.id).length === 0);
   }
 
   @computed
   get dataStorages () {
     if (this.props.dataStorages.loaded) {
-      return (this.props.dataStorages.value || []).filter(d => roleModel.writeAllowed(d)).map(d => d);
+      return (this.props.dataStorages.value || [])
+        .filter(d => roleModel.writeAllowed(d)).map(d => d);
     }
     return [];
+  }
+
+  get defaultStorageId () {
+    const {defaultStorageId} = this.state;
+    if (defaultStorageId) {
+      return `${defaultStorageId}`;
+    }
+    return undefined;
+  }
+
+  get modified () {
+    const {metadata, defaultStorageId, defaultStorageIdInitial, instanceTypesChanged} = this.state;
+    return !!metadata ||
+      defaultStorageId !== defaultStorageIdInitial ||
+      this.addedRoles.length > 0 ||
+      this.removedRoles.length > 0 ||
+      instanceTypesChanged;
   }
 
   addRoleInputChanged = (id) => {
@@ -246,19 +321,118 @@ export default class EditUserRolesDialog extends React.Component {
     };
   };
 
-  changeDefaultDataStorage = async (id) => {
-    const hide = message.loading('Updating default data storage...', -1);
-    const request = new UserUpdate(this.props.userId);
-    await request.send({
-      defaultStorageId: id
-    });
-    if (request.error) {
-      hide();
-      message.error(request.error, 5);
-    } else {
-      this.props.userInfo && await this.props.userInfo.fetch();
-      hide();
+  saveChanges = async () => {
+    if (this.modified) {
+      const mainHide = message.loading('Updating user info...', 0);
+      const {
+        defaultStorageId,
+        defaultStorageIdInitial,
+        metadata,
+        instanceTypesChanged
+      } = this.state;
+      if (defaultStorageId !== defaultStorageIdInitial) {
+        const hide = message.loading('Updating default data storage...', -1);
+        const request = new UserUpdate(this.props.userId);
+        await request.send({defaultStorageId});
+        if (request.error) {
+          hide();
+          message.error(request.error, 5);
+          mainHide();
+          return;
+        } else {
+          this.props.userInfo && await this.props.userInfo.fetch();
+          hide();
+        }
+      }
+      if (this.addedRoles.length > 0) {
+        const hide = message.loading('Assigning roles...', 0);
+        const requests = this.addedRoles.map(role => new RoleAssign(
+          role.id,
+          this.props.userInfo.value.id
+        ));
+        await Promise.all(requests.map(request => request.send({})));
+        const [error] = requests
+          .map(request => request.error)
+          .filter(Boolean);
+        hide();
+        if (error) {
+          message.error(error, 5);
+          mainHide();
+          return;
+        }
+      }
+      if (this.removedRoles.length > 0) {
+        const hide = message.loading('Removing roles...', 0);
+        const requests = this.removedRoles.map(role => new RoleRemove(
+          role.id,
+          this.props.userInfo.value.id
+        ));
+        await Promise.all(requests.map(request => request.send({})));
+        const [error] = requests
+          .map(request => request.error)
+          .filter(Boolean);
+        hide();
+        if (error) {
+          mainHide();
+          message.error(error, 5);
+          return;
+        }
+      }
+      if (this.addedRoles.length > 0 || this.removedRoles.length > 0) {
+        await this.props.userInfo.fetch();
+        await roleModel.refreshAuthenticationInfo(this);
+      }
+      if (metadata) {
+        const hide = message.loading('Updating attributes...', 0);
+        const request = new MetadataUpdate();
+        await request.send({
+          entity: {
+            entityId: this.props.userId,
+            entityClass: 'PIPELINE_USER'
+          },
+          data: metadata
+        });
+        hide();
+        if (request.error) {
+          mainHide();
+          message.error(request.error, 5);
+          return;
+        }
+        await this.props.metadataCache.getMetadata(this.props.userId, 'PIPELINE_USER').fetch();
+      }
+      if (this.instanceTypesForm && instanceTypesChanged) {
+        await this.instanceTypesForm.apply();
+      }
+      mainHide();
     }
+    this.onClose();
+  };
+
+  onChangeMetadata = (metadata) => {
+    this.setState({metadata});
+  };
+
+  onChangeDefaultStorageId = (id) => {
+    this.setState({defaultStorageId: id ? +id : undefined});
+  };
+
+  onInstanceTypesModified = (modified) => {
+    this.setState({instanceTypesChanged: modified});
+  };
+
+  revertChanges = () => {
+    if (this.instanceTypesForm) {
+      this.instanceTypesForm.reset();
+    }
+    const {
+      defaultStorageIdInitial,
+      rolesInitial
+    } = this.state;
+    this.setState({
+      defaultStorageId: defaultStorageIdInitial,
+      roles: rolesInitial.map(r => r),
+      metadata: undefined
+    });
   };
 
   render () {
@@ -269,6 +443,7 @@ export default class EditUserRolesDialog extends React.Component {
     if (this.props.userInfo.loaded) {
       blocked = this.props.userInfo.value.blocked;
     }
+    const {metadata} = this.state;
     return (
       <Modal
         width="50%"
@@ -304,10 +479,22 @@ export default class EditUserRolesDialog extends React.Component {
                 }
               </Button>
             </div>
-            <Button
-              id="close-edit-user-form"
-              type="primary"
-              onClick={this.onClose}>OK</Button>
+            <div>
+              <Button
+                id="revert-changes-edit-user-form"
+                onClick={this.revertChanges}
+                disabled={!this.modified}
+              >
+                REVERT
+              </Button>
+              <Button
+                id="close-edit-user-form"
+                type="primary"
+                onClick={this.operationWrapper(this.saveChanges)}
+              >
+                OK
+              </Button>
+            </div>
           </Row>
         }
         visible={this.props.visible}>
@@ -346,13 +533,9 @@ export default class EditUserRolesDialog extends React.Component {
                 allowClear
                 showSearch
                 disabled={this.state.operationInProgress}
-                value={
-                  this.props.userInfo.loaded && this.props.userInfo.value.defaultStorageId
-                    ? `${this.props.userInfo.value.defaultStorageId}`
-                    : undefined
-                }
+                value={this.defaultStorageId}
                 style={{flex: 1}}
-                onChange={this.operationWrapper(this.changeDefaultDataStorage)}
+                onChange={this.onChangeDefaultStorageId}
                 size="small"
                 filterOption={(input, option) =>
                   option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
@@ -459,12 +642,20 @@ export default class EditUserRolesDialog extends React.Component {
               readOnly={this.state.operationInProgress}
               key={METADATA_PANEL_KEY}
               entityId={this.props.userId}
-              entityClass="PIPELINE_USER" />
+              entityClass="PIPELINE_USER"
+              applyChanges={ApplyChanges.callback}
+              onChange={this.onChangeMetadata}
+              value={metadata}
+            />
             <InstanceTypesManagementForm
               disabled={this.state.operationInProgress}
               key="INSTANCE_MANAGEMENT"
               resourceId={this.props.userId}
-              level="USER" />
+              level="USER"
+              onInitialized={this.onInstanceTypesFormInitialized}
+              onModified={this.onInstanceTypesModified}
+              showApplyButton={false}
+            />
           </SplitPanel>
         </SplitPanel>
       </Modal>
