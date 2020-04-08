@@ -62,6 +62,132 @@ INDEX_TEMPLATE="{
     \"number_of_replicas\": 0,
     \"index.lifecycle.name\": \"security_log_policy\",
     \"index.lifecycle.rollover_alias\": \"${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}\"
+  },
+  \"mappings\": {
+    \"_doc\" : {
+      \"properties\": {
+        \"@timestamp\": {
+          \"type\": \"date\"
+        },
+        \"hostname\": {
+          \"type\": \"text\",
+          \"fields\": {
+            \"keyword\": {
+              \"type\": \"keyword\"
+            }
+          }
+        },
+        \"level\": {
+          \"type\": \"text\",
+          \"fields\": {
+            \"keyword\": {
+              \"type\": \"keyword\"
+            }
+          }
+        },
+        \"loggerName\": {
+          \"type\": \"text\",
+          \"fields\": {
+            \"keyword\": {
+              \"type\": \"keyword\"
+            }
+          }
+        },
+        \"message\": {
+          \"type\": \"text\",
+          \"fields\": {
+            \"keyword\": {
+              \"type\": \"keyword\"
+            }
+          }
+        },
+        \"message_timestamp\": {
+          \"type\": \"date\"
+        },
+        \"service_account\": {
+          \"type\": \"boolean\"
+        },
+        \"service_name\": {
+          \"type\": \"text\",
+          \"fields\": {
+            \"keyword\": {
+              \"type\": \"keyword\"
+            }
+          }
+        },
+        \"source\": {
+          \"type\": \"text\",
+          \"fields\": {
+            \"keyword\": {
+              \"type\": \"keyword\"
+            }
+          }
+        },
+        \"thread\": {
+          \"type\": \"text\",
+          \"fields\": {
+            \"keyword\": {
+              \"type\": \"keyword\"
+            }
+          }
+        },
+        \"thrown\": {
+          \"properties\": {
+            \"commonElementCount\": {
+              \"type\": \"long\"
+            },
+            \"extendedStackTrace\": {
+              \"type\": \"text\",
+              \"fields\": {
+                \"keyword\": {
+                  \"type\": \"keyword\"
+                }
+              }
+            },
+            \"localizedMessage\": {
+              \"type\": \"text\",
+              \"fields\": {
+                \"keyword\": {
+                  \"type\": \"keyword\"
+                }
+              }
+            },
+            \"message\": {
+              \"type\": \"text\",
+              \"fields\": {
+                \"keyword\": {
+                  \"type\": \"keyword\"
+                }
+              }
+            },
+            \"name\": {
+              \"type\": \"text\",
+              \"fields\": {
+                \"keyword\": {
+                  \"type\": \"keyword\"
+                }
+              }
+            }
+          }
+        },
+        \"type\": {
+          \"type\": \"text\",
+          \"fields\": {
+            \"keyword\": {
+              \"type\": \"keyword\"
+            }
+          }
+        },
+        \"user\": {
+          \"type\": \"text\",
+          \"fields\": {
+            \"keyword\": {
+              \"type\": \"keyword\"
+            }
+          }
+        }
+      }
+    }
   }
 }"
 
