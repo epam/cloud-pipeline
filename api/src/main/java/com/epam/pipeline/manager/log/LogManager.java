@@ -135,7 +135,7 @@ public class LogManager {
                 .build();
     }
 
-    private PageMarker getToken(List<LogEntry> items, int pageSize) {
+    private PageMarker getToken(final List<LogEntry> items, final int pageSize) {
         if (items == null || items.size() <= pageSize) {
             return null;
         }
@@ -143,7 +143,7 @@ public class LogManager {
         return new PageMarker(entry.getId(), entry.getMessageTimestamp());
     }
 
-    private BoolQueryBuilder constructQueryFilter(LogFilter logFilter) {
+    private BoolQueryBuilder constructQueryFilter(final LogFilter logFilter) {
         final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
 
         if (BooleanUtils.isNotTrue(logFilter.getIncludeServiceAccountEvents())) {
@@ -175,24 +175,25 @@ public class LogManager {
         return boolQuery;
     }
 
-    private void addRageFilter(BoolQueryBuilder boolQuery, LocalDateTime timestampFrom, LocalDateTime timestampTo) {
+    private void addRageFilter(final BoolQueryBuilder boolQuery,
+                               final LocalDateTime timestampFrom, final LocalDateTime timestampTo) {
         if (timestampFrom == null && timestampTo == null) {
             return;
         }
 
-        RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(MESSAGE_TIMESTAMP);
+        final RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(MESSAGE_TIMESTAMP);
 
         if (timestampFrom != null) {
-            rangeQueryBuilder = rangeQueryBuilder.from(timestampFrom.toInstant(ZoneOffset.UTC));
+            rangeQueryBuilder.from(timestampFrom.toInstant(ZoneOffset.UTC));
         }
         if (timestampTo != null) {
-            rangeQueryBuilder = rangeQueryBuilder.to(timestampTo.toInstant(ZoneOffset.UTC));
+            rangeQueryBuilder.to(timestampTo.toInstant(ZoneOffset.UTC));
         }
 
         boolQuery.filter(rangeQueryBuilder);
     }
 
-    private SearchResponse verifyResponse(SearchResponse logsResponse) {
+    private SearchResponse verifyResponse(final SearchResponse logsResponse) {
         if (logsResponse.status().getStatus() != HttpStatus.OK.value()) {
             throw new IllegalStateException(
                     "Illegal Rest status: "  + logsResponse.status().name()
