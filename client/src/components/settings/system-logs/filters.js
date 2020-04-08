@@ -20,6 +20,7 @@ import {inject, observer} from 'mobx-react';
 import styles from './filters.css';
 import {
   Button,
+  Checkbox,
   DatePicker,
   Input,
   Select
@@ -35,7 +36,7 @@ function Filter ({label, children, display = true}) {
   }
   return (
     <div className={styles.filter}>
-      <span className={styles.label}>{label}:</span>
+      {label && (<span className={styles.label}>{label}:</span>)}
       {children}
     </div>
   );
@@ -85,20 +86,24 @@ class Filters extends React.Component {
     const {showAdvanced, filters = {}} = this.state;
     const {onChange, filters: initialFilters = {}} = this.props;
     const {
-      timestampFrom,
-      timestampTo,
       messageTimestampFrom,
       messageTimestampTo,
       users,
       serviceNames,
       types,
       message,
-      hostnames = []
+      hostnames = [],
+      includeServiceAccountEvents = false
     } = filters;
-    const onFieldChanged = (field, submit = false, converter = (o => o)) => (event) => {
+    const onFieldChanged = (
+      field,
+      submit = false,
+      converter = (o => o),
+      eventField = 'value'
+    ) => (event) => {
       let value = event;
       if (event && event.target) {
-        value = event.target.value;
+        value = event.target[eventField];
       }
       const newFilters = Object.assign({}, filters, {[field]: converter(value)});
       if (!value) {
@@ -230,27 +235,20 @@ class Filters extends React.Component {
             <Select.Option key="Security" value="Security">Security</Select.Option>
           </Select>
         </Filter>
-        <Filter label="Recorded From" display={showAdvanced}>
-          <DatePicker
-            showTime
-            format="YYYY-MM-DD HH:mm:ss"
-            placeholder="Recorded From"
-            style={commonStyle}
-            value={momentDateParser(timestampFrom)}
-            onChange={onFieldChanged('timestampFrom', true, momentDateConverter)}
-            disabledDate={getDisabledDate({max: momentDateParser(timestampTo)})}
-          />
-        </Filter>
-        <Filter label="Recorded To" display={showAdvanced}>
-          <DatePicker
-            showTime
-            format="YYYY-MM-DD HH:mm:ss"
-            placeholder="Recorded To"
-            style={commonStyle}
-            value={momentDateParser(timestampTo)}
-            onChange={onFieldChanged('timestampTo', true, momentDateConverter)}
-            disabledDate={getDisabledDate({min: momentDateParser(timestampFrom)})}
-          />
+        <Filter display={showAdvanced}>
+          <Checkbox
+            checked={includeServiceAccountEvents}
+            onChange={
+              onFieldChanged(
+                'includeServiceAccountEvents',
+                true,
+                undefined,
+                'checked'
+              )
+            }
+          >
+            Include Service Account Events
+          </Checkbox>
         </Filter>
         <div className={styles.filter} style={{minWidth: 'unset'}}>
           <Button
