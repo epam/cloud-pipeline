@@ -116,7 +116,8 @@ public class LogManager {
         if (logFilter.getPagination().getToken() != null) {
             searchSourceBuilder.searchAfter(
                     new Object[]{
-                            logFilter.getPagination().getToken().getMessageTimestamp().toString(),
+                            logFilter.getPagination().getToken().getMessageTimestamp()
+                                    .toInstant(ZoneOffset.UTC).toEpochMilli(),
                             logFilter.getPagination().getToken().getId()
                     }
             );
@@ -162,14 +163,13 @@ public class LogManager {
             boolQuery.filter(QueryBuilders.termsQuery(USER, formattedUsers));
         }
         if (!CollectionUtils.isEmpty(logFilter.getHostnames())) {
-            boolQuery.filter(QueryBuilders.termsQuery(HOSTNAME, logFilter.getHostnames()));
+            boolQuery.filter(QueryBuilders.termsQuery(HOSTNAME + KEYWORD, logFilter.getHostnames()));
         }
         if (!CollectionUtils.isEmpty(logFilter.getServiceNames())) {
-            boolQuery.filter(QueryBuilders.termsQuery(SERVICE_NAME, logFilter.getServiceNames()));
+            boolQuery.filter(QueryBuilders.termsQuery(SERVICE_NAME + KEYWORD, logFilter.getServiceNames()));
         }
         if (!CollectionUtils.isEmpty(logFilter.getTypes())) {
-            boolQuery.filter(QueryBuilders.termsQuery(TYPE, logFilter.getTypes().stream()
-                    .map(String::toLowerCase).collect(Collectors.toList())));
+            boolQuery.filter(QueryBuilders.termsQuery(TYPE + KEYWORD, logFilter.getTypes()));
         }
         if (!StringUtils.isEmpty(logFilter.getMessage())) {
             boolQuery.filter(QueryBuilders.matchQuery(MESSAGE, logFilter.getMessage()));
