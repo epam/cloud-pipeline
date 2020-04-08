@@ -55,6 +55,7 @@ import {
   sparkEnabled,
   slurmEnabled
 } from '../../pipelines/launch/form/utilities/launch-cluster';
+import AWSRegionTag from '../../special/AWSRegionTag';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -62,6 +63,8 @@ const Panels = {
   executionDefaults: 'exec',
   parameters: 'parameters'
 };
+
+const regionNotConfiguredValue = 'not_configured';
 
 @Form.create()
 @inject('awsRegions', 'allowedInstanceTypes', 'spotToolInstanceTypes', 'onDemandToolInstanceTypes', 'runDefaultParameters')
@@ -120,6 +123,14 @@ export default class EditToolForm extends React.Component {
   @observable defaultSystemProperties;
 
   endpointControl;
+
+  @computed
+  get awsRegions () {
+    if (this.props.awsRegions.loaded) {
+      return (this.props.awsRegions.value || []).map(r => r);
+    }
+    return [];
+  }
 
   showLabelInput = () => {
     this.setState({labelInputVisible: true}, () => this.input.focus());
@@ -231,6 +242,8 @@ export default class EditToolForm extends React.Component {
         const configuration = {
           parameters,
           node_count: this.state.launchCluster ? this.state.nodesCount : undefined,
+          // todo
+          // cloudRegionId: values.cloudRegionId,
           cmd_template: this.defaultCommand,
           instance_disk: values.disk,
           instance_size: values.instanceType,
@@ -278,7 +291,7 @@ export default class EditToolForm extends React.Component {
   getCloudProvider = () => {
     const instanceType = this.getInstanceTypeValue();
     if (this.props.awsRegions.loaded) {
-      const [provider] = (this.props.awsRegions.value || [])
+      const [provider] = this.awsRegions
         .filter(a => (instanceType && a.id === instanceType.regionId) || !instanceType)
         .map(a => a.provider);
       return provider;
@@ -298,6 +311,11 @@ export default class EditToolForm extends React.Component {
     return (this.props.configuration && this.props.configuration.instance_disk) ||
       (this.props.tool && this.props.tool.disk) ||
       undefined;
+  };
+
+  getCloudRegionInitialValue = () => {
+    return (this.props.configuration && this.props.configuration.cloudRegionId) ||
+      regionNotConfiguredValue;
   };
 
   rebuildComponent (props) {
@@ -882,6 +900,61 @@ export default class EditToolForm extends React.Component {
                   </Row>
                 </Col>
               </Row>
+              <Form.Item
+                {...this.formItemLayout}
+                label="Cloud Region"
+                style={{marginTop: 10, marginBottom: 10}}
+                required
+              >
+                {getFieldDecorator('cloudRegionId', {
+                  rules: [
+                    {
+                      required: true,
+                      message: 'Cloud region is required'
+                    }
+                  ],
+                  initialValue: this.getCloudRegionInitialValue()
+                })(
+                  <Select
+                    disabled={this.state.pending || this.props.readOnly}
+                    showSearch
+                    allowClear={false}
+                    placeholder="Cloud Region"
+                    optionFilterProp="children"
+                    filterOption={
+                      (input, option) =>
+                        option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                  >
+                    <Select.Option
+                      key={regionNotConfiguredValue}
+                      name="Not configured"
+                      title="Not configured"
+                      value={regionNotConfiguredValue}
+                    >
+                      Not configured
+                    </Select.Option>
+                    <Select.Option disabled key="divider" className={styles.selectOptionDivider} />
+                    {
+                      this.awsRegions
+                        .map(region => {
+                          return (
+                            <Select.Option
+                              key={`${region.id}`}
+                              name={region.name}
+                              title={region.name}
+                              value={`${region.id}`}>
+                              <AWSRegionTag
+                                provider={region.provider}
+                                regionUID={region.regionId}
+                                style={{fontSize: 'larger'}}
+                              /> {region.name}
+                            </Select.Option>
+                          );
+                        })
+                    }
+                  </Select>
+                )}
+              </Form.Item>
               <ConfigureClusterDialog
                 instanceName={this.props.form.getFieldValue('instanceType')}
                 launchCluster={this.state.launchCluster}
