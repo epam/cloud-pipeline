@@ -4089,9 +4089,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   className={styles.settingsContainer}
                   style={{padding: 5}}>
                   <div className={styles.settingsContent}>
-                    {
-                      this.renderExecutionEnvironmentSummary()
-                    }
+                    <Row
+                      type="flex"
+                      style={{alignItems: 'center'}}
+                    >
+                      {
+                        this.renderExecutionEnvironmentSummary()
+                      }
+                      <div style={{width: 30, textAlign: 'center'}}>
+                        {hints.renderHint(
+                          this.localizedStringWithSpotDictionaryFn,
+                          hints.executionEnvironmentSummaryHint
+                        )}
+                      </div>
+                    </Row>
                   </div>
                 </div>
               </Row>

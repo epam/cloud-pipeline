@@ -125,6 +125,12 @@ const prettyUrlHint = (localizedStringFn) => (
   </Row>
 );
 
+const executionEnvironmentSummaryHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    General amount of resources that will be allocated during the run execution. Notice that in some specific configurations such as <b>hybrid autoscaling clusters</b> amount of resources can vary beyond the shown interval.
+  </Row>
+);
+
 const hints = {
   renderHint,
   pipelineHint,
@@ -137,7 +143,8 @@ const hints = {
   autoPauseHint,
   timeOutHint,
   limitMountsHint,
-  prettyUrlHint
+  prettyUrlHint,
+  executionEnvironmentSummaryHint
 };
 
 export default hints;
