@@ -64,7 +64,7 @@ INDEX_TEMPLATE="{
     \"index.lifecycle.rollover_alias\": \"${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}\"
   },
   \"mappings\": {
-    \"_doc\" : {
+    \"doc\" : {
       \"properties\": {
         \"@timestamp\": {
           \"type\": \"date\"
