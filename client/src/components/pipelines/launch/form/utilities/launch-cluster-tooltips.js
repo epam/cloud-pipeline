@@ -108,6 +108,13 @@ const AUTOSCALED_CLUSTER_DEFAULT_NODES_COUNT_TOOLTIP = (
     </Row>
   </div>
 );
+const HYBRID_AUTOSCALED_CLUSTER_TOOLTIP = (
+  <div>
+    Compute nodes of the cluster will be created according to the jobs' requirements.
+    By default, the same instance family (as the master) is used.
+    But the size of the node will vary.
+  </div>
+);
 
 export const LaunchClusterTooltip = {
   clusterMode: 'cluster mode',
@@ -118,7 +125,8 @@ export const LaunchClusterTooltip = {
   },
   autoScaledCluster: {
     autoScaledUpTo: 'up to',
-    defaultNodesCount: 'default nodes count'
+    defaultNodesCount: 'default nodes count',
+    hybridAutoScaledCluster: 'hybrid'
   }
 };
 
@@ -134,7 +142,9 @@ const tooltips = {
   [LaunchClusterTooltip.autoScaledCluster.autoScaledUpTo]:
     AUTOSCALED_CLUSTER_UP_TO_TOOLTIP,
   [LaunchClusterTooltip.autoScaledCluster.defaultNodesCount]:
-    AUTOSCALED_CLUSTER_DEFAULT_NODES_COUNT_TOOLTIP
+    AUTOSCALED_CLUSTER_DEFAULT_NODES_COUNT_TOOLTIP,
+  [LaunchClusterTooltip.autoScaledCluster.hybridAutoScaledCluster]:
+    HYBRID_AUTOSCALED_CLUSTER_TOOLTIP
 };
 
 export function renderTooltip (tooltip, style) {

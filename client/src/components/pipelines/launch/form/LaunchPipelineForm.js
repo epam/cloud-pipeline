@@ -65,11 +65,13 @@ import {getSpotTypeName} from '../../../special/spot-instance-names';
 import DTSClusterInfo from '../../../../models/dts/DTSClusterInfo';
 import {
   autoScaledClusterEnabled,
+  hybridAutoScaledClusterEnabled,
   CP_CAP_SGE,
   CP_CAP_SPARK,
   CP_CAP_SLURM,
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
+  CP_CAP_AUTOSCALE_HYBRID,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState,
@@ -211,6 +213,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     pipelineConfiguration: null,
     launchCluster: false,
     autoScaledCluster: false,
+    hybridAutoScaledClusterEnabled: false,
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
@@ -733,6 +736,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   resetState = (keepPipeline) => {
     const {execEnvSelectValue, dtsId} = this.getExecEnvSelectValue();
     const autoScaledCluster = autoScaledClusterEnabled(this.props.parameters.parameters);
+    const hybridAutoScaledCluster = hybridAutoScaledClusterEnabled(
+      this.props.parameters.parameters
+    );
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
     const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
@@ -747,6 +753,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         dockerImageBrowserVisible: false,
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
+        hybridAutoScaledClusterEnabled: hybridAutoScaledCluster,
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
         slurmEnabled: slurmEnabledValue,
@@ -794,6 +801,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         pipelineConfiguration: null,
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
+        hybridAutoScaledClusterEnabled: hybridAutoScaledCluster,
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
         slurmEnabled: slurmEnabledValue,
@@ -934,6 +942,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           type: 'int',
           value: +this.state.maxNodesCount
         };
+        if (this.state.hybridAutoScaledClusterEnabled) {
+          payload[PARAMETERS][CP_CAP_AUTOSCALE_HYBRID] = {
+            type: 'boolean',
+            value: true
+          };
+        }
       }
       if (this.state.launchCluster && this.state.gridEngineEnabled) {
         payload[PARAMETERS][CP_CAP_SGE] = {
@@ -1084,6 +1098,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         type: 'int',
         value: +this.state.maxNodesCount
       };
+      if (this.state.hybridAutoScaledClusterEnabled) {
+        payload.params[CP_CAP_AUTOSCALE_HYBRID] = {
+          type: 'boolean',
+          value: true
+        };
+      }
     }
     if (this.state.launchCluster && this.state.gridEngineEnabled) {
       payload.params[CP_CAP_SGE] = {
@@ -1234,12 +1254,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   prepare = (updateFireCloud = false) => {
     const autoScaledCluster = autoScaledClusterEnabled(this.props.parameters.parameters);
+    const hybridAutoScaledCluster = hybridAutoScaledClusterEnabled(
+      this.props.parameters.parameters
+    );
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
     const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
     let state = {
       launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
       autoScaledCluster: autoScaledCluster,
+      hybridAutoScaledClusterEnabled: hybridAutoScaledCluster,
       gridEngineEnabled: gridEngineEnabledValue,
       sparkEnabled: sparkEnabledValue,
       slurmEnabled: slurmEnabledValue,
@@ -2896,6 +2920,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const {
       launchCluster,
       autoScaledCluster,
+      hybridAutoScaledClusterEnabled,
       nodesCount,
       maxNodesCount,
       gridEngineEnabled,
@@ -2905,6 +2930,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.setState({
       launchCluster,
       autoScaledCluster,
+      hybridAutoScaledClusterEnabled,
       gridEngineEnabled,
       sparkEnabled,
       slurmEnabled,
@@ -4045,6 +4071,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       instanceName={this.getSectionFieldValue(EXEC_ENVIRONMENT)('type')}
                       launchCluster={this.state.launchCluster}
                       autoScaledCluster={this.state.autoScaledCluster}
+                      hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
                       gridEngineEnabled={this.state.gridEngineEnabled}
                       sparkEnabled={this.state.sparkEnabled}
                       slurmEnabled={this.state.slurmEnabled}

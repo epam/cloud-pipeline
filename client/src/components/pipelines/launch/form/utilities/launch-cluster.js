@@ -29,6 +29,7 @@ export const CP_CAP_SPARK = 'CP_CAP_SPARK';
 export const CP_CAP_SLURM = 'CP_CAP_SLURM';
 export const CP_CAP_AUTOSCALE = 'CP_CAP_AUTOSCALE';
 export const CP_CAP_AUTOSCALE_WORKERS = 'CP_CAP_AUTOSCALE_WORKERS';
+export const CP_CAP_AUTOSCALE_HYBRID = 'CP_CAP_AUTOSCALE_HYBRID';
 
 const PARAMETER_TITLE_WIDTH = 110;
 const PARAMETER_TITLE_RIGHT_MARGIN = 5;
@@ -47,6 +48,11 @@ function booleanParameterIsSetToValue (parameters, parameter, value = true) {
 export function autoScaledClusterEnabled (parameters) {
   return booleanParameterIsSetToValue(parameters, CP_CAP_SGE) &&
     booleanParameterIsSetToValue(parameters, CP_CAP_AUTOSCALE);
+}
+
+export function hybridAutoScaledClusterEnabled (parameters) {
+  return autoScaledClusterEnabled(parameters) &&
+    booleanParameterIsSetToValue(parameters, CP_CAP_AUTOSCALE_HYBRID);
 }
 
 export function gridEngineEnabled (parameters) {
@@ -73,9 +79,17 @@ export function getSkippedSystemParametersList (controller) {
       controller.state.autoScaledCluster ||
       controller.state.gridEngineEnabled ||
       controller.state.sparkEnabled ||
-      controller.state.slurmEnabled
+      controller.state.slurmEnabled ||
+      controller.state.hybridAutoScaledClusterEnabled
     )) {
-    return [CP_CAP_SGE, CP_CAP_SPARK, CP_CAP_SLURM, CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS];
+    return [
+      CP_CAP_SGE,
+      CP_CAP_SPARK,
+      CP_CAP_SLURM,
+      CP_CAP_AUTOSCALE,
+      CP_CAP_AUTOSCALE_WORKERS,
+      CP_CAP_AUTOSCALE_HYBRID
+    ];
   }
   return [CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS];
 }
@@ -91,7 +105,8 @@ export function setClusterParameterValue (form, sectionName, configuration) {
   const {
     gridEngineEnabled,
     sparkEnabled,
-    slurmEnabled
+    slurmEnabled,
+    hybridAutoScaledClusterEnabled
   } = configuration;
   const formValue = form.getFieldValue(sectionName);
   if (!formValue || !formValue.hasOwnProperty('params')) {
@@ -118,6 +133,10 @@ export function setClusterParameterValue (form, sectionName, configuration) {
       value.value = `${slurmEnabled}`;
       modified = true;
     }
+    if (value.name === CP_CAP_AUTOSCALE_HYBRID) {
+      value.value = `${hybridAutoScaledClusterEnabled}`;
+      modified = true;
+    }
   }
   if (modified) {
     form.setFieldsValue(
@@ -135,7 +154,8 @@ export function setSingleNodeMode (controller, callback) {
     setDefaultNodesCount: false,
     gridEngineEnabled: false,
     sparkEnabled: false,
-    slurmEnabled: false
+    slurmEnabled: false,
+    hybridAutoScaledClusterEnabled: false
   }, callback);
 }
 
@@ -147,6 +167,7 @@ export function setFixedClusterMode (controller, callback) {
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
+    hybridAutoScaledClusterEnabled: false,
     nodesCount: Math.max(1,
       !isNaN(controller.state.maxNodesCount)
         ? controller.state.maxNodesCount
@@ -164,6 +185,7 @@ export function setAutoScaledMode (controller, callback) {
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
+    hybridAutoScaledClusterEnabled: false,
     maxNodesCount: Math.max(1,
       !isNaN(controller.state.nodesCount)
         ? controller.state.nodesCount
@@ -195,7 +217,10 @@ const lowerCasedString = (string, lowercased) => {
 class ConfigureClusterDialog extends React.Component {
   static getClusterName = (ctrl, lowerCased) => {
     if (ctrl.state.launchCluster && ctrl.state.autoScaledCluster) {
-      const name = lowerCasedString('Auto-scaled cluster', lowerCased);
+      const name = lowerCasedString(
+        `Auto-scaled ${ctrl.state.hybridAutoScaledClusterEnabled ? 'hybrid ' : ''}cluster`,
+        lowerCased
+      );
       if (!isNaN(ctrl.state.nodesCount) && !isNaN(ctrl.state.maxNodesCount)) {
         return `${name} (${range(ctrl.state)} child nodes)`;
       }
@@ -237,6 +262,7 @@ class ConfigureClusterDialog extends React.Component {
     gridEngineEnabled: PropTypes.bool,
     sparkEnabled: PropTypes.bool,
     slurmEnabled: PropTypes.bool,
+    hybridAutoScaledClusterEnabled: PropTypes.bool,
     nodesCount: PropTypes.number,
     maxNodesCount: PropTypes.number,
     onChange: PropTypes.func,
@@ -251,6 +277,7 @@ class ConfigureClusterDialog extends React.Component {
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
+    hybridAutoScaledClusterEnabled: false,
     nodesCount: 0,
     maxNodesCount: 0,
     validation: {
@@ -329,7 +356,8 @@ class ConfigureClusterDialog extends React.Component {
     this.setState({
       gridEngineEnabled: e.target.checked,
       sparkEnabled: false,
-      slurmEnabled: false
+      slurmEnabled: false,
+      hybridAutoScaledClusterEnabled: false
     });
   };
 
@@ -337,7 +365,8 @@ class ConfigureClusterDialog extends React.Component {
     this.setState({
       gridEngineEnabled: false,
       sparkEnabled: e.target.checked,
-      slurmEnabled: false
+      slurmEnabled: false,
+      hybridAutoScaledClusterEnabled: false
     });
   };
 
@@ -345,7 +374,17 @@ class ConfigureClusterDialog extends React.Component {
     this.setState({
       gridEngineEnabled: false,
       sparkEnabled: false,
-      slurmEnabled: e.target.checked
+      slurmEnabled: e.target.checked,
+      hybridAutoScaledClusterEnabled: false
+    });
+  };
+
+  onChangeEnableHybridAutoScaledCluster = (e) => {
+    this.setState({
+      gridEngineEnabled: false,
+      sparkEnabled: false,
+      slurmEnabled: false,
+      hybridAutoScaledClusterEnabled: e.target.checked
     });
   };
 
@@ -467,6 +506,15 @@ class ConfigureClusterDialog extends React.Component {
         {renderTooltip(LaunchClusterTooltip.autoScaledCluster.autoScaledUpTo, {marginLeft: 5})}
       </Row>,
       this.getValidationRow('maxNodesCount'),
+      <Row key="enable hybrid" type="flex" align="middle" style={{marginTop: 5}}>
+        <Checkbox
+          style={{marginLeft: LEFT_MARGIN}}
+          checked={this.state.hybridAutoScaledClusterEnabled}
+          onChange={this.onChangeEnableHybridAutoScaledCluster}>
+          Enable Hybrid cluster
+        </Checkbox>
+        {renderTooltip(LaunchClusterTooltip.autoScaledCluster.hybridAutoScaledCluster)}
+      </Row>,
       ...renderSetDefaultNodesCount(),
       this.getValidationRow('nodesCount')
     ].filter(r => !!r);
@@ -488,6 +536,7 @@ class ConfigureClusterDialog extends React.Component {
         launchCluster: this.state.launchCluster,
         autoScaledCluster: this.state.autoScaledCluster,
         gridEngineEnabled: this.state.gridEngineEnabled,
+        hybridAutoScaledClusterEnabled: this.state.hybridAutoScaledClusterEnabled,
         sparkEnabled: this.state.sparkEnabled,
         slurmEnabled: this.state.slurmEnabled
       });
@@ -623,6 +672,7 @@ class ConfigureClusterDialog extends React.Component {
         gridEngineEnabled: nextProps.gridEngineEnabled,
         sparkEnabled: nextProps.sparkEnabled,
         slurmEnabled: nextProps.slurmEnabled,
+        hybridAutoScaledClusterEnabled: nextProps.hybridAutoScaledClusterEnabled,
         setDefaultNodesCount: nextProps.nodesCount > 0,
         nodesCount: nextProps.nodesCount && !isNaN(nextProps.nodesCount) ? nextProps.nodesCount : 0,
         maxNodesCount: nextProps.maxNodesCount,

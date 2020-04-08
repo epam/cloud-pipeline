@@ -21,6 +21,7 @@ import {
 } from './launch-form-sections';
 import {
   autoScaledClusterEnabled,
+  hybridAutoScaledClusterEnabled,
   CP_CAP_AUTOSCALE_WORKERS,
   getSkippedSystemParametersList,
   gridEngineEnabled,
@@ -36,11 +37,13 @@ function modified (form, parameters, formName, parametersName, defaultValue) {
 
 function clusterModified (parameters, state) {
   const autoScaledCluster = autoScaledClusterEnabled(parameters.parameters);
+  const hybridAutoScaledCluster = hybridAutoScaledClusterEnabled(parameters.parameters);
   const gridEngineEnabledValue = gridEngineEnabled(parameters.parameters);
   const sparkEnabledValue = sparkEnabled(parameters.parameters);
   const slurmEnabledValue = slurmEnabled(parameters.parameters);
   const initial = {
     autoScaledCluster,
+    hybridAutoScaledClusterEnabled: hybridAutoScaledCluster,
     gridEngineEnabled: gridEngineEnabledValue,
     sparkEnabled: sparkEnabledValue,
     slurmEnabled: slurmEnabledValue,
@@ -51,6 +54,7 @@ function clusterModified (parameters, state) {
       : 0
   };
   return initial.autoScaledCluster !== state.autoScaledCluster ||
+    initial.hybridAutoScaledClusterEnabled !== state.hybridAutoScaledClusterEnabled ||
     initial.gridEngineEnabled !== state.gridEngineEnabled ||
     initial.sparkEnabled !== state.sparkEnabled ||
     initial.slurmEnabled !== state.slurmEnabled ||

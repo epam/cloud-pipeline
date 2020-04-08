@@ -41,11 +41,13 @@ import {
 } from '../../pipelines/launch/form/LimitMountsInput';
 import {
   autoScaledClusterEnabled,
+  hybridAutoScaledClusterEnabled,
   CP_CAP_SGE,
   CP_CAP_SPARK,
   CP_CAP_SLURM,
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
+  CP_CAP_AUTOSCALE_HYBRID,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState,
@@ -105,6 +107,7 @@ export default class EditToolForm extends React.Component {
     nodesCount: 0,
     maxNodesCount: 0,
     autoScaledCluster: false,
+    hybridAutoScaledClusterEnabled: false,
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
@@ -177,6 +180,13 @@ export default class EditToolForm extends React.Component {
               type: 'int',
               value: +this.state.maxNodesCount
             });
+            if (this.state.hybridAutoScaledClusterEnabled) {
+              params.push({
+                name: CP_CAP_AUTOSCALE_HYBRID,
+                type: 'boolean',
+                value: true
+              });
+            }
           }
           if (this.state.launchCluster && this.state.gridEngineEnabled) {
             params.push({
@@ -306,6 +316,8 @@ export default class EditToolForm extends React.Component {
             : 0;
         state.nodesCount = props.configuration.node_count;
         state.autoScaledCluster = props.configuration && autoScaledClusterEnabled(props.configuration.parameters);
+        state.hybridAutoScaledClusterEnabled = props.configuration &&
+          hybridAutoScaledClusterEnabled(props.configuration.parameters);
         state.gridEngineEnabled = props.configuration && gridEngineEnabled(props.configuration.parameters);
         state.sparkEnabled = props.configuration && sparkEnabled(props.configuration.parameters);
         state.slurmEnabled = props.configuration && slurmEnabled(props.configuration.parameters);
@@ -539,6 +551,8 @@ export default class EditToolForm extends React.Component {
         : 0;
     const autoScaledCluster = this.props.configuration &&
       autoScaledClusterEnabled(this.props.configuration.parameters);
+    const hybridAutoScaledCluster = this.props.configuration &&
+      hybridAutoScaledClusterEnabled(this.props.configuration.parameters);
     const gridEngineEnabledValue = this.props.configuration &&
       gridEngineEnabled(this.props.configuration.parameters);
     const sparkEnabledValue = this.props.configuration &&
@@ -556,6 +570,7 @@ export default class EditToolForm extends React.Component {
       (this.toolFormSystemParameters && this.toolFormSystemParameters.modified) ||
       !!launchCluster !== !!this.state.launchCluster ||
       !!autoScaledCluster !== !!this.state.autoScaledCluster ||
+      !!hybridAutoScaledCluster !== !!this.state.hybridAutoScaledClusterEnabled ||
       !!gridEngineEnabledValue !== !!this.state.gridEngineEnabled ||
       !!sparkEnabledValue !== !!this.state.sparkEnabled ||
       !!slurmEnabledValue !== !!this.state.slurmEnabled ||
@@ -597,6 +612,7 @@ export default class EditToolForm extends React.Component {
     const {
       launchCluster,
       autoScaledCluster,
+      hybridAutoScaledClusterEnabled,
       nodesCount,
       maxNodesCount,
       gridEngineEnabled,
@@ -607,6 +623,7 @@ export default class EditToolForm extends React.Component {
       launchCluster,
       nodesCount,
       autoScaledCluster,
+      hybridAutoScaledClusterEnabled,
       maxNodesCount,
       gridEngineEnabled,
       sparkEnabled,
@@ -869,6 +886,7 @@ export default class EditToolForm extends React.Component {
                 instanceName={this.props.form.getFieldValue('instanceType')}
                 launchCluster={this.state.launchCluster}
                 autoScaledCluster={this.state.autoScaledCluster}
+                hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
                 gridEngineEnabled={this.state.gridEngineEnabled}
                 sparkEnabled={this.state.sparkEnabled}
                 slurmEnabled={this.state.slurmEnabled}
