@@ -56,6 +56,11 @@ export default function getVersionRunningInfo (
     const allowedToExecuteFlag = versionObject
       ? versionObject.allowedToExecute
       : false;
+    const {
+      distribution,
+      version: distrVersion,
+      isAllowed = true
+    } = (versionObject ? versionObject.toolOSVersion : undefined) || {};
     let tooltip, launchTooltip;
     let defaultTag;
     if (versions['latest']) {
@@ -64,10 +69,18 @@ export default function getVersionRunningInfo (
       defaultTag = Object.keys(versions)[0];
     }
     const isGrace = isGracePeriod(versionObject);
-    let gracePeriodEnd = isGrace && !isAdmin ? displayDate(versionObject.gracePeriod, 'D MMMM YYYY') : null;
+    let gracePeriodEnd = isGrace && !isAdmin
+      ? displayDate(versionObject.gracePeriod, 'D MMMM YYYY')
+      : null;
     const isLatest = version === defaultTag;
     let allowedToExecute = allowedToExecuteFlag || isAdmin || isGrace;
-    if (versionObject && checkVulnerabilitiesNumber(versionObject)) {
+    if (!isAllowed) {
+      const distributionDescription = distribution
+        ? ` (${distribution}${distrVersion ? ` ${distrVersion}` : ''})`
+        : '';
+      tooltip = `This distribution${distributionDescription} is not supported.`;
+      launchTooltip = `This distribution${distributionDescription} is not supported. Run anyway?`;
+    } else if (versionObject && checkVulnerabilitiesNumber(versionObject)) {
       tooltip = ScanStatusDescriptionsFn(isLatest, isGrace || isAdmin).vulnerabilitiesNumberExceeds;
       launchTooltip = LaunchMessages(gracePeriodEnd).vulnerabilitiesNumberExceeds;
     } else if (versionObject && versionObject.status === ScanStatuses.notScanned) {
