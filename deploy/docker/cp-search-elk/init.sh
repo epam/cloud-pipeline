@@ -75,64 +75,79 @@ INDEX="{
 
 curl -H 'Content-Type: application/json' -XPUT localhost:9200/%3C${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-0000001%3E -d "$INDEX"
 
-EDGE_PIPELINE='{
+EDGE_PIPELINE="{
 
-    "description" : "Log data extraction pipeline from EDGE",
-    "processors": [
+    \"description\" : \"Log data extraction pipeline from EDGE\",
+    \"processors\": [
       {
-        "grok": {
-          "field": "message",
-          "patterns": ["%{DATESTAMP:log_timestamp} %{GREEDYDATA} Application: %{GREEDYDATA:application}; User: %{DATA:user}; %{GREEDYDATA}"]
+        \"grok\": {
+          \"field\": \"message\",
+          \"patterns\": [\"%{DATESTAMP:log_timestamp} %{GREEDYDATA} Application: %{GREEDYDATA:application}; User: %{DATA:user}; %{GREEDYDATA}\"]
         }
       },
        {
-         "rename": {
-           "field": "fields.type",
-           "target_field": "type"
+         \"rename\": {
+           \"field\": \"fields.type\",
+           \"target_field\": \"type\"
          }
        },
        {
-         "rename": {
-           "field": "fields.service",
-           "target_field": "service_name"
-         }
-       },
-       {
-         "rename": {
-           "field": "host.name",
-           "target_field": "hostname"
-         }
-       },
-       {
-         "date": {
-            "field" : "log_timestamp",
-            "target_field" : "message_timestamp",
-            "formats" : ["yy/MM/dd HH:mm:ss"]
-         }
-       },
-       {
-         "remove": {
-           "field": "log_timestamp",
-           "ignore_missing": true,
-           "ignore_failure": true
+         \"set\": {
+           \"field\": \"service_account\",
+           \"value\": false,
+           \"ignore_failure\": true
           }
        },
        {
-         "remove": {
-           "field": "fields",
-           "ignore_missing": true,
-           "ignore_failure": true
+         \"set\": {
+           \"if\": \"ctx.user.equalsIgnoreCase('$CP_DEFAULT_ADMIN_NAME')\",
+           \"field\": \"service_account\",
+           \"value\": true,
+           \"ignore_failure\": true
           }
        },
        {
-         "remove": {
-           "field": "host",
-           "ignore_missing": true,
-           "ignore_failure": true
+         \"rename\": {
+           \"field\": \"fields.service\",
+           \"target_field\": \"service_name\"
+         }
+       },
+       {
+         \"rename\": {
+           \"field\": \"host.name\",
+           \"target_field\": \"hostname\"
+         }
+       },
+       {
+         \"date\": {
+            \"field\" : \"log_timestamp\",
+            \"target_field\" : \"message_timestamp\",
+            \"formats\" : [\"yy/MM/dd HH:mm:ss\"]
+         }
+       },
+       {
+         \"remove\": {
+           \"field\": \"log_timestamp\",
+           \"ignore_missing\": true,
+           \"ignore_failure\": true
+          }
+       },
+       {
+         \"remove\": {
+           \"field\": \"fields\",
+           \"ignore_missing\": true,
+           \"ignore_failure\": true
+          }
+       },
+       {
+         \"remove\": {
+           \"field\": \"host\",
+           \"ignore_missing\": true,
+           \"ignore_failure\": true
           }
        }
     ]
-}'
+}"
 
 curl -H 'Content-Type: application/json' -XPUT localhost:9200/_ingest/pipeline/edge -d "$EDGE_PIPELINE"
 
@@ -145,6 +160,20 @@ API_SRV_PIPELINE="{
            \"field\": \"fields.type\",
            \"target_field\": \"type\"
          }
+       },
+       {
+         \"set\": {
+           \"field\": \"service_account\",
+           \"value\": false,
+           \"ignore_failure\": true
+          }
+       },
+       {
+         \"set\": {
+           \"if\": \"ctx.user.equalsIgnoreCase('$CP_DEFAULT_ADMIN_NAME')\",
+           \"field\": \"service_account\",
+           \"value\": true
+          }
        },
        {
          \"rename\": {
