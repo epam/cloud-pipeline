@@ -39,6 +39,14 @@ import ClusterNodePods from '../cluster/ClusterNodePods';
 import ClusterNodeMonitor from '../cluster/ClusterNodeMonitor';
 import Tool from '../tools/Tool';
 import Tools from '../tools/Tools';
+import SettingsForm from '../settings';
+import CLIForm from '../settings/CLIForm';
+import UserManagementForm from '../settings/UserManagementForm';
+import EmailNotificationSettings from '../settings/EmailNotificationSettings';
+import Preferences from '../settings/Preferences';
+import AWSRegionsForm from '../settings/AWSRegionsForm';
+import SystemLogs from '../settings/system-logs';
+import SystemEvents from '../settings/SystemEvents';
 import AllRuns from '../runs/AllRuns';
 import RunsFilter from '../runs/RunsFilter';
 import RunsSearch from '../runs/RunsSearch';
@@ -61,6 +69,16 @@ export default class AppRouter extends React.Component {
     return <Router history={this.props.history}>
       <Route component={App}>
         <Route path="search" component={RunsSearch} />
+        <Redirect from="/settings" to="/settings/cli" />
+        <Route path="/settings" component={SettingsForm}>
+          <Route path="cli" component={CLIForm} />
+          <Route path="events" component={SystemEvents} />
+          <Route path="user" component={UserManagementForm} />
+          <Route path="email" component={EmailNotificationSettings} />
+          <Route path="preferences" component={Preferences} />
+          <Route path="regions" component={AWSRegionsForm} />
+          <Route path="logs" component={SystemLogs} />
+        </Route>
         <Route path="/cluster" component={Cluster} />
         <Redirect from="/cluster/:nodeName" to="/cluster/:nodeName/info" />
         <Route path="/cluster/:nodeName" component={ClusterNode}>

@@ -22,8 +22,7 @@ import styles from './Navigation.css';
 import PropTypes from 'prop-types';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import RunsCounterMenuItem from './RunsCounterMenuItem';
-import SettingsForm from './SettingsForm';
-import SupportMenuItem from './forms/SupportMenuItem';
+import SupportMenuItem from './SupportMenuItem';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import searchStyles from '../../search/search.css';
 
@@ -40,9 +39,8 @@ export default class Navigation extends React.Component {
   };
 
   state = {
-    settingsControlVisible: false,
     versionInfoVisible: false,
-    supportModalVisible: false,
+    supportModalVisible: false
   };
 
   navigationItems = [
@@ -93,7 +91,8 @@ export default class Navigation extends React.Component {
       icon: 'setting',
       path: '/settings',
       key: 'settings',
-      isDefault: false
+      isDefault: false,
+      isLink: true
     },
     {
       title: 'Search',
@@ -142,8 +141,6 @@ export default class Navigation extends React.Component {
   navigate = ({key}) => {
     if (key === 'search') {
       this.props.openSearchDialog && this.props.openSearchDialog();
-    } else if (key === 'settings') {
-      this.openSettingsForm();
     } else if (key === 'runs') {
       SessionStorageWrapper.navigateToActiveRuns(this.props.router);
     } else if (key === 'logout') {
@@ -153,14 +150,6 @@ export default class Navigation extends React.Component {
       }
       window.location = url;
     }
-  };
-
-  openSettingsForm = () => {
-    this.setState({settingsControlVisible: true});
-  };
-
-  closeSettingsForm = () => {
-    this.setState({settingsControlVisible: false});
   };
 
   closeVersionInfoControl = () => {
@@ -337,10 +326,6 @@ export default class Navigation extends React.Component {
             </Button>
           }
         </div>
-        <SettingsForm
-          visible={this.state.settingsControlVisible}
-          onClose={this.closeSettingsForm}
-        />
       </div>
     );
   }

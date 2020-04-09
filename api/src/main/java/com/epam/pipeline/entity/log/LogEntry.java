@@ -14,17 +14,22 @@
  * limitations under the License.
  */
 
-.actions {
-  margin-top: 10px;
-}
+package com.epam.pipeline.entity.log;
 
-.actions button {
-  margin-left: 5px;
-}
+import lombok.Builder;
+import lombok.Data;
 
-.code-editor {
-  height: 30vh;
-  background-color: #efefef;
-  border: 1px solid #ccc;
-  line-height: 15px;
+import java.time.LocalDateTime;
+
+@Data
+@Builder
+public class LogEntry {
+    private Long eventId;
+    private String hostname;
+    private String message;
+    private LocalDateTime messageTimestamp;
+    private String serviceName;
+    private String type;
+    private String user;
+    private String severity;
 }

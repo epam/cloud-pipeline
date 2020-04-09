@@ -327,6 +327,7 @@ public final class MessageConstants {
     public static final String ERROR_PAGE_INDEX = "error.page.index";
     public static final String ERROR_PAGE_SIZE = "error.page.size";
     public static final String ERROR_INVALID_PAGE_INDEX_OR_SIZE = "error.invalid.page.index.size";
+    public static final String ERROR_PAGINATION_IS_NOT_PROVIDED = "error.pagination.is.not.provided";
 
     //Entities
     public static final String ERROR_CLASS_NOT_SUPPORTED = "error.class.not.supported";

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,18 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import NotificationSettings from '../../../models/settings/NotificationSettings';
-import NotificationSettingUpdate from '../../../models/settings/NotificationSettingUpdate';
-import NotificationTemplateUpdate from '../../../models/settings/NotificationTemplateUpdate';
-import NotificationTemplates from '../../../models/settings/NotificationTemplates';
-import LoadingView from '../../special/LoadingView';
-import {SplitPanel} from '../../special/splitPanel/SplitPanel';
-import Users from '../../../models/user/Users';
+import NotificationSettings from '../../models/settings/NotificationSettings';
+import NotificationSettingUpdate from '../../models/settings/NotificationSettingUpdate';
+import NotificationTemplateUpdate from '../../models/settings/NotificationTemplateUpdate';
+import NotificationTemplates from '../../models/settings/NotificationTemplates';
+import LoadingView from '../special/LoadingView';
+import {SplitPanel} from '../special/splitPanel/SplitPanel';
+import Users from '../../models/user/Users';
 import {Alert, message, Modal, Table} from 'antd';
 import EditEmailNotification from './forms/EditEmailNotification';
 import styles from './EmailNotificationSettings.css';
 
+@inject('router')
 @inject(() => {
   return {
     notificationSettings: new NotificationSettings(),
@@ -39,8 +40,22 @@ import styles from './EmailNotificationSettings.css';
 export default class EmailNotificationSettings extends React.Component {
 
   state = {
-    selectedTemplateId: null
+    selectedTemplateId: null,
+    changesCanBeSkipped: false
   };
+
+  componentDidMount () {
+    const {route, router} = this.props;
+    if (route && router) {
+      router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
+    }
+  };
+
+  componentDidUpdate () {
+    if (!this.state.selectedTemplateId && this.templates.length > 0) {
+      this.selectTemplate(this.templates[0]);
+    }
+  }
 
   reload = async (clearState = false) => {
     this.props.notificationSettings.fetch();
@@ -85,6 +100,30 @@ export default class EmailNotificationSettings extends React.Component {
     }
     return [];
   }
+
+  checkSettingsBeforeLeave = (nextLocation) => {
+    const {router} = this.props;
+    const {changesCanBeSkipped} = this.state;
+    const makeTransition = nextLocation => {
+      this.setState({changesCanBeSkipped: true},
+        () => router.push(nextLocation)
+      );
+    };
+    if (this.templateModified && !changesCanBeSkipped) {
+      Modal.confirm({
+        title: 'You have unsaved changes. Continue?',
+        style: {
+          wordWrap: 'break-word'
+        },
+        onOk () {
+          makeTransition(nextLocation);
+        },
+        okText: 'Yes',
+        cancelText: 'No'
+      });
+      return false;
+    }
+  };
 
   updateTemplate = async (values) => {
     const [template] = this.templates.filter(t => t.id === this.state.selectedTemplateId);
@@ -241,11 +280,5 @@ export default class EmailNotificationSettings extends React.Component {
         <div>{this.renderTemplateForm()}</div>
       </SplitPanel>
     );
-  }
-
-  componentDidUpdate () {
-    if (!this.state.selectedTemplateId && this.templates.length > 0) {
-      this.selectTemplate(this.templates[0]);
-    }
   }
 }

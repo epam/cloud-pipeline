@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
-import LoadingView from '../../special/LoadingView';
-import {SplitPanel} from '../../special/splitPanel';
+import LoadingView from '../special/LoadingView';
+import {SplitPanel} from '../special/splitPanel';
 import {
   Alert,
   Button,
@@ -37,21 +37,21 @@ import {
   Table,
   Tooltip, Col, AutoComplete
 } from 'antd';
-import AWSRegionUpdate from '../../../models/dataStorage/AWSRegionUpdate';
-import AWSRegionDelete from '../../../models/dataStorage/AWSRegionDelete';
-import AWSRegionCreate from '../../../models/dataStorage/AWSRegionCreate';
-import FileShareMountUpdate from '../../../models/fileShareMount/FileShareMountUpdate';
-import FileShareMountDelete from '../../../models/fileShareMount/FileShareMountDelete';
-import GrantGet from '../../../models/grant/GrantGet';
-import GrantPermission from '../../../models/grant/GrantPermission';
-import GrantRemove from '../../../models/grant/GrantRemove';
-import Roles from '../../../models/user/Roles';
-import UserFind from '../../../models/user/UserFind';
-import GroupFind from '../../../models/user/GroupFind';
-import UserName from '../../special/UserName';
-import CodeEditorFormItem from '../../special/CodeEditorFormItem';
-import AWSRegionTag from '../../special/AWSRegionTag';
-import highlightText from '../../special/highlightText';
+import AWSRegionUpdate from '../../models/dataStorage/AWSRegionUpdate';
+import AWSRegionDelete from '../../models/dataStorage/AWSRegionDelete';
+import AWSRegionCreate from '../../models/dataStorage/AWSRegionCreate';
+import FileShareMountUpdate from '../../models/fileShareMount/FileShareMountUpdate';
+import FileShareMountDelete from '../../models/fileShareMount/FileShareMountDelete';
+import GrantGet from '../../models/grant/GrantGet';
+import GrantPermission from '../../models/grant/GrantPermission';
+import GrantRemove from '../../models/grant/GrantRemove';
+import Roles from '../../models/user/Roles';
+import UserFind from '../../models/user/UserFind';
+import GroupFind from '../../models/user/GroupFind';
+import UserName from '../special/UserName';
+import CodeEditorFormItem from '../special/CodeEditorFormItem';
+import AWSRegionTag from '../special/AWSRegionTag';
+import highlightText from '../special/highlightText';
 import styles from './AWSRegionsForm.css';
 
 const AWS_REGION_ITEM_TYPE = 'CLOUD_REGION';
@@ -87,7 +87,7 @@ function fromJSON (obj, defaultValue) {
   return defaultValue;
 }
 
-@inject('awsRegions', 'availableCloudRegions', 'cloudProviders')
+@inject('awsRegions', 'availableCloudRegions', 'cloudProviders', 'router')
 @observer
 export default class AWSRegionsForm extends React.Component {
 
@@ -100,11 +100,27 @@ export default class AWSRegionsForm extends React.Component {
     currentProvider: null,
     search: null,
     operationInProgress: false,
-    newRegion: null
+    newRegion: null,
+    changesCanBeSkipped: false
   };
 
   @observable awsRegionForm;
   @observable awsRegionIds;
+
+  componentDidMount () {
+    const {route, router} = this.props;
+    this.props.onInitialize && this.props.onInitialize(this);
+    if (route && router) {
+      router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
+    }
+  };
+
+  componentDidUpdate () {
+    const {currentRegionId} = this.state;
+    if (!currentRegionId && this.regions.length > 0) {
+      this.selectDefaultRegion();
+    }
+  };
 
   operationWrapper = (fn) => {
     return (...opts) => {
@@ -485,7 +501,6 @@ export default class AWSRegionsForm extends React.Component {
           <div
             key="content"
             style={{
-              height: '50vh',
               display: 'flex',
               flexDirection: 'column'
             }}>
@@ -516,9 +531,29 @@ export default class AWSRegionsForm extends React.Component {
     }, this.loadAvailableRegionIds);
   };
 
-  componentDidMount () {
-    this.props.onInitialize && this.props.onInitialize(this);
-  }
+  checkSettingsBeforeLeave = (nextLocation) => {
+    const {router} = this.props;
+    const {changesCanBeSkipped} = this.state;
+    const makeTransition = nextLocation => {
+      this.setState({changesCanBeSkipped: true},
+        () => router.push(nextLocation)
+      );
+    };
+    if (this.regionModified && !changesCanBeSkipped) {
+      Modal.confirm({
+        title: 'You have unsaved changes. Continue?',
+        style: {
+          wordWrap: 'break-word'
+        },
+        onOk () {
+          makeTransition(nextLocation);
+        },
+        okText: 'Yes',
+        cancelText: 'No'
+      });
+      return false;
+    }
+  };
 
   selectRegion = (region) => {
     if (region) {
@@ -538,13 +573,7 @@ export default class AWSRegionsForm extends React.Component {
     const [defaultRegion] = this.regions.filter(r => r.default);
     this.selectRegion(defaultRegion || this.regions[0]);
   };
-
-  componentDidUpdate () {
-    if (!this.state.currentRegionId && this.regions.length > 0) {
-      this.selectDefaultRegion();
-    }
-  }
-}
+};
 
 @inject(() => {
   const roles = new Roles();
@@ -1928,7 +1957,7 @@ const MountRootFormat = {
       mask: /^[^:]+(:[\d]+)?:\/.+$/i,
       format: 'server:port:/root'
     }
-  },
+  }
 };
 
 @observer
