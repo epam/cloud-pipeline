@@ -20,15 +20,70 @@ import {Row, Menu} from 'antd';
 import PipelineGitCredentials from '../../models/pipelines/PipelineGitCredentials';
 import AdaptedLink from '../special/AdaptedLink';
 import styles from './styles.css';
+import roleModel from '../../utils/roleModel';
 import 'highlight.js/styles/github.css';
+
+const SettingsTabs = [
+  {
+    key: 'cli',
+    path: '/settings/cli',
+    title: 'CLI',
+    available: () => true
+  },
+  {
+    key: 'events',
+    path: '/settings/events',
+    title: 'System events',
+    available: (user) => user ? user.admin : false
+  },
+  {
+    key: 'user',
+    path: '/settings/user',
+    title: 'User management',
+    available: (user) => user ? user.admin : false
+  },
+  {
+    key: 'email',
+    path: '/settings/email',
+    title: 'Email notifications',
+    available: (user) => user ? user.admin : false
+  },
+  {
+    key: 'preferences',
+    path: '/settings/preferences',
+    title: 'Preferences',
+    available: (user) => user ? user.admin : false
+  },
+  {
+    key: 'regions',
+    path: '/settings/regions',
+    title: 'Cloud regions',
+    available: (user) => user ? user.admin : false
+  },
+  {
+    key: 'logs',
+    path: '/settings/logs',
+    title: 'System Logs',
+    available: (user) => user ? user.admin : false
+  }
+];
 
 @inject(() => ({
   pipelineGitCredentials: new PipelineGitCredentials()
 }))
+@roleModel.authenticationInfo
 @observer
-export default class Index extends React.Component {
+export default class extends React.Component {
+  get currentUser () {
+    const {authenticatedUserInfo} = this.props;
+    return authenticatedUserInfo.loaded
+      ? authenticatedUserInfo.value
+      : undefined;
+  };
+
   renderSettingsNavigation = () => {
     const {router: {location}} = this.props;
+    const tabs = SettingsTabs.filter(tab => tab.available(this.currentUser));
     const activeTab = location.pathname.split('/').pop();
     return (
       <Row
@@ -42,55 +97,17 @@ export default class Index extends React.Component {
           selectedKeys={[activeTab]}
           className={styles.tabsMenu}
         >
-          <Menu.Item key="cli">
-            <AdaptedLink
-              to={`/settings/cli`}
-              location={location}>
-              CLI
-            </AdaptedLink>
-          </Menu.Item>
-          <Menu.Item key="events">
-            <AdaptedLink
-              to={`/settings/events`}
-              location={location}>
-              System events
-            </AdaptedLink>
-          </Menu.Item>
-          <Menu.Item key="user">
-            <AdaptedLink
-              to={`/settings/user`}
-              location={location}>
-              User management
-            </AdaptedLink>
-          </Menu.Item>
-          <Menu.Item key="email">
-            <AdaptedLink
-              to={`/settings/email`}
-              location={location}>
-              Email notifications
-            </AdaptedLink>
-          </Menu.Item>
-          <Menu.Item key="preferences">
-            <AdaptedLink
-              to={`/settings/preferences`}
-              location={location}>
-              Preferences
-            </AdaptedLink>
-          </Menu.Item>
-          <Menu.Item key="regions">
-            <AdaptedLink
-              to={`/settings/regions`}
-              location={location}>
-              Cloud Regions
-            </AdaptedLink>
-          </Menu.Item>
-          <Menu.Item key="logs">
-            <AdaptedLink
-              to={`/settings/logs`}
-              location={location}>
-              System logs
-            </AdaptedLink>
-          </Menu.Item>
+          {
+            tabs.map(tab => (
+              <Menu.Item key={tab.key}>
+                <AdaptedLink
+                  to={tab.path}
+                  location={location}>
+                  {tab.title}
+                </AdaptedLink>
+              </Menu.Item>
+            ))
+          }
         </Menu>
       </Row>
     );
