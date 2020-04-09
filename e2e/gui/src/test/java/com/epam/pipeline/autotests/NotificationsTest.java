@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,8 +54,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
         navigationMenu()
                 .settings()
                 .switchToSystemEvents()
-                .deleteAllEntries()
-                .ok();
+                .deleteAllEntries();
     }
 
 
@@ -66,8 +65,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .settings()
                 .switchToSystemEvents()
                 .ensureTableHasText("No data")
-                .ensureVisible(REFRESH, ADD, OK)
-                .ok();
+                .ensureVisible(REFRESH, ADD);
     }
 
     @Test(dependsOnMethods = {"validateSystemEventsMenu"})
@@ -90,11 +88,11 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .clickCombobox()
                 .selectSeverity(severity)
                 .setActive()
-                .create()
-                .ok();
+                .create();
 
         refresh();
         validateActiveNotification(warningActiveNotification, warningActiveNotificationBodyText, severity);
+        new NotificationAO(warningActiveNotification).close();
     }
 
     @Test(dependsOnMethods = {"validateCreateInactiveInfoNotification"})
@@ -108,8 +106,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .ensureBodyHasText(infoNotificationBodyText)
                 .narrow()
                 .ensureNoBodyText(infoNotificationBodyText)
-                .close()
-                .ok();
+                .close();
     }
 
     @Test(dependsOnMethods = {"validateCreateInactiveInfoNotification"})
@@ -157,8 +154,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .edit()
                 .titleTo(infoEditedTitle)
                 .bodyTo(infoEditedBodyText)
-                .save()
-                .ok();
+                .save();
         refresh();
         validateActiveNotification(infoEditedTitle, infoEditedBodyText, INFO);
     }
@@ -172,7 +168,6 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .searchForTableEntry(warningNotification)
                 .delete()
                 .ensureTitleIs(String.format(deletionMessageFormat, warningNotification))
-                .ok()
                 .ok();
 
         refresh();
@@ -216,8 +211,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .searchForTableEntry(infoNotification)
                 .expand()
                 .ensureBodyHasText(infoNotificationBodyText)
-                .close()
-                .ok();
+                .close();
     }
 
     @Test(dependsOnMethods = {"validateSeveralInactiveNotifications"})
@@ -230,8 +224,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .delete()
                 .ensureTitleIs(String.format(deletionMessageFormat, criticalNotification))
                 .ok()
-                .ensureTableHasNoText(criticalNotification)
-                .ok();
+                .ensureTableHasNoText(criticalNotification);
     }
 
     @Test
@@ -240,8 +233,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
         logout();
         loginAs(user)
                 .settings()
-                .ensure(SYSTEM_EVENTS_TAB, not(visible))
-                .ok();
+                .ensure(SYSTEM_EVENTS_TAB, not(visible));
         logout();
     }
 
@@ -266,8 +258,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .searchForTableEntry(titleText)
                 .ensureVisible(EXPAND, SEVERITY_ICON, TITLE, DATE, STATE, ACTIVE_LABEL, EDIT, DELETE)
                 .ensureSeverityIconIs(severity.name().toLowerCase())
-                .close()
-                .ok();
+                .close();
     }
 
     private void validateActiveNotification(String titleText, String bodyText, Primitive severity) {
@@ -287,8 +278,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .switchToSystemEvents()
                 .searchForTableEntry(title)
                 .changeState()
-                .close()
-                .ok();
+                .close();
     }
 
     private String capitalCase(Primitive severity) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,8 +151,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                         .setIdleCpuThreshold(idleCpuThreshold)
                         .setIdleAction(idleAction)
                         .save()
-                        .sleep(2, SECONDS)
-                        .click(OK)
+                        .sleep(1, SECONDS)
         );
     }
 
@@ -162,12 +161,10 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
     }
 
     private String getSystemValue(final Function<SystemTabAO, String> getValueFunction) {
-        final String value = getValueFunction.apply(navigationMenu()
+        return getValueFunction.apply(navigationMenu()
                 .settings()
                 .switchToPreferences()
                 .switchToSystem());
-        new SettingsPageAO(new PipelinesLibraryAO()).click(OK);
-        return value;
     }
 
     private String getToolName() {
