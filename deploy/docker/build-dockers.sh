@@ -183,8 +183,7 @@ docker push "$CP_SEARCH_DIST_NAME"
 # Search ELK
 CP_SEARCH_ELK_DIST_NAME=${CP_SEARCH_ELK_DIST_NAME:-"$CP_DIST_REPO_NAME:search-elk-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-search-elk \
-                -t "$CP_SEARCH_ELK_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+                -t "$CP_SEARCH_ELK_DIST_NAME"
 docker push "$CP_SEARCH_ELK_DIST_NAME"
 
 # Node logger
