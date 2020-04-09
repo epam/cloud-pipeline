@@ -41,14 +41,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
     @Override
     public SelenideElement context() {
-        return $(byClassName("ant-modal-content"));
+        return $(byId("root-content"));
     }
 
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
-            entry(CLI_TAB, $(byXpath("//*[contains(@class, 'ant-tabs-tab') and contains(., 'CLI')]"))),
-            entry(SYSTEM_EVENTS_TAB, $(byXpath("//*[contains(@class, 'ant-tabs-tab') and contains(., 'System events')]"))),
-            entry(USER_MANAGEMENT_TAB, context().find(byXpath("//*[contains(@class, 'ant-tabs-tab') and contains(., 'User management')]"))),
-            entry(PREFERENCES_TAB, context().find(byXpath("//*[contains(@class, 'ant-tabs-tab') and contains(., 'Preferences')]"))),
+            entry(CLI_TAB, $(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'CLI')]"))),
+            entry(SYSTEM_EVENTS_TAB, $(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'System events')]"))),
+            entry(USER_MANAGEMENT_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'User management')]"))),
+            entry(PREFERENCES_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Preferences')]"))),
             entry(OK, context().find(byId("settings-form-ok-button")))
     );
 

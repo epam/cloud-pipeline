@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ public class NavigationMenuAO {
     public SettingsPageAO settings() {
         $(byId("navigation-button-settings")).shouldBe(visible).click();
         sleep(1, SECONDS);
-        $(byClassName("ant-modal-content")).waitUntil(visible, 5000);
+        $(byId("root-content")).waitUntil(visible, 5000);
         return new SettingsPageAO(new PipelinesLibraryAO());
     }
 

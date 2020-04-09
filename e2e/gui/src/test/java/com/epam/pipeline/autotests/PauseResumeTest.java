@@ -90,7 +90,6 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                             .switchToPreferences()
                             .switchToCluster()
                             .getClusterHddExtraMulti();
-            new SettingsPageAO(new PipelinesLibraryAO()).click(OK);
         });
     }
 
@@ -105,7 +104,6 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .setClusterHddExtraMulti(defaultClusterHddExtraMulti)
                         .save()
                         .sleep(1, SECONDS)
-                        .click(OK)
         );
     }
 
@@ -168,8 +166,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .switchToCluster()
                         .setClusterHddExtraMulti("1")
                         .save()
-                        .sleep(3, SECONDS)
-                        .click(OK));
+                        .sleep(2, SECONDS));
 
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
@@ -242,9 +239,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .switchToPreferences()
                         .switchToCluster()
                         .setClusterHddExtraMulti("100")
-                        .save()
-                        .sleep(1, SECONDS)
-                        .click(OK));
+                        .save());
 
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
