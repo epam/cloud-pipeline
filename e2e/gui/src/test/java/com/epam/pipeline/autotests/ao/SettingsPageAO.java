@@ -101,8 +101,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 super.elements(),
                 entry(REFRESH, context().find(byId("refresh-notifications-button"))),
                 entry(ADD, context().find(byId("add-notification-button"))),
-                entry(TABLE, context().find(byClassName("ant-tabs-tabpane-active"))
-                                .find(byClassName("ant-table-content")))
+                entry(TABLE, context().find(byClassName("ant-table-content")))
         );
 
         public SystemEventsAO(PipelinesLibraryAO pipelinesLibraryAO) {
@@ -147,7 +146,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         private List<SelenideElement> getAllEntries() {
-            return new ArrayList<>(context().find(byClassName("ant-tabs-tabpane-active"))
+            return new ArrayList<>(context().find(byClassName("ant-table-content"))
                     .findAll(byXpath(".//tr[contains(@class, 'ant-table-row-level-0')]")));
         }
 

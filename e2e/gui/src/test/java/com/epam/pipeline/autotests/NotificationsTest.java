@@ -65,7 +65,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .settings()
                 .switchToSystemEvents()
                 .ensureTableHasText("No data")
-                .ensureVisible(REFRESH, ADD, OK);
+                .ensureVisible(REFRESH, ADD);
     }
 
     @Test(dependsOnMethods = {"validateSystemEventsMenu"})
