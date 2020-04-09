@@ -61,6 +61,7 @@ class S3MultipartUpload(MultipartUpload):
         return self._path
 
     def initiate(self):
+        logging.info('Initializing multipart upload for %s' % self._path)
         response = self._s3.create_multipart_upload(
             Bucket=self._bucket,
             Key=self._path
@@ -68,6 +69,7 @@ class S3MultipartUpload(MultipartUpload):
         self._upload_id = response['UploadId']
 
     def upload_part(self, buf, offset=None, part_number=None):
+        logging.info('Uploading multipart upload part range %d-%d for %s' % (offset, offset + len(buf), self._path))
         with io.BytesIO(buf) as body:
             response = self._s3.upload_part(
                 Bucket=self._bucket,
@@ -79,6 +81,7 @@ class S3MultipartUpload(MultipartUpload):
         self._parts[part_number] = response['ETag']
 
     def upload_copy_part(self, start, end, offset=None, part_number=None):
+        logging.info('Uploading multipart upload part copy range %d-%d for %s' % (start, end, self._path))
         response = self._s3.upload_part_copy(
             Bucket=self._bucket,
             Key=self._path,
@@ -93,6 +96,7 @@ class S3MultipartUpload(MultipartUpload):
         self._parts[part_number] = response['CopyPartResult']['ETag']
 
     def complete(self):
+        logging.info('Completing multipart upload for %s' % self._path)
         self._s3.complete_multipart_upload(
             Bucket=self._bucket,
             Key=self._path,
@@ -143,6 +147,7 @@ class S3Client(FileSystemClient):
 
     def _generate_aws_session(self, bucket, pipe):
         def refresh():
+            logging.info('Refreshing temporary credentials for data storage %s' % bucket)
             bucket_object = pipe.get_storage(bucket)
             credentials = pipe.get_temporary_credentials(bucket_object)
             return dict(
@@ -285,6 +290,7 @@ class S3Client(FileSystemClient):
             self.delete(file.name)
 
     def download_range(self, fh, buf, path, offset=0, length=0):
+        logging.info('Downloading range %d-%d for %s' % (offset, offset + length, path))
         source_path = path.lstrip(self._delimiter)
         source = {
             'Bucket': self.bucket,
@@ -307,8 +313,10 @@ class S3Client(FileSystemClient):
                 file_size = self.attrs(path).size
                 buf_size = len(buf)
                 if buf_size < self._SINGLE_UPLOAD_SIZE and file_size < self._SINGLE_UPLOAD_SIZE:
+                    logging.info('Using single range upload approach')
                     self._upload_single_range(fh, buf, source_path, offset)
                 else:
+                    logging.info('Using multipart upload approach')
                     mpu = self._new_mpu(source_path, file_size, offset)
                     self._mpus[path] = mpu
                     mpu.initiate()
@@ -341,6 +349,7 @@ class S3Client(FileSystemClient):
             modified_bytes = bytearray(original_buf.getvalue())
         modified_bytes[offset: offset + len(buf)] = buf
         with io.BytesIO(modified_bytes) as body:
+            logging.info('Uploading range %d-%d for %s' % (offset, offset + len(buf), path))
             self._s3.put_object(Bucket=self.bucket, Key=path, Body=body)
 
     def flush(self, fh, path):
@@ -355,6 +364,7 @@ class S3Client(FileSystemClient):
                 del self._mpus[path]
 
     def truncate(self, fh, path, length):
+        logging.info('Truncating %s to %d' % (path, length))
         file_size = self.attrs(path).size
         if not length:
             self.upload(bytearray(), path)

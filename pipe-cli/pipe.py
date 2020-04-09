@@ -977,30 +977,26 @@ def storage_delete_object_tags(path, tags, version):
 
 @storage.command('mount')
 @click.argument('mountpoint', required=True)
-@click.option('-f', '--file', required=False, help='File system mode', is_flag=True)
-@click.option('-b', '--bucket', required=False, help='Bucket name')
-@click.option('-o', '--options', required=False, help='Specify mount options')
-@click.option('-l', '--log-file', required=False, help='Specify log file for mount operation')
-@click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
+@click.option('-f', '--file', required=False, help='Enables file system mode', is_flag=True)
+@click.option('-b', '--bucket', required=False, help='Mounting bucket name')
+@click.option('-o', '--options', required=False, help='Any mount options supported by underlying FUSE implementation')
+@click.option('-c', '--custom-options', required=False, help='Mount options supported only by pipe fuse')
+@click.option('-l', '--log-file', required=False, help='Log file for mount')
+@click.option('-v', '--log-level', required=False, help='Log level for mount: '
+                                                        'CRITICAL, ERROR, WARNING, INFO or DEBUG')
+@click.option('-q', '--quiet', help='Enables quiet mode', is_flag=True)
 @click.option('-t', '--threads', help='Enables multithreading', is_flag=True)
 @click.option('-m', '--mode', required=False, help='Default file permissions',  default=700, type=int)
 @Config.validate_access_token
-def mount_storage(mountpoint, file, bucket, options, log_file, quiet, threads, mode):
+def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, log_level, quiet, threads, mode):
     """ Mounts either all available file systems or a single bucket into a local folder.
         Either -f\\--file flag or -b\\--bucket argument should be specified.
         Command is supported for Linux distributions and MacOS and requires
         FUSE installed.
-        - mountpoint - destination for mount.
-        - file - enables file system mount mode.
-        - bucket - name of the bucket to mount.
-        - options - any mount options supported by underlying FUSE implementation.
-        - log-file - path to FUSE log file.
-        - threads - start FUSE in a multithreaded mode.
-        - mode - file permissions mask
     """
-    DataStorageOperations.mount_storage(mountpoint, file=file, log_file=log_file,
-                                        bucket=bucket, options=options, quiet=quiet,
-                                        threading=threads, mode=mode)
+    DataStorageOperations.mount_storage(mountpoint, file=file, log_file=log_file, log_level=log_level,
+                                        bucket=bucket, options=options, custom_options=custom_options,
+                                        quiet=quiet, threading=threads, mode=mode)
 
 
 @storage.command('umount')

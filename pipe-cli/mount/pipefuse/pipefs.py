@@ -83,7 +83,6 @@ class PipeFS(Operations):
         self.delimiter = '/'
         self.root = '/'
         self.is_mac = platform.system() == 'Darwin'
-        self._system_files = ['/.Trash', '/.Trash-1000', '/.xdg-volume-info', '/autorun.inf']
         self._lock = lock
 
     def is_skipped_mac_files(self, path):
@@ -108,12 +107,12 @@ class PipeFS(Operations):
         pass
 
     def getattr(self, path, fh=None):
-        if self.is_skipped_mac_files(path):
-            raise FuseOSError(errno.ENOENT)
         try:
+            if self.is_skipped_mac_files(path):
+                raise FuseOSError(errno.ENOENT)
             props = self.client.attrs(path)
             if not props:
-                raise RuntimeError('Cannot read attributes for a path because it doesn\'t exist %s' % path)
+                raise FuseOSError(errno.ENOENT)
             if path == self.root or props.is_dir:
                 mode = stat.S_IFDIR
             else:
@@ -131,9 +130,9 @@ class PipeFS(Operations):
             if props.ctime:
                 attrs['st_ctime'] = props.ctime
             return attrs
+        except FuseOSError:
+            raise
         except Exception:
-            if path not in self._system_files:
-                logging.exception('Error occurred while getting attributes for %s' % path)
             raise FuseOSError(errno.ENOENT)
 
     def readdir(self, path, fh):

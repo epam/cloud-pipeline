@@ -18,6 +18,7 @@ import logging
 import os
 import sys
 
+
 is_frozen = getattr(sys, 'frozen', False)
 
 if is_frozen:
@@ -42,6 +43,7 @@ from pipefuse.api import CloudPipelineClient
 from pipefuse.webdav import CPWebDavClient
 from pipefuse.s3 import S3Client
 from pipefuse.pipefs import PipeFS
+from pipefuse.record import RecordingFS, RecordingFileSystemClient
 from pipefuse.fslock import get_lock
 import ctypes
 import fuse
@@ -51,11 +53,13 @@ from cachetools import TTLCache
 _allowed_logging_level_names = logging._levelNames
 _allowed_logging_levels = filter(lambda name: isinstance(name, str), _allowed_logging_level_names.keys())
 _allowed_logging_levels_string = ', '.join(_allowed_logging_levels)
-_default_logging_level = logging.ERROR
+_default_logging_level = _allowed_logging_level_names[logging.ERROR]
+_debug_logging_level = _allowed_logging_level_names[logging.DEBUG]
+_info_logging_level = _allowed_logging_level_names[logging.INFO]
 
 
 def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size, cache_ttl, cache_size, default_mode,
-          mount_options=None, threads=False, monitoring_delay=600):
+          mount_options=None, threads=False, monitoring_delay=600, recording=False):
     if mount_options is None:
         mount_options = {}
     try:
@@ -76,6 +80,8 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
             raise RuntimeError("Cloud Pipeline API should be specified.")
         pipe = CloudPipelineClient(api=api, token=bearer)
         client = S3Client(bucket, pipe=pipe, chunk_size=chunk_size)
+    if recording:
+        client = RecordingFileSystemClient(client)
     if cache_ttl > 0 and cache_size > 0:
         cache = TTLCache(maxsize=cache_size, ttl=cache_ttl)
         client = CachingFileSystemClient(client, cache)
@@ -94,6 +100,8 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
     else:
         logging.info('Truncating support is disabled.')
     fs = PipeFS(client=client, lock=get_lock(threads, monitoring_delay=monitoring_delay), mode=int(default_mode, 8))
+    if recording:
+        fs = RecordingFS(fs)
 
     enable_fallocate_support()
     FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=client.is_read_only(), **mount_options)
@@ -182,10 +190,12 @@ if __name__ == '__main__':
         parser.error('Either --webdav or --bucket parameter should be specified.')
     if args.bucket and (args.chunk_size < 5 * MB or args.chunk_size > 5 * GB):
         parser.error('Chunk size can vary from 5 MB to 5 GB due to AWS s3 multipart upload limitations.')
-    if args.logging_level not in _allowed_logging_level_names:
+    if args.logging_level not in _allowed_logging_levels:
         parser.error('Only the following logging level are allowed: %s.' % _allowed_logging_levels_string)
+    recording = args.logging_level in [_info_logging_level, _debug_logging_level]
     logging.basicConfig(format='[%(levelname)s] %(asctime)s %(filename)s - %(message)s',
                         level=_allowed_logging_level_names[args.logging_level])
+    logging.getLogger('botocore').setLevel(logging.ERROR)
 
     if is_frozen:
         logging.info('Frozen installation found. Bundled libfuse will be used.')
@@ -196,7 +206,7 @@ if __name__ == '__main__':
         start(args.mountpoint, webdav=args.webdav, bucket=args.bucket, buffer_size=args.buffer_size,
               trunc_buffer_size=args.trunc_buffer_size, chunk_size=args.chunk_size, cache_ttl=args.cache_ttl,
               cache_size=args.cache_size, default_mode=args.mode, mount_options=parse_mount_options(args.options),
-              threads=args.threads, monitoring_delay=args.monitoring_delay)
+              threads=args.threads, monitoring_delay=args.monitoring_delay, recording=recording)
     except BaseException as e:
         logging.error('Unhandled error: %s' % e.message)
         sys.exit(1)
