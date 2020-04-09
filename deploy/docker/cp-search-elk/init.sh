@@ -69,6 +69,9 @@ INDEX_TEMPLATE="{
         \"@timestamp\": {
           \"type\": \"date\"
         },
+        \"event_id\": {
+          \"type\": \"long\"
+        },
         \"hostname\": {
           \"type\": \"text\",
           \"fields\": {
@@ -232,6 +235,13 @@ EDGE_PIPELINE="{
            \"ignore_failure\": true
           }
        },
+        {
+         \"script\": {
+           \"ignore_failure\": false,
+           \"lang\": \"painless\",
+           \"source\": \"ctx.event_id=System.nanoTime()\"
+         }
+       },
        {
          \"set\": {
            \"if\": \"ctx.user.equalsIgnoreCase('$CP_DEFAULT_ADMIN_NAME')\",
@@ -308,6 +318,13 @@ API_SRV_PIPELINE="{
            \"field\": \"service_account\",
            \"value\": true
           }
+       },
+       {
+         \"script\": {
+           \"ignore_failure\": false,
+           \"lang\": \"painless\",
+           \"source\": \"ctx.event_id=System.nanoTime()\"
+         }
        },
        {
          \"rename\": {
