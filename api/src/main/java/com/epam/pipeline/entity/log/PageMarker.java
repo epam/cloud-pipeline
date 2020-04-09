@@ -24,6 +24,6 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 public class PageMarker {
-    private String id;
+    private Long id;
     private LocalDateTime messageTimestamp;
 }

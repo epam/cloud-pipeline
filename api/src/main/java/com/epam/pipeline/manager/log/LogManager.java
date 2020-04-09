@@ -85,7 +85,7 @@ public class LogManager {
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     private static final String DEFAULT_SEVERITY = "INFO";
-    public static final String ID = "_id";
+    public static final String ID = "event_id";
     public static final String SERVICE_ACCOUNT = "service_account";
     public static final String KEYWORD = ".keyword";
 
@@ -146,7 +146,7 @@ public class LogManager {
             return null;
         }
         final LogEntry entry = items.get(items.size() - 1);
-        return new PageMarker(entry.getId(), entry.getMessageTimestamp());
+        return new PageMarker(entry.getEventId(), entry.getMessageTimestamp());
     }
 
     private BoolQueryBuilder constructQueryFilter(final LogFilter logFilter) {
@@ -218,7 +218,7 @@ public class LogManager {
     private LogEntry mapHitToLogEntry(SearchHit searchHit) {
         Map<String, Object> hit = searchHit.getSourceAsMap();
         return LogEntry.builder()
-                .id(searchHit.getId())
+                .eventId((Long) hit.get(ID))
                 .messageTimestamp(LocalDateTime.parse((String) hit.get(MESSAGE_TIMESTAMP), DATE_TIME_FORMATTER))
                 .hostname((String) hit.get(HOSTNAME))
                 .serviceName((String) hit.get(SERVICE_NAME))

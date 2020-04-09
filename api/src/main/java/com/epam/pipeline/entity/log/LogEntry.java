@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 public class LogEntry {
-    private String id;
+    private Long eventId;
     private String hostname;
     private String message;
     private LocalDateTime messageTimestamp;
