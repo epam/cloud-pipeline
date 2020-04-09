@@ -477,7 +477,7 @@ export default class AWSRegionsForm extends React.Component {
     const AWSRegionFormComponent = this.awsRegionFormComponent;
 
     return (
-      <div>
+      <div style={{flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column'}}>
         <Row type="flex" style={{marginBottom: 10}}>
           <Input.Search
             size="small"
@@ -494,7 +494,9 @@ export default class AWSRegionsForm extends React.Component {
                 pxDefault: 175
               }
             }
-          ]}>
+          ]}
+          style={{flex: 1, minHeight: 0}}
+        >
           <div key="regions">
             {this.renderAwsRegionsTable()}
           </div>

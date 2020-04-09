@@ -777,7 +777,7 @@ export default class UserManagementForm extends React.Component {
   render () {
     const {exportUserDialogVisible, userDataToExport} = this.state;
     return (
-      <Tabs className="user-management-tabs" style={{width: '100%'}} type="card">
+      <Tabs className="user-management-tabs" style={{width: '100%', overflow: 'auto'}} type="card">
         <Tabs.TabPane tab="Users" key="users">
           {this.renderUsersTableControls()}
           {this.renderUsersTable()}

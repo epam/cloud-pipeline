@@ -78,7 +78,11 @@ export default class EditUserRolesDialog extends React.Component {
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    this.updateValues();
+    if (prevProps.visible !== this.props.visible) {
+      this.reload();
+    } else {
+      this.updateValues();
+    }
   }
 
   onInstanceTypesFormInitialized = (form) => {
@@ -420,7 +424,7 @@ export default class EditUserRolesDialog extends React.Component {
     this.setState({instanceTypesChanged: modified});
   };
 
-  revertChanges = () => {
+  revertChanges = (callback) => {
     if (this.instanceTypesForm) {
       this.instanceTypesForm.reset();
     }
@@ -432,7 +436,18 @@ export default class EditUserRolesDialog extends React.Component {
       defaultStorageId: defaultStorageIdInitial,
       roles: rolesInitial.map(r => r),
       metadata: undefined
-    });
+    }, callback);
+  };
+
+  reload = () => {
+    this.setState({
+      defaultStorageInitialized: false,
+      metadata: undefined,
+      roles: [],
+      rolesInitial: [],
+      rolesInitialized: false,
+      instanceTypesChanged: false
+    }, () => this.revertChanges(this.updateValues));
   };
 
   render () {
@@ -482,7 +497,7 @@ export default class EditUserRolesDialog extends React.Component {
             <div>
               <Button
                 id="revert-changes-edit-user-form"
-                onClick={this.revertChanges}
+                onClick={() => this.revertChanges()}
                 disabled={!this.modified}
               >
                 REVERT

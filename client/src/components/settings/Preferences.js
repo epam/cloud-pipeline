@@ -232,40 +232,51 @@ export default class Preferences extends React.Component {
       return <Alert type="warning" message={this.props.preferences.error} />
     }
     return (
-      <div>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0
+        }}
+      >
         <Row type="flex" style={{marginBottom: 10}}>
           <Input.Search
             size="small"
             onChange={this.onChange}
             onSearch={this.onSearch} />
         </Row>
-        <SplitPanel
-          contentInfo={[
-            {
-              key: 'groups',
-              size: {
-                pxDefault: 150
+        <div
+          style={{flex: 1, minHeight: 0}}
+        >
+          <SplitPanel
+            contentInfo={[
+              {
+                key: 'groups',
+                size: {
+                  pxDefault: 150
+                }
               }
-            }
-          ]}>
-          <div key="groups">
-            {this.renderPreferenceGroupsTable()}
-          </div>
-          <div
-            key="preferences"
-            style={{
-              display: 'flex',
-              flexDirection: 'column'
-            }}>
-            <PreferenceGroup
-              pending={this.state.operationInProgress}
-              onSubmit={this.operationWrapper(this.updatePreferences)}
-              group={this.state.selectedPreferenceGroup}
-              preferences={this.preferences}
-              wrappedComponentRef={this.initializePreferenceGroupForm}
-              search={this.state.search} />
-          </div>
-        </SplitPanel>
+            ]}
+          >
+            <div key="groups">
+              {this.renderPreferenceGroupsTable()}
+            </div>
+            <div
+              key="preferences"
+              style={{
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+              <PreferenceGroup
+                pending={this.state.operationInProgress}
+                onSubmit={this.operationWrapper(this.updatePreferences)}
+                group={this.state.selectedPreferenceGroup}
+                preferences={this.preferences}
+                wrappedComponentRef={this.initializePreferenceGroupForm}
+                search={this.state.search} />
+            </div>
+          </SplitPanel>
+        </div>
       </div>
     );
   }

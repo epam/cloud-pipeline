@@ -505,7 +505,7 @@ export default class CLIForm extends React.Component {
 
   render () {
     return (
-      <div style={{display: 'flex', flexDirection: 'row', height: '100%'}}>
+      <div style={{flex: 1, display: 'flex', flexDirection: 'row', minHeight: 0}}>
         <div style={{width: 200, height: '100%', borderRight: '1px solid #eee'}}>
           <Table
             columns={this.columns}

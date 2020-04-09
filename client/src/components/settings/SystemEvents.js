@@ -120,7 +120,7 @@ export default class SystemEvents extends Component {
     }
   };
 
-  renderSystemEvents = () => {
+  render () {
     const {notifications} = this.props;
     const data = (
       notifications.loaded
@@ -225,7 +225,7 @@ export default class SystemEvents extends Component {
       }
     ];
     return (
-      <Row>
+      <div style={{flex: 1, minHeight: 0}}>
         <Table
           id="notifications-table"
           className={styles.table}
@@ -279,15 +279,7 @@ export default class SystemEvents extends Component {
           visible={this.state.notification.createNotification}
           onCancel={this.closeCreateNotificationForm}
           onSubmit={this.updateNotification} />
-      </Row>
-    );
-  };
-
-  render () {
-    return (
-      <div>
-        {this.renderSystemEvents()}
       </div>
     );
-  };
+  }
 };

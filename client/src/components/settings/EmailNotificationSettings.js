@@ -269,16 +269,19 @@ export default class EmailNotificationSettings extends React.Component {
       return <Alert type="warning" message={this.props.notificationSettings.error} />;
     }
     return (
-      <SplitPanel
-        contentInfo={[{
-          key: 'templates',
-          size: {
-            pxDefault: 200
-          }
-        }]}>
-        <div key="templates">{this.renderTemplatesTable()}</div>
-        <div>{this.renderTemplateForm()}</div>
-      </SplitPanel>
+      <div style={{flex: 1, minHeight: 0}}>
+        <SplitPanel
+          contentInfo={[{
+            key: 'templates',
+            size: {
+              pxDefault: 200
+            }
+          }]}
+        >
+          <div key="templates">{this.renderTemplatesTable()}</div>
+          <div>{this.renderTemplateForm()}</div>
+        </SplitPanel>
+      </div>
     );
   }
 }
