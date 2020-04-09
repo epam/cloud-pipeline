@@ -77,6 +77,14 @@ INDEX_TEMPLATE="{
             }
           }
         },
+        \"application\": {
+          \"type\": \"text\",
+          \"fields\": {
+            \"keyword\": {
+              \"type\": \"keyword\"
+            }
+          }
+        },
         \"level\": {
           \"type\": \"text\",
           \"fields\": {
