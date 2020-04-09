@@ -216,6 +216,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
                 .thenReturn(ToolVersion.builder().size(1L).build());
         doReturn(configuration).when(pipelineConfigurationManager).getPipelineConfiguration(any());
         doReturn(configuration).when(pipelineConfigurationManager).getPipelineConfiguration(any(), any());
+        doReturn(new PipelineConfiguration()).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());
 
         AwsRegion region = new AwsRegion();
         region.setRegionCode("us-east-1");
@@ -373,7 +374,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     @Test
     @WithMockUser
     public void testLaunchPipelineDoesNotValidateToolInstanceTypeIfItIsNotSpecified() {
-        launchTool(null);
+        launchTool((String) null);
 
         verify(instanceOfferManager, times(0)).isInstanceAllowed(any(), eq(REGION_ID), eq(true));
         verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(REGION_ID), eq(true));
@@ -421,7 +422,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     @Test
     @WithMockUser
     public void testLaunchPipelineDoesNotValidatePipelineInstanceTypeIfItIsNotSpecified() {
-        launchPipeline(null);
+        launchPipeline((String) null);
 
         verify(instanceOfferManager, times(0)).isInstanceAllowed(any(), eq(REGION_ID), eq(true));
         verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(REGION_ID), eq(true));
@@ -453,6 +454,30 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
             () -> launchPipeline(INSTANCE_TYPE));
         verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), any());
+    }
+
+    @Test
+    @WithMockUser
+    public void testLaunchPipelineFailsIfToolCloudRegionIsConfiguredAndItDiffersFromRunConfigurationOne() {
+        final PipelineConfiguration toolConfiguration = new PipelineConfiguration();
+        toolConfiguration.setCloudRegionId(NON_DEFAULT_REGION_ID);
+        doReturn(toolConfiguration).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());
+
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE), this::launchPipeline);
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE), this::launchTool);
+        verify(pipelineConfigurationManager, times(2)).getConfigurationForTool(any(), any());
+    }
+
+    @Test
+    @WithMockUser
+    public void testLaunchPipelineDoesNotFailIfToolCloudRegionIsConfiguredAndItDiffersFromDefaultOne() {
+        final PipelineConfiguration toolConfiguration = new PipelineConfiguration();
+        toolConfiguration.setCloudRegionId(NON_DEFAULT_REGION_ID);
+        doReturn(toolConfiguration).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());
+
+        launchPipeline(configurationWithoutRegion());
+        launchTool(configurationWithoutRegion());
+        verify(pipelineConfigurationManager, times(2)).getConfigurationForTool(any(), any());
     }
 
     @Test
@@ -665,8 +690,24 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         Assert.assertEquals(paramValue, actualParameters.get(0).getValue());
     }
 
+    private void launchTool() {
+        launchPipeline(configuration, null, null, null);
+    }
+
+    private void launchTool(final PipelineConfiguration configuration) {
+        launchPipeline(configuration, null, null, null);
+    }
+
     private void launchTool(final String instanceType) {
         launchPipeline(configuration, null, instanceType, null);
+    }
+
+    private void launchPipeline() {
+        launchPipeline(configuration, new Pipeline(), null, null);
+    }
+
+    private void launchPipeline(final PipelineConfiguration configuration) {
+        launchPipeline(configuration, new Pipeline(), null, null);
     }
 
     private void launchPipeline(final String instanceType) {

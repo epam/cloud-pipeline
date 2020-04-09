@@ -392,4 +392,10 @@ public class PipelineConfigurationManager {
         }
         return defaultConfiguration;
     }
+
+    public PipelineConfiguration getConfigurationForTool(final Tool tool, final PipelineConfiguration configuration) {
+        return Optional.ofNullable(getConfigurationForToolVersion(tool.getId(), configuration.getDockerImage(), null))
+                .map(ConfigurationEntry::getConfiguration)
+                .orElseGet(PipelineConfiguration::new);
+    }
 }
