@@ -2,7 +2,7 @@ actions:
   1:
     action: snapshot
     description: >-
-      Snapshot security_log- prefixed indices older than 1 hour (based on index
+      Snapshot security_log- prefixed indices older than 1 day (based on index
       creation_date).
     options:
       allow_ilm_indices: True
@@ -26,7 +26,7 @@ actions:
   2:
     action: delete_snapshots
     description: >-
-      Delete snapshots from the selected repository older than 30 days
+      Delete snapshots from the selected repository older than CP_SECURITY_LOGS_ELASTIC_BACKUP_DAYS days
       (based on creation_date), for 'snapshot-' prefixed snapshots.
     options:
       repository: log_backup_repo
