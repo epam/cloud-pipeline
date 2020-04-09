@@ -324,7 +324,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public SystemEventsEntry ensureSeverityIconIs(String severity) {
-                ensure(SEVERITY_ICON, cssClass(String.format("settings-form__%s", severity.toLowerCase())));
+                ensure(SEVERITY_ICON, cssClass(String.format("tyles__%s", severity.toLowerCase())));
                 return this;
             }
 

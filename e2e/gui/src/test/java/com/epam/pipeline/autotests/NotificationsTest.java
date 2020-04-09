@@ -92,6 +92,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
 
         refresh();
         validateActiveNotification(warningActiveNotification, warningActiveNotificationBodyText, severity);
+        new NotificationAO(warningActiveNotification).close();
     }
 
     @Test(dependsOnMethods = {"validateCreateInactiveInfoNotification"})
