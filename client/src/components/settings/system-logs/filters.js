@@ -152,8 +152,12 @@ class Filters extends React.Component {
       }
       onChange && onChange(filters);
     };
-    const momentDateConverter = d => d ? moment.utc(d).format(DATE_FORMAT) : undefined;
-    const momentDateParser = d => d ? moment.utc(d, DATE_FORMAT) : undefined;
+    const momentDateConverter = d => d
+      ? moment.utc(d).format(DATE_FORMAT)
+      : undefined;
+    const momentDateParser = d => d
+      ? moment(moment.utc(d, DATE_FORMAT).toDate())
+      : undefined;
     const commonStyle = {flex: 1};
     const getDisabledDate = ({min, max}) => (date) => {
       let disabled = false;
