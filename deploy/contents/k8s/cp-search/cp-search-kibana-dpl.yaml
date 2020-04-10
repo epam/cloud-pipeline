@@ -1,0 +1,36 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-search-kibana
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-search-kibana: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-search-kibana: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      containers:
+        - name: cp-search-kibana
+          image: docker.elastic.co/kibana/kibana:6.8.3
+          securityContext:
+            privileged: true
+          imagePullPolicy: "IfNotPresent"
+          command: ["bash"]
+          args: ["-c", "/usr/local/bin/kibana-docker"]
+          env:
+            - name: ELASTICSEARCH_HOSTS
+              value: "http://${CP_SEARCH_ELK_INTERNAL_HOST}:${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT}"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5601
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10

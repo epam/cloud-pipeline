@@ -110,6 +110,11 @@ ADD update-trust /update-trust
 RUN chmod +x /init* && \
     chmod +x /update-trust
 
+RUN wget -q https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-6.8.3-x86_64.rpm \
+    && rpm -vi filebeat-6.8.3-x86_64.rpm && rm -rf filebeat-6.8.3-x86_64.rpm
+
+COPY filebeat-template.yml /etc/filebeat/
+
 WORKDIR /opt/api
 
 CMD ["/init-api"]

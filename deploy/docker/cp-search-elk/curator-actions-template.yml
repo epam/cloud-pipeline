@@ -1,0 +1,43 @@
+actions:
+  1:
+    action: snapshot
+    description: >-
+      Snapshot security_log- prefixed indices older than 1 day (based on index
+      creation_date).
+    options:
+      allow_ilm_indices: True
+      repository: log_backup_repo
+      name: snapshot-%Y%m%d%H
+      ignore_unavailable: False
+      include_global_state: True
+      partial: False
+      wait_for_completion: True
+      skip_repo_fs_check: False
+      disable_action: False
+    filters:
+      - filtertype: pattern
+        kind: prefix
+        value: ${CP_SECURITY_LOGS_ELASTIC_PREFIX}
+      - filtertype: age
+        source: creation_date
+        direction: older
+        unit: days
+        unit_count: 1
+  2:
+    action: delete_snapshots
+    description: >-
+      Delete snapshots from the selected repository older than CP_SECURITY_LOGS_ELASTIC_BACKUP_DAYS days
+      (based on creation_date), for 'snapshot-' prefixed snapshots.
+    options:
+      repository: log_backup_repo
+      disable_action: False
+    filters:
+      - filtertype: pattern
+        kind: prefix
+        value: snapshot-
+        exclude:
+      - filtertype: age
+        source: creation_date
+        direction: older
+        unit: days
+        unit_count: ${CP_SECURITY_LOGS_ELASTIC_BACKUP_DAYS}
