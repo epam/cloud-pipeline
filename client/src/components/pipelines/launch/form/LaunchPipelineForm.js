@@ -97,6 +97,7 @@ import {
   getInputPaths,
   getOutputPaths
 } from '../../../runs/actions';
+import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSettings';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -333,6 +334,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   @observable dockerImage = null;
   @observable cmdTemplateValue;
   @observable launchCommandPayload;
+  @observable _toolSettings;
+  @observable regionDisabledByToolSettings = false;
+  @observable toolCloudRegion = null;
 
   @action
   formFieldsChanged = async () => {
@@ -356,8 +360,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       form.getFieldValue(PARAMETERS),
       (parameters || {}).parameters
     );
-    this.dockerImage = form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`) ||
-      this.getDefaultValue('docker_image');
+    const currentDockerImage = form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`);
+    if (this.dockerImage !== currentDockerImage) {
+      if (currentDockerImage) {
+        await this.loadToolSettings(currentDockerImage);
+        if (this.toolCloudRegion) {
+          this.props.form.setFieldsValue({
+            [`${EXEC_ENVIRONMENT}.cloudRegionId`]: this.toolCloudRegion
+          });
+        }
+      } else {
+        this.resetToolSettings();
+      }
+    }
+    this.dockerImage = currentDockerImage || this.getDefaultValue('docker_image');
     this.rebuildLaunchCommand();
   };
 
@@ -2840,6 +2856,55 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
+  resetToolSettings = () => {
+    this._toolSettings = null;
+    this.regionDisabledByToolSettings = false;
+    this.toolCloudRegion = null;
+  };
+
+  loadToolSettings = async (dockerImage) => {
+    await this.props.dockerRegistries.fetchIfNeededOrWait();
+    if (this.props.dockerRegistries.loaded) {
+      const [registry, group, toolAndVersion] = dockerImage.toLowerCase().split('/');
+      const [imageRegistry] = (this.props.dockerRegistries.value.registries || [])
+        .filter(r => r.path.toLowerCase() === registry);
+      if (imageRegistry) {
+        const [imageGroup] = (imageRegistry.groups || [])
+          .filter(g => g.name.toLowerCase() === group);
+        if (imageGroup) {
+          const [image, version] = toolAndVersion.split(':');
+          const [im] = (imageGroup.tools || [])
+            .filter(i => i.image.toLowerCase() === `${group}/${image}`);
+          if (im && im.id) {
+            this._toolSettings = new LoadToolVersionSettings(im.id, version);
+            await this._toolSettings.fetchIfNeededOrWait();
+
+            if (this._toolSettings && this._toolSettings.loaded && this._toolSettings.value &&
+              this._toolSettings.value[0] && this._toolSettings.value[0].settings &&
+              this._toolSettings.value[0].settings[0].configuration &&
+              this._toolSettings.value[0].settings[0].configuration.cloudRegionId) {
+              this.regionDisabledByToolSettings = true;
+              this.toolCloudRegion = `${
+                this._toolSettings.value[0].settings[0].configuration.cloudRegionId
+              }`;
+            } else {
+              this.regionDisabledByToolSettings = false;
+              this.toolCloudRegion = null;
+            }
+          }
+        }
+      }
+    }
+  };
+
+  getDefaultCloudRegionValue = () => {
+    if (this.toolCloudRegion) {
+      return this.toolCloudRegion;
+    }
+
+    return this.getDefaultValue('cloudRegionId') || this.defaultCloudRegionId;
+  };
+
   renderAWSRegionSelection = () => {
     if (this.state.isDts && this.props.detached) {
       return undefined;
@@ -2859,11 +2924,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 message: 'Cloud region id is required'
               }
             ],
-            initialValue: this.getDefaultValue('cloudRegionId') || this.defaultCloudRegionId
+            initialValue: this.getDefaultCloudRegionValue()
           }
         )(
           <Select
             disabled={
+              this.regionDisabledByToolSettings ||
               !!this.state.fireCloudMethodName ||
               (this.props.readOnly && !this.props.canExecute) ||
               (
@@ -4081,7 +4147,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       onChange={this.onChangeClusterConfiguration}
                       visible={this.state.configureClusterDialogVisible}
                       disabled={this.props.readOnly && !this.props.canExecute} />
-                    {this.renderFormItemRow(this.renderAWSRegionSelection, hints.awsRegionHint)}
+                    {
+                      this.renderFormItemRow(
+                        this.renderAWSRegionSelection,
+                        this.regionDisabledByToolSettings
+                          ? hints.awsRegionRestrictedByToolSettingsHint
+                          : hints.awsRegionHint
+                      )
+                    }
                     {this.renderFormItemRow(this.renderCoresFormItem)}
                   </div>
                 </div>
@@ -4183,6 +4256,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   componentDidMount () {
     this.reset(true);
     this.evaluateEstimatedPrice({});
+    if (this.props.parameters && this.props.parameters.docker_image) {
+      this.loadToolSettings(this.props.parameters.docker_image);
+    }
     this.prepare();
     if (this.props.isDetachedConfiguration) {
       this.loadCurrentProject();
@@ -4234,6 +4310,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.props.allowedInstanceTypes.changed) {
       this.correctAllowedInstanceValues();
       this.props.allowedInstanceTypes.handleChanged();
+    }
+    if ((prevProps.parameters || {}).docker_image !== (this.props.parameters || {}).docker_image) {
+      if (this.props.parameters && this.props.parameters.docker_image) {
+        this.loadToolSettings(this.props.parameters.docker_image);
+      } else {
+        this.resetToolSettings();
+      }
     }
   }
 

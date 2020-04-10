@@ -242,8 +242,9 @@ export default class EditToolForm extends React.Component {
         const configuration = {
           parameters,
           node_count: this.state.launchCluster ? this.state.nodesCount : undefined,
-          // todo
-          // cloudRegionId: values.cloudRegionId,
+          cloudRegionId: values.cloudRegionId === regionNotConfiguredValue
+            ? null
+            : +values.cloudRegionId,
           cmd_template: this.defaultCommand,
           instance_disk: values.disk,
           instance_size: values.instanceType,
@@ -314,8 +315,9 @@ export default class EditToolForm extends React.Component {
   };
 
   getCloudRegionInitialValue = () => {
-    return (this.props.configuration && this.props.configuration.cloudRegionId) ||
-      regionNotConfiguredValue;
+    return this.props.configuration && this.props.configuration.cloudRegionId
+      ? `${this.props.configuration.cloudRegionId}`
+      : regionNotConfiguredValue;
   };
 
   rebuildComponent (props) {
@@ -559,6 +561,9 @@ export default class EditToolForm extends React.Component {
     const limitMountsFieldChanged = () => {
       return this.defaultLimitMounts !== this.props.form.getFieldValue('limitMounts');
     };
+    const cloudRegionFieldChanged = () => {
+      return this.getCloudRegionInitialValue() !== this.props.form.getFieldValue('cloudRegionId');
+    };
     const toolEndpointArray = this.props.tool ? (this.props.tool.endpoints || []).map(e => e) : null;
     const toolEndpointArrayFormValue = (this.props.form.getFieldValue('endpoints') || []).map(e => e);
     const toolLabelsArray = this.props.tool ? (this.props.tool.labels || []).map(l => l) : null;
@@ -594,7 +599,7 @@ export default class EditToolForm extends React.Component {
       !!slurmEnabledValue !== !!this.state.slurmEnabled ||
       (this.state.launchCluster && nodesCount !== this.state.nodesCount) ||
       (this.state.launchCluster && this.state.autoScaledCluster && maxNodesCount !== this.state.maxNodesCount) ||
-      limitMountsFieldChanged();
+      limitMountsFieldChanged() || cloudRegionFieldChanged();
   };
 
   initializeEndpointsControl = (control) => {
