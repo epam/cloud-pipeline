@@ -172,6 +172,22 @@ function cp_cap_publish {
       _MASTER_CAP_INIT_PATH="$CP_CAP_SCRIPTS_DIR/master"
       _WORKER_CAP_INIT_PATH="$CP_CAP_SCRIPTS_DIR/worker"
 
+      if check_cp_cap "CP_CAP_DIND_CONTAINER"
+      then
+            echo "set -e" >> $_MASTER_CAP_INIT_PATH
+            echo "set -e" >> $_WORKER_CAP_INIT_PATH
+
+            _DIND_CONTAINER_INIT="dind_setup && docker_setup_credentials"
+            echo "Requested DinD CONTAINER mode capability, setting init scripts:"
+            echo "--> Master/Worker: $_DIND_CONTAINER_INIT"
+
+            sed -i "/$_DIND_CONTAINER_INIT/d" $_MASTER_CAP_INIT_PATH
+            echo "$_DIND_CONTAINER_INIT" >> $_MASTER_CAP_INIT_PATH
+            
+            sed -i "/$_DIND_CONTAINER_INIT/d" $_WORKER_CAP_INIT_PATH
+            echo "$_DIND_CONTAINER_INIT" >> $_WORKER_CAP_INIT_PATH
+      fi
+
       if check_cp_cap "CP_CAP_SGE"
       then
             echo "set -e" >> $_MASTER_CAP_INIT_PATH
@@ -188,22 +204,6 @@ function cp_cap_publish {
             
             sed -i "/$_SGE_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_SGE_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
-      fi
-
-      if check_cp_cap "CP_CAP_DIND_CONTAINER"
-      then
-            echo "set -e" >> $_MASTER_CAP_INIT_PATH
-            echo "set -e" >> $_WORKER_CAP_INIT_PATH
-
-            _DIND_CONTAINER_INIT="dind_setup && docker_setup_credentials"
-            echo "Requested DinD CONTAINER mode capability, setting init scripts:"
-            echo "--> Master/Worker: $_DIND_CONTAINER_INIT"
-
-            sed -i "/$_DIND_CONTAINER_INIT/d" $_MASTER_CAP_INIT_PATH
-            echo "$_DIND_CONTAINER_INIT" >> $_MASTER_CAP_INIT_PATH
-            
-            sed -i "/$_DIND_CONTAINER_INIT/d" $_WORKER_CAP_INIT_PATH
-            echo "$_DIND_CONTAINER_INIT" >> $_WORKER_CAP_INIT_PATH
       fi
 
       if check_cp_cap "CP_CAP_SPARK"
