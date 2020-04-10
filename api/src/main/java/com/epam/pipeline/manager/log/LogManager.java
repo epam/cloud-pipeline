@@ -107,18 +107,24 @@ public class LogManager {
         Assert.isTrue(pagination.getPageSize() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_PAGE_INDEX_OR_SIZE));
 
+        final SortOrder sortOrder = logFilter.getSortOrder() != null
+                ? SortOrder.fromString(logFilter.getSortOrder())
+                : SortOrder.DESC;
         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
                 .query(constructQueryFilter(logFilter))
-                .sort(MESSAGE_TIMESTAMP, SortOrder.ASC)
-                .sort(ID, SortOrder.ASC)
+                .sort(MESSAGE_TIMESTAMP, sortOrder)
+                .sort(ID, sortOrder)
                 .size(pagination.getPageSize() + 1);
 
-        if (logFilter.getPagination().getToken() != null) {
+        final PageMarker pageMarker = logFilter.getPagination().getToken();
+        if (pageMarker != null) {
+            Assert.isTrue(pageMarker.getId() != null && pageMarker.getMessageTimestamp() != null,
+                    "Token should contain id and messageTimestamp values");
             searchSourceBuilder.searchAfter(
                     new Object[]{
-                            logFilter.getPagination().getToken().getMessageTimestamp()
+                            pageMarker.getMessageTimestamp()
                                     .toInstant(ZoneOffset.UTC).toEpochMilli(),
-                            logFilter.getPagination().getToken().getId()
+                            pageMarker.getId()
                     }
             );
         }

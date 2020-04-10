@@ -32,4 +32,5 @@ public class LogFilter {
     private List<String> users;
     private Boolean includeServiceAccountEvents;
     private LogPaginationRequest pagination;
+    private String sortOrder;
 }
