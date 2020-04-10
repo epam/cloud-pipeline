@@ -21,7 +21,6 @@
 
 .filters .filter {
   min-width: 210px;
-  max-width: 250px;
   display: inline-flex;
   align-items: center;
   padding: 0 5px;
