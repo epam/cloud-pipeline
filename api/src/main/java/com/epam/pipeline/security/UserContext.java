@@ -31,6 +31,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -78,7 +80,7 @@ public class UserContext implements UserDetails {
 
     public JwtTokenClaims toClaims() {
         return JwtTokenClaims.builder()
-                .userId(userId.toString())
+                .userId(Optional.ofNullable(userId).map(Objects::toString).orElse(null))
                 .userName(userName)
                 .orgUnitId(orgUnitId)
                 .roles(roles.stream().map(Role::getName)
