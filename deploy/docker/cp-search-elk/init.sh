@@ -13,8 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ES_JAVA_OPTS=""; echo $(get-aws-profile.sh --key) | bin/elasticsearch-keystore add s3.client.default.access_key -f
-ES_JAVA_OPTS=""; echo $(get-aws-profile.sh --secret) | bin/elasticsearch-keystore add s3.client.default.secret_key -f
+if [ "$CP_CLOUD_PLATFORM" == 'aws' ]; then
+    ES_JAVA_OPTS=""; echo $(get-aws-profile.sh --key) | bin/elasticsearch-keystore add s3.client.default.access_key -f
+    ES_JAVA_OPTS=""; echo $(get-aws-profile.sh --secret) | bin/elasticsearch-keystore add s3.client.default.secret_key -f
+elif [ "$CP_CLOUD_PLATFORM" == 'gcp' ]; then
+    ES_JAVA_OPTS=""; echo "$CP_CLOUD_CREDENTIALS_LOCATION" | bin/elasticsearch-keystore add gcs.client.default.credentials_file -f
+elif [ "$CP_CLOUD_PLATFORM" == 'az' ]; then
+    ES_JAVA_OPTS=""; echo "$CP_AZURE_STORAGE_ACCOUNT" | bin/elasticsearch-keystore add azure.client.default.account -f
+    ES_JAVA_OPTS=""; echo "$CP_AZURE_STORAGE_KEY" | bin/elasticsearch-keystore add azure.client.default.key -f
+fi
+
 
 ulimit -n 65536 && sysctl -w vm.max_map_count=262144 && /usr/local/bin/docker-entrypoint.sh &
 
@@ -371,13 +379,31 @@ API_SRV_PIPELINE="{
 
 curl -H 'Content-Type: application/json' -XPUT localhost:9200/_ingest/pipeline/api_server -d "$API_SRV_PIPELINE"
 
-LOG_BACKUP_REPO="{
-  \"type\": \"s3\",
-  \"settings\": {
-    \"bucket\": \"${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}\",
-    \"base_path\": \"log_backup_repo\"
-  }
-}"
+if [ "$CP_CLOUD_PLATFORM" == 'aws' ]; then
+    LOG_BACKUP_REPO="{
+      \"type\": \"s3\",
+      \"settings\": {
+        \"bucket\": \"${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}\",
+        \"base_path\": \"log_backup_repo\"
+      }
+    }"
+elif [ "$CP_CLOUD_PLATFORM" == 'gcp' ]; then
+    LOG_BACKUP_REPO="{
+      \"type\": \"gcs\",
+      \"settings\": {
+        \"bucket\": \"${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}\",
+        \"base_path\": \"log_backup_repo\"
+      }
+    }"
+elif [ "$CP_CLOUD_PLATFORM" == 'az' ]; then
+   LOG_BACKUP_REPO="{
+      \"type\": \"azure\",
+      \"settings\": {
+        \"container\": \"${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}\",
+        \"base_path\": \"log_backup_repo\"
+      }
+    }"
+fi
 
 curl -H 'Content-Type: application/json' -XPUT localhost:9200/_snapshot/log_backup_repo -d "$LOG_BACKUP_REPO"
 

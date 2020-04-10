@@ -15,6 +15,8 @@
 
 FROM elasticsearch:6.8.3
 RUN ES_JAVA_OPTS=""; echo "y" | bin/elasticsearch-plugin install repository-s3
+RUN ES_JAVA_OPTS=""; echo "y" | bin/elasticsearch-plugin install repository-azure
+RUN ES_JAVA_OPTS=""; echo "y" | bin/elasticsearch-plugin install repository-gcs
 
 RUN wget https://packages.elastic.co/curator/5/centos/7/Packages/elasticsearch-curator-5.8.1-1.x86_64.rpm && \
     rpm -vi elasticsearch-curator-5.8.1-1.x86_64.rpm && \
