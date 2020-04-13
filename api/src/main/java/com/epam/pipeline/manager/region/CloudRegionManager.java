@@ -297,6 +297,8 @@ public class CloudRegionManager implements SecuredEntityManager {
     private void validateRegion(final AbstractCloudRegion region, final AbstractCloudRegionCredentials credentials) {
         Assert.isTrue(StringUtils.isNotBlank(region.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_REGION_NAME_MISSING));
+        Assert.notNull(region.getMountStorageRule(),
+                messageHelper.getMessage(MessageConstants.ERROR_REGION_MOUNT_RULE_MISSING));
         getHelper(region.getProvider()).validateRegion(region, credentials);
     }
 

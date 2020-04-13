@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPCustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.entity.region.MountStorageRule;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -72,6 +73,7 @@ public class GCPRegionDaoHelper extends AbstractCloudRegionDaoHelper<GCPRegion, 
         gcpRegion.setApplicationName(rs.getString(CloudRegionParameters.APPLICATION_NAME.name()));
         gcpRegion.setImpersonatedAccount(rs.getString(CloudRegionParameters.IMPERSONATED_ACCOUNT.name()));
         final String customInstanceTypes = rs.getString(CloudRegionParameters.CUSTOM_INSTANCE_TYPES.name());
+        gcpRegion.setMountStorageRule(MountStorageRule.valueOf(rs.getString(CloudRegionParameters.MOUNT_STORAGE_RULE.name())));
         if (StringUtils.isNotBlank(customInstanceTypes)) {
             gcpRegion.setCustomInstanceTypes(JsonMapper.parseData(customInstanceTypes,
                     new TypeReference<List<GCPCustomInstanceType>>() {}));

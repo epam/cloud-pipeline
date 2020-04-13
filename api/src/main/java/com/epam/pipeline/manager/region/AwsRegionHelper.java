@@ -110,6 +110,7 @@ public class AwsRegionHelper implements CloudRegionHelper<AwsRegion, AbstractClo
         originalRegion.setProfile(updatedRegion.getProfile());
         originalRegion.setFileShareMounts(updatedRegion.getFileShareMounts());
         originalRegion.setSshKeyName(updatedRegion.getSshKeyName());
+        originalRegion.setMountStorageRule(updatedRegion.getMountStorageRule());
         return originalRegion;
     }
 

@@ -92,6 +92,7 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
         originalRegion.setMeterRegionName(updatedRegion.getMeterRegionName());
         originalRegion.setSshPublicKeyPath(updatedRegion.getSshPublicKeyPath());
         originalRegion.setFileShareMounts(updatedRegion.getFileShareMounts());
+        originalRegion.setMountStorageRule(updatedRegion.getMountStorageRule());
         return originalRegion;
     }
 

@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.region.AzurePolicy;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.region.MountStorageRule;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -72,6 +73,7 @@ class AzureRegionDaoHelper extends AbstractCloudRegionDaoHelper<AzureRegion, Azu
         azureRegion.setMeterRegionName(rs.getString(CloudRegionParameters.METER_REGION_NAME.name()));
         azureRegion.setAzureApiUrl(rs.getString(CloudRegionParameters.AZURE_API_URL.name()));
         azureRegion.setPriceOfferId(rs.getString(CloudRegionParameters.PRICE_OFFER_ID.name()));
+        azureRegion.setMountStorageRule(MountStorageRule.valueOf(rs.getString(CloudRegionParameters.MOUNT_STORAGE_RULE.name())));
         return azureRegion;
     }
 
