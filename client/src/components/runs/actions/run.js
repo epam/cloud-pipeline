@@ -333,6 +333,13 @@ export class RunConfirmation extends React.Component {
   };
 
   @computed
+  get currentRegion () {
+    const [currentRegion] = (this.props.cloudRegions || [])
+      .filter(p => +p.id === +this.props.cloudRegionId);
+    return currentRegion;
+  }
+
+  @computed
   get currentCloudProvider () {
     const [currentProvider] = (this.props.cloudRegions || []).filter(p => +p.id === +this.props.cloudRegionId);
     return currentProvider ? currentProvider.provider : null;
@@ -727,6 +734,20 @@ export class RunConfirmation extends React.Component {
               />
             )
             : undefined
+        }
+        {
+          !this.currentRegion && (
+            <Alert
+              type="error"
+              style={{margin: 2}}
+              showIcon
+              message={
+                <div>
+                  <b>Cloud region not available.</b>
+                </div>
+              }
+            />
+          )
         }
         <EstimatedDiskSizeWarning
           nodeCount={this.props.nodeCount}

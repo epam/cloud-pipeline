@@ -2905,6 +2905,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return this.getDefaultValue('cloudRegionId') || this.defaultCloudRegionId;
   };
 
+  getInitialCloudRegionNotAvailable = () => {
+    const {getFieldValue} = this.props.form;
+    const initialValue = `${this.getDefaultCloudRegionValue()}`;
+    const currentValue = getFieldValue('cloudRegionId');
+    return (!currentValue || currentValue === initialValue) &&
+      initialValue &&
+      this.awsRegions.filter((region) => `${region.id}` === initialValue).length === 0;
+  };
+
   renderAWSRegionSelection = () => {
     if (this.state.isDts && this.props.detached) {
       return undefined;
@@ -2945,6 +2954,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             filterOption={
               (input, option) =>
                 option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
+            {
+              this.getInitialCloudRegionNotAvailable() && (
+                <Select.Option
+                  key={this.getDefaultCloudRegionValue()}
+                  name="Not available"
+                  title="Not available"
+                  value={this.getDefaultCloudRegionValue()}
+                >
+                  Not available
+                </Select.Option>
+              )
+            }
             {
               this.awsRegions
                 .map(region => {

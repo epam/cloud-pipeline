@@ -320,6 +320,16 @@ export default class EditToolForm extends React.Component {
       : regionNotConfiguredValue;
   };
 
+  getInitialCloudRegionNotAvailable = () => {
+    const {getFieldValue} = this.props.form;
+    const initialValue = this.getCloudRegionInitialValue();
+    const currentValue = getFieldValue('cloudRegionId');
+    return initialValue !== regionNotConfiguredValue &&
+      currentValue === initialValue &&
+      initialValue &&
+      this.awsRegions.filter((region) => `${region.id}` === initialValue).length === 0;
+  };
+
   rebuildComponent (props) {
     const state = this.state;
     state.labels = props.tool && props.tool.labels ? props.tool.labels.map(l => l) : [];
@@ -938,6 +948,18 @@ export default class EditToolForm extends React.Component {
                     >
                       Not configured
                     </Select.Option>
+                    {
+                      this.getInitialCloudRegionNotAvailable() && (
+                        <Select.Option
+                          key={this.getCloudRegionInitialValue()}
+                          name="Not available"
+                          title="Not available"
+                          value={this.getCloudRegionInitialValue()}
+                        >
+                          Not available
+                        </Select.Option>
+                      )
+                    }
                     <Select.Option disabled key="divider" className={styles.selectOptionDivider} />
                     {
                       this.awsRegions

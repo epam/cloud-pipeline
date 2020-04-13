@@ -1463,7 +1463,9 @@ export default class Tool extends localization.LocalizedReactComponent {
       nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))
         ? +versionSettingValue('node_count')
         : undefined,
-      cloudRegionId: this.defaultCloudRegionId
+      cloudRegionId: parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
+        ? versionSettingValue('cloudRegionId')
+        : this.defaultCloudRegionId
     }, this.props.allowedInstanceTypes);
     const {allowedToExecute, tooltip, notLoaded} = this.getVersionRunningInformation(version);
     if (!allowedToExecute) {

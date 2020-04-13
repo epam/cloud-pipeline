@@ -404,7 +404,9 @@ export default class PersonalToolsPanel extends React.Component {
           nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))
             ? +versionSettingValue('node_count')
             : undefined,
-          cloudRegionId: this.defaultCloudRegionId
+          cloudRegionId: parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
+            ? versionSettingValue('cloudRegionId')
+            : this.defaultCloudRegionId
         }, allowedInstanceTypesRequest);
         const parts = (tool.image || '').toLowerCase().split('/');
         const [image] = parts[parts.length - 1].split(':');
