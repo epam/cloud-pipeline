@@ -369,9 +369,8 @@ public class PipelineRunManager {
                                      final AbstractCloudRegion region) {
         if (toolConfiguration.getCloudRegionId() != null) {
             Assert.isTrue(toolConfiguration.getCloudRegionId().equals(region.getId()),
-                    messageHelper
-                            .getMessage(MessageConstants.ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED,
-                                    toolConfiguration.getCloudRegionId(), region.getId()));
+                    messageHelper.getMessage(MessageConstants.ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED,
+                            cloudRegionManager.load(toolConfiguration.getCloudRegionId()).getName(), region.getName()));
         }
     }
 
