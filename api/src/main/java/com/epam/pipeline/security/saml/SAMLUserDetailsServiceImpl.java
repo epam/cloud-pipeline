@@ -99,7 +99,8 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
             .orElseGet(() -> processNewUser(userName, groups, attributes));
         validateGroupsBlockingStatus(userContext.getAuthorities(), userName);
         if (hasBlockedStatusAttribute(credential)) {
-            userManager.updateUserBlockingStatus(userContext.getUserId(), true);
+            Optional.ofNullable(userContext.getUserId())
+                    .ifPresent(id -> userManager.updateUserBlockingStatus(id, true));
             throwUserIsBlocked(userName);
         }
         LOGGER.info("Successfully authenticate user: " + userContext.getUsername());
@@ -132,7 +133,7 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, userName));
         switch (autoCreateUsers) {
             case EXPLICIT:
-                return userNotRegisteredExplicitlyError(userName);
+                return throwUserNotExplicitlyRegistered(userName);
             case EXPLICIT_GROUP:
                 if (permissionManager.isGroupRegistered(groups)) {
                     return createUser(userName, groups, attributes);
@@ -140,7 +141,7 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
                     if (allowAnonymous) {
                         return createAnonymousUser(userName, groups);
                     } else {
-                        return userNotRegisteredGroupExplicitlyError(userName, groups);
+                        return throwGroupNotExplicitlyRegistered(userName, groups);
                     }
                 }
             default:
@@ -148,17 +149,17 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
         }
     }
 
-    private UserContext userNotRegisteredGroupExplicitlyError(final String userName, final List<String> groups) {
+    private UserContext throwUserNotExplicitlyRegistered(final String userName) {
+        log.error(messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_EXPLICITLY, userName));
+        throw new UsernameNotFoundException(
+                messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_EXPLICITLY, userName));
+    }
+
+    private UserContext throwGroupNotExplicitlyRegistered(final String userName, final List<String> groups) {
         log.error(messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_GROUP_EXPLICITLY, userName));
         throw new UsernameNotFoundException(
                 messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_GROUP_EXPLICITLY,
                         String.join(", ", groups), userName));
-    }
-
-    private UserContext userNotRegisteredExplicitlyError(final String userName) {
-        log.error(messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_EXPLICITLY, userName));
-        throw new UsernameNotFoundException(
-                messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_EXPLICITLY, userName));
     }
 
     private UserContext createUser(final String userName, final List<String> groups,

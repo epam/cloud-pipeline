@@ -52,11 +52,8 @@ public class UserContext implements UserDetails {
 
     public UserContext(JwtRawToken jwtRawToken, JwtTokenClaims claims) {
         this.jwtRawToken = jwtRawToken;
-        if (NumberUtils.isDigits(claims.getUserId())) {
-            this.userId = Long.parseLong(claims.getUserId());
-        } else {
-            throw new IllegalArgumentException("Invalid user ID: " + claims.getUserId());
-        }
+        this.userId = Optional.ofNullable(claims.getUserId()).filter(NumberUtils::isDigits).map(Long::parseLong)
+                .orElse(null);
         this.userName = claims.getUserName().toUpperCase();
         this.orgUnitId = claims.getOrgUnitId();
         this.roles = claims.getRoles().stream().map(Role::new).collect(Collectors.toList());
