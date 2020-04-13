@@ -90,7 +90,6 @@ class SystemLogs extends React.Component {
   };
 
   onFiltersChange = (newFilters) => {
-    console.log(newFilters);
     this.setState({
       filters: newFilters
     });
@@ -116,7 +115,7 @@ class SystemLogs extends React.Component {
           >
             <Logs
               filters={filters}
-              height={logContainerSize.height}
+              width={logContainerSize.width}
             />
           </div>
         </div>

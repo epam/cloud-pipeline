@@ -25,7 +25,6 @@ import styles from './logs.css';
 
 const PAGE_SIZE = 20;
 const PAGINATION_CONTROL_HEIGHT = 36;
-const TABLE_HEADER_HEIGHT = 40;
 
 const columns = [
   {
@@ -62,7 +61,7 @@ const columns = [
     dataIndex: 'type',
     title: 'Type',
     width: 100
-  },
+  }
 ];
 
 @observer
@@ -166,25 +165,25 @@ class Logs extends React.Component {
   };
 
   render () {
-    const {height} = this.props;
-    if (!height) {
+    const {width} = this.props;
+    if (!width) {
       return null;
     }
     return (
-      <div style={{height, width: '100%'}}>
+      <div>
         <Table
-          style={{height: height - PAGINATION_CONTROL_HEIGHT}}
+          className={styles.table}
           columns={columns}
           dataSource={this.logMessages}
           loading={this.logs.pending}
           size="small"
-          scroll={{y: height - PAGINATION_CONTROL_HEIGHT - TABLE_HEADER_HEIGHT}}
           pagination={false}
         />
         <div
           style={{
             height: PAGINATION_CONTROL_HEIGHT,
-            lineHeight: `${PAGINATION_CONTROL_HEIGHT}px`
+            lineHeight: `${PAGINATION_CONTROL_HEIGHT}px`,
+            width: width - 10
           }}
           className={styles.pagination}
         >
@@ -212,7 +211,7 @@ class Logs extends React.Component {
 
 Logs.propTypes = {
   filters: PropTypes.object,
-  height: PropTypes.number,
+  width: PropTypes.number,
   onInitialized: PropTypes.func
 };
 

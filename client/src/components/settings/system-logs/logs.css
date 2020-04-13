@@ -23,3 +23,11 @@
 .pagination .button {
   margin-left: 3px;
 }
+
+.table {
+  width: 100%;
+}
+
+.table > div > div {
+  filter: none !important;
+}
