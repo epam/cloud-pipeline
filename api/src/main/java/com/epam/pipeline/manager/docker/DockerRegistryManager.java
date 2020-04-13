@@ -27,13 +27,13 @@ import com.epam.pipeline.entity.docker.DockerRegistryList;
 import com.epam.pipeline.entity.docker.DockerRegistrySecret;
 import com.epam.pipeline.entity.docker.ImageDescription;
 import com.epam.pipeline.entity.docker.ManifestV2;
-import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.DockerRegistryEvent;
 import com.epam.pipeline.entity.pipeline.DockerRegistryEventEnvelope;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
+import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -491,8 +491,9 @@ public class DockerRegistryManager implements SecuredEntityManager {
         if (toolInGroup.isPresent()) {
             LOGGER.warn(messageHelper.getMessage(MessageConstants.ERROR_TOOL_ALREADY_EXIST, tool.getImage(),
                     toolGroup.getName()));
-            final ToolVersion toolVersion = toolVersionManager.loadToolVersion(tool.getId(), pushTag);
-            if (!toolVersion.getDigest().equals(pushDigest)) {
+            final Optional<ToolVersionScanResult> scanResult = toolManager.loadToolVersionScan(
+                    toolInGroup.get().getId(), pushTag);
+            if (!scanResult.isPresent() || !scanResult.get().getDigest().equals(pushDigest)) {
                 toolManager.updateToolVersionScanStatus(toolInGroup.get().getId(),
                         ToolScanStatus.NOT_SCANNED, DateUtils.now(), pushTag,
                         null, pushDigest);
