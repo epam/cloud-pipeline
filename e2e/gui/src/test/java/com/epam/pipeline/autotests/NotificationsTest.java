@@ -25,13 +25,13 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
-import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.REFRESH;
 
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.*;
 import static com.codeborne.selenide.Condition.*;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static java.lang.String.format;
 
 public class NotificationsTest extends AbstractBfxPipelineTest implements Authorization {
 
@@ -92,7 +92,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
 
         refresh();
         validateActiveNotification(warningActiveNotification, warningActiveNotificationBodyText, severity);
-        new NotificationAO(warningActiveNotification).close();
+        closeNotification(warningActiveNotification);
     }
 
     @Test(dependsOnMethods = {"validateCreateInactiveInfoNotification"})
@@ -120,7 +120,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .ensureTitleIs(infoNotification)
                 .ensureBodyIs(infoNotificationBodyText)
                 .ensureVisible(CLOSE, DATE);
-
+        closeNotification(infoNotification);
         changeStateOf(infoNotification);
     }
 
@@ -142,6 +142,10 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
         validateActiveNotification(infoNotification, infoNotificationBodyText, INFO);
         validateActiveNotification(warningNotification, warningNotificationBodyText, WARNING);
         validateActiveNotification(criticalNotification, criticalNotificationBodyText, CRITICAL);
+
+        closeNotification(infoNotification);
+        closeNotification(warningNotification);
+        closeNotification(criticalNotification);
     }
 
     @Test(dependsOnMethods = {"validateDisplaySeveralActiveNotifications"})
@@ -157,6 +161,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .save();
         refresh();
         validateActiveNotification(infoEditedTitle, infoEditedBodyText, INFO);
+        closeNotification(infoEditedTitle);
     }
 
     @Test(dependsOnMethods = {"validateDisplaySeveralActiveNotifications"})
@@ -167,23 +172,24 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .switchToSystemEvents()
                 .searchForTableEntry(warningNotification)
                 .delete()
-                .ensureTitleIs(String.format(deletionMessageFormat, warningNotification))
+                .ensureTitleIs(format(deletionMessageFormat, warningNotification))
                 .ok();
 
         refresh();
         ensureNotificationIsAbsent(warningNotification);
+        closeNotification(infoNotification);
+        closeNotification(criticalNotification);
     }
 
-    @Test(dependsOnMethods = {"validateDeleteActiveNotification"})
+    @Test(dependsOnMethods = {"validateDeleteActiveNotification"}, enabled = false)
     @TestCase(value = {"EPMCMBIBPC-1221"})
     public void validateCloseActiveNotification() {
-        new NotificationAO(criticalNotification)
-                .close();
+        closeNotification(criticalNotification);
         refresh();
         validateActiveNotification(criticalNotification, criticalNotificationBodyText, CRITICAL);
     }
 
-    @Test(dependsOnMethods = {"validateCloseActiveNotification"})
+    @Test(dependsOnMethods = {"validateDeleteActiveNotification"})
     @TestCase(value = {"EPMCMBIBPC-1217"})
     public void validateSeveralInactiveNotifications() {
         changeStateOf(infoEditedTitle);
@@ -222,7 +228,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .switchToSystemEvents()
                 .searchForTableEntry(criticalNotification)
                 .delete()
-                .ensureTitleIs(String.format(deletionMessageFormat, criticalNotification))
+                .ensureTitleIs(format(deletionMessageFormat, criticalNotification))
                 .ok()
                 .ensureTableHasNoText(criticalNotification);
     }
@@ -269,7 +275,8 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     }
 
     private void ensureNotificationIsAbsent(String title) {
-        $(byXpath(String.format("//*[contains(@class, 'system-notification__container') and contains(., '%s')]", title))).shouldNotBe(visible);
+        $(byXpath(format("//*[contains(@class, 'system-notification__container') and contains(., '%s')]", title)))
+                .shouldNotBe(visible);
     }
 
     private void changeStateOf(String title) {
@@ -283,5 +290,9 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
 
     private String capitalCase(Primitive severity) {
         return severity.name().substring(0,1) + severity.name().substring(1).toLowerCase();
+    }
+
+    private void closeNotification(final String notificationName) {
+        new NotificationAO(notificationName).close();
     }
 }
