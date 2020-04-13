@@ -95,10 +95,10 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.OPTIONS).permitAll()
                 .antMatchers(getUnsecuredResources()).permitAll()
                 .antMatchers(getAnonymousResources())
-                    .hasAnyAuthority(roles(DefaultRoles.ROLE_ADMIN, DefaultRoles.ROLE_USER, 
-                            DefaultRoles.ROLE_ANONYMOUS_USER))
+                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName(), 
+                            DefaultRoles.ROLE_ANONYMOUS_USER.getName())
                 .antMatchers(getSecuredResources())
-                    .hasAnyAuthority(roles(DefaultRoles.ROLE_ADMIN, DefaultRoles.ROLE_USER))
+                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName())
                 .and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 .and()
@@ -145,13 +145,6 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     public String[] getAnonymousResources() {
         return anonymousResources;
-    }
-
-    private String[] roles(final DefaultRoles... roles) {
-        return Arrays.stream(roles)
-                .map(DefaultRoles::getRole)
-                .map(Role::getName)
-                .toArray(String[]::new);
     }
 
     //List of urls under REST that should be redirected back after authorization

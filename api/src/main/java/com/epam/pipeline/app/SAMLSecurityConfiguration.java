@@ -160,10 +160,10 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
         http.authorizeRequests()
                 .antMatchers(getUnsecuredResources()).permitAll()
                 .antMatchers(getAnonymousResources())
-                    .hasAnyAuthority(roles(DefaultRoles.ROLE_ADMIN, DefaultRoles.ROLE_USER, 
-                            DefaultRoles.ROLE_ANONYMOUS_USER))
+                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName(), 
+                            DefaultRoles.ROLE_ANONYMOUS_USER.getName())
                 .antMatchers(getSecuredResourcesRoot())
-                    .hasAnyAuthority(roles(DefaultRoles.ROLE_ADMIN, DefaultRoles.ROLE_USER));
+                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName());
         http.logout().logoutSuccessUrl("/");
     }
 
@@ -182,13 +182,6 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     public String[] getAnonymousResources() {
         return anonymousResources;
-    }
-
-    private String[] roles(final DefaultRoles... roles) {
-        return Arrays.stream(roles)
-                .map(DefaultRoles::getRole)
-                .map(Role::getName)
-                .toArray(String[]::new);
     }
 
     protected RequestMatcher getFullRequestMatcher() {
