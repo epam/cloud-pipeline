@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.app;
 
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.security.jwt.JwtAuthenticationProvider;
 import com.epam.pipeline.security.jwt.JwtFilterAuthenticationFilter;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
@@ -59,6 +60,9 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Value("${jwt.use.for.all.requests:false}")
     private boolean useJwtAuthForAllRequests;
+    
+    @Value("${api.security.anonymous.urls:/restapi/route}")
+    private String[] anonymousResources;
 
     @Autowired
     private SAMLAuthenticationProvider samlAuthenticationProvider;
@@ -87,9 +91,13 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .and()
                 .requestMatcher(getFullRequestMatcher())
                 .authorizeRequests()
-                    .antMatchers(HttpMethod.OPTIONS).permitAll()
-                    .antMatchers(getUnsecuredResources()).permitAll()
-                    .antMatchers(getSecuredResources()).authenticated()
+                .antMatchers(HttpMethod.OPTIONS).permitAll()
+                .antMatchers(getUnsecuredResources()).permitAll()
+                .antMatchers(getAnonymousResources())
+                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName(), 
+                            DefaultRoles.ROLE_ANONYMOUS_USER.getName())
+                .antMatchers(getSecuredResources())
+                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName())
                 .and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 .and()
@@ -132,6 +140,10 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
             "/fsbrowser.tar.gz", "/error", "/error/**", "/pipe.zip", "/pipe.tar.gz",
             "/pipe-el6", "/pipe-el6.tar.gz"
         };
+    }
+
+    public String[] getAnonymousResources() {
+        return anonymousResources;
     }
 
     //List of urls under REST that should be redirected back after authorization

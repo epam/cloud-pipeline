@@ -83,10 +83,6 @@ public class JwtTokenVerifier {
             throw new TokenVerificationException("Invalid token: token ID is empty");
         }
 
-        if (StringUtils.isEmpty(tokenClaims.getUserId())) {
-            throw new TokenVerificationException("Invalid token: user ID is empty");
-        }
-
         if (StringUtils.isEmpty(tokenClaims.getUserName())) {
             throw new TokenVerificationException("Invalid token: user name is empty");
         }

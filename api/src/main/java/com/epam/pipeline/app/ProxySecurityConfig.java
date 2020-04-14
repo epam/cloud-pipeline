@@ -31,6 +31,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import com.epam.pipeline.security.jwt.RestAuthenticationEntryPoint;
 import com.epam.pipeline.security.saml.SAMLProxyAuthenticationProvider;
 import com.epam.pipeline.security.saml.SAMLProxyFilter;
+import com.epam.pipeline.entity.user.DefaultRoles;
 
 @Configuration
 @Order(1)
@@ -51,7 +52,8 @@ public class ProxySecurityConfig extends WebSecurityConfigurerAdapter {
             .requestMatcher(new AntPathRequestMatcher(RESTAPI_PROXY))
             .authorizeRequests()
                 .antMatchers(HttpMethod.OPTIONS).permitAll()
-                .antMatchers(RESTAPI_PROXY).authenticated()
+                .antMatchers(RESTAPI_PROXY)
+                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName())
                 .anyRequest().permitAll()
             .and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)

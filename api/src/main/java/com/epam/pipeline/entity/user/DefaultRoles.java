@@ -27,7 +27,8 @@ import lombok.Getter;
 public enum DefaultRoles {
 
     ROLE_ADMIN(new Role(1L, "ROLE_ADMIN", true, false, null, null)),
-    ROLE_USER(new Role(2L, "ROLE_USER", true, true, null, null));
+    ROLE_USER(new Role(2L, "ROLE_USER", true, true, null, null)),
+    ROLE_ANONYMOUS_USER(new Role(null, "ROLE_ANONYMOUS_USER", true, false, null, null));
 
     private Role role;
 
