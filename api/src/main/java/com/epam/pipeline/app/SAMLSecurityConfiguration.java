@@ -17,7 +17,6 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.entity.user.DefaultRoles;
-import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.security.saml.OptionalSAMLLogoutFilter;
 import com.epam.pipeline.security.saml.SAMLContexProviderCustomSingKey;
 import com.epam.pipeline.utils.URLUtils;

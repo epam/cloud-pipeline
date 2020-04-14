@@ -17,7 +17,6 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.entity.user.DefaultRoles;
-import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.security.jwt.JwtAuthenticationProvider;
 import com.epam.pipeline.security.jwt.JwtFilterAuthenticationFilter;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
