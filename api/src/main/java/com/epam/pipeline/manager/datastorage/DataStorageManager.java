@@ -42,6 +42,9 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.StorageServiceType;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
+import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -85,6 +88,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -148,15 +153,19 @@ public class DataStorageManager implements SecuredEntityManager {
         return dataStorageDao.loadAllDataStorages();
     }
 
-    public List<DataStorageWithShareMount> getDataStoragesWithShareMountObject() {
-        return dataStorageDao.loadAllDataStorages().stream().map(storage -> {
-            if (storage.getFileShareMountId() != null) {
-                return new DataStorageWithShareMount(storage,
-                        fileShareMountManager.load(storage.getFileShareMountId()));
-            } else {
-                return new DataStorageWithShareMount(storage, null);
-            }
-        }).collect(Collectors.toList());
+    public List<DataStorageWithShareMount> getDataStoragesWithShareMountObject(final Long fromRegionId) {
+        final AbstractCloudRegion fromRegion = Optional.ofNullable(fromRegionId)
+                .map(cloudRegionManager::load).orElse(null);
+        return getDataStorages().stream()
+                .map(storage -> {
+                    if (storage.getFileShareMountId() != null) {
+                        return new DataStorageWithShareMount(storage,
+                                fileShareMountManager.load(storage.getFileShareMountId()));
+                    } else {
+                        return new DataStorageWithShareMount(storage, null);
+                    }
+                }).filter(storage -> filterDataStorage(storage, fromRegion))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -614,6 +623,37 @@ public class DataStorageManager implements SecuredEntityManager {
     public StorageUsage getStorageUsage(final String id, final String path) {
         final AbstractDataStorage dataStorage = loadByNameOrId(id);
         return searchManager.getStorageUsage(dataStorage, path);
+    }
+
+    private boolean filterDataStorage(DataStorageWithShareMount storage, AbstractCloudRegion region) {
+        if (Objects.isNull(region)) {
+            return true;
+        }
+
+        final AbstractCloudRegion storageRegion = storage.getStorage().getType().equals(DataStorageType.NFS)
+                ? cloudRegionManager.load(storage.getShareMount().getRegionId())
+                : cloudRegionManager.load(getCloudRegionId(storage.getStorage()));
+
+        switch (storageRegion.getMountStorageRule()) {
+            case CLOUD:
+                return region.getProvider().equals(storageRegion.getProvider());
+            case ALL:
+                return true;
+            case NONE:
+            default:
+                return false;
+        }
+    }
+
+    private Long getCloudRegionId(final AbstractDataStorage dataStorage) {
+        if (dataStorage instanceof S3bucketDataStorage) {
+            return ((S3bucketDataStorage) dataStorage).getRegionId();
+        } else if (dataStorage instanceof GSBucketStorage) {
+            return ((GSBucketStorage) dataStorage).getRegionId();
+        } else if (dataStorage instanceof AzureBlobStorage) {
+            return ((AzureBlobStorage) dataStorage).getRegionId();
+        }
+        throw new IllegalArgumentException("Unsupported type of DataStorage!");
     }
 
     private Collection<String> getRootPaths(final List<String> paths) {

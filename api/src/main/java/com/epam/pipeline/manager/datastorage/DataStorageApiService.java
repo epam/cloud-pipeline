@@ -100,8 +100,8 @@ public class DataStorageApiService {
     @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject.storage, 'READ') OR "
             + "hasPermission(filterObject.storage, 'WRITE'))")
     @AclMaskDelegateList
-    public List<DataStorageWithShareMount> getAvailableStoragesWithShareMount() {
-        return dataStorageManager.getDataStoragesWithShareMountObject();
+    public List<DataStorageWithShareMount> getAvailableStoragesWithShareMount(final Long fromRegionId) {
+        return dataStorageManager.getDataStoragesWithShareMountObject(fromRegionId);
     }
 
     @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject, 'READ') OR "

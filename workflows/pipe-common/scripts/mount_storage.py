@@ -76,10 +76,11 @@ class MountStorageTask:
             # use -1 as default in order to don't mount any NFS if CLOUD_REGION_ID is not provided
             cloud_region_id = int(os.getenv('CLOUD_REGION_ID', -1))
             if cloud_region_id == -1:
-                Logger.warn('CLOUD_REGION_ID env variable is not provided, no NFS will be mounted', task_name=self.task_name)
+                Logger.warn('CLOUD_REGION_ID env variable is not provided, no NFS will be mounted, \
+                 and no storage will be filtered by mount storage rule of a region', task_name=self.task_name)
 
             Logger.info('Fetching list of allowed storages...', task_name=self.task_name)
-            available_storages_with_mounts = self.api.load_available_storages_with_share_mount()
+            available_storages_with_mounts = self.api.load_available_storages_with_share_mount(cloud_region_id if cloud_region_id != -1 else None)
             # filtering nfs storages in order to fetch only nfs from the same region
             available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.storage_type != NFS_TYPE
                                               or x.file_share_mount.region_id == cloud_region_id]
