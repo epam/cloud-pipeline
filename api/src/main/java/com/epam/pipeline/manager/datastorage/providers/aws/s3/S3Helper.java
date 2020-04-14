@@ -326,7 +326,7 @@ public class S3Helper {
     }
 
     public DataStorageListing getItems(String bucket, String path, Boolean showVersion,
-            Integer pageSize, String marker) {
+            Integer pageSize, String marker, String prefix) {
         String requestPath = Optional.ofNullable(path).orElse("");
         AmazonS3 client = getDefaultS3Client();
         if (!StringUtils.isNullOrEmpty(requestPath)) {
@@ -336,8 +336,8 @@ public class S3Helper {
             }
         }
         DataStorageListing result = showVersion ?
-                listVersions(client, bucket, requestPath, pageSize, marker) :
-                listFiles(client, bucket, requestPath, pageSize, marker);
+                listVersions(client, bucket, requestPath, pageSize, marker, prefix) :
+                listFiles(client, bucket, requestPath, pageSize, marker, prefix);
         result.getResults().sort(AbstractDataStorageItem.getStorageItemComparator());
         return result;
     }
@@ -648,7 +648,7 @@ public class S3Helper {
         final String requestPath = Optional.ofNullable(path).orElse("");
         final AmazonS3 client = getDefaultS3Client();
 
-        ObjectListing listing = client.listObjects(dataStorage.getPath(), requestPath);
+        ObjectListing listing = client.listObjects(dataStorage.getRoot(), requestPath);
         boolean hasNextPageMarker = true;
         while (hasNextPageMarker && !pathDescription.getCompleted()) {
             ProviderUtils.getSizeByPath(listing.getObjectSummaries(), requestPath,
@@ -716,7 +716,7 @@ public class S3Helper {
     }
 
     private DataStorageListing listFiles(AmazonS3 client, String bucket,
-            String requestPath, Integer pageSize, String marker) {
+            String requestPath, Integer pageSize, String marker, String prefix) {
         ListObjectsV2Request req = new ListObjectsV2Request();
         req.setBucketName(bucket);
         req.setPrefix(requestPath);
@@ -735,11 +735,12 @@ public class S3Helper {
 
             for (String name : listing.getCommonPrefixes()) {
                 previous = getPreviousKey(previous, name);
-                items.add(parseFolder(requestPath, name));
+                items.add(parseFolder(requestPath, name, prefix));
             }
             for (S3ObjectSummary s3ObjectSummary : listing.getObjectSummaries()) {
                 DataStorageFile file =
-                        AbstractS3ObjectWrapper.getWrapper(s3ObjectSummary).convertToStorageFile(requestPath);
+                        AbstractS3ObjectWrapper.getWrapper(s3ObjectSummary)
+                                .convertToStorageFile(requestPath, prefix);
                 if (file != null) {
                     previous = getPreviousKey(previous, s3ObjectSummary.getKey());
                     items.add(file);
@@ -758,7 +759,7 @@ public class S3Helper {
         return key.compareTo(previous) > 0 ? key : previous;
     }
 
-    private DataStorageFolder parseFolder(String requestPath, String name) {
+    private DataStorageFolder parseFolder(String requestPath, String name, String prefix) {
         String relativePath = name;
         if (relativePath.endsWith(ProviderUtils.DELIMITER)) {
             relativePath = relativePath.substring(0, relativePath.length() - 1);
@@ -766,12 +767,12 @@ public class S3Helper {
         String folderName = relativePath.substring(requestPath.length());
         DataStorageFolder folder = new DataStorageFolder();
         folder.setName(folderName);
-        folder.setPath(relativePath);
+        folder.setPath(ProviderUtils.removePrefix(relativePath, prefix));
         return folder;
     }
 
     private DataStorageListing listVersions(AmazonS3 client, String bucket,
-            String requestPath, Integer pageSize, String marker) {
+            String requestPath, Integer pageSize, String marker, String prefix) {
         ListVersionsRequest request = new ListVersionsRequest()
                 .withBucketName(bucket).withPrefix(requestPath).withDelimiter(ProviderUtils.DELIMITER);
         if (StringUtils.hasValue(marker)) {
@@ -792,7 +793,7 @@ public class S3Helper {
                     return new DataStorageListing(previous, items);
                 }
                 previous = getPreviousKey(previous, commonPrefix);
-                AbstractDataStorageItem folder = parseFolder(requestPath, commonPrefix);
+                AbstractDataStorageItem folder = parseFolder(requestPath, commonPrefix, prefix);
                 items.add(folder);
             }
             for (S3VersionSummary versionSummary : versionListing.getVersionSummaries()) {
@@ -800,7 +801,7 @@ public class S3Helper {
                     continue;
                 }
                 DataStorageFile file =
-                        AbstractS3ObjectWrapper.getWrapper(versionSummary).convertToStorageFile(requestPath);
+                        AbstractS3ObjectWrapper.getWrapper(versionSummary).convertToStorageFile(requestPath, prefix);
                 if (file == null) {
                     continue;
                 }
@@ -885,7 +886,7 @@ public class S3Helper {
     public Map<String, String> updateObjectTags(AbstractDataStorage dataStorage, String path, Map<String, String> tags,
                                  String version) {
         AmazonS3 client = getDefaultS3Client();
-        SetObjectTaggingRequest setTaggingRequest = new SetObjectTaggingRequest(dataStorage.getPath(), path,
+        SetObjectTaggingRequest setTaggingRequest = new SetObjectTaggingRequest(dataStorage.getRoot(), path,
                 new ObjectTagging(convertMapToAwsTags(tags)));
         if (!StringUtils.isNullOrEmpty(version)) {
             setTaggingRequest.withVersionId(version);
@@ -898,7 +899,7 @@ public class S3Helper {
         try {
             AmazonS3 client = getDefaultS3Client();
             GetObjectTaggingRequest getTaggingRequest =
-                    new GetObjectTaggingRequest(dataStorage.getPath(), path);
+                    new GetObjectTaggingRequest(dataStorage.getRoot(), path);
             if (!StringUtils.isNullOrEmpty(version)) {
                 getTaggingRequest.withVersionId(version);
             }
@@ -906,7 +907,7 @@ public class S3Helper {
         } catch (AmazonS3Exception e) {
             if (e.getStatusCode() == NOT_FOUND) {
                 throw new DataStorageException(messageHelper
-                        .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, dataStorage.getPath()));
+                        .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, dataStorage.getRoot()));
             } else {
                 throw new DataStorageException(e.getMessage(), e);
             }
@@ -928,13 +929,13 @@ public class S3Helper {
         try {
             AmazonS3 client = getDefaultS3Client();
             GetObjectRequest rangeObjectRequest =
-                    new GetObjectRequest(dataStorage.getPath(), path, version).withRange(0, maxDownloadSize - 1);
+                    new GetObjectRequest(dataStorage.getRoot(), path, version).withRange(0, maxDownloadSize - 1);
             S3Object objectPortion = client.getObject(rangeObjectRequest);
             return downloadContent(maxDownloadSize, objectPortion);
         } catch (AmazonS3Exception e) {
             if (e.getStatusCode() == NOT_FOUND) {
                 throw new DataStorageException(messageHelper
-                        .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, dataStorage.getPath()));
+                        .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, dataStorage.getRoot()));
             } else if (e.getStatusCode() == INVALID_RANGE) {
                 // is thrown in case of en empty file
                 LOGGER.debug(e.getMessage(), e);
@@ -951,13 +952,13 @@ public class S3Helper {
         try {
             AmazonS3 client = getDefaultS3Client();
             GetObjectRequest rangeObjectRequest =
-                new GetObjectRequest(dataStorage.getPath(), path, version);
+                new GetObjectRequest(dataStorage.getRoot(), path, version);
             S3Object object = client.getObject(rangeObjectRequest);
             return new DataStorageStreamingContent(object.getObjectContent(), object.getKey());
         } catch (AmazonS3Exception e) {
             if (e.getStatusCode() == NOT_FOUND) {
                 throw new DataStorageException(messageHelper
-                        .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, dataStorage.getPath()));
+                        .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, dataStorage.getRoot()));
             } else {
                 throw new DataStorageException(e.getMessage(), e);
             }
