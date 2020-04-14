@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.datastorage.DatastoragePath;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Arrays;
 import java.util.function.Function;
 
 public final class ProviderUtils {
@@ -38,13 +39,14 @@ public final class ProviderUtils {
     }
 
     public static String withoutLeadingDelimiter(final String path) {
-        return StringUtils.isNotBlank(path) && path.startsWith(ProviderUtils.DELIMITER) ? path.substring(1) : path;
+        return StringUtils.isNotBlank(path) && path.startsWith(DELIMITER) ? path.substring(1) : path;
     }
 
     public static DatastoragePath parsePath(final String fullPath) {
-        final String[] chunks = fullPath.split(ProviderUtils.DELIMITER);
+        final String[] chunks = fullPath.split(DELIMITER);
         final String root = chunks[0];
-        final String path = chunks.length > 1 ? chunks[1] : StringUtils.EMPTY;
+        final String path = chunks.length > 1 ?
+                StringUtils.join(Arrays.copyOfRange(chunks, 1, chunks.length), DELIMITER) : StringUtils.EMPTY;
         return new DatastoragePath(root, path);
     }
 
@@ -55,7 +57,7 @@ public final class ProviderUtils {
                 .toLowerCase()
                 .replaceAll("[^a-z0-9\\-]+", "-");
         return StringUtils.isBlank(datastoragePath.getPath()) ?
-                bucketName : bucketName + ProviderUtils.DELIMITER + datastoragePath.getPath();
+                bucketName : bucketName + DELIMITER + datastoragePath.getPath();
     }
 
     public static String withoutTrailingDelimiter(final String path) {
