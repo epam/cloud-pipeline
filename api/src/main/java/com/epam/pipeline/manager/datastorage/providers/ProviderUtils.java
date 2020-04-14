@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.datastorage.providers;
 
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DatastoragePath;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import org.apache.commons.lang3.StringUtils;
 
@@ -39,10 +41,21 @@ public final class ProviderUtils {
         return StringUtils.isNotBlank(path) && path.startsWith(ProviderUtils.DELIMITER) ? path.substring(1) : path;
     }
 
-    public static String normalizeBucketName(String name) {
-        String bucketName = name.trim().toLowerCase();
-        bucketName = bucketName.replaceAll("[^a-z0-9\\-]+", "-");
-        return bucketName;
+    public static DatastoragePath parsePath(final String fullPath) {
+        final String[] chunks = fullPath.split(ProviderUtils.DELIMITER);
+        final String root = chunks[0];
+        final String path = chunks.length > 1 ? chunks[1] : StringUtils.EMPTY;
+        return new DatastoragePath(root, path);
+    }
+
+    public static String normalizeBucketName(final String name) {
+        final DatastoragePath datastoragePath = parsePath(name);
+        final String bucketName = datastoragePath.getRoot()
+                .trim()
+                .toLowerCase()
+                .replaceAll("[^a-z0-9\\-]+", "-");
+        return StringUtils.isBlank(datastoragePath.getPath()) ?
+                bucketName : bucketName + ProviderUtils.DELIMITER + datastoragePath.getPath();
     }
 
     public static String withoutTrailingDelimiter(final String path) {
@@ -74,5 +87,24 @@ public final class ProviderUtils {
 
     public static boolean isRootOrFolder(final String requestPath) {
         return StringUtils.isBlank(requestPath) || requestPath.endsWith(DELIMITER);
+    }
+
+    public static String buildPath(final AbstractDataStorage dataStorage, final String path) {
+        final DatastoragePath datastoragePath = parsePath(dataStorage.getPath());
+        return mergePaths(datastoragePath.getPath(), path);
+    }
+
+    public static String mergePaths(final String parent, final String child) {
+        if (StringUtils.isBlank(parent)) {
+            return child;
+        }
+        if (StringUtils.isBlank(child)) {
+            return parent;
+        }
+        return withTrailingDelimiter(parent) + withoutLeadingDelimiter(child);
+    }
+
+    public static String removePrefix(final String path, final String prefix) {
+        return path.startsWith(prefix) ? path.replaceFirst(prefix, StringUtils.EMPTY) : path;
     }
 }
