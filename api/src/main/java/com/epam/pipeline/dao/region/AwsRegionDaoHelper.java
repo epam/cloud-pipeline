@@ -19,7 +19,6 @@ package com.epam.pipeline.dao.region;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.entity.region.MountStorageRule;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -65,7 +64,6 @@ class AwsRegionDaoHelper extends AbstractCloudRegionDaoHelper<AwsRegion, Abstrac
         }
         awsRegion.setVersioningEnabled(rs.getBoolean(CloudRegionParameters.VERSIONING_ENABLED.name()));
         awsRegion.setSshKeyName(rs.getString(CloudRegionParameters.SSH_KEY_NAME.name()));
-        awsRegion.setMountStorageRule(MountStorageRule.valueOf(rs.getString(CloudRegionParameters.MOUNT_STORAGE_RULE.name())));
         return awsRegion;
     }
 
