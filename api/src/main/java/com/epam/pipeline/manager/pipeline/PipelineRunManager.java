@@ -69,6 +69,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.utils.PasswordGenerator;
 import org.apache.commons.collections4.CollectionUtils;
@@ -185,6 +186,9 @@ public class PipelineRunManager {
 
     @Autowired
     private NodesManager nodesManager;
+    
+    @Autowired
+    private CheckPermissionHelper permissionHelper;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -372,6 +376,8 @@ public class PipelineRunManager {
                     messageHelper.getMessage(MessageConstants.ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED,
                             cloudRegionManager.load(toolConfiguration.getCloudRegionId()).getName(), region.getName()));
         }
+        Assert.isTrue(permissionHelper.isAllowed("READ", region),
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_CLOUD_REGION_NOT_ALLOWED, region.getName()));
     }
 
     private void validateInstanceAndPriceTypes(final PipelineConfiguration configuration,

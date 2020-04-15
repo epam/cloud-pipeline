@@ -54,6 +54,7 @@ import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.util.TestUtils;
 import io.reactivex.subjects.BehaviorSubject;
 import org.apache.commons.collections.CollectionUtils;
@@ -112,6 +113,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     private static final long NOT_ALLOWED_REGION_ID = 2L;
     private static final long NON_DEFAULT_REGION_ID = 3L;
     private static final String NOT_ALLOWED_MESSAGE = "not allowed";
+    private static final String NO_PERMISSIONS_MESSAGE = "doesn't have sufficient permissions";
     private static final long PARENT_RUN_ID = 5L;
     private static final String INSTANCE_DISK = "1";
     private static final String PARENT_RUN_ID_PARAMETER = "parent-id";
@@ -157,6 +159,9 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
     @MockBean
     private ToolVersionManager toolVersionManager;
+
+    @MockBean
+    private CheckPermissionHelper permissionHelper;
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -217,6 +222,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         doReturn(configuration).when(pipelineConfigurationManager).getPipelineConfiguration(any());
         doReturn(configuration).when(pipelineConfigurationManager).getPipelineConfiguration(any(), any());
         doReturn(new PipelineConfiguration()).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());
+
+        doReturn(true).when(permissionHelper).isAllowed(any(), any());
 
         AwsRegion region = new AwsRegion();
         region.setRegionCode("us-east-1");
@@ -478,6 +485,14 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         launchPipeline(configurationWithoutRegion());
         launchTool(configurationWithoutRegion());
         verify(pipelineConfigurationManager, times(2)).getConfigurationForTool(any(), any());
+    }
+
+    @Test
+    @WithMockUser
+    public void testLaunchPipelineFailsIfCloudRegionIsNotAllowed() {
+        doReturn(false).when(permissionHelper).isAllowed(any(), any());
+
+        assertThrows(e -> e.getMessage().contains(NO_PERMISSIONS_MESSAGE), this::launchPipeline);
     }
 
     @Test
