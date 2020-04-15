@@ -371,13 +371,16 @@ public class PipelineRunManager {
 
     private void validateCloudRegion(final PipelineConfiguration toolConfiguration,
                                      final AbstractCloudRegion region) {
-        if (toolConfiguration.getCloudRegionId() != null) {
-            Assert.isTrue(toolConfiguration.getCloudRegionId().equals(region.getId()),
-                    messageHelper.getMessage(MessageConstants.ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED,
-                            cloudRegionManager.load(toolConfiguration.getCloudRegionId()).getName(), region.getName()));
+        if (!permissionHelper.isAdmin()) {
+            if (toolConfiguration.getCloudRegionId() != null) {
+                Assert.isTrue(toolConfiguration.getCloudRegionId().equals(region.getId()),
+                        messageHelper.getMessage(MessageConstants.ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED,
+                                cloudRegionManager.load(toolConfiguration.getCloudRegionId()).getName(), 
+                                region.getName()));
+            }
+            Assert.isTrue(permissionHelper.isAllowed("READ", region),
+                    messageHelper.getMessage(MessageConstants.ERROR_RUN_CLOUD_REGION_NOT_ALLOWED, region.getName()));
         }
-        Assert.isTrue(permissionHelper.isAllowed("READ", region),
-                messageHelper.getMessage(MessageConstants.ERROR_RUN_CLOUD_REGION_NOT_ALLOWED, region.getName()));
     }
 
     private void validateInstanceAndPriceTypes(final PipelineConfiguration configuration,
