@@ -618,6 +618,18 @@ class AWSRegionForm extends React.Component {
     style: {marginBottom: 2}
   };
 
+  formItemLayoutWideLabel = {
+    labelCol: {
+      xs: {span: 24},
+      sm: {span: 8}
+    },
+    wrapperCol: {
+      xs: {span: 24},
+      sm: {span: 16}
+    },
+    style: {marginBottom: 2}
+  };
+
   defaultCheckBoxFormItemLayout = {
     wrapperCol: {
       xs: {
@@ -650,7 +662,8 @@ class AWSRegionForm extends React.Component {
         required: form => form.getFieldValue('versioningEnabled')
       },
       'versioningEnabled',
-      'fileShareMounts'
+      'fileShareMounts',
+      'mountStorageRule'
     ],
     AZURE: [
       'regionId',
@@ -667,7 +680,8 @@ class AWSRegionForm extends React.Component {
       'meterRegionName',
       'azureApiUrl',
       'priceOfferId',
-      'fileShareMounts'
+      'fileShareMounts',
+      'mountStorageRule'
     ],
     GCP: [
       'regionId',
@@ -681,6 +695,7 @@ class AWSRegionForm extends React.Component {
       'fileShareMounts',
       'customInstanceTypes',
       'corsRules',
+      'mountStorageRule',
       'policy',
       {
         key: 'backupDuration',
@@ -800,6 +815,7 @@ class AWSRegionForm extends React.Component {
       check('kmsKeyId', checkStringValue) ||
       check('kmsKeyArn', checkStringValue) ||
       check('corsRules', checkJSONValue) ||
+      check('mountStorageRule', checkStringValue) ||
       check('policy', checkJSONValue) ||
       check('storageAccount', checkStringValue) ||
       check('storageAccountKey', checkStringValue) ||
@@ -1394,6 +1410,25 @@ class AWSRegionForm extends React.Component {
                   disabled={this.props.region.default}>
                   This is default cloud region
                 </Checkbox>
+              )}
+            </Form.Item>
+            <Form.Item
+              {...this.formItemLayoutWideLabel}
+              className={this.getFieldClassName('mountStorageRule')}
+              label="Mount storages across other regions"
+            >
+              {getFieldDecorator('mountStorageRule', {
+                initialValue: this.props.region.mountStorageRule
+              })(
+                <Select
+                  size="small"
+                  allowClear={false}
+                  style={{marginTop: 4}}
+                >
+                  <Select.Option value="NONE">None</Select.Option>
+                  <Select.Option value="CLOUD">Same cloud</Select.Option>
+                  <Select.Option value="ALL">All</Select.Option>
+                </Select>
               )}
             </Form.Item>
             <Form.Item
