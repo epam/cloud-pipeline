@@ -220,7 +220,7 @@ if token then
     ngx.req.set_header('X-Auth-User', username)
     if string.match(ngx.var.request_uri, "^/fsbrowser/[%w_-]+/$") then
       ngx.log(ngx.WARN,"[SECURITY] Application: FSBrowser-" .. ngx.var.request_uri .. "; User: " .. username ..
-              "; Status: Successfully autentificated.")
+              "; Status: Successfully authenticated.")
     end
     return
     -- --------------------------------------------

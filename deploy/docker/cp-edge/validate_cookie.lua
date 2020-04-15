@@ -99,12 +99,22 @@ if token then
                 "; User: " .. username .. "; Status:  Authentication failed; Message: Not an owner and access isn't shared.")
         ngx.exit(ngx.HTTP_UNAUTHORIZED)
     end
+    
+    -- 401 if:
+    -- user is anonymous and such access is not enabled
+    if os.getenv("CP_API_SRV_SAML_ALLOW_ANONYMOUS_USER") ~= "true" and arr_has_value(user_roles, "ROLE_ANONYMOUS_USER") then
+        ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+        ngx.status = ngx.HTTP_UNAUTHORIZED
+        ngx.log(ngx.WARN, "[SECURITY] Application: " .. ngx.var.route_location_root ..
+                "; User: " .. username .. "; Status:  Authentication failed; Message: Anonymous access is disabled.")
+        ngx.exit(ngx.HTTP_UNAUTHORIZED)
+    end
 
     -- If "bearer" is fine - allow nginx to proceed
     -- Pass authenticated user to the proxied resource as a header
     if ngx.var.route_location_root == ngx.var.request_uri then
         ngx.log(ngx.WARN,"[SECURITY] Application: " .. ngx.var.route_location_root ..
-                "; User: " .. username .. "; Status: Successfully autentificated.")
+                "; User: " .. username .. "; Status: Successfully authenticated.")
     end
     ngx.req.set_header('X-Auth-User', username)
     return

@@ -191,7 +191,7 @@ if token then
     -- If "bearer" is fine - allow nginx to proceed
     if string.gmatch(ngx.var.request_uri, "^/webdav/[%w_-]+/$") then
         ngx.log(ngx.WARN,"[SECURITY] Application: DAV-" .. ngx.var.request_uri ..
-                "; User: " .. jwt_username .. "; Status: Successfully autentificated.")
+                "; User: " .. jwt_username .. "; Status: Successfully authenticated.")
     end
     return
 end

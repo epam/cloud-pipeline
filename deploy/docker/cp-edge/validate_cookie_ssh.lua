@@ -49,7 +49,7 @@ if token then
     -- If "bearer" is fine - allow nginx to proceed
     -- Pass authenticated user to the proxied resource as a header
     if string.match(ngx.var.request_uri, "ssh/pipeline") then
-        ngx.log(ngx.WARN,"[SECURITY] Application: SSH-" .. ngx.var.request_uri .. "; User: " .. username .. "; Status: Successfully autentificated.")
+        ngx.log(ngx.WARN,"[SECURITY] Application: SSH-" .. ngx.var.request_uri .. "; User: " .. username .. "; Status: Successfully authenticated.")
     end
     ngx.req.set_header('token', token)
     return
