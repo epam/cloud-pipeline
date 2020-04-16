@@ -219,6 +219,37 @@
                 ]]>
             </value>
         </property>
+        <property name="loadDataStorageByPrefixesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        datastorage_id,
+                        datastorage_name,
+                        description,
+                        datastorage_type,
+                        path,
+                        sts_duration,
+                        lts_duration,
+                        incomplete_upload_cleanup_days,
+                        folder_id,
+                        created_date,
+                        owner,
+                        enable_versioning,
+                        backup_duration,
+                        locked as datastorage_locked,
+                        mount_point,
+                        mount_options,
+                        shared,
+                        allowed_cidrs,
+                        region_id as region_id,
+                        file_share_mount_id
+                    FROM
+                        pipeline.datastorage
+                    WHERE
+                        path IN (:PATH)
+                ]]>
+            </value>
+        </property>
         <property name="loadDataStorageByNameAndParentIdQuery">
             <value>
                 <![CDATA[

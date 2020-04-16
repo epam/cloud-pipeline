@@ -22,10 +22,12 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.EnumUtils;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -62,5 +64,12 @@ public final class CommonUtils {
                     Map.Entry::getKey,
                     Map.Entry::getValue,
                     (value1, value2) -> value1));
+    }
+
+    public static <T> Optional<T> first(Supplier<Optional<T>>... suppliers) {
+        return Arrays.asList(suppliers).stream()
+                .map(Supplier::get)
+                .flatMap(o -> o.map(Stream::of).orElseGet(Stream::empty))
+                .findFirst();
     }
 }
