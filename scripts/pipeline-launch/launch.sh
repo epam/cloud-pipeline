@@ -427,6 +427,13 @@ function initialise_wrappers {
     local _WRAPPING_COMMANDS="$1"
     local _WRAPPER="$2"
     local _WRAPPERS_BIN="$3"
+
+    # Here we backup the current value of the $PATH and remove the $CP_USR_BIN (/usr/cpbin)
+    # from the current $PATH value. This is required as COMMAND_PATH=$(command -v "$COMMAND") will get the wrapper path
+    # instead of the real binary. This causes wrapper to call the wrapper in a recursion
+    local _WRAPPERS_PATH_BKP="$PATH"
+    export PATH=$(sed "s|$CP_USR_BIN||g" <<< "$PATH")
+
     IFS=',' read -r -a WRAPPING_COMMANDS_LIST <<< "$_WRAPPING_COMMANDS"
     for COMMAND in "${WRAPPING_COMMANDS_LIST[@]}"
     do
@@ -442,6 +449,9 @@ function initialise_wrappers {
             fi
         fi
     done
+
+    # Restore the original $PATH, which was previosly modified to remove the $CP_USR_BIN (/usr/cpbin)
+    export PATH="$_WRAPPERS_PATH_BKP"
 }
 
 function list_storage_mounts() {
