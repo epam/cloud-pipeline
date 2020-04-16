@@ -22,6 +22,7 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
+import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -33,9 +34,11 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.DatastoragePath;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
+import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
+import com.epam.pipeline.manager.cloud.aws.S3TemporaryCredentialsGenerator;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -51,6 +54,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +68,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     private final MessageHelper messageHelper;
     private final CloudRegionManager cloudRegionManager;
     private final PreferenceManager preferenceManager;
+    private final S3TemporaryCredentialsGenerator stsCredentialsGenerator;
 
     @Override
     public DataStorageType getStorageType() {
@@ -169,13 +174,15 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     public DataStorageDownloadFileUrl generateDownloadURL(S3bucketDataStorage dataStorage,
                                                           String path, String version,
                                                           ContentDisposition contentDisposition) {
-        return getS3Helper(dataStorage).generateDownloadURL(dataStorage.getRoot(),
+        final TemporaryCredentials credentials = getStsCredentials(dataStorage, version, false);
+        return getS3Helper(credentials).generateDownloadURL(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path), version, contentDisposition);
     }
 
     @Override
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(S3bucketDataStorage dataStorage, String path) {
-        return getS3Helper(dataStorage).generateDataStorageItemUploadUrl(
+        final TemporaryCredentials credentials = getStsCredentials(dataStorage, null, true);
+        return getS3Helper(credentials).generateDataStorageItemUploadUrl(
                 dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), authManager.getAuthorizedUser());
     }
 
@@ -278,7 +285,26 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         return new RegionAwareS3Helper(region, messageHelper);
     }
 
+    public S3Helper getS3Helper(final TemporaryCredentials credentials) {
+        return new TemporaryCredentialsS3Helper(credentials, messageHelper);
+    }
+
     private AwsRegion getAwsRegion(S3bucketDataStorage dataStorage) {
         return cloudRegionManager.getAwsRegion(dataStorage);
+    }
+
+    private TemporaryCredentials getStsCredentials(final S3bucketDataStorage dataStorage,
+                                                   final String version,
+                                                   final boolean write) {
+        final boolean useVersion = StringUtils.hasText(version);
+        final DataStorageAction action = new DataStorageAction();
+        action.setId(dataStorage.getId());
+        action.setBucketName(dataStorage.getRoot());
+        action.setRead(true);
+        action.setReadVersion(useVersion);
+        action.setWrite(write);
+        action.setWriteVersion(useVersion);
+        return stsCredentialsGenerator
+                .generate(Collections.singletonList(action), dataStorage);
     }
 }
