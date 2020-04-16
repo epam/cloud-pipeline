@@ -364,9 +364,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.dockerImage !== currentDockerImage) {
       if (currentDockerImage) {
         await this.loadToolSettings(currentDockerImage);
-        if (this.toolCloudRegion) {
+        if (this.toolCloudRegion || this.defaultCloudRegionId) {
           this.props.form.setFieldsValue({
-            [`${EXEC_ENVIRONMENT}.cloudRegionId`]: this.toolCloudRegion
+            [`${EXEC_ENVIRONMENT}.cloudRegionId`]: this.toolCloudRegion || this.defaultCloudRegionId
           });
         }
       } else {
