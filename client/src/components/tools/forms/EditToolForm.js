@@ -396,11 +396,27 @@ export default class EditToolForm extends React.Component {
     this.reset();
     if (this.props.allowedInstanceTypes) {
       const isSpot = this.getPriceTypeInitialValue();
-      this.props.allowedInstanceTypes.setIsSpot(`${isSpot}` === 'true');
-      this.props.allowedInstanceTypes.setToolId(this.props.toolId);
+      const cloudRegionId = this.props.configuration && this.props.configuration.cloudRegionId
+        ? this.props.configuration.cloudRegionId
+        : undefined;
+      this.props.allowedInstanceTypes.setParameters(
+        {
+          isSpot: `${isSpot}` === 'true',
+          regionId: cloudRegionId,
+          toolId: this.props.toolId
+        }
+      );
     }
-
     this.props.onInitialized && this.props.onInitialized(this);
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (prevProps.configuration !== this.props.configuration) {
+      const cloudRegionId = this.props.configuration && this.props.configuration.cloudRegionId
+        ? this.props.configuration.cloudRegionId
+        : undefined;
+      this.props.allowedInstanceTypes.setRegionId(cloudRegionId, true);
+    }
   }
 
   componentWillReceiveProps (nextProps) {
@@ -412,6 +428,15 @@ export default class EditToolForm extends React.Component {
   handleIsSpotChange = (isSpot) => {
     if (this.props.allowedInstanceTypes && isSpot !== undefined && isSpot !== null) {
       this.props.allowedInstanceTypes.setIsSpot(`${isSpot}` === 'true');
+    }
+  };
+
+  handleCloudRegionChange = (region) => {
+    if (this.props.allowedInstanceTypes) {
+      this.props.allowedInstanceTypes.setRegionId(
+        region === regionNotConfiguredValue ? undefined : region,
+        true
+      );
     }
   };
 
@@ -936,6 +961,7 @@ export default class EditToolForm extends React.Component {
                     allowClear={false}
                     placeholder="Cloud Region"
                     optionFilterProp="children"
+                    onChange={this.handleCloudRegionChange}
                     filterOption={
                       (input, option) =>
                         option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0}

@@ -4434,13 +4434,25 @@ export default class extends React.Component {
   };
 
   onValuesChange = (props, fields) => {
+    const cloudRegionKey = `${EXEC_ENVIRONMENT}.cloudRegionId`;
+    const spotKey = `${ADVANCED}.is_spot`;
     if (fields &&
+      fields[cloudRegionKey] &&
+      props.allowedInstanceTypes) {
+      props.allowedInstanceTypes.setRegionId(+fields[cloudRegionKey]);
+    } else if (fields &&
       fields.exec &&
       fields.exec.cloudRegionId &&
       props.allowedInstanceTypes) {
       props.allowedInstanceTypes.setRegionId(+fields.exec.cloudRegionId);
     }
     if (fields &&
+      fields[spotKey] &&
+      fields[spotKey] !== undefined &&
+      fields[spotKey] !== null &&
+      props.allowedInstanceTypes) {
+      props.allowedInstanceTypes.setIsSpot(`${fields[spotKey]}` === 'true');
+    } else if (fields &&
       fields[ADVANCED] &&
       fields[ADVANCED].is_spot !== undefined &&
       fields[ADVANCED].is_spot !== null &&

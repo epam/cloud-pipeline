@@ -191,6 +191,9 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
         parameters: versionSettingValue('parameters'),
         node_count: parameterIsNotEmpty(versionSettingValue('node_count'))
           ? +versionSettingValue('node_count')
+          : undefined,
+        cloudRegionId: parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
+          ? versionSettingValue('cloudRegionId')
           : undefined
       };
     } else if (this.props.run && !this.runPending && !this.props.run.error) {
@@ -267,7 +270,8 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     if (parameters) {
       this.allowedInstanceTypes.setParameters({
         isSpot: parameters.is_spot,
-        regionId: parameters.cloudRegionId
+        regionId: parameters.cloudRegionId,
+        toolId: this.props.image
       });
     }
   }
