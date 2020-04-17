@@ -71,24 +71,56 @@ class Cluster:
         self.slots_per_node = slots_per_node
 
     @classmethod
-    def build_cluster(cls):
+    def build_cluster(cls, api, task_name):
         if 'CP_PARALLEL_TRANSFER' not in os.environ:
+            Logger.info('Parallel transfer is not enabled.', task_name=task_name)
             return None
-
         slots_per_node = cls.get_slots_per_node()
+        local_cluster = cls.build_local_cluster(slots_per_node)
+
+        if int(os.getenv('node_count', 0)) == 0:
+            Logger.info('No child nodes requested. Using only master node for data transfer.', task_name=task_name)
+            return local_cluster
+        distributed_cluster = cls.build_distributed_cluster(slots_per_node, api, task_name)
+        if distributed_cluster is None or len(distributed_cluster.nodes) == 0:
+            Logger.info('Failed to find child nodes. Using only master node for data transfer.', task_name=task_name)
+            return local_cluster
+        return distributed_cluster
+
+    @classmethod
+    def build_distributed_cluster(cls, slots_per_node, api, task_name):
+        if cls.is_autoscaled_cluster():
+            Logger.info('Using autoscaled cluster for data transfer.', task_name=task_name)
+            return cls.build_autoscaled_cluster(slots_per_node, api, task_name)
 
         if 'DEFAULT_HOSTFILE' not in os.environ:
-            return cls.build_local_cluster(slots_per_node)
-
+            return None
         hostfile = os.environ['DEFAULT_HOSTFILE']
         if not os.path.isfile(hostfile):
-            return cls.build_local_cluster(slots_per_node)
-
+            return None
         with open(hostfile) as f:
+            Logger.info('Using static cluster for data transfer.', task_name=task_name)
             hosts = f.readlines()
             master_host = socket.gethostname()
             nodes = [Node('localhost' if x.strip() == master_host else x.strip()) for x in hosts]
             return Cluster(nodes, slots_per_node)
+
+    @classmethod
+    def is_autoscaled_cluster(cls):
+        flag_values = ['yes', 'true']
+        sge_enabled = os.getenv('CP_CAP_SGE', None) in flag_values
+        autoscale_enabled = os.getenv('CP_CAP_AUTOSCALE', None) in flag_values
+        return sge_enabled and autoscale_enabled
+
+    @classmethod
+    def build_autoscaled_cluster(cls, slots_per_node, api, task_name):
+        child_runs = api.load_child_pipelines(os.getenv('RUN_ID'))
+        nodes = [Node('localhost')]
+        static_runs = filter(lambda run: cls.is_static_run(run), child_runs)
+        if len(static_runs) > 0:
+            Logger.info('Found %s running static for data transfer ' % len(static_runs), task_name=task_name)
+            nodes.extend([Node(static_run['podId']) for static_run in static_runs])
+        return Cluster(nodes, slots_per_node)
 
     @classmethod
     def build_local_cluster(cls, slots_per_node):
@@ -105,6 +137,20 @@ class Cluster:
         if 32 <= cpu_number < 64:
             return 2
         return 3
+
+    @classmethod
+    def is_static_run(cls, run):
+        if run['status'] != 'RUNNING':
+            return False
+        if 'pipelineRunParameters' not in run:
+            return True
+        params = run['pipelineRunParameters']
+        if not params:
+            return True
+        for param in params:
+            if param['name'] == 'cluster_role_type' and param['value'] == 'additional':
+                return False
+        return True
 
 
 class PathType(object):
@@ -338,7 +384,7 @@ class InputDataTask:
         return LocalToS3(path.path, path.cloud_path, rules) if upload else S3ToLocal(path.cloud_path, path.path, rules)
 
     def localize_data(self, remote_locations, upload, rules=None):
-        cluster = Cluster.build_cluster()
+        cluster = Cluster.build_cluster(self.api, self.task_name)
         for location in remote_locations:
             for path in location.paths:
                 source, destination = self.get_local_paths(path, upload)
