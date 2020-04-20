@@ -42,6 +42,7 @@
 - [Ability to perform scheduled runs from detached configurations](#ability-to-perform-scheduled-runs-from-detached-configurations)
 - [Using custom domain names as a "friendly URL" for the interactive services](#the-ability-to-use-custom-domain-names-as-a-friendly-url-for-the-interactive-services)
 - [Displaying of the additional support icon/info](#displaying-of-the-additional-support-iconinfo)
+- [Pass proxy settings to the `DIND` containers](#pass-proxy-settings-to-the-dind-containers)
 
 ***
 
@@ -68,6 +69,7 @@
     - [`endDate` isn't set when node of a paused run was terminated](#enddate-isnt-set-when-node-of-a-paused-run-was-terminated)
     - [AWS: Nodeup retry process may stuck when first attempt to create a spot instance failed](#aws-nodeup-retry-process-may-stuck-when-first-attempt-to-create-a-spot-instance-failed)
     - [Resume job timeout throws strange error message](#resume-job-timeout-throws-strange-error-message)
+    - [GE autoscaler doesn't remove dead additional workers from cluster](#ge-autoscaler-doesnt-remove-dead-additional-workers-from-cluster)
     - [Broken layouts](#broken-layouts)
 
 ***
@@ -814,6 +816,21 @@ The displaying of this icon and the info content can be configured by admins via
 
 For more details see [UI system settings](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#user-interface).
 
+## Pass proxy settings to the `DIND` containers
+
+Previously, `DIND` containers configuration included only registry credentials and a couple of driver settings.  
+In certain environments, it is not possible to access external networks (e.g. for the packages installation) without the proxy settings.  
+So the users had to pass this manually every time when using the `docker run` command.
+
+In the current version, a new system preference **`launch.dind.container.vars`** is introduced. It allows to specify all the additions variables, which will be passed to the `DIND` containers (if they are set for the host environment).  
+
+By default, the following variables are set for the `launch.dind.container.vars` preference (and so will be passed to `DIND` container): `http_proxy`,`https_proxy`, `no_proxy`, `API`, `API_TOKEN`. Variables are being specified as a comma-separated list.
+
+Example of using:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_DINDvariations_1.png)
+
+At the same time, a new system parameter (per run) was added - **`CP_CAP_DIND_CONTAINER_NO_VARS`**, which disables described behavior. You can set it before any run if you don't want to pass any additional variations to the `DIND` container.
+
 ***
 
 ## Notable Bug fixes
@@ -968,6 +985,12 @@ Now, checks that instance associated with `SpotRequest` (created for the first a
 [#832](https://github.com/epam/cloud-pipeline/issues/832)
 
 Previously, the non-informative error message was shown if the paused run could't be resumed in a reasonable amount of time - the count of attempts to resume was displaying incorrectly.
+
+### GE autoscaler doesn't remove dead additional workers from cluster
+
+[#946](https://github.com/epam/cloud-pipeline/issues/946)
+
+Previously, the Grid Engine Autoscaler didn't properly handle dead workers downscaling. For example, if some spot worker instance was preempted during the run then the autoscaler could not remove such worker from GE. Moreover, such cluster was blocked from accepting new jobs.
 
 ### Broken layouts
 
