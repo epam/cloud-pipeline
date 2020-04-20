@@ -368,6 +368,7 @@ class S3Mounter(StorageMounter):
                     '--stat-cache-ttl {stat_cache} --type-cache-ttl {type_cache} ' \
                     '-f --gid 0 --region "{region_name}" {path} {mount} > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
         elif params['fuse_type'] == FUSE_S3FS_ID:
+            params['path'] = '{bucket}:/{relative_path}'.format(**params) if params['relative_path'] else params['path']
             return 'AWSACCESSKEYID={aws_key_id} AWSSECRETACCESSKEY={aws_secret} s3fs {path} {mount} -o use_cache={tmp_dir} ' \
                     '-o umask=0000 -o {permissions} -o allow_other -o enable_noobj_cache ' \
                     '-o endpoint="{region_name}" -o url="https://s3.{region_name}.amazonaws.com"'.format(**params)
