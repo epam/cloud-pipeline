@@ -364,11 +364,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.dockerImage !== currentDockerImage) {
       if (currentDockerImage) {
         await this.loadToolSettings(currentDockerImage);
-        if (this.toolCloudRegion || this.defaultCloudRegionId) {
-          this.props.form.setFieldsValue({
-            [`${EXEC_ENVIRONMENT}.cloudRegionId`]: this.toolCloudRegion || this.defaultCloudRegionId
-          });
-        }
+        const currentValue = this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.cloudRegionId`);
+        const regionId = this.correctCloudRegion(
+          currentValue ||
+          this.defaultCloudRegionId
+        );
+        this.props.form.setFieldsValue({
+          [`${EXEC_ENVIRONMENT}.cloudRegionId`]: this.toolCloudRegion || regionId
+        });
       } else {
         this.resetToolSettings();
       }
@@ -2908,7 +2911,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   getInitialCloudRegionNotAvailable = () => {
     const {getFieldValue} = this.props.form;
     const initialValue = `${this.getDefaultCloudRegionValue()}`;
-    const currentValue = getFieldValue('cloudRegionId');
+    const currentValue = getFieldValue(`${EXEC_ENVIRONMENT}.cloudRegionId`);
     return (!currentValue || currentValue === initialValue) &&
       initialValue &&
       this.awsRegions.filter((region) => `${region.id}` === initialValue).length === 0;
@@ -3193,6 +3196,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       [instanceTypeField]: this.correctInstanceTypeValue(instanceType),
       [priceTypeField]: this.correctPriceTypeValue(priceType)
     });
+  };
+
+  correctCloudRegion = (value) => {
+    const regionId = +value;
+    const [region] = this.awsRegions.filter(r => r.id === regionId);
+    return region ? `${region.id}` : this.defaultCloudRegionId;
   };
 
   renderScheduleControl = () => {
