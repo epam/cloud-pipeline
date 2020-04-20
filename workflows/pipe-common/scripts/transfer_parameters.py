@@ -78,7 +78,7 @@ class Cluster:
         slots_per_node = cls.get_slots_per_node()
         local_cluster = cls.build_local_cluster(slots_per_node)
 
-        if int(os.getenv('node_count', 0)) == 0:
+        if cls.get_node_count() <= 0:
             Logger.info('No child nodes requested. Using only master node for data transfer.', task_name=task_name)
             return local_cluster
 
@@ -87,6 +87,14 @@ class Cluster:
             Logger.info('Failed to find child nodes. Using only master node for data transfer.', task_name=task_name)
             return local_cluster
         return distributed_cluster
+
+    @classmethod
+    def get_node_count(cls):
+        env_val = os.getenv('node_count', 0)
+        try:
+            return int(env_val)
+        except ValueError:
+            return 0
 
     @classmethod
     def build_distributed_cluster(cls, slots_per_node, api, task_name):
