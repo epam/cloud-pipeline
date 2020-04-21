@@ -22,6 +22,7 @@ import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -88,7 +89,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
     @Before
     public void setUp() {
-        doReturn(new MockS3Helper()).when(storageProviderManager).getS3Helper(any());
+        doReturn(new MockS3Helper()).when(storageProviderManager).getS3Helper(any(S3bucketDataStorage.class));
         doReturn(new AwsRegion()).when(regionManager).loadOrDefault(any());
         doReturn(new AwsRegion()).when(regionManager).getAwsRegion(any());
         Preference systemIndependentBlackList = SystemPreferences.DATA_STORAGE_NFS_MOUNT_BLACK_LIST.toPreference();

@@ -85,7 +85,7 @@ public class S3StorageProviderTest extends AbstractSpringTest {
                 "  }" +
                 "]");
         when(cloudRegionManager.getAwsRegion(any())).thenReturn(region);
-        doReturn(s3Helper).when(s3StorageProvider).getS3Helper(any());
+        doReturn(s3Helper).when(s3StorageProvider).getS3Helper(any(S3bucketDataStorage.class));
     }
 
     @Test

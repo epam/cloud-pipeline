@@ -123,6 +123,12 @@ public class DataStorageApiService {
         return dataStorageManager.loadByNameOrId(identifier);
     }
 
+    @PostAuthorize("hasRole('ADMIN') OR hasPermission(returnObject, 'READ')")
+    @AclMask
+    public AbstractDataStorage loadByPathOrId(final String identifier) {
+        return dataStorageManager.loadByPathOrId(identifier);
+    }
+
     @PreAuthorize(STORAGE_ID_READ)
     public DataStorageListing getDataStorageItems(final Long id, final String path,
             Boolean showVersion, Integer pageSize, String marker) {

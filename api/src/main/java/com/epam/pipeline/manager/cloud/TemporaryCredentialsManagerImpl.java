@@ -66,7 +66,7 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
         actions.forEach(action -> {
             AbstractDataStorage loadedDataStorage =
                     action.getId().equals(dataStorage.getId()) ? dataStorage : dataStorageManager.load(action.getId());
-            action.setBucketName(loadedDataStorage.getPath());
+            action.setBucketName(loadedDataStorage.getRoot());
             AbstractCloudRegion loadedRegion = credentialsGenerator.getRegion(loadedDataStorage);
             Assert.isTrue(Objects.equals(region.getId(), loadedRegion.getId()),
                     "Actions shall be requested for buckets from the same region");
