@@ -341,6 +341,10 @@ class S3Mounter(StorageMounter):
         stat_cache = os.getenv('CP_S3_FUSE_STAT_CACHE', '1m0s')
         type_cache = os.getenv('CP_S3_FUSE_TYPE_CACHE', '1m0s')
         aws_key_id, aws_secret, region_name = self._get_credentials(self.storage)
+        path_chunks = self.storage.path.split('/')
+        bucket = path_chunks[0]
+        relative_path = '/'.join(path_chunks[1:]) if len(path_chunks) > 1 else ''
+
         if not PermissionHelper.is_storage_writable(self.storage):
             mask = '0554'
             permissions = 'ro'
@@ -355,16 +359,20 @@ class S3Mounter(StorageMounter):
                 'fuse_type': self.fuse_type,
                 'aws_key_id': aws_key_id,
                 'aws_secret': aws_secret,
-                'tmp_dir': self.fuse_tmp
+                'tmp_dir': self.fuse_tmp,
+                'bucket': bucket,
+                'relative_path': relative_path
                 }
 
     def build_mount_command(self, params):
         if params['fuse_type'] == FUSE_GOOFYS_ID:
+            params['path'] = '{bucket}:{relative_path}'.format(**params) if params['relative_path'] else params['path']
             return 'AWS_ACCESS_KEY_ID={aws_key_id} AWS_SECRET_ACCESS_KEY={aws_secret} nohup goofys ' \
                    '--dir-mode {mask} --file-mode {mask} -o {permissions} -o allow_other ' \
                     '--stat-cache-ttl {stat_cache} --type-cache-ttl {type_cache} ' \
                     '-f --gid 0 --region "{region_name}" {path} {mount} > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
         elif params['fuse_type'] == FUSE_S3FS_ID:
+            params['path'] = '{bucket}:/{relative_path}'.format(**params) if params['relative_path'] else params['path']
             return 'AWSACCESSKEYID={aws_key_id} AWSSECRETACCESSKEY={aws_secret} s3fs {path} {mount} -o use_cache={tmp_dir} ' \
                     '-o umask=0000 -o {permissions} -o allow_other -o enable_noobj_cache ' \
                     '-o endpoint="{region_name}" -o url="https://s3.{region_name}.amazonaws.com"'.format(**params)

@@ -232,6 +232,8 @@ class S3BucketWrapper(CloudDataStorageWrapper):
 
     def __init__(self, bucket, path):
         super(S3BucketWrapper, self).__init__(bucket, path)
+        # parse root bucket from path
+        self.bucket.path = bucket.path.split(self.path_separator)[0]
         self.is_empty_flag = True
         self.session = None
 

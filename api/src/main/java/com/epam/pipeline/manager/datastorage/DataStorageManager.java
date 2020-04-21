@@ -135,6 +135,9 @@ public class DataStorageManager implements SecuredEntityManager {
     @Autowired
     private Executor dataStoragePathExecutor;
 
+    @Autowired
+    private DataStoragePathLoader pathLoader;
+
     private AbstractDataStorageFactory dataStorageFactory =
             AbstractDataStorageFactory.getDefaultDataStorageFactory();
 
@@ -171,6 +174,10 @@ public class DataStorageManager implements SecuredEntityManager {
 
     @Override public AclClass getSupportedClass() {
         return AclClass.DATA_STORAGE;
+    }
+
+    public AbstractDataStorage loadByPathOrId(final String identifier) {
+        return pathLoader.loadDataStorageByPathOrId(identifier);
     }
 
     public AbstractDataStorage loadByNameOrId(final String identifier) {

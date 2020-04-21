@@ -25,6 +25,7 @@ import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.dao.util.AclTestDao;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -96,7 +97,7 @@ public class FolderTemplateManagerTest extends AbstractSpringTest {
 
     @Before
     public void setUp() {
-        doReturn(new MockS3Helper()).when(storageProviderManager).getS3Helper(any());
+        doReturn(new MockS3Helper()).when(storageProviderManager).getS3Helper(any(S3bucketDataStorage.class));
 
         awsRegion = new AwsRegion();
         awsRegion.setName("US");

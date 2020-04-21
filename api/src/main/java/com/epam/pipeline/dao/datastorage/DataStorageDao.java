@@ -68,6 +68,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     private String loadStorageCountQuery;
     private String loadAllStoragesWithParentsQuery;
     private String loadStorageWithParentsQuery;
+    private String loadDataStorageByPrefixesQuery;
 
     @Autowired
     private DaoHelper daoHelper;
@@ -131,6 +132,13 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 .query(loadDataStorageByNameAndParentIdQuery, params,
                         DataStorageParameters.getRowMapper());
         return !items.isEmpty() ? items.get(0) : null;
+    }
+
+    public List<AbstractDataStorage> loadDataStoragesByPrefixes(final Collection<String> prefixes) {
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(DataStorageParameters.PATH.name(), prefixes);
+        return getNamedParameterJdbcTemplate().query(loadDataStorageByPrefixesQuery, params,
+                DataStorageParameters.getRowMapper());
     }
 
     public List<AbstractDataStorage> loadRootDataStorages() {
@@ -238,6 +246,11 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadStorageWithParentsQuery(String loadStorageWithParentsQuery) {
         this.loadStorageWithParentsQuery = loadStorageWithParentsQuery;
+    }
+
+    @Required
+    public void setLoadDataStorageByPrefixesQuery(String loadDataStorageByPrefixesQuery) {
+        this.loadDataStorageByPrefixesQuery = loadDataStorageByPrefixesQuery;
     }
 
     public enum DataStorageParameters {

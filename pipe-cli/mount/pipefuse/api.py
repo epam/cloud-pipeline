@@ -73,7 +73,7 @@ class CloudPipelineClient:
 
     def get_storage(self, name):
         logging.info('Getting data storage %s' % name)
-        response_data = self._get('datastorage/find?id={}'.format(name))
+        response_data = self._get('datastorage/findByPath?id={}'.format(name))
         if 'payload' in response_data:
             return DataStorage.load(response_data['payload'])
         return None
