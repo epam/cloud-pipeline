@@ -208,7 +208,11 @@ export default class CommitRunDockerImageInput extends React.Component {
     if (!this.currentRegistry) {
       return [];
     }
-    return (this.currentRegistry.groups || []).map(g => g);
+    return (this.currentRegistry.groups || [])
+      .map(g => g)
+      .filter(g => roleModel.writeAllowed(g) ||
+        (g.tools || []).filter(t => roleModel.writeAllowed(t)).length > 0
+      );
   }
 
   @computed
