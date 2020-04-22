@@ -132,6 +132,9 @@ elif [ "$CP_CAP_MODULES_TYPE" == "lmod" ]; then
 
     # Configure the modules setup
     ln -s $MODULES_INSTALL_DIR/lmod/lmod/init/profile /etc/profile.d/lmod.sh
+    MODULES_FILES_DIR="${CP_CAP_MODULES_FILES_DIR:-$MODULES_INSTALL_DIR/lmod/lmod/modulesfiles/Core}"
+    export MODULEPATH="$MODULEPATH:$MODULES_FILES_DIR"
+    echo "export MODULEPATH="$MODULEPATH:$MODULES_FILES_DIR"" >> /etc/cp_env.sh
 fi
 
 # Cleanup
