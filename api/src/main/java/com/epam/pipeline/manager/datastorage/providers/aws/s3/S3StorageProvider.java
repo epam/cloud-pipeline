@@ -84,7 +84,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
             s3Helper.createS3Bucket(datastoragePath.getRoot());
         }
         if (StringUtils.hasText(prefix)) {
-            createFolder(storage, prefix);
+            s3Helper.createFolder(datastoragePath.getRoot(), prefix);
         }
         return storage.getPath();
     }
