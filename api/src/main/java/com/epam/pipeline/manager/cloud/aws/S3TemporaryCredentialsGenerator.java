@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsGenerator;
+import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -156,12 +157,13 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
             }
         }
         final ArrayNode resource = statement.putArray("Resource");
-        String s3Arn = ARN_AWS_S3_PREFIX + dataStorageActions.getBucketName();
-        if (!listBucket) {
-            s3Arn += "/*";
-        }
-        resource.add(s3Arn);
+        resource.add(buildS3Arn(dataStorageActions, listBucket));
         statements.add(statement);
+    }
+
+    private String buildS3Arn(final DataStorageAction action, final boolean list) {
+        return list ? ARN_AWS_S3_PREFIX + ProviderUtils.withoutTrailingDelimiter(action.getBucketName())
+                : ARN_AWS_S3_PREFIX + ProviderUtils.withoutTrailingDelimiter(action.getPath()) + "/*";
     }
 
     private void addKmsActionToStatement(final String kmsArn, final ArrayNode statements) {
