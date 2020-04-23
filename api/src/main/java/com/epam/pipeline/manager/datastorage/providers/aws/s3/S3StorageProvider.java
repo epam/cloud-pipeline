@@ -83,7 +83,8 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
             s3Helper.createS3Bucket(datastoragePath.getRoot());
         }
         if (StringUtils.hasText(prefix)) {
-            createFolder(storage, prefix);
+            s3Helper.createFile(datastoragePath.getRoot(), ProviderUtils.withTrailingDelimiter(prefix),
+                    new byte[]{}, authManager.getAuthorizedUser());
         }
         return storage.getPath();
     }
@@ -227,10 +228,21 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     @Override public boolean checkStorage(S3bucketDataStorage dataStorage) {
         if (dataStorage.getRegionId() == null) {
-            AwsRegion awsRegion = cloudRegionManager.getAwsRegion(dataStorage);
+            final AwsRegion awsRegion = cloudRegionManager.getAwsRegion(dataStorage);
             dataStorage.setRegionId(awsRegion.getId());
         }
-        return getS3Helper(dataStorage).checkBucket(dataStorage.getRoot());
+        final DatastoragePath datastoragePath = ProviderUtils.parsePath(dataStorage.getPath());
+        final S3Helper s3Helper = getS3Helper(dataStorage);
+        final boolean exists = s3Helper.checkBucket(datastoragePath.getRoot());
+        if (!exists) {
+            return false;
+        }
+        if (StringUtils.hasText(datastoragePath.getPath())) {
+            s3Helper.createFile(datastoragePath.getRoot(),
+                    ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
+                    new byte[]{}, authManager.getAuthorizedUser());
+        }
+        return true;
     }
 
     @Override
@@ -311,7 +323,8 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         final boolean useVersion = StringUtils.hasText(version);
         final DataStorageAction action = new DataStorageAction();
         action.setId(dataStorage.getId());
-        action.setBucketName(dataStorage.getPath());
+        action.setBucketName(dataStorage.getRoot());
+        action.setPath(dataStorage.getPath());
         action.setRead(true);
         action.setReadVersion(useVersion);
         action.setWrite(write);

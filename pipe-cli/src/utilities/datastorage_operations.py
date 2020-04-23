@@ -245,7 +245,7 @@ class DataStorageOperations(object):
             root_bucket = None
             original_path = ''
             try:
-                root_bucket, original_path = DataStorage.load_from_uri(path)
+                root_bucket, original_path, _ = DataStorage.load_from_uri(path)
             except ALL_ERRORS as error:
                 click.echo('Error: %s' % str(error), err=True)
                 sys.exit(1)
@@ -267,28 +267,15 @@ class DataStorageOperations(object):
     def storage_mk_dir(cls, folders):
         """ Creates a directory
         """
-        buckets = []
-        try:
-            buckets = list(DataStorage.list())
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
-            sys.exit(1)
         for original_path in folders:
-            folder = original_path
-            info = DataStorageWrapper.get_data_storage_item_path_info(folder, buckets)
-            error = info[0]
-            current_bucket_identifier = info[1]
-            relative_path = info[2]
-            if error is not None:
-                click.echo(error, err=True)
-                continue
+            bucket, full_path, relative_path = DataStorage.load_from_uri(original_path)
             if len(relative_path) == 0:
                 click.echo('Cannot create folder \'{}\': already exists'.format(original_path), err=True)
                 continue
             click.echo('Creating folder {}...'.format(original_path), nl=False)
             result = None
             try:
-                result = DataStorage.create_folder(current_bucket_identifier, relative_path)
+                result = DataStorage.create_folder(bucket.identifier, relative_path)
             except ALL_ERRORS as error:
                 click.echo('Error: %s' % str(error), err=True)
                 sys.exit(1)
@@ -301,7 +288,7 @@ class DataStorageOperations(object):
     @classmethod
     def set_object_tags(cls, path, tags, version):
         try:
-            root_bucket, relative_path = DataStorage.load_from_uri(path)
+            root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
             updated_tags = DataStorage.set_object_tags(root_bucket.identifier, relative_path,
                                                        cls.convert_input_pairs_to_json(tags), version)
             if not updated_tags:
@@ -313,7 +300,7 @@ class DataStorageOperations(object):
     @classmethod
     def get_object_tags(cls, path, version):
         try:
-            root_bucket, relative_path = DataStorage.load_from_uri(path)
+            root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
             tags = DataStorage.get_object_tags(root_bucket.identifier, relative_path, version)
             if not tags:
                 click.echo("No tags available for path '{}'.".format(path))
@@ -329,7 +316,7 @@ class DataStorageOperations(object):
             click.echo("Error: Missing argument \"tags\"", err=True)
             sys.exit(1)
         try:
-            root_bucket, relative_path = DataStorage.load_from_uri(path)
+            root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
             DataStorage.delete_object_tags(root_bucket.identifier, relative_path, tags, version)
         except BaseException as e:
             click.echo(str(e.message), err=True)
