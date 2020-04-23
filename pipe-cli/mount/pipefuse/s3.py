@@ -268,7 +268,10 @@ class S3Client(FileSystemClient):
 
     def delete(self, path):
         source_path = self.build_full_path(path)
-        self._s3.delete_object(Bucket=self.bucket, Key=source_path)
+        self._delete(source_path)
+
+    def _delete(self, full_path):
+        self._s3.delete_object(Bucket=self.bucket, Key=full_path)
 
     def mv(self, old_path, path):
         source_path = self.build_full_path(old_path)
@@ -294,17 +297,16 @@ class S3Client(FileSystemClient):
         self._s3.delete_object(**source)
 
     def mkdir(self, path):
-        folder_path = self.build_full_path(path)
-        synthetic_file_path = fuseutils.join_path_with_delimiter(folder_path, '.DS_Store')
+        synthetic_file_path = fuseutils.join_path_with_delimiter(path, '.DS_Store')
         self.upload([], synthetic_file_path)
 
     def rmdir(self, path):
-        for file in self.ls(fuseutils.append_delimiter(self.build_full_path(path)), depth=-1):
-            self.delete(file.name)
+        for file in self.ls(fuseutils.append_delimiter(path), depth=-1):
+            self._delete(file.name)
 
-    def download_range(self, fh, buf, path, offset=0, length=0):
+    def download_range(self, fh, buf, path, offset=0, length=0, expand_path=True):
         logging.info('Downloading range %d-%d for %s' % (offset, offset + length, path))
-        source_path = self.build_full_path(path)
+        source_path = self.build_full_path(path) if expand_path else path
         source = {
             'Bucket': self.bucket,
             'Key': source_path
@@ -358,7 +360,7 @@ class S3Client(FileSystemClient):
 
     def _upload_single_range(self, fh, buf, path, offset):
         with io.BytesIO() as original_buf:
-            self.download_range(fh, original_buf, path)
+            self.download_range(fh, original_buf, path, expand_path=False)
             modified_bytes = bytearray(original_buf.getvalue())
         modified_bytes[offset: offset + len(buf)] = buf
         with io.BytesIO(modified_bytes) as body:
