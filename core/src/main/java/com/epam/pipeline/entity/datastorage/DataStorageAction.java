@@ -32,5 +32,7 @@ public class DataStorageAction {
 
     @JsonIgnore
     private String bucketName;
+    @JsonIgnore
+    private String path;
 
 }

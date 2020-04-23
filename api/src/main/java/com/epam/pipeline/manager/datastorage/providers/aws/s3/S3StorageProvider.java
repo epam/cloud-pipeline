@@ -300,6 +300,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         final DataStorageAction action = new DataStorageAction();
         action.setId(dataStorage.getId());
         action.setBucketName(dataStorage.getRoot());
+        action.setPath(dataStorage.getPath());
         action.setRead(true);
         action.setReadVersion(useVersion);
         action.setWrite(write);

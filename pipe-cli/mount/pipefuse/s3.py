@@ -179,12 +179,12 @@ class S3Client(FileSystemClient):
     def is_read_only(self):
         return self._is_read_only
 
-    def exists(self, path):
-        return len(self.ls(path)) > 0
+    def exists(self, path, expand_path=True):
+        return len(self.ls(path, expand_path=expand_path)) > 0
 
-    def ls(self, path, depth=1):
+    def ls(self, path, depth=1, expand_path=True):
         paginator = self._s3.get_paginator('list_objects_v2')
-        prefix = self.build_full_path(path)
+        prefix = self.build_full_path(path) if expand_path else path
         recursive = depth < 0
         operation_parameters = {
             'Bucket': self.bucket
@@ -261,29 +261,26 @@ class S3Client(FileSystemClient):
                     contenttype='',
                     is_dir=False)
 
-    def upload(self, buf, path):
-        destination_path = self.build_full_path(path)
+    def upload(self, buf, path, expand_path=True):
+        destination_path = self.build_full_path(path) if expand_path else path
         with io.BytesIO(bytearray(buf)) as body:
             self._s3.put_object(Bucket=self.bucket, Key=destination_path, Body=body)
 
-    def delete(self, path):
-        source_path = self.build_full_path(path)
-        self._delete(source_path)
-
-    def _delete(self, full_path):
-        self._s3.delete_object(Bucket=self.bucket, Key=full_path)
+    def delete(self, path, expand_path=True):
+        source_path = self.build_full_path(path) if expand_path else path
+        self._s3.delete_object(Bucket=self.bucket, Key=source_path)
 
     def mv(self, old_path, path):
         source_path = self.build_full_path(old_path)
         destination_path = self.build_full_path(path)
         folder_source_path = fuseutils.append_delimiter(source_path)
-        if self.exists(folder_source_path):
+        if self.exists(folder_source_path, expand_path=False):
             self._mvdir(folder_source_path, destination_path)
         else:
             self._mvfile(source_path, destination_path)
 
     def _mvdir(self, folder_source_path, folder_destination_path):
-        for file in self.ls(fuseutils.append_delimiter(folder_source_path), depth=-1):
+        for file in self.ls(fuseutils.append_delimiter(folder_source_path), depth=-1, expand_path=False):
             relative_path = fuseutils.without_prefix(file.name, folder_source_path)
             destination_path = fuseutils.join_path_with_delimiter(folder_destination_path, relative_path)
             self._mvfile(file.name, destination_path)
@@ -302,7 +299,7 @@ class S3Client(FileSystemClient):
 
     def rmdir(self, path):
         for file in self.ls(fuseutils.append_delimiter(path), depth=-1):
-            self._delete(file.name)
+            self.delete(file.name, expand_path=False)
 
     def download_range(self, fh, buf, path, offset=0, length=0, expand_path=True):
         logging.info('Downloading range %d-%d for %s' % (offset, offset + length, path))
@@ -322,7 +319,7 @@ class S3Client(FileSystemClient):
 
     def upload_range(self, fh, buf, path, offset=0):
         source_path = self.build_full_path(path)
-        mpu = self._mpus.get(path, None)
+        mpu = self._mpus.get(source_path, None)
         try:
             if not mpu:
                 file_size = self.attrs(path).size
@@ -382,7 +379,7 @@ class S3Client(FileSystemClient):
     def truncate(self, fh, path, length):
         source_path = self.build_full_path(path)
         logging.info('Truncating %s to %d' % (source_path, length))
-        file_size = self.attrs(source_path).size
+        file_size = self.attrs(path).size
         if not length:
             self.upload(bytearray(), path)
         elif file_size > length:
