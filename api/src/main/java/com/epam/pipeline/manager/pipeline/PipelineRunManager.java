@@ -73,6 +73,7 @@ import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.utils.PasswordGenerator;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -114,6 +115,7 @@ public class PipelineRunManager {
     private static final Long EMPTY_PIPELINE_ID = null;
     private static final int MILLS_IN_SEC = 1000;
     private static final int DIVIDER_TO_GB = 1024 * 1024 * 1024;
+    private static final String SHOW_ACTIVE_WORKERS_ONLY_PARAMETER = "CP_SHOW_ACTIVE_WORKERS_ONLY";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -636,9 +638,30 @@ public class PipelineRunManager {
         if (CollectionUtils.isNotEmpty(result.getElements())) {
             Map<Long, List<RunStatus>> runStatuses = runStatusManager.loadRunStatus(result.getElements().stream()
                     .map(PipelineRun::getId).collect(Collectors.toList()));
-            result.getElements().forEach(run -> run.setRunStatuses(runStatuses.get(run.getId())));
+            for (final PipelineRun run : result.getElements()) {
+                run.setRunStatuses(runStatuses.get(run.getId()));
+                run.setChildRuns(getFilteredChildRuns(run));
+            }
         }
         return result;
+    }
+
+    private List<PipelineRun> getFilteredChildRuns(final PipelineRun run) {
+        return showOnlyActiveChildRuns(run) ? getActiveChildRuns(run) : run.getChildRuns();
+    }
+
+    private boolean showOnlyActiveChildRuns(final PipelineRun run) {
+        return ListUtils.emptyIfNull(run.getPipelineRunParameters())
+                .stream()
+                .anyMatch(parameter -> SHOW_ACTIVE_WORKERS_ONLY_PARAMETER.equals(parameter.getName())
+                        && Boolean.parseBoolean(parameter.getValue()));
+    }
+
+    private List<PipelineRun> getActiveChildRuns(final PipelineRun run) {
+        return ListUtils.emptyIfNull(run.getChildRuns())
+                .stream()
+                .filter(childRun -> childRun.getStatus() == TaskStatus.RUNNING)
+                .collect(Collectors.toList());
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
