@@ -133,6 +133,7 @@ class Logs extends localization.LocalizedReactComponent {
     const {runTasks, runSchedule} = this.props;
     runTasks.fetch();
     runSchedule.fetch();
+    this.updateShowOnlyActiveRuns();
   }
 
   componentWillUnmount () {
@@ -198,6 +199,17 @@ class Logs extends localization.LocalizedReactComponent {
       return payload;
     }
     return null;
+  }
+
+  get showActiveWorkersOnly () {
+    const {run} = this.props;
+    if (run.loaded) {
+      const {pipelineRunParameters} = run.value;
+      const [showActiveWorkersOnly] = (pipelineRunParameters || [])
+        .filter(parameter => parameter.name === 'CP_SHOW_ACTIVE_WORKERS_ONLY');
+      return showActiveWorkersOnly && /^true$/i.test(showActiveWorkersOnly.value);
+    }
+    return false;
   }
 
   exportLog = async () => {
@@ -1201,6 +1213,11 @@ class Logs extends localization.LocalizedReactComponent {
         </Link>
       );
     };
+    const searchParts = [`parent.id=${this.props.runId}`];
+    if (this.showActiveWorkersOnly) {
+      searchParts.push('status=RUNNING');
+    }
+    const search = searchParts.join(' and ');
     return (
       <tr>
         <th
@@ -1216,7 +1233,7 @@ class Logs extends localization.LocalizedReactComponent {
             total > MAX_NESTED_RUNS_TO_DISPLAY &&
             <Link
               className={styles.allNestedRuns}
-              to={`/runs/filter?search=${encodeURIComponent(`parent.id=${this.props.runId}`)}`}
+              to={`/runs/filter?search=${encodeURIComponent(search)}`}
             >
               show all {total} runs
             </Link>
@@ -1754,7 +1771,12 @@ class Logs extends localization.LocalizedReactComponent {
         this.props.runTasks.clearInterval();
         this.props.nestedRuns.clearRefreshInterval();
       }
+      this.updateShowOnlyActiveRuns();
     }
+  }
+
+  updateShowOnlyActiveRuns = () => {
+    this.props.nestedRuns.setShowOnlyActiveWorkers(this.showActiveWorkersOnly);
   }
 }
 
