@@ -124,7 +124,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         when(mockCmdExecutor.executeCommand(anyString())).thenReturn("");
 
         CloudRegionManager regionManager = new CloudRegionManager(cloudRegionDao, cloudRegionMapper,
-                fileShareMountManager, messageHelper, preferenceManager, authManager, helpers());
+                fileShareMountManager, messageHelper, preferenceManager, authManager, kubernetesManager, helpers());
 
         AWSRegionDTO awsRegion = new AWSRegionDTO();
         awsRegion.setName("region");

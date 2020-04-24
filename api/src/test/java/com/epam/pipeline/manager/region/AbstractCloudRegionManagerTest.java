@@ -61,7 +61,7 @@ public abstract class AbstractCloudRegionManagerTest {
     final FileShareMountManager fileShareMountManager = mock(FileShareMountManager.class);
     final CloudRegionManager cloudRegionManager =
             new CloudRegionManager(cloudRegionDao, cloudRegionMapper, fileShareMountManager,
-                    messageHelper, preferenceManager, authManager, helpers());
+                    messageHelper, preferenceManager, authManager, kubernetesManager, helpers());
 
     @Before
     public void initJsonMapper() {

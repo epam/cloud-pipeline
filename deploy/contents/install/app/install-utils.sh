@@ -427,6 +427,10 @@ function init_kube_secrets {
 
     rm -f $_ssh_key_name
     rm -f $_ssh_pub_name
+
+    # create empty kube secret to store region credentials for WebDav service
+    kubectl delete secret cp-region-cres-secret
+    kubectl create secret generic cp-region-cres-secret
 }
 
 function update_config_value {
