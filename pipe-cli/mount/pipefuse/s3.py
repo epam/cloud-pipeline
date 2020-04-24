@@ -351,7 +351,7 @@ class S3Client(FileSystemClient):
     def _generate_region_download_function(self, path):
         def download_func(region_offset, region_length):
             with io.BytesIO() as buf:
-                self.download_range(None, buf, path, region_offset, region_length)
+                self.download_range(None, buf, path, region_offset, region_length, expand_path=False)
                 return buf.getvalue()
         return download_func
 
