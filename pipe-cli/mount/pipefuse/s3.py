@@ -133,13 +133,13 @@ class S3Client(FileSystemClient):
         :param chunk_size: Multipart upload chunk size.
         """
         super(S3Client, self).__init__()
+        self._delimiter = '/'
         self._is_read_only = False
-        path_chunks = bucket.split('/')
+        path_chunks = bucket.rstrip(self._delimiter).split(self._delimiter)
         self.bucket = path_chunks[0]
-        self.root_path = '/'.join(path_chunks[1:]) if len(path_chunks) > 1 else ''
+        self.root_path = self._delimiter.join(path_chunks[1:]) if len(path_chunks) > 1 else ''
         self._s3 = self._generate_s3_client(bucket, pipe)
         self._chunk_size = chunk_size
-        self._delimiter = '/'
         self._mpus = {}
 
     def _generate_s3_client(self, bucket, pipe):
