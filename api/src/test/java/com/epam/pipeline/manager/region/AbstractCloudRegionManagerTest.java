@@ -23,6 +23,7 @@ import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -59,6 +60,7 @@ public abstract class AbstractCloudRegionManagerTest {
     final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     final AuthManager authManager = mock(AuthManager.class);
     final FileShareMountManager fileShareMountManager = mock(FileShareMountManager.class);
+    private KubernetesManager kubernetesManager = mock(KubernetesManager.class);
     final CloudRegionManager cloudRegionManager =
             new CloudRegionManager(cloudRegionDao, cloudRegionMapper, fileShareMountManager,
                     messageHelper, preferenceManager, authManager, kubernetesManager, helpers());

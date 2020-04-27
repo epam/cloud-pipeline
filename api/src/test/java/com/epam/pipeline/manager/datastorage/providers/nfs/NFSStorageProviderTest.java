@@ -37,12 +37,10 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.region.AwsRegionHelper;
-import com.epam.pipeline.manager.region.AzureRegionHelper;
-import com.epam.pipeline.manager.region.CloudRegionHelper;
-import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.region.*;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import org.apache.commons.io.FileUtils;
@@ -55,6 +53,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.reflection.Whitebox;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,6 +72,9 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
     @Mock
     private CmdExecutor mockCmdExecutor;
+
+    @Mock
+    private KubernetesManager kubernetesManager;
 
     @Autowired
     private DataStorageDao dataStorageDao;
@@ -97,6 +99,9 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
     @Autowired
     private AuthManager authManager;
+
+    @MockBean
+    CloudRegionAspect cloudRegionAspect;
 
 
     private FileShareMount awsFileShareMount;
