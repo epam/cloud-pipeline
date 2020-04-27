@@ -27,7 +27,6 @@ import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.actuate.autoconfigure.ManagementWebSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.SecurityFilterAutoConfiguration;
@@ -60,7 +59,6 @@ import java.util.concurrent.Executor;
         ContextualPreferenceConfiguration.class})
 @EnableAutoConfiguration(exclude = {
         SecurityAutoConfiguration.class,
-        ManagementWebSecurityAutoConfiguration.class,
         SecurityFilterAutoConfiguration.class})
 @ComponentScan(
         basePackages = {
