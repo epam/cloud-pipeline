@@ -67,6 +67,7 @@ RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
 # Setup nfs sync
 RUN yum install -y cronie \
                    nfs-utils \
+                   cifs-utils \
                    python
 RUN curl -s https://bootstrap.pypa.io/get-pip.py | python && \
     pip install -I requests==2.21.0 && \

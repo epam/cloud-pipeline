@@ -22,6 +22,7 @@ class StorageModel(object):
         self.mask = None
         self.type = None
         self.path = None
+        self.share_mount_id = None
         self.mount_source = None
         self.users = []
 
@@ -36,6 +37,7 @@ class StorageModel(object):
         instance.name = entity_json['name']
         instance.mask = entity_json['mask']
         instance.type = entity_json['type']
+        instance.share_mount_id = entity_json['fileShareMountId'] if 'fileShareMountId' in entity_json else None
         instance.path = entity_json['pathMask'] if 'pathMask' in entity_json else None
         if 'owner' in entity_json and entity_json['owner'].lower() != 'unauthorized':
             user = UserModel()

@@ -14,6 +14,7 @@
 
 from .base import API
 from ..model.storage_model import StorageModel
+from ..model.share_mount_model import ShareMountModel
 
 
 class Storages(API):
@@ -33,3 +34,16 @@ class Storages(API):
             if 'totalCount' in response_data['payload']:
                 total_count = int(response_data['payload']['totalCount'])
         return storages, total_count
+
+
+    def list_share_mounts(self):
+            response_data = self.call('cloud/region', None)
+            share_mounts = {}
+            total_count = 0
+            if 'payload' in response_data:
+                for region in response_data['payload']:
+                    for share_mount_json in region['fileShareMounts']:
+                        share_mount = ShareMountModel.load(share_mount_json)
+                        if share_mount is not None:
+                            share_mounts[share_mount.identifier] = share_mount
+            return share_mounts
