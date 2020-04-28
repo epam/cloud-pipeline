@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,11 @@
 package com.epam.pipeline.manager.region;
 
 import com.epam.pipeline.config.JsonMapper;
-import com.epam.pipeline.entity.region.*;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
+import com.epam.pipeline.entity.region.AzureRegion;
+import com.epam.pipeline.entity.region.AzureRegionCredentials;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,6 +60,7 @@ public class CloudRegionAspect {
         }
         if (!kubernetesManager.isSecretExist(CP_REGION_CREDS_SECRET)) {
             log.warn("Secret: " + CP_REGION_CREDS_SECRET + " doesn't exist!");
+            return;
         }
         AzureRegion azureRegion = (AzureRegion) region;
         AzureRegionCredentials azureRegionCredentials = (AzureRegionCredentials) credentials;
