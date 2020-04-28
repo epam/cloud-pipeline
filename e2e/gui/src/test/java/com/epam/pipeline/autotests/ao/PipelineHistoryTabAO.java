@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,32 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.WebElement;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
-import static com.codeborne.selenide.Condition.*;
+import static com.codeborne.selenide.Condition.empty;
+import static com.codeborne.selenide.Condition.matchText;
+import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
-import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.ao.Primitive.COMPLETED_TIME;
+import static com.epam.pipeline.autotests.ao.Primitive.HISTORY_TAB;
+import static com.epam.pipeline.autotests.ao.Primitive.LOG;
+import static com.epam.pipeline.autotests.ao.Primitive.OWNER;
+import static com.epam.pipeline.autotests.ao.Primitive.PIPELINE;
+import static com.epam.pipeline.autotests.ao.Primitive.RERUN;
+import static com.epam.pipeline.autotests.ao.Primitive.RUN_NAME;
+import static com.epam.pipeline.autotests.ao.Primitive.STARTED_TIME;
+import static com.epam.pipeline.autotests.ao.Primitive.STOP;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.cssSelector;
+import static org.testng.Assert.assertEquals;
 
 public class PipelineHistoryTabAO extends AbstractPipelineTabAO<PipelineHistoryTabAO> {
 
@@ -73,14 +88,14 @@ public class PipelineHistoryTabAO extends AbstractPipelineTabAO<PipelineHistoryT
 
     public PipelineHistoryTabAO shouldContainActiveRun(String pipelineName, String runId, String versionPattern, int maxElapsedTime, String owner) {
         return shouldContainRun(pipelineName, runId, versionPattern, owner)
-                .ensure(STARTED_TIME, inTime(maxElapsedTime))
+                .ensure(STARTED_TIME, "true".equals(C.AUTH_TOKEN) ? inFormat() : inTime(maxElapsedTime))
                 .ensure(COMPLETED_TIME, empty)
                 .ensure(STOP, visible);
     }
 
     public PipelineHistoryTabAO shouldContainStoppedRun(String pipelineName, String runId, String versionPattern, int maxElapsedTime, String owner) {
         return shouldContainRun(pipelineName, runId, versionPattern, owner)
-                .ensure(COMPLETED_TIME, inTime(maxElapsedTime))
+                .ensure(COMPLETED_TIME, "true".equals(C.AUTH_TOKEN) ? inFormat() : inTime(maxElapsedTime))
                 .ensure(RERUN, visible);
     }
 
@@ -107,6 +122,18 @@ public class PipelineHistoryTabAO extends AbstractPipelineTabAO<PipelineHistoryT
             @Override
             public boolean apply(WebElement element) {
                 Utils.assertTimePassed(element.getText(), maxElapsedTime);
+                return true;
+            }
+        };
+    }
+
+    private Condition inFormat() {
+        return new Condition("not in 'yyyy-MM-dd HH:mm:ss' format") {
+            @Override
+            public boolean apply(WebElement element) {
+                final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Utils.DATE_TIME_PATTERN);
+                final LocalDateTime dateTime = LocalDateTime.parse(element.getText(), formatter);
+                assertEquals(element.getText(), dateTime.format(formatter));
                 return true;
             }
         };
