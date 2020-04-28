@@ -1,0 +1,64 @@
+#!/bin/bash
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+mkdir -p /opt/tinyproxy/logs
+mkdir -p /var/run/tinyproxy
+
+CP_TP_ALLOWED_CIDR="${CP_TP_ALLOWED_CIDR:-10.244.0.0/16}"
+CP_TP_INTERNAL_PORT="${CP_TP_INTERNAL_PORT:-3128}"
+CP_TP_VIA_NAME="${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME:-CloudPipeline}-tinyproxy"
+CP_TP_CONFIG_PATH="${CP_TP_CONFIG_PATH:-/opt/tinyproxy/tinyproxy.conf}"
+
+CP_TP_MAX_CLIENTS="${CP_TP_MAX_CLIENTS:-100}"
+CP_TP_MIN_SPARE_SERVERS="${CP_TP_MIN_SPARE_SERVERS:-2}"
+CP_TP_MAX_SPARE_SERVERS="${CP_TP_MAX_SPARE_SERVERS:-5}"
+CP_TP_START_SERVERS="${CP_TP_START_SERVERS:-2}"
+CP_TP_MAX_REQ_PER_CHILD="${CP_TP_MAX_REQ_PER_CHILD:-0}"
+
+cat > "$CP_TP_CONFIG_PATH" <<EOF
+User root
+Group root
+
+Port $CP_TP_INTERNAL_PORT
+Listen 0.0.0.0
+BindSame yes
+Timeout 600
+
+DefaultErrorFile "/opt/tinyproxy/logs/default.html"
+StatFile "/opt/tinyproxy/logs/stats.html"
+Logfile "/opt/tinyproxy/logs/tinyproxy.log"
+LogLevel Info
+PidFile "/var/run/tinyproxy/tinyproxy.pid"
+
+MaxClients $CP_TP_MAX_CLIENTS
+MinSpareServers $CP_TP_MIN_SPARE_SERVERS
+MaxSpareServers $CP_TP_MAX_SPARE_SERVERS
+StartServers $CP_TP_START_SERVERS
+MaxRequestsPerChild $CP_TP_MAX_REQ_PER_CHILD
+
+Allow $CP_TP_ALLOWED_CIDR
+
+ViaProxyName "$CP_TP_VIA_NAME"
+EOF
+
+if [ "$CP_TP_ALLOWED_PORTS" ]; then
+    echo "ConnectPort $CP_TP_ALLOWED_PORTS" >> "$CP_TP_CONFIG_PATH"
+fi
+
+if [ "$CP_TP_UPSTREAM" ]; then
+    echo "Upstream http $CP_TP_UPSTREAM" >> "$CP_TP_CONFIG_PATH"
+fi
+
+tinyproxy -c "$CP_TP_CONFIG_PATH" -d

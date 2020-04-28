@@ -253,6 +253,12 @@ CP_BILLING_SRV_KUBE_NODE_NAME=${CP_BILLING_SRV_KUBE_NODE_NAME:-$KUBE_MASTER_NODE
 print_info "-> Assigning cloud-pipeline/cp-billing-srv to $CP_SHARE_SRV_KUBE_NODE_NAME"
 kubectl label nodes "$CP_BILLING_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-billing-srv="true" --overwrite
 
+# Allow to schedule Share service to the master
+CP_TP_KUBE_NODE_NAME=${CP_TP_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-tinyproxy to $CP_TP_KUBE_NODE_NAME"
+kubectl label nodes "$CP_TP_KUBE_NODE_NAME" cloud-pipeline/cp-tinyproxy="true" --overwrite
+
+
 echo
 
 ##########
@@ -1108,6 +1114,26 @@ if is_service_requested cp-share-srv; then
     echo
 fi
 
+# Tinyproxy
+if is_service_requested cp-tinyproxy; then
+    print_ok "[Starting Tinyproxy deployment]"
+
+    print_info "-> Deleting existing instance of Tinyproxy"
+    delete_deployment_and_service   "cp-tinyproxy" \
+                                    "/opt/tinyproxy"
+
+    if is_install_requested; then
+        print_info "-> Deploying Tinyproxy"
+        create_kube_resource $K8S_SPECS_HOME/cp-tinyproxy/cp-tinyproxy-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-tinyproxy/cp-tinyproxy-svc.yaml
+
+        print_info "-> Waiting for Tinyproxy to initialize"
+        wait_for_deployment "cp-tinyproxy"
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-tinyproxy: Use http://${CP_TP_INTERNAL_HOST}:${CP_TP_INTERNAL_PORT} as an egress proxy"
+    fi
+    echo
+fi
 
 #Billing Service
 if is_service_requested cp-billing-srv; then

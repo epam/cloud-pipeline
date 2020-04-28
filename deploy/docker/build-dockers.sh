@@ -227,6 +227,12 @@ docker build    $DOCKERS_SOURCES_PATH/cp-billing-srv \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_BILLING_SRV_DIST_NAME"
 
+# Tinyproxy
+CP_TP_DIST_NAME=${CP_TP_DIST_NAME:-"$CP_DIST_REPO_NAME:tinyproxy-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-tinyproxy \
+                -t "$CP_TP_DIST_NAME"
+docker push "$CP_TP_DIST_NAME"
+
 ########################
 # Base tools dockers
 ########################
