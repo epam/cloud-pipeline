@@ -149,7 +149,7 @@ while IFS='|' read -r mount_id region_id mount_root mount_type mount_options; do
             mount_protocol="cifs"
             region_cred_file="/root/.cloud/regioncreds/${region_id}"
             if [ ! -f ${region_cred_file} ]; then
-                echo "[ERROR] Cred file for Azure region ${region_id}, not found! Bucket ${mount_root_srv}:${mount_root_path} won't be mounted."
+                echo "[ERROR] Cred file for Azure region ${region_id}, not found! CIFS storage ${mount_root_srv}:${mount_root_path} won't be mounted."
                 continue
             fi
             username=$(cat ${region_cred_file} | jq .storage_account)
