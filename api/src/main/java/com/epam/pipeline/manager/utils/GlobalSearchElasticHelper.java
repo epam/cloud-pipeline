@@ -24,7 +24,7 @@ public class GlobalSearchElasticHelper {
         return new RestHighLevelClient(buildLowLevelClient());
     }
 
-    private RestClient buildLowLevelClient() {
+    public RestClient buildLowLevelClient() {
         final String host = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_HOST);
         final Integer port = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_PORT);
         final String schema = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_SCHEME);
