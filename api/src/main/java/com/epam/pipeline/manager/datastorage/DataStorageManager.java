@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageFactory;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
@@ -263,7 +264,16 @@ public class DataStorageManager implements SecuredEntityManager {
     public SecuredEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
                                                                final Boolean proceedOnCloud,
                                                                final Boolean checkExistence,
-                                                               final boolean replaceStoragePath)
+                                                               final boolean replaceStoragePath) {
+        return create(dataStorageVO, proceedOnCloud, checkExistence, replaceStoragePath, false);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public SecuredEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
+                                                               final Boolean proceedOnCloud,
+                                                               final Boolean checkExistence,
+                                                               final boolean replaceStoragePath,
+                                                               final boolean skipPolicy)
             throws DataStorageException {
         Assert.isTrue(!StringUtils.isEmpty(dataStorageVO.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "name"));
@@ -298,13 +308,15 @@ public class DataStorageManager implements SecuredEntityManager {
             }
             String created = storageProviderManager.createBucket(dataStorage);
             dataStorage.setPath(created);
-
-            createdStorage.setActionStatus(storageProviderManager.postCreationProcessing(dataStorage));
+            if (skipPolicy) {
+                createdStorage.setActionStatus(ActionStatus.success());
+            } else {
+                createdStorage.setActionStatus(storageProviderManager.postCreationProcessing(dataStorage));
+            }
         } else if (checkExistence && !storageProviderManager.checkStorage(dataStorage)) {
             throw new IllegalStateException(messageHelper
                     .getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND_BY_NAME, dataStorage.getName(),
                             dataStorage.getPath()));
-
         }
 
         dataStorage.setOwner(authManager.getAuthorizedUser());
@@ -313,7 +325,7 @@ public class DataStorageManager implements SecuredEntityManager {
             dataStorage.setParent(parent);
         }
 
-        if (dataStorage.isPolicySupported()) {
+        if (!skipPolicy && dataStorage.isPolicySupported()) {
             storageProviderManager.applyStoragePolicy(dataStorage);
         }
 
