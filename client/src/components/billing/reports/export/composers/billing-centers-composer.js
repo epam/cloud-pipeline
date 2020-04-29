@@ -14,22 +14,28 @@
  * limitations under the License.
  */
 
-import {minutesToHours} from '../../../../../models/billing/utils';
+import {bytesToGbs, minutesToHours} from '../../../../../models/billing/utils';
 import {Range} from '../../periods';
 
 function compose (csv, resources) {
   return new Promise((resolve, reject) => {
-    if (!resources || resources.length === 0 || resources.filter(r => !r.loaded).length > 0) {
+    if (
+      !resources ||
+      resources.length === 0 ||
+      resources.filter(r => !r[0].loaded || !r[1].loaded).length > 0
+    ) {
       reject(new Error('Resources data is not available'));
     } else {
       const centers = [];
       for (let r = 0; r < resources.length; r++) {
         const resource = resources[r];
-        const {value = {}} = resource;
-        const currentCenters = Object.keys(value);
-        for (let c = 0; c < currentCenters.length; c++) {
-          if (centers.indexOf(currentCenters[c]) === -1) {
-            centers.push(currentCenters[c]);
+        for (let s = 0; s < resource.length; s++) {
+          const {value = {}} = resource[s];
+          const currentCenters = Object.keys(value);
+          for (let c = 0; c < currentCenters.length; c++) {
+            if (centers.indexOf(currentCenters[c]) === -1) {
+              centers.push(currentCenters[c]);
+            }
           }
         }
       }
@@ -41,11 +47,11 @@ function compose (csv, resources) {
       const grandTotalRow = csv.addRow('Grand total', true);
       const columns = {};
       for (let i = 0; i < resources.length; i++) {
-        const resource = resources[i];
+        const [resource] = resources[i];
         const {filters} = resource;
         const {start, endStrict, name} = filters;
         const periodName = Range.getRangeDescription({start, end: endStrict}, name);
-        columns[i] = csv.addColumns(periodName, '', '');
+        columns[i] = csv.addColumns(periodName, '', '', '', '');
         csv.setCellValueByIndex(
           titleRow,
           columns[i][0],
@@ -59,44 +65,70 @@ function compose (csv, resources) {
         csv.setCellValueByIndex(
           titleRow,
           columns[i][2],
-          'Sum of costs'
+          'Sum of runs costs'
+        );
+        csv.setCellValueByIndex(
+          titleRow,
+          columns[i][3],
+          'Sum of storage costs'
+        );
+        csv.setCellValueByIndex(
+          titleRow,
+          columns[i][4],
+          'Sum of storage usage'
         );
       }
       for (let i = 0; i < resources.length; i++) {
-        const resource = resources[i];
-        const {value = {}} = resource;
-        const getGroupingInfo = (parent, name) => {
+        const [computeRequest, storageRequest] = resources[i];
+        const {value: compute = {}} = computeRequest;
+        const {value: storage = {}} = storageRequest;
+        const getGroupingInfo = (request) => (parent, name) => {
           if (
-            value.hasOwnProperty(parent) &&
-            value[parent].hasOwnProperty('groupingInfo') &&
-            value[parent].groupingInfo.hasOwnProperty(name)
+            request.hasOwnProperty(parent) &&
+            request[parent].hasOwnProperty('groupingInfo') &&
+            request[parent].groupingInfo.hasOwnProperty(name)
           ) {
-            return value[parent].groupingInfo[name];
+            return request[parent].groupingInfo[name];
           }
           return undefined;
         };
-        const getInfo = (parent, name) => {
+        const getInfo = (request) => (parent, name) => {
           if (
-            value.hasOwnProperty(parent) &&
-            value[parent].hasOwnProperty(name)
+            request.hasOwnProperty(parent) &&
+            request[parent].hasOwnProperty(name)
           ) {
-            return value[parent][name];
+            return request[parent][name];
           }
           return undefined;
         };
+        const getComputeGroupingInfo = getGroupingInfo(compute);
+        const getComputeInfo = getInfo(compute);
+        const getStorageGroupingInfo = getGroupingInfo(storage);
+        const getStorageInfo = getInfo(storage);
         let sumOfRuns = 0;
         let sumOfHours = 0;
-        let sumOfCost = 0;
+        let sumOfRunsCosts = 0;
+        let sumOfStorageUsage = 0;
+        let sumOfStorageCosts = 0;
         for (let c = 0; c < centers.length; c++) {
           const center = centers[c];
-          const runsValue = getGroupingInfo(center, 'runs');
-          const costsValue = getInfo(center, 'value');
+          const runsValue = getComputeGroupingInfo(center, 'runs');
+          const runCostsValue = getComputeInfo(center, 'value');
+          const storageUsage = bytesToGbs(getStorageGroupingInfo(center, 'usage_storages'));
+          const storageCostsValue = getStorageInfo(center, 'value');
           const runs = (!runsValue || isNaN(runsValue)) ? 0 : +runsValue;
-          const hours = minutesToHours(getGroupingInfo(center, 'usage_runs'));
-          const costs = (!costsValue || isNaN(costsValue)) ? 0 : +costsValue;
+          const hours = minutesToHours(getComputeGroupingInfo(center, 'usage_runs'));
+          const runsCosts = (!runCostsValue || isNaN(runCostsValue))
+            ? 0
+            : +runCostsValue;
+          const storageCosts = (!storageCostsValue || isNaN(storageCostsValue))
+            ? 0
+            : +storageCostsValue;
           sumOfRuns += runs;
           sumOfHours += hours;
-          sumOfCost += costs;
+          sumOfRunsCosts += runsCosts;
+          sumOfStorageUsage += storageUsage;
+          sumOfStorageCosts += storageCosts;
           csv.setCellValueByIndex(
             centersRows[center],
             columns[i][0],
@@ -110,7 +142,17 @@ function compose (csv, resources) {
           csv.setCellValueByIndex(
             centersRows[center],
             columns[i][2],
-            costs
+            runsCosts
+          );
+          csv.setCellValueByIndex(
+            centersRows[center],
+            columns[i][3],
+            storageCosts
+          );
+          csv.setCellValueByIndex(
+            centersRows[center],
+            columns[i][4],
+            storageUsage
           );
         }
         csv.setCellValueByIndex(
@@ -126,7 +168,17 @@ function compose (csv, resources) {
         csv.setCellValueByIndex(
           grandTotalRow,
           columns[i][2],
-          sumOfCost
+          sumOfRunsCosts
+        );
+        csv.setCellValueByIndex(
+          grandTotalRow,
+          columns[i][3],
+          sumOfStorageCosts
+        );
+        csv.setCellValueByIndex(
+          grandTotalRow,
+          columns[i][4],
+          sumOfStorageUsage
         );
       }
       resolve();

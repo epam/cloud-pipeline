@@ -59,12 +59,36 @@ function injection (stores, props) {
     billingCentersTableRequest = new GetGroupedBillingCenters(filters, true);
     billingCentersTableRequest.fetch();
   }
-  const export1CsvRequest = new GetGroupedBillingCenters({...periodInfo}, false);
-  const export2CsvRequest = new GetGroupedBillingCenters({...prevPeriodInfo}, false);
-  const export3CsvRequest = new GetGroupedBillingCenters({...prevPrevPeriodInfo}, false);
-  export1CsvRequest.fetch();
-  export2CsvRequest.fetch();
-  export3CsvRequest.fetch();
+  const export1ComputeCsvRequest = new GetGroupedBillingCenters(
+    {...periodInfo, resourceType: 'COMPUTE'},
+    false
+  );
+  const export2ComputeCsvRequest = new GetGroupedBillingCenters(
+    {...prevPeriodInfo, resourceType: 'COMPUTE'},
+    false
+  );
+  const export3ComputeCsvRequest = new GetGroupedBillingCenters(
+    {...prevPrevPeriodInfo, resourceType: 'COMPUTE'},
+    false
+  );
+  const export1StorageCsvRequest = new GetGroupedBillingCenters(
+    {...periodInfo, resourceType: 'STORAGE'},
+    false
+  );
+  const export2StorageCsvRequest = new GetGroupedBillingCenters(
+    {...prevPeriodInfo, resourceType: 'STORAGE'},
+    false
+  );
+  const export3StorageCsvRequest = new GetGroupedBillingCenters(
+    {...prevPrevPeriodInfo, resourceType: 'STORAGE'},
+    false
+  );
+  export1ComputeCsvRequest.fetch();
+  export2ComputeCsvRequest.fetch();
+  export3ComputeCsvRequest.fetch();
+  export1StorageCsvRequest.fetch();
+  export2StorageCsvRequest.fetch();
+  export3StorageCsvRequest.fetch();
   const resources = new GetGroupedResourcesWithPrevious(filters);
   resources.fetch();
   const summary = new GetBillingData(filters);
@@ -77,9 +101,9 @@ function injection (stores, props) {
     billingCentersTableRequest,
     resources,
     exportCsvRequest: [
-      period === Period.custom ? undefined : export3CsvRequest,
-      period === Period.custom ? undefined : export2CsvRequest,
-      export1CsvRequest
+      period === Period.custom ? undefined : [export3ComputeCsvRequest, export3StorageCsvRequest],
+      period === Period.custom ? undefined : [export2ComputeCsvRequest, export2StorageCsvRequest],
+      [export1ComputeCsvRequest, export1StorageCsvRequest]
     ].filter(Boolean)
   };
 }

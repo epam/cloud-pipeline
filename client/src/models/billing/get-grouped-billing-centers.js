@@ -5,11 +5,20 @@ import join from './join-periods';
 
 export class GetGroupedBillingCenters extends BaseBillingRequest {
   constructor (filters, pagination = null) {
-    super(filters, true, pagination);
+    const {resourceType, ...rest} = filters || {};
+    super(rest, true, pagination);
+    this.resourceType = resourceType;
     if (this.filters && this.filters.group) {
       this.grouping = 'USER';
     } else {
       this.grouping = 'BILLING_CENTER';
+    }
+  }
+
+  async prepareBody () {
+    await super.prepareBody();
+    if (this.resourceType) {
+      this.body.filters.resource_type = [this.resourceType];
     }
   }
 
