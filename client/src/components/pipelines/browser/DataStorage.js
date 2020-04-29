@@ -312,7 +312,7 @@ export default class DataStorage extends React.Component {
       if (execResult && execResult.length === 3) {
         let relativePath = execResult[2] || '';
         if (relativePath && relativePath.endsWith(delimiter)) {
-          relativePath = path.substring(0, relativePath.length - 1);
+          relativePath = relativePath.substr(0, relativePath.length - 1);
         }
         if (relativePath) {
           this.props.router.push(`/storage/${this.props.storageId}?path=${relativePath}&versions=${this.showVersions}`);
