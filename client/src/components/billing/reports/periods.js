@@ -161,7 +161,7 @@ function getCurrentDate () {
 function getPeriod (period, range) {
   const dateNow = getCurrentDate();
   let {start, end, isCurrent} = Range.parse(range, period);
-  let before = start ? moment(start).add(-1, 'D') : moment(dateNow).add(-1, 'D');
+  let before = start ? moment(start).add(-1, 'd') : moment(dateNow).add(-1, 'd');
   const rangeIsSelected = !!start && !!end;
   let tickFormat;
   let previousStart;

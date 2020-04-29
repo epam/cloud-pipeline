@@ -79,9 +79,10 @@ function compose (csv, resources) {
         );
       }
       for (let i = 0; i < resources.length; i++) {
-        const [computeRequest, storageRequest] = resources[i];
+        const [computeRequest, storageRequest, storageLastDayRequest] = resources[i];
         const {value: compute = {}} = computeRequest;
         const {value: storage = {}} = storageRequest;
+        const {value: lastDay = {}} = storageLastDayRequest;
         const getGroupingInfo = (request) => (parent, name) => {
           if (
             request.hasOwnProperty(parent) &&
@@ -103,7 +104,7 @@ function compose (csv, resources) {
         };
         const getComputeGroupingInfo = getGroupingInfo(compute);
         const getComputeInfo = getInfo(compute);
-        const getStorageGroupingInfo = getGroupingInfo(storage);
+        const getStorageLastDayGroupingInfo = getGroupingInfo(lastDay);
         const getStorageInfo = getInfo(storage);
         let sumOfRuns = 0;
         let sumOfHours = 0;
@@ -114,7 +115,7 @@ function compose (csv, resources) {
           const center = centers[c];
           const runsValue = getComputeGroupingInfo(center, 'runs');
           const runCostsValue = getComputeInfo(center, 'value');
-          const storageUsage = bytesToGbs(getStorageGroupingInfo(center, 'usage_storages'));
+          const storageUsage = bytesToGbs(getStorageLastDayGroupingInfo(center, 'usage_storages'));
           const storageCostsValue = getStorageInfo(center, 'value');
           const runs = (!runsValue || isNaN(runsValue)) ? 0 : +runsValue;
           const hours = minutesToHours(getComputeGroupingInfo(center, 'usage_runs'));
