@@ -16,22 +16,90 @@
 
 import React from 'react';
 import {observer, inject} from 'mobx-react';
-import {Select} from 'antd';
-import UserName from '../../../special/UserName';
+import {Row, Select} from 'antd';
 
 const RunnerType = {
   user: 'user',
   group: 'group'
 };
 
+function getUserDescription (user, myUserName) {
+  if (!user) {
+    return null;
+  }
+  return `${user.userName}${user.userName === myUserName ? ' (you)' : ''}`;
+}
+
+function getUserSearchOptions (user) {
+  if (user) {
+    const searchParts = [
+      (user.userName || '').toLowerCase()
+    ];
+    if (user.attributes) {
+      const getAttributesValues = () => {
+        const values = [];
+        for (let key in user.attributes) {
+          if (user.attributes.hasOwnProperty(key)) {
+            values.push((user.attributes[key] || '').toLowerCase());
+          }
+        }
+        return values;
+      };
+      searchParts.push(...getAttributesValues());
+    }
+    return searchParts;
+  }
+  return [];
+}
+
+function filterRunner (searchOptions, filter) {
+  if (!filter) {
+    return true;
+  }
+  return searchOptions.filter(p => p.indexOf(filter.toLowerCase()) >= 0).length > 0;
+}
+
+function RenderUserName ({user, myUserName}) {
+  if (!user) {
+    return null;
+  }
+  if (user.attributes) {
+    const getAttributesValues = () => {
+      const values = [];
+      for (let key in user.attributes) {
+        if (user.attributes.hasOwnProperty(key)) {
+          values.push(user.attributes[key]);
+        }
+      }
+      return values;
+    };
+    const attributesString = getAttributesValues().join(', ');
+    return (
+      <Row type="flex" style={{flexDirection: 'column'}}>
+        <Row>{user.userName}{user.userName === myUserName ? <b> (you)</b> : undefined}</Row>
+        <Row><span style={{fontSize: 'smaller'}}>{attributesString}</span></Row>
+      </Row>
+    );
+  }
+  return (
+    <span>
+      {user.userName}
+    </span>
+  );
+}
+
 function runnerFilter (
   {
+    authenticatedUserInfo,
     billingCenters: billingCentersRequest,
     onChange,
     filter,
     users: usersRequest
   }
 ) {
+  const myUserName = authenticatedUserInfo && authenticatedUserInfo.loaded
+    ? authenticatedUserInfo.value.userName
+    : undefined;
   const changeRunner = (key) => {
     if (key) {
       const [type, ...rest] = key.split('_');
@@ -56,10 +124,16 @@ function runnerFilter (
   return (
     <Select
       allowClear
+      showSearch
+      dropdownMatchSelectWidth={false}
       style={{width: 200}}
       placeholder="All users / groups"
       value={currentRunner}
       onChange={changeRunner}
+      optionLabelProp="text"
+      filterOption={
+        (input, option) => filterRunner(option.props.searchOptions, input)
+      }
     >
       <Select.OptGroup label="Users">
         {
@@ -67,8 +141,11 @@ function runnerFilter (
             <Select.Option
               key={`${RunnerType.user}_${user.id}`}
               value={`${RunnerType.user}_${user.id}`}
+              text={getUserDescription(user, myUserName)}
+              user={user}
+              searchOptions={getUserSearchOptions(user)}
             >
-              <UserName userName={user.userName} />
+              <RenderUserName myUserName={myUserName} user={user} />
             </Select.Option>
           ))
         }
@@ -79,6 +156,8 @@ function runnerFilter (
             <Select.Option
               key={`${RunnerType.group}_${center}`}
               value={`${RunnerType.group}_${center}`}
+              text={center}
+              searchOptions={[(center || '').toLowerCase()]}
             >
               {center}
             </Select.Option>
@@ -89,5 +168,5 @@ function runnerFilter (
   );
 }
 
-export default inject('billingCenters', 'users')(observer(runnerFilter));
+export default inject('authenticatedUserInfo', 'billingCenters', 'users')(observer(runnerFilter));
 export {RunnerType};
