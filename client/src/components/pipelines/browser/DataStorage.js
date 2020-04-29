@@ -294,31 +294,34 @@ export default class DataStorage extends React.Component {
 
   navigateFull = (path) => {
     if (path && !this.props.info.pending && !this.props.info.error) {
-      const parts = path.split('://');
-      if (parts.length === 2) {
-        const nameParts = parts[1].split('/');
-        const bucketName = nameParts[0];
-        let relativePath;
-        for (let i = 1; i < nameParts.length; i++) {
-          if (!relativePath) {
-            relativePath = nameParts[i];
-          } else {
-            relativePath += `/${nameParts[i]}`;
-          }
+      let {pathMask, path: bucketPath, delimiter = '/'} = this.props.info.value;
+      let bucketPathMask = `^[^:/]+://[^${delimiter}]+(|${delimiter}(.*))$`;
+      if (pathMask) {
+        if (pathMask.endsWith(delimiter)) {
+          pathMask = pathMask.substr(0, pathMask.length - 1);
         }
-        if (this.props.info.value.path.toLowerCase() !== bucketName.toLowerCase()) {
-          message.error('You cannot navigate to another storage.', 3);
+        bucketPathMask = `^${pathMask}(|${delimiter}(.*))$`;
+      } else if (bucketPath) {
+        if (bucketPath.endsWith(delimiter)) {
+          bucketPath = bucketPath.substr(0, bucketPath.length - 1);
+        }
+        bucketPathMask = `^[^:/]+://${bucketPath}(|${delimiter}(.*))$`;
+      }
+      const regExp = new RegExp(bucketPathMask, 'i');
+      const execResult = regExp.exec(path);
+      if (execResult && execResult.length === 3) {
+        let relativePath = execResult[2] || '';
+        if (relativePath && relativePath.endsWith(delimiter)) {
+          relativePath = path.substring(0, relativePath.length - 1);
+        }
+        if (relativePath) {
+          this.props.router.push(`/storage/${this.props.storageId}?path=${relativePath}&versions=${this.showVersions}`);
         } else {
-          if (relativePath && relativePath.endsWith('/')) {
-            relativePath = path.substring(0, relativePath.length - 1);
-          }
-          if (relativePath) {
-            this.props.router.push(`/storage/${this.props.storageId}?path=${relativePath}&versions=${this.showVersions}`);
-          } else {
-            this.props.router.push(`/storage/${this.props.storageId}?versions=${this.showVersions}`);
-          }
-          this.setState({currentPage: 0, pageMarkers: [null], pagePerformed: false, selectedItems: [], selectedFile: null});
+          this.props.router.push(`/storage/${this.props.storageId}?versions=${this.showVersions}`);
         }
+        this.setState({currentPage: 0, pageMarkers: [null], pagePerformed: false, selectedItems: [], selectedFile: null});
+      } else {
+        message.error('You cannot navigate to another storage.', 3);
       }
     }
   };
