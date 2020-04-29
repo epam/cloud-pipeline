@@ -15,6 +15,7 @@
  */
 
 export {default as CSV} from './csv';
+export {default as billingCentersComposer} from './billing-centers-composer';
 export {default as defaultComposer} from './default-composer';
 export {default as summaryComposer} from './summary-composer';
 export {default as resourcesComposer} from './resources-composer';

@@ -49,6 +49,31 @@ function buildRangeString ({start, end}, period) {
   }
 }
 
+function getRangeDescription ({start, end}, period) {
+  switch (period) {
+    case Period.custom:
+      if (!start || !end) {
+        return undefined;
+      }
+      return `${start.format('YYYY-MM')} - ${end.format('YYYY-MM')}`;
+    case Period.year:
+      if (!start) {
+        return undefined;
+      }
+      return start.format('YYYY');
+    case Period.quarter:
+      if (!start) {
+        return undefined;
+      }
+      return `${start.format('Q')} quarter ${start.format('YYYY')}`;
+    default:
+      if (!start) {
+        return undefined;
+      }
+      return start.format('MMMM YYYY');
+  }
+}
+
 function parseRangeString (string, period) {
   if (!string) {
     return {
@@ -125,7 +150,8 @@ function buildRangeByDate (date, period) {
 const Range = {
   parse: parseRangeString,
   build: buildRangeString,
-  buildRangeByDate
+  buildRangeByDate,
+  getRangeDescription
 };
 
 function getCurrentDate () {
@@ -135,6 +161,7 @@ function getCurrentDate () {
 function getPeriod (period, range) {
   const dateNow = getCurrentDate();
   let {start, end, isCurrent} = Range.parse(range, period);
+  let before = start ? moment(start).add(-1, 'D') : moment(dateNow).add(-1, 'D');
   const rangeIsSelected = !!start && !!end;
   let tickFormat;
   let previousStart;
@@ -150,6 +177,7 @@ function getPeriod (period, range) {
         start = moment(dateNow).startOf('month');
         end = moment(dateNow).endOf('month');
       }
+      before = start ? moment(start).add(-1, 'M') : moment(dateNow).add(-1, 'M');
       tickFormat = getTickFormat(start, end);
       previousStart = moment(start).add(-1, 'M');
       previousEnd = moment(previousStart).endOf('M');
@@ -173,6 +201,7 @@ function getPeriod (period, range) {
         start = moment(dateNow).startOf('Q');
         end = moment(start).endOf('Q');
       }
+      before = start ? moment(start).add(-1, 'Q') : moment(dateNow).add(-1, 'Q');
       tickFormat = getTickFormat(start, end);
       previousStart = moment(start).add(-1, 'y');
       previousEnd = moment(end).add(-1, 'y');
@@ -194,6 +223,7 @@ function getPeriod (period, range) {
         start = moment(dateNow).startOf('Y');
         end = moment(dateNow).endOf('Y');
       }
+      before = start ? moment(start).add(-1, 'Y') : moment(dateNow).add(-1, 'Y');
       tickFormat = getTickFormat(start, end);
       previousStart = moment(start).add(-1, 'y');
       previousEnd = moment(end).add(-1, 'y');
@@ -213,6 +243,7 @@ function getPeriod (period, range) {
     default:
       tickFormat = getTickFormat(start, end);
       endStrict = moment(end);
+      before = undefined;
       break;
   }
   return {
@@ -225,7 +256,9 @@ function getPeriod (period, range) {
     previousEnd,
     previousEndStrict,
     previousShiftFn,
-    previousFilterFn
+    previousFilterFn,
+    current: Range.build({start}, period),
+    before: Range.build({start: before}, period)
   };
 }
 

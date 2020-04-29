@@ -45,6 +45,8 @@ function injection (stores, props) {
     range
   } = location.query;
   const periodInfo = getPeriod(period, range);
+  const prevPeriodInfo = getPeriod(period, periodInfo.before);
+  const prevPrevPeriodInfo = getPeriod(period, prevPeriodInfo.before);
   const filters = {
     group,
     user,
@@ -57,6 +59,12 @@ function injection (stores, props) {
     billingCentersTableRequest = new GetGroupedBillingCenters(filters, true);
     billingCentersTableRequest.fetch();
   }
+  const export1CsvRequest = new GetGroupedBillingCenters({...periodInfo}, false);
+  const export2CsvRequest = new GetGroupedBillingCenters({...prevPeriodInfo}, false);
+  const export3CsvRequest = new GetGroupedBillingCenters({...prevPrevPeriodInfo}, false);
+  export1CsvRequest.fetch();
+  export2CsvRequest.fetch();
+  export3CsvRequest.fetch();
   const resources = new GetGroupedResourcesWithPrevious(filters);
   resources.fetch();
   const summary = new GetBillingData(filters);
@@ -67,7 +75,12 @@ function injection (stores, props) {
     summary,
     billingCentersRequest,
     billingCentersTableRequest,
-    resources
+    resources,
+    exportCsvRequest: [
+      period === Period.custom ? undefined : export3CsvRequest,
+      period === Period.custom ? undefined : export2CsvRequest,
+      export1CsvRequest
+    ].filter(Boolean)
   };
 }
 
@@ -91,7 +104,8 @@ function GeneralDataBlock ({children, style}) {
 function UserReport ({
   resources,
   summary,
-  filters
+  filters,
+  exportCsvRequest
 }) {
   const onResourcesSelect = navigation.wrapNavigation(
     navigation.resourcesNavigation,
@@ -99,13 +113,17 @@ function UserReport ({
   );
   const composers = [
     {
-      composer: ExportComposers.summaryComposer,
-      options: [summary]
-    },
-    {
-      composer: ExportComposers.resourcesComposer,
-      options: [resources]
+      composer: ExportComposers.billingCentersComposer,
+      options: [exportCsvRequest]
     }
+    // {
+    //   composer: ExportComposers.summaryComposer,
+    //   options: [summary]
+    // },
+    // {
+    //   composer: ExportComposers.resourcesComposer,
+    //   options: [resources]
+    // }
   ];
   return (
     <Export.Consumer
@@ -139,7 +157,8 @@ function GroupReport ({
   resources,
   summary,
   filters,
-  users
+  users,
+  exportCsvRequest
 }) {
   const billingCenterName = group;
   const title = `${billingCenterName} user's spendings`;
@@ -182,24 +201,28 @@ function GroupReport ({
   );
   const composers = [
     {
-      composer: ExportComposers.summaryComposer,
-      options: [summary]
-    },
-    {
-      composer: ExportComposers.resourcesComposer,
-      options: [resources]
-    },
-    {
-      composer: ExportComposers.defaultComposer,
-      options: [
-        billingCentersRequest,
-        {
-          runs_duration: 'runsDuration',
-          runs_count: 'runsCount',
-          billing_center: () => group
-        }
-      ]
+      composer: ExportComposers.billingCentersComposer,
+      options: [exportCsvRequest]
     }
+    // {
+    //   composer: ExportComposers.summaryComposer,
+    //   options: [summary]
+    // },
+    // {
+    //   composer: ExportComposers.resourcesComposer,
+    //   options: [resources]
+    // },
+    // {
+    //   composer: ExportComposers.defaultComposer,
+    //   options: [
+    //     billingCentersRequest,
+    //     {
+    //       runs_duration: 'runsDuration',
+    //       runs_count: 'runsCount',
+    //       billing_center: () => group
+    //     }
+    //   ]
+    // }
   ];
   return (
     <Export.Consumer
@@ -261,7 +284,8 @@ function GeneralReport ({
   billingCentersRequest,
   resources,
   summary,
-  filters
+  filters,
+  exportCsvRequest
 }) {
   const onResourcesSelect = navigation.wrapNavigation(
     navigation.resourcesNavigation,
@@ -273,17 +297,21 @@ function GeneralReport ({
   );
   const composers = [
     {
-      composer: ExportComposers.summaryComposer,
-      options: [summary]
-    },
-    {
-      composer: ExportComposers.resourcesComposer,
-      options: [resources]
-    },
-    {
-      composer: ExportComposers.defaultComposer,
-      options: [billingCentersRequest]
+      composer: ExportComposers.billingCentersComposer,
+      options: [exportCsvRequest]
     }
+    // {
+    //   composer: ExportComposers.summaryComposer,
+    //   options: [summary]
+    // },
+    // {
+    //   composer: ExportComposers.resourcesComposer,
+    //   options: [resources]
+    // },
+    // {
+    //   composer: ExportComposers.defaultComposer,
+    //   options: [billingCentersRequest]
+    // }
   ];
   return (
     <Export.Consumer

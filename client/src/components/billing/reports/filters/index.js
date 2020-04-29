@@ -23,7 +23,7 @@ import ReportFilter from './report-filter';
 import RunnerFilter, {RunnerType} from './runner-filter';
 import reportsRouting from './reports-routing';
 import Divider from './divider';
-import ExportReports from '../export';
+import ExportReports, {ExportFormat} from '../export';
 import styles from '../reports.css';
 
 class Filters extends React.Component {
@@ -45,7 +45,11 @@ class Filters extends React.Component {
     if (!this.filterStore) {
       return null;
     }
-    const {children, users} = this.props;
+    const {children, users, location} = this.props;
+    const {pathname} = location;
+    const formats = /billing\/reports$/.test(pathname)
+      ? [ExportFormat.csv, ExportFormat.image]
+      : [ExportFormat.image];
     return (
       <div className={styles.container}>
         <div className={styles.reportFilter}>
@@ -69,6 +73,7 @@ class Filters extends React.Component {
             <ExportReports
               className={styles.exportReportsButton}
               documentName={() => this.filterStore.getDescription({users})}
+              formats={formats}
             />
           </div>
           <Provider filters={this.filterStore}>
