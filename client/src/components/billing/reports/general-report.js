@@ -83,27 +83,12 @@ function injection (stores, props) {
     {...prevPrevPeriodInfo, resourceType: 'STORAGE'},
     false
   );
-  const export1StorageLastDayCsvRequest = new GetGroupedBillingCenters(
-    {...periodInfo, resourceType: 'STORAGE', fetchLastDay: true},
-    false
-  );
-  const export2StorageLastDayCsvRequest = new GetGroupedBillingCenters(
-    {...prevPeriodInfo, resourceType: 'STORAGE', fetchLastDay: true},
-    false
-  );
-  const export3StorageLastDayCsvRequest = new GetGroupedBillingCenters(
-    {...prevPrevPeriodInfo, resourceType: 'STORAGE', fetchLastDay: true},
-    false
-  );
   export1ComputeCsvRequest.fetch();
   export2ComputeCsvRequest.fetch();
   export3ComputeCsvRequest.fetch();
   export1StorageCsvRequest.fetch();
   export2StorageCsvRequest.fetch();
   export3StorageCsvRequest.fetch();
-  export1StorageLastDayCsvRequest.fetch();
-  export2StorageLastDayCsvRequest.fetch();
-  export3StorageLastDayCsvRequest.fetch();
   const resources = new GetGroupedResourcesWithPrevious(filters);
   resources.fetch();
   const summary = new GetBillingData(filters);
@@ -118,11 +103,11 @@ function injection (stores, props) {
     exportCsvRequest: [
       period === Period.custom
         ? undefined
-        : [export3ComputeCsvRequest, export3StorageCsvRequest, export3StorageLastDayCsvRequest],
+        : [export3ComputeCsvRequest, export3StorageCsvRequest],
       period === Period.custom
         ? undefined
-        : [export2ComputeCsvRequest, export2StorageCsvRequest, export2StorageLastDayCsvRequest],
-      [export1ComputeCsvRequest, export1StorageCsvRequest, export1StorageLastDayCsvRequest]
+        : [export2ComputeCsvRequest, export2StorageCsvRequest],
+      [export1ComputeCsvRequest, export1StorageCsvRequest]
     ].filter(Boolean)
   };
 }
