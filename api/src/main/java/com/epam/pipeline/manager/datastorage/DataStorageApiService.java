@@ -215,8 +215,10 @@ public class DataStorageApiService {
     @PreAuthorize("hasRole('ADMIN') OR "
             + "(#dataStorageVO.parentFolderId != null AND hasRole('STORAGE_MANAGER') AND "
             + "hasPermission(#dataStorageVO.parentFolderId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
-    public SecuredEntityWithAction<AbstractDataStorage> create(DataStorageVO dataStorageVO, Boolean proceedOnCloud) {
-        return dataStorageManager.create(dataStorageVO, proceedOnCloud, true, true);
+    public SecuredEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
+                                                               final boolean proceedOnCloud,
+                                                               final boolean skipPolicy) {
+        return dataStorageManager.create(dataStorageVO, proceedOnCloud, true, true, skipPolicy);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#dataStorageVO.id, 'WRITE')")
