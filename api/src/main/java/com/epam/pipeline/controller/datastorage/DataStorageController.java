@@ -488,8 +488,9 @@ public class DataStorageController extends AbstractRestController {
             })
     public Result<SecuredEntityWithAction<AbstractDataStorage>> registerDataStorage(
             @RequestBody DataStorageVO dataStorageVO,
-            @RequestParam(value = CLOUD, defaultValue = FALSE) final Boolean proceedOnCloud) {
-        return Result.success(dataStorageApiService.create(dataStorageVO, proceedOnCloud));
+            @RequestParam(value = CLOUD, defaultValue = FALSE) final Boolean proceedOnCloud,
+            @RequestParam(value = "skipPolicy", defaultValue = FALSE) final boolean skipPolicy){
+        return Result.success(dataStorageApiService.create(dataStorageVO, proceedOnCloud, skipPolicy));
     }
 
     @RequestMapping(value = "/datastorage/update", method = RequestMethod.POST)
