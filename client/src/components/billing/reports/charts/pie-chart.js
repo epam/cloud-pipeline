@@ -95,7 +95,9 @@ function PieChart (
         label: function (tooltipItem, data) {
           const {index} = tooltipItem;
           const {data: values} = data.datasets[tooltipItem.datasetIndex];
-          const value = valueFormatter(values[index]);
+          const total = values.reduce((r, c) => r + c, 0);
+          const percentage = Math.round(values[index] / total * 10000.0) / 100.0;
+          const value = `${valueFormatter(values[index])} (${percentage}%)`;
           const label = data.labels[index];
           if (label) {
             return `${label}: ${value}`;
