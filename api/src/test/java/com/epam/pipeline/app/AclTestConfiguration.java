@@ -167,7 +167,7 @@ public class AclTestConfiguration {
     public BillingManager billingManager;
 
     @MockBean
-    private RoleManager roleManger;
+    protected RoleManager roleManger;
 
     @Bean
     public PermissionFactory permissionFactory() {
