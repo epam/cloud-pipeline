@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.vo.EntityVO;
+import org.apache.commons.collections4.MapUtils;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -69,7 +70,7 @@ public interface EntityLoader<T> {
     }
 
     default Map<String, String> prepareMetadataEntry(final MetadataEntry metadataEntry) {
-        return Stream.of(metadataEntry.getData())
+        return Stream.of(MapUtils.emptyIfNull(metadataEntry.getData()))
                 .map(Map::entrySet)
                 .flatMap(Set::stream)
                 .collect(
