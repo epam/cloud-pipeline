@@ -59,10 +59,21 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
 
     private final String awsStorageServiceName;
     private final ObjectMapper mapper;
+    private final PriceLoadingMode priceLoadingMode;
+    private final String priceLoadingEndpoint;
 
-    public AwsStoragePriceListLoader(final String awsStorageServiceName) {
+    public AwsStoragePriceListLoader(final String awsStorageServiceName,
+                                     final PriceLoadingMode mode,
+                                     final String jsonPriceListEndpointTemplate) {
         this.awsStorageServiceName = awsStorageServiceName;
         this.mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.priceLoadingMode = mode;
+        if (mode.equals(PriceLoadingMode.JSON)
+            && StringUtils.isNotEmpty(jsonPriceListEndpointTemplate)
+            && !jsonPriceListEndpointTemplate.endsWith(".json")) {
+            throw new IllegalArgumentException("Given endpoint template is incorrect for JSON mode!");
+        }
+        this.priceLoadingEndpoint = String.format(jsonPriceListEndpointTemplate, awsStorageServiceName);
     }
 
     @Override
@@ -72,7 +83,7 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
 
     @Override
     public Map<String, StoragePricing> loadFullPriceList() {
-        return loadAwsPricingCards(awsStorageServiceName).stream()
+        return loadAwsPricingCards(awsStorageServiceName, priceLoadingMode).stream()
             .map(this::extractEntryFromAwsPricing)
             .filter(Optional::isPresent)
             .map(Optional::get)
@@ -109,7 +120,19 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
         return pricing;
     }
 
-    private List<AwsPricingCard> loadAwsPricingCards(final String awsStorageServiceName) {
+    private List<AwsPricingCard> loadAwsPricingCards(final String awsStorageServiceName, final PriceLoadingMode mode) {
+        switch (mode) {
+            case API:
+                return getAwsPricingCardsViaApi(awsStorageServiceName);
+            case JSON:
+                return getAwsPricingCardsFromJson(awsStorageServiceName);
+            default:
+                throw new IllegalArgumentException(
+                    String.format("Chosen mode [%s] isn't supported by AwsPriceListLoader!", mode));
+        }
+    }
+
+    private List<AwsPricingCard> getAwsPricingCardsViaApi(final String awsStorageServiceName) {
         final List<AwsPricingCard> allPrices = new ArrayList<>();
         final Filter filter = new Filter();
         filter.setType(TERM_MATCH_FILTER);
@@ -138,6 +161,10 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
             nextToken = result.getNextToken();
         } while (nextToken != null);
         return allPrices;
+    }
+
+    private List<AwsPricingCard> getAwsPricingCardsFromJson(final String awsStorageServiceName) {
+        throw new UnsupportedOperationException();
     }
 
     private AwsPricingCard parseAwsPricingCard(final String jsonStr) {
