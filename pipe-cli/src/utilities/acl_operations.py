@@ -155,7 +155,7 @@ class ACLOperations(object):
             available_entities = Entity.load_available_entities(cls.normalize_sid_name(sid_name, principal),
                                                                 principal, acl_class)
             if len(available_entities) == 0:
-                click.echo("No entities available for '%s'", sid_name)
+                click.echo("No accessible objects available for '%s'" % sid_name)
                 sys.exit(0)
             entities_table = prettytable.PrettyTable()
             entities_table.field_names = ["Type", "Name"]
@@ -197,6 +197,7 @@ class ACLOperations(object):
     @staticmethod
     def normalize_sid_name(sid_name, principal):
         role_prefix = "ROLE_"
-        if principal or str(sid_name).upper().startswith(role_prefix):
+        sid_name = str(sid_name).upper()
+        if principal or sid_name.startswith(role_prefix):
             return sid_name
         return role_prefix + sid_name

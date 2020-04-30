@@ -65,7 +65,6 @@ import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
-import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
@@ -180,8 +179,6 @@ public class GrantPermissionManager {
     @Autowired private EntityEventServiceManager entityEventServiceManager;
 
     @Autowired private RunPermissionManager runPermissionManager;
-
-    @Autowired private RoleManager roleManager;
 
     public boolean isActionAllowedForUser(AbstractSecuredEntity entity, String user, Permission permission) {
         return isActionAllowedForUser(entity, user, Collections.singletonList(permission));
@@ -385,7 +382,6 @@ public class GrantPermissionManager {
         if (aclSid.isPrincipal()) {
             filterTree(aclSid.getName(), entity, permission);
         } else {
-            roleManager.loadRole(aclSid.getName());
             filterTree(Collections.singletonList(new GrantedAuthoritySid(aclSid.getName())), entity, permission);
         }
     }

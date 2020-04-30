@@ -49,4 +49,4 @@ class Entity(API):
         if 'message' in response_data:
             raise RuntimeError(response_data['message'])
         else:
-            raise RuntimeError("Failed to load entities available for '{}'".format(sid_name))
+            return dict()
