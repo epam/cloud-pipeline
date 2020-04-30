@@ -35,7 +35,9 @@ class ACLOperations(object):
         """
 
         try:
-            all_permissions = User.get_permissions(identifier, object_type)
+            entity = Entity.load_by_id_or_name(identifier, object_type)
+            identifier = entity['id']
+            all_permissions = User.permissions(identifier, entity['aclClass'])
             user_permissions = filter(lambda permission:
                                       permission.name.lower() == sid.lower() and permission.principal != group,
                                       all_permissions)
@@ -102,12 +104,16 @@ class ACLOperations(object):
 
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
+            sys.exit(1)
         except requests.exceptions.RequestException as http_error:
             click.echo('Http error: {}'.format(str(http_error)), err=True)
+            sys.exit(1)
         except RuntimeError as runtime_error:
             click.echo('Error: {}'.format(str(runtime_error)), err=True)
+            sys.exit(1)
         except ValueError as value_error:
             click.echo('Error: {}'.format(str(value_error)), err=True)
+            sys.exit(1)
 
     @classmethod
     def view_acl(cls, identifier, object_type):
@@ -132,12 +138,16 @@ class ACLOperations(object):
 
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
+            sys.exit(1)
         except requests.exceptions.RequestException as http_error:
             click.echo('Http error: {}'.format(str(http_error)), err=True)
+            sys.exit(1)
         except RuntimeError as runtime_error:
             click.echo('Error: {}'.format(str(runtime_error)), err=True)
+            sys.exit(1)
         except ValueError as value_error:
             click.echo('Error: {}'.format(str(value_error)), err=True)
+            sys.exit(1)
 
     @classmethod
     def print_sid_objects(cls, sid_name, principal, acl_class=None):
@@ -160,9 +170,13 @@ class ACLOperations(object):
             click.echo()
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
+            sys.exit(1)
         except requests.exceptions.RequestException as http_error:
             click.echo('Http error: {}'.format(str(http_error)), err=True)
+            sys.exit(1)
         except RuntimeError as runtime_error:
             click.echo('Error: {}'.format(str(runtime_error)), err=True)
+            sys.exit(1)
         except ValueError as value_error:
             click.echo('Error: {}'.format(str(value_error)), err=True)
+            sys.exit(1)
