@@ -15,12 +15,14 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {Table} from 'antd';
+import {Radio, Table} from 'antd';
 import {
   BarChart,
   GroupedBarChart,
   BillingTable,
+  PieChart,
   Summary
 } from './charts';
 import {Period, getPeriod} from './periods';
@@ -128,6 +130,81 @@ function GeneralDataBlock ({children, style}) {
     </div>
   );
 }
+
+const BillingCentersDisplayModes = {
+  bar: 'bar',
+  pie: 'chart'
+};
+
+class BillingCenters extends React.Component {
+  state = {
+    mode: BillingCentersDisplayModes.bar
+  };
+
+  onChangeMode = (e) => {
+    this.setState({mode: e.target.value});
+  };
+
+  render () {
+    const {
+      request,
+      onSelect,
+      style,
+      title
+    } = this.props;
+    const {mode} = this.state;
+    return (
+      <div>
+        <Radio.Group
+          value={mode}
+          onChange={this.onChangeMode}
+          style={{display: 'flex', justifyContent: 'center'}}
+          size="small"
+        >
+          <Radio.Button
+            key={BillingCentersDisplayModes.bar}
+            value={BillingCentersDisplayModes.bar}
+          >
+            Bar chart
+          </Radio.Button>
+          <Radio.Button
+            key={BillingCentersDisplayModes.pie}
+            value={BillingCentersDisplayModes.pie}
+          >
+            Pie chart
+          </Radio.Button>
+        </Radio.Group>
+        {
+          mode === BillingCentersDisplayModes.bar && (
+            <BarChart
+              request={request}
+              title={title}
+              onSelect={onSelect}
+              style={style}
+            />
+          )
+        }
+        {
+          mode === BillingCentersDisplayModes.pie && (
+            <PieChart
+              request={request}
+              title={title}
+              onSelect={onSelect}
+              style={style}
+            />
+          )
+        }
+      </div>
+    );
+  }
+}
+
+BillingCenters.propTypes = {
+  request: PropTypes.object,
+  onSelect: PropTypes.func,
+  title: PropTypes.node,
+  style: PropTypes.object
+};
 
 function UserReport ({
   resources,
@@ -367,10 +444,10 @@ function GeneralReport ({
           />
         </GeneralDataBlock>
         <GeneralDataBlock style={{flex: 'unset'}}>
-          <BarChart
+          <BillingCenters
             request={billingCentersRequest}
-            title="Billing centers"
             onSelect={onBillingCenterSelect}
+            title="Billing centers"
             style={{height: 400}}
           />
         </GeneralDataBlock>

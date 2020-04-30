@@ -20,6 +20,7 @@ import * as BarchartDataLabelPlugin from './barchart-data-label-plugin';
 import * as ChartClickPlugin from './chart-click-plugin';
 import * as DataLabelPlugin from './data-label-plugin';
 import * as GenerateImagePlugin from './generate-image-plugin';
+import * as PieChartDataLabelPlugin from './pie-chart-data-label-plugin';
 import * as PointDataLabelPlugin from './point-data-label-plugin';
 import * as VerticalLinePlugin from './vertical-line-plugin';
 
@@ -28,6 +29,7 @@ export {
   ChartClickPlugin,
   DataLabelPlugin,
   GenerateImagePlugin,
+  PieChartDataLabelPlugin,
   PointDataLabelPlugin,
   VerticalLinePlugin,
   SummaryChart

@@ -104,7 +104,7 @@ class ChartWrapper extends React.Component {
             plugins: optPlugins,
             maintainAspectRatio: false
           },
-          plugins: [...plugins, DataLabelPlugin.plugin, GenerateImagePlugin.plugin]
+          plugins: [...(plugins || []), DataLabelPlugin.plugin, GenerateImagePlugin.plugin]
         });
       }
       this.chart.resize();
