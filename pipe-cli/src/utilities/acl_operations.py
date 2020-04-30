@@ -152,7 +152,8 @@ class ACLOperations(object):
     @classmethod
     def print_sid_objects(cls, sid_name, principal, acl_class=None):
         try:
-            available_entities = Entity.load_available_entities(sid_name, principal, acl_class)
+            available_entities = Entity.load_available_entities(cls.normalize_sid_name(sid_name, principal),
+                                                                principal, acl_class)
             if len(available_entities) == 0:
                 click.echo("No entities available for '%s'", sid_name)
                 sys.exit(0)
@@ -192,3 +193,10 @@ class ACLOperations(object):
         if str(entity_type).lower() == 'docker_registry':
             return entity['path'] if 'path' in entity else None
         return entity['name'] if 'name' in entity else None
+
+    @staticmethod
+    def normalize_sid_name(sid_name, principal):
+        role_prefix = "ROLE_"
+        if principal or str(sid_name).upper().startswith(role_prefix):
+            return sid_name
+        return role_prefix + sid_name
