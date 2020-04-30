@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -216,7 +216,8 @@ class TestMoveWithFiles(object):
     def test_move_from_not_existing_bucket(self, source, destination):
         try:
             error = pipe_storage_mv(source, destination, expected_status=1)[1]
-            assert_error_message_is_present(error, "Error: data storage with id: 'does-not-exist' was not found.")
+            assert_error_message_is_present(error, "Error: data storage with id: '{}/{}' was not found."
+                                            .format("does-not-exist", self.test_file_1))
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-675", e.message))
 
@@ -232,7 +233,8 @@ class TestMoveWithFiles(object):
         self.upload_file_to_bucket(source)
         try:
             error = pipe_storage_mv(source, destination, expected_status=1)[1]
-            assert_error_message_is_present(error, "Error: data storage with id: 'does-not-exist' was not found.")
+            assert_error_message_is_present(error, "Error: data storage with id: '{}/{}' was not found."
+                                            .format("does-not-exist", self.test_file_1))
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-675", e.message))
 

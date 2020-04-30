@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -149,9 +149,11 @@ class TestRmFileFolder(object):
     @pytest.mark.run(order=5)
     @pytest.mark.parametrize("path", test_rm_not_existing)
     def test_remove_from_not_existing_bucket(self, path):
+        bucket_name = "does-not-exist"
         try:
-            error = pipe_storage_rm("cp://{}/{}".format("does-not-exist", path), expected_status=1)[1]
-            assert_error_message_is_present(error, "Error: data storage with id: 'does-not-exist' was not found.")
+            error = pipe_storage_rm("cp://{}/{}".format(bucket_name, path), expected_status=1)[1]
+            assert_error_message_is_present(error, "Error: data storage with id: '{}/{}' was not found."
+                                            .format(bucket_name, path))
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_from_non_existing_bucket, e.message))
 

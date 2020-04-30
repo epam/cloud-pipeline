@@ -238,7 +238,7 @@ class TestCopyWithFiles(object):
         try:
             error = pipe_storage_cp(source, destination, expected_status=1)[1]
             assert_error_message_is_present(error, "Error: data storage with id: '{}/{}' was not found."
-                                            .format(self.bucket_name, self.test_file_1))
+                                            .format("does-not-exist", self.test_file_1))
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-649", e.message))
 
@@ -255,7 +255,7 @@ class TestCopyWithFiles(object):
         try:
             error = pipe_storage_cp(source, destination, expected_status=1)[1]
             assert_error_message_is_present(error, "Error: data storage with id: '{}/{}' was not found."
-                                            .format(self.bucket_name, self.test_file_1))
+                                            .format("does-not-exist", self.test_file_1))
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-649", e.message))
 
