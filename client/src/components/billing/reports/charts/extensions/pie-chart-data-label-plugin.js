@@ -69,25 +69,33 @@ const plugin = {
       x: 2,
       y: 2
     };
-    if (display(labelWidth + 2.0 * padding.x)) {
+    const renderRect = (lWidth, lHeight) => {
       ctx.save();
       ctx.beginPath();
       ctx.lineWidth = 2;
       ctx.strokeStyle = color || 'transparent';
       ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
       ctx.rect(
-        x - labelWidth / 2.0 - padding.x,
-        y - labelHeight - padding.y * 1.5,
-        labelWidth + 2.0 * padding.x,
-        2.0 * labelHeight + 3.0 * padding.y
+        x - lWidth / 2.0 - padding.x,
+        y - lHeight - padding.y * 1.5,
+        lWidth + 2.0 * padding.x,
+        2.0 * lHeight + 3.0 * padding.y
       );
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = 'rgb(0, 0, 0)';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
+    };
+    if (display(labelWidth + 2.0 * padding.x)) {
+      renderRect(labelWidth, labelHeight);
       ctx.fillText(label, x, y - padding.y);
       ctx.fillText(subLabel, x, y + labelHeight + padding.y);
+      ctx.restore();
+    } else if (display(subLabelWidth + 2.0 * padding.x)) {
+      const subLabelHeight = labelHeight / 2;
+      renderRect(subLabelWidth, subLabelHeight);
+      ctx.fillText(subLabel, x, y + subLabelHeight + padding.y);
       ctx.restore();
     }
   }
