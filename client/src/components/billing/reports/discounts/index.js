@@ -87,7 +87,7 @@ function SingleDiscountsSliderComponent ({value, onChange, title}) {
         max={100}
         onChange={onChange}
         value={value}
-        step={0.01}
+        step={1}
         style={{flex: 1}}
       />
       <InputNumber
@@ -142,7 +142,9 @@ function DiscountsSliderComponent ({compute, storage, discounts: store}) {
 function DiscountsConsumerComponent ({children, discounts: store}) {
   return children(
     discounts.simpleDiscount(100.0 - store.compute),
-    discounts.simpleDiscount(100.0 - store.storage)
+    discounts.simpleDiscount(100.0 - store.storage),
+    store.compute,
+    store.storage
   );
 }
 

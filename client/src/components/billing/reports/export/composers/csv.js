@@ -70,7 +70,7 @@ function CSV () {
         ['', ...this.columns],
         ...this.rows.map((row, index) => ([
           row,
-          ...this.data[index].map(value => (value === undefined || value === null) ? '-' : value)
+          ...this.data[index].map(value => (value === undefined || value === null) ? '' : value)
         ]))
       ];
     }

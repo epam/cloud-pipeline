@@ -254,10 +254,10 @@ function UserReport ({
     navigation.resourcesNavigation,
     filters
   );
-  const composers = [
+  const composers = (discounts) => [
     {
       composer: ExportComposers.billingCentersComposer,
-      options: [exportCsvRequest]
+      options: [exportCsvRequest, discounts]
     }
     // {
     //   composer: ExportComposers.summaryComposer,
@@ -271,10 +271,17 @@ function UserReport ({
   return (
     <Discounts.Consumer>
       {
-        (computeDiscounts, storageDiscounts) => (
+        (computeDiscounts, storageDiscounts, computeDiscountValue, storageDiscountValue) => (
           <Export.Consumer
             className={styles.chartsContainer}
-            composers={composers}
+            composers={
+              composers({
+                compute: computeDiscounts,
+                storage: storageDiscounts,
+                computeValue: computeDiscountValue,
+                storageValue: storageDiscountValue
+              })
+            }
           >
             <GeneralDataBlock>
               <BillingTable
@@ -414,10 +421,10 @@ function GroupReport ({
     filters,
     users
   );
-  const composers = [
+  const composers = (discounts) => [
     {
       composer: ExportComposers.billingCentersComposer,
-      options: [exportCsvRequest]
+      options: [exportCsvRequest, discounts]
     }
     // {
     //   composer: ExportComposers.summaryComposer,
@@ -442,10 +449,17 @@ function GroupReport ({
   return (
     <Discounts.Consumer>
       {
-        (computeDiscounts, storageDiscounts) => (
+        (computeDiscounts, storageDiscounts, computeDiscountValue, storageDiscountValue) => (
           <Export.Consumer
             className={styles.chartsContainer}
-            composers={composers}
+            composers={
+              composers({
+                compute: computeDiscounts,
+                storage: storageDiscounts,
+                computeValue: computeDiscountValue,
+                storageValue: storageDiscountValue
+              })
+            }
           >
             <GeneralDataBlock>
               <BillingTable
@@ -516,10 +530,10 @@ function GeneralReport ({
     navigation.billingCentersNavigation,
     filters
   );
-  const composers = [
+  const composers = (discounts) => [
     {
       composer: ExportComposers.billingCentersComposer,
-      options: [exportCsvRequest]
+      options: [exportCsvRequest, discounts]
     }
     // {
     //   composer: ExportComposers.summaryComposer,
@@ -537,10 +551,17 @@ function GeneralReport ({
   return (
     <Discounts.Consumer>
       {
-        (computeDiscounts, storageDiscounts) => (
+        (computeDiscounts, storageDiscounts, computeDiscountValue, storageDiscountValue) => (
           <Export.Consumer
             className={styles.chartsContainer}
-            composers={composers}
+            composers={
+              composers({
+                compute: computeDiscounts,
+                storage: storageDiscounts,
+                computeValue: computeDiscountValue,
+                storageValue: storageDiscountValue
+              })
+            }
           >
             <GeneralDataBlock>
               <BillingTable

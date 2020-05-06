@@ -17,7 +17,7 @@
 import {minutesToHours} from '../../../../../models/billing/utils';
 import {Range} from '../../periods';
 
-function compose (csv, resources) {
+function compose (csv, resources, discounts) {
   return new Promise((resolve, reject) => {
     if (
       !resources ||
@@ -26,6 +26,12 @@ function compose (csv, resources) {
     ) {
       reject(new Error('Billing centers data is not available'));
     } else {
+      const {
+        compute: computeFn = o => o,
+        storage: storageFn = o => o,
+        computeValue = 0,
+        storageValue = 0
+      } = discounts || {};
       const centers = [];
       for (let r = 0; r < resources.length; r++) {
         const resource = resources[r];
@@ -39,6 +45,15 @@ function compose (csv, resources) {
           }
         }
       }
+      const computeDiscountRow = csv.addRow(
+        'Compute discounts:',
+        true
+      );
+      const storageDiscountRow = csv.addRow(
+        'Compute discounts:',
+        true
+      );
+      const periodsRow = csv.addRow('', true);
       const titleRow = csv.addRow('', true);
       const centersRows = {};
       for (let c = 0; c < centers.length; c++) {
@@ -47,11 +62,29 @@ function compose (csv, resources) {
       const grandTotalRow = csv.addRow('Grand total', true);
       const columns = {};
       for (let i = 0; i < resources.length; i++) {
+        columns[i] = csv.addColumns('', '', '', '');
+      }
+      const round = a => Math.round(a * 100.0) / 100.0;
+      csv.setCellValueByIndex(
+        computeDiscountRow,
+        0,
+        computeValue > 0 ? `${round(computeValue)} %` : '-'
+      );
+      csv.setCellValueByIndex(
+        storageDiscountRow,
+        0,
+        storageValue > 0 ? `${round(storageValue)} %` : '-'
+      );
+      for (let i = 0; i < resources.length; i++) {
         const [resource] = resources[i];
         const {filters} = resource;
         const {start, endStrict, name} = filters;
         const periodName = Range.getRangeDescription({start, end: endStrict}, name);
-        columns[i] = csv.addColumns(periodName, '', '', '');
+        csv.setCellValueByIndex(
+          periodsRow,
+          columns[i][0],
+          periodName
+        );
         csv.setCellValueByIndex(
           titleRow,
           columns[i][0],
@@ -103,7 +136,6 @@ function compose (csv, resources) {
         let sumOfHours = 0;
         let sumOfRunsCosts = 0;
         let sumOfStorageCosts = 0;
-        const round = a => Math.round(a * 100.0) / 100.0;
         for (let c = 0; c < centers.length; c++) {
           const center = centers[c];
           const runsValue = getComputeGroupingInfo(center, 'runs');
@@ -113,10 +145,10 @@ function compose (csv, resources) {
           const hours = minutesToHours(getComputeGroupingInfo(center, 'usage_runs'));
           const runsCosts = (!runCostsValue || isNaN(runCostsValue))
             ? 0
-            : +runCostsValue;
+            : computeFn(+runCostsValue);
           const storageCosts = (!storageCostsValue || isNaN(storageCostsValue))
             ? 0
-            : +storageCostsValue;
+            : storageFn(+storageCostsValue);
           sumOfRuns += runs;
           sumOfHours += hours;
           sumOfRunsCosts += runsCosts;
