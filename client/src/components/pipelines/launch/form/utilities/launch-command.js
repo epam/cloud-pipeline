@@ -16,6 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {observer, inject} from 'mobx-react';
+import {computed} from 'mobx';
 import PipelineRunCmd from '../../../../../models/pipelines/PipelineRunCmd';
 import {Alert, Modal, Row, Tabs} from 'antd';
 import hljs from 'highlight.js';
@@ -23,8 +25,11 @@ import 'highlight.js/styles/github.css';
 import styles from './launch-command.css';
 import {API_PATH, SERVER} from '../../../../../config';
 
-function wrapCommand (command) {
-  return `# PIPE CLI command: \n${command || ''}`;
+function wrapCommand (command, template) {
+  if (!template) {
+    return `# PIPE CLI command: \n${command || ''}`;
+  }
+  return template.replace(/\{LAUNCH_COMMAND\}/ig, command);
 }
 
 function generateRunMethodUrl () {
@@ -61,6 +66,12 @@ class LaunchCommand extends React.Component {
     code: null,
     error: false
   };
+
+  @computed
+  get launchCommandTemplate () {
+    const {preferences} = this.props;
+    return preferences.getPreferenceValue('ui.launch.command.template');
+  }
 
   componentDidMount () {
     this.props.onInitialized && this.props.onInitialized(this);
@@ -113,7 +124,7 @@ class LaunchCommand extends React.Component {
           <code
             id="launch-command"
             dangerouslySetInnerHTML={{
-              __html: processBashScript(wrapCommand(code))
+              __html: processBashScript(wrapCommand(code, this.launchCommandTemplate))
             }} />
         </pre>
       </Row>
@@ -167,4 +178,4 @@ class LaunchCommand extends React.Component {
   }
 }
 
-export default LaunchCommand;
+export default inject('preferences')(observer(LaunchCommand));
