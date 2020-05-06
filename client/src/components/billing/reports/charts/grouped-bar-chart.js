@@ -24,6 +24,7 @@ import Export from '../export';
 class GroupedBarChart extends React.Component {
   static propTypes = {
     request: PropTypes.object,
+    discountsMapper: PropTypes.object,
     onSelect: PropTypes.func,
     title: PropTypes.string,
     height: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
@@ -105,7 +106,7 @@ class GroupedBarChart extends React.Component {
   };
 
   render () {
-    const {title, height, request, onSelect} = this.props;
+    const {title, height, request, discountsMapper, onSelect} = this.props;
     const {data, itemsCount, groups, total} = this.billingData;
     return (
       <div style={{position: 'relative'}}>
@@ -115,6 +116,11 @@ class GroupedBarChart extends React.Component {
             <BarChart
               key={group}
               request={request}
+              discounts={
+                discountsMapper && discountsMapper.hasOwnProperty(group)
+                  ? discountsMapper[group]
+                  : undefined
+              }
               data={data[group]}
               title={group}
               subChart

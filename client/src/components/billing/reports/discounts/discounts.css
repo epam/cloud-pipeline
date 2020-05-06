@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-import React from 'react';
-import Filters from './filters';
-import Discounts from './discounts';
-
-function Reports ({children, location, router}) {
-  return (
-    <Filters location={location} router={router}>
-      <Discounts>
-        {children}
-      </Discounts>
-    </Filters>
-  );
+.container {
+  display: flex;
+  align-items: center;
+  margin: 5px;
 }
 
-export default Reports;
-export {default as InstanceReport} from './instance-report';
-export {default as StorageReport} from './storage-report';
-export {default as GeneralReport} from './general-report';
+.label {
+  margin-right: 5px;
+}
+
+.sub-container {
+  flex: 1;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+}

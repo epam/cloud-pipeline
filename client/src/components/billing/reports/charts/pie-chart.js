@@ -23,6 +23,7 @@ import {
   ChartClickPlugin,
   PieChartDataLabelPlugin
 } from './extensions';
+import {discounts} from '../discounts';
 import {costTickFormatter} from '../utilities';
 
 function toValueFormat (value) {
@@ -44,6 +45,7 @@ function filterData (data, dataSample = 'value') {
 function PieChart (
   {
     request,
+    discounts: discountsFn,
     data: rawData,
     dataSample = 'value',
     previousDataSample = 'previous',
@@ -58,8 +60,22 @@ function PieChart (
   if (!request) {
     return null;
   }
-  const loading = request.pending && !request.loaded;
-  const data = rawData || (request.loaded ? (request.value || {}) : {});
+  const loading = Array.isArray(request)
+    ? (request.filter(r => r.loading).length > 0)
+    : (request.pending && !request.loaded);
+  const loaded = Array.isArray(request)
+    ? (request.filter(r => !r.loaded).length === 0)
+    : (request.loaded);
+  const value = rawData ||
+    (
+      Array.isArray(request)
+        ? (loaded ? request.map(r => r.value || {}) : {})
+        : (loaded ? (request.value || {}) : {})
+    );
+  const data = discounts.applyGroupedDataDiscounts(
+    value,
+    discountsFn
+  );
   const filteredData = filterData(data);
   const error = request.error;
   const groups = filteredData.map(d => d.name);

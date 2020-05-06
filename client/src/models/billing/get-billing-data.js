@@ -117,7 +117,8 @@ class GetBillingDataWithPreviousRange extends GetDataWithPrevious {
         {
           ...o,
           previous: o.value,
-          previousCost: o.cost
+          previousCost: o.cost,
+          previousInitialDate: o.initialDate
         }))
       : [];
     result.forEach((o) => {
