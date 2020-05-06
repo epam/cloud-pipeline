@@ -26,7 +26,7 @@ import {
   Summary
 } from './charts';
 import {Period, getPeriod} from './periods';
-import Filters from './filters';
+import Filters, {RUNNER_SEPARATOR} from './filters';
 import {
   GetBillingData,
   GetGroupedBillingCenters,
@@ -42,11 +42,13 @@ import styles from './reports.css';
 function injection (stores, props) {
   const {location} = props;
   const {
-    user,
-    group,
+    user: userQ,
+    group: groupQ,
     period = Period.month,
     range
   } = location.query;
+  const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
+  const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
   const periodInfo = getPeriod(period, range);
   const prevPeriodInfo = getPeriod(period, periodInfo.before);
   const prevPrevPeriodInfo = getPeriod(period, prevPeriodInfo.before);
@@ -281,7 +283,6 @@ function UserReport ({
                 computeDiscounts={computeDiscounts}
                 storagesDiscounts={storageDiscounts}
               />
-              <Discounts.Slider compute storage />
               <Summary
                 compute={summaryCompute}
                 storages={summaryStorages}
@@ -358,7 +359,7 @@ BillingCentersTable.propTypes = {
   requests: PropTypes.array,
   discounts: PropTypes.array,
   onUserSelect: PropTypes.func,
-  columns: PropTypes.array,
+  columns: PropTypes.array
 };
 
 function GroupReport ({
@@ -374,7 +375,7 @@ function GroupReport ({
   users,
   exportCsvRequest
 }) {
-  const billingCenterName = group;
+  const billingCenterName = (group || []).join(' ');
   const title = `${billingCenterName} user's spendings`;
   const tableColumns = [{
     key: 'user',
@@ -453,7 +454,6 @@ function GroupReport ({
                 computeDiscounts={computeDiscounts}
                 storagesDiscounts={storageDiscounts}
               />
-              <Discounts.Slider compute storage />
               <Summary
                 compute={summaryCompute}
                 storages={summaryStorages}
@@ -549,7 +549,6 @@ function GeneralReport ({
                 computeDiscounts={computeDiscounts}
                 storagesDiscounts={storageDiscounts}
               />
-              <Discounts.Slider compute storage />
               <Summary
                 compute={summaryCompute}
                 storages={summaryStorages}

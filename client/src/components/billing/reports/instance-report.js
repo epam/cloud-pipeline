@@ -22,7 +22,7 @@ import {
   BillingTable,
   Summary
 } from './charts';
-import Filters from './filters';
+import Filters, {RUNNER_SEPARATOR} from './filters';
 import {Period, getPeriod} from './periods';
 import InstanceFilter, {InstanceFilters} from './filters/instance-filter';
 import Discounts, {discounts} from './discounts';
@@ -48,12 +48,14 @@ function injection (stores, props) {
   const {location, params} = props;
   const {type} = params || {};
   const {
-    user,
-    group,
+    user: userQ,
+    group: groupQ,
     period = Period.month,
     range
   } = location.query;
   const periodInfo = getPeriod(period, range);
+  const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
+  const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
   const filters = {
     group,
     user,
@@ -313,7 +315,6 @@ class InstanceReport extends React.Component {
                   computeDiscounts={computeDiscounts}
                   showQuota={false}
                 />
-                <Discounts.Slider compute />
                 <Summary
                   compute={summary}
                   computeDiscounts={computeDiscounts}

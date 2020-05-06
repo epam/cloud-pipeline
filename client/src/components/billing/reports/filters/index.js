@@ -17,6 +17,7 @@
 import React from 'react';
 import {observable} from 'mobx';
 import {inject, observer, Provider} from 'mobx-react';
+import Discounts from '../discounts';
 import FilterStore from './filter-store';
 import PeriodFilter from './period-filter';
 import ReportFilter from './report-filter';
@@ -70,11 +71,14 @@ class Filters extends React.Component {
               filter={this.filterStore.runner}
               onChange={this.filterStore.buildNavigationFn('runner')}
             />
-            <ExportReports
-              className={styles.exportReportsButton}
-              documentName={() => this.filterStore.getDescription({users})}
-              formats={formats}
-            />
+            <div className={styles.actionsBlock}>
+              <Discounts.Button className={styles.discountsButton} />
+              <ExportReports
+                className={styles.exportReportsButton}
+                documentName={() => this.filterStore.getDescription({users})}
+                formats={formats}
+              />
+            </div>
           </div>
           <Provider filters={this.filterStore}>
             <ExportReports.Provider>
@@ -87,4 +91,7 @@ class Filters extends React.Component {
   }
 }
 
+const RUNNER_SEPARATOR = FilterStore.RUNNER_SEPARATOR;
+
+export {RUNNER_SEPARATOR};
 export default inject('users')(observer(Filters));

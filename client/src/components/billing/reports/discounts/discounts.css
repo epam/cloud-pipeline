@@ -22,6 +22,12 @@
 
 .label {
   margin-right: 5px;
+  width: 125px;
+}
+
+.input {
+  margin-left: 5px;
+  width: 75px;
 }
 
 .sub-container {
@@ -29,4 +35,24 @@
   padding: 5px;
   display: flex;
   align-items: center;
+}
+
+.button {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  height: 30px;
+  cursor: pointer;
+}
+
+.button > div {
+  height: 15px;
+  line-height: 15px;
+  cursor: pointer;
+}
+
+.button:hover {
+  text-decoration: underline;
+  color: rgb(46, 151, 231);
 }

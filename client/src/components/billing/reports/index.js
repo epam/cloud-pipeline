@@ -20,11 +20,11 @@ import Discounts from './discounts';
 
 function Reports ({children, location, router}) {
   return (
-    <Filters location={location} router={router}>
-      <Discounts>
+    <Discounts>
+      <Filters location={location} router={router}>
         {children}
-      </Discounts>
-    </Filters>
+      </Filters>
+    </Discounts>
   );
 }
 

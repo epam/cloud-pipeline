@@ -16,12 +16,39 @@
 
 import React from 'react';
 import {observer, inject} from 'mobx-react';
+import {computed, isObservableArray} from 'mobx';
 import {Row, Select} from 'antd';
+import styles from './runner-filter.css';
 
 const RunnerType = {
   user: 'user',
   group: 'group'
 };
+
+function runnersEqual (runnersA, runnersB) {
+  if (!runnersA && !runnersB) {
+    return true;
+  }
+  if (!runnersA || !runnersB) {
+    return false;
+  }
+  const {type: typeA, ids: a} = runnersA;
+  const {type: typeB, ids: b} = runnersB;
+  if (typeA !== typeB) {
+    return false;
+  }
+  const idsA = (a && (Array.isArray(a) || isObservableArray(a)) ? a : []).sort();
+  const idsB = (b && (Array.isArray(b) || isObservableArray(b)) ? b : []).sort();
+  if (idsA.length !== idsB.length) {
+    return false;
+  }
+  for (let i = 0; i < idsA.length; i++) {
+    if (`${idsA[i]}` !== `${idsB[i]}`) {
+      return false;
+    }
+  }
+  return true;
+}
 
 function getUserDescription (user, myUserName) {
   if (!user) {
@@ -88,85 +115,184 @@ function RenderUserName ({user, myUserName}) {
   );
 }
 
-function runnerFilter (
-  {
-    authenticatedUserInfo,
-    billingCenters: billingCentersRequest,
-    onChange,
-    filter,
-    users: usersRequest
+class RunnerFilter extends React.Component {
+  state = {
+    filter: undefined,
+    focused: false
+  };
+
+  componentDidMount () {
+    this.updateFilter();
   }
-) {
-  const myUserName = authenticatedUserInfo && authenticatedUserInfo.loaded
-    ? authenticatedUserInfo.value.userName
-    : undefined;
-  const changeRunner = (key) => {
-    if (key) {
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (!runnersEqual(this.props.filter, prevProps.filter)) {
+      this.updateFilter();
+    }
+  }
+
+  updateFilter = () => {
+    this.setState({
+      filter: this.props.filter
+    });
+  }
+
+  @computed
+  get myUserName () {
+    const {authenticatedUserInfo} = this.props;
+    return authenticatedUserInfo && authenticatedUserInfo.loaded
+      ? authenticatedUserInfo.value.userName
+      : undefined;
+  }
+
+  get currentRunner () {
+    const {filter} = this.state;
+    let currentRunner;
+    if (filter) {
+      const {type, id} = filter;
+      if (Array.isArray(id) || isObservableArray(id)) {
+        currentRunner = id.map((i) => `${type}_${i}`);
+      } else {
+        currentRunner = [`${type}_${id}`];
+      }
+    }
+    return currentRunner;
+  }
+
+  get currentType () {
+    const {filter} = this.state;
+    let currentType;
+    if (filter) {
+      const {type} = filter;
+      currentType = type;
+    }
+    return currentType;
+  }
+
+  @computed
+  get users () {
+    const {
+      users: usersRequest
+    } = this.props;
+    let users = [];
+    if (usersRequest && usersRequest.loaded) {
+      users = (usersRequest.value || []).map(u => u).sort((a, b) => {
+        if (a.userName > b.userName) {
+          return 1;
+        }
+        if (a.userName < b.userName) {
+          return -1;
+        }
+        return 0;
+      });
+    }
+    return users;
+  }
+
+  @computed
+  get centers () {
+    const {
+      billingCenters: billingCentersRequest
+    } = this.props;
+    let centers = [];
+    if (billingCentersRequest && billingCentersRequest.loaded) {
+      centers = (billingCentersRequest.value || []).map(c => c).sort((a, b) => {
+        if (a > b) {
+          return 1;
+        }
+        if (a < b) {
+          return -1;
+        }
+        return 0;
+      });
+    }
+    return centers;
+  }
+
+  changeRunner = (keys) => {
+    const runners = (keys || []).map((key) => {
       const [type, ...rest] = key.split('_');
-      onChange && onChange({id: rest.join('_'), type});
+      return {type, id: rest.join('_')};
+    });
+    let [runnersType] = runners.filter(r => r.type !== this.currentType).map(r => r.type);
+    runnersType = runnersType || this.currentType;
+    const newRunners = runners.filter(r => r.type === runnersType);
+    if (newRunners.length === 1) {
+      this.setState({filter: newRunners[0]});
+    } else if (newRunners.length > 1) {
+      this.setState({filter: {type: runnersType, id: newRunners.map(r => r.id)}});
     } else {
-      onChange && onChange(null);
+      this.setState({filter: null});
     }
   };
-  let users = [];
-  if (usersRequest && usersRequest.loaded) {
-    users = (usersRequest.value || []).map(u => u);
+
+  onFocus = () => {
+    this.setState({focused: true});
   }
-  let centers = [];
-  if (billingCentersRequest && billingCentersRequest.loaded) {
-    centers = (billingCentersRequest.value || []).map(c => c);
-  }
-  let currentRunner;
-  if (filter) {
-    const {type, id} = filter;
-    currentRunner = `${type}_${id}`;
-  }
-  return (
-    <Select
-      allowClear
-      showSearch
-      dropdownMatchSelectWidth={false}
-      style={{width: 200}}
-      placeholder="All users / groups"
-      value={currentRunner}
-      onChange={changeRunner}
-      optionLabelProp="text"
-      filterOption={
-        (input, option) => filterRunner(option.props.searchOptions, input)
-      }
-    >
-      <Select.OptGroup label="Users">
-        {
-          users.map((user) => (
-            <Select.Option
-              key={`${RunnerType.user}_${user.id}`}
-              value={`${RunnerType.user}_${user.id}`}
-              text={getUserDescription(user, myUserName)}
-              user={user}
-              searchOptions={getUserSearchOptions(user)}
-            >
-              <RenderUserName myUserName={myUserName} user={user} />
-            </Select.Option>
-          ))
+
+  onBlur = () => {
+    const {filter} = this.state;
+    if (!runnersEqual(filter, this.props.filter)) {
+      const {onChange} = this.props;
+      onChange && onChange(filter);
+    }
+    this.setState({focused: false});
+  };
+
+  render () {
+    const {focused} = this.state;
+    return (
+      <Select
+        mode="multiple"
+        showSearch
+        dropdownMatchSelectWidth={false}
+        className={styles.runnerSelect}
+        dropdownClassName={styles.dropdown}
+        style={{width: 200}}
+        placeholder="All users / groups"
+        value={this.currentRunner}
+        onChange={this.changeRunner}
+        onFocus={this.onFocus}
+        onBlur={this.onBlur}
+        optionLabelProp="text"
+        filterOption={
+          (input, option) => filterRunner(option.props.searchOptions, input)
         }
-      </Select.OptGroup>
-      <Select.OptGroup label="Billing centers">
-        {
-          centers.map((center) => (
-            <Select.Option
-              key={`${RunnerType.group}_${center}`}
-              value={`${RunnerType.group}_${center}`}
-              text={center}
-              searchOptions={[(center || '').toLowerCase()]}
-            >
-              {center}
-            </Select.Option>
-          ))
-        }
-      </Select.OptGroup>
-    </Select>
-  );
+        open={focused}
+      >
+        <Select.OptGroup label="Billing centers">
+          {
+            this.centers.map((center) => (
+              <Select.Option
+                key={`${RunnerType.group}_${center}`}
+                value={`${RunnerType.group}_${center}`}
+                text={center}
+                searchOptions={[(center || '').toLowerCase()]}
+              >
+                {center}
+              </Select.Option>
+            ))
+          }
+        </Select.OptGroup>
+        <Select.OptGroup label="Users">
+          {
+            this.users.map((user) => (
+              <Select.Option
+                key={`${RunnerType.user}_${user.id}`}
+                value={`${RunnerType.user}_${user.id}`}
+                text={getUserDescription(user, this.myUserName)}
+                user={user}
+                searchOptions={getUserSearchOptions(user)}
+              >
+                <RenderUserName myUserName={this.myUserName} user={user} />
+              </Select.Option>
+            ))
+          }
+        </Select.OptGroup>
+      </Select>
+    );
+  }
 }
 
-export default inject('authenticatedUserInfo', 'billingCenters', 'users')(observer(runnerFilter));
+export default inject('authenticatedUserInfo', 'billingCenters', 'users')(observer(RunnerFilter));
 export {RunnerType};

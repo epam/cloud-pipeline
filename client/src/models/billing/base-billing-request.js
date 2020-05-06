@@ -1,3 +1,4 @@
+import {isObservableArray} from 'mobx';
 import RemotePost from '../basic/RemotePost';
 import User from '../user/User';
 
@@ -52,16 +53,20 @@ export default class BaseBillingRequest extends RemotePost {
     this.body.to = this.filters && this.filters.end
       ? this.filters.end.toISOString() : undefined;
     this.body.filters = {};
-
+    const mapRunner = (runner) => runner && (Array.isArray(runner) || isObservableArray(runner))
+      ? runner
+      : [runner].filter(Boolean);
     if (this.filters && this.filters.user) {
-      const userRequest = new User(this.filters.user);
-      await userRequest.fetchIfNeededOrWait();
-      if (userRequest.loaded && userRequest.value) {
-        this.body.filters.owner = [userRequest.value.userName];
-      }
+      const requests = mapRunner(this.filters.user)
+        .map(user => new User(user));
+      await Promise.all(requests.map(r => r.fetchIfNeededOrWait()));
+      this.body.filters.owner = requests.filter(r => r.loaded).map(r => r.value.userName);
     }
     if (this.filters && this.filters.group) {
-      this.body.filters.billing_center = [this.filters.group];
+      this.body.filters.billing_center = Array.isArray(this.filters.group) ||
+      isObservableArray(this.filters.group)
+        ? this.filters.group
+        : [this.filters.group];
     }
     if (this.loadDetails) {
       this.body.loadDetails = true;

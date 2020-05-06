@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observable} from 'mobx';
 import {inject, observer, Provider as MobxProvider} from 'mobx-react';
-import {Slider} from 'antd';
+import {InputNumber, Modal, Slider} from 'antd';
 import * as discounts from './apply';
 import styles from './discounts.css';
 
@@ -73,47 +73,66 @@ class DiscountsStore {
   }
 }
 
+function SingleDiscountsSliderComponent ({value, onChange, title}) {
+  const parser = value => {
+    return value ? `${value}`.replace(/ %$/g, '') : '0';
+  };
+  return (
+    <div className={styles.subContainer}>
+      <span className={styles.label}>
+        {title}:
+      </span>
+      <Slider
+        min={0}
+        max={100}
+        onChange={onChange}
+        value={value}
+        step={0.01}
+        style={{flex: 1}}
+      />
+      <InputNumber
+        className={styles.input}
+        value={value}
+        onChange={onChange}
+        min={0}
+        max={100}
+        step={1}
+        formatter={value => `${value || 0} %`}
+        parser={parser}
+      />
+    </div>
+  );
+}
+
 function DiscountsSliderComponent ({compute, storage, discounts: store}) {
   const onChangeCompute = (value) => {
-    store.setCompute(value);
+    if (!isNaN(value)) {
+      store.setCompute(value);
+    }
   };
   const onChangeStorage = (value) => {
-    store.setStorage(value);
+    if (!isNaN(value)) {
+      store.setStorage(value);
+    }
   };
   return (
     <div className={styles.container}>
       {
         compute && (
-          <div className={styles.subContainer}>
-            <span className={styles.label}>
-              Compute discounts:
-            </span>
-            <Slider
-              min={0}
-              max={100}
-              onChange={onChangeCompute}
-              value={store.computeRaw}
-              step={0.01}
-              style={{flex: 1}}
-            />
-          </div>
+          <SingleDiscountsSliderComponent
+            value={store.computeRaw}
+            onChange={onChangeCompute}
+            title="Compute discounts"
+          />
         )
       }
       {
         storage && (
-          <div className={styles.subContainer}>
-            <span className={styles.label}>
-              Storage discounts:
-            </span>
-            <Slider
-              min={0}
-              max={100}
-              onChange={onChangeStorage}
-              value={store.storageRaw}
-              step={0.01}
-              style={{flex: 1}}
-            />
-          </div>
+          <SingleDiscountsSliderComponent
+            value={store.storageRaw}
+            onChange={onChangeStorage}
+            title="Storage discounts"
+          />
         )
       }
     </div>
@@ -130,9 +149,96 @@ function DiscountsConsumerComponent ({children, discounts: store}) {
 const DiscountsSlider = inject('discounts')(observer(DiscountsSliderComponent));
 const DiscountsConsumer = inject('discounts')(observer(DiscountsConsumerComponent));
 
+class DiscountsModalComponent extends React.Component {
+  render () {
+    const {onClose, visible} = this.props;
+    return (
+      <Modal
+        onCancel={onClose}
+        visible={visible}
+        footer={false}
+        title="Configure discounts"
+      >
+        <DiscountsSlider compute />
+        <DiscountsSlider storage />
+      </Modal>
+    );
+  }
+}
+
+DiscountsModalComponent.propTypes = {
+  onClose: PropTypes.func,
+  visible: PropTypes.bool
+};
+
+const DiscountsModal = inject('discounts')(observer(DiscountsModalComponent));
+
+class ButtonComponent extends React.Component {
+  state = {
+    modalVisible: false
+  };
+
+  onOpenModal = () => {
+    this.setState({modalVisible: true});
+  };
+
+  onCloseModal = () => {
+    this.setState({modalVisible: false});
+  };
+
+  render () {
+    const {className, discounts} = this.props;
+    const {modalVisible} = this.state;
+    const classNames = [className, styles.button].filter(Boolean).join(' ');
+    const parts = [];
+    const round = a => Math.round(a * 100.0) / 100.0;
+    if (discounts.compute > 0) {
+      parts.push((
+        <div key="compute">
+          <b>{round(discounts.compute)}%</b>
+          <span style={{marginLeft: 5}}>compute discounts</span>
+        </div>
+      ));
+    }
+    if (discounts.storage > 0) {
+      parts.push((
+        <div key="storage">
+          <b>{round(discounts.storage)}%</b>
+          <span style={{marginLeft: 5}}>storage discounts</span>
+        </div>
+      ));
+    }
+    if (parts.length === 0) {
+      parts.push((
+        <div key="configure">Configure discounts</div>
+      ));
+    }
+    return (
+      <div
+        className={classNames}
+        onClick={this.onOpenModal}
+      >
+        {parts}
+        <DiscountsModal
+          key="modal"
+          visible={modalVisible}
+          onClose={this.onCloseModal}
+        />
+      </div>
+    );
+  }
+}
+
+ButtonComponent.propTypes = {
+  className: PropTypes.string
+};
+
+const Button = inject('discounts')(observer(ButtonComponent));
+
 class Discounts extends React.Component {
   static Slider = DiscountsSlider;
   static Consumer = DiscountsConsumer;
+  static Button = Button;
   store = new DiscountsStore();
 
   render () {
