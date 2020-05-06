@@ -50,7 +50,7 @@ function compose (csv, resources, discounts) {
         true
       );
       const storageDiscountRow = csv.addRow(
-        'Compute discounts:',
+        'Storage discounts:',
         true
       );
       const periodsRow = csv.addRow('', true);
