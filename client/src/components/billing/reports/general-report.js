@@ -26,7 +26,7 @@ import {
   Summary
 } from './charts';
 import {Period, getPeriod} from './periods';
-import Filters from './filters';
+import Filters, {RUNNER_SEPARATOR} from './filters';
 import {
   GetBillingData,
   GetGroupedBillingCenters,
@@ -34,6 +34,7 @@ import {
   GetGroupedResourcesWithPrevious
 } from '../../../models/billing';
 import * as navigation from './navigation';
+import Discounts, {discounts} from './discounts';
 import Export, {ExportComposers} from './export';
 import {costTickFormatter} from './utilities';
 import styles from './reports.css';
@@ -41,11 +42,13 @@ import styles from './reports.css';
 function injection (stores, props) {
   const {location} = props;
   const {
-    user,
-    group,
+    user: userQ,
+    group: groupQ,
     period = Period.month,
     range
   } = location.query;
+  const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
+  const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
   const periodInfo = getPeriod(period, range);
   const prevPeriodInfo = getPeriod(period, periodInfo.before);
   const prevPrevPeriodInfo = getPeriod(period, prevPeriodInfo.before);
@@ -54,12 +57,25 @@ function injection (stores, props) {
     user,
     ...periodInfo
   };
-  const billingCentersRequest = new GetGroupedBillingCentersWithPrevious(filters, true);
-  billingCentersRequest.fetch();
-  let billingCentersTableRequest;
+  const billingCentersStorageRequest = new GetGroupedBillingCentersWithPrevious(
+    {...filters, resourceType: 'STORAGE'}
+  );
+  billingCentersStorageRequest.fetch();
+  const billingCentersComputeRequest = new GetGroupedBillingCentersWithPrevious(
+    {...filters, resourceType: 'COMPUTE'}
+  );
+  billingCentersComputeRequest.fetch();
+  let billingCentersComputeTableRequest;
+  let billingCentersStorageTableRequest;
   if (group) {
-    billingCentersTableRequest = new GetGroupedBillingCenters(filters, true);
-    billingCentersTableRequest.fetch();
+    billingCentersComputeTableRequest = new GetGroupedBillingCenters(
+      {...filters, resourceType: 'COMPUTE'}
+    );
+    billingCentersComputeTableRequest.fetch();
+    billingCentersStorageTableRequest = new GetGroupedBillingCenters(
+      {...filters, resourceType: 'STORAGE'}
+    );
+    billingCentersStorageTableRequest.fetch();
   }
   const export1ComputeCsvRequest = new GetGroupedBillingCenters(
     {...periodInfo, resourceType: 'COMPUTE'},
@@ -93,15 +109,32 @@ function injection (stores, props) {
   export3StorageCsvRequest.fetch();
   const resources = new GetGroupedResourcesWithPrevious(filters);
   resources.fetch();
-  const summary = new GetBillingData(filters);
-  summary.fetch();
+  const summaryCompute = new GetBillingData(
+    {
+      ...filters,
+      filterBy: GetBillingData.FILTER_BY.compute
+    }
+  );
+  summaryCompute.fetch();
+  const summaryStorages = new GetBillingData(
+    {
+      ...filters,
+      filterBy: GetBillingData.FILTER_BY.storages
+    }
+  );
+  summaryStorages.fetch();
   return {
     user,
     group,
-    summary,
-    billingCentersRequest,
-    billingCentersTableRequest,
+    summaryCompute,
+    summaryStorages,
+    billingCentersComputeRequest,
+    billingCentersStorageRequest,
+    billingCentersComputeTableRequest,
+    billingCentersStorageTableRequest,
     resources,
+    export1ComputeCsvRequest,
+    export1StorageCsvRequest,
     exportCsvRequest: [
       period === Period.custom
         ? undefined
@@ -148,6 +181,7 @@ class BillingCenters extends React.Component {
   render () {
     const {
       request,
+      discounts: discountsFn,
       onSelect,
       style,
       title
@@ -178,6 +212,7 @@ class BillingCenters extends React.Component {
           mode === BillingCentersDisplayModes.bar && (
             <BarChart
               request={request}
+              discounts={discountsFn}
               title={title}
               onSelect={onSelect}
               style={style}
@@ -188,6 +223,7 @@ class BillingCenters extends React.Component {
           mode === BillingCentersDisplayModes.pie && (
             <PieChart
               request={request}
+              discounts={discountsFn}
               title={title}
               onSelect={onSelect}
               style={style}
@@ -200,7 +236,8 @@ class BillingCenters extends React.Component {
 }
 
 BillingCenters.propTypes = {
-  request: PropTypes.object,
+  request: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  discounts: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   onSelect: PropTypes.func,
   title: PropTypes.node,
   style: PropTypes.object
@@ -208,7 +245,8 @@ BillingCenters.propTypes = {
 
 function UserReport ({
   resources,
-  summary,
+  summaryCompute,
+  summaryStorages,
   filters,
   exportCsvRequest
 }) {
@@ -216,10 +254,10 @@ function UserReport ({
     navigation.resourcesNavigation,
     filters
   );
-  const composers = [
+  const composers = (discounts) => [
     {
       composer: ExportComposers.billingCentersComposer,
-      options: [exportCsvRequest]
+      options: [exportCsvRequest, discounts]
     }
     // {
     //   composer: ExportComposers.summaryComposer,
@@ -231,41 +269,120 @@ function UserReport ({
     // }
   ];
   return (
-    <Export.Consumer
-      className={styles.chartsContainer}
-      composers={composers}
-    >
-      <GeneralDataBlock>
-        <BillingTable summary={summary} />
-        <Summary
-          summary={summary}
-          title="Summary"
-          style={{flex: 1, height: 500}}
-        />
-      </GeneralDataBlock>
-      <GeneralDataBlock>
-        <GroupedBarChart
-          request={resources}
-          title="Resources"
-          onSelect={onResourcesSelect}
-          height={400}
-        />
-      </GeneralDataBlock>
-    </Export.Consumer>
+    <Discounts.Consumer>
+      {
+        (computeDiscounts, storageDiscounts, computeDiscountValue, storageDiscountValue) => (
+          <Export.Consumer
+            className={styles.chartsContainer}
+            composers={
+              composers({
+                compute: computeDiscounts,
+                storage: storageDiscounts,
+                computeValue: computeDiscountValue,
+                storageValue: storageDiscountValue
+              })
+            }
+          >
+            <GeneralDataBlock>
+              <BillingTable
+                compute={summaryCompute}
+                storages={summaryStorages}
+                computeDiscounts={computeDiscounts}
+                storagesDiscounts={storageDiscounts}
+              />
+              <Summary
+                compute={summaryCompute}
+                storages={summaryStorages}
+                computeDiscounts={computeDiscounts}
+                storagesDiscounts={storageDiscounts}
+                title="Summary"
+                style={{flex: 1, height: 500}}
+              />
+            </GeneralDataBlock>
+            <GeneralDataBlock>
+              <GroupedBarChart
+                request={resources}
+                discountsMapper={{
+                  'Storage': storageDiscounts,
+                  'Compute instances': computeDiscounts
+                }}
+                title="Resources"
+                onSelect={onResourcesSelect}
+                height={400}
+              />
+            </GeneralDataBlock>
+          </Export.Consumer>
+        )
+      }
+    </Discounts.Consumer>
   );
 }
 
+@observer
+class BillingCentersTable extends React.Component {
+  state = {
+    current: 1
+  };
+
+  onChangePage = (page) => {
+    this.setState({current: page});
+  }
+
+  render () {
+    const {
+      columns: tableColumns,
+      requests,
+      discounts: discountsFn,
+      onUserSelect
+    } = this.props;
+    const {current} = this.state;
+    const pageSize = 2;
+    const pending = requests.filter(r => r.pending).length > 0;
+    const loaded = requests.filter(r => !r.loaded).length === 0;
+    const rawData = loaded ? requests.map(r => r.value || {}) : {};
+    const data = discounts.applyGroupedDataDiscounts(rawData, discountsFn);
+    const tableData = loaded ? Object.values(data) : [];
+    return (
+      <Table
+        rowKey={(record) => `user-item_${record.name}`}
+        rowClassName={() => styles.usersTableRow}
+        dataSource={tableData.slice((current - 1) * pageSize, current * pageSize)}
+        columns={tableColumns}
+        loading={pending}
+        pagination={{
+          current,
+          pageSize,
+          total: tableData.length,
+          onChange: this.onChangePage
+        }}
+        onRowClick={record => onUserSelect({key: record.name})}
+        size="small"
+      />
+    );
+  }
+}
+
+BillingCentersTable.propTypes = {
+  requests: PropTypes.array,
+  discounts: PropTypes.array,
+  onUserSelect: PropTypes.func,
+  columns: PropTypes.array
+};
+
 function GroupReport ({
   group,
-  billingCentersRequest,
-  billingCentersTableRequest,
+  billingCentersComputeRequest,
+  billingCentersStorageRequest,
+  billingCentersComputeTableRequest,
+  billingCentersStorageTableRequest,
   resources,
-  summary,
+  summaryCompute,
+  summaryStorages,
   filters,
   users,
   exportCsvRequest
 }) {
-  const billingCenterName = group;
+  const billingCenterName = (group || []).join(' ');
   const title = `${billingCenterName} user's spendings`;
   const tableColumns = [{
     key: 'user',
@@ -304,10 +421,10 @@ function GroupReport ({
     filters,
     users
   );
-  const composers = [
+  const composers = (discounts) => [
     {
       composer: ExportComposers.billingCentersComposer,
-      options: [exportCsvRequest]
+      options: [exportCsvRequest, discounts]
     }
     // {
     //   composer: ExportComposers.summaryComposer,
@@ -330,65 +447,78 @@ function GroupReport ({
     // }
   ];
   return (
-    <Export.Consumer
-      className={styles.chartsContainer}
-      composers={composers}
-    >
-      <GeneralDataBlock>
-        <BillingTable summary={summary} />
-        <Summary
-          summary={summary}
-          title="Summary"
-          style={{flex: 1, height: 500}}
-        />
-      </GeneralDataBlock>
-      <div className={styles.chartsSubContainer}>
-        <GeneralDataBlock>
-          <GroupedBarChart
-            request={resources}
-            title="Resources"
-            onSelect={onResourcesSelect}
-            height={400}
-          />
-        </GeneralDataBlock>
-        <GeneralDataBlock>
-          <BarChart
-            request={billingCentersRequest}
-            title={title}
-            onSelect={onUserSelect}
-            style={{height: 250}}
-          />
-          <Table
-            rowKey={(record) => `user-item_${record.name}`}
-            rowClassName={() => styles.usersTableRow}
-            dataSource={
-              billingCentersTableRequest && billingCentersTableRequest.loaded
-                ? Object.values(billingCentersTableRequest.value)
-                : []
+    <Discounts.Consumer>
+      {
+        (computeDiscounts, storageDiscounts, computeDiscountValue, storageDiscountValue) => (
+          <Export.Consumer
+            className={styles.chartsContainer}
+            composers={
+              composers({
+                compute: computeDiscounts,
+                storage: storageDiscounts,
+                computeValue: computeDiscountValue,
+                storageValue: storageDiscountValue
+              })
             }
-            columns={tableColumns}
-            loading={billingCentersTableRequest.pending}
-            pagination={{
-              current: billingCentersTableRequest.pageNum + 1,
-              pageSize: billingCentersTableRequest.pageSize,
-              total: billingCentersTableRequest.totalPages * billingCentersTableRequest.pageSize,
-              onChange: async (page) => {
-                await billingCentersTableRequest.fetchPage(page - 1);
-              }
-            }}
-            onRowClick={record => onUserSelect({key: record.name})}
-            size="small"
-          />
-        </GeneralDataBlock>
-      </div>
-    </Export.Consumer>
+          >
+            <GeneralDataBlock>
+              <BillingTable
+                compute={summaryCompute}
+                storages={summaryStorages}
+                computeDiscounts={computeDiscounts}
+                storagesDiscounts={storageDiscounts}
+              />
+              <Summary
+                compute={summaryCompute}
+                storages={summaryStorages}
+                computeDiscounts={computeDiscounts}
+                storagesDiscounts={storageDiscounts}
+                title="Summary"
+                style={{flex: 1, height: 500}}
+              />
+            </GeneralDataBlock>
+            <div className={styles.chartsSubContainer}>
+              <GeneralDataBlock>
+                <GroupedBarChart
+                  request={resources}
+                  discountsMapper={{
+                    'Storage': storageDiscounts,
+                    'Compute instances': computeDiscounts
+                  }}
+                  title="Resources"
+                  onSelect={onResourcesSelect}
+                  height={400}
+                />
+              </GeneralDataBlock>
+              <GeneralDataBlock>
+                <BarChart
+                  request={[billingCentersComputeRequest, billingCentersStorageRequest]}
+                  discounts={[computeDiscounts, storageDiscounts]}
+                  title={title}
+                  onSelect={onUserSelect}
+                  style={{height: 250}}
+                />
+                <BillingCentersTable
+                  requests={[billingCentersComputeTableRequest, billingCentersStorageTableRequest]}
+                  discounts={[computeDiscounts, storageDiscounts]}
+                  columns={tableColumns}
+                  onUserSelect={onUserSelect}
+                />
+              </GeneralDataBlock>
+            </div>
+          </Export.Consumer>
+        )
+      }
+    </Discounts.Consumer>
   );
 }
 
 function GeneralReport ({
-  billingCentersRequest,
+  billingCentersComputeRequest,
+  billingCentersStorageRequest,
   resources,
-  summary,
+  summaryCompute,
+  summaryStorages,
   filters,
   exportCsvRequest
 }) {
@@ -400,10 +530,10 @@ function GeneralReport ({
     navigation.billingCentersNavigation,
     filters
   );
-  const composers = [
+  const composers = (discounts) => [
     {
       composer: ExportComposers.billingCentersComposer,
-      options: [exportCsvRequest]
+      options: [exportCsvRequest, discounts]
     }
     // {
     //   composer: ExportComposers.summaryComposer,
@@ -419,40 +549,66 @@ function GeneralReport ({
     // }
   ];
   return (
-    <Export.Consumer
-      className={styles.chartsContainer}
-      composers={composers}
-    >
-      <GeneralDataBlock>
-        <BillingTable summary={summary} />
-        <Summary
-          summary={summary}
-          title="Summary"
-          style={{flex: 1, height: 500}}
-        />
-      </GeneralDataBlock>
-      <div className={styles.chartsSubContainer}>
-        <GeneralDataBlock style={{
-          position: 'relative',
-          flex: 'unset'
-        }}>
-          <GroupedBarChart
-            request={resources}
-            onSelect={onResourcesSelect}
-            title="Resources"
-            height={400}
-          />
-        </GeneralDataBlock>
-        <GeneralDataBlock style={{flex: 'unset'}}>
-          <BillingCenters
-            request={billingCentersRequest}
-            onSelect={onBillingCenterSelect}
-            title="Billing centers"
-            style={{height: 400}}
-          />
-        </GeneralDataBlock>
-      </div>
-    </Export.Consumer>
+    <Discounts.Consumer>
+      {
+        (computeDiscounts, storageDiscounts, computeDiscountValue, storageDiscountValue) => (
+          <Export.Consumer
+            className={styles.chartsContainer}
+            composers={
+              composers({
+                compute: computeDiscounts,
+                storage: storageDiscounts,
+                computeValue: computeDiscountValue,
+                storageValue: storageDiscountValue
+              })
+            }
+          >
+            <GeneralDataBlock>
+              <BillingTable
+                compute={summaryCompute}
+                storages={summaryStorages}
+                computeDiscounts={computeDiscounts}
+                storagesDiscounts={storageDiscounts}
+              />
+              <Summary
+                compute={summaryCompute}
+                storages={summaryStorages}
+                computeDiscounts={computeDiscounts}
+                storagesDiscounts={storageDiscounts}
+                title="Summary"
+                style={{flex: 1, height: 500}}
+              />
+            </GeneralDataBlock>
+            <div className={styles.chartsSubContainer}>
+              <GeneralDataBlock style={{
+                position: 'relative',
+                flex: 'unset'
+              }}>
+                <GroupedBarChart
+                  request={resources}
+                  discountsMapper={{
+                    'Storage': storageDiscounts,
+                    'Compute instances': computeDiscounts
+                  }}
+                  onSelect={onResourcesSelect}
+                  title="Resources"
+                  height={400}
+                />
+              </GeneralDataBlock>
+              <GeneralDataBlock style={{flex: 'unset'}}>
+                <BillingCenters
+                  request={[billingCentersComputeRequest, billingCentersStorageRequest]}
+                  discounts={[computeDiscounts, storageDiscounts]}
+                  onSelect={onBillingCenterSelect}
+                  title="Billing centers"
+                  style={{height: 400}}
+                />
+              </GeneralDataBlock>
+            </div>
+          </Export.Consumer>
+        )
+      }
+    </Discounts.Consumer>
   );
 }
 

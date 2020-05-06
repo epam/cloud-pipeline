@@ -25,9 +25,10 @@ import {
   BillingTable,
   Summary
 } from './charts';
-import Filters from './filters';
+import Filters, {RUNNER_SEPARATOR} from './filters';
 import {Period, getPeriod} from './periods';
 import Export, {ExportComposers} from './export';
+import Discounts, {discounts} from './discounts';
 import {
   GetBillingData,
   GetGroupedStorages,
@@ -45,12 +46,14 @@ function injection (stores, props) {
   const {location, params} = props;
   const {type} = params || {};
   const {
-    user,
-    group,
+    user: userQ,
+    group: groupQ,
     period = Period.month,
     range
   } = location.query;
   const periodInfo = getPeriod(period, range);
+  const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
+  const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
   const filters = {
     group,
     user,
@@ -100,7 +103,7 @@ function StoragesDataBlock ({children}) {
   );
 }
 
-function renderTable ({storages}) {
+function renderTable ({storages, discounts: discountsFn}) {
   if (!storages || !storages.loaded) {
     return null;
   }
@@ -140,7 +143,9 @@ function renderTable ({storages}) {
       render: (value) => moment.utc(value).format('DD MMM YYYY')
     }
   ];
-  const dataSource = Object.values(storages.value || {});
+  const dataSource = Object.values(
+    discounts.applyGroupedDataDiscounts(storages.value || {}, discountsFn)
+  );
   return (
     <Table
       rowKey={({info, name}) => {
@@ -202,29 +207,44 @@ function StorageReports ({storages, storagesTable, summary, type}) {
     }
   ];
   return (
-    <Export.Consumer
-      className={styles.chartsContainer}
-      composers={composers}
-    >
-      <StoragesDataBlock>
-        <BillingTable summary={summary} showQuota={false} />
-        <Summary
-          summary={summary}
-          quota={false}
-          title={getSummaryTitle()}
-          style={{flex: 1, height: 500}}
-        />
-      </StoragesDataBlock>
-      <StoragesDataBlock className={styles.chartsColumnContainer}>
-        <BarChart
-          request={storages}
-          title={getTitle()}
-          top={tablePageSize}
-          style={{height: 300}}
-        />
-        <RenderTable storages={storagesTable} />
-      </StoragesDataBlock>
-    </Export.Consumer>
+    <Discounts.Consumer>
+      {
+        (o, storageDiscounts) => (
+          <Export.Consumer
+            className={styles.chartsContainer}
+            composers={composers}
+          >
+            <StoragesDataBlock>
+              <BillingTable
+                storages={summary}
+                storagesDiscounts={storageDiscounts}
+                showQuota={false}
+              />
+              <Summary
+                storages={summary}
+                storagesDiscounts={storageDiscounts}
+                quota={false}
+                title={getSummaryTitle()}
+                style={{flex: 1, height: 500}}
+              />
+            </StoragesDataBlock>
+            <StoragesDataBlock className={styles.chartsColumnContainer}>
+              <BarChart
+                request={storages}
+                discounts={storageDiscounts}
+                title={getTitle()}
+                top={tablePageSize}
+                style={{height: 300}}
+              />
+              <RenderTable
+                storages={storagesTable}
+                discounts={storageDiscounts}
+              />
+            </StoragesDataBlock>
+          </Export.Consumer>
+        )
+      }
+    </Discounts.Consumer>
   );
 }
 

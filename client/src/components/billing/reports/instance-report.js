@@ -22,9 +22,10 @@ import {
   BillingTable,
   Summary
 } from './charts';
-import Filters from './filters';
+import Filters, {RUNNER_SEPARATOR} from './filters';
 import {Period, getPeriod} from './periods';
 import InstanceFilter, {InstanceFilters} from './filters/instance-filter';
+import Discounts, {discounts} from './discounts';
 import Export, {ExportComposers} from './export';
 import {
   GetBillingData,
@@ -47,12 +48,14 @@ function injection (stores, props) {
   const {location, params} = props;
   const {type} = params || {};
   const {
-    user,
-    group,
+    user: userQ,
+    group: groupQ,
     period = Period.month,
     range
   } = location.query;
   const periodInfo = getPeriod(period, range);
+  const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
+  const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
   const filters = {
     group,
     user,
@@ -110,6 +113,7 @@ function ResourcesDataBlock ({children}) {
 function renderResourcesSubData (
   {
     request,
+    discounts: discountsFn,
     tableDataRequest,
     dataSample = InstanceFilters.value.dataSample,
     previousDataSample = InstanceFilters.value.previousDataSample,
@@ -162,12 +166,16 @@ function renderResourcesSubData (
       render: value => value ? `$${Math.round(value * 100.0) / 100.0}` : null
     }
   ].filter(Boolean);
+  const tableData = tableDataRequest && tableDataRequest.loaded
+    ? discounts.applyGroupedDataDiscounts(tableDataRequest.value, discountsFn)
+    : {};
   return (
     <ResourcesDataBlock>
       {extra}
       <div className={styles.resourcesChart}>
         <BarChart
           request={request}
+          discounts={discountsFn}
           dataSample={dataSample}
           previousDataSample={previousDataSample}
           title={title}
@@ -183,7 +191,7 @@ function renderResourcesSubData (
       <Table
         className={styles.resourcesTable}
         dataSource={
-          Object.values(tableDataRequest && tableDataRequest.loaded ? tableDataRequest.value : {})
+          Object.values(tableData)
         }
         loading={tableDataRequest.pending}
         rowKey={({name, value, usage}) => {
@@ -294,56 +302,70 @@ class InstanceReport extends React.Component {
       }
     ];
     return (
-      <Export.Consumer
-        className={styles.chartsContainer}
-        composers={composers}
-      >
-        <ResourcesDataBlock>
-          <BillingTable summary={summary} showQuota={false} />
-          <Summary
-            summary={summary}
-            quota={false}
-            title={this.getSummaryTitle()}
-            style={{flex: 1, height: 500}}
-          />
-        </ResourcesDataBlock>
-        <ResourcesSubData
-          extra={(
-            <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'center'}}>
-              <InstanceFilter
-                onChange={this.handleDataSampleChange}
-                value={dataSample}
-                previous={previousDataSample}
+      <Discounts.Consumer>
+        {
+          (computeDiscounts) => (
+            <Export.Consumer
+              className={styles.chartsContainer}
+              composers={composers}
+            >
+              <ResourcesDataBlock>
+                <BillingTable
+                  compute={summary}
+                  computeDiscounts={computeDiscounts}
+                  showQuota={false}
+                />
+                <Summary
+                  compute={summary}
+                  computeDiscounts={computeDiscounts}
+                  quota={false}
+                  title={this.getSummaryTitle()}
+                  style={{flex: 1, height: 500}}
+                />
+              </ResourcesDataBlock>
+              <ResourcesSubData
+                extra={(
+                  <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'center'}}>
+                    <InstanceFilter
+                      onChange={this.handleDataSampleChange}
+                      value={dataSample}
+                      previous={previousDataSample}
+                    />
+                  </div>
+                )}
+                request={instances}
+                discounts={computeDiscounts}
+                tableDataRequest={instancesTable}
+                dataSample={dataSample}
+                previousDataSample={previousDataSample}
+                owner={false}
+                title={`${this.getInstanceTitle()} ${this.getClarificationTitle()}`}
+                singleTitle="Instance"
               />
-            </div>
-          )}
-          request={instances}
-          tableDataRequest={instancesTable}
-          dataSample={dataSample}
-          previousDataSample={previousDataSample}
-          owner={false}
-          title={`${this.getInstanceTitle()} ${this.getClarificationTitle()}`}
-          singleTitle="Instance"
-        />
-        <ResourcesSubData
-          request={pipelines}
-          tableDataRequest={pipelinesTable}
-          dataSample={dataSample}
-          previousDataSample={previousDataSample}
-          owner
-          title={`Pipelines ${this.getClarificationTitle()}`}
-          singleTitle="Pipeline"
-        />
-        <ResourcesSubData
-          request={tools}
-          tableDataRequest={toolsTable}
-          dataSample={dataSample}
-          previousDataSample={previousDataSample}
-          owner
-          title={`Tools ${this.getClarificationTitle()}`}
-          singleTitle="Tool"
-        />
-      </Export.Consumer>
+              <ResourcesSubData
+                request={pipelines}
+                discounts={computeDiscounts}
+                tableDataRequest={pipelinesTable}
+                dataSample={dataSample}
+                previousDataSample={previousDataSample}
+                owner
+                title={`Pipelines ${this.getClarificationTitle()}`}
+                singleTitle="Pipeline"
+              />
+              <ResourcesSubData
+                request={tools}
+                discounts={computeDiscounts}
+                tableDataRequest={toolsTable}
+                dataSample={dataSample}
+                previousDataSample={previousDataSample}
+                owner
+                title={`Tools ${this.getClarificationTitle()}`}
+                singleTitle="Tool"
+              />
+            </Export.Consumer>
+          )
+        }
+      </Discounts.Consumer>
     );
   }
 }

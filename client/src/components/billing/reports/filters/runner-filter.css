@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-.divider {
-  width: 1px;
-  height: 30px;
-  border-left: 1px solid #d9d9d9;
-  margin: 0 5px;
+.dropdown ul {
+  max-height: 70vh;
+  height: unset;
+}
+
+.runner-select li {
+  display: inline;
 }

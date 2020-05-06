@@ -26,6 +26,7 @@ import {
 import {colors} from './colors';
 import Export from '../export';
 import {costTickFormatter} from '../utilities';
+import {discounts} from '../discounts';
 import {getTickFormat, getCurrentDate} from '../periods';
 import moment from 'moment-timezone';
 
@@ -189,19 +190,27 @@ function Summary (
   {
     title,
     style,
-    summary,
+    compute,
+    storages,
+    computeDiscounts,
+    storagesDiscounts,
     quota: showQuota = true,
     display = Display.accumulative
   }
 ) {
-  const data = summary && summary.loaded
-    ? fillSet(summary.filters, summary.value.values || [])
-    : [];
-  const quotaValue = showQuota && summary && summary.loaded
-    ? summary.value.quota
+  const pending = compute?.pending || storages?.pending;
+  const loaded = compute?.loaded && storages?.loaded;
+  const error = compute?.error || storages?.error;
+  const filters = compute?.filters || storages?.filters;
+  const summary = discounts.joinSummaryDiscounts(
+    [compute, storages],
+    [computeDiscounts, storagesDiscounts]
+  );
+  const data = summary ? fillSet(filters, summary.values || []) : [];
+  const quotaValue = showQuota && summary
+    ? summary.quota
     : undefined;
-  const error = summary?.error;
-  const {labels, currentDateIndex} = generateLabels(data, summary?.filters);
+  const {labels, currentDateIndex} = generateLabels(data, filters);
   const {
     currentData,
     previousData,
@@ -210,7 +219,7 @@ function Summary (
     quota
   } = parse(data, quotaValue);
   const disabled = currentData.length === 0 && previousData.length === 0;
-  const loading = summary?.pending && !summary?.loaded;
+  const loading = pending && !loaded;
   const dataConfiguration = {
     labels: labels.map(l => l.text),
     datasets: [

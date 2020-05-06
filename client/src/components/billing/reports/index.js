@@ -16,12 +16,15 @@
 
 import React from 'react';
 import Filters from './filters';
+import Discounts from './discounts';
 
 function Reports ({children, location, router}) {
   return (
-    <Filters location={location} router={router}>
-      {children}
-    </Filters>
+    <Discounts>
+      <Filters location={location} router={router}>
+        {children}
+      </Filters>
+    </Discounts>
   );
 }
 

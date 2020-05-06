@@ -14,9 +14,45 @@
  * limitations under the License.
  */
 
-.divider {
-  width: 1px;
+.container {
+  display: flex;
+  align-items: center;
+  margin: 5px;
+}
+
+.label {
+  margin-right: 5px;
+  width: 125px;
+}
+
+.input {
+  margin-left: 5px;
+  width: 75px;
+}
+
+.sub-container {
+  flex: 1;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+}
+
+.button {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
   height: 30px;
-  border-left: 1px solid #d9d9d9;
-  margin: 0 5px;
+  cursor: pointer;
+}
+
+.button > div {
+  height: 15px;
+  line-height: 15px;
+  cursor: pointer;
+}
+
+.button:hover {
+  text-decoration: underline;
+  color: rgb(46, 151, 231);
 }
