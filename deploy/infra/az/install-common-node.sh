@@ -85,15 +85,23 @@ yum install -y \
 sed -i 's/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=0"/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=4194"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 sed -i 's/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=systemd"/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=cgroupfs"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 
-# delete CustomData from the image
-rm -f /var/lib/waagent/CustomData
-
 sed -i 's|Provisioning.DecodeCustomData=n|Provisioning.DecodeCustomData=y|g' /etc/waagent.conf
 sed -i 's|Provisioning.ExecuteCustomData=n|Provisioning.ExecuteCustomData=y|g' /etc/waagent.conf
 
 # Upgrade to the latest mainline kernel (4.17+)
-rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org && \
-rpm -Uvh http://www.elrepo.org/elrepo-release-7.0-4.el7.elrepo.noarch.rpm && \
-yum --enablerepo=elrepo-kernel install kernel-ml -y && \
+yum install -y ncurses-devel make gcc bc bison flex elfutils-libelf-devel openssl-devel grub2
+cd /usr/src/
+wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.20.1.tar.xz
+tar -xvf linux-4.20.1.tar.xz
+cd linux-4.20.1/
+cp -v /boot/config-3.10.0-957.27.2.el7.x86_64 /usr/src/linux-4.20.1/.config
+
+make menuconfig
+make bzImage
+make modules
+make
+make modules_install
+make install
+
 sed -i '/GRUB_DEFAULT=/c\GRUB_DEFAULT=0' /etc/default/grub && \
 grub2-mkconfig -o /boot/grub2/grub.cfg

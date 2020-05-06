@@ -109,49 +109,24 @@ yum install nvidia-docker2-2.0.3-1.docker18.03* \
     nvidia-container-runtime-2.0.0-1.docker18.03* -y
 
 
-# create a script that will parse and run user data every start up time
-CUSTOM_USER_ACTIONS_SCRIPT="/usr/local/user-data-execute"
-cat <<'EOF' >$CUSTOM_USER_ACTIONS_SCRIPT
-#!/bin/bash
+sed -i 's|Provisioning.DecodeCustomData=n|Provisioning.DecodeCustomData=y|g' /etc/waagent.conf
+sed -i 's|Provisioning.ExecuteCustomData=n|Provisioning.ExecuteCustomData=y|g' /etc/waagent.conf
 
-exec > /var/log/user_data_rc.log 2>&1
+# Upgrade to the latest mainline kernel (4.17+)
+yum install -y ncurses-devel make gcc bc bison flex elfutils-libelf-devel openssl-devel grub2
+cd /usr/src/
+wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.20.1.tar.xz
+tar -xvf linux-4.20.1.tar.xz
+cd linux-4.20.1/
+cp -v /boot/config-3.10.0-957.27.2.el7.x86_64 /usr/src/linux-4.20.1/.config
 
-rdom () { local IFS=\> ; read -d \< E C ;}
+make menuconfig
+make bzImage
+make modules
+make
+make modules_install
+make install
 
-custom_data_file=/var/lib/waagent/CustomData
-waagent_file=/var/lib/waagent/ovf-env.xml
+sed -i '/GRUB_DEFAULT=/c\GRUB_DEFAULT=0' /etc/default/grub && \
+grub2-mkconfig -o /boot/grub2/grub.cfg
 
-wait_attempts=120
-while [ "$wait_attempts" -ne 0 ]; do
-  if [ -f "$custom_data_file" ]; then
-    echo "Custom data file found at $custom_data_file"
-    cat /var/lib/waagent/CustomData | base64 --decode | /bin/bash
-    echo "$custom_data_file executed"
-    exit 0
-  fi
-  if [ -f "$waagent_file" ]; then
-    echo "Custom data file found at $waagent_file"
-    while rdom; do
-      if [[ $E = *CustomData* ]]; then
-          echo $C | base64 --decode | /bin/bash
-          echo "$waagent_file executed"
-          exit 0
-      fi
-    done < $waagent_file
-
-    echo "$waagent_file WAS NOT executed, as <CustomData> tag was not found. Will proceed with waiting"
-  fi
-  wait_attempts=$((wait_attempts-1))
-  sleep 1
-done
-
-echo "None of the Custom Data files was found: $custom_data_file , $waagent_file in the $wait_attempts seconds"
-EOF
-
-chmod +x $CUSTOM_USER_ACTIONS_SCRIPT
-
-echo "bash $CUSTOM_USER_ACTIONS_SCRIPT" >> /etc/rc.d/rc.local
-chmod +x /etc/rc.d/rc.local
-
-# delete CustomData from the image
-rm -f /var/lib/waagent/CustomData
