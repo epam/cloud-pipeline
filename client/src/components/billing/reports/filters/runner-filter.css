@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-.dropdown ul {
+.dropdown > div {
   max-height: 70vh;
-  height: unset;
 }
 
-.runner-select li {
-  display: inline;
+.dropdown > div > ul {
+  max-height: unset;
 }
