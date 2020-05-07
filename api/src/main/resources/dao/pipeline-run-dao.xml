@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -569,7 +569,7 @@
                 ]]>
             </value>
         </property>
-        <property name="loadRunningPipelineRunsQuery">
+        <property name="loadPipelineRunsByStatusQuery">
             <!-- TODO: add check for pod_ip? -->
             <value>
                 <![CDATA[
@@ -623,7 +623,7 @@
                     FROM
                       pipeline.pipeline_run r LEFT JOIN pipeline.pipeline p ON r.pipeline_id = p.pipeline_id
                     WHERE
-                    r.status = 2
+                    r.status = ?
                 ]]>
             </value>
         </property>

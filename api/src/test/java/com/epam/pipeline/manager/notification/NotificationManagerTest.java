@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,23 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
-import com.epam.pipeline.entity.pipeline.*;
+import com.epam.pipeline.entity.pipeline.CommitStatus;
+import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.execution.EnvVarsBuilder;
 import com.epam.pipeline.manager.execution.EnvVarsBuilderTest;
@@ -97,6 +107,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
     private static final String BODY = "body";
     private static final String NON_EXISTING_USER = "not_existing_user";
     private static final Map<String, Object> PARAMETERS = Collections.singletonMap("key", "value");
+    public static final int ONE_SECOND = 1000;
 
     @Autowired
     private NotificationManager notificationManager;
@@ -176,6 +187,10 @@ public class NotificationManagerTest extends AbstractManagerTest {
         createTemplate(IDLE_RUN.getId(), "idle-run-template");
         createSettings(IDLE_RUN, IDLE_RUN.getId(), -1, -1);
 
+        createTemplate(LONG_PAUSED_RUN.getId(), "longPausedTemplate");
+        NotificationSettings longPaused = createSettings(LONG_PAUSED_RUN, LONG_PAUSED_RUN.getId(), 1L, 1L);
+        updateKeepInformedOwner(longPaused, false);
+
         createTemplate(HIGH_CONSUMED_RESOURCES.getId(), "idle-run-template");
         highConsuming = createSettings(HIGH_CONSUMED_RESOURCES, HIGH_CONSUMED_RESOURCES.getId(),
                 HIGH_CONSUMED_RESOURCES.getDefaultThreshold(), HIGH_CONSUMED_RESOURCES.getDefaultResendDelay());
@@ -251,6 +266,25 @@ public class NotificationManagerTest extends AbstractManagerTest {
         List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertEquals(1, messages.size());
         Assert.assertNull(messages.get(0).getToUserId());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    public void testNotifyLongPausedRun() throws InterruptedException {
+        PipelineRun run = createTestPipelineRun();
+        LocalDateTime nowUTC = DateUtils.nowUTC();
+        run.setRunStatuses(Collections.singletonList(new RunStatus(1L, TaskStatus.PAUSED, "", nowUTC)));
+        boolean needToTerminate = notificationManager.notifyPausedRun(run, nowUTC);
+        List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
+        Assert.assertEquals(1, messages.size());
+        Assert.assertFalse(needToTerminate);
+
+        Thread.sleep(ONE_SECOND);
+
+        needToTerminate = notificationManager.notifyPausedRun(run, nowUTC);
+        messages = monitoringNotificationDao.loadAllNotifications();
+        Assert.assertEquals(2, messages.size());
+        Assert.assertTrue(needToTerminate);
     }
 
     @Test

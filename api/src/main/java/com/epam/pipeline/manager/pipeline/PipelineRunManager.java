@@ -583,8 +583,8 @@ public class PipelineRunManager {
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
-    public List<PipelineRun> loadRunningPipelineRuns() {
-        return pipelineRunDao.loadRunningPipelineRuns();
+    public List<PipelineRun> loadPipelineRunsByStatus(TaskStatus status) {
+        return pipelineRunDao.loadPipelineRunsByStatus(status);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -986,7 +986,7 @@ public class PipelineRunManager {
     /**
      * Adjust statuses to the given period: all the statuses after the end of the period are removed,
      * activity periods completed before start of the period are removed as well.
-     * If run was in {@link TaskStatus#RUNNING} state during {@code start} moment, its {@link RunStatus#timestamp}
+     * If run was in {@link TaskStatus#RUNNING} state during {@code start} moment, its {@link RunStatus#getTimestamp()}
      * will be adjusted to {@code start} time point.
      *
      * @param runStatuses statuses to be adjusted

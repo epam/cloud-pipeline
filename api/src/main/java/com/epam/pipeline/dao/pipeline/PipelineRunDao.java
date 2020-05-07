@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String loadAllRunsByPipelineIdQuery;
     private String loadAllRunsByPipelineIdAndVersionQuery;
     private String loadRunningAndTerminatedPipelineRunsQuery;
-    private String loadRunningPipelineRunsQuery;
+    private String loadPipelineRunsByStatusQuery;
     private String loadActiveServicesQuery;
     private String countActiveServicesQuery;
     private String loadTerminatingPipelineRunsQuery;
@@ -282,8 +282,9 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
-    public List<PipelineRun> loadRunningPipelineRuns() {
-        return getJdbcTemplate().query(loadRunningPipelineRunsQuery, PipelineRunParameters.getExtendedRowMapper());
+    public List<PipelineRun> loadPipelineRunsByStatus(TaskStatus status) {
+        return getJdbcTemplate().query(loadPipelineRunsByStatusQuery,
+                PipelineRunParameters.getExtendedRowMapper(), status.getId());
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -1119,8 +1120,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Required
-    public void setLoadRunningPipelineRunsQuery(String loadRunningPipelineRunsQuery) {
-        this.loadRunningPipelineRunsQuery = loadRunningPipelineRunsQuery;
+    public void setLoadPipelineRunsByStatusQuery(String loadPipelineRunsByStatusQuery) {
+        this.loadPipelineRunsByStatusQuery = loadPipelineRunsByStatusQuery;
     }
 
     @Required

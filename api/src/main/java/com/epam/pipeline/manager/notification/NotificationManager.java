@@ -19,9 +19,11 @@ package com.epam.pipeline.manager.notification;
 import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationGroup;
 import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,6 +34,7 @@ import java.util.stream.Collectors;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.notification.NotificationTimestamp;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.utils.DateUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -106,20 +109,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
     public void notifyLongRunningTask(PipelineRun run, NotificationSettings settings) {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_SUBMITTED, run.getPodId()));
 
-        NotificationMessage notificationMessage = new NotificationMessage();
-
-        if (settings.isKeepInformedOwner()) {
-            PipelineUser pipelineOwner = userManager.loadUserByName(run.getOwner());
-            notificationMessage.setToUserId(pipelineOwner.getId());
-        }
-
-        notificationMessage.setCopyUserIds(getCCUsers(settings));
-
-        notificationMessage.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        if (notificationMessage.getTemplate() == null) {
-            LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_NOTIFICATION_NOT_FOUND,
-                    settings.getTemplateId()));
-        }
+        NotificationMessage notificationMessage = fillNotificationMessage(run, settings);
 
         notificationMessage.setTemplateParameters(PipelineRunMapper.map(run, settings.getThreshold()));
         monitoringNotificationDao.createMonitoringNotification(notificationMessage);
@@ -330,6 +320,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         monitoringNotificationDao.updateNotificationTimestamp(runIds, notificationType);
     }
 
+
     /**
      * Creates a custom notification.
      *
@@ -364,6 +355,24 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
     public Optional<NotificationTimestamp> loadLastNotificationTimestamp(final Long runId,
                                                                          final NotificationType type) {
         return monitoringNotificationDao.loadNotificationTimestamp(runId, type);
+    }
+
+    /**
+     * Creates notification message about a long paused run.
+     * @return true if this run also should be terminated
+     * */
+    public boolean notifyPausedRun(final PipelineRun run, final LocalDateTime pausedAt) {
+        final LocalDateTime now = DateUtils.nowUTC();
+        final NotificationSettings settings = notificationSettingsManager.load(NotificationType.LONG_PAUSED_RUN);
+        final NotificationMessage message = fillNotificationMessage(run, settings);
+        message.setTemplateParameters(PipelineRunMapper.map(run, null));
+        message.getTemplateParameters().put("stoppedTime", ChronoUnit.MINUTES.between(now, pausedAt));
+        if (shouldNotify(run.getId(), settings)) {
+            monitoringNotificationDao.createMonitoringNotification(message);
+            monitoringNotificationDao
+                    .updateNotificationTimestamp(Collections.singletonList(run.getId()), settings.getType());
+        }
+        return pausedAt.plusSeconds(settings.getThreshold()).isBefore(now);
     }
 
     private boolean shouldNotify(final Long runId, final NotificationSettings notificationSettings) {
@@ -434,5 +443,23 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         final PipelineUser user = userManager.loadUserByName(username);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, username));
         return user;
+    }
+
+    private NotificationMessage fillNotificationMessage(final PipelineRun run, final NotificationSettings settings) {
+        NotificationMessage notificationMessage = new NotificationMessage();
+
+        if (settings.isKeepInformedOwner()) {
+            PipelineUser pipelineOwner = userManager.loadUserByName(run.getOwner());
+            notificationMessage.setToUserId(pipelineOwner.getId());
+        }
+
+        notificationMessage.setCopyUserIds(getCCUsers(settings));
+
+        notificationMessage.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        if (notificationMessage.getTemplate() == null) {
+            LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_NOTIFICATION_NOT_FOUND,
+                    settings.getTemplateId()));
+        }
+        return notificationMessage;
     }
 }

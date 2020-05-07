@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,20 +20,24 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
@@ -121,9 +125,31 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     }
 
     public void monitorResourceUsage() {
-        List<PipelineRun> runs = pipelineRunManager.loadRunningPipelineRuns();
-        processIdleRuns(runs);
-        processOverloadedRuns(runs);
+        final List<PipelineRun> running = pipelineRunManager.loadPipelineRunsByStatus(TaskStatus.RUNNING);
+        final List<PipelineRun> paused = pipelineRunManager.loadPipelineRunsByStatus(TaskStatus.PAUSED);
+        processIdleRuns(running);
+        processOverloadedRuns(running);
+        processPausedRuns(paused);
+    }
+
+    private void processPausedRuns(final List<PipelineRun> paused) {
+        for (final PipelineRun run : paused) {
+            final int timeRange = preferenceManager.getPreference(SystemPreferences.SYSTEM_MAX_PAUSED_TIMEOUT_MINUTES);
+            final LocalDateTime nowUTC = DateUtils.nowUTC();
+
+            final Optional<RunStatus> lastStatus = ListUtils.emptyIfNull(run.getRunStatuses())
+                    .stream()
+                    .max(Comparator.comparing(RunStatus::getTimestamp));
+
+            final boolean exceedTimeout = lastStatus
+                    .map(pausedStatus -> nowUTC.isAfter(pausedStatus.getTimestamp().plusMinutes(timeRange)))
+                    .orElse(false);
+
+            if(exceedTimeout && notificationManager.notifyPausedRun(run, lastStatus.get().getTimestamp())) {
+                log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_PAUSED_ACTION, run.getId()));
+                pipelineRunManager.terminateRun(run.getId());
+            }
+        }
     }
 
     private void processOverloadedRuns(final List<PipelineRun> runs) {
