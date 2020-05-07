@@ -22,6 +22,7 @@ import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -37,6 +38,7 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -76,9 +78,8 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         final LocalDateTime previousSync,
         final LocalDateTime syncStart) {
         final BigDecimal pricePerHour = runContainer.getEntity().getPipelineRun().getPricePerHour();
-        final List<RunStatus> statuses = adjustStatuses(runContainer.getEntity().getPipelineRun().getRunStatuses(),
-                                                        previousSync,
-                                                        syncStart);
+        final List<RunStatus> statuses = adjustStatuses(runContainer.getEntity().getPipelineRun(),
+                previousSync, syncStart);
 
         return createBillingsForPeriod(runContainer.getEntity(), pricePerHour, statuses).stream()
             .filter(billing -> !billing.getCost().equals(0L))
@@ -88,10 +89,12 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
             .values();
     }
 
-    private List<RunStatus> adjustStatuses(final List<RunStatus> statuses,
+    private List<RunStatus> adjustStatuses(final PipelineRun run,
                                            final LocalDateTime previousSync,
                                            final LocalDateTime syncStart) {
+        final List<RunStatus> statuses = run.getRunStatuses();
         if (CollectionUtils.isNotEmpty(statuses)) {
+            addFirstRunningStatusIfRequired(run, statuses);
             statuses.sort(Comparator.comparing(RunStatus::getTimestamp));
             final RunStatus lastStatus = statuses.get(statuses.size() - 1);
             if (TaskStatus.RUNNING.equals(lastStatus.getStatus())) {
@@ -104,6 +107,16 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
                 new RunStatus(null, null, syncStart.toLocalDate().atStartOfDay()));
         }
         return statuses;
+    }
+
+    private void addFirstRunningStatusIfRequired(final PipelineRun run,
+                                                 final List<RunStatus> statuses) {
+        final RunStatus first = statuses.get(0);
+        if (!TaskStatus.RUNNING.equals(first.getStatus())) {
+            final RunStatus inserted = new RunStatus(first.getRunId(), TaskStatus.RUNNING,
+                    run.getStartDate().toInstant().atZone(ZoneId.of("Z")).toLocalDateTime());
+            statuses.add(0, inserted);
+        }
     }
 
     private List<PipelineRunBillingInfo> createBillingsForPeriod(final PipelineRunWithType run,

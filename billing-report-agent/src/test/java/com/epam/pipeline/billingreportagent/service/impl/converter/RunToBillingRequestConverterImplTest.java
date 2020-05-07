@@ -34,8 +34,10 @@ import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -71,6 +73,29 @@ public class RunToBillingRequestConverterImplTest {
 
     private final RunToBillingRequestConverter converter =
         new RunToBillingRequestConverter(new RunBillingMapper(BILLING_CENTER_KEY));
+
+
+    @Test
+    public void shouldConvertToBillingsWithOneFinalStatus() {
+        final PipelineRun run = new PipelineRun();
+        run.setStartDate(Date.from(
+                LocalDateTime.of(2019, 12, 4, 10, 0)
+                .atZone(ZoneId.of("Z"))
+                .toInstant()));
+        run.setId(RUN_ID);
+        run.setPricePerHour(BigDecimal.valueOf(4, 2));
+        final List<RunStatus> statuses = new ArrayList<>();
+        statuses.add(new RunStatus(RUN_ID, TaskStatus.STOPPED, LocalDateTime.of(2019, 12, 4, 15, 0)));
+        run.setRunStatuses(statuses);
+
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+                .entity(new PipelineRunWithType(run, ComputeType.CPU)).build();
+        final Collection<PipelineRunBillingInfo> billings =
+                converter.convertRunToBillings(runContainer,
+                        LocalDateTime.of(2019, 12, 4, 0, 0),
+                        LocalDateTime.of(2019, 12, 5, 0, 0));
+        Assert.assertEquals(1, billings.size());
+    }
 
     @Test
     public void convertRunToBillings() {
