@@ -617,7 +617,7 @@ function DefaultReport (props) {
   if (user) {
     return UserReport(props);
   }
-  if (group) {
+  if (group && group.length === 1) {
     return GroupReport(props);
   }
   return GeneralReport(props);

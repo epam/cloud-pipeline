@@ -32,8 +32,8 @@ function runnersEqual (runnersA, runnersB) {
   if (!runnersA || !runnersB) {
     return false;
   }
-  const {type: typeA, ids: a} = runnersA;
-  const {type: typeB, ids: b} = runnersB;
+  const {type: typeA, id: a} = runnersA;
+  const {type: typeB, id: b} = runnersB;
   if (typeA !== typeB) {
     return false;
   }
@@ -48,13 +48,6 @@ function runnersEqual (runnersA, runnersB) {
     }
   }
   return true;
-}
-
-function getUserDescription (user, myUserName) {
-  if (!user) {
-    return null;
-  }
-  return `${user.userName}${user.userName === myUserName ? ' (you)' : ''}`;
 }
 
 function getUserSearchOptions (user) {
@@ -79,6 +72,16 @@ function getUserSearchOptions (user) {
   return [];
 }
 
+function getAttributesValues (user) {
+  const values = [];
+  for (let key in user.attributes) {
+    if (user.attributes.hasOwnProperty(key)) {
+      values.push(user.attributes[key]);
+    }
+  }
+  return values;
+}
+
 function filterRunner (searchOptions, filter) {
   if (!filter) {
     return true;
@@ -90,17 +93,8 @@ function RenderUserName ({user, myUserName}) {
   if (!user) {
     return null;
   }
-  if (user.attributes) {
-    const getAttributesValues = () => {
-      const values = [];
-      for (let key in user.attributes) {
-        if (user.attributes.hasOwnProperty(key)) {
-          values.push(user.attributes[key]);
-        }
-      }
-      return values;
-    };
-    const attributesString = getAttributesValues().join(', ');
+  if (user.attributesValues) {
+    const attributesString = (user.attributesValues || []).join(', ');
     return (
       <Row type="flex" style={{flexDirection: 'column'}}>
         <Row>{user.userName}{user.userName === myUserName ? <b> (you)</b> : undefined}</Row>
@@ -110,7 +104,7 @@ function RenderUserName ({user, myUserName}) {
   }
   return (
     <span>
-      {user.userName}
+      {user.userName}{user.userName === myUserName ? <b> (you)</b> : undefined}
     </span>
   );
 }
@@ -118,7 +112,11 @@ function RenderUserName ({user, myUserName}) {
 class RunnerFilter extends React.Component {
   state = {
     filter: undefined,
-    focused: false
+    focused: false,
+    searchCriteria: undefined,
+    searching: false,
+    filteredUsers: [],
+    filteredCenters: undefined
   };
 
   componentDidMount () {
@@ -133,7 +131,11 @@ class RunnerFilter extends React.Component {
 
   updateFilter = () => {
     this.setState({
-      filter: this.props.filter
+      filter: this.props.filter,
+      searchCriteria: undefined,
+      searching: false,
+      filteredUsers: [],
+      filteredCenters: undefined
     });
   }
 
@@ -157,6 +159,33 @@ class RunnerFilter extends React.Component {
       }
     }
     return currentRunner;
+  }
+
+  get currentRunnerValue () {
+    if (!this.currentRunner) {
+      return undefined;
+    }
+    const items = this.users.map((user) => ({
+      item: user,
+      key: `${RunnerType.user}_${user.userName}`,
+      label: user.userName === this.myUserName
+        ? `${user.userName} (you)`
+        : user.userName
+    }));
+    items.push(
+      ...this.centers.map((center) => ({
+        item: center,
+        key: `${RunnerType.group}_${center}`,
+        label: center
+      }))
+    );
+    return this.currentRunner.map((runner) => {
+      const [result] = items.filter(item => item.key.toLowerCase() === runner.toLowerCase());
+      return {
+        key: result ? result.key : runner,
+        label: result ? result.label : runner
+      };
+    });
   }
 
   get currentType () {
@@ -186,7 +215,11 @@ class RunnerFilter extends React.Component {
         return 0;
       });
     }
-    return users;
+    return users.map((user) => ({
+      ...user,
+      searchOptions: getUserSearchOptions(user),
+      attributesValues: getAttributesValues(user)
+    }));
   }
 
   @computed
@@ -209,8 +242,55 @@ class RunnerFilter extends React.Component {
     return centers;
   }
 
+  findRunnerDelayed = (search) => {
+    if (this.findRunnerDelayedRequest) {
+      clearTimeout(this.findRunnerDelayedRequest);
+      this.findRunnerDelayedRequest = null;
+    }
+    if (!search || !search.length) {
+      this.findRunner(search);
+    } else {
+      this.findRunnerDelayedRequest = setTimeout(() => this.findRunner(search), 100);
+    }
+  };
+
+  findRunner = (search) => {
+    const searchCriteria = (search || '').toLowerCase();
+    this.setState({
+      searching: true,
+      searchCriteria
+    }, async () => {
+      const {
+        billingCenters: billingCentersRequest,
+        users: usersRequest
+      } = this.props;
+      await billingCentersRequest.fetchIfNeededOrWait();
+      await usersRequest.fetchIfNeededOrWait();
+      const {searchCriteria: initialSearch} = this.state;
+      if (initialSearch === searchCriteria) {
+        if (!searchCriteria || !searchCriteria.length) {
+          this.setState({
+            filteredCenters: undefined,
+            filteredUsers: [],
+            searching: false
+          });
+        } else {
+          const filteredCenters = this.centers
+            .filter((center) => filterRunner([(center || '').toLowerCase()], searchCriteria));
+          const filteredUsers = this.users
+            .filter((user) => filterRunner(user.searchOptions, searchCriteria));
+          this.setState({
+            filteredCenters,
+            filteredUsers,
+            searching: false
+          });
+        }
+      }
+    });
+  };
+
   changeRunner = (keys) => {
-    const runners = (keys || []).map((key) => {
+    const runners = (keys || []).map(({key}) => {
       const [type, ...rest] = key.split('_');
       return {type, id: rest.join('_')};
     });
@@ -218,11 +298,26 @@ class RunnerFilter extends React.Component {
     runnersType = runnersType || this.currentType;
     const newRunners = runners.filter(r => r.type === runnersType);
     if (newRunners.length === 1) {
-      this.setState({filter: newRunners[0]});
+      this.setState({
+        filter: newRunners[0],
+        filteredUsers: [],
+        filteredCenters: undefined,
+        searchCriteria: undefined
+      });
     } else if (newRunners.length > 1) {
-      this.setState({filter: {type: runnersType, id: newRunners.map(r => r.id)}});
+      this.setState({
+        filter: {type: runnersType, id: newRunners.map(r => r.id)},
+        filteredUsers: [],
+        filteredCenters: undefined,
+        searchCriteria: undefined
+      });
     } else {
-      this.setState({filter: null});
+      this.setState({
+        filter: null,
+        filteredUsers: [],
+        filteredCenters: undefined,
+        searchCriteria: undefined
+      });
     }
   };
 
@@ -240,34 +335,45 @@ class RunnerFilter extends React.Component {
   };
 
   render () {
-    const {focused} = this.state;
+    const {
+      focused,
+      filteredCenters,
+      filteredUsers,
+      searchCriteria
+    } = this.state;
+    const showBillingCenters = (filteredCenters || this.centers).length > 0;
+    const showUsers = filteredUsers.length > 0;
+    const open = focused &&
+      showBillingCenters &&
+      showUsers;
     return (
       <Select
         mode="multiple"
+        labelInValue
         showSearch
         dropdownMatchSelectWidth={false}
         className={styles.runnerSelect}
         dropdownClassName={styles.dropdown}
         style={{width: 200}}
         placeholder="All users / groups"
-        value={this.currentRunner}
+        notFoundContent={
+          searchCriteria ? 'Not found' : 'Specify user or billing center name'
+        }
+        value={this.currentRunnerValue}
+        onSearch={this.findRunnerDelayed}
         onChange={this.changeRunner}
         onFocus={this.onFocus}
         onBlur={this.onBlur}
         optionLabelProp="text"
-        filterOption={
-          (input, option) => filterRunner(option.props.searchOptions, input)
-        }
-        open={focused}
+        filterOption={false}
+        open={open}
       >
         <Select.OptGroup label="Billing centers">
           {
-            this.centers.map((center) => (
+            (filteredCenters || this.centers).map((center) => (
               <Select.Option
                 key={`${RunnerType.group}_${center}`}
                 value={`${RunnerType.group}_${center}`}
-                text={center}
-                searchOptions={[(center || '').toLowerCase()]}
               >
                 {center}
               </Select.Option>
@@ -276,13 +382,10 @@ class RunnerFilter extends React.Component {
         </Select.OptGroup>
         <Select.OptGroup label="Users">
           {
-            this.users.map((user) => (
+            filteredUsers.map((user) => (
               <Select.Option
-                key={`${RunnerType.user}_${user.id}`}
-                value={`${RunnerType.user}_${user.id}`}
-                text={getUserDescription(user, this.myUserName)}
-                user={user}
-                searchOptions={getUserSearchOptions(user)}
+                key={`${RunnerType.user}_${user.userName}`}
+                value={`${RunnerType.user}_${user.userName}`}
               >
                 <RenderUserName myUserName={this.myUserName} user={user} />
               </Select.Option>

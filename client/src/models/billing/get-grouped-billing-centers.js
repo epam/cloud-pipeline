@@ -10,7 +10,7 @@ export class GetGroupedBillingCenters extends BaseBillingRequest {
     super(rest, true, pagination);
     this.resourceType = resourceType;
     this.fetchLastDay = fetchLastDay;
-    if (this.filters && this.filters.group) {
+    if (this.filters && this.filters.group && this.filters.group.length === 1) {
       this.grouping = 'USER';
     } else {
       this.grouping = 'BILLING_CENTER';
