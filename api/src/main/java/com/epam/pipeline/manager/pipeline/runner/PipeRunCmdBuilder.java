@@ -24,9 +24,12 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -35,6 +38,8 @@ import java.util.stream.Collectors;
 public class PipeRunCmdBuilder {
 
     private static final String WHITESPACE = " ";
+    private static final Set<String> QUOTABLE_PARAMETER_TYPES =
+        new HashSet<>(Arrays.asList("string", "input", "output", "path", "common"));
 
     private final PipelineStart runVO;
     private final PipeRunCmdStartVO startVO;
@@ -83,7 +88,7 @@ public class PipeRunCmdBuilder {
     public PipeRunCmdBuilder cmdTemplate() {
         if (StringUtils.isNotBlank(runVO.getCmdTemplate())) {
             cmd.add("-cmd");
-            cmd.add(quoteStringArgument(runVO.getCmdTemplate()));
+            cmd.add(quoteArgumentValue(runVO.getCmdTemplate()));
         }
         return this;
     }
@@ -173,11 +178,13 @@ public class PipeRunCmdBuilder {
     }
 
     private String prepareParams(final Map.Entry<String, PipeConfValueVO> entry) {
-        String value = entry.getValue().getValue();
-        if (entry.getValue().getType().equalsIgnoreCase("string")) {
-            value = quoteStringArgument(value);
-        }
-        return entry.getKey() + WHITESPACE + value;
+        final String value = entry.getValue().getValue();
+        final String proceededValue = QUOTABLE_PARAMETER_TYPES.stream()
+            .filter(entry.getValue().getType()::equalsIgnoreCase)
+            .findAny()
+            .map(type -> quoteArgumentValue(value))
+            .orElse(value);
+        return entry.getKey() + WHITESPACE + proceededValue;
     }
 
     private void buildObjectCmdArg(final String argumentName, final Object argumentValue) {
@@ -194,7 +201,7 @@ public class PipeRunCmdBuilder {
         }
     }
 
-    private String quoteStringArgument(final String value) {
+    private String quoteArgumentValue(final String value) {
         final Character quote = getQuotes();
         return String.format("%c%s%c", quote, escapeDoubleQuotes(value), quote);
     }
