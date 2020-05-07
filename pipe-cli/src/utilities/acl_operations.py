@@ -152,9 +152,10 @@ class ACLOperations(object):
     @classmethod
     def print_sid_objects(cls, sid_name, principal, acl_class=None):
         try:
-            available_entities = Entity.load_available_entities(sid_name, principal, acl_class)
+            available_entities = Entity.load_available_entities(cls.normalize_sid_name(sid_name, principal),
+                                                                principal, acl_class)
             if len(available_entities) == 0:
-                click.echo("No entities available for '%s'", sid_name)
+                click.echo("No accessible objects available for '%s'" % sid_name)
                 sys.exit(0)
             entities_table = prettytable.PrettyTable()
             entities_table.field_names = ["Type", "Name"]
@@ -163,9 +164,10 @@ class ACLOperations(object):
                 entity_type = item[0]
                 entities = item[1]
                 for entity in entities:
-                    if 'name' not in entity:
+                    entity_name = cls.build_name_by_type(entity, entity_type)
+                    if not entity_name:
                         continue
-                    entities_table.add_row([entity_type, entity['name']])
+                    entities_table.add_row([entity_type, entity_name])
             click.echo(entities_table)
             click.echo()
         except ConfigNotFoundError as config_not_found_error:
@@ -180,3 +182,22 @@ class ACLOperations(object):
         except ValueError as value_error:
             click.echo('Error: {}'.format(str(value_error)), err=True)
             sys.exit(1)
+
+    @staticmethod
+    def build_name_by_type(entity, entity_type):
+        if str(entity_type).lower() == 'tool':
+            registry = entity['registry'] if 'registry' in entity else None
+            if 'image' in entity:
+                return "/".join([registry, entity['image']]) if registry else entity['image']
+            return None
+        if str(entity_type).lower() == 'docker_registry':
+            return entity['path'] if 'path' in entity else None
+        return entity['name'] if 'name' in entity else None
+
+    @staticmethod
+    def normalize_sid_name(sid_name, principal):
+        role_prefix = "ROLE_"
+        sid_name = str(sid_name).upper()
+        if principal or sid_name.startswith(role_prefix):
+            return sid_name
+        return role_prefix + sid_name
