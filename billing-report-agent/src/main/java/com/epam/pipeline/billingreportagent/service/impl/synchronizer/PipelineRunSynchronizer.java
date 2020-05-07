@@ -106,7 +106,10 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
                                                             final LocalDateTime previousSync,
                                                             final LocalDateTime syncStart) {
         try {
-            return buildDocRequests(pipelineRun, previousSync, syncStart);
+            final List<DocWriteRequest> docs = buildDocRequests(pipelineRun, previousSync, syncStart);
+            log.debug("Creating {} documents for run {}",
+                    docs.size(), pipelineRun.getEntity().getPipelineRun().getId());
+            return docs;
         } catch (Exception e) {
             log.error("An error during pipeline run billing {} synchronization: {}",
                       pipelineRun.getEntity().getPipelineRun().getId(), e.getMessage());

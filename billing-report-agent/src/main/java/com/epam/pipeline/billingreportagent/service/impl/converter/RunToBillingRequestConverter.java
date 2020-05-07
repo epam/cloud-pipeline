@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,13 +39,13 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -98,8 +99,11 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
             statuses.sort(Comparator.comparing(RunStatus::getTimestamp));
             final RunStatus lastStatus = statuses.get(statuses.size() - 1);
             if (TaskStatus.RUNNING.equals(lastStatus.getStatus())) {
+                final LocalDateTime lastTimestamp = Optional.ofNullable(run.getEndDate())
+                        .map(DateUtils::toLocalDateTime)
+                        .orElse(syncStart);
                 statuses
-                    .add(new RunStatus(null, null, lastStatus.getTimestamp().plusDays(1).toLocalDate().atStartOfDay()));
+                    .add(new RunStatus(null, null, lastTimestamp.toLocalDate().atStartOfDay()));
             }
         } else {
             return Arrays.asList(
@@ -114,7 +118,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         final RunStatus first = statuses.get(0);
         if (!TaskStatus.RUNNING.equals(first.getStatus())) {
             final RunStatus inserted = new RunStatus(first.getRunId(), TaskStatus.RUNNING,
-                    run.getStartDate().toInstant().atZone(ZoneId.of("Z")).toLocalDateTime());
+                    DateUtils.toLocalDateTime(run.getStartDate()));
             statuses.add(0, inserted);
         }
     }
@@ -155,9 +159,10 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         final List<LocalDateTime> timePoints = new ArrayList<>();
         final List<PipelineRunBillingInfo> billings = new ArrayList<>();
         timePoints.add(start);
-        final LocalDate startDate = start.toLocalDate();
-        for (long i = 0; i < ChronoUnit.DAYS.between(startDate, end.toLocalDate()); i++) {
-            timePoints.add(startDate.plusDays(1).atStartOfDay());
+        LocalDate startDate = start.toLocalDate();
+        for (long i = 0; i < ChronoUnit.DAYS.between(start.toLocalDate(), end.toLocalDate()); i++) {
+            startDate = startDate.plusDays(1);
+            timePoints.add(startDate.atStartOfDay());
         }
         timePoints.add(end);
         for (int i = 0; i < timePoints.size() - 1; i++) {
