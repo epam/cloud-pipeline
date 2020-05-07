@@ -19,11 +19,21 @@ import PropTypes from 'prop-types';
 import {observer, inject} from 'mobx-react';
 import {computed} from 'mobx';
 import PipelineRunCmd from '../../../../../models/pipelines/PipelineRunCmd';
-import {Alert, Modal, Row, Tabs} from 'antd';
+import {Alert, Modal, Row, Select, Tabs} from 'antd';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import styles from './launch-command.css';
 import {API_PATH, SERVER} from '../../../../../config';
+import {getOS, OperationSystems} from '../../../../../utils/OSDetection';
+
+const OSFamily = {
+  windows: 'WINDOWS',
+  linux: 'LINUX'
+};
+
+const DEFAULT_OS = getOS() === OperationSystems.windows
+  ? OSFamily.windows
+  : OSFamily.linux;
 
 function wrapCommand (command, template) {
   if (!template) {
@@ -64,7 +74,8 @@ class LaunchCommand extends React.Component {
   state = {
     pending: false,
     code: null,
-    error: false
+    error: false,
+    osType: DEFAULT_OS
   };
 
   @computed
@@ -90,13 +101,15 @@ class LaunchCommand extends React.Component {
     LaunchCommand.requestIdentifier += 1;
     const identifier = LaunchCommand.requestIdentifier;
     this.setState({pending: true}, async () => {
+      const {osType} = this.state;
       const request = new PipelineRunCmd();
       await request.send({
         pipelineStart: payload,
         quite: false,
         yes: true,
         showParams: false,
-        sync: false
+        sync: false,
+        runStartCmdExecutionEnvironment: osType
       });
       if (identifier === LaunchCommand.requestIdentifier) {
         if (request.error) {
@@ -111,23 +124,44 @@ class LaunchCommand extends React.Component {
   renderCLICommand () {
     const {
       code,
-      error
+      error,
+      osType
     } = this.state;
     if (error) {
       return (
         <Alert type="warning" message={error} />
       );
     }
+    const onChangeOS = (os) => {
+      this.setState({osType: os}, () => this.rebuild(this.props.payload));
+    };
     return (
-      <Row type="flex" className={styles.mdPreview}>
-        <pre style={{width: '100%', fontSize: 'smaller'}}>
-          <code
-            id="launch-command"
-            dangerouslySetInnerHTML={{
-              __html: processBashScript(wrapCommand(code, this.launchCommandTemplate))
-            }} />
-        </pre>
-      </Row>
+      <div>
+        <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', marginBottom: 5}}>
+          <span style={{marginRight: 5}}>Operation System:</span>
+          <Select
+            value={osType}
+            onChange={onChangeOS}
+            style={{width: 150}}
+          >
+            <Select.Option key={OSFamily.linux} value={OSFamily.linux}>
+              Linux
+            </Select.Option>
+            <Select.Option key={OSFamily.windows} value={OSFamily.windows}>
+              Windows
+            </Select.Option>
+          </Select>
+        </div>
+        <Row type="flex" className={styles.mdPreview}>
+          <pre style={{width: '100%', fontSize: 'smaller'}}>
+            <code
+              id="launch-command"
+              dangerouslySetInnerHTML={{
+                __html: processBashScript(wrapCommand(code, this.launchCommandTemplate))
+              }} />
+          </pre>
+        </Row>
+      </div>
     );
   }
 
