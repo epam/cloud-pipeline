@@ -16,19 +16,6 @@
 
 package com.epam.pipeline.entity.pipeline.run;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-/**
- * This class supplements {@link PipelineStart} to provide ability to specify additional CLI specific options
- */
-@Data
-@NoArgsConstructor
-public class PipeRunCmdStartVO {
-    private PipelineStart pipelineStart;
-    private boolean quite;
-    private boolean yes;
-    private boolean showParams;
-    private boolean sync;
-    private OsType runStartCmdExecutionEnvironment = OsType.LINUX;
+public enum OsType {
+    LINUX, WINDOWS
 }
