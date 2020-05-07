@@ -25,7 +25,9 @@ import org.junit.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class PipeRunCmdBuilderTest {
 
@@ -64,8 +66,10 @@ public class PipeRunCmdBuilderTest {
         runParameters.put(TEST_PARAM_NAME_6, pipeConfValue6);
         final PipeConfValueVO pipeConfValue7 = new PipeConfValueVO(Boolean.TRUE.toString(), "boolean");
         runParameters.put(TEST_PARAM_NAME_7, pipeConfValue7);
-
-        final PipeRunCmdStartVO pipeRunCmdStartVO = getPipeRunCmdStartVO(runParameters);
+        final Map<String, PipeConfValueVO> sortedParameters = runParameters.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2, LinkedHashMap::new));
+        final PipeRunCmdStartVO pipeRunCmdStartVO = getPipeRunCmdStartVO(sortedParameters);
 
         final PipeRunCmdBuilder pipeRunCmdBuilder = new PipeRunCmdBuilder(pipeRunCmdStartVO);
         final String actualResult = buildCmd(pipeRunCmdBuilder);

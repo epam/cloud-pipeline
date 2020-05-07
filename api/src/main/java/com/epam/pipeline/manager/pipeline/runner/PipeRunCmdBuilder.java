@@ -160,7 +160,6 @@ public class PipeRunCmdBuilder {
         if (MapUtils.isNotEmpty(runVO.getParams())) {
             final String parametersCommand = runVO.getParams().entrySet()
                     .stream()
-                    .sorted(Map.Entry.comparingByKey())
                     .map(this::prepareParams)
                     .collect(Collectors.joining(WHITESPACE));
             cmd.add(parametersCommand);
