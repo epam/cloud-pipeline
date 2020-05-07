@@ -24,18 +24,25 @@ import com.amazonaws.services.pricing.model.GetProductsRequest;
 import com.amazonaws.services.pricing.model.GetProductsResult;
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
 import com.epam.pipeline.billingreportagent.model.pricing.AwsPriceDimensions;
+import com.epam.pipeline.billingreportagent.model.pricing.AwsPriceList;
 import com.epam.pipeline.billingreportagent.model.pricing.AwsPriceRate;
 import com.epam.pipeline.billingreportagent.model.pricing.AwsPricingCard;
+import com.epam.pipeline.billingreportagent.model.pricing.AwsTerms;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -59,10 +66,21 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
 
     private final String awsStorageServiceName;
     private final ObjectMapper mapper;
+    private final PriceLoadingMode priceLoadingMode;
+    private final String priceLoadingEndpoint;
 
-    public AwsStoragePriceListLoader(final String awsStorageServiceName) {
+    public AwsStoragePriceListLoader(final String awsStorageServiceName,
+                                     final PriceLoadingMode mode,
+                                     final String jsonPriceListEndpointTemplate) {
         this.awsStorageServiceName = awsStorageServiceName;
         this.mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.priceLoadingMode = mode;
+        if (mode.equals(PriceLoadingMode.JSON)
+            && StringUtils.isNotEmpty(jsonPriceListEndpointTemplate)
+            && !jsonPriceListEndpointTemplate.endsWith(".json")) {
+            throw new IllegalArgumentException("Given endpoint template is incorrect for JSON mode!");
+        }
+        this.priceLoadingEndpoint = String.format(jsonPriceListEndpointTemplate, awsStorageServiceName);
     }
 
     @Override
@@ -72,7 +90,7 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
 
     @Override
     public Map<String, StoragePricing> loadFullPriceList() {
-        return loadAwsPricingCards(awsStorageServiceName).stream()
+        return loadAwsPricingCards(awsStorageServiceName, priceLoadingMode).stream()
             .map(this::extractEntryFromAwsPricing)
             .filter(Optional::isPresent)
             .map(Optional::get)
@@ -109,7 +127,19 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
         return pricing;
     }
 
-    private List<AwsPricingCard> loadAwsPricingCards(final String awsStorageServiceName) {
+    private List<AwsPricingCard> loadAwsPricingCards(final String awsStorageServiceName, final PriceLoadingMode mode) {
+        switch (mode) {
+            case API:
+                return getAwsPricingCardsViaApi(awsStorageServiceName);
+            case JSON:
+                return getAwsPricingCardsFromJson();
+            default:
+                throw new IllegalArgumentException(
+                    String.format("Chosen mode [%s] isn't supported by AwsPriceListLoader!", mode));
+        }
+    }
+
+    private List<AwsPricingCard> getAwsPricingCardsViaApi(final String awsStorageServiceName) {
         final List<AwsPricingCard> allPrices = new ArrayList<>();
         final Filter filter = new Filter();
         filter.setType(TERM_MATCH_FILTER);
@@ -138,6 +168,39 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
             nextToken = result.getNextToken();
         } while (nextToken != null);
         return allPrices;
+    }
+
+    private List<AwsPricingCard> getAwsPricingCardsFromJson() {
+        try {
+            final String jsonPriceList = readStringFromURL(priceLoadingEndpoint);
+            final AwsPriceList fullPriceList = mapper.readValue(jsonPriceList, AwsPriceList.class);
+            return fullPriceList.getProducts().values().stream()
+                .filter(awsProduct -> STORAGE.equals(awsProduct.getProductFamily()))
+                .filter(awsProduct -> GENERAL_STORAGE.equals(awsProduct.getAttributes().get(STORAGE_CLASS_KEY)))
+                .map(awsProduct -> {
+                    final AwsPricingCard card = new AwsPricingCard();
+                    card.setProduct(awsProduct);
+                    card.setServiceCode(fullPriceList.getOfferCode());
+                    card.setVersion(fullPriceList.getVersion());
+                    card.setPublicationDate(fullPriceList.getPublicationDate());
+                    final AwsTerms awsTerms = new AwsTerms();
+                    awsTerms.setOnDemand(MapUtils.emptyIfNull(fullPriceList.getFullTerms().getOnDemand())
+                                             .get(awsProduct.getSku()));
+                    awsTerms.setSpot(MapUtils.emptyIfNull(fullPriceList.getFullTerms().getSpot())
+                                         .get(awsProduct.getSku()));
+                    card.setTerms(awsTerms);
+                    return card;
+                })
+                .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new IllegalStateException("Can't load AWS price list from given endpoint!", e);
+        }
+    }
+
+    public String readStringFromURL(String url) throws IOException {
+        try (InputStream inputStream = new URL(url).openStream()) {
+            return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+        }
     }
 
     private AwsPricingCard parseAwsPricingCard(final String jsonStr) {

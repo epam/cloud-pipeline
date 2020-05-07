@@ -24,6 +24,7 @@ import com.epam.pipeline.billingreportagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AwsStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AzureStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.GcpStoragePriceListLoader;
+import com.epam.pipeline.billingreportagent.service.impl.converter.PriceLoadingMode;
 import com.epam.pipeline.billingreportagent.service.impl.converter.StoragePricingService;
 import com.epam.pipeline.billingreportagent.service.impl.synchronizer.PipelineRunSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.synchronizer.StorageSynchronizer;
@@ -92,10 +93,16 @@ public class CommonSyncConfiguration {
     @ConditionalOnProperty(value = STORAGE_SYNC_DISABLE_PROP, matchIfMissing = true, havingValue = FALSE)
     public StorageSynchronizer s3Synchronizer(final StorageLoader loader,
                                               final ElasticIndexService indexService,
-                                              final ElasticsearchServiceClient elasticsearchClient) {
+                                              final ElasticsearchServiceClient elasticsearchClient,
+                                              final @Value("${sync.storage.price.load.mode:api}")
+                                                      String priceMode,
+                                              final @Value("${sync.aws.json.price.endpoint.template}")
+                                                      String endpointTemplate) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.S3_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
-            new StoragePricingService(new AwsStoragePriceListLoader("AmazonS3"));
+            new StoragePricingService(new AwsStoragePriceListLoader("AmazonS3",
+                                                                    PriceLoadingMode.valueOf(priceMode.toUpperCase()),
+                                                                    endpointTemplate));
         return new StorageSynchronizer(storageMapping,
                                        commonIndexPrefix,
                                        storageIndexName,
@@ -114,10 +121,16 @@ public class CommonSyncConfiguration {
     @ConditionalOnProperty(value = STORAGE_SYNC_DISABLE_PROP, matchIfMissing = true, havingValue = FALSE)
     public StorageSynchronizer efsSynchronizer(final StorageLoader loader,
                                                final ElasticIndexService indexService,
-                                               final ElasticsearchServiceClient elasticsearchClient) {
+                                               final ElasticsearchServiceClient elasticsearchClient,
+                                               final @Value("${sync.storage.price.load.mode:api}")
+                                                       String priceMode,
+                                               final @Value("${sync.aws.json.price.endpoint.template}")
+                                                       String endpointTemplate) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
-            new StoragePricingService(new AwsStoragePriceListLoader("AmazonEFS"));
+            new StoragePricingService(new AwsStoragePriceListLoader("AmazonEFS",
+                                                                    PriceLoadingMode.valueOf(priceMode.toUpperCase()),
+                                                                    endpointTemplate));
         return new StorageSynchronizer(storageMapping,
                                        commonIndexPrefix,
                                        storageIndexName,
