@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,7 +43,8 @@ class TestLsWithRoleModel(object):
         try:
             error_text = pipe_storage_ls("cp://{}/{}".format(self.bucket_name, self.resources_root),
                                          expected_status=1, token=self.token)[1]
-            assert_error_message_is_present(error_text, 'Access is denied')
+            assert_error_message_is_present(error_text, "data storage with id: '{}/{}' was not found"
+                                            .format(self.bucket_name, self.resources_root))
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
 
@@ -77,6 +78,7 @@ class TestLsWithRoleModel(object):
             set_storage_permission(self.user, self.bucket_name, allow='w', deny='r')
             error_text = pipe_storage_ls("cp://{}/{}".format(self.bucket_name, self.resources_root),
                                          expected_status=1, token=self.token)[1]
-            assert_error_message_is_present(error_text, 'Access is denied')
+            assert_error_message_is_present(error_text, "data storage with id: '{}/{}' was not found"
+                                            .format(self.bucket_name, self.resources_root))
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))

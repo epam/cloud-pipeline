@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -58,7 +58,8 @@ class TestMvWithRoleModel(object):
             error_text = pipe_storage_mv("cp://{}/{}".format(self.bucket_name, self.test_file),
                                          os.path.join(self.output_folder, self.test_file),
                                          expected_status=1, token=self.token)[1]
-            assert_error_message_is_present(error_text, 'Access is denied')
+            assert_error_message_is_present(error_text, "data storage with id: '{}/{}' was not found"
+                                            .format(self.bucket_name, self.test_file))
             assert_copied_object_does_not_exist(ObjectInfo(True).build(
                 self.output_folder + self.test_file), self.epam_test_case)
             assert_files_skipped(self.bucket_name, self.test_file)
@@ -72,7 +73,8 @@ class TestMvWithRoleModel(object):
             error_text = pipe_storage_mv(self.test_file, "cp://{}/{}/{}".format(self.bucket_name, case,
                                                                                 self.test_file),
                                          expected_status=1, token=self.token)[1]
-            assert_error_message_is_present(error_text, 'Access is denied')
+            assert_error_message_is_present(error_text, "data storage with id: '{}/{}/{}' was not found"
+                                            .format(self.bucket_name, case, self.test_file))
             assert_copied_object_does_not_exist(ObjectInfo(False).build(self.bucket_name,
                                                                         os.path.join(case, self.test_file)),
                                                 self.epam_test_case)
@@ -89,7 +91,8 @@ class TestMvWithRoleModel(object):
             error_text = pipe_storage_mv("cp://{}/{}".format(self.bucket_name, self.test_file),
                                          "cp://{}/{}/{}".format(self.other_bucket_name, case, self.test_file),
                                          expected_status=1, token=self.token)[1]
-            assert_error_message_is_present(error_text, 'Access is denied')
+            assert_error_message_is_present(error_text, "data storage with id: '{}/{}/{}' was not found"
+                                            .format(self.other_bucket_name, case, self.test_file))
             assert_copied_object_does_not_exist(ObjectInfo(False).build(
                 self.other_bucket_name, os.path.join(case, self.test_file)),
                                                 self.epam_test_case)
@@ -122,7 +125,8 @@ class TestMvWithRoleModel(object):
             error_text = pipe_storage_mv(self.test_file, "cp://{}/{}/{}".format(self.bucket_name, case,
                                                                                 self.test_file),
                                          expected_status=1, token=self.token)[1]
-            assert_error_message_is_present(error_text, 'Access is denied')
+            assert_error_message_is_present(error_text, "data storage with id: '{}/{}' was not found"
+                                            .format(self.other_bucket_name, self.test_file))
             assert_copied_object_does_not_exist(ObjectInfo(False).build(self.bucket_name,
                                                                         os.path.join(case, self.test_file)),
                                                 self.epam_test_case)
