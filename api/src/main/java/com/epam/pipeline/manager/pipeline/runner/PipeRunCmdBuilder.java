@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.pipeline.runner;
 
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
+import com.epam.pipeline.entity.pipeline.run.OsType;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import org.apache.commons.collections.MapUtils;
@@ -38,12 +39,14 @@ public class PipeRunCmdBuilder {
     private final PipelineStart runVO;
     private final PipeRunCmdStartVO startVO;
     private final List<String> cmd;
+    private final OsType runCmdExecutionEnvironment;
 
     public PipeRunCmdBuilder(final PipeRunCmdStartVO startVO) {
         this.startVO = startVO;
         this.runVO = startVO.getPipelineStart();
         this.cmd = new ArrayList<>();
         this.cmd.add("pipe run");
+        this.runCmdExecutionEnvironment = startVO.getRunStartCmdExecutionEnvironment();
     }
 
     public String build() {
@@ -192,7 +195,23 @@ public class PipeRunCmdBuilder {
     }
 
     private String quoteStringArgument(final String value) {
-        return String.format("'%s'", value);
+        final Character quote = getQuotes();
+        return String.format("%c%s%c", quote, escapeDoubleQuotes(value), quote);
+    }
+
+    private Character getQuotes() {
+        switch (runCmdExecutionEnvironment) {
+            case WINDOWS:
+                return '"';
+            default:
+                return '\'';
+        }
+    }
+
+    private String escapeDoubleQuotes(final String value) {
+        return OsType.WINDOWS.equals(runCmdExecutionEnvironment)
+               ? value.replaceAll("\"", "\\\\\"")
+               : value;
     }
 
     private boolean isOnDemand() {
