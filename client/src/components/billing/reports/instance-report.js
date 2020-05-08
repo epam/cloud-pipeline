@@ -38,7 +38,8 @@ import {
 } from '../../../models/billing';
 import {
   numberFormatter,
-  costTickFormatter
+  costTickFormatter,
+  DisplayUser
 } from './utilities';
 import styles from './reports.css';
 
@@ -146,7 +147,8 @@ function renderResourcesSubData (
     owner && {
       key: 'owner',
       dataIndex: 'owner',
-      title: 'Owner'
+      title: 'Owner',
+      render: owner => (<DisplayUser userName={owner} />)
     },
     {
       key: 'usage',

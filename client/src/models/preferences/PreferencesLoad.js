@@ -84,6 +84,7 @@ class PreferencesLoad extends Remote {
   }
 
   getPreferenceValue = (key) => {
+    console.log('get preference value', key);
     if (!this.loaded) {
       return null;
     }

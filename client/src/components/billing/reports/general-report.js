@@ -36,7 +36,7 @@ import {
 import * as navigation from './navigation';
 import Discounts, {discounts} from './discounts';
 import Export, {ExportComposers} from './export';
-import {costTickFormatter} from './utilities';
+import {costTickFormatter, getUserDisplayInfo, DisplayUser} from './utilities';
 import styles from './reports.css';
 
 function injection (stores, props) {
@@ -369,6 +369,40 @@ BillingCentersTable.propTypes = {
   columns: PropTypes.array
 };
 
+class UsersChartComponent extends React.Component {
+  componentDidMount () {
+    const {users, preferences} = this.props;
+    (async () => {
+      await users.fetchIfNeededOrWait();
+      await preferences.fetchIfNeededOrWait();
+    })();
+  }
+
+  render () {
+    const {
+      request,
+      discounts,
+      title,
+      onSelect,
+      style,
+      users,
+      preferences
+    } = this.props;
+    return (
+      <BarChart
+        request={request}
+        discounts={discounts}
+        title={title}
+        onSelect={onSelect}
+        style={style}
+        itemNameFn={name => getUserDisplayInfo(name, users, preferences)}
+      />
+    );
+  }
+}
+
+const UsersChart = inject('users', 'preferences')(observer(UsersChartComponent));
+
 function GroupReport ({
   group,
   billingCentersComputeRequest,
@@ -379,7 +413,6 @@ function GroupReport ({
   summaryCompute,
   summaryStorages,
   filters,
-  users,
   exportCsvRequest
 }) {
   const billingCenterName = (group || []).join(' ');
@@ -387,7 +420,8 @@ function GroupReport ({
   const tableColumns = [{
     key: 'user',
     dataIndex: 'name',
-    title: 'User'
+    title: 'User',
+    render: user => (<DisplayUser userName={user} />)
   }, {
     key: 'runs-duration',
     dataIndex: 'runsDuration',
@@ -490,7 +524,7 @@ function GroupReport ({
                 />
               </GeneralDataBlock>
               <GeneralDataBlock>
-                <BarChart
+                <UsersChart
                   request={[billingCentersComputeRequest, billingCentersStorageRequest]}
                   discounts={[computeDiscounts, storageDiscounts]}
                   title={title}
@@ -622,7 +656,7 @@ function DefaultReport (props) {
   return GeneralReport(props);
 }
 
-export default inject('billingCenters', 'users')(
+export default inject('billingCenters')(
   inject(injection)(
     Filters.attach(
       observer(DefaultReport)

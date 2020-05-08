@@ -25,6 +25,7 @@ import {
   BillingTable,
   Summary
 } from './charts';
+import {DisplayUser} from './utilities';
 import Filters, {RUNNER_SEPARATOR} from './filters';
 import {Period, getPeriod} from './periods';
 import Export, {ExportComposers} from './export';
@@ -118,7 +119,8 @@ function renderTable ({storages, discounts: discountsFn}) {
     {
       key: 'owner',
       title: 'Owner',
-      dataIndex: 'owner'
+      dataIndex: 'owner',
+      render: owner => (<DisplayUser userName={owner} />)
     },
     {
       key: 'cost',

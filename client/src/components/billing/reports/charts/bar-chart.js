@@ -69,7 +69,8 @@ function BarChart (
     top = 10,
     valueFormatter = costTickFormatter,
     useImageConsumer = true,
-    onImageDataReceived
+    onImageDataReceived,
+    itemNameFn = o => o
   }
 ) {
   if (!request) {
@@ -96,6 +97,7 @@ function BarChart (
     : [request.error];
   const filteredData = filterTopData(data, top, dataSample);
   const groups = filteredData.map(d => d.name);
+  const displayGroups = groups.map(itemNameFn);
   const previousData = getValues(filteredData, previousDataSample);
   const currentData = getValues(filteredData, dataSample);
   const maximum = getMaximum(
@@ -104,7 +106,7 @@ function BarChart (
   );
   const disabled = isNaN(maximum);
   const chartData = {
-    labels: groups,
+    labels: displayGroups,
     datasets: [
       {
         label: 'Previous',
