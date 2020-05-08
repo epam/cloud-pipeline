@@ -34,11 +34,7 @@ class S3Client(CloudClient):
         return result
 
     def assert_policy(self, bucket_name, sts, lts, backup_duration):
-        sleep(60)
-        attempts = 8
-        while self.s3_get_bucket_lifecycle(bucket_name)['shortTermStorageDuration'] != sts and attempts != 0:
-            attempts -= 1
-            sleep(10)
+        sleep(40)
         actual_policy = self.s3_get_bucket_lifecycle(bucket_name)
         if sts:
             assert actual_policy['shortTermStorageDuration'] == sts, \
@@ -47,6 +43,8 @@ class S3Client(CloudClient):
         if lts:
             assert actual_policy['longTermStorageDuration'] == lts, "LTS assertion failed"
         if backup_duration:
+            if backup_duration != backup_duration:
+                actual_policy = self.s3_get_bucket_lifecycle(bucket_name)
             assert actual_policy['backupDuration'] == backup_duration, "Backup Duration assertion failed"
 
     def get_modification_date(self, path):
@@ -89,7 +87,11 @@ class S3Client(CloudClient):
     @staticmethod
     def s3_get_bucket_lifecycle(bucket):
         s3 = boto3.resource('s3')
-        rules = s3.BucketLifecycle(bucket).rules
+        try:
+            rules = s3.BucketLifecycle(bucket).rules
+        except:
+            sleep(40)
+            rules = s3.BucketLifecycle(bucket).rules
         result = {'shortTermStorageDuration': None, 'longTermStorageDuration': None, 'backupDuration': None}
         for rule in rules:
             if 'ID' not in rule:
