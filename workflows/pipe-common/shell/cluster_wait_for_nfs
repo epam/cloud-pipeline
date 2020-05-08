@@ -103,9 +103,18 @@ elif [ "$CP_CAP_SHARE_FS_TYPE" == "lfs" ]; then
     if ! grep "lizardfs-master" /etc/hosts -q; then
         echo "$NFS_IP" lizardfs-master >> /etc/hosts
     fi
+    if [ "${CP_CAP_NFS_MOUNT_OPTIONS}" ]
+    then
+        MOUNT_OPTIONS="${CP_CAP_NFS_MOUNT_OPTIONS}"
+    else
+        MOUNT_OPTIONS="-o big_writes,nosuid,nodev,noatime -o cacheexpirationtime=5000 -o readaheadmaxwindowsize=4096"
+    fi
+    if [ "${CP_CAP_NFS_DEBUG}" == "true" ] || [ "${CP_CAP_NFS_DEBUG}" == "yes" ]; then
+        MOUNT_OPTIONS="${MOUNT_OPTIONS} -o debug"
+    fi
     mkdir -p ${SHARED_PATH} && \
     rm -rf ${SHARED_PATH}/* && \
-    mfsmount -H lizardfs-master -o big_writes,nosuid,nodev,noatime -o cacheexpirationtime=5000 -o readaheadmaxwindowsize=4096 ${SHARED_PATH}
+    nohup mfsmount -f -H lizardfs-master ${MOUNT_OPTIONS} ${SHARED_PATH} > /var/log/mfsmount.out 2>&1 &
     
     if [ $? -ne 0 ]
     then
