@@ -82,7 +82,7 @@ class TestCpWithRoleModel(object):
                                          "cp://{}/{}/{}".format(self.other_bucket_name, case, self.test_file),
                                          expected_status=1, token=self.token)[1]
             assert_error_message_is_present(error_text, "data storage with id: '{}/{}/{}' was not found"
-                                            .format(self.bucket_name, case, self.test_file))
+                                            .format(self.other_bucket_name, case, self.test_file))
             assert_copied_object_does_not_exist(ObjectInfo(False).build(
                 self.other_bucket_name, os.path.join(case, self.test_file)),
                                                 self.epam_test_case)

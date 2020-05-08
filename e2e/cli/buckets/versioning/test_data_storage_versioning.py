@@ -183,7 +183,7 @@ class TestDataStorageVersioning(object):
         destination_1 = 'cp://{}/{}/{}'.format(self.bucket, self.test_folder_1, self.test_file_1)
         try:
             pipe_storage_cp(os.path.abspath(self.test_file_1), destination_1)
-            pipe_storage_rm(destination_1, recursive=True)
+            pipe_storage_rm('cp://{}/{}'.format(self.bucket, self.test_folder_1), recursive=True)
             actual_output = get_pipe_listing(self.path_to_bucket)
             assert len(actual_output) == 0
             actual_output = get_pipe_listing(self.path_to_bucket, versioning=True)
