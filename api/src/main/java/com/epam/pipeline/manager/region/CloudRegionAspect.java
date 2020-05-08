@@ -16,17 +16,15 @@
 
 package com.epam.pipeline.manager.region;
 
-import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
+import com.epam.pipeline.utils.Base64Utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.binary.Base64;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Aspect;
@@ -34,7 +32,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
-import java.util.HashMap;
 
 @Slf4j
 @Service
@@ -42,19 +39,18 @@ import java.util.HashMap;
 public class CloudRegionAspect {
 
     public static final String CP_REGION_CREDS_SECRET = "cp-region-creds-secret";
-    public static final String STORAGE_ACCOUNT = "storage_account";
-    public static final String STORAGE_KEY = "storage_key";
     private final KubernetesManager kubernetesManager;
-    private final ObjectMapper mapper = new JsonMapper();
+    private final AzureRegionHelper azureRegionHelper;
 
     @Autowired
-    public CloudRegionAspect(final KubernetesManager kubernetesManager) {
+    public CloudRegionAspect(final KubernetesManager kubernetesManager, final AzureRegionHelper azureRegionHelper) {
         this.kubernetesManager = kubernetesManager;
+        this.azureRegionHelper = azureRegionHelper;
     }
 
     @After("execution(* com.epam.pipeline.dao.region.CloudRegionDao.create(..)) && args(region, credentials)")
     public void updateCloudRegionCreds(final JoinPoint joinPoint, final AbstractCloudRegion region,
-                                       final AbstractCloudRegionCredentials credentials) throws JsonProcessingException {
+                                       final AbstractCloudRegionCredentials credentials) {
         if (!region.getProvider().equals(CloudProvider.AZURE)) {
             return;
         }
@@ -65,13 +61,10 @@ public class CloudRegionAspect {
         final AzureRegion azureRegion = (AzureRegion) region;
         final AzureRegionCredentials azureRegionCredentials = (AzureRegionCredentials) credentials;
         log.debug("Update Kube secret with new cred value for region with id: {}", region.getId());
-        final HashMap<String, String> creds = new HashMap<>();
-        creds.put(STORAGE_ACCOUNT, azureRegion.getStorageAccount());
-        creds.put(STORAGE_KEY, azureRegionCredentials.getStorageAccountKey());
         kubernetesManager.updateSecret(CP_REGION_CREDS_SECRET,
                 Collections.singletonMap(
                         azureRegion.getId().toString(),
-                        Base64.encodeBase64String(mapper.writeValueAsString(creds).getBytes())),
+                        azureRegionHelper.serializeCredentials(azureRegion, azureRegionCredentials)),
                 Collections.emptyMap()
         );
     }
@@ -80,11 +73,10 @@ public class CloudRegionAspect {
     public void deleteCloudRegionCreds(final JoinPoint joinPoint, final Long region) throws JsonProcessingException {
         log.debug("Delete cred value of a region from Kube secret. Region id: {}", region);
         if (kubernetesManager.doesSecretExist(CP_REGION_CREDS_SECRET)) {
-            kubernetesManager.updateSecret(CP_REGION_CREDS_SECRET,
+            kubernetesManager.updateSecret(
+                    CP_REGION_CREDS_SECRET,
                     Collections.emptyMap(),
-                    Collections.singletonMap(
-                            region.toString(),
-                            Base64.encodeBase64String(mapper.writeValueAsString(Collections.emptyMap()).getBytes()))
+                    Collections.singletonMap(region.toString(), Base64Utils.EMPTY_ENCODED_MAP)
             );
         }
     }

@@ -43,10 +43,7 @@ import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.utils.CommonUtils;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Service;
@@ -55,7 +52,6 @@ import org.springframework.util.Assert;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -68,9 +64,6 @@ import java.util.stream.Collectors;
 public class CloudRegionManager implements SecuredEntityManager {
 
     public static final String CP_REGION_CREDS_SECRET = "cp-region-creds-secret";
-    public static final String STORAGE_ACCOUNT = "storage_account";
-    public static final String STORAGE_KEY = "storage_key";
-    public static final String EMTY_ENCODED = Base64.encodeBase64String("{}".getBytes());
 
     private final CloudRegionDao cloudRegionDao;
     private final FileShareMountManager shareMountManager;
@@ -80,7 +73,6 @@ public class CloudRegionManager implements SecuredEntityManager {
     private final AuthManager authManager;
     private final KubernetesManager kubernetesManager;
     private final Map<CloudProvider, ? extends CloudRegionHelper> helpers;
-    private final ObjectMapper mapper = new ObjectMapper();
 
     public CloudRegionManager(final CloudRegionDao cloudRegionDao,
                               final CloudRegionMapper cloudRegionMapper,
@@ -250,17 +242,10 @@ public class CloudRegionManager implements SecuredEntityManager {
                         .filter(region -> region.getProvider().equals(CloudProvider.AZURE))
                         .map(region -> (AzureRegion) region)
                         .collect(
-                                Collectors.toMap(azureRegion -> azureRegion.getId().toString(),
-                                        azureRegion ->  {
-                                            final HashMap<String, String> creds = new HashMap<>();
-                                            creds.put(STORAGE_ACCOUNT, azureRegion.getStorageAccount());
-                                            creds.put(STORAGE_KEY, loadCredentials(azureRegion).getStorageAccountKey());
-                                            try {
-                                                return Base64.encodeBase64String(mapper.writeValueAsString(creds).getBytes());
-                                            } catch (JsonProcessingException e) {
-                                                return EMTY_ENCODED;
-                                            }
-                                        })
+                            Collectors.toMap(azureRegion -> azureRegion.getId().toString(),
+                                azureRegion ->  ((AzureRegionHelper) helpers.get(CloudProvider.AZURE))
+                                        .serializeCredentials(azureRegion, loadCredentials(azureRegion))
+                            )
                         )
         );
     }

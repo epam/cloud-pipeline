@@ -156,7 +156,7 @@ public class KubernetesManager {
 
     public String refreshSecret(final String secretName, final Map<String, String> data) {
         Secret secret;
-        try (final KubernetesClient client = getKubernetesClient()) {
+        try (KubernetesClient client = getKubernetesClient()) {
             secret = client.secrets()
                     .inNamespace(kubeNamespace)
                     .withName(secretName)
@@ -200,7 +200,7 @@ public class KubernetesManager {
     }
 
     public boolean doesSecretExist(final String name) {
-        try (final KubernetesClient client = getKubernetesClient()) {
+        try (KubernetesClient client = getKubernetesClient()) {
             return Objects.nonNull(client.secrets().inNamespace(kubeNamespace).withName(name).get());
         } catch (KubernetesClientException e) {
             LOGGER.error(e.getMessage(), e);
