@@ -34,10 +34,16 @@ class S3Client(CloudClient):
         return result
 
     def assert_policy(self, bucket_name, sts, lts, backup_duration):
-        sleep(20)
+        sleep(60)
+        attempts = 8
+        while self.s3_get_bucket_lifecycle(bucket_name)['shortTermStorageDuration'] != sts and attempts != 0:
+            attempts -= 1
+            sleep(10)
         actual_policy = self.s3_get_bucket_lifecycle(bucket_name)
         if sts:
-            assert actual_policy['shortTermStorageDuration'] == sts, "STS assertion failed"
+            assert actual_policy['shortTermStorageDuration'] == sts, \
+                "STS assertion failed: expected sts is {}, but actual is {}"\
+                    .format(sts, actual_policy['shortTermStorageDuration'])
         if lts:
             assert actual_policy['longTermStorageDuration'] == lts, "LTS assertion failed"
         if backup_duration:
