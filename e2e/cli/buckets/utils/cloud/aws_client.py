@@ -34,7 +34,7 @@ class S3Client(CloudClient):
         return result
 
     def assert_policy(self, bucket_name, sts, lts, backup_duration):
-        sleep(5)
+        sleep(20)
         actual_policy = self.s3_get_bucket_lifecycle(bucket_name)
         if sts:
             assert actual_policy['shortTermStorageDuration'] == sts, "STS assertion failed"
