@@ -35,7 +35,7 @@ public class StartupApplicationListener {
     private final CloudRegionManager cloudRegionManager;
 
     @EventListener
-    public void onApplicationEvent(ContextRefreshedEvent event) {
+    public void onApplicationEvent(final ContextRefreshedEvent event) {
         try {
             if (Objects.isNull(event.getApplicationContext().getParent())) {
                 dockerRegistryManager.checkDockerSecrets();

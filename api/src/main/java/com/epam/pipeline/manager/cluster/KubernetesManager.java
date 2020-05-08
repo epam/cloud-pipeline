@@ -156,7 +156,7 @@ public class KubernetesManager {
 
     public String refreshSecret(final String secretName, final Map<String, String> data) {
         Secret secret;
-        try (KubernetesClient client = getKubernetesClient()) {
+        try (final KubernetesClient client = getKubernetesClient()) {
             secret = client.secrets()
                     .inNamespace(kubeNamespace)
                     .withName(secretName)
@@ -199,8 +199,8 @@ public class KubernetesManager {
         }
     }
 
-    public boolean isSecretExist(final String name) {
-        try (KubernetesClient client = getKubernetesClient()) {
+    public boolean doesSecretExist(final String name) {
+        try (final KubernetesClient client = getKubernetesClient()) {
             return Objects.nonNull(client.secrets().inNamespace(kubeNamespace).withName(name).get());
         } catch (KubernetesClientException e) {
             LOGGER.error(e.getMessage(), e);
@@ -366,7 +366,7 @@ public class KubernetesManager {
             Thread.sleep(NODE_READY_TIMEOUT);
             if (attempts <= 0) {
                 throw new IllegalStateException(String.format(
-                        "Node %s doesn't match the ready status over than %d times.", nodeName, ATTEMPTS_STATUS_NODE));
+                        "Node %s doesn't match the ready status over than %d times.", nodeName, attempts));
             }
         }
         LOGGER.debug("Labeling node with run id {}", runId);

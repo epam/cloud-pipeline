@@ -48,22 +48,22 @@ public class CloudRegionAspect {
     private final ObjectMapper mapper = new JsonMapper();
 
     @Autowired
-    public CloudRegionAspect(KubernetesManager kubernetesManager) {
+    public CloudRegionAspect(final KubernetesManager kubernetesManager) {
         this.kubernetesManager = kubernetesManager;
     }
 
     @After("execution(* com.epam.pipeline.dao.region.CloudRegionDao.create(..)) && args(region, credentials)")
-    public void updateCloudRegionCreds(JoinPoint joinPoint, AbstractCloudRegion region,
-                                       AbstractCloudRegionCredentials credentials) throws JsonProcessingException {
+    public void updateCloudRegionCreds(final JoinPoint joinPoint, final AbstractCloudRegion region,
+                                       final AbstractCloudRegionCredentials credentials) throws JsonProcessingException {
         if (!region.getProvider().equals(CloudProvider.AZURE)) {
             return;
         }
-        if (!kubernetesManager.isSecretExist(CP_REGION_CREDS_SECRET)) {
+        if (!kubernetesManager.doesSecretExist(CP_REGION_CREDS_SECRET)) {
             log.warn("Secret: " + CP_REGION_CREDS_SECRET + " doesn't exist!");
             return;
         }
-        AzureRegion azureRegion = (AzureRegion) region;
-        AzureRegionCredentials azureRegionCredentials = (AzureRegionCredentials) credentials;
+        final AzureRegion azureRegion = (AzureRegion) region;
+        final AzureRegionCredentials azureRegionCredentials = (AzureRegionCredentials) credentials;
         log.debug("Update Kube secret with new cred value for region with id: {}", region.getId());
         final HashMap<String, String> creds = new HashMap<>();
         creds.put(STORAGE_ACCOUNT, azureRegion.getStorageAccount());
@@ -77,9 +77,9 @@ public class CloudRegionAspect {
     }
 
     @After("execution(* com.epam.pipeline.dao.region.CloudRegionDao.delete(..)) && args(region)")
-    public void deleteCloudRegionCreds(JoinPoint joinPoint, Long region) throws JsonProcessingException {
+    public void deleteCloudRegionCreds(final JoinPoint joinPoint, final Long region) throws JsonProcessingException {
         log.debug("Delete cred value of a region from Kube secret. Region id: {}", region);
-        if (kubernetesManager.isSecretExist(CP_REGION_CREDS_SECRET)) {
+        if (kubernetesManager.doesSecretExist(CP_REGION_CREDS_SECRET)) {
             kubernetesManager.updateSecret(CP_REGION_CREDS_SECRET,
                     Collections.emptyMap(),
                     Collections.singletonMap(

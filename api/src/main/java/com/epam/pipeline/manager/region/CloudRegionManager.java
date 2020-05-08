@@ -240,7 +240,7 @@ public class CloudRegionManager implements SecuredEntityManager {
 
     public void refreshCloudRegionCredKubeSecret() {
         log.debug("Create Kube secret with cloud region creds if it does not exist.");
-        if (!kubernetesManager.isSecretExist(CP_REGION_CREDS_SECRET)) {
+        if (!kubernetesManager.doesSecretExist(CP_REGION_CREDS_SECRET)) {
             log.warn("Secret: " + CP_REGION_CREDS_SECRET + " doesn't exist!");
             return;
         }
