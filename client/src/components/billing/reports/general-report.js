@@ -418,8 +418,7 @@ function GroupReport ({
   );
   const onUserSelect = navigation.wrapNavigation(
     navigation.usersNavigation,
-    filters,
-    users
+    filters
   );
   const composers = (discounts) => [
     {
