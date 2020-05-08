@@ -29,11 +29,11 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.DocWriteRequest;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 @Slf4j
@@ -48,10 +48,11 @@ public class StorageSynchronizer implements ElasticsearchSynchronizer {
     private final BulkRequestSender requestSender;
     private final DataStorageType storageType;
 
-    public StorageSynchronizer(final @Value("${sync.storage.index.mapping}") String storageIndexMappingFile,
-                               final @Value("${sync.index.common.prefix}") String indexPrefix,
-                               final @Value("${sync.storage.index.name}") String storageIndexName,
-                               final @Value("${sync.bulk.insert.size:1000}") Integer bulkInsertSize,
+    public StorageSynchronizer(final String storageIndexMappingFile,
+                               final String indexPrefix,
+                               final String storageIndexName,
+                               final Integer bulkInsertSize,
+                               final Long insertTimeout,
                                final ElasticsearchServiceClient elasticsearchServiceClient,
                                final EntityLoader<AbstractDataStorage> loader,
                                final ElasticIndexService indexService,
@@ -62,7 +63,7 @@ public class StorageSynchronizer implements ElasticsearchSynchronizer {
         this.loader = loader;
         this.storageToBillingRequestConverter = storageToBillingReqConverter;
         this.indexService = indexService;
-        this.requestSender = new BulkRequestSender(elasticsearchServiceClient, bulkInsertSize);
+        this.requestSender = new BulkRequestSender(elasticsearchServiceClient, bulkInsertSize, insertTimeout);
         this.storageType = storageType;
     }
 
@@ -77,17 +78,17 @@ public class StorageSynchronizer implements ElasticsearchSynchronizer {
         log.info("{} document requests created", storageBillingRequests.size());
 
         storageBillingRequests.stream()
-            .map(DocWriteRequest::index)
-            .distinct()
-            .forEach(index -> {
-                try {
-                    indexService.createIndexIfNotExists(index, storageIndexMappingFile);
-                } catch (ElasticClientException e) {
-                    log.warn("Can't create index {}!", index);
-                }
-            });
+                .collect(Collectors.groupingBy(DocWriteRequest::index))
+                .forEach((index, docs) -> {
+                    try {
+                        log.debug("Inserting {} document(s) into index {}.", docs.size(), index);
+                        indexService.createIndexIfNotExists(index, storageIndexMappingFile);
+                        requestSender.indexDocuments(docs);
+                    } catch (ElasticClientException e) {
+                        log.error("Can't create index {}!", index);
+                    }
+                });
 
-        requestSender.indexDocuments(storageBillingRequests);
         log.debug("Successfully finished {} storage billing synchronization.", storageType);
     }
 

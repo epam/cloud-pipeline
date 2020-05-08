@@ -31,7 +31,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.elasticsearch.action.DocWriteRequest;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -50,10 +49,11 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
     private final EntityToBillingRequestConverter<PipelineRunWithType> runToBillingRequestConverter;
     private final EntityLoader<PipelineRunWithType> loader;
 
-    public PipelineRunSynchronizer(final @Value("${sync.run.index.mapping}") String pipelineRunIndexMappingFile,
-                                   final @Value("${sync.index.common.prefix}") String indexPrefix,
-                                   final @Value("${sync.run.index.name}") String pipelineRunIndexName,
-                                   final @Value("${sync.bulk.insert.size:1000}") Integer bulkInsertSize,
+    public PipelineRunSynchronizer(final String pipelineRunIndexMappingFile,
+                                   final String indexPrefix,
+                                   final String pipelineRunIndexName,
+                                   final Integer bulkInsertSize,
+                                   final Long insertTimeout,
                                    final ElasticsearchServiceClient elasticsearchServiceClient,
                                    final ElasticIndexService indexService,
                                    final RunBillingMapper mapper,
@@ -63,7 +63,7 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
         this.indexPrefix = indexPrefix + pipelineRunIndexName;
         this.loader = loader;
         this.runToBillingRequestConverter = new RunToBillingRequestConverter(mapper);
-        this.requestSender = new BulkRequestSender(elasticsearchServiceClient, bulkInsertSize);
+        this.requestSender = new BulkRequestSender(elasticsearchServiceClient, bulkInsertSize, insertTimeout);
     }
 
     @Override
@@ -87,17 +87,17 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
         log.info("{} document requests created", pipelineRunBillingRequests.size());
 
         pipelineRunBillingRequests.stream()
-            .map(DocWriteRequest::index)
-            .distinct()
-            .forEach(index -> {
-                try {
-                    indexService.createIndexIfNotExists(index, pipelineRunIndexMappingFile);
-                } catch (ElasticClientException e) {
-                    log.warn("Can't create index {}!", index);
-                }
-            });
+                .collect(Collectors.groupingBy(DocWriteRequest::index))
+                .forEach((index, docs) -> {
+                    try {
+                        log.debug("Inserting {} document(s) into index {}.", docs.size(), index);
+                        indexService.createIndexIfNotExists(index, pipelineRunIndexMappingFile);
+                        requestSender.indexDocuments(docs);
+                    } catch (ElasticClientException e) {
+                        log.error("Can't create index {}!", index);
+                    }
+                });
 
-        requestSender.indexDocuments(pipelineRunBillingRequests);
         log.debug("Successfully finished runs billing synchronization.");
     }
 

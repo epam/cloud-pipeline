@@ -83,7 +83,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
                 previousSync, syncStart);
 
         return createBillingsForPeriod(runContainer.getEntity(), pricePerHour, statuses).stream()
-            .filter(billing -> !billing.getCost().equals(0L))
+            .filter(billing -> billing.getCost() > 0L || billing.getUsageMinutes() > 0L)
             .collect(Collectors.toMap(PipelineRunBillingInfo::getDate,
                                       Function.identity(),
                                       this::mergeBillings))

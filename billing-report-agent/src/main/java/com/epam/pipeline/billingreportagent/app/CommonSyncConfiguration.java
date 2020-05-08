@@ -52,41 +52,45 @@ public class CommonSyncConfiguration {
     @Value("${sync.bulk.insert.size:1000}")
     private int bulkSize;
 
+    @Value("${sync.bulk.insert.timeout:1000}")
+    private long insertTimeout;
+
     @Value("${sync.storage.index.mapping}")
-    private  String storageMapping;
+    private String storageMapping;
 
     @Value("${sync.storage.index.name}")
-    private  String storageIndexName;
+    private String storageIndexName;
 
     @Value("${sync.billing.center.key}")
     private String billingCenterKey;
 
     @Value("${sync.storage.file.index.pattern}")
-    private  String fileIndexPattern;
+    private String fileIndexPattern;
 
     @Bean
     public BulkRequestSender bulkRequestSender(
-        final ElasticsearchServiceClient elasticsearchClient) {
+            final ElasticsearchServiceClient elasticsearchClient) {
         return new BulkRequestSender(elasticsearchClient);
     }
 
     @Bean
     @ConditionalOnProperty(value = "sync.run.disable", matchIfMissing = true, havingValue = FALSE)
     public ElasticsearchSynchronizer pipelineRunSynchronizer(
-        final RunBillingMapper mapper,
-        final PipelineRunLoader loader,
-        final ElasticIndexService indexService,
-        final ElasticsearchServiceClient elasticsearchClient,
-        final @Value("${sync.run.index.name}") String runIndexName,
-        final @Value("${sync.run.index.mapping}") String runMapping) {
+            final RunBillingMapper mapper,
+            final PipelineRunLoader loader,
+            final ElasticIndexService indexService,
+            final ElasticsearchServiceClient elasticsearchClient,
+            final @Value("${sync.run.index.name}") String runIndexName,
+            final @Value("${sync.run.index.mapping}") String runMapping) {
         return new PipelineRunSynchronizer(runMapping,
-                                           commonIndexPrefix,
-                                           runIndexName,
-                                           bulkSize,
-                                           elasticsearchClient,
-                                           indexService,
-                                           mapper,
-                                           loader);
+                commonIndexPrefix,
+                runIndexName,
+                bulkSize,
+                insertTimeout,
+                elasticsearchClient,
+                indexService,
+                mapper,
+                loader);
     }
 
     @Bean
@@ -100,21 +104,22 @@ public class CommonSyncConfiguration {
                                                       String endpointTemplate) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.S3_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
-            new StoragePricingService(new AwsStoragePriceListLoader("AmazonS3",
-                                                                    PriceLoadingMode.valueOf(priceMode.toUpperCase()),
-                                                                    endpointTemplate));
+                new StoragePricingService(new AwsStoragePriceListLoader("AmazonS3",
+                        PriceLoadingMode.valueOf(priceMode.toUpperCase()),
+                        endpointTemplate));
         return new StorageSynchronizer(storageMapping,
-                                       commonIndexPrefix,
-                                       storageIndexName,
-                                       bulkSize,
-                                       elasticsearchClient,
-                                       loader,
-                                       indexService,
-                                       new StorageToBillingRequestConverter(mapper, elasticsearchClient,
-                                                                            StorageType.OBJECT_STORAGE,
-                                                                            pricingService,
-                                                                            fileIndexPattern),
-                                       DataStorageType.S3);
+                commonIndexPrefix,
+                storageIndexName,
+                bulkSize,
+                insertTimeout,
+                elasticsearchClient,
+                loader,
+                indexService,
+                new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                        StorageType.OBJECT_STORAGE,
+                        pricingService,
+                        fileIndexPattern),
+                DataStorageType.S3);
     }
 
     @Bean
@@ -128,21 +133,22 @@ public class CommonSyncConfiguration {
                                                        String endpointTemplate) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
-            new StoragePricingService(new AwsStoragePriceListLoader("AmazonEFS",
-                                                                    PriceLoadingMode.valueOf(priceMode.toUpperCase()),
-                                                                    endpointTemplate));
+                new StoragePricingService(new AwsStoragePriceListLoader("AmazonEFS",
+                        PriceLoadingMode.valueOf(priceMode.toUpperCase()),
+                        endpointTemplate));
         return new StorageSynchronizer(storageMapping,
-                                       commonIndexPrefix,
-                                       storageIndexName,
-                                       bulkSize,
-                                       elasticsearchClient,
-                                       loader,
-                                       indexService,
-                                       new StorageToBillingRequestConverter(mapper, elasticsearchClient,
-                                                                            StorageType.FILE_STORAGE,
-                                                                            pricingService,
-                                                                            fileIndexPattern),
-                                       DataStorageType.NFS);
+                commonIndexPrefix,
+                storageIndexName,
+                bulkSize,
+                insertTimeout,
+                elasticsearchClient,
+                loader,
+                indexService,
+                new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                        StorageType.FILE_STORAGE,
+                        pricingService,
+                        fileIndexPattern),
+                DataStorageType.NFS);
     }
 
     @Bean
@@ -152,19 +158,20 @@ public class CommonSyncConfiguration {
                                               final ElasticsearchServiceClient elasticsearchClient) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.GS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
-            new StoragePricingService(new GcpStoragePriceListLoader());
+                new StoragePricingService(new GcpStoragePriceListLoader());
         return new StorageSynchronizer(storageMapping,
-                                       commonIndexPrefix,
-                                       storageIndexName,
-                                       bulkSize,
-                                       elasticsearchClient,
-                                       loader,
-                                       indexService,
-                                       new StorageToBillingRequestConverter(mapper, elasticsearchClient,
-                                                                            StorageType.OBJECT_STORAGE,
-                                                                            pricingService,
-                                                                            fileIndexPattern),
-                                       DataStorageType.GS);
+                commonIndexPrefix,
+                storageIndexName,
+                bulkSize,
+                insertTimeout,
+                elasticsearchClient,
+                loader,
+                indexService,
+                new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                        StorageType.OBJECT_STORAGE,
+                        pricingService,
+                        fileIndexPattern),
+                DataStorageType.GS);
     }
 
     @Bean
@@ -175,20 +182,21 @@ public class CommonSyncConfiguration {
                                                  final ElasticIndexService indexService,
                                                  final ElasticsearchServiceClient elasticsearchClient) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.AZ_BLOB_STORAGE,
-                                                                     billingCenterKey);
+                billingCenterKey);
         final StoragePricingService pricingService =
-            new StoragePricingService(new AzureStoragePriceListLoader(offerId, authFile));
+                new StoragePricingService(new AzureStoragePriceListLoader(offerId, authFile));
         return new StorageSynchronizer(storageMapping,
-                                       commonIndexPrefix,
-                                       storageIndexName,
-                                       bulkSize,
-                                       elasticsearchClient,
-                                       loader,
-                                       indexService,
-                                       new StorageToBillingRequestConverter(mapper, elasticsearchClient,
-                                                                            StorageType.OBJECT_STORAGE,
-                                                                            pricingService,
-                                                                            fileIndexPattern),
-                                       DataStorageType.AZ);
+                commonIndexPrefix,
+                storageIndexName,
+                bulkSize,
+                insertTimeout,
+                elasticsearchClient,
+                loader,
+                indexService,
+                new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                        StorageType.OBJECT_STORAGE,
+                        pricingService,
+                        fileIndexPattern),
+                DataStorageType.AZ);
     }
 }
