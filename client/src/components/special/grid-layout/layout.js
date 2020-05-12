@@ -481,7 +481,7 @@ export default function buildLayout (
       }
       return layout;
     },
-    getPanelsLayout (rebuildIfNull = true) {
+    getPanelsLayout (rebuildIfNull = true, staticPanels = []) {
       const info = localStorage.getItem(storage);
       let infoCount = 0;
       if (info) {
@@ -496,7 +496,10 @@ export default function buildLayout (
         try {
           const layout = JSON.parse(info);
           if (Array.isArray(layout)) {
-            return layout;
+            return layout.map(layoutItem => {
+              const isStaticPanel = staticPanels.indexOf(layoutItem.i) >= 0;
+              return {...layoutItem, static: isStaticPanel};
+            });
           }
         } catch (___) {}
       }

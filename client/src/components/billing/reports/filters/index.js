@@ -24,6 +24,7 @@ import ReportFilter from './report-filter';
 import RunnerFilter, {RunnerType} from './runner-filter';
 import reportsRouting from './reports-routing';
 import Divider from './divider';
+import {RestoreButton} from '../layout';
 import ExportReports, {ExportFormat} from '../export';
 import styles from '../reports.css';
 
@@ -73,6 +74,7 @@ class Filters extends React.Component {
             />
             <div className={styles.actionsBlock}>
               <Discounts.Button className={styles.discountsButton} />
+              <RestoreButton className={styles.restoreLayoutButton} />
               <ExportReports
                 className={styles.exportReportsButton}
                 documentName={() => this.filterStore.getDescription({users})}

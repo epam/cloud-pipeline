@@ -47,7 +47,7 @@ export default function ({
     return period;
   };
   return (
-    <div style={{display: 'flex', alignItems: 'center', height: '100%'}}>
+    <div style={{display: 'flex', alignItems: 'center'}}>
       <RangeFilter
         period={filter}
         range={range}

@@ -14,10 +14,27 @@
  * limitations under the License.
  */
 
-import Panels from './panels';
+.panel-container {
+  padding: 2px;
+  width: 100%;
+  height: 100%;
+}
 
-export default [
-  {'w': 12, 'h': 12, 'x': 0, 'y': 12, 'i': Panels.data, 'moved': false, 'static': false},
-  {'w': 12, 'h': 24, 'x': 12, 'y': 0, 'i': Panels.personalTools, 'moved': false, 'static': false},
-  {'w': 12, 'h': 12, 'x': 0, 'y': 0, 'i': Panels.runs, 'moved': false, 'static': false}
-];
+.panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  box-shadow: 0 0 4px 0 #ddd;
+}
+
+.panel-move {
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.05);
+  left: 0;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  text-align: center;
+  line-height: 20px;
+  cursor: move;
+}

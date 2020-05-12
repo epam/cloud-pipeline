@@ -15,9 +15,18 @@
  */
 
 import Panels from './panels';
+import defaultSizes from './default-panels-sizes';
+import defaultState from './default-panels-state';
+import {buildGridStyle, buildLayout} from '../../../../special/grid-layout';
 
-export default [
-  {'w': 12, 'h': 12, 'x': 0, 'y': 12, 'i': Panels.data, 'moved': false, 'static': false},
-  {'w': 12, 'h': 24, 'x': 12, 'y': 0, 'i': Panels.personalTools, 'moved': false, 'static': false},
-  {'w': 12, 'h': 12, 'x': 0, 'y': 0, 'i': Panels.runs, 'moved': false, 'static': false}
-];
+const GridStyles = buildGridStyle({top: 0, maxLayoutColumns: 4});
+
+const Layout = buildLayout({
+  defaultState,
+  storage: 'panelsLayout-Billing-Storages',
+  defaultSizes,
+  panelNeighbors: [],
+  gridStyle: GridStyles
+});
+
+export {GridStyles, Layout, Panels};
