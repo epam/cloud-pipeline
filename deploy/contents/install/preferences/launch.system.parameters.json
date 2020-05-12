@@ -38,6 +38,12 @@
         "defaultValue": "true"
     },
     {
+        "name": "CP_CAP_MODULES_TYPE",
+        "type": "string",
+        "description": "Declares specific environment module system to use (tcl/lmod)",
+        "defaultValue": "tcl"
+    },
+    {
         "name": "CP_CAP_SPARK",
         "type": "boolean",
         "description": "Enables Spark for a current run",
