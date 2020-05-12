@@ -92,6 +92,7 @@ class LayoutComponent extends React.Component {
     if (update && onLayoutChange) {
       onLayoutChange();
     }
+    this.forceUpdate();
   };
 
   render () {
@@ -116,7 +117,8 @@ class LayoutComponent extends React.Component {
           containerPadding={[5, 0]}
           rowHeight={gridStyles.rowHeight(layoutDimensions.height)}
           onDragStop={(layout) => this.onLayoutChanged(layout, true)}
-          onLayoutChange={(layout) => this.onLayoutChanged(layout, false)}>
+          onLayoutChange={(layout) => this.onLayoutChanged(layout, false)}
+        >
           {this.props.children}
         </GridLayout>
       </div>

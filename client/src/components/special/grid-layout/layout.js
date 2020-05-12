@@ -475,7 +475,7 @@ export default function buildLayout (
         try {
           localStorage.setItem(
             storage,
-            JSON.stringify(rebuildLayout(layout, gridStyle, rebuildHeights))
+            JSON.stringify(rebuildLayout(layout.map(o => o), gridStyle, rebuildHeights))
           );
         } catch (___) {}
       }

@@ -188,7 +188,7 @@ class BillingCenters extends React.Component {
         <Radio.Group
           value={mode}
           onChange={this.onChangeMode}
-          style={{display: 'flex', justifyContent: 'center'}}
+          style={{display: 'flex', justifyContent: 'center', marginTop: 5}}
           size="small"
         >
           <Radio.Button
@@ -211,7 +211,7 @@ class BillingCenters extends React.Component {
               discounts={discountsFn}
               title={title}
               onSelect={onSelect}
-              style={height ? {height: height - 22} : {}}
+              style={height ? {height: height - 27} : {}}
             />
           )
         }
@@ -222,7 +222,7 @@ class BillingCenters extends React.Component {
               discounts={discountsFn}
               title={title}
               onSelect={onSelect}
-              style={height ? {height: height - 22} : {}}
+              style={height ? {height: height - 27} : {}}
             />
           )
         }
