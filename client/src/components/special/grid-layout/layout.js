@@ -498,7 +498,7 @@ export default function buildLayout (
           if (Array.isArray(layout)) {
             return layout.map(layoutItem => {
               const isStaticPanel = staticPanels.indexOf(layoutItem.i) >= 0;
-              return {...layoutItem, static: isStaticPanel};
+              return {...layoutItem, isResizable: !isStaticPanel};
             });
           }
         } catch (___) {}
