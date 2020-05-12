@@ -114,12 +114,7 @@ fi
 # Start LFS Chunk server
 ######################################################
 
-if [[ "$IS_RPM_BASED" = 0 ]]; then
-    nohup mfschunkserver -d start > /var/log/mfschunkserver.out 2>&1 &
-else
-    sed -i "s/fals/tru/g" /etc/default/lizardfs-chunkserver
-    service lizardfs-chunkserver start
-fi
+nohup mfschunkserver -d start > /var/log/mfschunkserver.out 2>&1 &
 
 if [ $? -ne 0 ]
 then
