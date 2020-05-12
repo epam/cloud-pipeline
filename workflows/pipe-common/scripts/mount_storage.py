@@ -426,6 +426,7 @@ class GCPMounter(StorageMounter):
             mask = '0554'
             permissions = 'ro'
         return {'mount': mount_point,
+                'storage_id': str(self.storage.id),
                 'path': self.get_path(),
                 'mask': mask,
                 'permissions': permissions,
