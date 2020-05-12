@@ -41,7 +41,11 @@ function handle (value, handler) {
 
 export default function ({onChange, value}) {
   return (
-    <Radio.Group value={value} onChange={e => handle(e.target.value, onChange)}>
+    <Radio.Group
+      value={value}
+      onChange={e => handle(e.target.value, onChange)}
+      size="small"
+    >
       <Radio.Button key="value" value="value">Cost</Radio.Button>
       <Radio.Button key="usage" value="usage">Usage (hours)</Radio.Button>
       <Radio.Button key="runsCount" value="runsCount">Runs</Radio.Button>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-export {default as costTickFormatter} from './cost-tick-formatter';
-export {default as dateRangeRenderer} from './date-range-renderer';
-export {default as numberFormatter} from './number-formatter';
-export {getUserDisplayInfo, default as DisplayUser} from './display-user';
-export {default as ResizableContainer} from './resizable-container';
+import {buildGridStyle} from '../../../special/grid-layout';
+
+export default buildGridStyle({});

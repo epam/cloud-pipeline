@@ -14,8 +14,28 @@
  * limitations under the License.
  */
 
-export {default as costTickFormatter} from './cost-tick-formatter';
-export {default as dateRangeRenderer} from './date-range-renderer';
-export {default as numberFormatter} from './number-formatter';
-export {getUserDisplayInfo, default as DisplayUser} from './display-user';
-export {default as ResizableContainer} from './resizable-container';
+export function buildGridStyle (
+  {
+    cols = 24,
+    rows = 24,
+    padding = 0,
+    panelMargin = 5,
+    top = 40,
+    maxLayoutColumns = 4,
+    scrollBarSize = 15
+  }
+) {
+  return {
+    gridCols: cols,
+    gridRows: rows,
+    padding,
+    panelMargin,
+    top,
+    maxLayoutColumns,
+    rowHeight: function (containerHeight) {
+      return (containerHeight - 2 * this.padding - this.gridRows * this.panelMargin - this.top) /
+        this.gridRows;
+    },
+    scrollBarSize
+  };
+}

@@ -25,7 +25,7 @@ import {
   BillingTable,
   Summary
 } from './charts';
-import {DisplayUser} from './utilities';
+import {DisplayUser, ResizableContainer} from './utilities';
 import Filters, {RUNNER_SEPARATOR} from './filters';
 import {Period, getPeriod} from './periods';
 import Export, {ExportComposers} from './export';
@@ -39,6 +39,7 @@ import {
   GetGroupedObjectStorages,
   GetGroupedObjectStoragesWithPrevious
 } from '../../../models/billing';
+import {StorageReportLayout, Layout} from './layout';
 import styles from './reports.css';
 
 const tablePageSize = 10;
@@ -94,17 +95,7 @@ function injection (stores, props) {
   };
 }
 
-function StoragesDataBlock ({children}) {
-  return (
-    <div className={styles.storagesChartsContainer}>
-      <div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function renderTable ({storages, discounts: discountsFn}) {
+function renderTable ({storages, discounts: discountsFn, height}) {
   if (!storages || !storages.loaded) {
     return null;
   }
@@ -165,6 +156,7 @@ function renderTable ({storages, discounts: discountsFn}) {
         }
       }}
       size="small"
+      scroll={{y: height - 100}}
     />
   );
 }
@@ -216,33 +208,63 @@ function StorageReports ({storages, storagesTable, summary, type}) {
             className={styles.chartsContainer}
             composers={composers}
           >
-            <StoragesDataBlock>
-              <BillingTable
-                storages={summary}
-                storagesDiscounts={storageDiscounts}
-                showQuota={false}
-              />
-              <Summary
-                storages={summary}
-                storagesDiscounts={storageDiscounts}
-                quota={false}
-                title={getSummaryTitle()}
-                style={{flex: 1, height: 500}}
-              />
-            </StoragesDataBlock>
-            <StoragesDataBlock className={styles.chartsColumnContainer}>
-              <BarChart
-                request={storages}
-                discounts={storageDiscounts}
-                title={getTitle()}
-                top={tablePageSize}
-                style={{height: 300}}
-              />
-              <RenderTable
-                storages={storagesTable}
-                discounts={storageDiscounts}
-              />
-            </StoragesDataBlock>
+            <Layout
+              layout={StorageReportLayout.Layout}
+              gridStyles={StorageReportLayout.GridStyles}
+            >
+              <div key={StorageReportLayout.Panels.summary}>
+                <Layout.Panel
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: 0
+                  }}
+                >
+                  <BillingTable
+                    storages={summary}
+                    storagesDiscounts={storageDiscounts}
+                    showQuota={false}
+                  />
+                  <ResizableContainer style={{flex: 1}}>
+                    {
+                      ({width, height}) => (
+                        <Summary
+                          storages={summary}
+                          storagesDiscounts={storageDiscounts}
+                          quota={false}
+                          title={getSummaryTitle()}
+                          style={{width, height}}
+                        />
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+              <div key={StorageReportLayout.Panels.storages}>
+                <Layout.Panel>
+                  <ResizableContainer style={{width: '100%', height: '100%'}}>
+                    {
+                      ({height}) => (
+                        <div>
+                          <BarChart
+                            request={storages}
+                            discounts={storageDiscounts}
+                            title={getTitle()}
+                            top={tablePageSize}
+                            style={{height: height / 2.0}}
+                          />
+                          <RenderTable
+                            storages={storagesTable}
+                            discounts={storageDiscounts}
+                            height={height / 2.0}
+                          />
+                        </div>
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+            </Layout>
           </Export.Consumer>
         )
       }

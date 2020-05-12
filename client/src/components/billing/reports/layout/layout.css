@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,27 @@
  * limitations under the License.
  */
 
-export {default as costTickFormatter} from './cost-tick-formatter';
-export {default as dateRangeRenderer} from './date-range-renderer';
-export {default as numberFormatter} from './number-formatter';
-export {getUserDisplayInfo, default as DisplayUser} from './display-user';
-export {default as ResizableContainer} from './resizable-container';
+.panel-container {
+  padding: 2px;
+  width: 100%;
+  height: 100%;
+}
+
+.panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  box-shadow: 0 0 4px 0 #ddd;
+}
+
+.panel-move {
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.05);
+  left: 0;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  text-align: center;
+  line-height: 20px;
+  cursor: move;
+}

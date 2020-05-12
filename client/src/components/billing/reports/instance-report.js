@@ -39,8 +39,10 @@ import {
 import {
   numberFormatter,
   costTickFormatter,
-  DisplayUser
+  DisplayUser,
+  ResizableContainer
 } from './utilities';
+import {InstanceReportLayout, Layout} from './layout';
 import styles from './reports.css';
 
 const tablePageSize = 6;
@@ -101,16 +103,6 @@ function injection (stores, props) {
   };
 }
 
-function ResourcesDataBlock ({children}) {
-  return (
-    <div className={styles.resourcesChartsContainer}>
-      <div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
 function renderResourcesSubData (
   {
     request,
@@ -121,7 +113,10 @@ function renderResourcesSubData (
     owner = true,
     title,
     singleTitle,
-    extra
+    extra,
+    extraHeight,
+    width,
+    height
   }
 ) {
   const columns = [
@@ -171,25 +166,24 @@ function renderResourcesSubData (
   const tableData = tableDataRequest && tableDataRequest.loaded
     ? discounts.applyGroupedDataDiscounts(tableDataRequest.value, discountsFn)
     : {};
+  const heightCorrected = extra && extraHeight ? (height - extraHeight) / 2.0 : height / 2.0;
   return (
-    <ResourcesDataBlock>
+    <div style={{width, height}}>
       {extra}
-      <div className={styles.resourcesChart}>
-        <BarChart
-          request={request}
-          discounts={discountsFn}
-          dataSample={dataSample}
-          previousDataSample={previousDataSample}
-          title={title}
-          style={{height: 250}}
-          top={tablePageSize}
-          valueFormatter={
-            dataSample === InstanceFilters.value.dataSample
-              ? costTickFormatter
-              : numberFormatter
-          }
-        />
-      </div>
+      <BarChart
+        request={request}
+        discounts={discountsFn}
+        dataSample={dataSample}
+        previousDataSample={previousDataSample}
+        title={title}
+        style={{height: heightCorrected}}
+        top={tablePageSize}
+        valueFormatter={
+          dataSample === InstanceFilters.value.dataSample
+            ? costTickFormatter
+            : numberFormatter
+        }
+      />
       <Table
         className={styles.resourcesTable}
         dataSource={
@@ -210,8 +204,9 @@ function renderResourcesSubData (
         }}
         rowClassName={() => styles.resourcesTableRow}
         size="small"
+        scroll={{y: heightCorrected - 100}}
       />
-    </ResourcesDataBlock>
+    </div>
   );
 }
 
@@ -311,59 +306,123 @@ class InstanceReport extends React.Component {
               className={styles.chartsContainer}
               composers={composers}
             >
-              <ResourcesDataBlock>
-                <BillingTable
-                  compute={summary}
-                  computeDiscounts={computeDiscounts}
-                  showQuota={false}
-                />
-                <Summary
-                  compute={summary}
-                  computeDiscounts={computeDiscounts}
-                  quota={false}
-                  title={this.getSummaryTitle()}
-                  style={{flex: 1, height: 500}}
-                />
-              </ResourcesDataBlock>
-              <ResourcesSubData
-                extra={(
-                  <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'center'}}>
-                    <InstanceFilter
-                      onChange={this.handleDataSampleChange}
-                      value={dataSample}
-                      previous={previousDataSample}
+              <Layout
+                layout={InstanceReportLayout.Layout}
+                gridStyles={InstanceReportLayout.GridStyles}
+              >
+                <div key={InstanceReportLayout.Panels.summary}>
+                  <Layout.Panel
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      minHeight: 0
+                    }}
+                  >
+                    <BillingTable
+                      compute={summary}
+                      computeDiscounts={computeDiscounts}
+                      showQuota={false}
                     />
-                  </div>
-                )}
-                request={instances}
-                discounts={computeDiscounts}
-                tableDataRequest={instancesTable}
-                dataSample={dataSample}
-                previousDataSample={previousDataSample}
-                owner={false}
-                title={`${this.getInstanceTitle()} ${this.getClarificationTitle()}`}
-                singleTitle="Instance"
-              />
-              <ResourcesSubData
-                request={pipelines}
-                discounts={computeDiscounts}
-                tableDataRequest={pipelinesTable}
-                dataSample={dataSample}
-                previousDataSample={previousDataSample}
-                owner
-                title={`Pipelines ${this.getClarificationTitle()}`}
-                singleTitle="Pipeline"
-              />
-              <ResourcesSubData
-                request={tools}
-                discounts={computeDiscounts}
-                tableDataRequest={toolsTable}
-                dataSample={dataSample}
-                previousDataSample={previousDataSample}
-                owner
-                title={`Tools ${this.getClarificationTitle()}`}
-                singleTitle="Tool"
-              />
+                    <ResizableContainer style={{flex: 1}}>
+                      {
+                        ({width, height}) => (
+                          <Summary
+                            compute={summary}
+                            computeDiscounts={computeDiscounts}
+                            quota={false}
+                            title={this.getSummaryTitle()}
+                            style={{width, height}}
+                          />
+                        )
+                      }
+                    </ResizableContainer>
+                  </Layout.Panel>
+                </div>
+                <div key={InstanceReportLayout.Panels.instances}>
+                  <Layout.Panel>
+                    <ResizableContainer style={{width: '100%', height: '100%'}}>
+                      {
+                        ({width, height}) => (
+                          <ResourcesSubData
+                            extra={(
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  flexDirection: 'row',
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                  height: 30
+                                }}
+                              >
+                                <InstanceFilter
+                                  onChange={this.handleDataSampleChange}
+                                  value={dataSample}
+                                  previous={previousDataSample}
+                                />
+                              </div>
+                            )}
+                            extraHeight={30}
+                            request={instances}
+                            discounts={computeDiscounts}
+                            tableDataRequest={instancesTable}
+                            dataSample={dataSample}
+                            previousDataSample={previousDataSample}
+                            owner={false}
+                            title={`${this.getInstanceTitle()} ${this.getClarificationTitle()}`}
+                            singleTitle="Instance"
+                            width={width}
+                            height={height}
+                          />
+                        )
+                      }
+                    </ResizableContainer>
+                  </Layout.Panel>
+                </div>
+                <div key={InstanceReportLayout.Panels.pipelines}>
+                  <Layout.Panel>
+                    <ResizableContainer style={{width: '100%', height: '100%'}}>
+                      {
+                        ({width, height}) => (
+                          <ResourcesSubData
+                            request={pipelines}
+                            discounts={computeDiscounts}
+                            tableDataRequest={pipelinesTable}
+                            dataSample={dataSample}
+                            previousDataSample={previousDataSample}
+                            owner
+                            title={`Pipelines ${this.getClarificationTitle()}`}
+                            singleTitle="Pipeline"
+                            width={width}
+                            height={height}
+                          />
+                        )
+                      }
+                    </ResizableContainer>
+                  </Layout.Panel>
+                </div>
+                <div key={InstanceReportLayout.Panels.tools}>
+                  <Layout.Panel>
+                    <ResizableContainer style={{width: '100%', height: '100%'}}>
+                      {
+                        ({width, height}) => (
+                          <ResourcesSubData
+                            request={tools}
+                            discounts={computeDiscounts}
+                            tableDataRequest={toolsTable}
+                            dataSample={dataSample}
+                            previousDataSample={previousDataSample}
+                            owner
+                            title={`Tools ${this.getClarificationTitle()}`}
+                            singleTitle="Tool"
+                            width={width}
+                            height={height}
+                          />
+                        )
+                      }
+                    </ResizableContainer>
+                  </Layout.Panel>
+                </div>
+              </Layout>
             </Export.Consumer>
           )
         }

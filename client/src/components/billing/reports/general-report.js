@@ -36,7 +36,13 @@ import {
 import * as navigation from './navigation';
 import Discounts, {discounts} from './discounts';
 import Export, {ExportComposers} from './export';
-import {costTickFormatter, getUserDisplayInfo, DisplayUser} from './utilities';
+import {
+  costTickFormatter,
+  getUserDisplayInfo,
+  DisplayUser,
+  ResizableContainer
+} from './utilities';
+import {GeneralReportLayout, Layout} from './layout';
 import styles from './reports.css';
 
 function injection (stores, props) {
@@ -154,16 +160,6 @@ function toValue (value) {
   return null;
 }
 
-function GeneralDataBlock ({children, style}) {
-  return (
-    <div className={styles.generalChartsContainer}>
-      <div style={style}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
 const BillingCentersDisplayModes = {
   bar: 'bar',
   pie: 'chart'
@@ -183,7 +179,7 @@ class BillingCenters extends React.Component {
       request,
       discounts: discountsFn,
       onSelect,
-      style,
+      height,
       title
     } = this.props;
     const {mode} = this.state;
@@ -192,7 +188,7 @@ class BillingCenters extends React.Component {
         <Radio.Group
           value={mode}
           onChange={this.onChangeMode}
-          style={{display: 'flex', justifyContent: 'center'}}
+          style={{display: 'flex', justifyContent: 'center', marginTop: 5}}
           size="small"
         >
           <Radio.Button
@@ -215,7 +211,7 @@ class BillingCenters extends React.Component {
               discounts={discountsFn}
               title={title}
               onSelect={onSelect}
-              style={style}
+              style={height ? {height: height - 27} : {}}
             />
           )
         }
@@ -226,7 +222,7 @@ class BillingCenters extends React.Component {
               discounts={discountsFn}
               title={title}
               onSelect={onSelect}
-              style={style}
+              style={height ? {height: height - 27} : {}}
             />
           )
         }
@@ -240,7 +236,7 @@ BillingCenters.propTypes = {
   discounts: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   onSelect: PropTypes.func,
   title: PropTypes.node,
-  style: PropTypes.object
+  height: PropTypes.number
 };
 
 function UserReport ({
@@ -283,34 +279,65 @@ function UserReport ({
               })
             }
           >
-            <GeneralDataBlock>
-              <BillingTable
-                compute={summaryCompute}
-                storages={summaryStorages}
-                computeDiscounts={computeDiscounts}
-                storagesDiscounts={storageDiscounts}
-              />
-              <Summary
-                compute={summaryCompute}
-                storages={summaryStorages}
-                computeDiscounts={computeDiscounts}
-                storagesDiscounts={storageDiscounts}
-                title="Summary"
-                style={{flex: 1, height: 500}}
-              />
-            </GeneralDataBlock>
-            <GeneralDataBlock>
-              <GroupedBarChart
-                request={resources}
-                discountsMapper={{
-                  'Storage': storageDiscounts,
-                  'Compute instances': computeDiscounts
-                }}
-                title="Resources"
-                onSelect={onResourcesSelect}
-                height={400}
-              />
-            </GeneralDataBlock>
+            <Layout
+              layout={GeneralReportLayout.Layout}
+              gridStyles={GeneralReportLayout.GridStyles}
+              staticPanels={[GeneralReportLayout.Panels.runners]}
+            >
+              <div key={GeneralReportLayout.Panels.summary}>
+                <Layout.Panel
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: 0
+                  }}
+                >
+                  <BillingTable
+                    compute={summaryCompute}
+                    storages={summaryStorages}
+                    computeDiscounts={computeDiscounts}
+                    storagesDiscounts={storageDiscounts}
+                  />
+                  <ResizableContainer style={{flex: 1}}>
+                    {
+                      ({width, height}) => (
+                        <Summary
+                          compute={summaryCompute}
+                          storages={summaryStorages}
+                          computeDiscounts={computeDiscounts}
+                          storagesDiscounts={storageDiscounts}
+                          title="Summary"
+                          style={{width, height}}
+                        />
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+              <div key={GeneralReportLayout.Panels.resources}>
+                <Layout.Panel>
+                  <ResizableContainer style={{width: '100%', height: '100%'}}>
+                    {
+                      ({height}) => (
+                        <GroupedBarChart
+                          request={resources}
+                          discountsMapper={{
+                            'Storage': storageDiscounts,
+                            'Compute instances': computeDiscounts
+                          }}
+                          title="Resources"
+                          onSelect={onResourcesSelect}
+                          height={height}
+                        />
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+              <div key={GeneralReportLayout.Panels.runners}>
+                {'\u00A0'}
+              </div>
+            </Layout>
           </Export.Consumer>
         )
       }
@@ -333,7 +360,8 @@ class BillingCentersTable extends React.Component {
       columns: tableColumns,
       requests,
       discounts: discountsFn,
-      onUserSelect
+      onUserSelect,
+      height
     } = this.props;
     const {current} = this.state;
     const pageSize = 2;
@@ -357,6 +385,7 @@ class BillingCentersTable extends React.Component {
         }}
         onRowClick={record => onUserSelect({key: record.name})}
         size="small"
+        scroll={{y: height - 100}}
       />
     );
   }
@@ -366,7 +395,8 @@ BillingCentersTable.propTypes = {
   requests: PropTypes.array,
   discounts: PropTypes.array,
   onUserSelect: PropTypes.func,
-  columns: PropTypes.array
+  columns: PropTypes.array,
+  height: PropTypes.number
 };
 
 class UsersChartComponent extends React.Component {
@@ -494,51 +524,90 @@ function GroupReport ({
               })
             }
           >
-            <GeneralDataBlock>
-              <BillingTable
-                compute={summaryCompute}
-                storages={summaryStorages}
-                computeDiscounts={computeDiscounts}
-                storagesDiscounts={storageDiscounts}
-              />
-              <Summary
-                compute={summaryCompute}
-                storages={summaryStorages}
-                computeDiscounts={computeDiscounts}
-                storagesDiscounts={storageDiscounts}
-                title="Summary"
-                style={{flex: 1, height: 500}}
-              />
-            </GeneralDataBlock>
-            <div className={styles.chartsSubContainer}>
-              <GeneralDataBlock>
-                <GroupedBarChart
-                  request={resources}
-                  discountsMapper={{
-                    'Storage': storageDiscounts,
-                    'Compute instances': computeDiscounts
+            <Layout
+              layout={GeneralReportLayout.Layout}
+              gridStyles={GeneralReportLayout.GridStyles}
+            >
+              <div key={GeneralReportLayout.Panels.summary}>
+                <Layout.Panel
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: 0
                   }}
-                  title="Resources"
-                  onSelect={onResourcesSelect}
-                  height={400}
-                />
-              </GeneralDataBlock>
-              <GeneralDataBlock>
-                <UsersChart
-                  request={[billingCentersComputeRequest, billingCentersStorageRequest]}
-                  discounts={[computeDiscounts, storageDiscounts]}
-                  title={title}
-                  onSelect={onUserSelect}
-                  style={{height: 250}}
-                />
-                <BillingCentersTable
-                  requests={[billingCentersComputeTableRequest, billingCentersStorageTableRequest]}
-                  discounts={[computeDiscounts, storageDiscounts]}
-                  columns={tableColumns}
-                  onUserSelect={onUserSelect}
-                />
-              </GeneralDataBlock>
-            </div>
+                >
+                  <BillingTable
+                    compute={summaryCompute}
+                    storages={summaryStorages}
+                    computeDiscounts={computeDiscounts}
+                    storagesDiscounts={storageDiscounts}
+                  />
+                  <ResizableContainer style={{flex: 1}}>
+                    {
+                      ({width, height}) => (
+                        <Summary
+                          compute={summaryCompute}
+                          storages={summaryStorages}
+                          computeDiscounts={computeDiscounts}
+                          storagesDiscounts={storageDiscounts}
+                          title="Summary"
+                          style={{width, height}}
+                        />
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+              <div key={GeneralReportLayout.Panels.resources}>
+                <Layout.Panel>
+                  <ResizableContainer style={{width: '100%', height: '100%'}}>
+                    {
+                      ({height}) => (
+                        <GroupedBarChart
+                          request={resources}
+                          discountsMapper={{
+                            'Storage': storageDiscounts,
+                            'Compute instances': computeDiscounts
+                          }}
+                          title="Resources"
+                          onSelect={onResourcesSelect}
+                          height={height}
+                        />
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+              <div key={GeneralReportLayout.Panels.runners}>
+                <Layout.Panel>
+                  <ResizableContainer style={{width: '100%', height: '100%'}}>
+                    {
+                      ({height}) => (
+                        <div>
+                          <UsersChart
+                            request={[billingCentersComputeRequest, billingCentersStorageRequest]}
+                            discounts={[computeDiscounts, storageDiscounts]}
+                            title={title}
+                            onSelect={onUserSelect}
+                            style={{height: height / 2.0}}
+                          />
+                          <BillingCentersTable
+                            requests={[
+                              billingCentersComputeTableRequest,
+                              billingCentersStorageTableRequest
+                            ]}
+                            discounts={[computeDiscounts, storageDiscounts]}
+                            columns={tableColumns}
+                            onUserSelect={onUserSelect}
+                            height={height / 2.0}
+                          />
+                        </div>
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+            </Layout>
           </Export.Consumer>
         )
       }
@@ -596,48 +665,84 @@ function GeneralReport ({
               })
             }
           >
-            <GeneralDataBlock>
-              <BillingTable
-                compute={summaryCompute}
-                storages={summaryStorages}
-                computeDiscounts={computeDiscounts}
-                storagesDiscounts={storageDiscounts}
-              />
-              <Summary
-                compute={summaryCompute}
-                storages={summaryStorages}
-                computeDiscounts={computeDiscounts}
-                storagesDiscounts={storageDiscounts}
-                title="Summary"
-                style={{flex: 1, height: 500}}
-              />
-            </GeneralDataBlock>
-            <div className={styles.chartsSubContainer}>
-              <GeneralDataBlock style={{
-                position: 'relative',
-                flex: 'unset'
-              }}>
-                <GroupedBarChart
-                  request={resources}
-                  discountsMapper={{
-                    'Storage': storageDiscounts,
-                    'Compute instances': computeDiscounts
+            <Layout
+              layout={GeneralReportLayout.Layout}
+              gridStyles={GeneralReportLayout.GridStyles}
+            >
+              <div
+                key={GeneralReportLayout.Panels.summary}
+              >
+                <Layout.Panel
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: 0
                   }}
-                  onSelect={onResourcesSelect}
-                  title="Resources"
-                  height={400}
-                />
-              </GeneralDataBlock>
-              <GeneralDataBlock style={{flex: 'unset'}}>
-                <BillingCenters
-                  request={[billingCentersComputeRequest, billingCentersStorageRequest]}
-                  discounts={[computeDiscounts, storageDiscounts]}
-                  onSelect={onBillingCenterSelect}
-                  title="Billing centers"
-                  style={{height: 400}}
-                />
-              </GeneralDataBlock>
-            </div>
+                >
+                  <BillingTable
+                    compute={summaryCompute}
+                    storages={summaryStorages}
+                    computeDiscounts={computeDiscounts}
+                    storagesDiscounts={storageDiscounts}
+                  />
+                  <ResizableContainer style={{flex: 1}}>
+                    {
+                      ({width, height}) => (
+                        <Summary
+                          compute={summaryCompute}
+                          storages={summaryStorages}
+                          computeDiscounts={computeDiscounts}
+                          storagesDiscounts={storageDiscounts}
+                          title="Summary"
+                          style={{width, height}}
+                        />
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+              <div
+                key={GeneralReportLayout.Panels.resources}
+              >
+                <Layout.Panel>
+                  <ResizableContainer style={{width: '100%', height: '100%'}}>
+                    {
+                      ({height}) => (
+                        <GroupedBarChart
+                          request={resources}
+                          discountsMapper={{
+                            'Storage': storageDiscounts,
+                            'Compute instances': computeDiscounts
+                          }}
+                          onSelect={onResourcesSelect}
+                          title="Resources"
+                          height={height}
+                        />
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+              <div
+                key={GeneralReportLayout.Panels.runners}
+              >
+                <Layout.Panel>
+                  <ResizableContainer style={{width: '100%', height: '100%'}}>
+                    {
+                      ({height}) => (
+                        <BillingCenters
+                          request={[billingCentersComputeRequest, billingCentersStorageRequest]}
+                          discounts={[computeDiscounts, storageDiscounts]}
+                          onSelect={onBillingCenterSelect}
+                          title="Billing centers"
+                          height={height}
+                        />
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+            </Layout>
           </Export.Consumer>
         )
       }

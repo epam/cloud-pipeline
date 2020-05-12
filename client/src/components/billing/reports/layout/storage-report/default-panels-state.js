@@ -14,29 +14,9 @@
  * limitations under the License.
  */
 
-import {buildLayout} from '../../../special/grid-layout';
-import gridStyle from './grid-style';
-import defaultState from './default-panels-state';
-import defaultSizes from './default-panels-sizes';
-import neighbors from './panel-neighbors';
 import Panels from './panels';
-import PanelIcons from './panel-icons';
-import PanelTitles from './panel-titles';
-import PanelInfos from './panel-informations';
 
-const layout = buildLayout({
-  defaultState,
-  storage: 'panelsLayout',
-  defaultSizes,
-  panelNeighbors: neighbors,
-  gridStyle
-});
-
-export {
-  layout as Layout,
-  gridStyle as GridStyles,
-  Panels,
-  PanelIcons,
-  PanelInfos,
-  PanelTitles
-};
+export default [
+  {'w': 12, 'h': 24, 'x': 0, 'y': 0, 'i': Panels.summary, 'moved': false, 'static': false},
+  {'w': 12, 'h': 24, 'x': 12, 'y': 0, 'i': Panels.storages, 'moved': false, 'static': false}
+];

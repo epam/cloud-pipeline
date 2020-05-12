@@ -108,10 +108,17 @@ class GroupedBarChart extends React.Component {
   render () {
     const {title, height, request, discountsMapper, onSelect} = this.props;
     const {data, itemsCount, groups, total} = this.billingData;
+    const heightCorrected = title && height ? (+height - 22) : height;
     return (
       <div style={{position: 'relative'}}>
-        {title && <div className={styles.title}>{title}</div>}
-        <div style={{position: 'relative', display: 'block', height}}>
+        {title && <div className={styles.title} style={{height: 22}}>{title}</div>}
+        <div
+          style={{
+            position: 'relative',
+            display: 'block',
+            height: heightCorrected
+          }}
+        >
           {groups.length > 0 ? groups.map((group, index) => (
             <BarChart
               key={group}
@@ -129,7 +136,7 @@ class GroupedBarChart extends React.Component {
                   ? `${100.0 * itemsCount[index] / total}%`
                   : `${100 / itemsCount.length}%`,
                 display: 'inline-block',
-                height
+                height: heightCorrected
               })}
               onSelect={onSelect ? ({key} = {}) => onSelect({group, key}) : undefined}
               onScaleSelect={onSelect ? () => onSelect({group}) : undefined}

@@ -39,7 +39,11 @@ const plugin = {
         document.body.style.overflowY = 'unset';
         onImageReady(data);
       };
-      image.onerror = onImageError;
+      image.onerror = function (...opts) {
+        onImageError && onImageError(...opts);
+        document.body.removeChild(canvasElement);
+        document.body.style.overflowY = 'unset';
+      };
       image.src = chart.toBase64Image();
     }
   }

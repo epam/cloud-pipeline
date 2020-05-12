@@ -345,12 +345,7 @@ function Summary (
   };
   return (
     <Export.ImageConsumer
-      style={
-        Object.assign(
-          {height: '100%', position: 'relative', display: 'block'},
-          style
-        )
-      }
+      style={style}
       order={1}
     >
       <Chart

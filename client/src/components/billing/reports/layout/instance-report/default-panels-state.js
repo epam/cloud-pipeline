@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,11 @@
  * limitations under the License.
  */
 
-import styles from '../HomePage.css';
+import Panels from './panels';
 
-export const GridStyles = {
-  draggableHandle: styles.panelHeader,
-  gridCols: 24,
-  gridRows: 24,
-  padding: 0,
-  panelMargin: 5,
-  top: 40,
-  rowHeight: function (containerHeight) {
-    return (containerHeight - 2 * this.padding - this.gridRows * this.panelMargin - this.top) /
-      this.gridRows;
-  },
-  scrollBarSize: 15
-};
+export default [
+  {'w': 12, 'h': 12, 'x': 0, 'y': 0, 'i': Panels.summary, 'moved': false, 'static': false},
+  {'w': 12, 'h': 12, 'x': 12, 'y': 0, 'i': Panels.instances, 'moved': false, 'static': false},
+  {'w': 12, 'h': 12, 'x': 0, 'y': 12, 'i': Panels.pipelines, 'moved': false, 'static': false},
+  {'w': 12, 'h': 12, 'x': 12, 'y': 12, 'i': Panels.tools, 'moved': false, 'static': false}
+];
