@@ -14,6 +14,7 @@
 
 # CP_S3_FUSE_STAT_CACHE (default: 1m0s)
 # CP_S3_FUSE_TYPE_CACHE (default: 1m0s)
+# CP_S3_FUSE_ENSURE_DISKFREE (default: None)
 # CP_S3_FUSE_TYPE: goofys/s3fs (default: goofys)
 
 import argparse
@@ -375,9 +376,12 @@ class S3Mounter(StorageMounter):
                     '-f --gid 0 --region "{region_name}" {path} {mount} > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
         elif params['fuse_type'] == FUSE_S3FS_ID:
             params['path'] = '{bucket}:/{relative_path}'.format(**params) if params['relative_path'] else params['path']
+            ensure_diskfree_size = os.getenv('CP_S3_FUSE_ENSURE_DISKFREE')
+            params["ensure_diskfree_option"] = "" if ensure_diskfree_size is None else "-o ensure_diskfree=" + ensure_diskfree_size
             return 'AWSACCESSKEYID={aws_key_id} AWSSECRETACCESSKEY={aws_secret} s3fs {path} {mount} -o use_cache={tmp_dir} ' \
                     '-o umask=0000 -o {permissions} -o allow_other -o enable_noobj_cache ' \
-                    '-o endpoint="{region_name}" -o url="https://s3.{region_name}.amazonaws.com"'.format(**params)
+                    '-o endpoint="{region_name}" -o url="https://s3.{region_name}.amazonaws.com" {ensure_diskfree_option} ' \
+                    '-o dbglevel="info" -f > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
         else:
             return 'exit 1'
 
