@@ -436,8 +436,8 @@ class GCPMounter(StorageMounter):
     def build_mount_command(self, params):
         if not params:
             return ""
-        return 'gcsfuse -o {permissions} --key-file {credentials} --temp-dir {tmp_dir} ' \
-               '--dir-mode {mask} --file-mode {mask} --implicit-dirs {path} {mount}'.format(**params)
+        return 'nohup gcsfuse --foreground -o {permissions} --key-file {credentials} --temp-dir {tmp_dir} ' \
+               '--dir-mode {mask} --file-mode {mask} --implicit-dirs {path} {mount} > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
 
     def _get_credentials(self, storage):
         account_region = os.getenv('CP_ACCOUNT_REGION_{}'.format(storage.region_id))
