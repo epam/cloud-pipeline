@@ -99,13 +99,7 @@ echo "1 1 : _" > /etc/mfs/mfsgoals.cfg
 # Start LFS Master
 ######################################################
 
-if [[ "$IS_RPM_BASED" = 0 ]]; then
-    nohup mfsmaster -d start > /var/log/mfsmaster.out 2>&1 &
-else
-    sed -i "s/fals/tru/g" /etc/default/lizardfs-master
-    service lizardfs-master start
-fi
-
+nohup mfsmaster -d start > /var/log/mfsmaster.out 2>&1 &
 
 if [ $? -ne 0 ]
 then
