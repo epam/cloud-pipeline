@@ -37,7 +37,7 @@ IS_RPM_BASED=$?
 CP_CAP_MODULES_TYPE="${CP_CAP_MODULES_TYPE:-tcl}"
 pipe_log_info "--> Installing Environment Modules: $CP_CAP_MODULES_TYPE" "$MODULES_INSTALL_TASK"
 
-mkdir -p/tmp/modules-tmp
+mkdir -p /tmp/modules-tmp
 cd /tmp/modules-tmp
 
 # Grab the sources of modules
@@ -103,11 +103,18 @@ if [ "$CP_CAP_MODULES_TYPE" == "tcl" ]; then
 elif [ "$CP_CAP_MODULES_TYPE" == "lmod" ]; then
     if [[ "$IS_RPM_BASED" = 0 ]]; then
         yum install -y -q lua lua-bitop lua-devel lua-filesystem \
-        lua-json lua-lpeg lua-posix lua-term tcl4 tcl-devel less
+        lua-json lua-lpeg lua-posix lua-term tcl4 tcl-devel less gcc
         _MODULES_INSTALL_RESULT=$?
     else
-        apt-get install liblua5.1-0 liblua5.1-0-dev liblua5.1-filesystem-dev liblua5.1-filesystem0 \
-                        liblua5.1-posix-dev liblua5.1-posix0 lua5.1 tcl tcl-dev libtcl less -y -qq
+        apt install make tcl-dev rsync lua5.2 lua-bitop lua-filesystem lua-json lua-lpeg lua-posix lua-term less gcc  -y
+        wget -q https://sourceforge.net/projects/lmod/files/lua-5.1.4.9.tar.bz2 -O lua-5.1.4.9.tar.bz2 && \
+        tar xf lua-5.1.4.9.tar.bz2 && rm -f lua-5.1.4.9.tar.bz2 && \
+        cd lua-5.1.4.9 && \
+        ./configure --prefix=/opt/apps/lua/5.1.4.9 && \
+        make; make install && \
+        ln -s /opt/apps/lua/5.1.4.9 /opt/apps/lua/lua && \
+        ln -s /opt/apps/lua/lua/bin/lua /usr/local/bin && \
+        cd ..
         _MODULES_INSTALL_RESULT=$?
     fi
 
@@ -119,7 +126,7 @@ elif [ "$CP_CAP_MODULES_TYPE" == "lmod" ]; then
     cd Lmod*
 
     # Install modules
-    MODULES_INSTALL_DIR="${CP_CAP_MODULES_INSTALL_DIR:-/usr/local/}"
+    MODULES_INSTALL_DIR="${CP_CAP_MODULES_INSTALL_DIR:-/usr/local}"
 
     MODULES_BUILD_LOG=/var/log/modules_build.log
     ./configure --prefix=$MODULES_INSTALL_DIR > $MODULES_BUILD_LOG 2>&1 && \
@@ -133,8 +140,8 @@ elif [ "$CP_CAP_MODULES_TYPE" == "lmod" ]; then
     # Configure the modules setup
     ln -s $MODULES_INSTALL_DIR/lmod/lmod/init/profile /etc/profile.d/lmod.sh
     MODULES_FILES_DIR="${CP_CAP_MODULES_FILES_DIR:-$MODULES_INSTALL_DIR/lmod/lmod/modulesfiles/Core}"
-    export MODULEPATH="$MODULEPATH:$MODULES_FILES_DIR"
-    echo "export MODULEPATH="$MODULEPATH:$MODULES_FILES_DIR"" >> /etc/cp_env.sh
+    echo "export MODULES_FILES_DIR="$MODULES_FILES_DIR"" >> /etc/cp_env.sh
+    echo "export MODULEPATH="\$MODULEPATH:\$MODULES_FILES_DIR"" >> /etc/cp_env.sh
 fi
 
 # Cleanup
