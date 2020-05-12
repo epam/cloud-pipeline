@@ -102,6 +102,7 @@ public class SystemPreferences {
     private static final String SEARCH_GROUP = "Search";
     private static final String GRID_ENGINE_AUTOSCALING_GROUP = "Grid engine autoscaling";
     private static final String GCP_GROUP = "GCP";
+    private static final String BILLING_GROUP = "Billing Reports";
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc";
 
@@ -611,6 +612,10 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, GCPResourceMapping>> GCP_SKU_MAPPING = new ObjectPreference<>(
             "gcp.sku.mapping", null, new TypeReference<Map<String, GCPResourceMapping>>() {}, GCP_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, GCPResourceMapping>>() {}));
+
+    // Billing Reports
+    public static final StringPreference BILLING_USER_NAME_ATTRIBUTE = new StringPreference(
+            "billing.reports.user.name.attribute", null, BILLING_GROUP, pass);
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 
