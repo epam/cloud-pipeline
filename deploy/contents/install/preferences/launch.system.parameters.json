@@ -64,6 +64,13 @@
         "passToWorkers": true
     },
     {
+        "name": "CP_S3_FUSE_ENSURE_DISKFREE",
+        "type": "int",
+        "description": "Applied to s3fs FUSE. Sets MB to ensure disk free space. This option means the threshold of free space size on disk which is used for the cache file by s3fs. s3fs makes file for downloading, uploading and caching files. If the disk free space is smaller than this value, s3fs do not use disk space as possible in exchange for the performance.",
+        "defaultValue": "",
+        "passToWorkers": true
+    },
+    {
         "name": "CP_S3_FUSE_TYPE_CACHE",
         "type": "string",
         "description": "Applied to goofys FUSE. How long to cache name -> file/dir mappings in directory. Set this to 0 if you are experiencing issues with files consistency",
