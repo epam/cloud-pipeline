@@ -193,7 +193,6 @@ class EditRoleDialog extends React.Component {
   removeRole = (userId) => {
     const {users} = this.state;
     const [user] = users.filter(u => u.id === userId);
-    console.log('remove role', userId, user, users);
     if (user) {
       const index = users.indexOf(user);
       if (index >= 0) {
