@@ -48,6 +48,8 @@ RUN apt-get update -y && \
 RUN curl https://bootstrap.pypa.io/get-pip.py | python - && \
     pip install --upgrade pip flask
 
+RUN pip install -I setuptools
+
 ARG GUI_ENV="xfce4 xfce4-xkb-plugin"
 RUN apt-get update -y && \
     apt-get install -y ${GUI_ENV}              

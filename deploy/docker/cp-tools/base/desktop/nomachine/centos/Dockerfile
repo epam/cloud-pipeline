@@ -43,6 +43,8 @@ RUN yum -y install epel-release && \
 RUN curl https://bootstrap.pypa.io/get-pip.py | python - && \
     pip install --upgrade pip flask
 
+RUN pip install -I setuptools
+
 # Install git from sources, as it conflicts with nvidia/cuda docker base image
 ADD centos/scripts/install_git.sh /opt/install_git.sh
 RUN chmod +x /opt/install_git.sh && \
