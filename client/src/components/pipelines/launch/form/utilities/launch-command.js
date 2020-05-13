@@ -42,6 +42,13 @@ function wrapCommand (command, template) {
   return template.replace(/\{LAUNCH_COMMAND\}/ig, command);
 }
 
+function wrapNewLines (command) {
+  if (!command) {
+    return '';
+  }
+  return command.replace(/\\\\n/g, '\n');
+}
+
 function generateRunMethodUrl () {
   const el = document.createElement('div');
   el.innerHTML = '<a href="' + (SERVER + API_PATH) + '/run"></a>';
@@ -157,7 +164,11 @@ class LaunchCommand extends React.Component {
             <code
               id="launch-command"
               dangerouslySetInnerHTML={{
-                __html: processBashScript(wrapCommand(code, this.launchCommandTemplate))
+                __html: processBashScript(
+                  wrapNewLines(
+                    wrapCommand(code, this.launchCommandTemplate)
+                  )
+                )
               }} />
           </pre>
         </Row>
