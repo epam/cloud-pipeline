@@ -58,7 +58,7 @@ public class NotificationAspect {
         pointcut =
             "execution(* com.epam.pipeline.manager.pipeline.PipelineRunManager.runPipeline(..)) || " +
             "execution(* com.epam.pipeline.manager.pipeline.PipelineRunManager.runCmd(..)) ||" +
-            "execution(* com.epam.pipeline.manager.pipeline.PipelineRunManager.updatePipelineStatus(" +
+            "execution(* com.epam.pipeline.manager.pipeline.PipelineRunCRUDService.updateRunStatus(" +
             "com.epam.pipeline.entity.pipeline.PipelineRun)) || " +
             "execution(* com.epam.pipeline.manager.pipeline.PipelineRunManager.updatePipelineStatusIfNotFinal(..)) ||" +
             "execution(* com.epam.pipeline.manager.pipeline.PipelineRunManager"
