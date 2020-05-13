@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.manager.datastorage.leakagepolicy.SensitiveStorageOperation;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -46,7 +47,7 @@ import java.util.Set;
 
 @Service
 @SuppressWarnings("unchecked")
-public final class StorageProviderManager {
+public class StorageProviderManager {
     @Autowired
     private PreferenceManager preferenceManager;
 
@@ -101,10 +102,10 @@ public final class StorageProviderManager {
         return getStorageProvider(dataStorage).getItems(dataStorage, path, showVersion, pageSize, marker);
     }
 
+    @SensitiveStorageOperation
     public DataStorageDownloadFileUrl generateDownloadURL(AbstractDataStorage dataStorage,
                                                           String path, String version,
                                                           ContentDisposition contentDisposition) {
-        assertStorageIsNotSensitive(dataStorage);
         return getStorageProvider(dataStorage).generateDownloadURL(dataStorage, path, version, contentDisposition);
     }
 
@@ -166,14 +167,14 @@ public final class StorageProviderManager {
         return getStorageProvider(dataStorage).deleteObjectTags(dataStorage, path, tags, version);
     }
 
+    @SensitiveStorageOperation
     public DataStorageItemContent getFile(AbstractDataStorage dataStorage, String path, String version) {
-        assertStorageIsNotSensitive(dataStorage);
         long maxDownloadSize = preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_MAX_DOWNLOAD_SIZE);
         return getStorageProvider(dataStorage).getFile(dataStorage, path, version, maxDownloadSize);
     }
 
+    @SensitiveStorageOperation
     public DataStorageStreamingContent getFileStream(AbstractDataStorage dataStorage, String path, String version) {
-        assertStorageIsNotSensitive(dataStorage);
         return getStorageProvider(dataStorage).getStream(dataStorage, path, version);
     }
 
@@ -184,13 +185,5 @@ public final class StorageProviderManager {
     public PathDescription getDataSize(final AbstractDataStorage dataStorage, final String path,
                                        final PathDescription pathDescription) {
         return getStorageProvider(dataStorage).getDataSize(dataStorage, path, pathDescription);
-    }
-
-    public void assertStorageIsNotSensitive(final AbstractDataStorage storage) {
-        if (storage.isSensitive()) {
-            throw new IllegalArgumentException(messageHelper
-                                                   .getMessage(MessageConstants.ERROR_SENSITIVE_DATASTORAGE_OPERATION,
-                                                               storage.getName(), storage.getType()));
-        }
     }
 }
