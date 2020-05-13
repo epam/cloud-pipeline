@@ -94,3 +94,4 @@ RUN wget -q "https://dl.google.com/linux/direct/google-chrome-stable_current_x86
 # Add Chrome desktop icon
 ADD create_chrome_launcher.sh /caps/create_chrome_launcher.sh
 RUN echo "bash /caps/create_chrome_launcher.sh" >> /caps.sh
+RUN cp /usr/NX/etc/server.cfg /usr/NX/etc/server.cfg.template
