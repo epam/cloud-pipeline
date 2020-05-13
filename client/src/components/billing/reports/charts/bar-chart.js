@@ -93,7 +93,7 @@ function BarChart (
     discountsFn
   );
   const [error] = Array.isArray(request)
-    ? request.filter(r => r.error)
+    ? request.filter(r => r.error).map(r => r.error)
     : [request.error];
   const filteredData = filterTopData(data, top, dataSample);
   const groups = filteredData.map(d => d.name);

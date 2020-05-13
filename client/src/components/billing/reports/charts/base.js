@@ -113,10 +113,10 @@ class ChartWrapper extends React.Component {
 
   generateImage = () => {
     if (this.chart) {
-      if (this._graphImageError) {
-        return Promise.reject(this._graphImageError);
-      } else if (this._graphImage) {
+      if (this._graphImage) {
         return Promise.resolve(this._graphImage);
+      } else if (this._graphImageError) {
+        return Promise.reject(this._graphImageError);
       }
     }
     return Promise.resolve(null);

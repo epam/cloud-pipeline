@@ -108,8 +108,8 @@ class ExportStore {
             hide();
           });
         })
-        .catch((error) => {
-          message.error(error.toString(), 5);
+        .catch((_) => {
+          message.error('Error generating image', 5);
           hide();
         });
     }, 250);

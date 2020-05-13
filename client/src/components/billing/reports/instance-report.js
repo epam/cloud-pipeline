@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {Table, Tooltip} from 'antd';
+import {Pagination, Table, Tooltip} from 'antd';
 import {
   BarChart,
   BillingTable,
@@ -124,6 +124,7 @@ function renderResourcesSubData (
       key: 'name',
       dataIndex: 'name',
       title: singleTitle,
+      className: styles.tableCell,
       render: (value, {fullName = null}) => {
         if (fullName) {
           return (
@@ -143,23 +144,27 @@ function renderResourcesSubData (
       key: 'owner',
       dataIndex: 'owner',
       title: 'Owner',
+      className: styles.tableCell,
       render: owner => (<DisplayUser userName={owner} />)
     },
     {
       key: 'usage',
       dataIndex: 'usage',
-      title: 'Usage (hours)'
+      title: 'Usage (hours)',
+      className: styles.tableCell
     },
     {
       key: 'runs',
       dataIndex: 'runsCount',
       title: 'Runs count',
+      className: styles.tableCell,
       render: value => value ? `${Math.round(value)}` : null
     },
     {
       key: 'cost',
       dataIndex: 'value',
       title: 'Cost',
+      className: styles.tableCell,
       render: value => value ? `$${Math.round(value * 100.0) / 100.0}` : null
     }
   ].filter(Boolean);
@@ -167,6 +172,10 @@ function renderResourcesSubData (
     ? discounts.applyGroupedDataDiscounts(tableDataRequest.value, discountsFn)
     : {};
   const heightCorrected = extra && extraHeight ? (height - extraHeight) / 2.0 : height / 2.0;
+  const dataSource = Object.values(tableData);
+  const paginationEnabled = tableDataRequest && tableDataRequest.loaded
+    ? tableDataRequest.totalPages > 1
+    : false;
   return (
     <div style={{width, height}}>
       {extra}
@@ -184,28 +193,49 @@ function renderResourcesSubData (
             : numberFormatter
         }
       />
-      <Table
-        className={styles.resourcesTable}
-        dataSource={
-          Object.values(tableData)
-        }
-        loading={tableDataRequest.pending}
-        rowKey={({name, value, usage}) => {
-          return `${name}_${value}_${usage}`;
+      <div
+        style={{
+          position: 'relative',
+          overflow: 'auto',
+          maxHeight: heightCorrected - (paginationEnabled ? 30 : 0),
+          padding: 5
         }}
-        columns={columns}
-        pagination={{
-          current: tableDataRequest.pageNum + 1,
-          pageSize: tableDataRequest.pageSize,
-          total: tableDataRequest.totalPages * tableDataRequest.pageSize,
-          onChange: async (page) => {
-            await tableDataRequest.fetchPage(page - 1);
-          }
-        }}
-        rowClassName={() => styles.resourcesTableRow}
-        size="small"
-        scroll={{y: heightCorrected - 100}}
-      />
+      >
+        <Table
+          className={styles.resourcesTable}
+          dataSource={dataSource}
+          loading={tableDataRequest.pending}
+          rowKey={({name, value, usage}) => {
+            return `${name}_${value}_${usage}`;
+          }}
+          columns={columns}
+          pagination={false}
+          rowClassName={() => styles.resourcesTableRow}
+          size="small"
+        />
+      </div>
+      {
+        paginationEnabled && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              height: 30
+            }}
+          >
+            <Pagination
+              current={tableDataRequest.pageNum + 1}
+              pageSize={tableDataRequest.pageSize}
+              total={tableDataRequest.totalPages * tableDataRequest.pageSize}
+              onChange={async (page) => {
+                await tableDataRequest.fetchPage(page - 1);
+              }}
+              size="small"
+            />
+          </div>
+        )
+      }
     </div>
   );
 }

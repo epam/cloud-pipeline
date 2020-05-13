@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {Radio, Table} from 'antd';
+import {Pagination, Radio, Table} from 'antd';
 import {
   BarChart,
   GroupedBarChart,
@@ -370,23 +370,50 @@ class BillingCentersTable extends React.Component {
     const rawData = loaded ? requests.map(r => r.value || {}) : {};
     const data = discounts.applyGroupedDataDiscounts(rawData, discountsFn);
     const tableData = loaded ? Object.values(data) : [];
+    const slicedData = tableData.slice((current - 1) * pageSize, current * pageSize);
+    const paginationEnabled = tableData.length > pageSize;
     return (
-      <Table
-        rowKey={(record) => `user-item_${record.name}`}
-        rowClassName={() => styles.usersTableRow}
-        dataSource={tableData.slice((current - 1) * pageSize, current * pageSize)}
-        columns={tableColumns}
-        loading={pending}
-        pagination={{
-          current,
-          pageSize,
-          total: tableData.length,
-          onChange: this.onChangePage
-        }}
-        onRowClick={record => onUserSelect({key: record.name})}
-        size="small"
-        scroll={{y: height - 100}}
-      />
+      <div>
+        <div
+          style={{
+            position: 'relative',
+            overflow: 'auto',
+            maxHeight: height - (paginationEnabled ? 30 : 0),
+            padding: 5
+          }}
+        >
+          <Table
+            rowKey={(record) => `user-item_${record.name}`}
+            rowClassName={() => styles.usersTableRow}
+            dataSource={slicedData}
+            columns={tableColumns}
+            loading={pending}
+            pagination={false}
+            onRowClick={record => onUserSelect({key: record.name})}
+            size="small"
+          />
+        </div>
+        {
+          paginationEnabled && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                height: 30
+              }}
+            >
+              <Pagination
+                current={current}
+                pageSize={pageSize}
+                total={tableData.length}
+                onChange={this.onChangePage}
+                size="small"
+              />
+            </div>
+          )
+        }
+      </div>
     );
   }
 }
@@ -451,30 +478,36 @@ function GroupReport ({
     key: 'user',
     dataIndex: 'name',
     title: 'User',
-    render: user => (<DisplayUser userName={user} />)
+    render: user => (<DisplayUser userName={user} />),
+    className: styles.tableCell
   }, {
     key: 'runs-duration',
     dataIndex: 'runsDuration',
     title: 'Runs duration (hours)',
-    render: toValue
+    render: toValue,
+    className: styles.tableCell
   }, {
     key: 'runs-count',
     dataIndex: 'runsCount',
-    title: 'Runs count'
+    title: 'Runs count',
+    className: styles.tableCell
   }, {
     key: 'storage-usage',
     dataIndex: 'storageUsage',
     title: 'Storages usage (Gb)',
-    render: toValue
+    render: toValue,
+    className: styles.tableCell
   }, {
     key: 'spendings',
     dataIndex: 'spendings',
     title: 'Spendings',
-    render: costTickFormatter
+    render: costTickFormatter,
+    className: styles.tableCell
   }, {
     key: 'billingCenter',
     title: 'Billing center',
-    render: () => billingCenterName
+    render: () => billingCenterName,
+    className: styles.tableCell
   }];
   const onResourcesSelect = navigation.wrapNavigation(
     navigation.resourcesNavigation,

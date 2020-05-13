@@ -23,9 +23,13 @@ const plugin = {
       const {onImageReady, onImageError} = configuration;
       const {canvas} = chart;
       const {width, height} = canvas;
+      if (width === 0 || height === 0) {
+        onImageReady(null);
+        return;
+      }
       const canvasElement = document.createElement('canvas');
-      canvasElement.width = width;
-      canvasElement.height = height;
+      canvasElement.width = width || 1;
+      canvasElement.height = height || 1;
       document.body.style.overflowY = 'hidden';
       document.body.appendChild(canvasElement);
       const ctx = canvasElement.getContext('2d');
@@ -39,8 +43,8 @@ const plugin = {
         document.body.style.overflowY = 'unset';
         onImageReady(data);
       };
-      image.onerror = function (...opts) {
-        onImageError && onImageError(...opts);
+      image.onerror = function () {
+        onImageError && onImageError('Error loading image');
         document.body.removeChild(canvasElement);
         document.body.style.overflowY = 'unset';
       };

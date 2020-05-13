@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {
+  Pagination,
   Table
 } from 'antd';
 import moment from 'moment-timezone';
@@ -139,25 +140,53 @@ function renderTable ({storages, discounts: discountsFn, height}) {
   const dataSource = Object.values(
     discounts.applyGroupedDataDiscounts(storages.value || {}, discountsFn)
   );
+  const paginationEnabled = storages && storages.loaded
+    ? storages.totalPages > 1
+    : false;
   return (
-    <Table
-      rowKey={({info, name}) => {
-        return info && info.id ? `storage_${info.id}` : `storage_${name}`;
-      }}
-      loading={storages.pending}
-      dataSource={dataSource}
-      columns={columns}
-      pagination={{
-        current: storages.pageNum + 1,
-        pageSize: storages.pageSize,
-        total: storages.totalPages * storages.pageSize,
-        onChange: async (page) => {
-          await storages.fetchPage(page - 1);
-        }
-      }}
-      size="small"
-      scroll={{y: height - 100}}
-    />
+    <div>
+      <div
+        style={{
+          position: 'relative',
+          overflow: 'auto',
+          maxHeight: height - (paginationEnabled ? 30 : 0),
+          padding: 5
+        }}
+      >
+        <Table
+          rowKey={({info, name}) => {
+            return info && info.id ? `storage_${info.id}` : `storage_${name}`;
+          }}
+          loading={storages.pending}
+          dataSource={dataSource}
+          columns={columns}
+          pagination={false}
+          size="small"
+        />
+      </div>
+      {
+        paginationEnabled && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              height: 30
+            }}
+          >
+            <Pagination
+              current={storages.pageNum + 1}
+              pageSize={storages.pageSize}
+              total={storages.totalPages * storages.pageSize}
+              onChange={async (page) => {
+                await storages.fetchPage(page - 1);
+              }}
+              size="small"
+            />
+          </div>
+        )
+      }
+    </div>
   );
 }
 
