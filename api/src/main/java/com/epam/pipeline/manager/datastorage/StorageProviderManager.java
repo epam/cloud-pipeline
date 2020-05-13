@@ -104,6 +104,7 @@ public final class StorageProviderManager {
     public DataStorageDownloadFileUrl generateDownloadURL(AbstractDataStorage dataStorage,
                                                           String path, String version,
                                                           ContentDisposition contentDisposition) {
+        assertStorageIsNotSensitive(dataStorage);
         return getStorageProvider(dataStorage).generateDownloadURL(dataStorage, path, version, contentDisposition);
     }
 
@@ -166,11 +167,13 @@ public final class StorageProviderManager {
     }
 
     public DataStorageItemContent getFile(AbstractDataStorage dataStorage, String path, String version) {
+        assertStorageIsNotSensitive(dataStorage);
         long maxDownloadSize = preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_MAX_DOWNLOAD_SIZE);
         return getStorageProvider(dataStorage).getFile(dataStorage, path, version, maxDownloadSize);
     }
 
     public DataStorageStreamingContent getFileStream(AbstractDataStorage dataStorage, String path, String version) {
+        assertStorageIsNotSensitive(dataStorage);
         return getStorageProvider(dataStorage).getStream(dataStorage, path, version);
     }
 
@@ -181,5 +184,13 @@ public final class StorageProviderManager {
     public PathDescription getDataSize(final AbstractDataStorage dataStorage, final String path,
                                        final PathDescription pathDescription) {
         return getStorageProvider(dataStorage).getDataSize(dataStorage, path, pathDescription);
+    }
+
+    public void assertStorageIsNotSensitive(final AbstractDataStorage storage) {
+        if (storage.isSensitive()) {
+            throw new IllegalArgumentException(messageHelper
+                                                   .getMessage(MessageConstants.ERROR_SENSITIVE_DATASTORAGE_OPERATION,
+                                                               storage.getName(), storage.getType()));
+        }
     }
 }
