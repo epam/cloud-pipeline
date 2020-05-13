@@ -56,7 +56,7 @@ function clean_outdated {
                 echo "Unable to unmount ${item}, skipping"
                 continue
             fi
-            
+
             echo "$item is unmounted, deleting directory"
             timeout -s 9 $_MOUNT_TIMEOUT_SEC \rm -r "$item"
             if [ $? -ne 0 ]; then
@@ -110,7 +110,7 @@ if ! command -v "jq" >/dev/null 2>&1 ; then
 fi
 
 fs_mounts="$(curl -sfk -H "Authorization: Bearer ${_API_TOKEN}" ${_API_URL%/}/cloud/region | \
-    jq -r '.payload[] | .fileShareMounts | select(.!=null)[] | "\(.id)|\(.regionId)|\(.mountRoot)|\(.mountType)"')"
+    jq -r '.payload[] | .fileShareMounts | select(.!=null)[] | "\(.id)|\(.regionId)|\(.mountRoot)|\(.mountType)|\(.mountOptions)"')"
 
 if [ $? -ne 0 ]; then
     echo "[ERROR] Cannot get list of the file shares, exiting"
@@ -123,34 +123,58 @@ mkdir -p "$_MOUNT_ROOT"
 while IFS='|' read -r mount_id region_id mount_root mount_type mount_options; do
     echo
     echo "[INFO] Staring processing: $mount_root (id: ${mount_id}, region: ${region_id} type: ${mount_type}, options: ${mount_options})"
-    if [ "$mount_type" == "NFS" ]; then
-        mount_root_srv="$(echo "$mount_root" | cut -f1 -d":")"
+    if [ "$mount_type" == "NFS" ] || [ "$mount_type" == "SMB" ]; then
+
+        # In a SMB paths we have the next structure : {mount_root_srv}/{mount_root_path} without any ':',
+        # that is why we need to do such conditional processing
+        mount_root_srv="$( [ ${mount_type} == "NFS" ] && echo "$mount_root" | cut -f1 -d":" || echo "$mount_root" | cut -f1 -d"/")"
         mount_root_path="/"
         if [[ "$mount_root" == *":"* ]]; then
-            mount_root_path="$(echo "$mount_root" | cut -f2 -d":")"
+            mount_root_path="$( [ ${mount_type} == "NFS" ] && echo "$mount_root" | cut -f2 -d"/" || echo "$mount_root" | cut -f2 -d"/")"
         fi
-        
+
         mount_root_srv_dir="${_MOUNT_ROOT}/${mount_root_srv}/${mount_root_path}"
         if mountpoint -q "$mount_root_srv_dir"; then
             echo "[DONE] $mount_root_srv_dir is already mounted, skipping"
             mounted_dirs+=($(remove_trailing_slashes "$mount_root_srv_dir"))
             continue
         fi
-        
+
         mount_options_opt=
         if [ "$mount_options" ] && [ "$mount_options" != "null" ]; then
             mount_options_opt="-o $mount_options"
         fi
+        mount_protocol="nfs"
+        if [ "$mount_type" == "SMB" ]; then
+            mount_protocol="cifs"
+            region_cred_file="/root/.cloud/regioncreds/${region_id}"
+            if [ ! -f ${region_cred_file} ]; then
+                echo "[ERROR] Cred file for Azure region ${region_id}, not found! CIFS storage ${mount_root_srv}:${mount_root_path} won't be mounted."
+                continue
+            fi
+            username=$(cat ${region_cred_file} | jq .storage_account)
+            password=$(cat ${region_cred_file} | jq .storage_key)
+            if [ "$mount_options_opt" ] && [ ! -z "$mount_options_opt" ]; then
+              mount_options_opt="${mount_options_opt},username=${username:1:-1},password=${password:1:-1}"
+            else
+              mount_options_opt="-o username=${username:1:-1},password=${password:1:-1}"
+            fi
+        fi
+
+        remote_nfs_path="${mount_root_srv}:${mount_root_path}"
+        if [ "$mount_type" == "SMB" ]; then
+            remote_nfs_path="//${mount_root_srv}${mount_root_path}"
+        fi
 
         mkdir -p "$mount_root_srv_dir"
-        timeout -s 9 $_MOUNT_TIMEOUT_SEC mount -t nfs "${mount_root_srv}:${mount_root_path}" "$mount_root_srv_dir" $mount_options_opt
+        echo "mount -t ${mount_protocol} $remote_nfs_path $mount_root_srv_dir $mount_options_opt"
+        timeout -s 9 $_MOUNT_TIMEOUT_SEC mount -t ${mount_protocol} "$remote_nfs_path" "$mount_root_srv_dir" $mount_options_opt
         if [ $? -ne 0 ]; then
             echo "[ERROR] Unable to mount $mount_root to $mount_root_srv_dir (id: ${mount_id}, type: ${mount_type}), skipping"
             continue
         fi
         echo "[DONE] $mount_root is mounted to $mount_root_srv_dir (id: ${mount_id}, type: ${mount_type})"
         mounted_dirs+=($(remove_trailing_slashes "$mount_root_srv_dir"))
-    # FIXME: Add SMB type handling
     else
         echo "[ERROR] Unsupported mount type $mount_type is specified. $mount_root (id: $mount_id), skipping"
         continue

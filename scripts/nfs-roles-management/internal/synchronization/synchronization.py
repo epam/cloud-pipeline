@@ -15,6 +15,8 @@
 from ..config import Config
 from ..api.storages_api import Storages
 from ..model.storage_model import StorageModel
+from ..model.share_mount_model import ShareMountModel
+
 import sys
 import traceback
 import os
@@ -43,14 +45,18 @@ class Synchronization(object):
             user_name = test_user.lower()
             return user_ids is None or len(user_ids) == 0 or len([u for u in user_ids if u.lower() == user_name]) > 0
 
-        def validate_storage(test_storage):
+        def validate_storage(test_storage, share_mounts):
             if not test_storage.is_nfs():
                 return None
             server_name = None
             storage_path = None
             try:
                 if test_storage.path.lower().startswith('nfs://'):
-                    (server_name, storage_path) = test_storage.path[len('nfs://'):].split(':')
+                    if share_mounts[test_storage.share_mount_id].mount_type == "SMB":
+                        search = re.search('([^\/]+)\/(.+)' ,test_storage.path[len('nfs://'):])
+                        (server_name, storage_path) = search.group(1), search.group(2)
+                    else:
+                        (server_name, storage_path) = test_storage.path[len('nfs://'):].split(':')
             except ValueError:
                 pass
             except AttributeError:
@@ -71,8 +77,9 @@ class Synchronization(object):
             print 'Fetching NFS storages...'
             self.__storages__ = []
             self.__users__ = []
+            share_mounts = self.list_share_mounts()
             for storage in self.list_storages():
-                storage.mount_source = validate_storage(storage)
+                storage.mount_source = validate_storage(storage, share_mounts)
                 if storage.mount_source is not None:
                     self.__storages__.append(storage)
                     if len(storage.users) > 0:
@@ -240,3 +247,11 @@ class Synchronization(object):
         except:
             print 'Error: ', traceback.format_exc()
         return result
+
+    def list_share_mounts(self):
+            try:
+                return self.__storages_api__.list_share_mounts()
+            except RuntimeError as error:
+                print error.message
+            except:
+                print 'Error: ', traceback.format_exc()

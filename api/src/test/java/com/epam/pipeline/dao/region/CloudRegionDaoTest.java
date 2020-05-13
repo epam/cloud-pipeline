@@ -24,9 +24,11 @@ import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.GCPCustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.region.CloudRegionAspect;
 import org.apache.commons.lang.math.RandomUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,6 +72,9 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
 
     @Autowired
     private CloudRegionDao cloudRegionDao;
+
+    @MockBean
+    CloudRegionAspect cloudRegionAspect;
 
     @Test
     public void loadAllShouldReturnEmptyListIfThereAreNoRegions() {

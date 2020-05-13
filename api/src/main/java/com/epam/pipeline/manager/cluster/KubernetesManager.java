@@ -154,6 +154,38 @@ public class KubernetesManager {
         return dockerRegistrySecret.getMetadata().getName();
     }
 
+    public String refreshSecret(final String secretName, final Map<String, String> data) {
+        Secret secret;
+        try (KubernetesClient client = getKubernetesClient()) {
+            secret = client.secrets()
+                    .inNamespace(kubeNamespace)
+                    .withName(secretName)
+                    .edit()
+                    .withData(data)
+                    .done();
+            secret.getMetadata().getName();
+        }
+        Assert.notNull(secret, "Failed to refresh a secret");
+        return secret.getMetadata().getName();
+    }
+
+    public String updateSecret(final String secretName, final Map<String, String> toAdd,
+                               final Map<String, String> toRemove) {
+        Secret secret;
+        try (KubernetesClient client = getKubernetesClient()) {
+            secret = client.secrets()
+                    .inNamespace(kubeNamespace)
+                    .withName(secretName)
+                    .edit()
+                    .addToData(toAdd)
+                    .removeFromData(toRemove)
+                    .done();
+            secret.getMetadata().getName();
+        }
+        Assert.notNull(secret, "Failed to update a secret");
+        return secret.getMetadata().getName();
+    }
+
     public Set<String> listAllSecrets() {
         try (KubernetesClient client = getKubernetesClient()) {
             final SecretList list = client.secrets().list();
@@ -165,6 +197,15 @@ public class KubernetesManager {
                     .map(secret -> secret.getMetadata().getName())
                     .collect(Collectors.toSet());
         }
+    }
+
+    public boolean doesSecretExist(final String name) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return Objects.nonNull(client.secrets().inNamespace(kubeNamespace).withName(name).get());
+        } catch (KubernetesClientException e) {
+            LOGGER.error(e.getMessage(), e);
+        }
+        return false;
     }
 
     public void deleteSecret(String secretName) {
@@ -325,7 +366,7 @@ public class KubernetesManager {
             Thread.sleep(NODE_READY_TIMEOUT);
             if (attempts <= 0) {
                 throw new IllegalStateException(String.format(
-                        "Node %s doesn't match the ready status over than %d times.", nodeName, ATTEMPTS_STATUS_NODE));
+                        "Node %s doesn't match the ready status over than %d times.", nodeName, attempts));
             }
         }
         LOGGER.debug("Labeling node with run id {}", runId);
