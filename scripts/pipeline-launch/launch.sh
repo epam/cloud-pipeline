@@ -456,7 +456,7 @@ function initialise_wrappers {
 
 function list_storage_mounts() {
     local _MOUNT_ROOT="$1"
-    echo $(df -T | awk '$2 == "fuse"' | awk '{ print $7 }' | grep "^$_MOUNT_ROOT")
+    echo $(df -T | awk 'index($2, "fuse")' | awk '{ print $7 }' | grep "^$_MOUNT_ROOT")
 }
 
 ######################################################
