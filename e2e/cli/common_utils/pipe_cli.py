@@ -95,11 +95,13 @@ def create_data_storage(bucket_name, path=None, versioning=False, token=None, ex
     get_command_output(command, expected_status=expected_status, token=token)
 
 
-def pipe_storage_restore(path, version=None, expected_status=None, token=None):
+def pipe_storage_restore(path, version=None, expected_status=None, token=None, recursive=False):
     command = ['pipe', 'storage', 'restore', path]
     if version:
         command.append('-v')
         command.append(version)
+    if recursive:
+        command.append('-r')
     return get_command_output(command, expected_status=expected_status, token=token)
 
 
