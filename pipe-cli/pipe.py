@@ -1316,9 +1316,12 @@ def split_tool_path(tool_path, registry, group, tool, version, strict=False):
 
 @cli.command(name='token')
 @click.argument('user-id', required=True)
-@click.option('-d', '--duration', required=False, help='Generates token according to specified duration [DAYS].')
+@click.option('-d', '--duration', type=int, required=False, help='The number of days this token will be valid.')
 @Config.validate_access_token
 def token(user_id, duration):
+    """
+    Prints a JWT token for specified user
+    """
     UserTokenOperations().print_user_token(user_id, duration)
 
 
