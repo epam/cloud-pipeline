@@ -102,7 +102,7 @@ public class ClusterApiService {
         return nodesManager.getMasterNodes();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(#name, 'WRITE')")
     public List<NodeDisk> registerNodeDisks(final String name, final List<DiskRegistrationRequest> requests) {
         return nodeDiskManager.register(name, requests);
     }
