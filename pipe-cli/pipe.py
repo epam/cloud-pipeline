@@ -754,7 +754,7 @@ def storage():
 @click.option('-r', '--region_id', default='default', help='Cloud Region ID where the datastorage shall be created',
               prompt='Cloud Region ID where the datastorage shall be created')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False,
-              help=USER_OPTION_DESCRIPTION, prompt=USER_OPTION_DESCRIPTION)
+              help=USER_OPTION_DESCRIPTION, prompt=USER_OPTION_DESCRIPTION, default='')
 @Config.validate_access_token
 def create(name, description, short_term_storage, long_term_storage, versioning, backup_duration, type,
            parent_folder, on_cloud, path, region_id):
