@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.dao.cluster.ClusterDao;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.MasterNode;
+import com.epam.pipeline.entity.cluster.DiskRegistrationRequest;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
 import com.epam.pipeline.entity.cluster.PodInstance;
@@ -93,6 +94,9 @@ public class NodesManager {
 
     @Autowired
     private KubernetesManager kubernetesManager;
+    
+    @Autowired
+    private NodeDiskManager nodeDiskManager;
 
     @Value("${kube.protected.node.labels:}")
     private String protectedNodesString;
@@ -311,10 +315,14 @@ public class NodesManager {
      */
     public void attachDisk(final PipelineRun run, final DiskAttachRequest request) {
         final Optional<RunInstance> instance = Optional.ofNullable(run.getInstance());
+        final String nodeId = instance.map(RunInstance::getNodeId)
+                .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
+                        MessageConstants.ERROR_RUN_DISK_ATTACHING_MISSING_NODE_ID)));
         final AbstractCloudRegion region = instance.map(RunInstance::getCloudRegionId)
                 .map(regionManager::load)
                 .orElseGet(regionManager::loadDefaultRegion);
         cloudFacade.attachDisk(region.getId(), run.getId(), request);
+        nodeDiskManager.register(nodeId, DiskRegistrationRequest.from(request));
     }
 
     private boolean isNodeProtected(NodeInstance nodeInstance) {
