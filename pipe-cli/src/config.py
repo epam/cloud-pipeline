@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -58,6 +58,8 @@ class ProxyInvalidConfig(Exception):
 
 class Config(object):
     """Provides a wrapper for a pipe command configuration"""
+
+    __USER_TOKEN__ = None
 
     def __init__(self, raise_config_not_found_exception=True):
         self.initialized = False
@@ -231,9 +233,10 @@ class Config(object):
         return cls(raise_config_not_found_exception)
 
     def get_current_user(self):
-        if not self.access_key:
+        token = self.get_token()
+        if not token:
             raise RuntimeError('Access token is not specified. Cannot get user info.')
-        user_info = jwt.decode(self.access_key, verify=False)
+        user_info = jwt.decode(token, verify=False)
         if 'sub' in user_info:
             return user_info['sub']
         raise RuntimeError('User information is not specified to access token is invalid.')
@@ -242,3 +245,8 @@ class Config(object):
         if self.tz == 'utc':
             return pytz.utc
         return tzlocal.get_localzone()
+
+    def get_token(self):
+        if self.__USER_TOKEN__:
+            return self.__USER_TOKEN__
+        return self.access_key
