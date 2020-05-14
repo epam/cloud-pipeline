@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.datastorage ADD sensitive boolean DEFAULT false;

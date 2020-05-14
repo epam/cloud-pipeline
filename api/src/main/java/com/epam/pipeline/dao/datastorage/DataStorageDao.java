@@ -280,7 +280,9 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         FILE_SHARE_MOUNT_ID,
 
         // cloud specific fields
-        REGION_ID;
+        REGION_ID,
+
+        SENSITIVE;
 
         static MapSqlParameterSource getParameters(AbstractDataStorage dataStorage) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -298,6 +300,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             params.addValue(SHARED.name(), dataStorage.isShared());
             params.addValue(MOUNT_OPTIONS.name(), dataStorage.getMountOptions());
             params.addValue(FILE_SHARE_MOUNT_ID.name(), dataStorage.getFileShareMountId());
+            params.addValue(SENSITIVE.name(), dataStorage.isSensitive());
 
             if (dataStorage instanceof S3bucketDataStorage) {
                 S3bucketDataStorage bucket = ((S3bucketDataStorage) dataStorage);
@@ -395,6 +398,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             }
             StoragePolicy policy = getStoragePolicy(rs);
             dataStorage.setStoragePolicy(policy);
+            dataStorage.setSensitive(rs.getBoolean(SENSITIVE.name()));
             return dataStorage;
         }
 
