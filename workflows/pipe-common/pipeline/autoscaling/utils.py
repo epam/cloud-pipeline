@@ -374,3 +374,7 @@ def get_region_id(cloud_region, provider, api):
         if region.provider == provider and region.region_id == cloud_region:
             return region.id
     return None
+
+def register_node_disks(node_id, disks):
+    api = PipelineAPI(api_url, None)
+    api.register_node_disks(node_id, disks)

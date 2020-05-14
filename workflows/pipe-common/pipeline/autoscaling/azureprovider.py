@@ -309,6 +309,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         }
 
         self.__create_node_resource(self.compute_client.virtual_machines, instance_name, vm_parameters)
+        self.__register_node_disks(instance_name, storage_profile, image.storage_profile)
 
         private_ip = self.network_client.network_interfaces.get(
             self.resource_group_name, instance_name + '-nic').ip_configurations[0].private_ip_address
@@ -326,6 +327,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
 
         service = self.compute_client.virtual_machine_scale_sets
 
+        storage_profile = self.__get_storage_profile(disk, image, instance_type, swap_size=swap_size)
         vmss_parameters = {
             "location": self.zone,
             "sku": {
@@ -342,7 +344,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                     'priority': 'Low',
                     'evictionPolicy': 'delete',
                     'os_profile': self.__get_os_profile(scale_set_name, ssh_pub_key, user, user_data_script, 'computer_name_prefix'),
-                    'storage_profile': self.__get_storage_profile(disk, image, instance_type, swap_size=swap_size),
+                    'storage_profile': storage_profile,
                     "network_profile": {
                         "networkInterfaceConfigurations": [
                             {
@@ -378,7 +380,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         }
 
         self.__create_node_resource(service, scale_set_name, vmss_parameters)
-
+        self.__register_node_disks(scale_set_name, storage_profile, image.storage_profile)
         return self.__get_instance_name_and_private_ip_from_vmss(scale_set_name)
 
     def __create_node_resource(self, service, instance_name, node_parameters):
@@ -397,6 +399,14 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                 sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
             else:
                 raise client_error
+
+    def __register_node_disks(self, node_id, data_storage_profile, os_storage_profile):
+        disks = []
+        for data_disk in data_storage_profile.get('data_disks', []) or data_storage_profile.get('dataDisks', []):
+            disks.append({'size': int(data_disk.get('disk_size_gb', 0) or data_disk.get('diskSizeGB', 0) or 0)})
+        for os_disk in os_storage_profile.get('os_disk', []) or os_storage_profile.get('osDisk', []):
+            disks.append({'size': int(os_disk.get('disk_size_gb', 0) or os_disk.get('diskSizeGB', 0) or 0)})
+        utils.register_node_disks(node_id, disks)
 
     def __get_os_profile(self, instance_name, ssh_pub_key, user, user_data_script, computer_name_parameter):
         profile = {
