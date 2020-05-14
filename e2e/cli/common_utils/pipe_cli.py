@@ -84,7 +84,7 @@ def create_data_storage(bucket_name, path=None, versioning=False, token=None, ex
     path = path if path else bucket_name
     command = ['pipe', 'storage', 'create', '--name', bucket_name, '-c', '--path', path,
                "-d", "The test bucket for integration testing", "-sts", sts, "-lts", lts, "-t", provider,
-               "-b", backup_duration]
+               "-b", backup_duration,  '-u', '']
     if folder:
         command.extend(["-f", str(folder)])
     else:
