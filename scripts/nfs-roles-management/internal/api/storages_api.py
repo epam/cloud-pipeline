@@ -39,9 +39,11 @@ class Storages(API):
     def list_share_mounts(self):
             response_data = self.call('cloud/region', None)
             share_mounts = {}
-            total_count = 0
             if 'payload' in response_data:
                 for region in response_data['payload']:
+                    if 'fileShareMounts' not in region:
+                        continue
+
                     for share_mount_json in region['fileShareMounts']:
                         share_mount = ShareMountModel.load(share_mount_json)
                         if share_mount is not None:
