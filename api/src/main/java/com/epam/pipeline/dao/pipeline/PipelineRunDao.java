@@ -111,13 +111,12 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String updatePodStatusQuery;
     private String loadEnvVarsQuery;
     private String updateLastNotificationQuery;
-
     private String updateProlongedAtTimeAndLastIdleNotificationTimeQuery;
-
     private String updateRunQuery;
     private String loadRunByPrettyUrlQuery;
     private String updateTagsQuery;
     private String loadAllRunsPossiblyActiveInPeriodQuery;
+    private String loadAllRunsByStatusQuery;
 
     // We put Propagation.REQUIRED here because this method can be called from non-transaction context
     // (see PipelineRunManager, it performs internal call for launchPipeline)
@@ -414,6 +413,16 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void deleteRunSids(Long runId) {
         getJdbcTemplate().update(deleteRunSidsByRunIdQuery, runId);
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public List<PipelineRun> loadRunsByStatuses(final List<TaskStatus> statuses) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("list", statuses.stream()
+                .map(TaskStatus::getId)
+                .collect(Collectors.toList()));
+        return ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
+                .query(loadAllRunsByStatusQuery, params, PipelineRunParameters.getRowMapper()));
     }
 
     private MapSqlParameterSource getPagingParameters(PagingRunFilterVO filter) {
@@ -1136,5 +1145,10 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadAllRunsPossiblyActiveInPeriodQuery(final String loadAllRunsPossiblyActiveInPeriodQuery) {
         this.loadAllRunsPossiblyActiveInPeriodQuery = loadAllRunsPossiblyActiveInPeriodQuery;
+    }
+
+    @Required
+    public void setLoadAllRunsByStatusQuery(final String loadAllRunsByStatusQuery) {
+        this.loadAllRunsByStatusQuery = loadAllRunsByStatusQuery;
     }
 }

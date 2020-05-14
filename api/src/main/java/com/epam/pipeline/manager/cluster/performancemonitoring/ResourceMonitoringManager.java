@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cluster.performancemonitoring;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -31,9 +32,11 @@ import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
@@ -124,6 +127,18 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         List<PipelineRun> runs = pipelineRunManager.loadRunningPipelineRuns();
         processIdleRuns(runs);
         processOverloadedRuns(runs);
+        processPausingResumingRuns();
+    }
+
+    private void processPausingResumingRuns() {
+        final List<PipelineRun> runsWithStatuses = pipelineRunManager
+                .loadRunsByStatuses(Arrays.asList(TaskStatus.PAUSING, TaskStatus.RESUMING))
+                .stream()
+                .map(run -> pipelineRunManager.loadPipelineRunWithRestartedRuns(run.getId()))
+                .collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(runsWithStatuses)) {
+            notificationManager.notifyStuckInStatusRuns(runsWithStatuses);
+        }
     }
 
     private void processOverloadedRuns(final List<PipelineRun> runs) {
