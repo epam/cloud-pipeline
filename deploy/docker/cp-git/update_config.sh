@@ -49,6 +49,7 @@ CP_GITLAB_WINDOW_MEMORY="${CP_GITLAB_WINDOW_MEMORY:-"128m"}"
 CP_GITLAB_PACK_SIZE_LIMIT="${CP_GITLAB_PACK_SIZE_LIMIT:-"512m"}"
 CP_GITLAB_EXTERNAL_URL="${CP_GITLAB_EXTERNAL_URL:-https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}}"
 CP_GITLAB_SSO_ENDPOINT_ID="${CP_GITLAB_SSO_ENDPOINT_ID:-https://${CP_GITLAB_EXTERNAL_HOST}:${CP_GITLAB_EXTERNAL_PORT}}"
+CP_GITLAB_SAML_USER_ATTRIBUTES="${CP_GITLAB_SAML_USER_ATTRIBUTES:-email: ['email']}"
 
 echo
 echo "idp_sso_target_url: $CP_GITLAB_SSO_TARGET_URL"
@@ -97,7 +98,7 @@ gitlab_rails['omniauth_providers'] = [
       digest_method: "http://www.w3.org/2000/09/xmldsig#rsa-sha1",
       signature_method: "http://www.w3.org/2000/09/xmldsig#rsa-sha1"
     },
-    attribute_statements: { email: ['email'] }
+    attribute_statements: { $CP_GITLAB_SAML_USER_ATTRIBUTES }
   }
  }
 ]
