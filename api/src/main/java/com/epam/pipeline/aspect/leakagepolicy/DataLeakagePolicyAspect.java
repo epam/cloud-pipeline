@@ -19,6 +19,7 @@ package com.epam.pipeline.aspect.leakagepolicy;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.exception.StorageForbiddenOperationException;
 import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -48,9 +49,9 @@ public class DataLeakagePolicyAspect {
 
     public void assertStorageIsNotSensitive(final AbstractDataStorage storage) {
         if (storage.isSensitive()) {
-            throw new IllegalArgumentException(messageHelper
-                                                   .getMessage(MessageConstants.ERROR_SENSITIVE_DATASTORAGE_OPERATION,
-                                                               storage.getId(), storage.getType()));
+            throw new StorageForbiddenOperationException(messageHelper.getMessage(
+                MessageConstants.ERROR_SENSITIVE_DATASTORAGE_OPERATION,
+                storage.getId(), storage.getType()));
         }
     }
 }
