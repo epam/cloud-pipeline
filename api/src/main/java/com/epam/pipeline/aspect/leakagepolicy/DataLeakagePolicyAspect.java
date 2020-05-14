@@ -21,12 +21,10 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.exception.StorageForbiddenOperationException;
 import lombok.RequiredArgsConstructor;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
 import org.springframework.stereotype.Component;
-
-import java.util.stream.Stream;
 
 /**
  * This aspect controls 'data-leakage' policy
@@ -38,20 +36,14 @@ public class DataLeakagePolicyAspect {
 
     private final MessageHelper messageHelper;
 
-    @Around("execution(@com.epam.pipeline.manager.datastorage.leakagepolicy.SensitiveStorageOperation * *(..))")
-    public void proceedSensitiveStorageOperation(final ProceedingJoinPoint joinPoint) throws Throwable {
-        Stream.of(joinPoint.getArgs())
-            .filter(AbstractDataStorage.class::isInstance)
-            .map(AbstractDataStorage.class::cast)
-            .forEach(this::assertStorageIsNotSensitive);
-        joinPoint.proceed();
-    }
-
-    public void assertStorageIsNotSensitive(final AbstractDataStorage storage) {
-        if (storage.isSensitive()) {
+    @Before("@annotation(com.epam.pipeline.manager.datastorage.leakagepolicy.SensitiveStorageOperation) && " +
+            "args(dataStorage,..)")
+    public void proceedSensitiveStorageOperation(final JoinPoint joinPoint,
+                                                 final AbstractDataStorage dataStorage) {
+        if (dataStorage.isSensitive()) {
             throw new StorageForbiddenOperationException(messageHelper.getMessage(
-                MessageConstants.ERROR_SENSITIVE_DATASTORAGE_OPERATION,
-                storage.getId(), storage.getType()));
+                    MessageConstants.ERROR_SENSITIVE_DATASTORAGE_OPERATION,
+                    dataStorage.getName(), dataStorage.getType()));
         }
     }
 }
