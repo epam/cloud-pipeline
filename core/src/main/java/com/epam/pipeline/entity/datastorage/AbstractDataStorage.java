@@ -56,6 +56,11 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
      */
     private boolean shared;
 
+    /**
+     * Defines if 'data-leak' rules applied
+     */
+    private boolean sensitive;
+
     public AbstractDataStorage(final Long id, final String name,
             final String path, final DataStorageType type) {
         this(id, name, path, type, DEFAULT_POLICY, "");

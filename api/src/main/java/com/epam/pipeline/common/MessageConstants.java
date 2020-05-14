@@ -206,6 +206,9 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_FOLDER_ALREADY_EXISTS = "error.datastorage.folder.already.exists";
     public static final String ERROR_DATASTORAGE_PATH_INVALID_SCHEMA = "error.datastorage.path.invalid.schema";
     public static final String ERROR_DATASTORAGE_PATH_PROCCESSING = "error.datastorage.path.processing.error";
+    public static final String ERROR_AZURE_STORAGE_CREDENTIAL_INVALID = "error.azure.storage.credentials.invalid";
+    public static final String ERROR_SENSITIVE_DATASTORAGE_OPERATION =
+        "error.sensitive.datastorage.forbidden.operation";
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
