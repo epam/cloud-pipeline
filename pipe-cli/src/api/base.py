@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,11 +20,12 @@ from ..config import Config
 
 
 class API(object):
+
     def __init__(self):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         self.__config__ = Config.instance()
         self.__headers__ = {'Content-Type': 'application/json',
-                            'Authorization': 'Bearer {}'.format(self.__config__.access_key)}
+                            'Authorization': 'Bearer {}'.format(self.__config__.get_token())}
         if self.__config__.proxy is not None:
             self.__proxies__ = self.__config__.resolve_proxy()
         else:

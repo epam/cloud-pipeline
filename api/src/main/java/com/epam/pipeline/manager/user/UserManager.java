@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -113,6 +114,17 @@ public class UserManager {
         PipelineUser pipelineUser = userDao.loadUserByName(name);
         Assert.notNull(pipelineUser, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, name));
         return new UserContext(pipelineUser);
+    }
+
+    /**
+     * Generates a JWT token for specified user
+     * @param userName the name of the user
+     * @param expiration token expiration time (seconds)
+     * @return generated token
+     */
+    public JwtRawToken issueToken(final String userName, final Long expiration) {
+        final UserContext userContext = loadUserContext(userName);
+        return authManager.issueToken(userContext, expiration);
     }
 
     public PipelineUser loadUserByName(String name) {

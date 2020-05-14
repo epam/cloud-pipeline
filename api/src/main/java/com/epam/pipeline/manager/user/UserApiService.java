@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.user;
 
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
+import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -134,5 +135,16 @@ public class UserApiService {
     @PreAuthorize(ADMIN_ONLY)
     public byte[] exportUsers(final PipelineUserExportVO attr) {
         return userManager.exportUsers(attr);
+    }
+
+    /**
+     * Generates a JWT token for specified user
+     * @param userName the name of the user
+     * @param expiration token expiration time (seconds)
+     * @return generated token
+     */
+    @PreAuthorize(ADMIN_ONLY)
+    public JwtRawToken issueToken(final String userName, final Long expiration) {
+        return userManager.issueToken(userName, expiration);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -59,16 +60,19 @@ public class UserController extends AbstractRestController {
     @RequestMapping(value = "/user/token", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(
-            value = "Returns a new valid token for currently authenticated user.",
-            notes = "Returns a new valid token for currently authenticated user.",
+            value = "Returns a new valid token.",
+            notes = "Returns a new valid token. " +
+                    "If user is name not specified a new token will be generated for currently authenticated user.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<JwtRawToken> getSettings(@RequestParam(required = false) Long expiration) {
-        return Result.success(authManager.issueTokenForCurrentUser(expiration));
+    public Result<JwtRawToken> getSettings(@RequestParam(required = false) Long expiration,
+                                           @RequestParam(required = false) String name) {
+        return Result.success(StringUtils.isNotBlank(name)
+                ? userApiService.issueToken(name, expiration)
+                : authManager.issueTokenForCurrentUser(expiration));
     }
-
 
     @RequestMapping(value = "/whoami", method = RequestMethod.GET)
     @ResponseBody

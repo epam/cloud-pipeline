@@ -128,7 +128,7 @@ class StorageOperations:
     @classmethod
     def get_user(cls):
         config = Config.instance()
-        user_info = jwt.decode(config.access_key, verify=False)
+        user_info = jwt.decode(config.get_token(), verify=False)
         if 'sub' in user_info:
             return user_info['sub']
         raise RuntimeError('Cannot find user info.')
