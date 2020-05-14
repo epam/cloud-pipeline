@@ -129,8 +129,10 @@ while IFS='|' read -r mount_id region_id mount_root mount_type mount_options; do
         # that is why we need to do such conditional processing
         mount_root_srv="$( [ ${mount_type} == "NFS" ] && echo "$mount_root" | cut -f1 -d":" || echo "$mount_root" | cut -f1 -d"/")"
         mount_root_path="/"
-        if [[ "$mount_root" == *":"* ]]; then
-            mount_root_path="$( [ ${mount_type} == "NFS" ] && echo "$mount_root" | cut -f2 -d"/" || echo "$mount_root" | cut -f2 -d"/")"
+        if [[ "$mount_type" == "NFS" ]] && [[ "$mount_root" == *":"* ]]; then
+            mount_root_path="$(echo "$mount_root" | cut -f2 -d":")"
+        elif [[ "$mount_type" == "SMB" ]]; then
+            mount_root_path="$(echo "$mount_root" | cut -f2 -d"/")"
         fi
 
         mount_root_srv_dir="${_MOUNT_ROOT}/${mount_root_srv}/${mount_root_path}"
@@ -149,7 +151,7 @@ while IFS='|' read -r mount_id region_id mount_root mount_type mount_options; do
             mount_protocol="cifs"
             region_cred_file="/root/.cloud/regioncreds/${region_id}"
             if [ ! -f ${region_cred_file} ]; then
-                echo "[ERROR] Cred file for Azure region ${region_id}, not found! CIFS storage ${mount_root_srv}:${mount_root_path} won't be mounted."
+                echo "[ERROR] Cred file for Azure region ${region_id}, not found! CIFS storage ${mount_root_srv}/${mount_root_path} won't be mounted."
                 continue
             fi
             username=$(cat ${region_cred_file} | jq .storage_account)
@@ -163,7 +165,7 @@ while IFS='|' read -r mount_id region_id mount_root mount_type mount_options; do
 
         remote_nfs_path="${mount_root_srv}:${mount_root_path}"
         if [ "$mount_type" == "SMB" ]; then
-            remote_nfs_path="//${mount_root_srv}${mount_root_path}"
+            remote_nfs_path="//${mount_root_srv}/${mount_root_path}"
         fi
 
         mkdir -p "$mount_root_srv_dir"
