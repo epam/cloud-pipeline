@@ -779,6 +779,25 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         validateLoadRunBooleanFieldValue(false, run, PipelineRun::getQueued);
     }
 
+    @Test
+    public void shouldLoadRunsByStatuses() {
+        final PipelineRun running = buildPipelineRun(null, null);
+        running.setStatus(TaskStatus.RUNNING);
+        pipelineRunDao.createPipelineRun(running);
+
+        final PipelineRun pausing = buildPipelineRun(null, null);
+        pausing.setStatus(TaskStatus.PAUSING);
+        pipelineRunDao.createPipelineRun(pausing);
+
+        final PipelineRun resuming = buildPipelineRun(null, null);
+        resuming.setStatus(TaskStatus.RESUMING);
+        pipelineRunDao.createPipelineRun(resuming);
+
+        final List<PipelineRun> runs = pipelineRunDao.loadRunsByStatuses(
+                Arrays.asList(TaskStatus.PAUSING, TaskStatus.RESUMING));
+        assertEquals(2, runs.size());
+    }
+
     private PipelineRun createTestPipelineRun() {
         return createTestPipelineRun(testPipeline.getId());
     }

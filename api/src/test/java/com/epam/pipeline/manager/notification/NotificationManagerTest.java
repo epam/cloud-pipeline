@@ -30,6 +30,7 @@ import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.*;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.execution.EnvVarsBuilder;
 import com.epam.pipeline.manager.execution.EnvVarsBuilderTest;
@@ -87,6 +88,7 @@ import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.PodResource;
 
 @ContextConfiguration(classes = TestApplication.class)
+@Transactional
 public class NotificationManagerTest extends AbstractManagerTest {
     private static final double TEST_CPU_RATE1 = 0.123;
     private static final double TEST_CPU_RATE2 = 0.456;
@@ -97,6 +99,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
     private static final String BODY = "body";
     private static final String NON_EXISTING_USER = "not_existing_user";
     private static final Map<String, Object> PARAMETERS = Collections.singletonMap("key", "value");
+    public static final int LONG_STATUS_THRESHOLD = 100;
 
     @Autowired
     private NotificationManager notificationManager;
@@ -216,7 +219,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testNotifyLongRunning() {
         podMonitor.updateStatus();
         List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
@@ -233,7 +235,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testDoesntNotifyIfNotConfigure() {
         notificationSettingsDao.deleteNotificationSettingsById(longRunningSettings.getId());
         notificationTemplateDao.deleteNotificationTemplate(longRunningTemplate.getId());
@@ -243,7 +244,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testNotifyNoOwner() {
         updateKeepInformedOwner(longRunningSettings, false);
 
@@ -254,7 +254,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testReNotifyLongRunning() {
         longRunnging.setStartDate(DateTime.now(DateTimeZone.UTC).minusMinutes(9).toDate());
         longRunnging.setLastNotificationTime(DateTime.now(DateTimeZone.UTC).minusMinutes(6).toDate());
@@ -268,7 +267,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testWontNotifyClusterNode() {
         podMetadata.setLabels(Collections.singletonMap("cluster_id", "some_id"));
         podMonitor.updateStatus();
@@ -278,7 +276,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testWontNotifyAdminsIfConfigured() {
         NotificationSettings settings = notificationSettingsDao.loadNotificationSettings(1L);
         settings.setKeepInformedAdmins(false);
@@ -300,7 +297,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testNotifyIssue() {
         Pipeline pipeline = createPipeline(testOwner);
         Issue issue = createIssue(testUser2, pipeline);
@@ -323,27 +319,43 @@ public class NotificationManagerTest extends AbstractManagerTest {
         Assert.assertNull(messages.get(1).getToUserId());
     }
 
-    private Pipeline createPipeline(PipelineUser testOwner) {
-        Pipeline pipeline = new Pipeline();
-        pipeline.setName("testPipeline");
-        pipeline.setRepository("testRepo");
-        pipeline.setRepositorySsh("testRepoSsh");
-        pipeline.setOwner(testOwner.getUserName());
-        pipelineDao.createPipeline(pipeline);
-        return pipeline;
-    }
+    @Test
+    public void shouldNotifyRunsStuckInStatus() {
+        final PipelineRun notified = new PipelineRun();
+        notified.setId(1L);
+        notified.setStatus(TaskStatus.PAUSING);
+        notified.setOwner(testUser1.getUserName());
+        notified.setStartDate(new Date());
+        notified.setRunStatuses(Collections.singletonList(
+                RunStatus.builder()
+                        .runId(notified.getId())
+                        .status(TaskStatus.PAUSING)
+                        .timestamp(DateUtils.nowUTC().minusDays(1))
+                        .build()));
 
-    private Issue createIssue(PipelineUser author, AbstractSecuredEntity entity) {
-        Issue issue = new Issue();
-        issue.setName("testIssue");
-        issue.setText("Notifying @TestUser1, @TestUser2, also add @admin here");
-        issue.setAuthor(author.getUserName());
-        issue.setEntity(new EntityVO(entity.getId(), entity.getAclClass()));
-        return issue;
+        final PipelineRun skipped = new PipelineRun();
+        skipped.setId(1L);
+        skipped.setStartDate(new Date());
+        skipped.setStatus(TaskStatus.PAUSING);
+        skipped.setOwner(testUser2.getUserName());
+        skipped.setRunStatuses(Collections.singletonList(
+                RunStatus.builder()
+                        .runId(skipped.getId())
+                        .status(TaskStatus.PAUSING)
+                        .timestamp(DateUtils.nowUTC())
+                        .build()));
+
+        createSettings(LONG_STATUS, createTemplate(5L, "stuckStatusTemplate").getId(),
+                LONG_STATUS_THRESHOLD, LONG_STATUS_THRESHOLD);
+
+        notificationManager.notifyStuckInStatusRuns(Arrays.asList(notified, skipped));
+        final List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
+        Assert.assertEquals(1, messages.size());
+        Assert.assertEquals(testUser1.getId(), messages.get(0).getToUserId());
+
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testNotifyIssueComment() {
         Pipeline pipeline = createPipeline(testOwner);
         Issue issue = createIssue(testUser2, pipeline);
@@ -373,7 +385,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testNotifyIdleRun() {
         PipelineRun run1 = new PipelineRun();
         run1.setOwner(testUser1.getUserName());
@@ -410,7 +421,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testNotifyHighConsumingRun() {
         PipelineRun run1 = createTestPipelineRun();
         PipelineRun run2 = createTestPipelineRun();
@@ -443,7 +453,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testRemoveNotificationTimestampWhenDelete() {
         Pipeline pipeline = createPipeline(testOwner);
         PipelineRun run1 = createTestPipelineRun(pipeline.getId());
@@ -461,7 +470,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void notifyHighConsumingRunOnlyOnceIfItIsSetup() {
         highConsuming.setResendDelay(-1L);
         notificationSettingsDao.updateNotificationSettings(highConsuming);
@@ -484,7 +492,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testCreateNotificationFailsIfSubjectIsNotSpecified() {
         final String userName = testUser1.getUserName();
         final NotificationMessageVO messageWithoutSubject = new NotificationMessageVO();
@@ -496,7 +503,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testCreateNotificationFailsIfBodyIsNotSpecified() {
         final String userName = testUser1.getUserName();
         final NotificationMessageVO messageWithoutBody = new NotificationMessageVO();
@@ -518,7 +524,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testCreateNotificationsFailsIfReceiverUserDoesNotExist() {
         final NotificationMessageVO messageWithNonExistingUser = new NotificationMessageVO();
         messageWithNonExistingUser.setBody(BODY);
@@ -530,7 +535,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testCreateNotificationFailsIfOneOfCopyUsersDoesNotExist() {
         final NotificationMessageVO message = new NotificationMessageVO();
         message.setBody(BODY);
@@ -543,7 +547,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testCreateNotification() {
         final NotificationMessageVO message = new NotificationMessageVO();
         message.setBody(BODY);
@@ -562,7 +565,6 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testCreateNotificationWithExistingCopyUser() {
         final NotificationMessageVO message = new NotificationMessageVO();
         message.setBody(BODY);
@@ -643,5 +645,24 @@ public class NotificationManagerTest extends AbstractManagerTest {
         runInstance.setCloudProvider(CloudProvider.AWS);
         runInstance.setCloudRegionId(1L);
         run.setInstance(runInstance);
+    }
+
+    private Pipeline createPipeline(PipelineUser testOwner) {
+        Pipeline pipeline = new Pipeline();
+        pipeline.setName("testPipeline");
+        pipeline.setRepository("testRepo");
+        pipeline.setRepositorySsh("testRepoSsh");
+        pipeline.setOwner(testOwner.getUserName());
+        pipelineDao.createPipeline(pipeline);
+        return pipeline;
+    }
+
+    private Issue createIssue(PipelineUser author, AbstractSecuredEntity entity) {
+        Issue issue = new Issue();
+        issue.setName("testIssue");
+        issue.setText("Notifying @TestUser1, @TestUser2, also add @admin here");
+        issue.setAuthor(author.getUserName());
+        issue.setEntity(new EntityVO(entity.getId(), entity.getAclClass()));
+        return issue;
     }
 }
