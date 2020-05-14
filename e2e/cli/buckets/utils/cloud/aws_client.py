@@ -56,7 +56,7 @@ class S3Client(CloudClient):
         if lts:
             assert actual_policy['longTermStorageDuration'] == lts, "LTS assertion failed"
         if backup_duration:
-            if backup_duration != backup_duration:
+            if backup_duration != actual_policy['backupDuration']:
                 actual_policy = self.s3_get_bucket_lifecycle(bucket_name)
             assert actual_policy['backupDuration'] == backup_duration, "Backup Duration assertion failed"
 
