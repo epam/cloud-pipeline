@@ -67,4 +67,18 @@ class User(API):
         if 'message' in response_data:
             raise RuntimeError(response_data['message'])
         else:
-            raise RuntimeError("Failed to load metadata.")
+            raise RuntimeError("Failed to change owner.")
+
+    @classmethod
+    def generate_user_token(cls, user_name, duration):
+        api = cls.instance()
+        query = '/user/token?name=%s' % user_name
+        if duration:
+            query = '&expiration='.join([query, str(duration)])
+        response_data = api.call(query, None)
+        if 'payload' in response_data and 'token' in response_data['payload']:
+            return response_data['payload']['token']
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        else:
+            raise RuntimeError("Failed to generate user token.")

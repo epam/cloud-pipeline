@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -155,7 +155,7 @@ class Mount(object):
         with open(output_file, 'w') as output:
             mount_environment = os.environ.copy()
             mount_environment['API'] = config.api
-            mount_environment['API_TOKEN'] = config.access_key
+            mount_environment['API_TOKEN'] = config.get_token()
             if config.proxy:
                 mount_environment['http_proxy'] = config.proxy
                 mount_environment['https_proxy'] = config.proxy
