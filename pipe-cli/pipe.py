@@ -1089,6 +1089,7 @@ def set_acl(identifier, object_type, sid, group, allow, deny, inherit):
     required=False,
     type=click.Choice(ACLOperations.get_classes())
 )
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def view_user_objects(username, object_type):
     ACLOperations.print_sid_objects(username, True, object_type)
@@ -1102,6 +1103,7 @@ def view_user_objects(username, object_type):
     required=False,
     type=click.Choice(ACLOperations.get_classes())
 )
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def view_group_objects(group_name, object_type):
     ACLOperations.print_sid_objects(group_name, False, object_type)
