@@ -183,6 +183,9 @@ public class PipelineRunManager {
     @Autowired
     private NodesManager nodesManager;
 
+    @Autowired
+    private PipelineRunCRUDService runCRUDService;
+
     /**
      * Launches cmd command execution, uses Tool as ACL identity
      * @param runVO
@@ -491,6 +494,11 @@ public class PipelineRunManager {
         return updatePipelineStatus(runId, status, pipelineRun);
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun updatePipelineStatus(final PipelineRun run) {
+        return runCRUDService.updateRunStatus(run);
+    }
+
     /**
      * A shorthand method to stop a Pipeline Run
      * @param runId ID of a Pipeline Run
@@ -499,13 +507,6 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun stop(Long runId) {
         return updatePipelineStatusIfNotFinal(runId, TaskStatus.STOPPED);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun updatePipelineStatus(PipelineRun run) {
-        updatePrettyUrlForFinishedRun(run);
-        pipelineRunDao.updateRunStatus(run);
-        return run;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -817,7 +818,7 @@ public class PipelineRunManager {
         Assert.state(pipelineRun.getStatus() == TaskStatus.RUNNING,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_FINISHED, runId));
         pipelineRun.setStatus(TaskStatus.PAUSING);
-        updatePipelineStatus(pipelineRun);
+        runCRUDService.updateRunStatus(pipelineRun);
         dockerContainerOperationManager.pauseRun(pipelineRun);
         return pipelineRun;
     }
@@ -839,7 +840,7 @@ public class PipelineRunManager {
         }
         Tool tool = toolManager.loadByNameOrId(pipelineRun.getDockerImage());
         pipelineRun.setStatus(TaskStatus.RESUMING);
-        updatePipelineStatus(pipelineRun);
+        runCRUDService.updateRunStatus(pipelineRun);
         dockerContainerOperationManager.resumeRun(pipelineRun, tool.getEndpoints());
         return pipelineRun;
     }
@@ -944,7 +945,7 @@ public class PipelineRunManager {
                         pipelineRun.getStatus()));
         pipelineRun.setStatus(TaskStatus.STOPPED);
         pipelineRun.setEndDate(DateUtils.now());
-        updatePipelineStatus(pipelineRun);
+        runCRUDService.updateRunStatus(pipelineRun);
         nodesManager.terminateRun(pipelineRun);
         return pipelineRun;
     }
@@ -999,6 +1000,11 @@ public class PipelineRunManager {
                 .parentNode()
                 .nonPause()
                 .build();
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public List<PipelineRun> loadRunsByStatuses(final List<TaskStatus> statuses) {
+        return pipelineRunDao.loadRunsByStatuses(statuses);
     }
 
     private void adjustInstanceDisk(final PipelineConfiguration configuration) {
@@ -1121,8 +1127,7 @@ public class PipelineRunManager {
         pipelineRun.setTerminating(status.isFinal());
 
         dataStorageManager.analyzePipelineRunsParameters(Arrays.asList(pipelineRun));
-        updatePrettyUrlForFinishedRun(pipelineRun);
-        pipelineRunDao.updateRunStatus(pipelineRun);
+        runCRUDService.updateRunStatus(pipelineRun);
         setParent(pipelineRun);
         return pipelineRun;
     }
@@ -1191,7 +1196,7 @@ public class PipelineRunManager {
             return parameter;
         }
     }
-    
+
     PipelineRunFilterVO.ProjectFilter resolveProjectFiltering(PipelineRunFilterVO filter) {
         if (CollectionUtils.isEmpty(filter.getProjectIds())) {
             return null;
@@ -1236,13 +1241,6 @@ public class PipelineRunManager {
             throw new IllegalArgumentException(
                     messageHelper.getMessage(MessageConstants.ERROR_RUN_PRETTY_URL_IN_USE, url, r.getId()));
         });
-    }
-
-    private void updatePrettyUrlForFinishedRun(PipelineRun run) {
-        if (run.getStatus().isFinal() && StringUtils.hasText(run.getPrettyUrl())) {
-            run.setPrettyUrl(null);
-            pipelineRunDao.updateRun(run);
-        }
     }
 
     private void setRunPrice(final RunInstance instance, final PipelineRun run) {

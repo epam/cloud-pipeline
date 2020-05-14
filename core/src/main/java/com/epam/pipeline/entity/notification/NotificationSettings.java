@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -89,7 +90,9 @@ public class NotificationSettings {
         IDLE_RUN(6, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, true, NotificationGroup.IDLE_RUN),
         IDLE_RUN_PAUSED(7, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, true, NotificationGroup.IDLE_RUN),
         IDLE_RUN_STOPPED(8, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, true, NotificationGroup.IDLE_RUN),
-        HIGH_CONSUMED_RESOURCES(9, MISSING_TIME_THRESHOLD, 600L, true, NotificationGroup.RESOURCE_CONSUMING);
+        HIGH_CONSUMED_RESOURCES(9, MISSING_TIME_THRESHOLD, 600L, true, NotificationGroup.RESOURCE_CONSUMING),
+        LONG_STATUS(10, 3600L, 600L, true, NotificationGroup.LONG_STATUS);
+
 
         private static final Map<Long, NotificationType> BY_ID;
 
@@ -142,6 +145,7 @@ public class NotificationSettings {
         ISSUE,
         PIPELINE_RUN_STATUS,
         IDLE_RUN,
-        RESOURCE_CONSUMING
+        RESOURCE_CONSUMING,
+        LONG_STATUS
     }
 }

@@ -56,6 +56,10 @@ public class PipelineRunManagerUnitTest {
     @SuppressWarnings("PMD.UnusedPrivateField")
     private MessageHelper messageHelper;
 
+    @Mock
+    @SuppressWarnings("PMD.UnusedPrivateField")
+    private PipelineRunCRUDService runCRUDService;
+
     @InjectMocks
     private PipelineRunManager pipelineRunManager;
 
@@ -91,7 +95,7 @@ public class PipelineRunManagerUnitTest {
 
         pipelineRunManager.terminateRun(RUN_ID);
 
-        verify(pipelineRunDao).updateRunStatus(argThat(matches(run -> run.getStatus() == TaskStatus.STOPPED)));
+        verify(runCRUDService).updateRunStatus(argThat(matches(run -> run.getStatus() == TaskStatus.STOPPED)));
     }
 
     @Test

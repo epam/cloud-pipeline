@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,11 @@ package com.epam.pipeline.manager.notification;
 
 import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,6 +32,9 @@ import java.util.stream.Collectors;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.notification.NotificationTimestamp;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.utils.DateUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -319,6 +324,64 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         monitoringNotificationDao.createMonitoringNotifications(messages);
         monitoringNotificationDao.updateNotificationTimestamp(runIds, notificationType);
     }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void notifyStuckInStatusRuns(final List<PipelineRun> runs) {
+        final NotificationSettings settings = notificationSettingsManager.load(NotificationType.LONG_STATUS);
+
+        if (settings == null || !settings.isEnabled() || settings.getTemplateId() == 0) {
+            LOGGER.info("No template configured for stuck status notifications or it was disabled!");
+            return;
+        }
+
+        final LocalDateTime now = DateUtils.nowUTC();
+        final Long threshold = settings.getThreshold();
+        if (threshold == null || threshold <= 0) {
+            return;
+        }
+        runs.stream()
+                .filter(run -> isRunStuckInStatus(settings, now, threshold, run))
+                .forEach(run -> {
+                    LOGGER.debug("Sending stuck status {} notification for run {}.",
+                            run.getStatus(), run.getId());
+                    final NotificationMessage notificationMessage = new NotificationMessage();
+                    if (settings.isKeepInformedOwner()) {
+                        PipelineUser pipelineOwner = userManager.loadUserByName(run.getOwner());
+                        notificationMessage.setToUserId(pipelineOwner.getId());
+                    }
+                    notificationMessage.setCopyUserIds(getCCUsers(settings));
+                    notificationMessage.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+                    notificationMessage.setTemplateParameters(PipelineRunMapper.map(run, settings.getThreshold()));
+                    monitoringNotificationDao.createMonitoringNotification(notificationMessage);
+                });
+    }
+
+    private boolean isRunStuckInStatus(final NotificationSettings settings,
+                                       final LocalDateTime now,
+                                       final Long threshold,
+                                       final PipelineRun run) {
+        final List<RunStatus> runStatuses = run.getRunStatuses();
+        if (CollectionUtils.isEmpty(runStatuses)) {
+            LOGGER.debug("Status timestamps are not available for run {}. " +
+                    "Skipping stuck status duration check.", run.getId());
+            return false;
+        }
+
+        final Optional<RunStatus> lastStatus = runStatuses.stream()
+                .filter(status -> run.getStatus().equals(status.getStatus()))
+                .max(Comparator.comparing(RunStatus::getTimestamp));
+
+        return lastStatus
+                .map(status -> {
+                    final long secondsFromStatusUpdate = status.getTimestamp().until(now, ChronoUnit.SECONDS);
+                    return secondsFromStatusUpdate >= threshold && shouldNotify(run.getId(), settings);
+                })
+                .orElseGet(() -> {
+                    LOGGER.debug("Failed to find status {} timestamp for run {}.", run.getStatus(), run.getId());
+                    return false;
+                });
+    }
+
 
     /**
      * Creates a custom notification.
