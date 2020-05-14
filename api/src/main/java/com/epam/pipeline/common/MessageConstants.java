@@ -497,6 +497,10 @@ public final class MessageConstants {
     public static final String ERROR_BILLING_INTERVAL_NOT_SUPPORTED = "error.billing.interval.not.supported";
     public static final String ERROR_ILLEGAL_PAGING_PARAMETERS = "error.billing.invalid.paging";
 
+    //Disks    
+    public static final String ERROR_DISK_NODE_MISSING = "error.disk.node.missing";
+    public static final String ERROR_DISK_SIZE_MISSING = "error.disk.size.missing";
+    public static final String ERROR_DISK_SIZE_INVALID = "error.disk.size.invalid";
 
     //Other
     public static final String ERROR_KEEP_ALIVE_POLICY_NOT_SUPPORTED = "error.keep.alive.policy.not.supported";

@@ -23,6 +23,8 @@ import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.MasterNode;
+import com.epam.pipeline.entity.cluster.NodeDisk;
+import com.epam.pipeline.entity.cluster.DiskRegistrationRequest;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.manager.cluster.ClusterApiService;
@@ -224,4 +226,34 @@ public class ClusterController extends AbstractRestController {
         final String reportName = String.format("%s_%s-%s-%s", name, from, to, interval);
         writeStreamToResponse(response, inputStream, String.format("%s.%s", reportName, "csv"));
     }
+
+    @RequestMapping(value = "/cluster/node/{name}/disks", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns node disks.",
+            notes = "Returns node disks.",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<NodeDisk>> loadNodeDisks(@PathVariable(value = NAME) final String name) {
+        return Result.success(clusterApiService.loadNodeDisks(name));
+    }
+
+    @RequestMapping(value = "/cluster/node/{name}/disks", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Register node disks.",
+            notes = "Register node disks.",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<NodeDisk>> registerNodeDisks(@PathVariable(value = NAME) final String name,
+                                                         @RequestBody final List<DiskRegistrationRequest> requests) {
+        return Result.success(clusterApiService.registerNodeDisks(name, requests));
+    }
+    
 }

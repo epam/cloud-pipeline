@@ -26,6 +26,8 @@ import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.MasterNode;
+import com.epam.pipeline.entity.cluster.NodeDisk;
+import com.epam.pipeline.entity.cluster.DiskRegistrationRequest;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
@@ -40,6 +42,7 @@ import org.springframework.stereotype.Service;
 public class ClusterApiService {
 
     private final NodesManager nodesManager;
+    private final NodeDiskManager nodeDiskManager;
     private final UsageMonitoringManager usageMonitoringManager;
     private final InstanceOfferManager instanceOfferManager;
 
@@ -97,5 +100,15 @@ public class ClusterApiService {
 
     public List<MasterNode> getMasterNodes() {
         return nodesManager.getMasterNodes();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<NodeDisk> registerNodeDisks(final String name, final List<DiskRegistrationRequest> requests) {
+        return nodeDiskManager.register(name, requests);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(#name, 'READ')")
+    public List<NodeDisk> loadNodeDisks(final String name) {
+        return nodeDiskManager.loadByNodeId(name);
     }
 }
