@@ -160,9 +160,7 @@ class ACLOperations(object):
             entities_table = prettytable.PrettyTable()
             entities_table.field_names = ["Type", "Name"]
             entities_table.align = "r"
-            for item in iteritems(available_entities):
-                entity_type = item[0]
-                entities = item[1]
+            for entity_type, entities in iteritems(available_entities):
                 for entity in entities:
                     entity_name = cls.build_name_by_type(entity, entity_type)
                     if not entity_name:
