@@ -25,6 +25,7 @@ import renderSeparator from './renderSeparator';
 import {PreviewIcons} from './previewIcons';
 import StatusIcon, {Statuses} from '../../special/run-status-icon';
 import {getRunSpotTypeName} from '../../special/spot-instance-names';
+import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import styles from './preview.css';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
 import displayDate from '../../../utils/displayDate';
