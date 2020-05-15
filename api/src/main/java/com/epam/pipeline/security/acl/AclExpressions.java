@@ -99,6 +99,18 @@ public final class AclExpressions {
 
     public static final String DTS_REGISTRY_PERMISSIONS = "hasRole('ADMIN') OR hasRole('ROLE_USER')";
 
+    public static final String NODE_READ = ADMIN_ONLY + OR +
+            "@grantPermissionManager.nodePermission(#name, 'READ')";
+
+    public static final String NODE_READ_FILTER = ADMIN_ONLY + OR +
+            "@grantPermissionManager.nodePermission(filterObject, 'READ')";
+    
+    public static final String NODE_WRITE = ADMIN_ONLY + OR +
+            "@grantPermissionManager.nodePermission(#name, 'WRITE')";
+    
+    public static final String NODE_STOP = ADMIN_ONLY + OR +
+            "@grantPermissionManager.nodeStopPermission(#name, 'EXECUTE')";
+
     private AclExpressions() {
         // no op
     }

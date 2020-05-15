@@ -230,13 +230,10 @@ public class ClusterController extends AbstractRestController {
     @RequestMapping(value = "/cluster/node/{name}/disks", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(
-            value = "Returns node disks.",
-            notes = "Returns node disks.",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+        value = "Returns node disks.",
+        notes = "Returns node disks.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION))
     public Result<List<NodeDisk>> loadNodeDisks(@PathVariable(value = NAME) final String name) {
         return Result.success(clusterApiService.loadNodeDisks(name));
     }
@@ -244,13 +241,10 @@ public class ClusterController extends AbstractRestController {
     @RequestMapping(value = "/cluster/node/{name}/disks", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(
-            value = "Register node disks.",
-            notes = "Register node disks.",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+        value = "Register node disks.",
+        notes = "Register node disks.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION))
     public Result<List<NodeDisk>> registerNodeDisks(@PathVariable(value = NAME) final String name,
                                                          @RequestBody final List<DiskRegistrationRequest> requests) {
         return Result.success(clusterApiService.registerNodeDisks(name, requests));

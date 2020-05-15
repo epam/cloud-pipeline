@@ -19,6 +19,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+@SuppressWarnings("PMD.TooManyStaticImports")
 public class NodeDiskManagerTest {
 
     private static final String NODE_ID = "NODE_ID";

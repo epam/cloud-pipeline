@@ -37,6 +37,11 @@ import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ;
+import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ_FILTER;
+import static com.epam.pipeline.security.acl.AclExpressions.NODE_STOP;
+import static com.epam.pipeline.security.acl.AclExpressions.NODE_WRITE;
+
 @Service
 @RequiredArgsConstructor
 public class ClusterApiService {
@@ -46,40 +51,40 @@ public class ClusterApiService {
     private final UsageMonitoringManager usageMonitoringManager;
     private final InstanceOfferManager instanceOfferManager;
 
-    @PostFilter("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(filterObject, 'READ')")
+    @PostFilter(NODE_READ_FILTER)
     public List<NodeInstance> getNodes() {
         return nodesManager.getNodes();
     }
 
-    @PostFilter("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(filterObject, 'READ')")
-    public List<NodeInstance> filterNodes(FilterNodesVO filterNodesVO) {
+    @PostFilter(NODE_READ_FILTER)
+    public List<NodeInstance> filterNodes(final FilterNodesVO filterNodesVO) {
         return nodesManager.filterNodes(filterNodesVO);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(#name, 'READ')")
+    @PreAuthorize(NODE_READ)
     @AclMask
-    public NodeInstance getNode(String name) {
+    public NodeInstance getNode(final String name) {
         return nodesManager.getNode(name);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(#name, 'READ')")
+    @PreAuthorize(NODE_READ)
     @AclMask
-    public NodeInstance getNode(String name, FilterPodsRequest request) {
+    public NodeInstance getNode(final String name, final FilterPodsRequest request) {
         return nodesManager.getNode(name, request);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.nodeStopPermission(#name, 'EXECUTE')")
+    @PreAuthorize(NODE_STOP)
     @AclMask
-    public NodeInstance terminateNode(String name) {
+    public NodeInstance terminateNode(final String name) {
         return nodesManager.terminateNode(name);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(#nodeName, 'READ')")
-    public List<MonitoringStats> getStatsForNode(String nodeName, final LocalDateTime from, final LocalDateTime to) {
-        return usageMonitoringManager.getStatsForNode(nodeName, from, to);
+    @PreAuthorize(NODE_READ)
+    public List<MonitoringStats> getStatsForNode(final String name, final LocalDateTime from, final LocalDateTime to) {
+        return usageMonitoringManager.getStatsForNode(name, from, to);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(#name, 'READ')")
+    @PreAuthorize(NODE_READ)
     public InputStream getUsageStatisticsFile(final String name, final LocalDateTime from, final LocalDateTime to,
                                               final Duration interval) {
         return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval);
@@ -102,12 +107,12 @@ public class ClusterApiService {
         return nodesManager.getMasterNodes();
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(#name, 'WRITE')")
+    @PreAuthorize(NODE_WRITE)
     public List<NodeDisk> registerNodeDisks(final String name, final List<DiskRegistrationRequest> requests) {
         return nodeDiskManager.register(name, requests);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(#name, 'READ')")
+    @PreAuthorize(NODE_READ)
     public List<NodeDisk> loadNodeDisks(final String name) {
         return nodeDiskManager.loadByNodeId(name);
     }
