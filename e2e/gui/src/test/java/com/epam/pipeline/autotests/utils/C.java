@@ -72,6 +72,7 @@ public class C {
         SPOT_PRICE_NAME = conf.getProperty("e2e.ui.spot.price.name");
         AUTH_TOKEN = conf.getProperty("e2e.ui.auth.token");
         STORAGE_NAME_PREFIX = conf.getProperty("e2e.ui.storage.name.prefix");
+        SEARCH_PREFIX = conf.getProperty("e2e.ui.search.prefix");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -122,4 +123,5 @@ public class C {
     public static final String SPOT_PRICE_NAME;
     public static final String AUTH_TOKEN;
     public static final String STORAGE_NAME_PREFIX;
+    public static final String SEARCH_PREFIX;
 }

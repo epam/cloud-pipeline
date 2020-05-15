@@ -88,10 +88,11 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
     }
 
     private static SelenideElement getElementByNameInUpperCase(String groupName) {
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 3; i++) {
             if (getTabTable().find(withText(groupName)).exists()) {
                 return getTabTable().find(withText(groupName));
             }
+            Utils.sleep(3, SECONDS);
         }
         return getTabTable().find(withText(groupName.toLowerCase()));
     }

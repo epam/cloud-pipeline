@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -50,7 +51,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
             entry(TOOLS, context().find(type("TOOL"))),
             entry(DATA, context().find(type("DATA"))),
             entry(ISSUES, context().find(type("ISSUE"))),
-            entry(SEARCH, context().find(byAttribute("placeholder", "CloudPipeline search"))),
+            entry(SEARCH, context().find(byAttribute("placeholder", C.SEARCH_PREFIX))),
             entry(QUESTION_MARK, context().find(byClassName("earch__hint-icon-container"))),
             entry(SEARCH_RESULT, context().find(byId("search-results")))
     );
