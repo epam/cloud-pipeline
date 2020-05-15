@@ -260,7 +260,10 @@ export default class AvailableStoragesBrowser extends Component {
           style={{margin: '5px 0'}}
           message={(
             <div>
-              Selection contains <b>sensitive mounts</b>.
+              Selection contains <b>sensitive storages</b>.
+              This will apply a number of restrictions for the job: no Internet access,
+              all the storages will be available in a read-only mode,
+              you won't be able to extract the data from the running job and other.
             </div>
           )}
         />

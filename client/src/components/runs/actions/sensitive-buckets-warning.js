@@ -58,7 +58,12 @@ function SensitiveBucketsWarning (
       style={style}
       message={message || (
         <div>
-          You are going to launch a job with <b>sensitive mounts</b>. FS Browser will not be available.
+          <div>You are going to launch a job with <b>sensitive storages</b>.</div>
+          <div>
+            This will apply a number of restrictions for the job: no Internet access,
+            all the storages will be available in a read-only mode,
+            you won't be able to extract the data from the running job and other.
+          </div>
         </div>
       )}
     />
