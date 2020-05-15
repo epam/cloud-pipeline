@@ -228,7 +228,6 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             additional_args = {'SecurityGroupIds': utils.get_security_groups(self.cloud_region)}
 
         try:
-            block_devices = self.__get_block_devices(ins_img, ins_hdd, kms_encyr_key_id, swap_size=swap_size)
             response = self.ec2.run_instances(
                 ImageId=ins_img,
                 MinCount=1,
@@ -236,7 +235,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                 KeyName=ins_key,
                 InstanceType=ins_type,
                 UserData=user_data_script,
-                BlockDeviceMappings=block_devices,
+                BlockDeviceMappings=self.__get_block_devices(ins_img, ins_hdd, kms_encyr_key_id, swap_size=swap_size),
                 TagSpecifications=[
                     {
                         'ResourceType': 'instance',
@@ -279,8 +278,6 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                 self.ec2.create_tags(
                     Resources=[volume['Ebs']['VolumeId']],
                     Tags=ebs_tags)
-                    
-        self.__register_node_disks(ins_id, block_devices)
 
         return ins_id, ins_ip
 
@@ -392,13 +389,13 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             utils.pipe_log('- Prices for {} spots:\n'.format(ins_type) +
                            '\n'.join('{0}: {1:.5f}'.format(zone, price) for zone, price in spot_prices) + '\n' +
                            '{} zone will be used'.format(cheapest_zone))
-        block_devices = self.__get_block_devices(ins_img, ins_hdd, kms_encyr_key_id, swap_size=swap_size)
+
         specifications = {
             'ImageId': ins_img,
             'InstanceType': ins_type,
             'KeyName': ins_key,
             'UserData': base64.b64encode(user_data_script.encode('utf-8')).decode('utf-8'),
-            'BlockDeviceMappings': block_devices,
+            'BlockDeviceMappings': self.__get_block_devices(ins_img, ins_hdd, kms_encyr_key_id, swap_size=swap_size),
         }
         if allowed_networks and cheapest_zone in allowed_networks:
             subnet_id = allowed_networks[cheapest_zone]
@@ -507,8 +504,6 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                         self.ec2.create_tags(
                             Resources=[volume['Ebs']['VolumeId']],
                             Tags=ebs_tags)
-                    
-                self.__register_node_disks(ins_id, block_devices)
 
                 utils.pipe_log('Instance is successfully created for spot request {}. ID: {}, IP: {}\n-'.format(request_id, ins_id, ins_ip))
                 break
@@ -525,10 +520,6 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         self.exit_if_spot_unavailable(run_id, last_status)
 
         return ins_id, ins_ip
-                        
-    def __register_node_disks(node_id, block_devices):
-        disks =  [{'size': int(device.get('Ebs', {}).get('VolumeSize', 0) or 0)} for device in block_devices]
-        utils.register_node_disks(node_id, disks)
 
     @staticmethod
     def tag_name_is_present(instance) :

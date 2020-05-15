@@ -308,7 +308,6 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
     else:
         pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
         additional_args = { 'SecurityGroupIds': get_security_groups(aws_region)}
-    block_devices = get_block_devices(ec2, ins_img, ins_hdd, kms_encyr_key_id, swap_size)
     response = {}
     try:
         response = ec2.run_instances(
@@ -318,7 +317,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
             KeyName=ins_key,
             InstanceType=ins_type,
             UserData=user_data_script,
-            BlockDeviceMappings=block_devices,
+            BlockDeviceMappings=get_block_devices(ec2, ins_img, ins_hdd, kms_encyr_key_id, swap_size),
             TagSpecifications=[
                 {
                     'ResourceType': 'instance',
@@ -361,8 +360,6 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
             ec2.create_tags(
                 Resources=[volume['Ebs']['VolumeId']],
                 Tags=ebs_tags)
-    
-    register_node_disks(ins_id, block_devices)
 
     return ins_id, ins_ip
 
@@ -786,13 +783,12 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
         pipe_log('- Prices for {} spots:\n'.format(ins_type) +
                 '\n'.join('{0}: {1:.5f}'.format(zone, price) for zone, price in spot_prices) + '\n' +
                 '{} zone will be used'.format(cheapest_zone))
-    block_devices = get_block_devices(ec2, ins_img, ins_hdd, kms_encyr_key_id, swap_size)
     specifications = {
             'ImageId': ins_img,
             'InstanceType': ins_type,
             'KeyName': ins_key,
             'UserData': base64.b64encode(user_data_script.encode('utf-8')).decode('utf-8'),
-            'BlockDeviceMappings': block_devices,
+            'BlockDeviceMappings': get_block_devices(ec2, ins_img, ins_hdd, kms_encyr_key_id, swap_size),
         }
     if allowed_networks and cheapest_zone in allowed_networks:
         subnet_id = allowed_networks[cheapest_zone]
@@ -906,8 +902,6 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
                         Resources=[volume['Ebs']['VolumeId']],
                         Tags=ebs_tags)
 
-            register_node_disks(ins_id, block_devices)
-            
             pipe_log('Instance is successfully created for spot request {}. ID: {}, IP: {}\n-'.format(request_id, ins_id, ins_ip))
             break
         pipe_log('- Spot request {} is not yet fulfilled. Still waiting...'.format(request_id))
@@ -922,11 +916,6 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
     exit_if_spot_unavailable(run_id, last_status)
 
     return ins_id, ins_ip
-                        
-def register_node_disks(node_id, block_devices):
-    instance_disks =  [{'size': int(device.get('Ebs', {}).get('VolumeSize', 0) or 0)} for device in block_devices]
-    pipe_api = PipelineAPI(api_url, None)
-    pipe_api.register_node_disks(node_id, instance_disks)
 
 def tag_name_is_present(instance):
     return 'Tags' in instance and len([tag for tag in instance['Tags'] if tag['Key'] == 'Name']) > 0

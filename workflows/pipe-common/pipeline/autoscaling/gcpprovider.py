@@ -62,7 +62,6 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         network_interfaces = self.__build_networks()
         if is_spot:
             utils.pipe_log('Preemptible instance with run id: ' + run_id + ' will be launched')
-        disks = self.__get_disk_devices(ins_img, OS_DISK_SIZE, ins_hdd, swap_size)
         body = {
             'name': instance_name,
             'machineType': machine_type,
@@ -71,7 +70,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                 'preemptible': is_spot
             },
             'canIpForward': True,
-            'disks': disks,
+            'disks': self.__get_disk_devices(ins_img, OS_DISK_SIZE, ins_hdd, swap_size),
             'networkInterfaces': network_interfaces,
             'labels': GCPInstanceProvider.get_tags(run_id, self.cloud_region),
             'tags': {
@@ -122,17 +121,10 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             zone=self.cloud_region,
             instance=instance_name
         ).execute()
-        
-        self.__register_node_disks(instance_name, disks)
 
         private_ip = ip_response['networkInterfaces'][0]['networkIP']
         return instance_name, private_ip
     
-    def __register_node_disks(self, node_id, node_disks):
-        disks = [{'size': int(node_disk.get('initializeParams', {}).get('diskSizeGb', 0) or 0)}
-                 for node_disk in node_disks]
-        utils.register_node_disks(node_id, disks)
-
     def parse_instance_type(self, ins_type):
         # Custom type with GPU: gpu-custom-4-16000-k80-1
         # Custom type with CPU only: custom-4-16000
