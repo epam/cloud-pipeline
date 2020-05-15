@@ -16,7 +16,7 @@ import sys
 import click
 import requests
 import prettytable
-
+from future.utils import iteritems
 
 from src.api.entity import Entity
 from src.api.user import User
@@ -160,7 +160,7 @@ class ACLOperations(object):
             entities_table = prettytable.PrettyTable()
             entities_table.field_names = ["Type", "Name"]
             entities_table.align = "r"
-            for item in available_entities.iteritems():
+            for item in iteritems(available_entities):
                 entity_type = item[0]
                 entities = item[1]
                 for entity in entities:
