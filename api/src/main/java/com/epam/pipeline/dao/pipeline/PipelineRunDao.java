@@ -113,8 +113,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String updateProlongedAtTimeAndLastIdleNotificationTimeQuery;
     private String updateRunQuery;
     private String loadRunByPrettyUrlQuery;
-    private String updateTagsQuery;
-    private String loadAllRunsPossiblyActiveInPeriodQuery;
     private String loadAllRunsByStatusQuery;
 
     // We put Propagation.REQUIRED here because this method can be called from non-transaction context

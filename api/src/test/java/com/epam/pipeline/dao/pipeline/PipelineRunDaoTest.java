@@ -855,4 +855,32 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
                 fieldFunction.apply(pipelineRunDao.searchPipelineGroups(pagingRunFilterVO, null).get(0)));
     }
 
+    private PipelineRun buildPipelineRun(final Long pipelineId, final String serviceUrl) {
+        final Date now = Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant());
+        return buildPipelineRun(pipelineId, serviceUrl, now, now);
+    }
+
+    private PipelineRun buildPipelineRun(final Long pipelineId, final String serviceUrl,
+                                         final Date start, final Date end) {
+        PipelineRun run = new PipelineRun();
+        run.setPipelineId(pipelineId);
+        run.setVersion("abcdefg");
+        run.setStartDate(start);
+        run.setEndDate(end);
+        run.setStatus(TaskStatus.RUNNING);
+        run.setCommitStatus(CommitStatus.NOT_COMMITTED);
+        run.setLastChangeCommitTime(new Date());
+        run.setPodId(TEST_POD_ID);
+        run.setParams(TEST_PARAMS);
+        run.setOwner(USER);
+        run.setServiceUrl(serviceUrl);
+
+        Map<SystemParams, String> systemParams = EnvVarsBuilderTest.matchSystemParams();
+        PipelineConfiguration configuration = EnvVarsBuilderTest.matchPipeConfig();
+        EnvVarsBuilder.buildEnvVars(run, configuration, systemParams, null);
+        run.setEnvVars(run.getEnvVars());
+        setRunInstance(run);
+        return run;
+    }
+
 }
