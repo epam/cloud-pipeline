@@ -73,6 +73,7 @@ import RemoveRunSchedules from '../../../models/runSchedule/RemoveRunSchedules';
 import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
 import RunSchedulingList from '../run-scheduling/run-sheduling-list';
 import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command';
+import JobEstimatedPriceInfo from "../../special/job-estimated-price-info";
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -1426,8 +1427,11 @@ class Logs extends localization.LocalizedReactComponent {
         price = (
           <tr>
             <th>Estimated price:</th>
-            <td>{adjustPrice(evaluateRunDuration(this.props.run.value) * this.props.run.value.pricePerHour).toFixed(2)}
-              $
+            <td>
+              <JobEstimatedPriceInfo>
+                {adjustPrice(evaluateRunDuration(this.props.run.value) * this.props.run.value.pricePerHour).toFixed(2)}
+                $
+              </JobEstimatedPriceInfo>
             </td>
           </tr>
         );

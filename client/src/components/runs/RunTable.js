@@ -54,6 +54,7 @@ import registryName from '../tools/registryName';
 import parseRunServiceUrl from '../../utils/parseRunServiceUrl';
 import mapResumeFailureReason from './utilities/map-resume-failure-reason';
 import RunTags from './run-tags';
+import JobEstimatedPriceInfo from '../special/job-estimated-price-info';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
@@ -845,15 +846,15 @@ export default class RunTable extends localization.LocalizedReactComponent {
     const price = Math.ceil(diff * 100.0) / 100.0;
     if (item.nodeCount) {
       return (
-        <span>
+        <JobEstimatedPriceInfo>
           Cost: {(price * (+item.nodeCount + 1)).toFixed(2)}$ ({price.toFixed(2)}$)
-        </span>
+        </JobEstimatedPriceInfo>
       );
     }
     return (
-      <span>
+      <JobEstimatedPriceInfo>
         Cost: {price.toFixed(2)}$
-      </span>
+      </JobEstimatedPriceInfo>
     );
   };
 

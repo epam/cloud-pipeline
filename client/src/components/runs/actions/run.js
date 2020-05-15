@@ -36,6 +36,7 @@ import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/la
 import {LIMIT_MOUNTS_PARAMETER} from '../../pipelines/launch/form/LimitMountsInput';
 import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
+import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import awsRegions from '../../../models/cloudRegions/CloudRegions';
 import {
@@ -893,10 +894,10 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             message={
               this._estimatedPriceType.pending
                 ? <Row>Estimated price: <Icon type="loading" /></Row>
-                : <Row>Estimated price: <b>{
+                : <Row><JobEstimatedPriceInfo>Estimated price: <b>{
                 (Math.ceil(this._estimatedPriceType.value.pricePerHour * 100.0) / 100.0 * (this.props.nodeCount + 1))
                   .toFixed(2)
-                }$</b> per hour.</Row>
+                }$</b> per hour.</JobEstimatedPriceInfo></Row>
             } />
         }
       </div>

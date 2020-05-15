@@ -30,6 +30,7 @@ import {getVersionRunningInfo} from '../../../tools/utils';
 import LoadingView from '../../../special/LoadingView';
 import roleModel from '../../../../utils/roleModel';
 import highlightText from '../../../special/highlightText';
+import JobEstimatedPriceInfo from '../../../special/job-estimated-price-info';
 import {Alert, Button, Col, Icon, message, Modal, Row} from 'antd';
 import {
   getInputPaths,
@@ -746,9 +747,11 @@ export default class PersonalToolsPanel extends React.Component {
               style={{margin: 2}}
               message={
                 <Row>
-                  Estimated price: <b>{
-                  Math.ceil(this.state.runToolInfo.pricePerHour * (this.state.runToolInfo.nodeCount + 1)* 100.0) / 100.0
-                }$</b> per hour.
+                  <JobEstimatedPriceInfo>
+                    Estimated price: <b>{
+                      Math.ceil(this.state.runToolInfo.pricePerHour * (this.state.runToolInfo.nodeCount + 1)* 100.0) / 100.0
+                    }$</b> per hour.
+                  </JobEstimatedPriceInfo>
                 </Row>
               } />
           }

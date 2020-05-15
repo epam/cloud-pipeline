@@ -43,6 +43,7 @@ import DockerImageInput from './DockerImageInput';
 import BooleanParameterInput from './BooleanParameterInput';
 import MetadataBrowser from './../dialogs/MetadataBrowser';
 import CodeEditor from '../../../special/CodeEditor';
+import JobEstimatedPriceInfo from '../../../special/job-estimated-price-info';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import AutoCompleteForParameter from '../../../special/AutoCompleteForParameter';
 import {LIMIT_MOUNTS_PARAMETER, LimitMountsInput} from './LimitMountsInput';
@@ -1445,7 +1446,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         </Popover>
       );
       const {pricePerHour} = this.state.estimatedPrice;
-      const priceStr = `${(pricePerHour * this.multiplyValueBy).toFixed(2)} $`;
+      const priceStr = (
+        <JobEstimatedPriceInfo>
+          {(pricePerHour * this.multiplyValueBy).toFixed(2)} $
+        </JobEstimatedPriceInfo>
+      );
       return (
         <span style={{marginLeft: 5}}>Estimated price per hour: <span className={className}>
           {priceStr} {info}</span>
@@ -1453,7 +1458,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       );
     } else if (this.state.estimatedPrice.pricePerHour > 0) {
       const {pricePerHour} = this.state.estimatedPrice;
-      const priceStr = `${(pricePerHour * this.multiplyValueBy).toFixed(2)} $`;
+      const priceStr = (
+        <JobEstimatedPriceInfo>
+          {(pricePerHour * this.multiplyValueBy).toFixed(2)} $
+        </JobEstimatedPriceInfo>
+      );
       return (
         <span style={{marginLeft: 5}}>Estimated price per hour: <span className={className}>
           {priceStr}</span>

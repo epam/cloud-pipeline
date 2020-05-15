@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-.limit-mounts-warning .ant-tooltip-inner,
-.job-estimated-price-info .ant-tooltip-inner {
-  max-width: unset;
+.info {
+  cursor: pointer;
+}
+
+.info:hover {
+  text-decoration: underline;
 }

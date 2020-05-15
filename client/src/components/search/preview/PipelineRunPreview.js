@@ -379,12 +379,14 @@ export default class PipelineRunPreview extends React.Component {
                   Estimated price:
                 </td>
                 <td>
-                  {
-                    adjustPrice(
-                      evaluateRunDuration(this.props.runInfo.value) *
-                      this.props.runInfo.value.pricePerHour
-                    )
-                  }$
+                  <JobEstimatedPriceInfo>
+                    {
+                      adjustPrice(
+                        evaluateRunDuration(this.props.runInfo.value) *
+                        this.props.runInfo.value.pricePerHour
+                      )
+                    }$
+                  </JobEstimatedPriceInfo>
                 </td>
               </tr>
             </tbody>
