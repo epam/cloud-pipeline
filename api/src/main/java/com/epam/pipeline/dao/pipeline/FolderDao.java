@@ -181,6 +181,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         DATASTORAGE_ALLOWED_CIDRS,
         DATASTORAGE_REGION_ID,
         DATASTORAGE_FILE_SHARE_MOUNT_ID,
+        DATASTORAGE_SENSITIVE,
         ENABLE_VERSIONING,
         BACKUP_DURATION,
         STS_DURATION,
@@ -294,6 +295,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                         dataStorage.setParentFolderId(folderId);
                         dataStorage.setLocked(rs.getBoolean(DATASTORAGE_LOCKED.name()));
                         dataStorage.setShared(rs.getBoolean(DATASTORAGE_SHARED.name()));
+                        dataStorage.setSensitive(rs.getBoolean(DATASTORAGE_SENSITIVE.name()));
                         folder.getStorages().add(dataStorage);
                     }
                     rs.getLong(CONFIG_ID.name());
