@@ -84,11 +84,11 @@ const icons = {
 @inject('dtsList', 'preferences')
 @inject(({}, params) => {
   return {
-    runInfo: params.item && params.item.id
-      ? pipelineRun.run(params.item.id, {refresh: false})
+    runInfo: params.item && (params.item.id || params.item.elasticId)
+      ? pipelineRun.run((params.item.id || params.item.elasticId), {refresh: false})
       : null,
-    runTasks: params.item && params.item.id
-      ? pipelineRun.runTasks(params.item.id)
+    runTasks: params.item && (params.item.id || params.item.elasticId)
+      ? pipelineRun.runTasks((params.item.id || params.item.elasticId))
       : null
   };
 })
@@ -112,17 +112,17 @@ export default class PipelineRunPreview extends React.Component {
         version
       } = this.props.runInfo.value;
       if (pipelineName && version) {
-        return `Run #${this.props.item.id} - ${pipelineName} (${version})`;
+        return `Run #${this.props.item.id || this.props.item.elasticId} - ${pipelineName} (${version})`;
       } else if (pipelineName) {
-        return `Run #${this.props.item.id} - ${pipelineName}`;
+        return `Run #${this.props.item.id || this.props.item.elasticId} - ${pipelineName}`;
       } else if (dockerImage) {
         const image = dockerImage.split('/').pop();
-        return `Run #${this.props.item.id} - ${image}`;
+        return `Run #${this.props.item.id || this.props.item.elasticId} - ${image}`;
       }
-      return `Run #${this.props.item.id}`;
+      return `Run #${this.props.item.id || this.props.item.elasticId}`;
     }
     if (this.props.item) {
-      return `Run #${this.props.item.id}`;
+      return `Run #${this.props.item.id || this.props.item.elasticId}`;
     }
     return null;
   }

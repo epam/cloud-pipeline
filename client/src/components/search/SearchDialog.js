@@ -465,7 +465,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             }
             return `${resultItem.name} - ${resultItem.description}`;
           }
-          return resultItem.name;
+          return resultItem.name || `Run ${resultItem.elasticId}`;
         }
         default: return resultItem.name;
       }
