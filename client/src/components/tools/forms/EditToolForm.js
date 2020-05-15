@@ -417,6 +417,12 @@ export default class EditToolForm extends React.Component {
         : undefined;
       this.props.allowedInstanceTypes.setRegionId(cloudRegionId, true);
     }
+    if (this.props.allowedInstanceTypes &&
+      this.props.allowedInstanceTypes.loaded &&
+      this.props.allowedInstanceTypes.changed) {
+      this.correctAllowedInstanceValues();
+      this.props.allowedInstanceTypes.handleChanged();
+    }
   }
 
   componentWillReceiveProps (nextProps) {
@@ -424,6 +430,16 @@ export default class EditToolForm extends React.Component {
       this.reset(nextProps);
     }
   }
+
+  correctAllowedInstanceValues = () => {
+    const {getFieldValue} = this.props.form;
+    const instanceType = getFieldValue('instanceType') || this.getInstanceTypeInitialValue();
+    const priceType = getFieldValue('is_spot') || this.getPriceTypeInitialValue();
+    this.props.form.setFieldsValue({
+      instanceType: this.correctInstanceTypeValue(instanceType),
+      is_spot: this.correctPriceTypeValue(priceType)
+    });
+  };
 
   handleIsSpotChange = (isSpot) => {
     if (this.props.allowedInstanceTypes && isSpot !== undefined && isSpot !== null) {
