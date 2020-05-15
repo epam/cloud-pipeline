@@ -118,11 +118,11 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     }
 
     public void monitorResourceUsage() {
-        List<PipelineRun> runs = pipelineRunManager.loadRunningPipelineRuns();
+        processPausingResumingRuns();
 
+        List<PipelineRun> runs = pipelineRunManager.loadRunningPipelineRuns();
         processIdleRuns(runs);
         processOverloadedRuns(runs);
-        processPausingResumingRuns();
     }
 
     private void processPausingResumingRuns() {
