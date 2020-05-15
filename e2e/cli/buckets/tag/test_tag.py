@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -143,7 +143,8 @@ class TestTagging(object):
          2. error message
      """
     test_case_for_non_existing = [
-        ('cp://non_existing/{}'.format(test_file), "data storage with id: 'non_existing' was not found"),
+        ('cp://non_existing/{}'.format(test_file),
+         "data storage with id: '{}/{}' was not found".format("non_existing", test_file)),
         ('cp://{}/non_existing'.format(bucket), "Storage path 'non_existing' for bucket '%s' does not exist" % bucket)
     ]
 

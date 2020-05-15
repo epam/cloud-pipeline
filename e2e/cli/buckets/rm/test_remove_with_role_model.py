@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -46,7 +46,8 @@ class TestRmWithRoleModel(object):
         try:
             error_text = pipe_storage_rm("cp://{}/{}".format(self.bucket_name, self.test_file),
                                          expected_status=1, token=self.token)[1]
-            assert_error_message_is_present(error_text, 'Access is denied')
+            assert_error_message_is_present(error_text, "data storage with id: '{}/{}' was not found"
+                                            .format(self.bucket_name, self.test_file))
             assert_files_skipped(self.bucket_name, self.test_file)
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
