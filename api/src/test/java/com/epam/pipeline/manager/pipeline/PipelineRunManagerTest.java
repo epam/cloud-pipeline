@@ -106,6 +106,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     private static final String ENV_VAR_NAME = "TEST_ENV";
     private static final String ENV_VAR_VALUE = "value";
     private static final float PRICE_PER_HOUR = 12F;
+    private static final float COMPUTE_PRICE_PER_HOUR = 11F;
+    private static final float DISK_PRICE_PER_HOUR = 1F;
     private static final String INSTANCE_TYPE = "m5.large";
     private static final String SPOT = PriceType.SPOT.getLiteral();
     private static final String ON_DEMAND = PriceType.ON_DEMAND.getLiteral();
@@ -196,7 +198,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         configuration.setCloudRegionId(defaultAwsRegion.getId());
 
         price = new InstancePrice(
-                configuration.getInstanceType(), Integer.valueOf(configuration.getInstanceDisk()), PRICE_PER_HOUR);
+                configuration.getInstanceType(), Integer.valueOf(configuration.getInstanceDisk()), PRICE_PER_HOUR, 
+                COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR);
 
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(notScannedTool);
         when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID), eq(true))).thenReturn(true);

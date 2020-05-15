@@ -1402,10 +1402,17 @@ public class PipelineRunManager {
         if (!instance.isEmpty()) {
             run.setInstance(instance);
             InstancePrice runPrice = instanceOfferManager.getInstanceEstimatedPrice(
-                    instance.getNodeType(), instance.getNodeDisk(), instance.getSpot(), instance.getCloudRegionId());
+                    instance.getNodeType(), instance.getEffectiveNodeDisk(), instance.getSpot(), 
+                    instance.getCloudRegionId());
             LOGGER.debug("Expected price per hour: {}", runPrice.getPricePerHour());
-            run.setPricePerHour(BigDecimal.valueOf(runPrice.getPricePerHour()).setScale(2, RoundingMode.HALF_EVEN));
+            run.setPricePerHour(scaled(runPrice.getPricePerHour()));
+            run.setComputePricePerHour(scaled(runPrice.getComputePricePerHour()));
+            run.setDiskPricePerHour(scaled(runPrice.getDiskPricePerHour()));
         }
+    }
+
+    private BigDecimal scaled(final double pricePerHour) {
+        return BigDecimal.valueOf(pricePerHour).setScale(2, RoundingMode.HALF_EVEN);
     }
 
     private PipelineRun createRestartRun(final PipelineRun run) {

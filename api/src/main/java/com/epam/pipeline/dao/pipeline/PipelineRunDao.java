@@ -696,6 +696,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         EXEC_PREFERENCES,
         PRETTY_URL,
         PRICE_PER_HOUR,
+        COMPUTE_PRICE_PER_HOUR,
+        DISK_PRICE_PER_HOUR,
         STATE_REASON,
         NON_PAUSE,
         NODE_REAL_DISK,
@@ -742,6 +744,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                     JsonMapper.convertDataToJsonStringForQuery(run.getExecutionPreferences()));
             params.addValue(PRETTY_URL.name(), run.getPrettyUrl());
             params.addValue(PRICE_PER_HOUR.name(), run.getPricePerHour());
+            params.addValue(COMPUTE_PRICE_PER_HOUR.name(), run.getComputePricePerHour());
+            params.addValue(DISK_PRICE_PER_HOUR.name(), run.getDiskPricePerHour());
             params.addValue(STATE_REASON.name(), run.getStateReasonMessage());
             params.addValue(NON_PAUSE.name(), run.isNonPause());
             params.addValue(TAGS.name(), JsonMapper.convertDataToJsonStringForQuery(run.getTags()));
@@ -877,6 +881,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             }
             run.setPrettyUrl(rs.getString(PRETTY_URL.name()));
             run.setPricePerHour(rs.getBigDecimal(PRICE_PER_HOUR.name()));
+            run.setComputePricePerHour(rs.getBigDecimal(COMPUTE_PRICE_PER_HOUR.name()));
+            run.setDiskPricePerHour(rs.getBigDecimal(DISK_PRICE_PER_HOUR.name()));
             String stateReasonMessage = rs.getString(STATE_REASON.name());
             if (!rs.wasNull()) {
                 run.setStateReasonMessage(stateReasonMessage);
