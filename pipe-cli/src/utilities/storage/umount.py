@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import subprocess
-
+from future.utils import iteritems
 
 class Umount(object):
 
@@ -27,7 +27,7 @@ class Umount(object):
                 return
             cmd_logs[cmd] = log
         error_message = 'All attempts to umount %s failed.' % mountpoint
-        for cmd, log in cmd_logs.iteritems():
+        for cmd, log in iteritems(cmd_logs):
             if log:
                 error_message += '\n%s: %s' % (cmd, log)
         raise RuntimeError(error_message)
