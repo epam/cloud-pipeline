@@ -48,6 +48,8 @@ RUN apt-get update -y && \
 RUN curl https://bootstrap.pypa.io/get-pip.py | python - && \
     pip install --upgrade pip flask
 
+RUN pip install -I setuptools
+
 ARG GUI_ENV="xfce4 xfce4-xkb-plugin"
 RUN apt-get update -y && \
     apt-get install -y ${GUI_ENV}              
@@ -89,3 +91,4 @@ RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key
 # Add Chrome desktop icon
 ADD create_chrome_launcher.sh /caps/create_chrome_launcher.sh
 RUN echo "bash /caps/create_chrome_launcher.sh" >> /caps.sh
+RUN cp /usr/NX/etc/server.cfg /usr/NX/etc/server.cfg.template
