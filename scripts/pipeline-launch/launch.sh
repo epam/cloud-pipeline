@@ -1300,6 +1300,10 @@ then
     initialise_wrappers "docker" "docker_wrapper \"$DEFAULT_ENV_FILE\"" "$CP_USR_BIN"
 fi
 
+# Apply the "custom fixes" script, which contains very specific modifications to fix the docker images
+# This is used, when we don't want to fix some issue on a docker-per-docker basis
+custom_fixes
+
 # Tell the environment that initilization phase is finished and a source script is going to be executed
 pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"
 
