@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloud.gcp;
 
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
+import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -41,9 +42,11 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -136,22 +139,12 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public void terminateInstance(final GCPRegion region, final String instanceId) {
-        try {
-            vmService.terminateInstance(region, instanceId);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            throw new GCPException(e);
-        }
+        vmService.terminateInstance(region, instanceId);
     }
 
     @Override
     public boolean instanceExists(final GCPRegion region, final String instanceId) {
-        try {
-            return vmService.instanceExists(region, instanceId);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            throw new GCPException(e);
-        }
+        return vmService.instanceExists(region, instanceId);
     }
 
     @Override
@@ -159,7 +152,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
                                              final RunInstance instance) {
         try {
             return fillRunInstanceFromGcpVm(instance, vmService.getAliveInstance(region, nodeLabel));
-        } catch (IOException e) {
+        } catch (GCPException e) {
             log.error("An error while getting instance description {}", nodeLabel);
             return null;
         }
@@ -207,6 +200,15 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     @Override
     public void attachDisk(final GCPRegion region, final Long runId, final DiskAttachRequest request) {
         throw new UnsupportedOperationException("Disk attaching doesn't work with GCP provider yet.");
+    }
+
+    @Override
+    public List<NodeDisk> loadDisks(final GCPRegion region, final Long runId) {
+        final Instance instance = vmService.getAliveInstance(region, String.valueOf(runId));
+        final LocalDateTime launchTime = getNodeLaunchTime(region, runId);
+        return instance.getDisks().stream()
+                .map(disk -> new NodeDisk(disk.getInitializeParams().getDiskSizeGb(), instance.getName(), launchTime))
+                .collect(Collectors.toList());
     }
 
     @Override

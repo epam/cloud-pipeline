@@ -21,9 +21,15 @@ package com.epam.pipeline.entity.cloud.azure;
 import com.epam.pipeline.exception.cloud.azure.AzureException;
 import com.microsoft.azure.management.compute.PowerState;
 import com.microsoft.azure.management.compute.VirtualMachine;
+import com.microsoft.azure.management.compute.VirtualMachineDataDisk;
 import com.microsoft.azure.management.compute.VirtualMachineScaleSetVM;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Data
 @AllArgsConstructor
@@ -34,12 +40,14 @@ public class AzureVirtualMachineStats {
     private PowerState powerState;
     private String name;
     private String privateIP;
+    private List<Integer> disks;
 
     public static AzureVirtualMachineStats fromVirtualMachine(final VirtualMachine machine) {
         return new AzureVirtualMachineStats(
                 machine.powerState(),
                 machine.name(),
-                machine.getPrimaryNetworkInterface().primaryIPConfiguration().privateIPAddress());
+                machine.getPrimaryNetworkInterface().primaryIPConfiguration().privateIPAddress(),
+                toDisks(machine));
     }
 
     public static AzureVirtualMachineStats fromScaleSetVirtualMachine(final VirtualMachineScaleSetVM machine) {
@@ -50,6 +58,23 @@ public class AzureVirtualMachineStats {
                         .findFirst()
                         .orElseThrow(() -> new AzureException(
                                 String.format(NO_NET_INTERFACE_FOR_VM, machine.computerName())))
-                        .primaryIPConfiguration().privateIPAddress());
+                        .primaryIPConfiguration().privateIPAddress(),
+                toDisks(machine));
+    }
+
+    private static List<Integer> toDisks(final VirtualMachine machine) {
+        return toDisks(machine.dataDisks(), machine.osDiskSize());
+    }
+
+    private static List<Integer> toDisks(final VirtualMachineScaleSetVM machine) {
+        return toDisks(machine.dataDisks(), machine.osDiskSizeInGB());
+    }
+
+    private static List<Integer> toDisks(final Map<Integer, VirtualMachineDataDisk> dataDisks, final int osDiskSize) {
+        return Stream.concat(Stream.of(osDiskSize), toDisks(dataDisks)).collect(Collectors.toList());
+    }
+
+    private static Stream<Integer> toDisks(final Map<Integer, VirtualMachineDataDisk> dataDisks) {
+        return dataDisks.values().stream().map(VirtualMachineDataDisk::size);
     }
 }

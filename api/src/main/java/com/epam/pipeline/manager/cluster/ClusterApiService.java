@@ -40,7 +40,6 @@ import org.springframework.stereotype.Service;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ_FILTER;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_STOP;
-import static com.epam.pipeline.security.acl.AclExpressions.NODE_WRITE;
 
 @Service
 @RequiredArgsConstructor
@@ -105,11 +104,6 @@ public class ClusterApiService {
 
     public List<MasterNode> getMasterNodes() {
         return nodesManager.getMasterNodes();
-    }
-
-    @PreAuthorize(NODE_WRITE)
-    public List<NodeDisk> registerNodeDisks(final String name, final List<DiskRegistrationRequest> requests) {
-        return nodeDiskManager.register(name, requests);
     }
 
     @PreAuthorize(NODE_READ)

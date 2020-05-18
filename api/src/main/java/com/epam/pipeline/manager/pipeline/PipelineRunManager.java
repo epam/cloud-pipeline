@@ -27,6 +27,7 @@ import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.InstancePrice;
+import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
@@ -1160,6 +1161,34 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<PipelineRun> loadRunsByStatuses(final List<TaskStatus> statuses) {
         return pipelineRunDao.loadRunsByStatuses(statuses);
+    }
+
+    /**
+     * Adjusts run price per hour including provided node disks.
+     * 
+     * @param runId of {@link PipelineRun} to update price for.
+     * @param instance of {@link PipelineRun}.
+     * @param disks of {@link PipelineRun} instance.
+     * @return Updated pipeline run.
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun adjustRunPricePerHourToDisks(final Long runId, final RunInstance instance, 
+                                                    final List<NodeDisk> disks) {
+        final PipelineRun run = loadPipelineRun(runId);
+        final BigDecimal pricePerHour = Optional.ofNullable(instance)
+                .filter(runInstance -> !runInstance.isEmpty())
+                .map(runInstance -> instanceOfferManager.getInstanceEstimatedPrice(runInstance.getNodeType(),
+                        getTotalSize(disks), runInstance.getSpot(), runInstance.getCloudRegionId()))
+                .map(InstancePrice::getPricePerHour)
+                .map(this::scaled)
+                .orElse(run.getPricePerHour());
+        run.setPricePerHour(pricePerHour);
+        LOGGER.debug("Updated expected price per hour: {}", run.getPricePerHour());
+        return updateRunInfo(run);
+    }
+
+    private int getTotalSize(final List<NodeDisk> disks) {
+        return (int) ListUtils.emptyIfNull(disks).stream().mapToLong(NodeDisk::getSize).sum();
     }
 
     private void adjustInstanceDisk(final PipelineConfiguration configuration) {

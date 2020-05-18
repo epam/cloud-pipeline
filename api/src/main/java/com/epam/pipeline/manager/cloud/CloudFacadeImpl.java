@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -230,6 +231,12 @@ public class CloudFacadeImpl implements CloudFacade {
     public void attachDisk(final Long regionId, final Long runId, final DiskAttachRequest request) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
         getInstanceService(region).attachDisk(region, runId, request);
+    }
+
+    @Override
+    public List<NodeDisk> loadDisks(final Long regionId, final Long runId) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        return getInstanceService(region).loadDisks(region, runId);
     }
 
     private AbstractCloudRegion getRegionByRunId(final Long runId) {

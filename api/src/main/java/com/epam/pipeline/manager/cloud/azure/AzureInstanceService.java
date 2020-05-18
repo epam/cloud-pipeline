@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cloud.azure;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
+import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AzureRegion;
@@ -45,10 +46,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -211,6 +214,15 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     @Override
     public void attachDisk(final AzureRegion region, final Long runId, final DiskAttachRequest request) {
         throw new UnsupportedOperationException("Disk attaching doesn't work with Azure provider yet.");
+    }
+
+    @Override
+    public List<NodeDisk> loadDisks(final AzureRegion region, final Long runId) {
+        final AzureVirtualMachineStats vm = vmService.getAliveVMByRunId(region, String.valueOf(runId));
+        final LocalDateTime launchTime = getNodeLaunchTime(region, runId);
+        return vm.getDisks().stream()
+                .map(disk -> new NodeDisk(disk.longValue(), vm.getName(), launchTime))
+                .collect(Collectors.toList());
     }
 
     @Override

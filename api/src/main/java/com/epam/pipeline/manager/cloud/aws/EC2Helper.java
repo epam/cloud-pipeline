@@ -28,6 +28,7 @@ import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryRequest;
 import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryResult;
 import com.amazonaws.services.ec2.model.DescribeVolumesRequest;
+import com.amazonaws.services.ec2.model.EbsInstanceBlockDevice;
 import com.amazonaws.services.ec2.model.EbsInstanceBlockDeviceSpecification;
 import com.amazonaws.services.ec2.model.Filter;
 import com.amazonaws.services.ec2.model.Instance;
@@ -50,6 +51,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
+import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.exception.cloud.aws.AwsEc2Exception;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -196,8 +198,7 @@ public class EC2Helper {
      */
     public LocalDateTime getInstanceLaunchTime(final String runId, final String awsRegion) {
         final Instance instance = getInstance(runId, awsRegion, new Filter().withName(NAME_TAG).withValues(runId));
-        final Date launchTime = instance.getLaunchTime();
-        return LocalDateTime.ofInstant(launchTime.toInstant(), UTC);
+        return com.epam.pipeline.entity.utils.DateUtils.toLocalDateTime(instance.getLaunchTime());
     }
 
     /**
@@ -350,6 +351,34 @@ public class EC2Helper {
     private void deleteVolume(final AmazonEC2 client, final String volumeId) {
         client.deleteVolume(new DeleteVolumeRequest()
                 .withVolumeId(volumeId));
+    }
+
+    public List<NodeDisk> loadAttachedVolumes(final String runId, final String awsRegion) {
+        final AmazonEC2 client = getEC2Client(awsRegion);
+        final Instance instance = getAliveInstance(runId, awsRegion);
+        return attachedVolumes(client, instance)
+                .map(volume -> toDisk(volume, instance.getInstanceId()))
+                .collect(Collectors.toList());
+    }
+
+    private Stream<Volume> attachedVolumes(final AmazonEC2 client, final Instance instance) {
+        return volumes(client, getVolumeIds(instance));
+    }
+
+    private Stream<Volume> volumes(final AmazonEC2 client, final List<String> volumeIds) {
+        return client.describeVolumes(new DescribeVolumesRequest(volumeIds)).getVolumes().stream();
+    }
+
+    private List<String> getVolumeIds(final Instance instance) {
+        return CollectionUtils.emptyIfNull(instance.getBlockDeviceMappings()).stream()
+                .map(InstanceBlockDeviceMapping::getEbs)
+                .map(EbsInstanceBlockDevice::getVolumeId)
+                .collect(Collectors.toList());
+    }
+
+    private NodeDisk toDisk(final Volume volume, final String instanceId) {
+        return new NodeDisk(volume.getSize().longValue(), instanceId, 
+                com.epam.pipeline.entity.utils.DateUtils.toLocalDateTime(volume.getCreateTime()));
     }
 
     private double getMeanValue(List<SpotPrice> value) {

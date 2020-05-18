@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.transaction.Transactional;
-import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -22,18 +21,18 @@ public class NodeDiskManager {
 
     @Transactional
     public NodeDisk register(final String nodeId, final DiskRegistrationRequest request) {
-        return register(nodeId, Collections.singletonList(request)).get(0);
+        Assert.notNull(nodeId,
+                messageHelper.getMessage(MessageConstants.ERROR_DISK_NODE_MISSING));
+        Assert.notNull(request.getSize(),
+                messageHelper.getMessage(MessageConstants.ERROR_DISK_SIZE_MISSING));
+        Assert.isTrue(request.getSize() > 0,
+                messageHelper.getMessage(MessageConstants.ERROR_DISK_SIZE_INVALID, request.getSize()));
+        return nodeDiskDao.insert(nodeId, request);
     }
 
     @Transactional
-    public List<NodeDisk> register(final String nodeId, final List<DiskRegistrationRequest> requests) {
-        requests.forEach(request -> Assert.notNull(nodeId,
-                messageHelper.getMessage(MessageConstants.ERROR_DISK_NODE_MISSING)));
-        requests.forEach(request -> Assert.notNull(request.getSize(),
-                messageHelper.getMessage(MessageConstants.ERROR_DISK_SIZE_MISSING)));
-        requests.forEach(request -> Assert.isTrue(request.getSize() > 0,
-                messageHelper.getMessage(MessageConstants.ERROR_DISK_SIZE_INVALID, request.getSize())));
-        return nodeDiskDao.insert(nodeId, requests);
+    public List<NodeDisk> register(final List<NodeDisk> disks) {
+        return nodeDiskDao.insert(disks);
     }
 
     public List<NodeDisk> loadByNodeId(final String nodeId) {
