@@ -1,0 +1,8 @@
+#!/bin/bash
+if [ -f "/usr/NX/etc/server.cfg" ]; then
+    \cp /usr/NX/etc/server.cfg /usr/NX/etc/server.cfg.cp_bkp
+    sed -i '/DisplayOwner/d' /usr/NX/etc/server.cfg
+    echo "DisplayOwner $OWNER" >> /usr/NX/etc/server.cfg
+    
+    echo "NoMachine DisplayOwner-fix is applied"
+fi
