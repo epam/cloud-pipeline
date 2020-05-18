@@ -35,7 +35,7 @@ mkdir -p /home/${OWNER}/Desktop
 chown ${OWNER} /home/${OWNER}/Desktop
 chmod o+rwx /home/${OWNER}/Desktop
 
-cp /usr/NX/etc/server.cfg.template /usr/NX/etc/server.cfg
+\cp /usr/NX/etc/server.cfg.template /usr/NX/etc/server.cfg
 
 sed -i '/#CreateDisplay/c\CreateDisplay 1' /usr/NX/etc/server.cfg
 sed -i "/#DisplayOwner/c\DisplayOwner $OWNER" /usr/NX/etc/server.cfg
