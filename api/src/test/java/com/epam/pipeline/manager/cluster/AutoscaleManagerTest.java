@@ -74,6 +74,9 @@ public class AutoscaleManagerTest {
     private NodesManager nodesManager;
 
     @Mock
+    private NodeDiskManager nodeDiskManager;
+
+    @Mock
     private KubernetesManager kubernetesManager;
 
     @Mock
@@ -92,7 +95,8 @@ public class AutoscaleManagerTest {
         MockitoAnnotations.initMocks(this);
 
         autoscaleManager = new AutoscaleManager(pipelineRunManager, executorService, autoscalerService, nodesManager,
-                                                kubernetesManager, preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade);
+                                                nodeDiskManager, kubernetesManager, preferenceManager, 
+                                                TEST_KUBE_NAMESPACE, cloudFacade);
 
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());
 

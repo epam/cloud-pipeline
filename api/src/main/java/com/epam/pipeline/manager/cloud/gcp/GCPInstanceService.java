@@ -206,8 +206,16 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     public List<NodeDisk> loadDisks(final GCPRegion region, final Long runId) {
         final Instance instance = vmService.getAliveInstance(region, String.valueOf(runId));
         final LocalDateTime launchTime = getNodeLaunchTime(region, runId);
+        return getDisks(instance, launchTime);
+    }
+
+    private List<NodeDisk> getDisks(final Instance instance, final LocalDateTime launchTime) {
         return instance.getDisks().stream()
-                .map(disk -> new NodeDisk(disk.getInitializeParams().getDiskSizeGb(), instance.getName(), launchTime))
+                .map(disk -> disk.get("diskSizeGb"))
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .map(Long::valueOf)
+                .map(disk -> new NodeDisk(disk, instance.getName(), launchTime))
                 .collect(Collectors.toList());
     }
 

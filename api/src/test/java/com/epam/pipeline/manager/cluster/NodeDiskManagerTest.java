@@ -35,7 +35,7 @@ public class NodeDiskManagerTest {
 
     @Before
     public void mockInsertingDisk() {
-        doReturn(Collections.singletonList(disk())).when(nodeDiskDao).insert(any(), any());
+        doReturn(Collections.singletonList(disk())).when(nodeDiskDao).insert(any(), any(DiskRegistrationRequest.class));
     }
 
     @Test
