@@ -61,6 +61,8 @@
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,
+                        r.compute_price_per_hour,
+                        r.disk_price_per_hour,
                         r.state_reason,
                         r.non_pause,
                         r.node_real_disk,
