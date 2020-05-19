@@ -43,6 +43,9 @@ public class GCPVMService {
     private static final String LABEL_FILTER = "labels.%s=\"%s\"";
     private static final String STATUS_FILTER = "status=\"%s\"";
     private static final String OR = " OR ";
+    private static final String AND = " AND ";
+    private static final String OPENING_BRACKET = " ( ";
+    private static final String CLOSING_BRACKET = " ) ";
     private static final String COMPUTE_OPERATIONS_FILTER = "targetLink eq .*%s";
     private static final String COMPUTE_INSTANCES_PREEMPTED = "compute.instances.preempted";
     private static final String COMPUTE_INSTANCE_DELETED = "delete";
@@ -167,12 +170,15 @@ public class GCPVMService {
             return  ListUtils.emptyIfNull(
                     gcpClient.buildComputeClient(region).instances()
                             .list(region.getProject(), region.getRegionCode())
-                            .setFilter(String.format(LABEL_FILTER, RUN_ID_LABEL_NAME, runId))
-                            .setFilter(String.format(STATUS_FILTER, "RUNNING") +
+                            .setFilter(String.format(LABEL_FILTER, RUN_ID_LABEL_NAME, runId) +
+                                    AND +
+                                    OPENING_BRACKET +
+                                    String.format(STATUS_FILTER, "RUNNING") +
                                     OR + String.format(STATUS_FILTER, "STOPPING") +
                                     OR + String.format(STATUS_FILTER, "STOPPED") +
                                     OR + String.format(STATUS_FILTER, "PROVISIONING") +
-                                    OR + String.format(STATUS_FILTER, "STAGING"))
+                                    OR + String.format(STATUS_FILTER, "STAGING") +
+                                    CLOSING_BRACKET)
                             .execute()
                             .getItems())
                     .stream().findFirst()
