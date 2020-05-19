@@ -49,6 +49,18 @@ if [ $? -ne 0 ]; then
   fi
 fi
 
+# Get the kube docker images, required by the kubelet
+# This is needed, as we don't want to rely on the external repos
+systemctl start docker && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.7.5/docker/kube-proxy-amd64-v1.7.5.tar" -O /tmp/kube-proxy-amd64-v1.7.5.tar  && \
+docker load -i /tmp/kube-proxy-amd64-v1.7.5.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.7.5/docker/pause-amd64-3.0.tar" -O /tmp/pause-amd64-3.0.tar && \
+docker load -i /tmp/pause-amd64-3.0.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.7.5/docker/flannel-v0.9.0-amd64.tar" -O /tmp/flannel-v0.9.0-amd64.tar && \
+docker load -i /tmp/flannel-v0.9.0-amd64.tar && \
+systemctl stop docker && \
+rm -rf /tmp/*
+
 # Install kubelet
 cat <<EOF >/etc/yum.repos.d/kubernetes.repo
 [kubernetes]
