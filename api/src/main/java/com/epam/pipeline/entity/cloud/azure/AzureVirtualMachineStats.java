@@ -18,6 +18,7 @@
 
 package com.epam.pipeline.entity.cloud.azure;
 
+import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.exception.cloud.azure.AzureException;
 import com.microsoft.azure.management.compute.PowerState;
 import com.microsoft.azure.management.compute.VirtualMachine;
@@ -40,7 +41,7 @@ public class AzureVirtualMachineStats {
     private PowerState powerState;
     private String name;
     private String privateIP;
-    private List<Integer> disks;
+    private List<InstanceDisk> disks;
 
     public static AzureVirtualMachineStats fromVirtualMachine(final VirtualMachine machine) {
         return new AzureVirtualMachineStats(
@@ -62,19 +63,27 @@ public class AzureVirtualMachineStats {
                 toDisks(machine));
     }
 
-    private static List<Integer> toDisks(final VirtualMachine machine) {
+    private static List<InstanceDisk> toDisks(final VirtualMachine machine) {
         return toDisks(machine.dataDisks(), machine.osDiskSize());
     }
 
-    private static List<Integer> toDisks(final VirtualMachineScaleSetVM machine) {
+    private static List<InstanceDisk> toDisks(final VirtualMachineScaleSetVM machine) {
         return toDisks(machine.dataDisks(), machine.osDiskSizeInGB());
     }
 
-    private static List<Integer> toDisks(final Map<Integer, VirtualMachineDataDisk> dataDisks, final int osDiskSize) {
-        return Stream.concat(Stream.of(osDiskSize), toDisks(dataDisks)).collect(Collectors.toList());
+    private static List<InstanceDisk> toDisks(final Map<Integer, VirtualMachineDataDisk> dataDisks, 
+                                              final int osDiskSize) {
+        return Stream.concat(osDisk(osDiskSize), dataDisks(dataDisks)).collect(Collectors.toList());
     }
 
-    private static Stream<Integer> toDisks(final Map<Integer, VirtualMachineDataDisk> dataDisks) {
-        return dataDisks.values().stream().map(VirtualMachineDataDisk::size);
+    private static Stream<InstanceDisk> osDisk(final int osDiskSize) {
+        return Stream.of(new InstanceDisk((long) osDiskSize));
+    }
+
+    private static Stream<InstanceDisk> dataDisks(final Map<Integer, VirtualMachineDataDisk> dataDisks) {
+        return dataDisks.values().stream()
+                .map(VirtualMachineDataDisk::size)
+                .map(Integer::longValue)
+                .map(InstanceDisk::new);
     }
 }

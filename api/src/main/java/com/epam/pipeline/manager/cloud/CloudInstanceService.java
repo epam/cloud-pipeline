@@ -18,7 +18,7 @@ package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
-import com.epam.pipeline.entity.cluster.NodeDisk;
+import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -189,5 +189,5 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @param runId
      * @return
      */
-    List<NodeDisk> loadDisks(T region, Long runId);
+    List<InstanceDisk> loadDisks(T region, Long runId);
 }

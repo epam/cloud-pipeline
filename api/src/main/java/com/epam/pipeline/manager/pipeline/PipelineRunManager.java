@@ -26,6 +26,7 @@ import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
+import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.PriceType;
@@ -1173,7 +1174,7 @@ public class PipelineRunManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun adjustRunPricePerHourToDisks(final Long runId, final RunInstance instance, 
-                                                    final List<NodeDisk> disks) {
+                                                    final List<InstanceDisk> disks) {
         final PipelineRun run = loadPipelineRun(runId);
         final BigDecimal pricePerHour = Optional.ofNullable(instance)
                 .filter(runInstance -> !runInstance.isEmpty())
@@ -1187,8 +1188,8 @@ public class PipelineRunManager {
         return updateRunInfo(run);
     }
 
-    private int getTotalSize(final List<NodeDisk> disks) {
-        return (int) ListUtils.emptyIfNull(disks).stream().mapToLong(NodeDisk::getSize).sum();
+    private int getTotalSize(final List<InstanceDisk> disks) {
+        return (int) ListUtils.emptyIfNull(disks).stream().mapToLong(InstanceDisk::getSize).sum();
     }
 
     private void adjustInstanceDisk(final PipelineConfiguration configuration) {

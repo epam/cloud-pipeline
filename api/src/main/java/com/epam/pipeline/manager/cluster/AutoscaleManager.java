@@ -16,7 +16,8 @@
 
 package com.epam.pipeline.manager.cluster;
 
-import com.epam.pipeline.entity.cluster.NodeDisk;
+import com.epam.pipeline.entity.cluster.DiskRegistrationRequest;
+import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -465,8 +466,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             RunInstance instance = cloudFacade.scaleUpNode(longId, requiredInstance);
             //save instance ID and IP
             pipelineRunManager.updateRunInstance(longId, instance);
-            List<NodeDisk> disks = cloudFacade.loadDisks(instance.getCloudRegionId(), longId);
-            nodeDiskManager.register(disks);
+            List<InstanceDisk> disks = cloudFacade.loadDisks(instance.getCloudRegionId(), longId);
+            nodeDiskManager.register(instance.getNodeId(), DiskRegistrationRequest.from(disks));
             pipelineRunManager.adjustRunPricePerHourToDisks(longId, instance, disks);
             Instant end = Instant.now();
             removeNodeUpTask(longId);

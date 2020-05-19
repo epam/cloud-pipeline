@@ -10,7 +10,6 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,13 +20,11 @@ public class NodeDiskDao extends NamedParameterJdbcDaoSupport {
     private final String loadNodeDisksByNodeIdQuery;
     private final String deleteNodeDisksByNodeIdQuery;
 
-    public NodeDisk insert(final String nodeId, final DiskRegistrationRequest request) {
-        return insert(nodeId, Collections.singletonList(request)).get(0);
-    }
-
     public List<NodeDisk> insert(final String nodeId, final List<DiskRegistrationRequest> requests) {
         final List<NodeDisk> disks = toDisks(nodeId, requests);
-        disks.forEach(this::insert);
+        for (NodeDisk disk : disks) {
+            getNamedParameterJdbcTemplate().update(insertNodeDiskQuery, getParameters(disk));
+        }
         return disks;
     }
 
@@ -36,15 +33,6 @@ public class NodeDiskDao extends NamedParameterJdbcDaoSupport {
         return requests.stream()
                 .map(disk -> new NodeDisk(disk.getSize(), nodeId, now))
                 .collect(Collectors.toList());
-    }
-
-    public List<NodeDisk> insert(final List<NodeDisk> disks) {
-        disks.forEach(this::insert);
-        return disks;
-    }
-
-    private void insert(final NodeDisk disk) {
-        getNamedParameterJdbcTemplate().update(insertNodeDiskQuery, getParameters(disk));
     }
 
     public List<NodeDisk> loadByNodeId(final String nodeId) {

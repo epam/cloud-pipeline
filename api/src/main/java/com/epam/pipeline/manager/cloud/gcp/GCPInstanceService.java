@@ -18,7 +18,7 @@ package com.epam.pipeline.manager.cloud.gcp;
 
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
-import com.epam.pipeline.entity.cluster.NodeDisk;
+import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -203,19 +203,13 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public List<NodeDisk> loadDisks(final GCPRegion region, final Long runId) {
-        final Instance instance = vmService.getAliveInstance(region, String.valueOf(runId));
-        final LocalDateTime launchTime = getNodeLaunchTime(region, runId);
-        return getDisks(instance, launchTime);
-    }
-
-    private List<NodeDisk> getDisks(final Instance instance, final LocalDateTime launchTime) {
-        return instance.getDisks().stream()
+    public List<InstanceDisk> loadDisks(final GCPRegion region, final Long runId) {
+        return vmService.getAliveInstance(region, String.valueOf(runId)).getDisks().stream()
                 .map(disk -> disk.get("diskSizeGb"))
                 .filter(String.class::isInstance)
                 .map(String.class::cast)
                 .map(Long::valueOf)
-                .map(disk -> new NodeDisk(disk, instance.getName(), launchTime))
+                .map(InstanceDisk::new)
                 .collect(Collectors.toList());
     }
 

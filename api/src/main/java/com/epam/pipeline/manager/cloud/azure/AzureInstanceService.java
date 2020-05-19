@@ -19,7 +19,7 @@ package com.epam.pipeline.manager.cloud.azure;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
-import com.epam.pipeline.entity.cluster.NodeDisk;
+import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AzureRegion;
@@ -217,12 +217,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
-    public List<NodeDisk> loadDisks(final AzureRegion region, final Long runId) {
-        final AzureVirtualMachineStats vm = vmService.getAliveVMByRunId(region, String.valueOf(runId));
-        final LocalDateTime launchTime = getNodeLaunchTime(region, runId);
-        return vm.getDisks().stream()
-                .map(disk -> new NodeDisk(disk.longValue(), vm.getName(), launchTime))
-                .collect(Collectors.toList());
+    public List<InstanceDisk> loadDisks(final AzureRegion region, final Long runId) {
+        return vmService.getAliveVMByRunId(region, String.valueOf(runId)).getDisks();
     }
 
     @Override
