@@ -22,7 +22,6 @@ import org.joda.time.DateTimeZone;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.Date;
 
 public final class DateUtils {
@@ -42,10 +41,5 @@ public final class DateUtils {
 
     public static LocalDateTime convertDateToLocalDateTime(final Date date) {
         return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-    }
-
-    // TODO 18.05.2020: Leave either this method or the method above.
-    public static LocalDateTime toLocalDateTime(final Date date) {
-        return LocalDateTime.ofInstant(date.toInstant(), ZoneOffset.UTC);
     }
 }

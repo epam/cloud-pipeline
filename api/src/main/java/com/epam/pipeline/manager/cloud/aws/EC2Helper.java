@@ -198,7 +198,8 @@ public class EC2Helper {
      */
     public LocalDateTime getInstanceLaunchTime(final String runId, final String awsRegion) {
         final Instance instance = getInstance(runId, awsRegion, new Filter().withName(NAME_TAG).withValues(runId));
-        return com.epam.pipeline.entity.utils.DateUtils.toLocalDateTime(instance.getLaunchTime());
+        final Date launchTime = instance.getLaunchTime();
+        return LocalDateTime.ofInstant(launchTime.toInstant(), UTC);
     }
 
     /**
