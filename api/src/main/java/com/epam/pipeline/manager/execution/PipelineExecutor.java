@@ -75,7 +75,7 @@ public class PipelineExecutor {
     private static final String DEFAULT_CPU_REQUEST = "1";
     private static final String CPU_REQUEST_NAME = "cpu";
     private static final DockerMount HOST_CGROUP_MOUNT = DockerMount.builder()
-            .name("host_cgroups")
+            .name("host-cgroups")
             .hostPath("/sys/fs/cgroup")
             .mountPath("/sys/fs/cgroup").build();
 
