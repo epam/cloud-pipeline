@@ -118,9 +118,12 @@ do
  
 done
 
-# Stop docker if it is running and clean any remaining default directories
+# Stop docker if it is running
 systemctl stop docker
-rm -rf /var/lib/docker
+# Move any existing docker configuration to the mounted directory (if we have any existing docker images)
+if [ -d "/var/lib/docker" ] && [ ! -d "/ebs/docker" ]; then
+  mv /var/lib/docker /ebs/
+fi
 
 mkdir -p /etc/docker
 # Check nvidia drivers are installed
