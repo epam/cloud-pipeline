@@ -42,6 +42,7 @@ public class StoragePricingService {
         this.defaultPriceGb = calculateDefaultPriceGb();
     }
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public void updatePrices() {
         try {
             if (priceListLoader != null) {
