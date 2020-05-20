@@ -236,6 +236,9 @@ class DataStorageOperations(object):
             if version and recursive:
                 click.echo('"version" argument should\'t be combined with "recursive" option', err=True)
                 sys.exit(1)
+            if not recursive and not source_wrapper.is_file():
+                click.echo('Flag --recursive (-r) is required to restore folders.', err=True)
+                sys.exit(1)
             manager = source_wrapper.get_restore_manager()
             manager.restore_version(version, exclude, include, recursive=recursive)
         except ALL_ERRORS as error:

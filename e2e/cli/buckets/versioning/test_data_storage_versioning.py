@@ -195,7 +195,8 @@ class TestDataStorageVersioning(object):
                 f('{}/{}'.format(self.test_folder_1, self.test_file_1), 10, added=True)
             ]
             compare_listing(actual_output, expected_output, 2)
-            pipe_storage_restore('cp://{}/{}'.format(self.bucket, self.test_folder_1), expected_status=0)
+            pipe_storage_restore('cp://{}/{}'.format(self.bucket, self.test_folder_1), expected_status=0,
+                                 recursive=True)
             actual_output = get_pipe_listing(self.path_to_bucket)
             assert len(actual_output) == 1 and self.test_folder_1 in actual_output[0].name
             actual_output = assert_and_filter_first_versioned_listing_line(
