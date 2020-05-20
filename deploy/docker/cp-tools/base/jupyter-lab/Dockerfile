@@ -20,7 +20,7 @@ RUN conda install -c conda-forge jupyterlab==1.0.7 -y && \
     jupyter serverextension enable --py jupyterlab --sys-prefix
 
 # NodeJS for git plugin
-RUN conda install -c conda-forge nodejs -y
+RUN conda install -c anaconda nodejs -y
 
 # Git Plugin
 ## Set WITH_GIT_PLUGIN to NO for python2-based conda images
