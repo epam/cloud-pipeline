@@ -88,7 +88,7 @@ if [ "$CP_CAP_SHARE_FS_TYPE" == "nfs" ]; then
 elif [ "$CP_CAP_SHARE_FS_TYPE" == "lfs" ]; then
     if [ "$cluster_role" != "worker" ] || [ "$cluster_role_type" != "additional" ]
     then
-        cluster_setup_shared_fs_lfs_chunk "$MASTER_RUN_ID" "/mnt/chunks"
+        cluster_setup_shared_fs_lfs_chunk "$MASTER_RUN_ID" "/mnt/chunks" "/var/lib/mfs"
         if [ $? -ne 0 ]; then
             exit 1
         fi
