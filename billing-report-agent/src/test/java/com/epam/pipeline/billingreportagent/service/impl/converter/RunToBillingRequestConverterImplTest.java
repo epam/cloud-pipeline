@@ -173,7 +173,7 @@ public class RunToBillingRequestConverterImplTest {
         Assert.assertEquals(run.getDockerImage(), requestFieldsMap.get("tool"));
         Assert.assertEquals(run.getInstance().getNodeType(), requestFieldsMap.get("instance_type"));
         Assert.assertEquals(9600, requestFieldsMap.get("cost"));
-        Assert.assertEquals(1441, requestFieldsMap.get("usage_minutes"));
+        Assert.assertEquals(1440, requestFieldsMap.get("usage_minutes"));
         Assert.assertEquals(PRICE.unscaledValue().intValue(), requestFieldsMap.get("run_price"));
         Assert.assertEquals(run.getInstance().getCloudRegionId().intValue(), requestFieldsMap.get("cloudRegionId"));
         Assert.assertEquals(USER_NAME, requestFieldsMap.get("owner"));

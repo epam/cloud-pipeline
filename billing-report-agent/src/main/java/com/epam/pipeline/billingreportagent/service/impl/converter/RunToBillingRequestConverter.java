@@ -39,6 +39,7 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -103,12 +104,13 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
                         .map(DateUtils::toLocalDateTime)
                         .orElse(syncStart);
                 statuses
-                    .add(new RunStatus(null, null, lastTimestamp.toLocalDate().atStartOfDay()));
+                    .add(new RunStatus(null, null,
+                                       lastTimestamp.toLocalDate().minusDays(1).atTime(LocalTime.MAX)));
             }
         } else {
             return Arrays.asList(
                 new RunStatus(null, TaskStatus.RUNNING, previousSync.toLocalDate().atStartOfDay()),
-                new RunStatus(null, null, syncStart.toLocalDate().atStartOfDay()));
+                new RunStatus(null, null, syncStart.toLocalDate().minusDays(1).atTime(LocalTime.MAX)));
         }
         return statuses;
     }
