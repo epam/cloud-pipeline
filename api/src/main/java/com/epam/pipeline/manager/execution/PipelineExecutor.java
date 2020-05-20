@@ -160,14 +160,9 @@ public class PipelineExecutor {
         if (!StringUtils.isEmpty(secretName)) {
             spec.setImagePullSecrets(Collections.singletonList(new LocalObjectReference(secretName)));
         }
-        boolean isDockerInDockerEnabled = authManager.isAdmin() && ListUtils.emptyIfNull(envVars)
-                .stream()
-                .anyMatch(env -> KubernetesConstants.CP_CAP_DIND_NATIVE.equals(env.getName()) &&
-                        TRUE.equals(env.getValue()));
-        boolean isSystemdEnabled = ListUtils.emptyIfNull(envVars)
-                .stream()
-                .anyMatch(env -> KubernetesConstants.CP_CAP_SYSTEMD_CONTAINER.equals(env.getName()) &&
-                        TRUE.equals(env.getValue()));
+        boolean isDockerInDockerEnabled = authManager.isAdmin() && isParameterEnabled(envVars, KubernetesConstants.CP_CAP_DIND_NATIVE);
+        boolean isSystemdEnabled = isParameterEnabled(envVars, KubernetesConstants.CP_CAP_SYSTEMD_CONTAINER);
+
         spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled));
 
         if (envVars.stream().anyMatch(envVar -> envVar.getName().equals(USE_HOST_NETWORK))){
@@ -177,6 +172,12 @@ public class PipelineExecutor {
         spec.setContainers(Collections.singletonList(getContainer(run,
                 envVars, dockerImage, command, pullImage, isDockerInDockerEnabled, isSystemdEnabled, isParentPod)));
         return spec;
+    }
+
+    private boolean isParameterEnabled(List<EnvVar> envVars, String parameter) {
+        return ListUtils.emptyIfNull(envVars)
+                .stream()
+                .anyMatch(env -> parameter.equals(env.getName()) && TRUE.equals(env.getValue()));
     }
 
 
@@ -243,7 +244,7 @@ public class PipelineExecutor {
                 .orElse(ContainerResources.empty());
     }
 
-    private List<Volume> getVolumes(final boolean isDockerInDockerEnabled, boolean isSystemdEnabled) {
+    private List<Volume> getVolumes(final boolean isDockerInDockerEnabled, final boolean isSystemdEnabled) {
         final List<Volume> volumes = new ArrayList<>();
         volumes.add(createVolume(REF_DATA_MOUNT, "/ebs/reference"));
         volumes.add(createVolume(RUNS_DATA_MOUNT, "/ebs/runs"));
@@ -260,7 +261,7 @@ public class PipelineExecutor {
         return volumes;
     }
 
-    private List<VolumeMount> getMounts(final boolean isDockerInDockerEnabled, boolean isSystemdEnabled) {
+    private List<VolumeMount> getMounts(final boolean isDockerInDockerEnabled, final boolean isSystemdEnabled) {
         final List<VolumeMount> mounts = new ArrayList<>();
         mounts.add(getVolumeMount(REF_DATA_MOUNT, "/common"));
         mounts.add(getVolumeMount(RUNS_DATA_MOUNT, "/runs"));
