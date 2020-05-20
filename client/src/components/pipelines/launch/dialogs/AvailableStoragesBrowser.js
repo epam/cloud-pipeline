@@ -65,8 +65,16 @@ export default class AvailableStoragesBrowser extends Component {
 
   onSave = () => {
     if (this.props.onSave) {
+      const {selectedStorages} = this.state;
+      const ids = selectedStorages.map(id => +id);
+      const sensitiveStoragesSelected = this.availableStorages
+        .filter(s => s.sensitive && ids.indexOf(+s.id) >= 0)
+        .length > 0;
       this.props.onSave(
-        this.allAvailableNonSensitiveStoragesAreSelected ? null : this.state.selectedStorages
+        this.allAvailableNonSensitiveStoragesAreSelected &&
+        !sensitiveStoragesSelected
+          ? null
+          : this.state.selectedStorages
       );
     }
   };
