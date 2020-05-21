@@ -44,7 +44,6 @@ import org.springframework.context.annotation.Configuration;
 public class CommonSyncConfiguration {
 
     private static final String FALSE = "false";
-    private static final String STORAGE_SYNC_DISABLE_PROP = "sync.storage.disable";
 
     @Value("${sync.index.common.prefix}")
     private String commonIndexPrefix;
@@ -94,7 +93,7 @@ public class CommonSyncConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = STORAGE_SYNC_DISABLE_PROP, matchIfMissing = true, havingValue = FALSE)
+    @ConditionalOnProperty(value = "sync.storage.s3.disable", matchIfMissing = true, havingValue = FALSE)
     public StorageSynchronizer s3Synchronizer(final StorageLoader loader,
                                               final ElasticIndexService indexService,
                                               final ElasticsearchServiceClient elasticsearchClient,
@@ -123,7 +122,7 @@ public class CommonSyncConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = STORAGE_SYNC_DISABLE_PROP, matchIfMissing = true, havingValue = FALSE)
+    @ConditionalOnProperty(value = "sync.storage.efs.disable", matchIfMissing = true, havingValue = FALSE)
     public StorageSynchronizer efsSynchronizer(final StorageLoader loader,
                                                final ElasticIndexService indexService,
                                                final ElasticsearchServiceClient elasticsearchClient,
@@ -152,7 +151,7 @@ public class CommonSyncConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = STORAGE_SYNC_DISABLE_PROP, matchIfMissing = true, havingValue = FALSE)
+    @ConditionalOnProperty(value = "sync.storage.gs.disable", matchIfMissing = true, havingValue = FALSE)
     public StorageSynchronizer gsSynchronizer(final StorageLoader loader,
                                               final ElasticIndexService indexService,
                                               final ElasticsearchServiceClient elasticsearchClient) {
@@ -175,7 +174,7 @@ public class CommonSyncConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = STORAGE_SYNC_DISABLE_PROP, matchIfMissing = true, havingValue = FALSE)
+    @ConditionalOnProperty(value = "sync.storage.azure-blob.disable", matchIfMissing = true, havingValue = FALSE)
     public StorageSynchronizer azureSynchronizer(final @Value("${sync.storage.azure.auth.file}") String authFile,
                                                  final @Value("${sync.storage.azure.offer.id}") String offerId,
                                                  final StorageLoader loader,
