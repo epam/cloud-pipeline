@@ -1175,6 +1175,10 @@ public class PipelineRunManager {
     public PipelineRun adjustRunPricePerHourToDisks(final Long runId, final RunInstance instance, 
                                                     final List<InstanceDisk> disks) {
         final PipelineRun run = loadPipelineRun(runId);
+        if (disks.isEmpty()) {
+            LOGGER.warn("Run #{} price per hour won't be adjusted since no disks are provided.", runId);
+            return run;
+        }
         final BigDecimal pricePerHour = Optional.ofNullable(instance)
                 .filter(runInstance -> !runInstance.isEmpty())
                 .map(runInstance -> instanceOfferManager.getInstanceEstimatedPrice(runInstance.getNodeType(),
@@ -1183,12 +1187,12 @@ public class PipelineRunManager {
                 .map(this::scaled)
                 .orElse(run.getPricePerHour());
         run.setPricePerHour(pricePerHour);
-        LOGGER.debug("Updated expected price per hour: {}", run.getPricePerHour());
+        LOGGER.debug("Adjusted price per hour for run #{} to {}", runId, run.getPricePerHour());
         return updateRunInfo(run);
     }
 
     private int getTotalSize(final List<InstanceDisk> disks) {
-        return (int) ListUtils.emptyIfNull(disks).stream().mapToLong(InstanceDisk::getSize).sum();
+        return (int) disks.stream().mapToLong(InstanceDisk::getSize).sum();
     }
 
     private void adjustInstanceDisk(final PipelineConfiguration configuration) {
