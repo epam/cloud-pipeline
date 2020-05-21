@@ -105,14 +105,12 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
                 final LocalDateTime lastTimestamp = Optional.ofNullable(run.getEndDate())
                         .map(DateUtils::toLocalDateTime)
                         .orElse(syncStart);
-                statuses
-                    .add(new RunStatus(null, null,
-                                       lastTimestamp.toLocalDate().minusDays(1).atTime(LocalTime.MAX)));
+                statuses.add(new RunStatus(null, null, lastTimestamp.toLocalDate().atStartOfDay()));
             }
         } else {
             return Arrays.asList(
                 new RunStatus(null, TaskStatus.RUNNING, previousSync.toLocalDate().atStartOfDay()),
-                new RunStatus(null, null, syncStart.toLocalDate().minusDays(1).atTime(LocalTime.MAX)));
+                new RunStatus(null, null, syncStart.toLocalDate().atStartOfDay()));
         }
         return statuses;
     }
@@ -276,7 +274,11 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
     }
 
     private Long getUsageMinutes(final Duration duration, final boolean active) {
-        return active ? duration.plusMinutes(1).toMinutes() : 0L;
+        return active ? max(duration, Duration.ofMinutes(1)).toMinutes() : 0L;
+    }
+
+    private Duration max(final Duration duration1, final Duration duration2) {
+        return duration1.compareTo(duration2) > 0 ? duration1 : duration2;
     }
 
     private DocWriteRequest getDocWriteRequest(final String indexPrefix,
