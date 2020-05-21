@@ -208,7 +208,8 @@
         "name": "CP_CAP_SYSTEMD_CONTAINER",
         "type": "boolean",
         "description": "Enable systemd for a current run if it meets requirements",
-        "defaultValue": "true"
+        "defaultValue": "true",
+        "passToWorkers": true
     },
     {
         "name": "CP_CAP_KEEP_FAILED_RUN",
