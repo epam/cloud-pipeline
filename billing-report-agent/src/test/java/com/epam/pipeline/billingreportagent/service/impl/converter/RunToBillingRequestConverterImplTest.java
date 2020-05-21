@@ -89,7 +89,7 @@ public class RunToBillingRequestConverterImplTest {
         run.setRunStatuses(statuses);
 
         final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
-                .entity(new PipelineRunWithType(run, ComputeType.CPU)).build();
+                .entity(new PipelineRunWithType(run, Collections.emptyList(), ComputeType.CPU)).build();
         final Collection<PipelineRunBillingInfo> billings =
                 converter.convertRunToBillings(runContainer,
                         LocalDateTime.of(2019, 12, 4, 0, 0),
@@ -114,7 +114,7 @@ public class RunToBillingRequestConverterImplTest {
         run.setRunStatuses(statuses);
 
         final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
-            .entity(new PipelineRunWithType(run, ComputeType.CPU)).build();
+            .entity(new PipelineRunWithType(run, Collections.emptyList(), ComputeType.CPU)).build();
         final Collection<PipelineRunBillingInfo> billings =
             converter.convertRunToBillings(runContainer,
                                            LocalDateTime.of(2019, 12, 1, 0, 0),
@@ -133,7 +133,7 @@ public class RunToBillingRequestConverterImplTest {
         run.setId(RUN_ID);
         run.setPricePerHour(BigDecimal.valueOf(4, 2));
         final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
-            .entity(new PipelineRunWithType(run, ComputeType.CPU)).build();
+            .entity(new PipelineRunWithType(run, Collections.emptyList(), ComputeType.CPU)).build();
 
         final Collection<PipelineRunBillingInfo> billings =
             converter.convertRunToBillings(runContainer,
@@ -153,7 +153,7 @@ public class RunToBillingRequestConverterImplTest {
 
         final EntityContainer<PipelineRunWithType> runContainer =
             EntityContainer.<PipelineRunWithType>builder()
-                .entity(new PipelineRunWithType(run, ComputeType.CPU))
+                .entity(new PipelineRunWithType(run, Collections.emptyList(), ComputeType.CPU))
                 .owner(testUserWithMetadata)
                 .build();
 

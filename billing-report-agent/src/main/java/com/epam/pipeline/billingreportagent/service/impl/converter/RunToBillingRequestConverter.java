@@ -22,6 +22,7 @@ import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
+import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
@@ -49,6 +50,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Data
 @Slf4j
@@ -79,11 +81,11 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         final EntityContainer<PipelineRunWithType> runContainer,
         final LocalDateTime previousSync,
         final LocalDateTime syncStart) {
-        final BigDecimal pricePerHour = runContainer.getEntity().getPipelineRun().getPricePerHour();
+        final RunPrice price = getPrice(runContainer);
         final List<RunStatus> statuses = adjustStatuses(runContainer.getEntity().getPipelineRun(),
                 previousSync, syncStart);
 
-        return createBillingsForPeriod(runContainer.getEntity(), pricePerHour, statuses).stream()
+        return createBillingsForPeriod(runContainer.getEntity(), price, statuses).stream()
             .filter(billing -> billing.getCost() > 0L || billing.getUsageMinutes() > 0L)
             .collect(Collectors.toMap(PipelineRunBillingInfo::getDate,
                                       Function.identity(),
@@ -125,23 +127,30 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         }
     }
 
+    private RunPrice getPrice(final EntityContainer<PipelineRunWithType> runContainer) {
+        final Optional<PipelineRun> run = Optional.of(runContainer.getEntity().getPipelineRun());
+        final BigDecimal pricePerHour = run.map(PipelineRun::getPricePerHour).orElse(BigDecimal.ZERO);
+        final BigDecimal computePricePerHour = run.map(PipelineRun::getComputePricePerHour).orElse(BigDecimal.ZERO);
+        final BigDecimal diskPricePerHour = run.map(PipelineRun::getDiskPricePerHour).orElse(BigDecimal.ZERO);
+        return new RunPrice(pricePerHour, computePricePerHour, diskPricePerHour);
+    }
+
     private List<PipelineRunBillingInfo> createBillingsForPeriod(final PipelineRunWithType run,
-                                                                 final BigDecimal pricePerHour,
+                                                                 final RunPrice price,
                                                                  final List<RunStatus> statuses) {
         final List<PipelineRunBillingInfo> billings = new ArrayList<>();
         boolean isPreviousActive = false;
         LocalDateTime periodStart = null;
         for (final RunStatus current : statuses) {
             final boolean isCurrentActive = TaskStatus.RUNNING.equals(current.getStatus());
-            if (isCurrentActive
-                && !isPreviousActive) {
+            if (isCurrentActive && !isPreviousActive) {
                 periodStart = current.getTimestamp();
                 isPreviousActive = true;
-            } else if (!isCurrentActive
-                       && isPreviousActive) {
+            } else if (!isCurrentActive && isPreviousActive) {
                 isPreviousActive = false;
-                billings.addAll(createRunBillingsForActivePeriod(periodStart, current.getTimestamp(),
-                                                                 run, pricePerHour));
+                billings.addAll(createRunBillingsForActivePeriod(periodStart, current.getTimestamp(), run, price));
+            } else {
+                billings.addAll(createRunBillingsForInactivePeriod(periodStart, current.getTimestamp(), run, price));
             }
         }
         return billings;
@@ -157,27 +166,91 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
     private List<PipelineRunBillingInfo> createRunBillingsForActivePeriod(final LocalDateTime start,
                                                                           final LocalDateTime end,
                                                                           final PipelineRunWithType run,
-                                                                          final BigDecimal pricePerHour) {
-        final List<LocalDateTime> timePoints = new ArrayList<>();
+                                                                          final RunPrice price) {
+        return createRunBillingsForPeriod(start, end, run, price, true);
+    }
+
+    private List<PipelineRunBillingInfo> createRunBillingsForInactivePeriod(final LocalDateTime start, 
+                                                                            final LocalDateTime end, 
+                                                                            final PipelineRunWithType run, 
+                                                                            final RunPrice price) {
+        return createRunBillingsForPeriod(start, end, run, price, false);
+    }
+
+    private List<PipelineRunBillingInfo> createRunBillingsForPeriod(final LocalDateTime start,
+                                                                    final LocalDateTime end,
+                                                                    final PipelineRunWithType run,
+                                                                    final RunPrice price,
+                                                                    final boolean active) {
+        final List<LocalDateTime> timePoints = getTimePoints(start, end, run);
         final List<PipelineRunBillingInfo> billings = new ArrayList<>();
-        timePoints.add(start);
-        LocalDate startDate = start.toLocalDate();
-        for (long i = 0; i < ChronoUnit.DAYS.between(start.toLocalDate(), end.toLocalDate()); i++) {
-            startDate = startDate.plusDays(1);
-            timePoints.add(startDate.atStartOfDay());
-        }
-        timePoints.add(end);
         for (int i = 0; i < timePoints.size() - 1; i++) {
-            final Duration durationSeconds = Duration.between(timePoints.get(i), timePoints.get(i + 1));
-            final Long cost = calculateCostsForPeriod(durationSeconds.getSeconds(), pricePerHour);
+            final LocalDateTime pointStart = timePoints.get(i);
+            final LocalDateTime pointEnd = timePoints.get(i + 1);
+            final Duration duration = Duration.between(pointStart, pointEnd);
+            final Long disk = getDisksSize(run, pointStart);
             billings.add(PipelineRunBillingInfo.builder()
-                             .date(timePoints.get(i).toLocalDate())
+                             .date(pointStart.toLocalDate())
                              .run(run)
-                             .cost(cost)
-                             .usageMinutes(durationSeconds.plusMinutes(1).toMinutes())
+                             .cost(getCosts(duration, disk, price, active))
+                             .usageMinutes(getUsageMinutes(duration, active))
                              .build());
         }
         return billings;
+    }
+
+    private List<LocalDateTime> getTimePoints(final LocalDateTime start, final LocalDateTime end,
+                                              final PipelineRunWithType run) {
+        return Stream.of(Stream.of(start, end), periodTimePoints(start, end), diskAttachTimePoints(start, end, run))
+                .reduce(Stream::concat)
+                .orElseGet(Stream::empty)
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+    }
+
+    private Stream<LocalDateTime> periodTimePoints(final LocalDateTime start, final LocalDateTime end) {
+        return Stream.iterate(start.toLocalDate().plusDays(1), date -> date.plusDays(1))
+                .limit(ChronoUnit.DAYS.between(start.toLocalDate(), end.toLocalDate()))
+                .map(LocalDate::atStartOfDay);
+    }
+
+    private Stream<LocalDateTime> diskAttachTimePoints(final LocalDateTime start, final LocalDateTime end, 
+                                                       final PipelineRunWithType run) {
+        return run.getDisks().stream()
+                .filter(disk -> disk.getCreatedDate().isAfter(start) && disk.getCreatedDate().isBefore(end))
+                .map(NodeDisk::getCreatedDate);
+    }
+
+    private Long getCosts(final Duration duration, final Long disk, final RunPrice price, final boolean active) {
+        if (disk == 0L && price.isNewFashioned()) {
+            log.warn("New fashioned pipeline run disks size is zero. Old fashioned price per hour will be used.");
+            return getOldFashionedCosts(duration, price, active);
+        }
+        return price.isOldFashioned() 
+                ? getOldFashionedCosts(duration, price, active)
+                : getNewFashionedCosts(duration, disk, price, active);
+    }
+
+    private long getOldFashionedCosts(final Duration duration, final RunPrice price, final boolean active) {
+        return active ? getOldFashionedCosts(duration, price) : 0L;
+    }
+
+    private Long getOldFashionedCosts(final Duration duration, final RunPrice price) {
+        return calculateCostsForPeriod(duration.getSeconds(), price.getOldFashionedPricePerHour());
+    }
+
+    private long getNewFashionedCosts(final Duration duration, final Long disk, final RunPrice price, final boolean active) {
+        return getDiskCosts(duration, disk, price) + (active ? getComputeCosts(duration, price) : 0L);
+    }
+
+    private Long getComputeCosts(final Duration duration, final RunPrice price) {
+        return calculateCostsForPeriod(duration.getSeconds(), price.getComputePricePerHour());
+    }
+
+    private Long getDiskCosts(final Duration duration, final Long disk, final RunPrice price) {
+        return calculateCostsForPeriod(duration.getSeconds(), price.getDiskPricePerHour()
+                .multiply(BigDecimal.valueOf(disk)));
     }
 
     /**
@@ -193,6 +266,17 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
             .divide(BigDecimal.valueOf(Duration.ofHours(1).getSeconds()), RoundingMode.CEILING)
             .scaleByPowerOfTen(4)
             .longValue();
+    }
+
+    private Long getDisksSize(final PipelineRunWithType run, final LocalDateTime date) {
+        return run.getDisks().stream()
+                .filter(d -> d.getCreatedDate().isBefore(date) || d.getCreatedDate().isEqual(date))
+                .mapToLong(NodeDisk::getSize)
+                .sum();
+    }
+
+    private Long getUsageMinutes(final Duration duration, final boolean active) {
+        return active ? duration.plusMinutes(1).toMinutes() : 0L;
     }
 
     private DocWriteRequest getDocWriteRequest(final String indexPrefix,

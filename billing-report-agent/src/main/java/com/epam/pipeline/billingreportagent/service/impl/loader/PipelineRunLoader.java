@@ -23,9 +23,11 @@ import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;
 import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.user.PipelineUser;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -67,10 +69,14 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
         return runs
                 .stream()
                 .map(run -> EntityContainer.<PipelineRunWithType>builder()
-                        .entity(new PipelineRunWithType(run, getRunType(run, regionOffers)))
+                        .entity(new PipelineRunWithType(run, loadDisks(run), getRunType(run, regionOffers)))
                         .owner(usersWithMetadata.get(run.getOwner()))
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    private List<NodeDisk> loadDisks(final PipelineRun run) {
+        return ListUtils.emptyIfNull(apiClient.loadNodeDisks(run.getInstance().getNodeId()));
     }
 
     private ComputeType getRunType(final PipelineRun run, final Map<Long, List<InstanceType>> regionOffers) {
