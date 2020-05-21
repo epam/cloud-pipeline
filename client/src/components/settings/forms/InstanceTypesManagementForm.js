@@ -255,7 +255,8 @@ export default class InstanceTypesManagementForm extends React.Component {
         [valueNames.allowedInstanceTypes]: undefined,
         [valueNames.allowedToolInstanceTypes]: undefined,
         [valueNames.allowedPriceTypes]: undefined,
-        [valueNames.jobsVisibility]: undefined
+        [valueNames.jobsVisibility]: undefined,
+        jobsVisibilityUpdated: false
       }, hide);
     }
   };
