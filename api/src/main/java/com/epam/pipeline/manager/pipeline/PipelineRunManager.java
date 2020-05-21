@@ -26,6 +26,7 @@ import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
+import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
@@ -1162,6 +1163,38 @@ public class PipelineRunManager {
         return pipelineRunDao.loadRunsByStatuses(statuses);
     }
 
+    /**
+     * Adjusts run price per hour including provided node disks.
+     * 
+     * @param runId of {@link PipelineRun} to update price for.
+     * @param instance of {@link PipelineRun}.
+     * @param disks of {@link PipelineRun} instance.
+     * @return Updated pipeline run.
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun adjustRunPricePerHourToDisks(final Long runId, final RunInstance instance, 
+                                                    final List<InstanceDisk> disks) {
+        final PipelineRun run = loadPipelineRun(runId);
+        if (disks.isEmpty()) {
+            LOGGER.warn("Run #{} price per hour won't be adjusted since no disks are provided.", runId);
+            return run;
+        }
+        final BigDecimal pricePerHour = Optional.ofNullable(instance)
+                .filter(runInstance -> !runInstance.isEmpty())
+                .map(runInstance -> instanceOfferManager.getInstanceEstimatedPrice(runInstance.getNodeType(),
+                        getTotalSize(disks), runInstance.getSpot(), runInstance.getCloudRegionId()))
+                .map(InstancePrice::getPricePerHour)
+                .map(this::scaled)
+                .orElse(run.getPricePerHour());
+        run.setPricePerHour(pricePerHour);
+        LOGGER.debug("Adjusted price per hour for run #{} to {}", runId, run.getPricePerHour());
+        return updateRunInfo(run);
+    }
+
+    private int getTotalSize(final List<InstanceDisk> disks) {
+        return (int) disks.stream().mapToLong(InstanceDisk::getSize).sum();
+    }
+
     private void adjustInstanceDisk(final PipelineConfiguration configuration) {
         long imageSizeBytes = toolManager.getCurrentImageSize(configuration.getDockerImage());
         long requiredDiskForImageBytes = imageSizeBytes
@@ -1402,10 +1435,17 @@ public class PipelineRunManager {
         if (!instance.isEmpty()) {
             run.setInstance(instance);
             InstancePrice runPrice = instanceOfferManager.getInstanceEstimatedPrice(
-                    instance.getNodeType(), instance.getNodeDisk(), instance.getSpot(), instance.getCloudRegionId());
+                    instance.getNodeType(), instance.getEffectiveNodeDisk(), instance.getSpot(), 
+                    instance.getCloudRegionId());
             LOGGER.debug("Expected price per hour: {}", runPrice.getPricePerHour());
-            run.setPricePerHour(BigDecimal.valueOf(runPrice.getPricePerHour()).setScale(2, RoundingMode.HALF_EVEN));
+            run.setPricePerHour(scaled(runPrice.getPricePerHour()));
+            run.setComputePricePerHour(scaled(runPrice.getComputePricePerHour()));
+            run.setDiskPricePerHour(scaled(runPrice.getDiskPricePerHour()));
         }
+    }
+
+    private BigDecimal scaled(final double pricePerHour) {
+        return BigDecimal.valueOf(pricePerHour).setScale(2, RoundingMode.HALF_EVEN);
     }
 
     private PipelineRun createRestartRun(final PipelineRun run) {

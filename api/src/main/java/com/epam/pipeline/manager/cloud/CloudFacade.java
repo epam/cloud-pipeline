@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
+import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
@@ -80,4 +81,9 @@ public interface CloudFacade {
      * Creates and attaches new disk by the given request to an instance associated with run.
      */
     void attachDisk(Long regionId, Long runId, DiskAttachRequest request);
+
+    /**
+     * Loads all disks attached to an instance associated with run including os, data and swap disks.
+     */
+    List<InstanceDisk> loadDisks(Long regionId, Long runId);
 }

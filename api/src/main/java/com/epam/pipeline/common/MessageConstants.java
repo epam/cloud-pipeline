@@ -142,7 +142,8 @@ public final class MessageConstants {
     public static final String ERROR_RUN_TERMINATION_WRONG_STATUS = "error.run.termination.wrong.status";
     public static final String WARN_RESUME_RUN_FAILED = "warn.resume.run.failed";
     public static final String INFO_INSTANCE_STARTED = "info.instance.started";
-    public static final String ERROR_RUN_DISK_ATTACHING_WRONG_STATUS = "error.run.attaching.wrong.status";
+    public static final String ERROR_RUN_DISK_ATTACHING_WRONG_STATUS = "error.run.disk.attaching.wrong.status";
+    public static final String ERROR_RUN_DISK_ATTACHING_MISSING_NODE_ID = "error.run.disk.attaching.missing.node.id";
     public static final String ERROR_RUN_DISK_SIZE_NOT_FOUND = "error.run.disk.size.not.found";
     public static final String ERROR_BAD_STATS_FILE_ENCODING = "error.run.stats.file.bad.encoding";
     public static final String ERROR_RUN_CLOUD_REGION_NOT_ALLOWED = "error.run.cloud.region.not.allowed";
@@ -497,6 +498,10 @@ public final class MessageConstants {
     public static final String ERROR_BILLING_INTERVAL_NOT_SUPPORTED = "error.billing.interval.not.supported";
     public static final String ERROR_ILLEGAL_PAGING_PARAMETERS = "error.billing.invalid.paging";
 
+    //Disks    
+    public static final String ERROR_DISK_NODE_MISSING = "error.disk.node.missing";
+    public static final String ERROR_DISK_SIZE_MISSING = "error.disk.size.missing";
+    public static final String ERROR_DISK_SIZE_INVALID = "error.disk.size.invalid";
 
     //Other
     public static final String ERROR_KEEP_ALIVE_POLICY_NOT_SUPPORTED = "error.keep.alive.policy.not.supported";

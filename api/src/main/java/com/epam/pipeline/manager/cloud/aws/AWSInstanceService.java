@@ -21,6 +21,7 @@ import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.ec2.model.Instance;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
+import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -45,6 +46,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -223,6 +225,11 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     @Override
     public void attachDisk(final AwsRegion region, final Long runId, final DiskAttachRequest request) {
         ec2Helper.createAndAttachVolume(String.valueOf(runId), request.getSize(), region.getRegionCode());
+    }
+
+    @Override
+    public List<InstanceDisk> loadDisks(final AwsRegion region, final Long runId) {
+        return ec2Helper.loadAttachedVolumes(String.valueOf(runId), region.getRegionCode());
     }
 
     private String buildNodeUpCommand(final AwsRegion region,

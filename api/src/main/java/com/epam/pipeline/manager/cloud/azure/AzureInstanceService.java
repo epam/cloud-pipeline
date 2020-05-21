@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cloud.azure;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
+import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AzureRegion;
@@ -45,6 +46,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -211,6 +213,11 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     @Override
     public void attachDisk(final AzureRegion region, final Long runId, final DiskAttachRequest request) {
         throw new UnsupportedOperationException("Disk attaching doesn't work with Azure provider yet.");
+    }
+
+    @Override
+    public List<InstanceDisk> loadDisks(final AzureRegion region, final Long runId) {
+        return vmService.getAliveVMByRunId(region, String.valueOf(runId)).getDisks();
     }
 
     @Override

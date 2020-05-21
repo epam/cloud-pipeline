@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.cluster;
 
+import com.epam.pipeline.entity.cluster.DiskRegistrationRequest;
+import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -76,6 +78,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
     private final ParallelExecutorService executorService;
     private final AutoscalerService autoscalerService;
     private final NodesManager nodesManager;
+    private final NodeDiskManager nodeDiskManager;
     private final KubernetesManager kubernetesManager;
     private final PreferenceManager preferenceManager;
     private final CloudFacade cloudFacade;
@@ -93,6 +96,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                             ParallelExecutorService executorService,
                             AutoscalerService autoscalerService,
                             NodesManager nodesManager,
+                            NodeDiskManager nodeDiskManager,
                             KubernetesManager kubernetesManager,
                             PreferenceManager preferenceManager,
                             @Value("${kube.namespace}") String kubeNamespace,
@@ -101,6 +105,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         this.executorService = executorService;
         this.autoscalerService = autoscalerService;
         this.nodesManager = nodesManager;
+        this.nodeDiskManager = nodeDiskManager;
         this.kubernetesManager = kubernetesManager;
         this.preferenceManager = preferenceManager;
         this.kubeNamespace = kubeNamespace;
@@ -291,6 +296,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     if (successfullyReassigned) {
                         scheduledRuns.add(runId);
                         pipelineRunManager.updateRunInstance(longId, previousInstance);
+                        List<InstanceDisk> disks = cloudFacade.loadDisks(previousInstance.getCloudRegionId(), longId);
+                        pipelineRunManager.adjustRunPricePerHourToDisks(longId, previousInstance, disks);
                         reassignedNodes.add(previousId);
                         return;
                     }
@@ -461,6 +468,9 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             RunInstance instance = cloudFacade.scaleUpNode(longId, requiredInstance);
             //save instance ID and IP
             pipelineRunManager.updateRunInstance(longId, instance);
+            List<InstanceDisk> disks = cloudFacade.loadDisks(instance.getCloudRegionId(), longId);
+            nodeDiskManager.register(instance.getNodeId(), DiskRegistrationRequest.from(disks));
+            pipelineRunManager.adjustRunPricePerHourToDisks(longId, instance, disks);
             Instant end = Instant.now();
             removeNodeUpTask(longId);
             LOGGER.debug("Time to create a node for run {} : {} s.", runId,

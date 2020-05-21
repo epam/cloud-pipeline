@@ -43,6 +43,9 @@ public class GCPVMService {
     private static final String LABEL_FILTER = "labels.%s=\"%s\"";
     private static final String STATUS_FILTER = "status=\"%s\"";
     private static final String OR = " OR ";
+    private static final String AND = " AND ";
+    private static final String OPENING_BRACKET = " ( ";
+    private static final String CLOSING_BRACKET = " ) ";
     private static final String COMPUTE_OPERATIONS_FILTER = "targetLink eq .*%s";
     private static final String COMPUTE_INSTANCES_PREEMPTED = "compute.instances.preempted";
     private static final String COMPUTE_INSTANCE_DELETED = "delete";
@@ -141,32 +144,49 @@ public class GCPVMService {
                         MessageConstants.ERROR_GCP_INSTANCE_NOT_FOUND, key + ":" + value)));
     }
 
-    public void terminateInstance(final GCPRegion region, final String instanceId) throws IOException {
-        gcpClient.buildComputeClient(region)
-                .instances()
-                .delete(region.getProject(), region.getRegionCode(), instanceId).execute();
+    public void terminateInstance(final GCPRegion region, final String instanceId) {
+        try {
+            gcpClient.buildComputeClient(region)
+                    .instances()
+                    .delete(region.getProject(), region.getRegionCode(), instanceId).execute();
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new GCPException(e);
+        }
     }
 
-    public boolean instanceExists(final GCPRegion region, final String instanceId) throws IOException {
-        return  null != gcpClient.buildComputeClient(region)
-                .instances().get(region.getProject(), region.getRegionCode(), instanceId).execute();
-
+    public boolean instanceExists(final GCPRegion region, final String instanceId) {
+        try {
+            return  null != gcpClient.buildComputeClient(region)
+                    .instances().get(region.getProject(), region.getRegionCode(), instanceId).execute();
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new GCPException(e);
+        }
     }
 
-    public Instance getAliveInstance(final GCPRegion region, final String runId) throws IOException {
-        return  ListUtils.emptyIfNull(
-                gcpClient.buildComputeClient(region).instances()
-                        .list(region.getProject(), region.getRegionCode())
-                        .setFilter(String.format(LABEL_FILTER, RUN_ID_LABEL_NAME, runId))
-                        .setFilter(String.format(STATUS_FILTER, "RUNNING") +
-                                OR + String.format(STATUS_FILTER, "STOPPING") +
-                                OR + String.format(STATUS_FILTER, "STOPPED") +
-                                OR + String.format(STATUS_FILTER, "PROVISIONING") +
-                                OR + String.format(STATUS_FILTER, "STAGING"))
-                        .execute()
-                        .getItems())
-                .stream().findFirst()
-                .orElseThrow(() -> new GCPException(messageHelper.getMessage(
-                        MessageConstants.ERROR_GCP_INSTANCE_NOT_FOUND)));
+    public Instance getAliveInstance(final GCPRegion region, final String runId) {
+        try {
+            return  ListUtils.emptyIfNull(
+                    gcpClient.buildComputeClient(region).instances()
+                            .list(region.getProject(), region.getRegionCode())
+                            .setFilter(String.format(LABEL_FILTER, RUN_ID_LABEL_NAME, runId) +
+                                    AND +
+                                    OPENING_BRACKET +
+                                    String.format(STATUS_FILTER, "RUNNING") +
+                                    OR + String.format(STATUS_FILTER, "STOPPING") +
+                                    OR + String.format(STATUS_FILTER, "STOPPED") +
+                                    OR + String.format(STATUS_FILTER, "PROVISIONING") +
+                                    OR + String.format(STATUS_FILTER, "STAGING") +
+                                    CLOSING_BRACKET)
+                            .execute()
+                            .getItems())
+                    .stream().findFirst()
+                    .orElseThrow(() -> new GCPException(messageHelper.getMessage(
+                            MessageConstants.ERROR_GCP_INSTANCE_NOT_FOUND)));
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new GCPException(e);
+        }
     }
 }

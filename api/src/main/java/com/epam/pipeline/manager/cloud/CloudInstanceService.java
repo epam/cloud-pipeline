@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
+import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -29,6 +30,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -180,4 +182,12 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @param request
      */
     void attachDisk(T region, Long runId, DiskAttachRequest request);
+
+    /**
+     * Loads all disks attached to cloud instance.
+     * @param region
+     * @param runId
+     * @return
+     */
+    List<InstanceDisk> loadDisks(T region, Long runId);
 }
