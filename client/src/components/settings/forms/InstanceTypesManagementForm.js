@@ -118,7 +118,7 @@ export default class InstanceTypesManagementForm extends React.Component {
   }
 
   valueModified = (field) => {
-    if (this.state[field] !== undefined) {
+    if (field === valueNames.jobsVisibility || this.state[field] !== undefined) {
       return this.getCurrentValue(field) !== this.getInitialValue(field);
     }
     return false;
@@ -139,13 +139,13 @@ export default class InstanceTypesManagementForm extends React.Component {
   };
 
   getValue = (field) => {
-    if (this.state[field] !== undefined) {
+    if (
+      this.state[field] !== undefined ||
+      (field === valueNames.jobsVisibility && this.state.jobsVisibilityUpdated)
+    ) {
       return this.state[field];
     }
-    if (this.props[field] && this.props[field].loaded) {
-      return this.props[field].value.value;
-    }
-    return '';
+    return this.getInitialValue(field);
   };
 
   getPriceTypesValue = () => {
@@ -153,7 +153,7 @@ export default class InstanceTypesManagementForm extends React.Component {
   };
 
   getJobsVisibilityValue = () => {
-    return (this.getValue(valueNames.jobsVisibility) || this.defaultJobsVisibilityValue || '');
+    return this.getValue(valueNames.jobsVisibility) || undefined;
   };
 
   onPriceTypeChanged = (e) => {
@@ -166,11 +166,10 @@ export default class InstanceTypesManagementForm extends React.Component {
   };
 
   onJobsVisibilityChanged = (jobsVisibility) => {
-    if (jobsVisibility !== this.state[valueNames.jobsVisibility]) {
-      this.setState({
-        [valueNames.jobsVisibility]: jobsVisibility
-      }, this.reportModified);
-    }
+    this.setState({
+      [valueNames.jobsVisibility]: jobsVisibility,
+      jobsVisibilityUpdated: true
+    }, this.reportModified);
   };
 
   valueInputDecorator = (field, disabled) =>
@@ -192,7 +191,11 @@ export default class InstanceTypesManagementForm extends React.Component {
   };
 
   applyValue = async (field) => {
-    if (this.state[field] !== undefined) {
+    await this.props[field].fetchIfNeededOrWait();
+    if (
+      this.state[field] !== undefined ||
+      (field === valueNames.jobsVisibility && this.getInitialValue(field))
+    ) {
       const request = this.state[field]
         ? new ContextualPreferenceUpdate()
         : new ContextualPreferenceDelete(names[field], this.props.level, this.props.resourceId);
@@ -225,7 +228,8 @@ export default class InstanceTypesManagementForm extends React.Component {
       [valueNames.allowedInstanceTypes]: undefined,
       [valueNames.allowedToolInstanceTypes]: undefined,
       [valueNames.allowedPriceTypes]: undefined,
-      [valueNames.jobsVisibility]: undefined
+      [valueNames.jobsVisibility]: undefined,
+      jobsVisibilityUpdated: false
     }, this.reportModified);
   };
 
@@ -313,6 +317,7 @@ export default class InstanceTypesManagementForm extends React.Component {
           </Row>
           <Row type="flex">
             <Select
+              allowClear
               style={{flex: 1}}
               value={this.getJobsVisibilityValue()}
               onChange={this.onJobsVisibilityChanged}
