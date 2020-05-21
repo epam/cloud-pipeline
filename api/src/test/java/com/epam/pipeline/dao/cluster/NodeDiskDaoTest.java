@@ -9,6 +9,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -20,6 +21,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+@Transactional
 public class NodeDiskDaoTest extends AbstractSpringTest {
     
     private static final String NODE_ID = "NODE_ID";
@@ -30,12 +32,6 @@ public class NodeDiskDaoTest extends AbstractSpringTest {
 
     @Autowired
     private NodeDiskDao dao;
-
-    @After
-    public void deleteDisksByNodeId() {
-        dao.deleteByNodeId(NODE_ID);
-        dao.deleteByNodeId(ANOTHER_NODE_ID);
-    }
 
     @Test
     public void insertShouldFailOnMissingNodeId() {

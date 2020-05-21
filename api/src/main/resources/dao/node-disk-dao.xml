@@ -18,8 +18,7 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
-    <bean class="com.epam.pipeline.dao.cluster.NodeDiskDao" id="nodeDiskDao"
-          autowire="byName">
+    <bean class="com.epam.pipeline.dao.cluster.NodeDiskDao" id="nodeDiskDao" autowire="byName">
         <constructor-arg>
             <value>
                 <!--insertNodeDiskQuery-->
@@ -46,15 +45,6 @@
                     FROM
                         pipeline.node_disk d
                     WHERE d.node_id = ?
-                ]]>
-            </value>
-        </constructor-arg>
-        <constructor-arg>
-            <value>
-                <!--deleteNodeDisksByNodeIdQuery-->
-                <![CDATA[
-                    DELETE FROM pipeline.node_disk
-                    WHERE node_id = ?
                 ]]>
             </value>
         </constructor-arg>

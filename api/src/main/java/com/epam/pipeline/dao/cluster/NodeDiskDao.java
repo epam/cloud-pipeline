@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 
+import javax.transaction.Transactional;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,8 +19,8 @@ public class NodeDiskDao extends NamedParameterJdbcDaoSupport {
     
     private final String insertNodeDiskQuery;
     private final String loadNodeDisksByNodeIdQuery;
-    private final String deleteNodeDisksByNodeIdQuery;
 
+    @Transactional
     public List<NodeDisk> insert(final String nodeId, final List<DiskRegistrationRequest> requests) {
         final List<NodeDisk> disks = toDisks(nodeId, requests);
         for (NodeDisk disk : disks) {
@@ -39,10 +40,6 @@ public class NodeDiskDao extends NamedParameterJdbcDaoSupport {
         return getJdbcTemplate().query(loadNodeDisksByNodeIdQuery, getRowMapper(), nodeId);
     }
 
-    public void deleteByNodeId(final String nodeId) {
-        getJdbcTemplate().update(deleteNodeDisksByNodeIdQuery, nodeId);
-    }
-    
     private MapSqlParameterSource getParameters(final NodeDisk disk) {
         return NodeDiskDao.Parameters.getParameters(disk);
     }
