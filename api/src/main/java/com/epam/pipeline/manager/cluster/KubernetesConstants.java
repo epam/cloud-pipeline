@@ -39,6 +39,7 @@ public final class KubernetesConstants {
     public static final String PAUSED_NODE_LABEL = "Paused";
 
     public static final String CP_CAP_DIND_NATIVE = "CP_CAP_DIND_NATIVE";
+    public static final String CP_CAP_SYSTEMD_CONTAINER = "CP_CAP_SYSTEMD_CONTAINER";
 
     protected static final String POD_SUCCEEDED_PHASE = "Succeeded";
     protected static final String POD_FAILED_PHASE = "Failed";
