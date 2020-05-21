@@ -301,8 +301,8 @@ function upgrade_installed_packages {
 # This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
 function configure_package_manager {
       # Get the distro name and version
-      local CP_OS=
-      local CP_VER=
+      CP_OS=
+      CP_VER=
       if [ -f /etc/os-release ]; then
             # freedesktop.org and systemd
             . /etc/os-release
@@ -326,6 +326,9 @@ function configure_package_manager {
             CP_OS=$(uname -s)
             CP_VER=$(uname -r)
       fi
+
+      export CP_OS
+      export CP_VER
 
       # Perform any specific cleanup/configuration
       if [ "$CP_OS" == "debian" ] && [ "$CP_VER" == "8" ]; then
@@ -1269,6 +1272,41 @@ if [ "$CP_CAP_DIND_NATIVE" == "true" ] && check_installed "docker"; then
       docker_setup_credentials --skip-cert
 else
     echo "DinD (native) configuration is not requested"
+fi
+
+######################################################
+
+
+######################################################
+# Setup systemd if required
+######################################################
+
+echo "Setup Systemd"
+echo "-"
+
+if [ "$CP_CAP_SYSTEMD_CONTAINER" == "true" ] && check_installed "systemctl" && [ "$CP_OS" == "centos" ]; then
+      _CONTAINER_DOCKER_ENV_EXPORTING="export container=docker"
+      _IGNORING_CHROOT_ENV_EXPORTING="export SYSTEMD_IGNORE_CHROOT=1"
+      _REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND='(cd /lib/systemd/system/sysinit.target.wants/; \
+      for i in *; do \
+        [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; \
+      done); \
+      rm -f /lib/systemd/system/multi-user.target.wants/*;\
+      rm -f /etc/systemd/system/*.wants/*;\
+      rm -f /lib/systemd/system/local-fs.target.wants/*; \
+      rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
+      rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
+      rm -f /lib/systemd/system/basic.target.wants/*;\
+      rm -f /lib/systemd/system/anaconda.target.wants/*;'
+
+      echo $_CONTAINER_DOCKER_ENV_EXPORTING >> /etc/cp_env.sh
+      eval "$_CONTAINER_DOCKER_ENV_EXPORTING"
+      echo $_IGNORING_CHROOT_ENV_EXPORTING >> /etc/cp_env.sh
+      eval "$_IGNORING_CHROOT_ENV_EXPORTING"
+      eval "$_REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND"
+      /usr/lib/systemd/systemd --system &
+else
+    echo "Systemd is not requested, skipping installation"
 fi
 
 ######################################################
