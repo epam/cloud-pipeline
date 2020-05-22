@@ -169,7 +169,11 @@ public class PipeRunCmdBuilder {
             cmd.add(parametersCommand);
         }
         if (Objects.nonNull(runVO.getParentRunId())) {
-            addCmd(String.format("parent-id %d", runVO.getParentRunId()));
+            cmd.add(getNewLineIndicator());
+            if (MapUtils.isEmpty(runVO.getParams())) {
+                cmd.add(CMD_OPTIONS_DELIMITER);
+            }
+            cmd.add(String.format("parent-id %d", runVO.getParentRunId()));
         }
         return this;
     }

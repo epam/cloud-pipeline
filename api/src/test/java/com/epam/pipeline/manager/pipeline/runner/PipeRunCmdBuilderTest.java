@@ -107,7 +107,7 @@ public class PipeRunCmdBuilderTest {
         final String actualResult = buildCmd(pipeRunCmdBuilder);
         final String expectedResult = String.format(buildExpectedForWindows("pipe run",
                 "-n 1@%s", "-p", "-y", "-id 10", "-it type", "-di image", "-cmd \"%s\"",
-                "-t 10", "-q", "-ic 5", "-s", "-pt spot", "-r 1", "-pn 1", "parent-id 1"),
+                "-t 10", "-q", "-ic 5", "-s", "-pt spot", "-r 1", "-pn 1", "-- parent-id 1"),
                 TEST_VERSION, CMD_TEMPLATE);
         Assert.assertEquals(expectedResult, actualResult);
     }
@@ -122,7 +122,7 @@ public class PipeRunCmdBuilderTest {
         final String actualResult = buildCmd(pipeRunCmdBuilder);
         final String expectedResult = String.format(buildExpectedForWindows("pipe run", "-n 1@%s",
                 "-p", "-y", "-id 10", "-it type", "-di image", "-cmd \"do \\\"command\\\"\"",
-                "-t 10", "-q", "-ic 5", "-s", "-pt spot", "-r 1", "-pn 1", "parent-id 1"), TEST_VERSION);
+                "-t 10", "-q", "-ic 5", "-s", "-pt spot", "-r 1", "-pn 1", "-- parent-id 1"), TEST_VERSION);
         Assert.assertEquals(expectedResult, actualResult);
     }
 
