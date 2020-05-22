@@ -1133,6 +1133,7 @@ public class PipelineRunManager {
 
     /**
      * Generates launch command for 'pipe run' CLI method.
+     * Note: runParameters should be at the end of the command.
      *
      * @param runVO {@link PipeRunCmdStartVO} contains input arguments for launch command
      * @return launch command
@@ -1142,7 +1143,6 @@ public class PipelineRunManager {
         return new PipeRunCmdBuilder(runVO)
                 .name()
                 .config()
-                .runParameters()
                 .parameters()
                 .yes()
                 .instanceDisk()
@@ -1157,6 +1157,7 @@ public class PipelineRunManager {
                 .regionId()
                 .parentNode()
                 .nonPause()
+                .runParameters()
                 .build();
     }
 
