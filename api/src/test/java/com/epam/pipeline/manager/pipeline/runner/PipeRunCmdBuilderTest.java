@@ -46,8 +46,11 @@ public class PipeRunCmdBuilderTest {
     private static final String DOCKER_IMAGE = "image";
     private static final String CMD_TEMPLATE = "sleep 100";
     private static final String CMD_TEMPLATE_WITH_DOUBLE_QUOTES = "do \"command\"";
-    private static final String QUOTED_PARAMETER = "%s '%s' ";
-    private static final String NON_QUOTED_PARAMETER = "%s %s ";
+    private static final String FIRST_PARAMETER = "-- %s '%s'";
+    private static final String QUOTED_PARAMETER = "%s '%s'";
+    private static final String NON_QUOTED_PARAMETER = "%s %s";
+    private static final String LINUX_NEW_LINE_INDICATOR = "\\\n";
+    private static final String WINDOWS_NEW_LINE_INDICATOR = "^\n";
 
     @Test
     public void shouldGenerateLaunchCommand() {
@@ -73,25 +76,25 @@ public class PipeRunCmdBuilderTest {
 
         final PipeRunCmdBuilder pipeRunCmdBuilder = new PipeRunCmdBuilder(pipeRunCmdStartVO);
         final String actualResult = buildCmd(pipeRunCmdBuilder);
-        final String expectedResult = String.format("pipe run -n 1@%s "
-                                                    + QUOTED_PARAMETER
-                                                    + NON_QUOTED_PARAMETER
-                                                    + QUOTED_PARAMETER
-                                                    + QUOTED_PARAMETER
-                                                    + QUOTED_PARAMETER
-                                                    + QUOTED_PARAMETER
-                                                    + NON_QUOTED_PARAMETER
-                                                    + "parent-id 1 -p -y -id 10 -it type -di image -cmd '%s' "
-                                                    + "-t 10 -q -ic 5 -s -pt spot -r 1 -pn 1",
-                                                    TEST_VERSION,
-                                                    TEST_PARAM_NAME_1, TEST_PARAM_VALUE_1,
-                                                    TEST_PARAM_NAME_2, TEST_PARAM_VALUE_2,
-                                                    TEST_PARAM_NAME_3, TEST_PARAM_VALUE_MULTIPLE_PATHS,
-                                                    TEST_PARAM_NAME_4, TEST_PARAM_VALUE_MULTIPLE_PATHS,
-                                                    TEST_PARAM_NAME_5, TEST_PARAM_VALUE_MULTIPLE_PATHS,
-                                                    TEST_PARAM_NAME_6, TEST_PARAM_VALUE_MULTIPLE_PATHS,
-                                                    TEST_PARAM_NAME_7, true,
-                                                    CMD_TEMPLATE);
+        final String expectedResult = String.format(buildExpectedForLinux("pipe run", "-n 1@%s", "-p", "-y",
+                "-id 10", "-it type", "-di image", "-cmd '%s'", "-t 10", "-q", "-ic 5", "-s", "-pt spot", "-r 1",
+                "-pn 1",
+                FIRST_PARAMETER,
+                NON_QUOTED_PARAMETER,
+                QUOTED_PARAMETER,
+                QUOTED_PARAMETER,
+                QUOTED_PARAMETER,
+                QUOTED_PARAMETER,
+                NON_QUOTED_PARAMETER,
+                "parent-id 1"),
+                TEST_VERSION, CMD_TEMPLATE,
+                TEST_PARAM_NAME_1, TEST_PARAM_VALUE_1,
+                TEST_PARAM_NAME_2, TEST_PARAM_VALUE_2,
+                TEST_PARAM_NAME_3, TEST_PARAM_VALUE_MULTIPLE_PATHS,
+                TEST_PARAM_NAME_4, TEST_PARAM_VALUE_MULTIPLE_PATHS,
+                TEST_PARAM_NAME_5, TEST_PARAM_VALUE_MULTIPLE_PATHS,
+                TEST_PARAM_NAME_6, TEST_PARAM_VALUE_MULTIPLE_PATHS,
+                TEST_PARAM_NAME_7, true);
         Assert.assertEquals(expectedResult, actualResult);
     }
 
@@ -102,10 +105,10 @@ public class PipeRunCmdBuilderTest {
 
         final PipeRunCmdBuilder pipeRunCmdBuilder = new PipeRunCmdBuilder(pipeRunCmdStartVO);
         final String actualResult = buildCmd(pipeRunCmdBuilder);
-        final String expectedResult = String.format("pipe run -n 1@%s parent-id 1 -p -y -id 10 " +
-                                                    "-it type -di image -cmd \"%s\" "
-                                                    + "-t 10 -q -ic 5 -s -pt spot -r 1 -pn 1",
-                                                    TEST_VERSION, CMD_TEMPLATE);
+        final String expectedResult = String.format(buildExpectedForWindows("pipe run",
+                "-n 1@%s", "-p", "-y", "-id 10", "-it type", "-di image", "-cmd \"%s\"",
+                "-t 10", "-q", "-ic 5", "-s", "-pt spot", "-r 1", "-pn 1", "-- parent-id 1"),
+                TEST_VERSION, CMD_TEMPLATE);
         Assert.assertEquals(expectedResult, actualResult);
     }
 
@@ -117,10 +120,9 @@ public class PipeRunCmdBuilderTest {
 
         final PipeRunCmdBuilder pipeRunCmdBuilder = new PipeRunCmdBuilder(pipeRunCmdStartVO);
         final String actualResult = buildCmd(pipeRunCmdBuilder);
-        final String expectedResult = String.format("pipe run -n 1@%s parent-id 1 -p -y -id 10 " +
-                                                    "-it type -di image -cmd \"do \\\"command\\\"\" "
-                                                    + "-t 10 -q -ic 5 -s -pt spot -r 1 -pn 1",
-                                                    TEST_VERSION);
+        final String expectedResult = String.format(buildExpectedForWindows("pipe run", "-n 1@%s",
+                "-p", "-y", "-id 10", "-it type", "-di image", "-cmd \"do \\\"command\\\"\"",
+                "-t 10", "-q", "-ic 5", "-s", "-pt spot", "-r 1", "-pn 1", "-- parent-id 1"), TEST_VERSION);
         Assert.assertEquals(expectedResult, actualResult);
     }
 
@@ -135,7 +137,8 @@ public class PipeRunCmdBuilderTest {
 
         final PipeRunCmdBuilder pipeRunCmdBuilder = new PipeRunCmdBuilder(pipeRunCmdStartVO);
         final String actualResult = buildCmd(pipeRunCmdBuilder);
-        Assert.assertEquals("pipe run -n 1 -pt spot", actualResult);
+        final String expected = buildExpectedForLinux("pipe run", "-n 1", "-pt spot");
+        Assert.assertEquals(expected, actualResult);
     }
 
     @Test
@@ -150,7 +153,8 @@ public class PipeRunCmdBuilderTest {
 
         final PipeRunCmdBuilder pipeRunCmdBuilder = new PipeRunCmdBuilder(pipeRunCmdStartVO);
         final String actualResult = buildCmd(pipeRunCmdBuilder);
-        Assert.assertEquals("pipe run -n 1 -pt on-demand -np", actualResult);
+        final String expected = buildExpectedForLinux("pipe run", "-n 1", "-pt on-demand", "-np");
+        Assert.assertEquals(expected, actualResult);
     }
 
     @Test
@@ -165,7 +169,8 @@ public class PipeRunCmdBuilderTest {
 
         final PipeRunCmdBuilder pipeRunCmdBuilder = new PipeRunCmdBuilder(pipeRunCmdStartVO);
         final String actualResult = buildCmd(pipeRunCmdBuilder);
-        Assert.assertEquals("pipe run -n 1 -pt spot", actualResult);
+        final String expected = buildExpectedForLinux("pipe run", "-n 1", "-pt spot");
+        Assert.assertEquals(expected, actualResult);
     }
 
 
@@ -173,7 +178,6 @@ public class PipeRunCmdBuilderTest {
         return pipeRunCmdBuilder
                 .name()
                 .config()
-                .runParameters()
                 .parameters()
                 .yes()
                 .instanceDisk()
@@ -188,6 +192,7 @@ public class PipeRunCmdBuilderTest {
                 .regionId()
                 .parentNode()
                 .nonPause()
+                .runParameters()
                 .build();
     }
 
@@ -213,5 +218,13 @@ public class PipeRunCmdBuilderTest {
         pipeRunCmdStartVO.setQuite(true);
         pipeRunCmdStartVO.setShowParams(true);
         return pipeRunCmdStartVO;
+    }
+
+    private String buildExpectedForLinux(final String... values) {
+        return String.join(" " + LINUX_NEW_LINE_INDICATOR + " ", values);
+    }
+
+    private String buildExpectedForWindows(final String... values) {
+        return String.join(" " + WINDOWS_NEW_LINE_INDICATOR  + " ", values);
     }
 }
