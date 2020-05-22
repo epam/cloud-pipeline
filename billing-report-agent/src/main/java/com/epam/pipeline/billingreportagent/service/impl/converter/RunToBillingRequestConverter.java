@@ -251,7 +251,8 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         return calculateCostsForPeriod(duration.getSeconds(), price.getOldFashionedPricePerHour());
     }
 
-    private long getNewFashionedCosts(final Duration duration, final Long disk, final RunPrice price, final boolean active) {
+    private long getNewFashionedCosts(final Duration duration, final Long disk, final RunPrice price, 
+                                      final boolean active) {
         return getDiskCosts(duration, disk, price) + (active ? getComputeCosts(duration, price) : 0L);
     }
 
