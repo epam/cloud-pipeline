@@ -109,9 +109,9 @@ function autoDetectTickInterval (fromUnix, toUnix) {
   const d = getDurationString(days, 'D');
   const h = getDurationString(hours, 'H');
   const m = getDurationString(minutes, 'M');
-  const period = d ? `P${d}` : '';
-  const time = h || m ? `T${h}${m}` : '';
-  return `${period}${time}`;
+  const period = d ? `${d}` : '';
+  const time = h || m ? `T${h || ''}${m || ''}` : '';
+  return period || time ? `P${period}${time}` : '';
 }
 
 export {autoDetectTickInterval, getAvailableTickIntervals};
