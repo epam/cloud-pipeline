@@ -161,14 +161,16 @@ class ClusterNodeMonitor extends React.Component {
   get retentionPeriodExceeded () {
     const {preferences, chartsData} = this.props;
     const {end} = this.state;
-    if (preferences.loaded) {
+    if (end && preferences.loaded) {
       const retentionPeriod = preferences.getPreferenceValue(
         'system.resource.monitoring.stats.retention.period'
       );
-      const endOfRetentionPeriod = moment().subtract(retentionPeriod, 'days');
-      if (moment.unix(end) < endOfRetentionPeriod ||
-        moment.unix(chartsData.instanceTo) < endOfRetentionPeriod) {
-        return true;
+      if (retentionPeriod) {
+        const endOfRetentionPeriod = moment().subtract(retentionPeriod, 'days');
+        if (moment.unix(end) < endOfRetentionPeriod ||
+          moment.unix(chartsData.instanceTo) < endOfRetentionPeriod) {
+          return true;
+        }
       }
     }
 
