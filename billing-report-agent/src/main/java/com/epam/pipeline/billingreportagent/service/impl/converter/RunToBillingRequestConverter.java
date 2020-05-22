@@ -40,7 +40,6 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -158,18 +157,15 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
                                                                  final RunPrice price,
                                                                  final List<RunStatus> statuses) {
         final List<PipelineRunBillingInfo> billings = new ArrayList<>();
-        boolean isPreviousActive = false;
-        LocalDateTime periodStart = null;
-        for (final RunStatus current : statuses) {
-            final boolean isCurrentActive = TaskStatus.RUNNING.equals(current.getStatus());
-            if (isCurrentActive && !isPreviousActive) {
-                periodStart = current.getTimestamp();
-                isPreviousActive = true;
-            } else if (!isCurrentActive && isPreviousActive) {
-                isPreviousActive = false;
-                billings.addAll(createRunBillingsForActivePeriod(periodStart, current.getTimestamp(), run, price));
+        for (int i = 0; i < statuses.size() - 1; i++) {
+            final RunStatus previous = statuses.get(i);
+            final RunStatus current = statuses.get(i + 1);
+            if (TaskStatus.RUNNING.equals(previous.getStatus())) {
+                billings.addAll(createRunBillingsForActivePeriod(previous.getTimestamp(), current.getTimestamp(), 
+                        run, price));
             } else {
-                billings.addAll(createRunBillingsForInactivePeriod(periodStart, current.getTimestamp(), run, price));
+                billings.addAll(createRunBillingsForInactivePeriod(previous.getTimestamp(), current.getTimestamp(),
+                        run, price));
             }
         }
         return billings;
