@@ -117,6 +117,8 @@ public class PipelineRunManager {
     private static final int MILLS_IN_SEC = 1000;
     private static final int DIVIDER_TO_GB = 1024 * 1024 * 1024;
     private static final String SHOW_ACTIVE_WORKERS_ONLY_PARAMETER = "CP_SHOW_ACTIVE_WORKERS_ONLY";
+    private static final int USER_PRICE_SCALE = 2;
+    private static final int BILLING_PRICE_SCALE = 5;
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -1184,7 +1186,7 @@ public class PipelineRunManager {
                 .map(runInstance -> instanceOfferManager.getInstanceEstimatedPrice(runInstance.getNodeType(),
                         getTotalSize(disks), runInstance.getSpot(), runInstance.getCloudRegionId()))
                 .map(InstancePrice::getPricePerHour)
-                .map(this::scaled)
+                .map(this::scaledForUser)
                 .orElse(run.getPricePerHour());
         run.setPricePerHour(pricePerHour);
         LOGGER.debug("Adjusted price per hour for run #{} to {}", runId, run.getPricePerHour());
@@ -1438,14 +1440,22 @@ public class PipelineRunManager {
                     instance.getNodeType(), instance.getEffectiveNodeDisk(), instance.getSpot(), 
                     instance.getCloudRegionId());
             LOGGER.debug("Expected price per hour: {}", runPrice.getPricePerHour());
-            run.setPricePerHour(scaled(runPrice.getPricePerHour()));
-            run.setComputePricePerHour(scaled(runPrice.getComputePricePerHour()));
-            run.setDiskPricePerHour(scaled(runPrice.getDiskPricePerHour()));
+            run.setPricePerHour(scaledForUser(runPrice.getPricePerHour()));
+            run.setComputePricePerHour(scaledForBilling(runPrice.getComputePricePerHour()));
+            run.setDiskPricePerHour(scaledForBilling(runPrice.getDiskPricePerHour()));
         }
     }
 
-    private BigDecimal scaled(final double pricePerHour) {
-        return BigDecimal.valueOf(pricePerHour).setScale(2, RoundingMode.HALF_EVEN);
+    private BigDecimal scaledForUser(final double price) {
+        return scaled(price, USER_PRICE_SCALE);
+    }
+
+    private BigDecimal scaledForBilling(final double price) {
+        return scaled(price, BILLING_PRICE_SCALE);
+    }
+
+    private BigDecimal scaled(final double price, final int scale) {
+        return BigDecimal.valueOf(price).setScale(scale, RoundingMode.HALF_EVEN);
     }
 
     private PipelineRun createRestartRun(final PipelineRun run) {

@@ -105,6 +105,8 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     private static final String TEST_SERVICE_URL = "service_url";
     private static final String GROUP_NAME = "group_1";
     private static final BigDecimal PRICE_PER_HOUR = new BigDecimal("0.08");
+    private static final BigDecimal COMPUTE_PRICE_PER_HOUR = new BigDecimal("0.04000");
+    private static final BigDecimal DISK_PRICE_PER_HOUR = new BigDecimal("0.00012");
     private static final String TEST_REPO = "///";
     private static final String TEST_REPO_SSH = "git@test";
 
@@ -749,10 +751,14 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     public void testLoadRunWithPricePerHour() {
         PipelineRun run = createTestPipelineRun(testPipeline.getId());
         run.setPricePerHour(PRICE_PER_HOUR);
+        run.setComputePricePerHour(COMPUTE_PRICE_PER_HOUR);
+        run.setDiskPricePerHour(DISK_PRICE_PER_HOUR);
         pipelineRunDao.updateRun(run);
         PipelineRun loaded = pipelineRunDao.loadPipelineRun(run.getId());
         assertEquals(run.getId(), loaded.getId());
         assertEquals(PRICE_PER_HOUR, loaded.getPricePerHour());
+        assertEquals(COMPUTE_PRICE_PER_HOUR, loaded.getComputePricePerHour());
+        assertEquals(DISK_PRICE_PER_HOUR, loaded.getDiskPricePerHour());
     }
 
     @Test
