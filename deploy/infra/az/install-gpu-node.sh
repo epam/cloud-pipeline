@@ -118,14 +118,26 @@ cd /usr/src/
 wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.20.1.tar.xz
 tar -xvf linux-4.20.1.tar.xz
 cd linux-4.20.1/
-cp -v /boot/config-3.10.0-957.27.2.el7.x86_64 /usr/src/linux-4.20.1/.config
+cp -v /boot/config-$(uname -r) /usr/src/linux-4.20.1/.config
 
+# Interactive step (for now):
+# Save -> .config -> Exit
 make menuconfig
-make bzImage
-make modules
-make
-make modules_install
+
+make bzImage -j $(nproc)
+echo "DONE: make bzImage"
+
+make modules -j $(nproc)
+echo "DONE: make modules"
+
+make -j $(nproc)
+echo "DONE: make"
+
+make modules_install -j $(nproc)
+echo "DONE: make modules_install"
+
 make install
+echo "DONE: make install"
 
 sed -i '/GRUB_DEFAULT=/c\GRUB_DEFAULT=0' /etc/default/grub && \
 grub2-mkconfig -o /boot/grub2/grub.cfg
