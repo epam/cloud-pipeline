@@ -411,13 +411,15 @@ export default class EditToolForm extends React.Component {
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
+    const {getFieldsValue} = this.props.form;
     if (prevProps.configuration !== this.props.configuration) {
       const cloudRegionId = this.props.configuration && this.props.configuration.cloudRegionId
         ? this.props.configuration.cloudRegionId
         : undefined;
       this.props.allowedInstanceTypes.setRegionId(cloudRegionId, true);
     }
-    if (this.props.allowedInstanceTypes &&
+    const fields = getFieldsValue();
+    if ('instanceType' in fields && this.props.allowedInstanceTypes &&
       this.props.allowedInstanceTypes.loaded &&
       this.props.allowedInstanceTypes.changed) {
       this.correctAllowedInstanceValues();
@@ -858,7 +860,13 @@ export default class EditToolForm extends React.Component {
                     initialValue: this.getInstanceTypeInitialValue()
                   })(
                   <Select
-                    disabled={this.state.pending || this.props.readOnly}
+                    disabled={this.state.pending || this.props.readOnly || (
+                      this.props.allowedInstanceTypes &&
+                      (
+                        this.props.allowedInstanceTypes.changed ||
+                        this.props.allowedInstanceTypes.pending
+                      )
+                    )}
                     showSearch
                     allowClear={false}
                     placeholder="Instance type"
