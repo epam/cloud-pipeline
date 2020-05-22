@@ -52,7 +52,7 @@ public class NodeDiskManager {
     }
 
     private void validateCreationDate(final LocalDateTime date) {
-        Assert.notNull(date, messageHelper.getMessage(MessageConstants.ERROR_DISK_NODE_MISSING));
+        Assert.notNull(date, messageHelper.getMessage(MessageConstants.ERROR_DISK_DATE_MISSING));
     }
 
     private void validateRequests(final List<DiskRegistrationRequest> requests) {
