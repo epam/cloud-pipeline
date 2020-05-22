@@ -57,6 +57,9 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class RunToBillingRequestConverter implements EntityToBillingRequestConverter<PipelineRunWithType> {
 
+    private static final int BILLING_PRICE_SCALE = 5;
+    private static final int USER_PRICE_SCALE = 2;
+    
     private final AbstractEntityMapper<PipelineRunBillingInfo> mapper;
 
     /**
@@ -126,11 +129,29 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
     }
 
     private RunPrice getPrice(final EntityContainer<PipelineRunWithType> runContainer) {
-        final Optional<PipelineRun> run = Optional.of(runContainer.getEntity().getPipelineRun());
-        final BigDecimal pricePerHour = run.map(PipelineRun::getPricePerHour).orElse(BigDecimal.ZERO);
-        final BigDecimal computePricePerHour = run.map(PipelineRun::getComputePricePerHour).orElse(BigDecimal.ZERO);
-        final BigDecimal diskPricePerHour = run.map(PipelineRun::getDiskPricePerHour).orElse(BigDecimal.ZERO);
+        final BigDecimal pricePerHour = getUserPrice(runContainer, PipelineRun::getPricePerHour);
+        final BigDecimal computePricePerHour = getBillingPrice(runContainer, PipelineRun::getComputePricePerHour);
+        final BigDecimal diskPricePerHour = getBillingPrice(runContainer, PipelineRun::getDiskPricePerHour);
         return new RunPrice(pricePerHour, computePricePerHour, diskPricePerHour);
+    }
+
+    private BigDecimal getUserPrice(final EntityContainer<PipelineRunWithType> runContainer, 
+                                    final Function<PipelineRun, BigDecimal> priceExtractor) {
+        return getScaledPrice(runContainer, priceExtractor, USER_PRICE_SCALE);
+    }
+
+    private BigDecimal getBillingPrice(final EntityContainer<PipelineRunWithType> runContainer,
+                                       final Function<PipelineRun, BigDecimal> priceExtractor) {
+        return getScaledPrice(runContainer, priceExtractor, BILLING_PRICE_SCALE);
+    }
+
+    private BigDecimal getScaledPrice(final EntityContainer<PipelineRunWithType> runContainer,
+                                      final Function<PipelineRun, BigDecimal> priceExtractor,
+                                      final int scale) {
+        return Optional.of(runContainer.getEntity().getPipelineRun())
+                .map(priceExtractor)
+                .orElse(BigDecimal.ZERO)
+                .setScale(scale, BigDecimal.ROUND_CEILING);
     }
 
     private List<PipelineRunBillingInfo> createBillingsForPeriod(final PipelineRunWithType run,
@@ -221,10 +242,6 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
     }
 
     private Long getCosts(final Duration duration, final Long disk, final RunPrice price, final boolean active) {
-        if (disk == 0L && price.isNewFashioned()) {
-            log.warn("New fashioned pipeline run disks size is zero. Old fashioned price per hour will be used.");
-            return getOldFashionedCosts(duration, price, active);
-        }
         return price.isOldFashioned() 
                 ? getOldFashionedCosts(duration, price, active)
                 : getNewFashionedCosts(duration, disk, price, active);
@@ -261,7 +278,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
     private Long calculateCostsForPeriod(final Long durationSecs, final BigDecimal hourlyPrice) {
         final BigDecimal duration = BigDecimal.valueOf(durationSecs);
         return duration.multiply(hourlyPrice)
-            .divide(BigDecimal.valueOf(Duration.ofHours(1).getSeconds()), RoundingMode.CEILING)
+            .divide(BigDecimal.valueOf(Duration.ofHours(1).getSeconds()), USER_PRICE_SCALE, RoundingMode.CEILING)
             .scaleByPowerOfTen(4)
             .longValue();
     }
