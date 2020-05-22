@@ -22,17 +22,23 @@ public class NodeDiskDao extends NamedParameterJdbcDaoSupport {
 
     @Transactional
     public List<NodeDisk> insert(final String nodeId, final List<DiskRegistrationRequest> requests) {
-        final List<NodeDisk> disks = toDisks(nodeId, requests);
+        return insert(nodeId, DateUtils.nowUTC(), requests);
+    }
+
+    @Transactional
+    public List<NodeDisk> insert(final String nodeId, final LocalDateTime creationDate, 
+                                 final List<DiskRegistrationRequest> requests) {
+        final List<NodeDisk> disks = toDisks(nodeId, creationDate, requests);
         for (NodeDisk disk : disks) {
             getNamedParameterJdbcTemplate().update(insertNodeDiskQuery, getParameters(disk));
         }
         return disks;
     }
 
-    private List<NodeDisk> toDisks(final String nodeId, final List<DiskRegistrationRequest> requests) {
-        final LocalDateTime now = DateUtils.nowUTC();
+    private List<NodeDisk> toDisks(final String nodeId, final LocalDateTime creationDate,
+                                   final List<DiskRegistrationRequest> requests) {
         return requests.stream()
-                .map(disk -> new NodeDisk(disk.getSize(), nodeId, now))
+                .map(disk -> new NodeDisk(disk.getSize(), nodeId, creationDate))
                 .collect(Collectors.toList());
     }
 

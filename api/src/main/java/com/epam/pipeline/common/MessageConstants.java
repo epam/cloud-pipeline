@@ -500,6 +500,7 @@ public final class MessageConstants {
 
     //Disks    
     public static final String ERROR_DISK_NODE_MISSING = "error.disk.node.missing";
+    public static final String ERROR_DISK_DATE_MISSING = "error.disk.date.missing";
     public static final String ERROR_DISK_SIZE_MISSING = "error.disk.size.missing";
     public static final String ERROR_DISK_SIZE_INVALID = "error.disk.size.invalid";
 

@@ -28,6 +28,8 @@ public class NodeDiskManagerTest {
     private static final Long ZERO_SIZE = 0L;
     private static final Long NEGATIVE_SIZE = -1L;
     private static final Long NULL_SIZE = null;
+    private static final LocalDateTime CREATION_DATE = LocalDateTime.now();
+    private static final LocalDateTime NULL_CREATION_DATE = null;
 
     private final NodeDiskDao nodeDiskDao = mock(NodeDiskDao.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
@@ -36,6 +38,7 @@ public class NodeDiskManagerTest {
     @Before
     public void mockInsertingDisk() {
         doReturn(Collections.singletonList(disk())).when(nodeDiskDao).insert(any(), any());
+        doReturn(Collections.singletonList(disk())).when(nodeDiskDao).insert(any(), any(), any());
     }
 
     @Test
@@ -57,12 +60,24 @@ public class NodeDiskManagerTest {
     public void insertShouldFailOnMissingNodeId() {
         assertThrows(IllegalArgumentException.class, () -> register(NULL_NODE_ID, request(SIZE)));
     }
+    
+    @Test
+    public void insertShouldFailOnMissingCreationDateIfSpecified() {
+        assertThrows(IllegalArgumentException.class, () -> register(NULL_NODE_ID, NULL_CREATION_DATE, request(SIZE)));
+    }
 
     @Test
     public void insertShouldSaveDisk() {
         register(NODE_ID, request(SIZE));
         
         verify(nodeDiskDao).insert(eq(NODE_ID), eq(Collections.singletonList(request(SIZE))));
+    }
+
+    @Test
+    public void insertShouldSaveDiskIfCreationDateIsSpecified() {
+        register(NODE_ID, CREATION_DATE, request(SIZE));
+        
+        verify(nodeDiskDao).insert(eq(NODE_ID), eq(CREATION_DATE), eq(Collections.singletonList(request(SIZE))));
     }
 
     @Test
@@ -74,6 +89,11 @@ public class NodeDiskManagerTest {
 
     private NodeDisk register(final String nodeId, final DiskRegistrationRequest request) {
         return manager.register(nodeId, request);
+    }
+
+    private NodeDisk register(final String nodeId, final LocalDateTime creationDate, 
+                              final DiskRegistrationRequest request) {
+        return manager.register(nodeId, creationDate, Collections.singletonList(request)).get(0);
     }
 
     private NodeDisk disk() {
