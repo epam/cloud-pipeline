@@ -70,6 +70,7 @@ public class PipelineRun extends AbstractSecuredEntity {
     private String serviceUrl;
 
     private Boolean terminating = false;
+    private Boolean sensitive;
     private String podId;
     private String pipelineName;
     private List<PipelineRunParameter> pipelineRunParameters;

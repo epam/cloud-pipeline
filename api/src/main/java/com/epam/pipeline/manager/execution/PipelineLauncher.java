@@ -200,6 +200,9 @@ public class PipelineLauncher {
                 .containsKey(SystemParams.RESUMED_RUN.getEnvName())) {
             systemParamsWithValue.put(SystemParams.RESUMED_RUN, "false");
         }
+        if (run.getSensitive()) {
+            systemParamsWithValue.put(SystemParams.CP_SENSITIVE_RUN, "true");
+        }
         return systemParamsWithValue;
     }
 
