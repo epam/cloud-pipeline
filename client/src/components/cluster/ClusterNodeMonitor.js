@@ -106,7 +106,7 @@ function ChartContainer (
   );
 }
 
-@inject('chartsData')
+@inject('chartsData', 'preferences')
 @observer
 class ClusterNodeMonitor extends React.Component {
   state = {
@@ -155,6 +155,24 @@ class ClusterNodeMonitor extends React.Component {
       moment.duration(chartsData.instanceTo - chartsData.instanceFrom, 's') >
       moment.duration(1, 'h')
     );
+  }
+
+  @computed
+  get retentionPeriodExceeded () {
+    const {preferences, chartsData} = this.props;
+    const {end} = this.state;
+    if (preferences.loaded) {
+      const retentionPeriod = preferences.getPreferenceValue(
+        'system.resource.monitoring.stats.retention.period'
+      );
+      const endOfRetentionPeriod = moment().subtract(retentionPeriod, 'days');
+      if (moment.unix(end) < endOfRetentionPeriod ||
+        moment.unix(chartsData.instanceTo) < endOfRetentionPeriod) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   componentDidMount () {
@@ -524,28 +542,34 @@ class ClusterNodeMonitor extends React.Component {
             value={end ? moment.unix(end) : undefined}
             disabledDate={this.disabledDate}
           />
-          <Divider />
-          <Dropdown
-            overlay={(
-              <Menu onClick={this.onExportClicked}>
-                {
-                  usageUtilities
-                    .getAvailableTickIntervals(start, end)
-                    .map((unit) => (
-                      <Menu.Item key={unit.value}>
-                        Interval: {unit.name}
-                      </Menu.Item>
-                    ))
-                }
-              </Menu>
-            )}>
-            <Button
-              disabled={!start || exporting}
-              onClick={() => this.onExportClicked()}
-            >
-              <Icon type="export" />Export
-            </Button>
-          </Dropdown>
+          {
+            !this.retentionPeriodExceeded && <Divider />
+          }
+          {
+            !this.retentionPeriodExceeded && (
+              <Dropdown
+                overlay={(
+                  <Menu onClick={this.onExportClicked}>
+                    {
+                      usageUtilities
+                        .getAvailableTickIntervals(start, end)
+                        .map((unit) => (
+                          <Menu.Item key={unit.value}>
+                            Interval: {unit.name}
+                          </Menu.Item>
+                        ))
+                    }
+                  </Menu>
+                )}>
+                <Button
+                  disabled={!start || exporting}
+                  onClick={() => this.onExportClicked()}
+                >
+                  <Icon type="export" />Export
+                </Button>
+              </Dropdown>
+            )
+          }
         </Row>
         <ResponsiveContainer
           className={styles.fullHeightContainer}
