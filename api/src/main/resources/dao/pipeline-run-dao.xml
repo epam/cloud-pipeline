@@ -446,7 +446,6 @@
                         owner = :OWNER,
                         service_url = :SERVICE_URL,
                         pod_ip = :POD_IP,
-                        ssh_password = :SSH_PASSWORD,
                         commit_status = :COMMIT_STATUS,
                         last_change_commit_time = :LAST_CHANGE_COMMIT_TIME,
                         config_name = :CONFIG_NAME,
