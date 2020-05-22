@@ -40,6 +40,7 @@ public class PipeRunCmdBuilder {
     private static final String WHITESPACE = " ";
     private static final Set<String> QUOTABLE_PARAMETER_TYPES =
         new HashSet<>(Arrays.asList("string", "input", "output", "path", "common"));
+    private static final String CMD_OPTIONS_DELIMITER = "--";
 
     private final PipelineStart runVO;
     private final PipeRunCmdStartVO startVO;
@@ -63,9 +64,9 @@ public class PipeRunCmdBuilder {
             return this;
         }
         if (StringUtils.isNotBlank(runVO.getVersion())) {
-            cmd.add(String.format("-n %d@%s", runVO.getPipelineId(), runVO.getVersion()));
+            addCmd(String.format("-n %d@%s", runVO.getPipelineId(), runVO.getVersion()));
         } else {
-            cmd.add(String.format("-n %d", runVO.getPipelineId()));
+            addCmd(String.format("-n %d", runVO.getPipelineId()));
         }
         return this;
     }
@@ -87,6 +88,7 @@ public class PipeRunCmdBuilder {
 
     public PipeRunCmdBuilder cmdTemplate() {
         if (StringUtils.isNotBlank(runVO.getCmdTemplate())) {
+            cmd.add(getNewLineIndicator());
             cmd.add("-cmd");
             cmd.add(quoteArgumentValue(runVO.getCmdTemplate()));
         }
@@ -108,6 +110,7 @@ public class PipeRunCmdBuilder {
     }
 
     public PipeRunCmdBuilder priceType() {
+        cmd.add(getNewLineIndicator());
         cmd.add("-pt");
         cmd.add(isOnDemand() ? "on-demand" : "spot");
         return this;
@@ -130,41 +133,46 @@ public class PipeRunCmdBuilder {
 
     public PipeRunCmdBuilder yes() {
         if (startVO.isYes()) {
-            cmd.add("-y");
+            addCmd("-y");
         }
         return this;
     }
 
     public PipeRunCmdBuilder quite() {
         if (startVO.isQuite()) {
-            cmd.add("-q");
+            addCmd("-q");
         }
         return this;
     }
 
     public PipeRunCmdBuilder sync() {
         if (startVO.isSync()) {
-            cmd.add("-s");
+            addCmd("-s");
         }
         return this;
     }
 
     public PipeRunCmdBuilder parameters() {
         if (startVO.isShowParams()) {
-            cmd.add("-p");
+            addCmd("-p");
         }
         return this;
     }
 
     public PipeRunCmdBuilder runParameters() {
         if (MapUtils.isNotEmpty(runVO.getParams())) {
+            addCmd(CMD_OPTIONS_DELIMITER);
             final String parametersCommand = runVO.getParams().entrySet()
                     .stream()
                     .map(this::prepareParams)
-                    .collect(Collectors.joining(WHITESPACE));
+                    .collect(Collectors.joining(WHITESPACE + getNewLineIndicator() + WHITESPACE));
             cmd.add(parametersCommand);
         }
         if (Objects.nonNull(runVO.getParentRunId())) {
+            cmd.add(getNewLineIndicator());
+            if (MapUtils.isEmpty(runVO.getParams())) {
+                cmd.add(CMD_OPTIONS_DELIMITER);
+            }
             cmd.add(String.format("parent-id %d", runVO.getParentRunId()));
         }
         return this;
@@ -172,7 +180,7 @@ public class PipeRunCmdBuilder {
 
     public PipeRunCmdBuilder nonPause() {
         if (isOnDemand() && runVO.isNonPause()) {
-            cmd.add("-np");
+            addCmd("-np");
         }
         return this;
     }
@@ -189,6 +197,7 @@ public class PipeRunCmdBuilder {
 
     private void buildObjectCmdArg(final String argumentName, final Object argumentValue) {
         if (Objects.nonNull(argumentValue)) {
+            cmd.add(getNewLineIndicator());
             cmd.add(argumentName);
             cmd.add(String.valueOf(argumentValue));
         }
@@ -196,6 +205,7 @@ public class PipeRunCmdBuilder {
 
     private void buildStringCmdArg(final String argumentName, final String argumentValue) {
         if (StringUtils.isNotBlank(argumentValue)) {
+            cmd.add(getNewLineIndicator());
             cmd.add(argumentName);
             cmd.add(argumentValue);
         }
@@ -223,5 +233,16 @@ public class PipeRunCmdBuilder {
 
     private boolean isOnDemand() {
         return Objects.nonNull(runVO.getIsSpot()) && !runVO.getIsSpot();
+    }
+
+    private void addCmd(final String value) {
+        cmd.add(getNewLineIndicator());
+        cmd.add(value);
+    }
+
+    private String getNewLineIndicator() {
+        return OsType.WINDOWS.equals(runCmdExecutionEnvironment)
+                ? "^\n"
+                : "\\\n";
     }
 }
