@@ -1169,14 +1169,13 @@ public class PipelineRunManager {
      * Adjusts run price per hour including provided node disks.
      * 
      * @param runId of {@link PipelineRun} to update price for.
-     * @param instance of {@link PipelineRun}.
      * @param disks of {@link PipelineRun} instance.
      * @return Updated pipeline run.
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun adjustRunPricePerHourToDisks(final Long runId, final RunInstance instance, 
-                                                    final List<InstanceDisk> disks) {
+    public PipelineRun adjustRunPricePerHourToDisks(final Long runId, final List<InstanceDisk> disks) {
         final PipelineRun run = loadPipelineRun(runId);
+        final RunInstance instance = run.getInstance();
         if (disks.isEmpty()) {
             LOGGER.warn("Run #{} price per hour won't be adjusted since no disks are provided.", runId);
             return run;

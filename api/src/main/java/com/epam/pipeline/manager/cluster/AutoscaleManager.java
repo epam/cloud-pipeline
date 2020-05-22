@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
@@ -53,6 +54,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -297,7 +299,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                         scheduledRuns.add(runId);
                         pipelineRunManager.updateRunInstance(longId, previousInstance);
                         List<InstanceDisk> disks = cloudFacade.loadDisks(previousInstance.getCloudRegionId(), longId);
-                        pipelineRunManager.adjustRunPricePerHourToDisks(longId, previousInstance, disks);
+                        adjustRunPrices(longId, disks);
                         reassignedNodes.add(previousId);
                         return;
                     }
@@ -469,8 +471,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             //save instance ID and IP
             pipelineRunManager.updateRunInstance(longId, instance);
             List<InstanceDisk> disks = cloudFacade.loadDisks(instance.getCloudRegionId(), longId);
-            nodeDiskManager.register(instance.getNodeId(), DiskRegistrationRequest.from(disks));
-            pipelineRunManager.adjustRunPricePerHourToDisks(longId, instance, disks);
+            registerNodeDisks(longId, disks);
+            adjustRunPrices(longId, disks);
             Instant end = Instant.now();
             removeNodeUpTask(longId);
             LOGGER.debug("Time to create a node for run {} : {} s.", runId,
@@ -491,6 +493,18 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             removeNodeUpTask(longId, false);
             return null;
         }));
+    }
+
+    private void registerNodeDisks(long runId, List<InstanceDisk> disks) {
+        PipelineRun run = pipelineRunManager.loadPipelineRun(runId);
+        String nodeId = run.getInstance().getNodeId();
+        LocalDateTime creationDate = DateUtils.convertDateToLocalDateTime(run.getCreatedDate());
+        List<DiskRegistrationRequest> requests = DiskRegistrationRequest.from(disks);
+        nodeDiskManager.register(nodeId, creationDate, requests);
+    }
+
+    private void adjustRunPrices(long longId, List<InstanceDisk> disks) {
+        pipelineRunManager.adjustRunPricePerHourToDisks(longId, disks);
     }
 
     private void addNodeUpTask(long longId) {

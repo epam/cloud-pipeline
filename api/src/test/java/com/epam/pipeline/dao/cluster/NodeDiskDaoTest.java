@@ -57,6 +57,15 @@ public class NodeDiskDaoTest extends AbstractSpringTest {
         assertTrue(actualCreationDate.isAfter(lowerExpectedCreationDate)
                 && actualCreationDate.isBefore(upperExpectedCreationDate));
     }
+
+    @Test
+    public void insertShouldInheritCreationDateIfSpecified() {
+        final LocalDateTime creationDate = LocalDateTime.now();
+        final List<NodeDisk> disks = insert(NODE_ID, creationDate, diskRequestOf(SIZE), diskRequestOf(SIZE));
+        
+        assertThat(disks.size(), is(2));
+        disks.forEach(disk -> assertThat(disk.getCreatedDate(), is(creationDate)));
+    }
     
     @Test
     public void insertShouldSaveAllDisks() {
@@ -92,6 +101,11 @@ public class NodeDiskDaoTest extends AbstractSpringTest {
         final List<NodeDisk> disks = dao.loadByNodeId(ANOTHER_NODE_ID);
         
         assertThat(disks.size(), is(3));
+    }
+
+    private List<NodeDisk> insert(final String nodeId, final LocalDateTime creationDate, 
+                                  final DiskRegistrationRequest... requests) {
+        return dao.insert(nodeId, creationDate, Arrays.asList(requests));
     }
 
     private List<NodeDisk> insert(final String nodeId, final DiskRegistrationRequest... requests) {
