@@ -19,7 +19,7 @@ package com.epam.pipeline.entity.scan;
 import lombok.Getter;
 
 @Getter
-public class ToolOSVersionView {
+public final class ToolOSVersionView {
 
     private final String distribution;
     private final String version;

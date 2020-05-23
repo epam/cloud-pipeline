@@ -22,7 +22,10 @@ import com.epam.pipeline.dao.tool.ToolGroupDao;
 import com.epam.pipeline.dao.util.AclTestDao;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.*;
+import com.epam.pipeline.entity.scan.ToolVersionScanResult;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.AbstractManagerTest;
+import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.util.TestUtils;
@@ -44,7 +47,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -68,8 +73,11 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
     private static final String PUSH_ACTION = "push";
     private static final String PULL_ACTION = "pull";
     private static final String ADMIN_ROLE = "ADMIN";
-    public static final String LATEST = "latest";
-    public static final long DOCKER_SIZE = 123456L;
+    private static final String LATEST = "latest";
+    private static final long DOCKER_SIZE = 123456L;
+    private static final String TEST_DIGEST = "sha256:testsha123";
+    private static final Date NOW = DateUtils.now();
+    private static final String OTHER_DIGEST = "sha256:othersha";
 
     @Autowired
     private AclTestDao aclTestDao;
@@ -94,6 +102,9 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
 
     @MockBean
     private ToolVersionManager toolVersionManager;
+
+    @Autowired
+    private ToolManager toolManager;
 
     @Before
     public void setUp() {
@@ -309,6 +320,54 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
         Assert.assertEquals(registeredTools.get(0).getId(), registeredTools.get(1).getId());
     }
 
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    @WithMockUser(username = ADMIN, roles = ADMIN_ROLE)
+    public void testEventWontUpdateScanStatusIfToolDidntChange() {
+        DockerRegistryEventEnvelope eventsEnvelope = generateDockerRegistryEvents(
+                Collections.singletonList(TEST_USER),
+                Collections.singletonList(TEST_REPO),
+                Collections.singletonList(TEST_IMAGE),
+                Collections.singletonList(PUSH_ACTION));
+
+        List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(TEST_REPO, eventsEnvelope);
+        Assert.assertEquals(1, registeredTools.size());
+
+        toolManager.updateToolVersionScanStatus(registeredTools.get(0).getId(), ToolScanStatus.COMPLETED, NOW,
+                LATEST, TEST_DIGEST, TEST_DIGEST);
+
+        registeredTools = registryManager.notifyDockerRegistryEvents(TEST_REPO, eventsEnvelope);
+        Optional<ToolVersionScanResult> scanResult =
+                toolManager.loadToolVersionScan(registeredTools.get(0).getId(), LATEST);
+        Assert.assertTrue(scanResult.isPresent());
+        Assert.assertEquals(scanResult.get().getStatus(), ToolScanStatus.COMPLETED);
+        Assert.assertEquals(scanResult.get().getDigest(), TEST_DIGEST);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    @WithMockUser(username = ADMIN, roles = ADMIN_ROLE)
+    public void testEventUpdateScanStatusIfToolIsChanged() {
+        DockerRegistryEventEnvelope eventsEnvelope = generateDockerRegistryEvents(
+                Collections.singletonList(TEST_USER),
+                Collections.singletonList(TEST_REPO),
+                Collections.singletonList(TEST_IMAGE),
+                Collections.singletonList(PUSH_ACTION));
+
+        List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(TEST_REPO, eventsEnvelope);
+        Assert.assertEquals(1, registeredTools.size());
+
+        toolManager.updateToolVersionScanStatus(registeredTools.get(0).getId(), ToolScanStatus.COMPLETED, NOW,
+                LATEST, TEST_DIGEST, OTHER_DIGEST);
+
+        registeredTools = registryManager.notifyDockerRegistryEvents(TEST_REPO, eventsEnvelope);
+        Optional<ToolVersionScanResult> scanResult =
+                toolManager.loadToolVersionScan(registeredTools.get(0).getId(), LATEST);
+        Assert.assertTrue(scanResult.isPresent());
+        Assert.assertEquals(scanResult.get().getStatus(), ToolScanStatus.NOT_SCANNED);
+        Assert.assertEquals(scanResult.get().getDigest(), TEST_DIGEST);
+    }
+
     private DockerRegistryEventEnvelope generateDockerRegistryEvents(List<String> users,
                                                                      List<String> testRepos,
                                                                      List<String> testImageNewGroups,
@@ -338,6 +397,7 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
         DockerRegistryEvent.Target target = new DockerRegistryEvent.Target();
         target.setRepository(groupAndTool);
         target.setTag(LATEST);
+        target.setDigest(TEST_DIGEST);
         event.setTarget(target);
         return event;
     }

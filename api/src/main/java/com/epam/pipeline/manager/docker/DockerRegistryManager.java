@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.pipeline.DockerRegistryEventEnvelope;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
+import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -479,18 +480,24 @@ public class DockerRegistryManager implements SecuredEntityManager {
         return enableToolIfNeeded(registryEvent, dockerRegistry, fullToolName, toolGroup);
     }
 
-    private Optional<Tool> enableToolIfNeeded(DockerRegistryEvent event, DockerRegistry registry,
-                                              String toolName, ToolGroup toolGroup) {
-        String actor = event.getActor().getName();
-        Tool tool = buildTool(registry, toolGroup, toolName, actor);
+    private Optional<Tool> enableToolIfNeeded(final DockerRegistryEvent event, final DockerRegistry registry,
+                                              final String toolName, final ToolGroup toolGroup) {
+        final String actor = event.getActor().getName();
+        final String pushTag = event.getTarget().getTag();
+        final String pushDigest = event.getTarget().getDigest();
+        final Tool tool = buildTool(registry, toolGroup, toolName, actor);
         // check that this tool isn't registered yet.
-        Optional<Tool> toolInGroup = toolManager.loadToolInGroup(tool.getImage(), tool.getToolGroupId());
+        final Optional<Tool> toolInGroup = toolManager.loadToolInGroup(tool.getImage(), tool.getToolGroupId());
         if (toolInGroup.isPresent()) {
             LOGGER.warn(messageHelper.getMessage(MessageConstants.ERROR_TOOL_ALREADY_EXIST, tool.getImage(),
                     toolGroup.getName()));
-            toolManager.updateToolVersionScanStatus(toolInGroup.get().getId(),
-                    ToolScanStatus.NOT_SCANNED, DateUtils.now(), event.getTarget().getTag(),
-                    null, event.getTarget().getDigest());
+            final Optional<ToolVersionScanResult> scanResult = toolManager.loadToolVersionScan(
+                    toolInGroup.get().getId(), pushTag);
+            if (!scanResult.isPresent() || !scanResult.get().getDigest().equals(pushDigest)) {
+                toolManager.updateToolVersionScanStatus(toolInGroup.get().getId(),
+                        ToolScanStatus.NOT_SCANNED, DateUtils.now(), pushTag,
+                        null, pushDigest);
+            }
             return toolInGroup;
         }
         if (!permissionManager.isActionAllowedForUser(toolGroup, actor, AclPermission.WRITE)) {
