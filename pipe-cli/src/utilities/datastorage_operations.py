@@ -294,7 +294,7 @@ class DataStorageOperations(object):
             if not updated_tags:
                 raise RuntimeError("Failed to set tags for path '{}'.".format(path))
         except BaseException as e:
-            click.echo(str(e.message), err=True)
+            click.echo(str(e), err=True)
             sys.exit(1)
 
     @classmethod
@@ -307,7 +307,7 @@ class DataStorageOperations(object):
             else:
                 click.echo(cls.create_table(tags))
         except BaseException as e:
-            click.echo(str(e.message), err=True)
+            click.echo(str(e), err=True)
             sys.exit(1)
 
     @classmethod
@@ -319,7 +319,7 @@ class DataStorageOperations(object):
             root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
             DataStorage.delete_object_tags(root_bucket.identifier, relative_path, tags, version)
         except BaseException as e:
-            click.echo(str(e.message), err=True)
+            click.echo(str(e), err=True)
             sys.exit(1)
 
     @classmethod
