@@ -498,7 +498,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
     private void registerNodeDisks(long runId, List<InstanceDisk> disks) {
         PipelineRun run = pipelineRunManager.loadPipelineRun(runId);
         String nodeId = run.getInstance().getNodeId();
-        LocalDateTime creationDate = DateUtils.convertDateToLocalDateTime(run.getCreatedDate());
+        LocalDateTime creationDate = DateUtils.convertDateToLocalDateTime(run.getStartDate());
         List<DiskRegistrationRequest> requests = DiskRegistrationRequest.from(disks);
         nodeDiskManager.register(nodeId, creationDate, requests);
     }
