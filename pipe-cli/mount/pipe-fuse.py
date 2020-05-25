@@ -17,7 +17,7 @@ import errno
 import logging
 import os
 import sys
-
+import future.utils
 
 is_frozen = getattr(sys, 'frozen', False)
 
@@ -51,7 +51,7 @@ from fuse import FUSE, fuse_operations, fuse_file_info
 from cachetools import TTLCache
 
 _allowed_logging_level_names = logging._levelNames
-_allowed_logging_levels = filter(lambda name: isinstance(name, str), _allowed_logging_level_names.keys())
+_allowed_logging_levels = future.utils.lfilter(lambda name: isinstance(name, str), _allowed_logging_level_names.keys())
 _allowed_logging_levels_string = ', '.join(_allowed_logging_levels)
 _default_logging_level = _allowed_logging_level_names[logging.ERROR]
 _debug_logging_level = _allowed_logging_level_names[logging.DEBUG]
