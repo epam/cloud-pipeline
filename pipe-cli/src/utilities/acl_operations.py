@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import click
+import future
 import requests
 import prettytable
 from src.api.folder import Folder
@@ -42,11 +43,10 @@ class ACLOperations(object):
                 identifier = model.identifier
 
             all_permissions = User.get_permissions(identifier, object_type)
-            user_permissions = filter(lambda permission:
-                                      permission.name.lower() == sid.lower() and permission.principal != group,
-                                      all_permissions)
+            user_permissions = future.utils.lfilter(
+                            lambda permission: permission.name.lower() == sid.lower() and permission.principal != group,
+                            all_permissions)
             user_mask = 0
-            # TODO 25.02.19: It fails using python 3 with the following error: "object of type 'filter' has no len()"
             if len(user_permissions) == 1:
                 user_mask = user_permissions[0].mask
 
