@@ -32,6 +32,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 
@@ -56,7 +57,7 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class RunToBillingRequestConverter implements EntityToBillingRequestConverter<PipelineRunWithType> {
 
-    private static final int BILLING_PRICE_SCALE = 5;
+    private static final int PRICE_SCALE = 5;
     private static final int USER_PRICE_SCALE = 2;
     
     private final AbstractEntityMapper<PipelineRunBillingInfo> mapper;
@@ -88,11 +89,15 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
                 previousSync, syncStart);
 
         return createBillingsForPeriod(runContainer.getEntity(), price, statuses).stream()
-            .filter(billing -> billing.getCost() > 0L || billing.getUsageMinutes() > 0L)
+            .filter(this::isNotEmpty)
             .collect(Collectors.toMap(PipelineRunBillingInfo::getDate,
                                       Function.identity(),
                                       this::mergeBillings))
             .values();
+    }
+
+    private boolean isNotEmpty(final PipelineRunBillingInfo billing) {
+        return billing.getCost() > 0L || billing.getUsageMinutes() > 0L || billing.getPausedMinutes() > 0L;
     }
 
     private List<RunStatus> adjustStatuses(final PipelineRun run,
@@ -103,7 +108,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
             addFirstRunningStatusIfRequired(run, statuses);
             statuses.sort(Comparator.comparing(RunStatus::getTimestamp));
             final RunStatus lastStatus = statuses.get(statuses.size() - 1);
-            if (TaskStatus.RUNNING.equals(lastStatus.getStatus())) {
+            if (isNotFinal(lastStatus)) {
                 final LocalDateTime lastTimestamp = Optional.ofNullable(run.getEndDate())
                         .map(DateUtils::toLocalDateTime)
                         .orElse(syncStart);
@@ -115,6 +120,14 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
                 new RunStatus(null, null, syncStart.toLocalDate().atStartOfDay()));
         }
         return statuses;
+    }
+
+    private Boolean isNotFinal(final RunStatus lastStatus) {
+        return Optional.ofNullable(lastStatus)
+                .map(RunStatus::getStatus)
+                .map(TaskStatus::isFinal)
+                .map(BooleanUtils::negate)
+                .orElse(true);
     }
 
     private void addFirstRunningStatusIfRequired(final PipelineRun run,
@@ -141,7 +154,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
 
     private BigDecimal getBillingPrice(final EntityContainer<PipelineRunWithType> runContainer,
                                        final Function<PipelineRun, BigDecimal> priceExtractor) {
-        return getScaledPrice(runContainer, priceExtractor, BILLING_PRICE_SCALE);
+        return getScaledPrice(runContainer, priceExtractor, PRICE_SCALE);
     }
 
     private BigDecimal getScaledPrice(final EntityContainer<PipelineRunWithType> runContainer,
@@ -175,6 +188,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
                                                  final PipelineRunBillingInfo billing2) {
         billing1.setCost(billing1.getCost() + billing2.getCost());
         billing1.setUsageMinutes(billing1.getUsageMinutes() + billing2.getUsageMinutes());
+        billing1.setPausedMinutes(billing1.getPausedMinutes() + billing2.getPausedMinutes());
         return billing1;
     }
 
@@ -204,11 +218,13 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
             final LocalDateTime pointEnd = timePoints.get(i + 1);
             final Duration duration = Duration.between(pointStart, pointEnd);
             final Long disk = getDisksSize(run, pointStart);
+            final Long durationMinutes = minutesOf(duration);
             billings.add(PipelineRunBillingInfo.builder()
                              .date(pointStart.toLocalDate())
                              .run(run)
                              .cost(getCosts(duration, disk, price, active))
-                             .usageMinutes(getUsageMinutes(duration, active))
+                             .usageMinutes(active ? durationMinutes : 0L)
+                             .pausedMinutes(active ? 0L : durationMinutes)
                              .build());
         }
         return billings;
@@ -287,8 +303,8 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
                 .sum();
     }
 
-    private Long getUsageMinutes(final Duration duration, final boolean active) {
-        return active ? max(duration, Duration.ofMinutes(1)).toMinutes() : 0L;
+    private Long minutesOf(final Duration duration) {
+        return max(duration, Duration.ofMinutes(1)).toMinutes();
     }
 
     private Duration max(final Duration duration1, final Duration duration2) {

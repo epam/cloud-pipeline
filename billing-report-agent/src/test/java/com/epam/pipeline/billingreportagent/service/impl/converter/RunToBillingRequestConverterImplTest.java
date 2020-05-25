@@ -121,15 +121,21 @@ public class RunToBillingRequestConverterImplTest {
             converter.convertRunToBillings(runContainer,
                                            LocalDateTime.of(2019, 12, 1, 0, 0),
                                            LocalDateTime.of(2019, 12, 5, 0, 0));
-        Assert.assertEquals(3, billings.size());
+        Assert.assertEquals(4, billings.size());
         final Map<LocalDate, PipelineRunBillingInfo> reports =
             billings.stream().collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));
         Assert.assertEquals(1200, reports.get(LocalDate.of(2019, 12, 1)).getCost().longValue());
         Assert.assertEquals(4800, reports.get(LocalDate.of(2019, 12, 2)).getCost().longValue());
         Assert.assertEquals(6000, reports.get(LocalDate.of(2019, 12, 3)).getCost().longValue());
+        Assert.assertEquals(0, reports.get(LocalDate.of(2019, 12, 4)).getCost().longValue());
         Assert.assertEquals(180, reports.get(LocalDate.of(2019, 12, 1)).getUsageMinutes().longValue());
         Assert.assertEquals(720, reports.get(LocalDate.of(2019, 12, 2)).getUsageMinutes().longValue());
         Assert.assertEquals(900, reports.get(LocalDate.of(2019, 12, 3)).getUsageMinutes().longValue());
+        Assert.assertEquals(0, reports.get(LocalDate.of(2019, 12, 4)).getUsageMinutes().longValue());
+        Assert.assertEquals(540, reports.get(LocalDate.of(2019, 12, 1)).getPausedMinutes().longValue());
+        Assert.assertEquals(720, reports.get(LocalDate.of(2019, 12, 2)).getPausedMinutes().longValue());
+        Assert.assertEquals(540, reports.get(LocalDate.of(2019, 12, 3)).getPausedMinutes().longValue());    
+        Assert.assertEquals(900, reports.get(LocalDate.of(2019, 12, 4)).getPausedMinutes().longValue());    
     }
 
     @Test
@@ -150,6 +156,7 @@ public class RunToBillingRequestConverterImplTest {
             billings.stream().collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));
         Assert.assertEquals(9600, reports.get(LocalDate.of(2019, 12, 4)).getCost().longValue());
         Assert.assertEquals(1440, reports.get(LocalDate.of(2019, 12, 4)).getUsageMinutes().longValue());
+        Assert.assertEquals(0, reports.get(LocalDate.of(2019, 12, 4)).getPausedMinutes().longValue());
     }
 
     @Test
@@ -229,5 +236,73 @@ public class RunToBillingRequestConverterImplTest {
         Assert.assertEquals(1440, reports.get(LocalDate.of(2020, 5, 23)).getUsageMinutes().longValue());
         Assert.assertEquals(900, reports.get(LocalDate.of(2020, 5, 24)).getUsageMinutes().longValue());
         Assert.assertEquals(0, reports.get(LocalDate.of(2020, 5, 25)).getUsageMinutes().longValue());
+        Assert.assertEquals(480, reports.get(LocalDate.of(2020, 5, 21)).getPausedMinutes().longValue());
+        Assert.assertEquals(720, reports.get(LocalDate.of(2020, 5, 22)).getPausedMinutes().longValue());
+        Assert.assertEquals(0, reports.get(LocalDate.of(2020, 5, 23)).getPausedMinutes().longValue());
+        Assert.assertEquals(540, reports.get(LocalDate.of(2020, 5, 24)).getPausedMinutes().longValue());
+        Assert.assertEquals(900, reports.get(LocalDate.of(2020, 5, 25)).getPausedMinutes().longValue());
+    }
+
+    @Test
+    void testConvertOldFashionedPausedRunToBillings() {
+        final PipelineRun run = new PipelineRun();
+        run.setId(RUN_ID);
+        run.setPricePerHour(new BigDecimal("0.04"));
+        run.setComputePricePerHour(new BigDecimal("0.02000"));
+        run.setDiskPricePerHour(new BigDecimal("0.00100"));
+        final List<RunStatus> statuses = new ArrayList<>();
+        statuses.add(new RunStatus(RUN_ID, TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 21, 12, 0)));
+        statuses.add(new RunStatus(RUN_ID, TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 21, 13, 0)));
+        run.setRunStatuses(statuses);
+
+        final List<NodeDisk> disks = new ArrayList<>();
+        disks.add(new NodeDisk(20L, NODE_ID, LocalDateTime.of(2020, 5, 21, 12, 0)));
+        disks.add(new NodeDisk(20L, NODE_ID, LocalDateTime.of(2020, 5, 21, 12, 0)));
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+                .entity(new PipelineRunWithType(run, disks, ComputeType.CPU)).build();
+        final Collection<PipelineRunBillingInfo> billings =
+                converter.convertRunToBillings(runContainer,
+                        LocalDateTime.of(2020, 5, 21, 0, 0),
+                        LocalDateTime.of(2020, 5, 23, 0, 0));
+        Assert.assertEquals(2, billings.size());
+        final Map<LocalDate, PipelineRunBillingInfo> reports =
+                billings.stream().collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));
+        Assert.assertEquals(5000, reports.get(LocalDate.of(2020, 5, 21)).getCost().longValue());
+        Assert.assertEquals(9600, reports.get(LocalDate.of(2020, 5, 22)).getCost().longValue());
+        Assert.assertEquals(60, reports.get(LocalDate.of(2020, 5, 21)).getUsageMinutes().longValue());
+        Assert.assertEquals(0, reports.get(LocalDate.of(2020, 5, 22)).getUsageMinutes().longValue());
+        Assert.assertEquals(660, reports.get(LocalDate.of(2020, 5, 21)).getPausedMinutes().longValue());
+        Assert.assertEquals(1440, reports.get(LocalDate.of(2020, 5, 22)).getPausedMinutes().longValue());
+    }
+
+    @Test
+    void testConvertNewFashionedRunningRunToBillings() {
+        final PipelineRun run = new PipelineRun();
+        run.setId(RUN_ID);
+        run.setPricePerHour(new BigDecimal("0.04"));
+        run.setComputePricePerHour(new BigDecimal("0.02000"));
+        run.setDiskPricePerHour(new BigDecimal("0.00100"));
+        final List<RunStatus> statuses = new ArrayList<>();
+        statuses.add(new RunStatus(RUN_ID, TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 21, 12, 0)));
+        run.setRunStatuses(statuses);
+
+        final List<NodeDisk> disks = new ArrayList<>();
+        disks.add(new NodeDisk(20L, NODE_ID, LocalDateTime.of(2020, 5, 21, 12, 0)));
+        disks.add(new NodeDisk(20L, NODE_ID, LocalDateTime.of(2020, 5, 21, 12, 0)));
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+                .entity(new PipelineRunWithType(run, disks, ComputeType.CPU)).build();
+        final Collection<PipelineRunBillingInfo> billings =
+                converter.convertRunToBillings(runContainer,
+                        LocalDateTime.of(2020, 5, 21, 0, 0),
+                        LocalDateTime.of(2020, 5, 23, 0, 0));
+        Assert.assertEquals(2, billings.size());
+        final Map<LocalDate, PipelineRunBillingInfo> reports =
+                billings.stream().collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));
+        Assert.assertEquals(7200, reports.get(LocalDate.of(2020, 5, 21)).getCost().longValue());
+        Assert.assertEquals(14400, reports.get(LocalDate.of(2020, 5, 22)).getCost().longValue());
+        Assert.assertEquals(720, reports.get(LocalDate.of(2020, 5, 21)).getUsageMinutes().longValue());
+        Assert.assertEquals(1440, reports.get(LocalDate.of(2020, 5, 22)).getUsageMinutes().longValue());
+        Assert.assertEquals(0, reports.get(LocalDate.of(2020, 5, 21)).getPausedMinutes().longValue());
+        Assert.assertEquals(0, reports.get(LocalDate.of(2020, 5, 22)).getPausedMinutes().longValue());
     }
 }

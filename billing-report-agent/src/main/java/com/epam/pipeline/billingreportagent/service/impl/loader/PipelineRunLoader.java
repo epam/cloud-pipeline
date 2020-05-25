@@ -27,15 +27,16 @@ import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.user.PipelineUser;
-import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -76,7 +77,11 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
     }
 
     private List<NodeDisk> loadDisks(final PipelineRun run) {
-        return ListUtils.emptyIfNull(apiClient.loadNodeDisks(run.getInstance().getNodeId()));
+        return Optional.of(run)
+                .map(PipelineRun::getInstance)
+                .map(RunInstance::getNodeId)
+                .map(apiClient::loadNodeDisks)
+                .orElseGet(Collections::emptyList);
     }
 
     private ComputeType getRunType(final PipelineRun run, final Map<Long, List<InstanceType>> regionOffers) {
