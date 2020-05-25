@@ -34,12 +34,17 @@ class Pipeline(API):
     @classmethod
     def list(cls):
         api = cls.instance()
+        result = []
         response_data = api.call('pipeline/loadAll?loadVersion=true', None)
-        for pipeline_json in response_data['payload']:
-            pipeline = PipelineModel.load(pipeline_json)
-            if 'currentVersion' in pipeline_json:
-                pipeline.set_current_version(VersionModel.load(pipeline_json['currentVersion']))
-            yield pipeline
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        if 'payload' in response_data:
+            for pipeline_json in response_data['payload']:
+                pipeline = PipelineModel.load(pipeline_json)
+                if 'currentVersion' in pipeline_json:
+                    pipeline.set_current_version(VersionModel.load(pipeline_json['currentVersion']))
+                result.append(pipeline)
+        return result
 
     @classmethod
     def get(cls, identifier, load_storage_rules=True, load_versions=True, load_run_parameters=True, config_name=None):
