@@ -120,7 +120,6 @@ public class PipelineRunManager {
     private static final int USER_PRICE_SCALE = 2;
     private static final int BILLING_PRICE_SCALE = 5;
     public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
-    public static final String COMMA = ",";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
