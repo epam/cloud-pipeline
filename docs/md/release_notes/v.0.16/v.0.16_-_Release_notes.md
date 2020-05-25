@@ -1,6 +1,7 @@
 # Cloud Pipeline v.0.16 - Release notes
 
 - [Google Cloud Platform Support](#google-cloud-platform-support)
+- [System logs](#system-logs)
 - [Displaying Cloud Provider's icon](#displaying-cloud-providers-icon-for-the-storagecompute-resources)
 - [Configurable timeout of GE Autoscale waiting](#configurable-timeout-of-ge-autoscale-waiting-for-a-worker-node-up)
 - [Storage mounts data transfer restrictor](#storage-mounts-data-transfer-restrictor)
@@ -60,6 +61,36 @@ One of the major **`v0.16`** features is a support for the **[Google Cloud Platf
 All the features, that were previously used for **`AWS`** and **`Azure`**, are now available in all the same manner, from all the same GUI/CLI, for **`GCP`**.
 
 This provides an even greater level of a flexibility to launch different jobs in the locations, closer to the data, with cheaper prices or better compute hardware in depend on a specific task.
+
+## System logs
+
+In the current version, the "Security Logging" was implemented.
+
+Now, the system records audit trail events:
+
+- users' authentication attempts
+- users' profiles modifications
+- platform objects' permissions management
+- access to interactive applications from pipeline runs
+- other platform functionality features
+
+Logs are collected/managed at the `Elasticsearch` node and backed up to the object storage (that could be configured during the platform deployment).
+
+The administrator can view/filter these logs via the GUI - in the System-level settings, e.g.:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_SystemLogs_1.png)
+
+Each record in the logs list contains:
+
+| Field | Description |
+|-|-|
+| **Date** | The date and time of the log event |
+| **Log status** | The status of the log message (`INFO`, `ERROR`, etc.) |
+| **Log message** | Description of the log event |
+| **User** | User name who performed the event |
+| **Service** | Service name that registered the event (`api-srv`, `edge`) |
+| **Type** | Log message type (currently, only `security` type is available) |
+
+For more details see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-logs).
 
 ## Displaying Cloud Provider's icon for the storage/compute resources
 
