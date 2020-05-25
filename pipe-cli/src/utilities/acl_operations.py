@@ -14,6 +14,7 @@
 import sys
 
 import click
+import future
 import requests
 import prettytable
 from future.utils import iteritems
@@ -38,11 +39,10 @@ class ACLOperations(object):
             entity = Entity.load_by_id_or_name(identifier, object_type)
             identifier = entity['id']
             all_permissions = User.permissions(identifier, entity['aclClass'])
-            user_permissions = filter(lambda permission:
-                                      permission.name.lower() == sid.lower() and permission.principal != group,
-                                      all_permissions)
+            user_permissions = future.utils.lfilter(
+                lambda permission: permission.name.lower() == sid.lower() and permission.principal != group,
+                all_permissions)
             user_mask = 0
-            # TODO 25.02.19: It fails using python 3 with the following error: "object of type 'filter' has no len()"
             if len(user_permissions) == 1:
                 user_mask = user_permissions[0].mask
 
