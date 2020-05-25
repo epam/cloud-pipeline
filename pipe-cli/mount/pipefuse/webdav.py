@@ -88,7 +88,7 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
             logging.error('WevDav is not available: %s' % str(e.reason))
             return False
         except BaseException as e:
-            logging.error('WevDav is not available: %s' % str(e.message))
+            logging.error('WevDav is not available: %s' % str(e))
             return False
 
     def is_read_only(self):
@@ -112,7 +112,7 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
             return time.mktime(time_value.timetuple())
         except ValueError as e:
             logging.error(
-                'Failed to parse date: %s. Expected format: "%s". Error: "%s"' % (value, date_format, e.message))
+                'Failed to parse date: %s. Expected format: "%s". Error: "%s"' % (value, date_format, str(e)))
             return None
 
     def elem2file(self, elem, path):

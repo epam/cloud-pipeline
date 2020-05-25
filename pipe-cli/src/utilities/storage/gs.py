@@ -157,7 +157,7 @@ class _ResumableDownloadProgressMixin(Blob):
                     raise RuntimeError('Resumable download has failed after %s sequential resumes. '
                                        'You can alter the number of allowed resumes using %s environment variable. '
                                        'Original error: %s.'
-                                       % (self._attempts, CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS, e.message))
+                                       % (self._attempts, CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS, str(e)))
         self.reload()
         stream.validate_checksum(self.md5_hash)
 

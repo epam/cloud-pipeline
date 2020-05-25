@@ -208,5 +208,5 @@ if __name__ == '__main__':
               cache_size=args.cache_size, default_mode=args.mode, mount_options=parse_mount_options(args.options),
               threads=args.threads, monitoring_delay=args.monitoring_delay, recording=recording)
     except BaseException as e:
-        logging.error('Unhandled error: %s' % e.message)
+        logging.error('Unhandled error: %s' % str(e))
         sys.exit(1)

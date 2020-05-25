@@ -44,7 +44,7 @@ class MetadataOperations(object):
         except requests.exceptions.RequestException as http_error:
             click.echo('Http error: {}'.format(str(http_error)), err=True)
         except RuntimeError as runtime_error:
-            if "No enum constant" and "AclClass" in runtime_error.message:
+            if "No enum constant" and "AclClass" in str(runtime_error):
                 click.echo("Error: Class '{}' does not exist.".format(entity_class), err=True)
             else:
                 click.echo('Error: {}'.format(str(runtime_error)), err=True)
@@ -65,7 +65,7 @@ class MetadataOperations(object):
         except requests.exceptions.RequestException as http_error:
             click.echo('Http error: {}'.format(str(http_error)), err=True)
         except RuntimeError as runtime_error:
-            if "No enum constant" and "AclClass" in runtime_error.message:
+            if "No enum constant" and "AclClass" in str(runtime_error):
                 click.echo("Error: Class '{}' does not exist.".format(entity_class), err=True)
             else:
                 click.echo('Error: {}'.format(str(runtime_error)), err=True)
@@ -101,7 +101,7 @@ class MetadataOperations(object):
         except requests.exceptions.RequestException as http_error:
             click.echo('Http error: {}'.format(str(http_error)), err=True)
         except RuntimeError as runtime_error:
-            if "No enum constant" and "AclClass" in runtime_error.message:
+            if "No enum constant" and "AclClass" in str(runtime_error):
                 click.echo("Error: Class '{}' does not exist.".format(entity_class), err=True)
             else:
                 click.echo('Error: {}'.format(str(runtime_error)), err=True)

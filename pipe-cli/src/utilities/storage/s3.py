@@ -282,21 +282,23 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
             client.copy_object(Bucket=bucket, Key=self.bucket.path,
                                CopySource=dict(Bucket=bucket, Key=self.bucket.path, VersionId=version))
         except ClientError as e:
-            if 'delete marker' in e.message:
+            error_message = str(e)
+            if 'delete marker' in error_message:
                 text = "Cannot restore a delete marker"
-            elif 'Invalid version' in e.message:
+            elif 'Invalid version' in error_message:
                 text = 'Version "{}" doesn\'t exist.'.format(version)
             else:
-                text = e.message
+                text = error_message
             raise RuntimeError(text)
 
     def load_item(self, bucket, client):
         try:
             item = client.head_object(Bucket=bucket, Key=self.bucket.path)
         except ClientError as e:
-            if 'Not Found' in e.message:
+            error_message = str(e)
+            if 'Not Found' in error_message:
                 return self.load_delete_marker(bucket, self.bucket.path, client)
-            raise RuntimeError('Requested file "{}" doesn\'t exist. {}.'.format(self.bucket.path, e.message))
+            raise RuntimeError('Requested file "{}" doesn\'t exist. {}.'.format(self.bucket.path, error_message))
         if item is None:
             raise RuntimeError('Path "{}" doesn\'t exist'.format(self.bucket.path))
         return item
