@@ -44,6 +44,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -187,10 +188,15 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         return second.isAfter(first) ? second : first;
     }
 
-    private List<RunStatus> getDefaultStatuses(final PipelineRun run, final LocalDateTime start, final LocalDateTime end) {
-        return Arrays.asList(
-                new RunStatus(run.getId(), TaskStatus.RUNNING, start),
-                new RunStatus(run.getId(), TaskStatus.STOPPED, end));
+    private List<RunStatus> getDefaultStatuses(final PipelineRun run, final LocalDateTime start, 
+                                               final LocalDateTime end) {
+        final LocalDateTime runStart = getStart(run);
+        final LocalDateTime runEnd = getEnd(run);
+        return runEnd.isBefore(start) || runStart.isAfter(end)
+                ? Collections.singletonList(new RunStatus(run.getId(), TaskStatus.STOPPED, start))
+                : Arrays.asList(
+                new RunStatus(run.getId(), TaskStatus.RUNNING, max(start, runStart)),
+                new RunStatus(run.getId(), TaskStatus.STOPPED, min(end, runEnd)));
     }
 
     private RunPrice getPrice(final EntityContainer<PipelineRunWithType> runContainer) {
