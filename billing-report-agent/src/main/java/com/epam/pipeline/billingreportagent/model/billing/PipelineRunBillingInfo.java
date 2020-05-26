@@ -29,11 +29,13 @@ import java.time.LocalDate;
 public class PipelineRunBillingInfo extends AbstractBillingInfo<PipelineRunWithType> {
 
     private Long usageMinutes;
+    private Long pausedMinutes;
 
     @Builder
     public PipelineRunBillingInfo(final LocalDate date, final PipelineRunWithType run,
-                                  final Long cost, final Long usageMinutes) {
+                                  final Long cost, final Long usageMinutes, final Long pausedMinutes) {
         super(date, run, cost, ResourceType.COMPUTE);
         this.usageMinutes = usageMinutes;
+        this.pausedMinutes = pausedMinutes;
     }
 }

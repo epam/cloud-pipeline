@@ -76,7 +76,6 @@ import com.epam.pipeline.utils.PasswordGenerator;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,7 +93,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -944,79 +942,11 @@ public class PipelineRunManager {
             return Collections.emptyList();
         }
 
-        final Map<Long, List<RunStatus>> runStatuses = runStatusManager.loadRunStatus(runIds).entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> adjustStatuses(e.getValue(), start, end)));
+        final Map<Long, List<RunStatus>> runStatuses = runStatusManager.loadRunStatus(runIds);
 
         return runs.stream()
-            .peek(run -> {
-                final List<RunStatus> loadedStatuses = runStatuses.get(run.getId());
-                if (CollectionUtils.isNotEmpty(loadedStatuses)) {
-                    run.setRunStatuses(loadedStatuses);
-                } else {
-                    createRunStatusesForRun(run, start, end);
-                }
-            })
-            .filter(run -> CollectionUtils.isNotEmpty(run.getRunStatuses()))
+            .peek(run -> run.setRunStatuses(runStatuses.get(run.getId())))
             .collect(Collectors.toList());
-    }
-
-    /**
-     * Create statuses for run based on its start/end date according to requested billing period
-     *
-     * @param run run to create status
-     * @param syncStart start of the billing calculation period
-     * @param syncEnd end of the billing calculation period
-     */
-    void createRunStatusesForRun(final PipelineRun run, final LocalDateTime syncStart, final LocalDateTime syncEnd) {
-        final LocalDateTime runStart = DateUtils.convertDateToLocalDateTime(run.getStartDate());
-        final Date runEnd = run.getEndDate();
-        if ((!Objects.isNull(runEnd) && syncStart.isAfter(DateUtils.convertDateToLocalDateTime(runEnd)))
-            || syncEnd.isBefore(runStart)) {
-            return;
-        } else {
-            final LocalDateTime runStatusStart = syncStart.isBefore(runStart)
-                                                 ? runStart
-                                                 : syncStart;
-            final LocalDateTime runStatusEnd = Objects.isNull(runEnd)
-                                               ? syncEnd
-                                               : ObjectUtils.min(DateUtils.convertDateToLocalDateTime(runEnd), syncEnd);
-            run.setRunStatuses(Arrays.asList(
-                new RunStatus(run.getId(), TaskStatus.RUNNING, EMPTY_STRING, runStatusStart),
-                new RunStatus(run.getId(), TaskStatus.PAUSED, EMPTY_STRING, runStatusEnd)
-            ));
-        }
-    }
-
-    /**
-     * Adjust statuses to the given period: all the statuses after the end of the period are removed,
-     * activity periods completed before start of the period are removed as well.
-     * If run was in {@link TaskStatus#RUNNING} state during {@code start} moment, its {@link RunStatus#getTimestamp()}
-     * will be adjusted to {@code start} time point.
-     *
-     * @param runStatuses statuses to be adjusted
-     * @param start beginning of period
-     * @param end ending of period
-     * @return list of adjusted statuses in natural date order
-     */
-    List<RunStatus> adjustStatuses(final List<RunStatus> runStatuses,
-                                   final LocalDateTime start,
-                                   final LocalDateTime end) {
-        runStatuses.removeIf(runStatus -> runStatus.getTimestamp().isAfter(end));
-        runStatuses.sort(Comparator.comparing(RunStatus::getTimestamp));
-        final int statusesCount = runStatuses.size();
-        for (int i = statusesCount - 1; i >= 0; i--) {
-            final RunStatus runStatus = runStatuses.get(i);
-            if (runStatus.getTimestamp().isBefore(start)) {
-                if (runStatus.getStatus() == TaskStatus.RUNNING) {
-                    runStatus.setTimestamp(start);
-                    runStatuses.set(i, runStatus);
-                    return runStatuses.subList(i, statusesCount);
-                } else {
-                    return runStatuses.subList(Math.min(i + 1, statusesCount), statusesCount);
-                }
-            }
-        }
-        return runStatuses;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

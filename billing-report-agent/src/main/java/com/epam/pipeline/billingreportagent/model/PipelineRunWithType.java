@@ -16,12 +16,16 @@
 
 package com.epam.pipeline.billingreportagent.model;
 
+import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import lombok.Value;
+
+import java.util.List;
 
 @Value
 public class PipelineRunWithType {
 
-    private PipelineRun pipelineRun;
-    private ComputeType runType;
+    PipelineRun pipelineRun;
+    List<NodeDisk> disks;
+    ComputeType runType;
 }
