@@ -402,6 +402,8 @@
         
             <li><a class="toctree-l5" href="#list-storagesstorage-content">List storages/storage content</a></li>
         
+            <li><a class="toctree-l5" href="#show-storage-usage">Show storage usage</a></li>
+        
             <li><a class="toctree-l5" href="#edit-a-datastorage">Edit a datastorage</a></li>
         
             <li><a class="toctree-l5" href="#delete-a-datastorage">Delete a datastorage</a></li>
@@ -571,6 +573,7 @@
 <ul>
 <li><a href="#create-a-datastorage">Create a datastorage</a></li>
 <li><a href="#list-storagesstorage-content">List storages/storage content</a></li>
+<li><a href="#show-storage-usage">Show storage usage</a></li>
 <li><a href="#edit-a-datastorage">Edit a datastorage</a><ul>
 <li><a href="#change-backup-duration-stslts-duration-versioning">Change backup duration, STS/LTS duration, versioning</a></li>
 <li><a href="#change-a-parent-folder-for-a-datastorage">Change a parent folder for a datastorage</a></li>
@@ -755,6 +758,68 @@ As you can see - <strong>Description</strong>, <strong>Type of the Cloud</strong
 
 <p>Result will be the same:<br />
 <img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_14.png" /></p>
+<h2 id="show-storage-usage">Show storage usage</h2>
+<p>To obtain a "disk usage" information on the supported data storage or its inner folder(s) use the command:</p>
+<pre><code class="bash">pipe storage du [OPTIONS] [STORAGE]
+</code></pre>
+
+<p>The command prints for the data storages/path:</p>
+<ul>
+<li>summary number of files in the storage/path</li>
+<li>summary size of files in the storage/path</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-p</code> / <code>--relative-path</code></td>
+<td>The relative path inside the storage</td>
+</tr>
+<tr>
+<td><code>-f</code> / <code>--format</code></td>
+<td>The size unit format (default: <code>Mb</code>). Possible values: <code>K</code>, <code>Kb</code>, <code>KB</code> - for kilobytes; <code>M</code>, <code>Mb</code>, <code>MB</code> - for megabytes; <code>G</code>, <code>Gb</code>, <code>GB</code> - for gigabytes</td>
+</tr>
+<tr>
+<td><code>-d</code> / <code>--depth</code></td>
+<td>The maximum depth level of the nesting folders. <strong><em>Note</em></strong><em>: this option isn't supported for the FS storages yet</em></td>
+</tr>
+</tbody>
+</table>
+<p><strong>STORAGE</strong> - defines the datastorage name/path.</p>
+<p>Without specifying any options and storage this command prints the full list of the available storages (both types - object and FS) with the "usage" information for each of them:  </p>
+<pre><code class="bash">pipe storage du
+</code></pre>
+
+<p>With specifying the storage name this command prints the "usage" information only by that storage, e.g.:</p>
+<pre><code class="bash">pipe storage du objectdatastorage
+</code></pre>
+
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_31.png" /></p>
+<p>With <code>-p</code> (<code>--relative-path</code>) option the command prints the "usage" information for the specified path in the required storage, e.g.:  </p>
+<pre><code class="bash">pipe storage du objectdatastorage -p innerdir1
+</code></pre>
+
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_32.png" /></p>
+<p>With <code>-d</code> (<code>--depth</code>) option the command prints the "usage" information in the required storage (and path) for the specified folders nesting depth, e.g.:  </p>
+<pre><code class="bash">pipe storage du objectdatastorage -p innerdir2 -d 1
+</code></pre>
+
+<p>Specified command will print the "usage" information for all folders with the nesting depth no more 1 relative to the path <code>objectdatastorage/innerdir2/</code>:<br />
+<img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_33.png" /></p>
+<p>With <code>-f</code> (<code>--format</code>) option user can change the unit for the size value, e.g. to print the storage usage in gigabytes:  </p>
+<pre><code class="bash">pipe storage du objectdatastorage -f GB
+</code></pre>
+
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_34.png" /></p>
 <h2 id="edit-a-datastorage">Edit a datastorage</h2>
 <h3 id="change-backup-duration-stslts-duration-versioning">Change backup duration, STS/LTS duration, versioning</h3>
 <p>The Command to change backup duration, select STS/LTS duration or enable versioning:</p>
@@ -815,7 +880,7 @@ As you can see - <strong>Description</strong>, <strong>Type of the Cloud</strong
 </code></pre>
 
 <p><strong>Directory</strong> - name of the folder to which the object storage will be moved.<br />
-<strong>Storage</strong> - alias/path of the storage to delete. Specified without Cloud prefix.</p>
+<strong>Storage</strong> - alias/path of the storage to move. Specified without Cloud prefix.</p>
 <p>In the example below we will move the storage <strong>objstor</strong> to the folder "<strong>InnerFolder</strong>":</p>
 <pre><code class="bash">pipe storage mvtodir objstor InnerFolder
 </code></pre>
@@ -1209,6 +1274,7 @@ To manage attributes of other Cloud Pipeline objects - see <a href="../14.2._Vie
 <blockquote>
 <p><strong><em>Note</em></strong>: This feature is available not for all Cloud Providers. Currently, it is supported only by <strong>AWS</strong></p>
 </blockquote>
+<p>For the mounted storages, regular listing/read/write commands are supported (e.g. <code>cp</code>, <code>mv</code>, <code>ls</code>, <code>mkdir</code>, <code>rm</code>, <code>fallocate</code>, <code>truncate</code>, <code>dd</code>, etc. - according to the corresponding OS), users can manage files/folders as with any general hard drive.</p>
 <h3 id="mount-a-storage">Mount a storage</h3>
 <p>The command to mount a data storage into the mountpoint:</p>
 <pre><code class="bash">pipe storage mount [OPTIONS] &lt;Mountpoint&gt;
@@ -1240,6 +1306,10 @@ To manage attributes of other Cloud Pipeline objects - see <a href="../14.2._Vie
 <td></td>
 </tr>
 <tr>
+<td><code>-m</code> / <code>--mode</code></td>
+<td>Allows to set a mask that defines access permissions (to the <code>owner</code>/<code>group</code>/<code>others</code>). This mask is set in the numerical view (three-digit octal number)</td>
+</tr>
+<tr>
 <td><code>-o</code> / <code>--options</code></td>
 <td>Allows to specify any mount options supported by underlying <strong><code>FUSE</code></strong> implementation</td>
 </tr>
@@ -1262,6 +1332,14 @@ To manage attributes of other Cloud Pipeline objects - see <a href="../14.2._Vie
 </code></pre>
 
 <p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_29.png" /></p>
+<p>In the example below we will mount the Object Storage named <strong>objectdatastorage</strong> into the directory "<strong>mountdir</strong>" and set full access permissons (read, write, execute) to the owner, read and execute permissions to the group and no permissions to others:</p>
+<pre><code class="bash">pipe storage mount -b objectdatastorage -m 750 ~/mountdir
+</code></pre>
+
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_35.png" /></p>
+<blockquote>
+<p><strong><em>Note</em></strong>: if <code>-m</code> option isn't specified, during mounting the default permissions mask will be set - <code>700</code> (full access to the owner and no permissions to the group and others)</p>
+</blockquote>
 <h3 id="unmount-a-storage">Unmount a storage</h3>
 <p>The command to unmount a mountpoint:</p>
 <pre><code class="bash">pipe storage umount [OPTIONS] &lt;Mountpoint&gt;

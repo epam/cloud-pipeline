@@ -553,16 +553,54 @@
 <ol>
 <li>Select a pipeline in the "<strong>Library</strong>" menu (<a href="../../03_Overview/3._Overview/#library">3. Overview</a>).</li>
 <li>Select a pipeline version to run.</li>
-<li>
-<p>Click the <strong>Run</strong> button. Launch pipeline page will open.<br />
+<li>Click the <strong>Run</strong> button.<br />
 <img alt="CP_LaunchPipeline" src="../attachments/LaunchPipeline_1.png" /><br />
-    Feel free to change settings of run configuration if you need to. See an example of editing configuration <a href="../6.1._Create_and_configure_pipeline/#edit-pipeline-configuration-optional">here</a>.<br />
-<strong><em>Note</em></strong>: if <strong>Price type</strong> is set as "<em>On-demand</em>" - at the <strong>Launch page</strong>, an additional checkbox <strong>Auto pause</strong> appears:<br />
+    Launch pipeline page will be opened:<br />
+<img alt="CP_LaunchPipeline" src="../attachments/LaunchPipeline_7.png" /><br />
+    Feel free to change settings of run configuration if you need to. See an example of editing configuration <a href="../6.1._Create_and_configure_pipeline/#edit-pipeline-configuration-optional">here</a>.  </li>
+<li>
+<p>If the <strong>Price type</strong> is set as "<em>On-demand</em>" - at the <strong>Launch page</strong>, an additional checkbox <strong>Auto pause</strong> appears:<br />
 <img alt="CP_LaunchPipeline" src="../attachments/LaunchPipeline_4.png" /><br />
     This checkbox allows to enable automatic pausing on-demand instance if it is not used. Such behavior could be controlled by Administrators using a set of parameters at System Preferences (see <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#system">here</a>).</p>
 <blockquote>
 <p>Please note, this checkbox will not be displayed if any cluster is configured ("Static" or "Autoscaled").</p>
 </blockquote>
+</li>
+<li>
+<p>If the <strong>Price type</strong> is set as "<em>On-demand</em>" - at the <strong>Launch page</strong>, an additional control <strong>Maintenance</strong> appears. It allows to configure schedule for automatical pause/resume a pipeline run. It could be useful when the pipeline is launched for a long time (several days/weeks) but it shall not stand idle, just increasing costs, in weekends and holidays, for example.<br />
+    Schedule is defined as a list of rules (user is able to specify any number of them).<br />
+    For each rule in the list the user is able to set:</p>
+<ul>
+<li>the action: <code>PAUSE</code> or <code>RESUME</code></li>
+<li>the recurrence:<ul>
+<li><em>Daily</em>: every <code>N</code> days, time<br />
+or  </li>
+<li><em>Weekly</em>: every <code>weekday(s)</code>, time  </li>
+</ul>
+</li>
+</ul>
+<p>Conflicting rules are not allowed (i.e. rules that are configured on the same execution time).<br />
+If any schedule rule is configured for the launched active run - that run will be paused/restarted accordingly in the scheduled day and time.</p>
+<p>To set a schedule for pause/restart a job:</p>
+<ul>
+<li>Click the <strong>Configure</strong> button:<br />
+<img alt="CP_LaunchPipeline" src="../attachments/LaunchPipeline_8.png" />  </li>
+<li>The "Maintenance" popup will appear:<br />
+<img alt="CP_LaunchPipeline" src="../attachments/LaunchPipeline_9.png" /></li>
+<li>Click the <strong>Add rule</strong> button. The first rule will appear:<br />
+<img alt="CP_LaunchPipeline" src="../attachments/LaunchPipeline_10.png" /></li>
+<li>Using available controls configure the rule according to your wish, e.g. to automatically pause a job every 2 days at <code>15:00</code>:<br />
+<img alt="CP_LaunchPipeline" src="../attachments/LaunchPipeline_11.png" /></li>
+<li>To add another rule click the <strong>Add rule</strong> button. Configure a new rule using available controls, e.g. to automatically restart (resume) a job every monday and friday at <code>18:30</code>:<br />
+<img alt="CP_LaunchPipeline" src="../attachments/LaunchPipeline_12.png" /></li>
+<li>Click the <strong>OK</strong> button to save specified rules</li>
+<li>Saved rules will be displayed at the <strong>Launch</strong> form:<br />
+<img alt="CP_LaunchPipeline" src="../attachments/LaunchPipeline_13.png" /></li>
+</ul>
+<blockquote>
+<p>Please note, the <strong>Maintenance</strong> control will not be displayed if any cluster is configured ("Static" or "Autoscaled").</p>
+</blockquote>
+<p>Users (who have permissions to pause/resume a run) can create/view/modify/delete schedule rules anytime launched run is active via the <strong>Run logs</strong> page - for more details see <a href="../../11_Manage_Runs/11._Manage_Runs/#maintenance">11. Manage runs</a>.</p>
 </li>
 <li>
 <p>Click <strong>Launch</strong>.<br />

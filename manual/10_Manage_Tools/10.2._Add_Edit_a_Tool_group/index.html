@@ -280,7 +280,7 @@
         
             <li><a class="toctree-l5" href="#add-a-personal-tool-group">Add a personal Tool group</a></li>
         
-            <li><a class="toctree-l5" href="#edit-a-tool-group">Edit a Tool group</a></li>
+            <li><a class="toctree-l5" href="#editdelete-a-tool-group">Edit/delete a Tool group</a></li>
         
         </ul>
     
@@ -559,7 +559,7 @@
 <ul>
 <li><a href="#add-a-generic-tool-group">Add a generic Tool group</a></li>
 <li><a href="#add-a-personal-tool-group">Add a personal Tool group</a></li>
-<li><a href="#edit-a-tool-group">Edit a Tool group</a><ul>
+<li><a href="#editdelete-a-tool-group">Edit/delete a Tool group</a><ul>
 <li><a href="#customize-tool-group-permissions">Customize Tool group permissions</a></li>
 </ul>
 </li>
@@ -573,8 +573,9 @@
 <ol>
 <li>In the <strong>Tools</strong> tab click the <strong>Gear</strong> icon → <strong>Group → + Create</strong>.<br />
 <img alt="CP_AddEditToolGroup" src="../attachments/AddEditToolGroup_1.png" /></li>
-<li>Give your Tool group a <strong>name</strong> and an optional <strong>description</strong>.<br />
-<img alt="CP_AddEditToolGroup" src="../attachments/AddEditToolGroup_2.png" /></li>
+<li>Give your Tool group a <strong>name</strong> and an optional <strong>description</strong>:<br />
+<img alt="CP_AddEditToolGroup" src="../attachments/AddEditToolGroup_2.png" /><br />
+    Click the <strong>CREATE</strong> button to confirm.</li>
 <li>You'll be automatically redirected to the new Tool group in the current Docker registry.<br />
 <img alt="CP_AddEditToolGroup" src="../attachments/AddEditToolGroup_3.png" /></li>
 </ol>
@@ -588,13 +589,19 @@
 <img alt="CP_AddEditToolGroup" src="../attachments/AddEditToolGroup_6.png" /><br />
     After that you'll be able to upload Tools to your personal Tool group.</li>
 </ol>
-<h2 id="edit-a-tool-group">Edit a Tool group</h2>
+<h2 id="editdelete-a-tool-group">Edit/delete a Tool group</h2>
 <ol>
 <li>Choose a Tool group and click the <strong>Gear</strong> icon → <strong>Group → Edit</strong>.<br />
 <img alt="CP_AddEditToolGroup" src="../attachments/AddEditToolGroup_7.png" /></li>
 <li>You'll be able to modify Tool group description in the <strong>Info</strong> tab.<br />
 <img alt="CP_AddEditToolGroup" src="../attachments/AddEditToolGroup_8.png" /></li>
-<li>If you wish to delete a Tool group - click the <strong>Gear</strong> icon → <strong>Group → Delete</strong>.</li>
+<li>If you wish to delete a Tool group:<ul>
+<li>click the <strong>Gear</strong> icon → <strong>Group → Delete</strong>:<br />
+<img alt="CP_AddEditToolGroup" src="../attachments/AddEditToolGroup_9.png" /></li>
+<li>set the "Delete child tools" checkbox if the group is not empty and click the <strong>Delete</strong> button to confirm:<br />
+<img alt="CP_AddEditToolGroup" src="../attachments/AddEditToolGroup_10.png" /></li>
+</ul>
+</li>
 </ol>
 <h3 id="customize-tool-group-permissions">Customize Tool group permissions</h3>
 <p>Users with <strong>ROLE_ADMIN</strong> or <strong>OWNER</strong> rights can modify permissions for this Tool group. It is convenient when you want to manage access for the whole Tool group and not for the individual Tools. For more details see <a href="../../13_Permissions/13._Permissions/">here</a>.</p>

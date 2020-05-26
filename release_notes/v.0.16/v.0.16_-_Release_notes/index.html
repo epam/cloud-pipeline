@@ -81,6 +81,8 @@
         
             <li><a class="toctree-l4" href="#google-cloud-platform-support">Google Cloud Platform Support</a></li>
         
+            <li><a class="toctree-l4" href="#system-logs">System logs</a></li>
+        
             <li><a class="toctree-l4" href="#displaying-cloud-providers-icon-for-the-storagecompute-resources">Displaying Cloud Provider's icon for the storage/compute resources</a></li>
         
             <li><a class="toctree-l4" href="#configurable-timeout-of-ge-autoscale-waiting-for-a-worker-node-up">Configurable timeout of GE Autoscale waiting for a worker node up</a></li>
@@ -99,6 +101,10 @@
         
             <li><a class="toctree-l4" href="#resource-usage-form-improvement">Resource usage form improvement</a></li>
         
+            <li><a class="toctree-l4" href="#allow-to-view-the-historical-resources-utilization">Allow to view the historical resources utilization</a></li>
+        
+            <li><a class="toctree-l4" href="#ability-to-schedule-automatic-pauserestart-of-the-running-jobs">Ability to schedule automatic pause/restart of the running jobs</a></li>
+        
             <li><a class="toctree-l4" href="#update-pipe-cli-version">Update pipe CLI version</a></li>
         
             <li><a class="toctree-l4" href="#blockingunblocking-users-and-groups">Blocking/unblocking users and groups</a></li>
@@ -115,7 +121,15 @@
         
             <li><a class="toctree-l4" href="#pipe-cli-view-tools-definitions">pipe CLI: view tools definitions</a></li>
         
+            <li><a class="toctree-l4" href="#storage-usage-statistics-retrieval-via-pipe">Storage usage statistics retrieval via pipe</a></li>
+        
             <li><a class="toctree-l4" href="#ge-autoscaler-respects-cpu-requirements-of-the-job-in-the-queue">GE Autoscaler respects CPU requirements of the job in the queue</a></li>
+        
+            <li><a class="toctree-l4" href="#the-ability-to-find-the-tool-by-its-versionpackage-name">The ability to find the tool by its version/package name</a></li>
+        
+            <li><a class="toctree-l4" href="#the-ability-to-restrict-which-run-statuses-trigger-the-email-notification">The ability to restrict which run statuses trigger the email notification</a></li>
+        
+            <li><a class="toctree-l4" href="#restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command">Restrictions of "other" users permissions for the storages mounted via the pipe storage mount command</a></li>
         
             <li><a class="toctree-l4" href="#notable-bug-fixes">Notable Bug fixes</a></li>
         
@@ -588,6 +602,7 @@
                 <h1 id="cloud-pipeline-v016-release-notes">Cloud Pipeline v.0.16 - Release notes</h1>
 <ul>
 <li><a href="#google-cloud-platform-support">Google Cloud Platform Support</a></li>
+<li><a href="#system-logs">System logs</a></li>
 <li><a href="#displaying-cloud-providers-icon-for-the-storagecompute-resources">Displaying Cloud Provider's icon</a></li>
 <li><a href="#configurable-timeout-of-ge-autoscale-waiting-for-a-worker-node-up">Configurable timeout of GE Autoscale waiting</a></li>
 <li><a href="#storage-mounts-data-transfer-restrictor">Storage mounts data transfer restrictor</a></li>
@@ -597,6 +612,8 @@
 <li><a href="#pushing-pipeline-changes-to-the-gitlab-on-behalf-of-the-user">Pushing pipeline changes to the GitLab on behalf of the user</a></li>
 <li><a href="#allowing-to-expose-compute-node-fs-to-upload-and-download-files">Allowing to expose compute node FS to upload and download files</a></li>
 <li><a href="#resource-usage-form-improvement">Resource usage form improvement</a></li>
+<li><a href="#allow-to-view-the-historical-resources-utilization">View the historical resources utilization</a></li>
+<li><a href="#ability-to-schedule-automatic-pauserestart-of-the-running-jobs">Ability to schedule automatic pause/restart of the running jobs</a></li>
 <li><a href="#update-pipe-cli-version">Update pipe CLI version</a></li>
 <li><a href="#blockingunblocking-users-and-groups">Blocking/unblocking users and groups</a></li>
 <li><a href="#displaying-additional-node-metrics-at-the-runs-page">Displaying additional node metrics</a></li>
@@ -605,7 +622,11 @@
 <li><a href="#enable-slurm-workload-manager-for-the-cloud-pipelines-clusters">Enable Slurm for the Cloud Pipeline's clusters</a></li>
 <li><a href="#the-ability-to-generate-the-pipe-run-command-from-the-gui">The ability to generate the <code>pipe run</code> command from the GUI</a></li>
 <li><a href="#pipe-cli-view-tools-definitions"><code>pipe</code> CLI: view tools definitions</a></li>
+<li><a href="#storage-usage-statistics-retrieval-via-pipe">Storage usage statistics retrieval via <code>pipe</code></a></li>
 <li><a href="#ge-autoscaler-respects-cpu-requirements-of-the-job-in-the-queue">GE Autoscaler respects CPU requirements of the job in the queue</a></li>
+<li><a href="#the-ability-to-find-the-tool-by-its-versionpackage-name">Search the tool by its version/package name</a></li>
+<li><a href="#the-ability-to-restrict-which-run-statuses-trigger-the-email-notification">The ability to restrict which run statuses trigger the email notification</a></li>
+<li><a href="#restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command">Restrictions of "other" users permissions for the mounted storage</a></li>
 </ul>
 <hr />
 <ul>
@@ -639,6 +660,55 @@
 <p>One of the major <strong><code>v0.16</code></strong> features is a support for the <strong><a href="https://cloud.google.com/">Google Cloud Platform</a></strong>.</p>
 <p>All the features, that were previously used for <strong><code>AWS</code></strong> and <strong><code>Azure</code></strong>, are now available in all the same manner, from all the same GUI/CLI, for <strong><code>GCP</code></strong>.</p>
 <p>This provides an even greater level of a flexibility to launch different jobs in the locations, closer to the data, with cheaper prices or better compute hardware in depend on a specific task.</p>
+<h2 id="system-logs">System logs</h2>
+<p>In the current version, the "Security Logging" was implemented.</p>
+<p>Now, the system records audit trail events:</p>
+<ul>
+<li>users' authentication attempts</li>
+<li>users' profiles modifications</li>
+<li>platform objects' permissions management</li>
+<li>access to interactive applications from pipeline runs</li>
+<li>other platform functionality features</li>
+</ul>
+<p>Logs are collected/managed at the <code>Elasticsearch</code> node and backed up to the object storage (that could be configured during the platform deployment).</p>
+<p>The administrator can view/filter these logs via the GUI - in the System-level settings, e.g.:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_SystemLogs_1.png" /></p>
+<p>Each record in the logs list contains:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Date</strong></td>
+<td>The date and time of the log event</td>
+</tr>
+<tr>
+<td><strong>Log status</strong></td>
+<td>The status of the log message (<code>INFO</code>, <code>ERROR</code>, etc.)</td>
+</tr>
+<tr>
+<td><strong>Log message</strong></td>
+<td>Description of the log event</td>
+</tr>
+<tr>
+<td><strong>User</strong></td>
+<td>User name who performed the event</td>
+</tr>
+<tr>
+<td><strong>Service</strong></td>
+<td>Service name that registered the event (<code>api-srv</code>, <code>edge</code>)</td>
+</tr>
+<tr>
+<td><strong>Type</strong></td>
+<td>Log message type (currently, only <code>security</code> type is available)</td>
+</tr>
+</tbody>
+</table>
+<p>For more details see <a href="../../../manual/12_Manage_Settings/12._Manage_Settings/#system-logs">here</a>.</p>
 <h2 id="displaying-cloud-providers-icon-for-the-storagecompute-resources">Displaying Cloud Provider's icon for the storage/compute resources</h2>
 <p>As presented in <strong><a href="../../v.0.15/v.0.15_-_Release_notes/#microsoft-azure-support">v0.15</a></strong>, Cloud Pipeline can manage multi Cloud Providers in a single installation.</p>
 <p>In the current version, useful icon-hints with the information about using Cloud Provider are introduced.<br />
@@ -771,6 +841,39 @@ Cloud Pipeline supports a number of options for the user to perform that data tr
 <p><img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ManageClusterNodes_1.png" /></p>
 <p>All filters are working for all plots simultaneously: data for all plots will be dynamically updated as soon as the user changes filter value.</p>
 <p>For more details see <a href="../../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">here</a>.</p>
+<h2 id="allow-to-view-the-historical-resources-utilization">Allow to view the historical resources utilization</h2>
+<p>Another convenient feature that was implemented in <strong><code>v0.16</code></strong> linked to the <a href="../../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">Cluster nodes monitor</a> is viewing of the detailed history of the resource utilization for any jobs.<br />
+Previously, it was available only for active jobs. Now, users can view the utilization data even for completed (succeed/stopped/failed) jobs for debugging/optimization purposes.  </p>
+<p>The utilization data for all runs is stored for a preconfigured period of time that is set by the system preference <strong><code>system.resource.monitoring.stats.retention.period</code></strong> (defaults to 5 days).<br />
+I.e. if the job has been stopped and the specified time period isn't over - the user can access to the resources utilization data of that job:</p>
+<ul>
+<li>Open the <strong>Run logs</strong> page for the completed job:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_HistoricalMonitor_1.png" /><br />
+    Click the node name hyperlink</li>
+<li>The <strong>Monitor</strong> page of the node resources utilization will be opened:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_HistoricalMonitor_2.png" /></li>
+</ul>
+<p>Also now, users have the ability to export the utilization information into a <code>.csv</code> file.<br />
+This is required, if the user wants to keep locally the information for a longer period of time than defined by <strong><code>system.resource.monitoring.stats.retention.period</code></strong>:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_HistoricalMonitor_3.png" /><br />
+The user can select the interval for the utilization statistics output and export the corresponding file.</p>
+<p>For more details see <a href="../../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/#monitor">here</a>.</p>
+<h2 id="ability-to-schedule-automatic-pauserestart-of-the-running-jobs">Ability to schedule automatic pause/restart of the running jobs</h2>
+<p>For certain use cases (e.g. when <code>Cloud Pipeline</code> is used as a development/research environment) users can launch jobs and keep them running all the time, including weekends and holidays.<br />
+To reduce costs, in the current version, the ability to set a <strong>Run schedule</strong> was implemented. This feature allows to automatically pause/resume runs, based on the configuration specified. This feature is applied only to the "Pausable" runs (i.e. "On-demand" and non-cluster):</p>
+<ul>
+<li>The user (who has permissions to pause/resume a run) is able to set a schedule for a run being launched:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ShedulePauseRestart_01.png" /></li>
+<li>Schedule is defined as a list of rules - user is able to specify any number of them:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ShedulePauseRestart_02.png" /><br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ShedulePauseRestart_03.png" /></li>
+<li>For each rule in the list user is able to set the action (<code>PAUSE</code>/<code>RESUME</code>) and the recurrence:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ShedulePauseRestart_04.png" /></li>
+</ul>
+<p>If any schedule rule is configured for the launched active run - that run will be paused/restarted accordingly in the scheduled day and time.<br />
+Also, users (who have permissions to pause/resume a run) can create/view/modify/delete schedule rules anytime run is active via the <strong>Run logs</strong> page:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ShedulePauseRestart_05.png" /></p>
+<p>See more details <a href="../../../manual/06_Manage_Pipeline/6.2._Launch_a_pipeline/">here</a> (item 5).</p>
 <h2 id="update-pipe-cli-version">Update <code>pipe</code> CLI version</h2>
 <p>Previously, if the user installed <code>pipe</code> CLI to his local workstation, used it some time - and the Cloud Pipeline API version could be updated during this period - so the user had to manually perform complete re-installing of <code>pipe</code> CLI every time to have an actual version.</p>
 <p>Currently, the <strong><code>pipe update</code></strong> command to update the Cloud Pipeline CLI version was implemented.</p>
@@ -882,6 +985,25 @@ The general command to perform these operations:</p>
 <p>Also the specifying of "path" to the object (registry/group/tool) is supported. The "full path" format is: <code>&lt;registry_name&gt;:&lt;port&gt;/&lt;group_name&gt;/&lt;tool_name&gt;:&lt;verion_name&gt;</code>:<br />
 <img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ViewTools_03.png" /></p>
 <p>For more details and usage examples see <a href="../../../manual/14_CLI/14.8._View_tools_definitions_via_CLI/">here</a>.</p>
+<h2 id="storage-usage-statistics-retrieval-via-pipe">Storage usage statistics retrieval via <code>pipe</code></h2>
+<p>In some cases, it may be necessary to obtain an information about storage usage or some inner folder(s).<br />
+In the current version, the command <code>pipe storage du</code> is implemented that provides "disk usage" information on the supported data storages/path:</p>
+<ul>
+<li>number of files in the storage/path</li>
+<li>summary size of the files in the storage/path</li>
+</ul>
+<p>In general, the command has the following format:</p>
+<pre><code class="bash">pipe storage du [OPTIONS] [STORAGE]
+</code></pre>
+
+<p>Without specifying any options and storage this command prints the full list of the available storages (both types - object and FS) with the "usage" information for each of them.<br />
+With specifying the storage name this command prints the "usage" information only by that storage, e.g.:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_PipeDiskUsage_1.png" /><br />
+With <code>-p</code> (<code>--relative-path</code>) option the command prints the "usage" information for the specified path in the required storage, e.g.:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_PipeDiskUsage_2.png" /><br />
+With <code>-d</code> (<code>--depth</code>) option the command prints the "usage" information in the required storage (and path) for the specified folders nesting depth, e.g.:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_PipeDiskUsage_3.png" /></p>
+<p>For more details about that command and full list of its options see <a href="../../../manual/14_CLI/14.3._Manage_Storage_via_CLI/#show-storage-usage">here</a>.</p>
 <h2 id="ge-autoscaler-respects-cpu-requirements-of-the-job-in-the-queue">GE Autoscaler respects CPU requirements of the job in the queue</h2>
 <p>At the moment, <strong>GE Autoscaler</strong> treats each job in the queue as a single-core job.<br />
 Previously, autoscale workers could have only fixed instance type (the same as the master) - that could lead to <code>unschedulable</code> jobs in the queue - for examle, if one of the jobs requested <strong>4</strong> slots in the <code>local</code> parallel environment within a <strong>2</strong>-cored machine. Described job waited in a queue forever (as autoscaler could setup only new <strong>2</strong>-cored nodes).</p>
@@ -899,6 +1021,33 @@ Previously, autoscale workers could have only fixed instance type (the same as t
     and in the logs console at the same time:<br />
 <img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_HybridAutoscaler_3.png" /></p>
 <p>For more details about <strong>GE Autoscaler</strong> see <a href="../../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">here</a>.</p>
+<h2 id="the-ability-to-find-the-tool-by-its-versionpackage-name">The ability to find the tool by its version/package name</h2>
+<p>Cloud Pipeline allows searching for the tools in the registry by its name or description. But in some cases, it is more convenient and useful to find which tool contains a specific software package and then use it.</p>
+<p>In the current version, this ability - to find a tool by its content - is implemented based on the global search capabilities.<br />
+Now, via the Global Search, you may find a tool by its version name, e.g.:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_SearchToolByVersionPackage_1.png" /><br />
+And by the package name (from any available ecosystem), e.g.:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_SearchToolByVersionPackage_2.png" /></p>
+<h2 id="the-ability-to-restrict-which-run-statuses-trigger-the-email-notification">The ability to restrict which run statuses trigger the email notification</h2>
+<p>Cloud Pipeline can be configured to send the email to the owner of the job (or specific users) if its status is changed.<br />
+But in certain cases - it is not desired to get a notification about all changes of the run state.<br />
+To reduce a number of the emails in these cases, the ability to configure, which statuses are triggering the notifications, is implemented in <strong><code>v0.16</code></strong>.</p>
+<p>Now, when the administrator configures the emails sending linked to the run status changes - he can select specific run states that will trigger the notifications.<br />
+It is done through the <code>PIPELINE_RUN_STATUS</code> section at the <strong>Email notifications</strong> tab of the System Settings (the "<strong>Statuses to inform</strong>" field):<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_RunStatusChangingTrigger.png" /><br />
+The email notifications will be sent only if the run enters one of the selected states.<br />
+<strong><em>Note</em></strong>: if no statuses are selected in the "<strong>Statuses to inform</strong>" field - email notifications will be sent as previously - for all status changes.</p>
+<p>For more information how to configure the email notifications see <a href="../../../manual/12_Manage_Settings/12.9._Change_email_notification/">here</a>.</p>
+<h2 id="restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command">Restrictions of "other" users permissions for the storages mounted via the <code>pipe storage mount</code> command</h2>
+<p>As was introduced in <a href="../../v.0.15/v.0.15_-_Release_notes/#mounting-data-storages-to-linux-and-mac-workstations">Release Notes v.0.15</a>, the ability to mount Cloud data storages (both - File Storages and Object Storages) to Linux and Mac workstations (requires <strong><code>FUSE</code></strong> installed) was added.<br />
+For that, the <code>pipe storage mount</code> command was implemented.</p>
+<p>Previously, Cloud Pipeline allowed read access to the mounted cloud storages for the other users, by default. This might introduce a security issue when dealing with the sensitive data.</p>
+<p>In the current version, for the <code>pipe storage mount</code> command the new option is added: <code>-m</code> (<code>--mode</code>), that allows to set the permissions on the mountpoint at a mount time.<br />
+Permissions are being configured by the numerical mask - similarly to <code>chmod</code> Linux command.  </p>
+<p>E.g. to mount the storage with <code>RW</code> access to the <strong>OWNER</strong>, <code>R</code> access to the <strong>GROUP</strong> and no access to the <strong>OTHERS</strong>:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_MountingMode.png" /></p>
+<p>If the option <code>-m</code> isn't specified - the default permission mask will be set - <code>700</code> (full access to the <strong>OWNER</strong> (<code>RWX</code>), no access to the <strong>GROUP</strong> and <strong>OTHERS</strong>).</p>
+<p>For more details about mounting data storages via the <code>pipe</code> see <a href="../../../manual/14_CLI/14.3._Manage_Storage_via_CLI/#mounting-of-storages">here</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="parameter-values-changes-cannot-be-saved-for-a-tool">Parameter values changes cannot be saved for a tool</h3>

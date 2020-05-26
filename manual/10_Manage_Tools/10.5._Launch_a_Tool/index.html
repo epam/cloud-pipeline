@@ -575,10 +575,10 @@
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_01.png" /></li>
 <li>If you want to change settings, you shall click the arrow near the <strong>Run</strong> button → <strong>Custom settings</strong>.<br />
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_02.png" /></li>
+<li><strong>Launch tool</strong> page will be opened.<br />
+<img alt="CP_LaunchTool" src="../attachments/LaunchTool_03.png" />  </li>
 <li>
-<p><strong>Launch tool</strong> page will be opened.<br />
-<img alt="CP_LaunchTool" src="../attachments/LaunchTool_03.png" /><br />
-<strong><em>Note</em></strong>: if <strong>Price type</strong> is set as "<em>On-demand</em>" - at the <strong>Launch page</strong>, an additional checkbox <strong>Auto pause</strong> appears:<br />
+<p>If the <strong>Price type</strong> is set as "<em>On-demand</em>" - at the <strong>Launch page</strong>, an additional checkbox <strong>Auto pause</strong> appears:<br />
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_23.png" /><br />
     This checkbox allows to enable automatic pausing on-demand instance if it is not used. Such behavior could be controlled by Administrators using a set of parameters at System Preferences (see <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#system">here</a>).</p>
 <blockquote>
@@ -586,7 +586,17 @@
 </blockquote>
 </li>
 <li>
-<p>Define the parameters in the <strong>Exec environment</strong>, <strong>Advanced</strong> and <strong>Parameters</strong> tabs.</p>
+<p>If the <strong>Price type</strong> is set as "<em>On-demand</em>" - at the <strong>Launch page</strong>, an additional control <strong>Maintenance</strong> appears. It allows to configure schedule for automatical pause/resume a tool run:<br />
+<img alt="CP_LaunchTool" src="../attachments/LaunchTool_26.png" /><br />
+    It could be useful when the tool is launched for a long time (several days/weeks) but it shall not stand idle, just increasing costs, in weekends and holidays, for example.<br />
+    For more details, how to configure the automatically schedule for a run see <a href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a pipeline</a> (item 5).  </p>
+<blockquote>
+<p>Please note, the <strong>Maintenance</strong> control will not be displayed if any cluster is configured ("Static" or "Autoscaled").</p>
+</blockquote>
+<p>Users (who have permissions to pause/resume a run) can create/view/modify/delete schedule rules anytime launched run is active via the <strong>Run logs</strong> page - for more details see <a href="../../11_Manage_Runs/11._Manage_Runs/#maintenance">11. Manage runs</a>.</p>
+</li>
+<li>
+<p>Define the parameters in the <strong>Exec environment</strong>, <strong>Advanced</strong> and <strong>Parameters</strong> sections.</p>
 </li>
 <li>
 <p>Click the <strong>Launch</strong> button in the top-right corner of the screen.<br />
@@ -631,22 +641,29 @@ Click the <strong>Launch</strong> button in the top-right corner of the screen 
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_09.png" /></li>
 </ol>
 <h2 id="launch-a-tool-with-friendly-url">Launch a Tool with "friendly" URL</h2>
-<p>User can specify a "Friendly URL" for persistent services. This produces endpoint URL in a more friendly/descriptive format: {cloud-pipeline_url}/<code>friendly_url</code> instead of {cloud-pipeline_url}/<code>pipeline-XXXX-XXXX</code>. It can be configured at a service launch time in the "<strong>Advanced</strong>" section of the Launch form.</p>
+<p>User can specify a "friendly"-format endpoint URL for persistent services. This produces the endpoint URL for the selected interactive service in a more friendly/descriptive format instead of the default general <strong><code>&lt;host&gt;/pipeline-&lt;RunID&gt;-&lt;port&gt;</code></strong>.<br />
+"Friendly" format can be configured before the specific service launch in the "<strong>Advanced</strong>" section of the <strong>Launch</strong> page.<br />
+This format has the following structure - <code>&lt;custom-host&gt;/&lt;friendly_url&gt;</code>, where:</p>
+<ul>
+<li><strong><code>&lt;custom-host&gt;</code></strong> - valid existing domain name. If it's not specified, the default host name will be used</li>
+<li><strong><code>&lt;friendly_url&gt;</code></strong> - valid endpoint name. If it's not specified but the <code>&lt;custom-host&gt;</code> is specified - the final endpoint URL will be equal the <code>&lt;custom-host&gt;</code> only</li>
+</ul>
+<p><strong><em>Note</em></strong>: specified endpoint URL shall be unique among all active runs.</p>
 <h3 id="example-2">Example 2</h3>
-<p>In this example we will configure a pretty URL for rstudio Tool.<br />
+<p>In this example we will configure a pretty URL for RStudio Tool.<br />
 <strong><em>Note</em></strong>: for do that, user account shall be registered within CP users catalog and granted <strong>READ</strong> &amp; <strong>EXECUTE</strong> permissions for the rstudio Tool.</p>
 <ol>
 <li>Navigate to the <strong>Tools</strong> tab.</li>
-<li>In the <strong>Default registry</strong> select the <strong>library/rstudio</strong> Tool:<br />
+<li>Select/find <strong><em>RStudio</em></strong> Tool in the list:<br />
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_10.png" /></li>
-<li>On opened page hover the "<strong>Run</strong>" button and click on appeared "<strong>Custom settings</strong>" point:<br />
+<li>At the opened page hover the "<strong>Run</strong>" button and click the appeared "<strong>Custom settings</strong>" point:<br />
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_11.png" /></li>
-<li>Click on "<strong>Advanced</strong>" control (<strong>a</strong>), input desired "<strong>Friendly URL</strong>" (<strong>b</strong>) (name shall be unique) and then click "<strong>Launch</strong>" button (<strong>c</strong>):<br />
+<li>Click the "<strong>Advanced</strong>" control (<strong>a</strong>), input desired "<strong>Friendly URL</strong>" (<strong>b</strong>) (name shall be unique) and then click the "<strong>Launch</strong>" button (<strong>c</strong>), e.g.:<br />
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_12.png" /></li>
-<li>Open logs page of rstudio Tool, wait until tool successfully started.</li>
-<li>Click on hyperlink opposite "<strong>Endpoint</strong>" label:<br />
+<li>Open the <strong>Run logs</strong> page of RStudio Tool, wait until the tool successfully starts.</li>
+<li>Click the hyperlink opposite "<strong>Endpoint</strong>" label:<br />
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_13.png" /></li>
-<li>In a new tab RStudio will be opened. Check, the URL will be in "pretty" format, that you inputted on step 4:<br />
+<li>In a new tab RStudio will be opened. Check that the URL is in the "pretty" format you specified at step 4:<br />
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_14.png" /></li>
 </ol>
 <h2 id="instance-management">Instance management</h2>

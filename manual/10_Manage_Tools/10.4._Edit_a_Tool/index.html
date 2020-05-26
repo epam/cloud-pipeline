@@ -290,6 +290,8 @@
         
             <li><a class="toctree-l5" href="#edit-a-tool-settings">Edit a Tool settings</a></li>
         
+            <li><a class="toctree-l5" href="#delete-a-tool">Delete a Tool</a></li>
+        
         </ul>
     
 
@@ -559,11 +561,12 @@
 <ul>
 <li><a href="#edit-a-tool-description">Edit a Tool description</a></li>
 <li><a href="#edit-a-tool-version">Edit a Tool version</a><ul>
-<li><a href="#rundelete-a-tool">Run/Delete a Tool</a></li>
+<li><a href="#rundelete-a-tool-version">Run/Delete a Tool version</a></li>
 <li><a href="#commit-a-tool">Commit a Tool</a></li>
 </ul>
 </li>
 <li><a href="#edit-a-tool-settings">Edit a Tool settings</a></li>
+<li><a href="#delete-a-tool">Delete a Tool</a></li>
 </ul>
 <blockquote>
 <p>To view and edit tool's attributes see <a href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17. CP objects tagging by additional attributes</a>.</p>
@@ -573,14 +576,14 @@
 <img alt="CP_EditTool" src="../attachments/EditTool_01.png" /></p>
 <h2 id="edit-a-tool-version">Edit a Tool version</h2>
 <p>In this tab, you can run a Tool version with custom settings or delete a Tool version. To see an example of a launching a Tool with custom settings see <a href="../10.5._Launch_a_Tool/">here</a>.</p>
-<h3 id="rundelete-a-tool">Run/Delete a Tool</h3>
+<h3 id="rundelete-a-tool-version">Run/Delete a Tool version</h3>
 <ol>
 <li>Navigate to the <strong>Versions</strong> tab of a Tool.</li>
 <li>Click on the arrow near the <strong>Run</strong> button.</li>
 <li>Select <strong>Custom settings</strong> option to configure run parameters.</li>
-<li>If you want to delete a Tool version, click the <strong>Delete</strong> button.<br />
-<img alt="CP_EditTool" src="../attachments/EditTool_02.png" /></li>
+<li>If you want to delete a Tool version, click the <strong>Delete</strong> button.</li>
 </ol>
+<p><img alt="CP_EditTool" src="../attachments/EditTool_02.png" /></p>
 <h3 id="commit-a-tool">Commit a Tool</h3>
 <p>Commit function allows modifying existing Tools.</p>
 <ol>
@@ -698,6 +701,19 @@ This is how everything will look in the <strong>Run log</strong> window:<br />
 <li>Click <strong>Save</strong> button to save these settings.<br />
 <img alt="CP_EditTool" src="../attachments/EditTool_15.png" /></li>
 </ol>
+<h2 id="delete-a-tool">Delete a Tool</h2>
+<p>To detach a Tool from the Cloud Pipeline:</p>
+<ol>
+<li>Open the Tool you wish to detach</li>
+<li>Hover over the <strong>gear</strong> icon in the right upper corner and click the "Delete tool" item in the appeared list:<br />
+<img alt="CP_EditTool" src="../attachments/EditTool_22.png" /></li>
+<li>Click the <strong>Delete</strong> button to confirm:<br />
+<img alt="CP_EditTool" src="../attachments/EditTool_23.png" /></li>
+</ol>
+<blockquote>
+<p><strong><em>Note</em></strong>: if you try to delete a tool/version, but there is/are active job(s) using it - the corresponding warning notification will be shown, e.g.:<br />
+<img alt="CP_EditTool" src="../attachments/EditTool_24.png" /></p>
+</blockquote>
               
             </div>
           </div>

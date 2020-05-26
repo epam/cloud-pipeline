@@ -155,7 +155,11 @@
         
             <li><a class="toctree-l4" href="#ability-to-perform-scheduled-runs-from-detached-configurations">Ability to perform scheduled runs from detached configurations</a></li>
         
+            <li><a class="toctree-l4" href="#the-ability-to-use-custom-domain-names-as-a-friendly-url-for-the-interactive-services">The ability to use custom domain names as a "friendly URL" for the interactive services</a></li>
+        
             <li><a class="toctree-l4" href="#displaying-of-the-additional-support-iconinfo">Displaying of the additional support icon/info</a></li>
+        
+            <li><a class="toctree-l4" href="#pass-proxy-settings-to-the-dind-containers">Pass proxy settings to the DIND containers</a></li>
         
             <li><a class="toctree-l4" href="#notable-bug-fixes">Notable Bug fixes</a></li>
         
@@ -671,7 +675,9 @@
 <li><a href="#mounting-data-storages-to-linux-and-mac-workstations">Mounting data storages to Linux and Mac workstations</a></li>
 <li><a href="#ability-to-restrict-the-visibility-of-the-jobs">Ability to restrict the visibility of the jobs</a></li>
 <li><a href="#ability-to-perform-scheduled-runs-from-detached-configurations">Ability to perform scheduled runs from detached configurations</a></li>
+<li><a href="#the-ability-to-use-custom-domain-names-as-a-friendly-url-for-the-interactive-services">Using custom domain names as a "friendly URL" for the interactive services</a></li>
 <li><a href="#displaying-of-the-additional-support-iconinfo">Displaying of the additional support icon/info</a></li>
+<li><a href="#pass-proxy-settings-to-the-dind-containers">Pass proxy settings to the <code>DIND</code> containers</a></li>
 </ul>
 <hr />
 <ul>
@@ -698,6 +704,7 @@
 <li><a href="#enddate-isnt-set-when-node-of-a-paused-run-was-terminated"><code>endDate</code> isn't set when node of a paused run was terminated</a></li>
 <li><a href="#aws-nodeup-retry-process-may-stuck-when-first-attempt-to-create-a-spot-instance-failed">AWS: Nodeup retry process may stuck when first attempt to create a spot instance failed</a></li>
 <li><a href="#resume-job-timeout-throws-strange-error-message">Resume job timeout throws strange error message</a></li>
+<li><a href="#ge-autoscaler-doesnt-remove-dead-additional-workers-from-cluster">GE autoscaler doesn't remove dead additional workers from cluster</a></li>
 <li><a href="#broken-layouts">Broken layouts</a></li>
 </ul>
 </li>
@@ -1009,9 +1016,9 @@ I.e. the following behavior was observed couple of times over the last year:</p>
 <p>See an example <a href="../../../manual/15_Interactive_services/15.2._Using_Terminal_access/#example-using-of-environment-modules-for-the-cloud-pipeline-runs">here</a>.</p>
 <h2 id="sharing-ssh-access-to-running-instances-with-other-usersgroups">Sharing SSH access to running instances with other user(s)/group(s)</h2>
 <p>As was introduced in <a href="../../v.0.13/v.0.13_-_Release_notes/#running-instances-sharing-with-other-users-or-groups-of-users">Release Notes v.0.13</a>, for certain use cases it is beneficial to be able to share applications with other users/groups.  </p>
-<p><strong><code>v0.15</code></strong> introduces a feature that allows to share SSH-sessions for such shared runs:</p>
+<p><strong><code>v0.15</code></strong> introduces a feature that allows to share the SSH-session of any active run (regardless of whether the job type is interactive or not):</p>
 <ol>
-<li>User can share a run with others:<ul>
+<li>The user can share an interactive run with others:<ul>
 <li>"Share with: ..." parameter, within a run log form, can be used for this<br />
 <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_1.png" /></li>
 <li>Specific users or whole groups can be set for sharing<br />
@@ -1021,9 +1028,18 @@ I.e. the following behavior was observed couple of times over the last year:</p>
 <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_3.png" /></li>
 </ul>
 </li>
+<li>Also, the user can share a non-interactive run:<ul>
+<li>"Share with: ..." parameter, within a run log form, can be used for this<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_5.png" /></li>
+<li>Specific users or whole groups can be set for sharing<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_6.png" /><br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_7.png" />  </li>
+<li>Once this is set - specified users/groups will be able to access the running instance via the SSH</li>
+</ul>
+</li>
 <li><strong>SERVICES</strong> widget within a Home dashboard page lists such "shared" services. It displays a "catalog" of services, that can be accessed by a current user, without running own jobs.<br />
 To open shared instance application user should click the service name.<br />
-To get SSH-access to the shared instance user should hover over service "card" and click the <strong>SSH</strong> hyperlink<br />
+To get SSH-access to the shared instance (regardless of whether the job type is interactive or not), the user should hover over the service "card" and click the <strong>SSH</strong> hyperlink<br />
 <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_4.png" /></li>
 </ol>
 <p>For more information about runs sharing see <a href="../../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users or groups of users</a>.</p>
@@ -1248,6 +1264,20 @@ But in certain use cases, it is beneficial to launch runs on a scheduled basis.<
 </ul>
 <p>If any schedule rule is configured for the detached configuration - a corresponding job (plain container or a pipeline) will be started accordingly in the scheduled day and time.</p>
 <p>See more details <a href="../../../manual/07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/#schedule-a-launch-from-the-detached-configuration">here</a>.</p>
+<h2 id="the-ability-to-use-custom-domain-names-as-a-friendly-url-for-the-interactive-services">The ability to use custom domain names as a "friendly URL" for the interactive services</h2>
+<p>In <strong><a href="../../v.0.13/v.0.13_-_Release_notes/#running-instances-sharing-with-other-users-or-groups-of-users"><code>v0.13</code></a></strong> the ability to set a "friendly URL" for the interactive services endpoint was implemented. It allows to configure the view of the interactive service endpoint:</p>
+<ul>
+<li>Default view: <code>https://&lt;host&gt;/pipeline-&lt;run-id&gt;-&lt;port&gt;</code>  </li>
+<li>"Friendly" view: <code>https://&lt;host&gt;/&lt;friendly-url&gt;</code></li>
+</ul>
+<p>In the current version this feature is expanded: users allow to specify a custom host.<br />
+So the endpoint url now can look like: <code>https://&lt;custom-host&gt;</code> or <code>https://&lt;custom-host&gt;/&lt;friendly-url&gt;</code>.<br />
+<strong><em>Note</em></strong>: custom host should exist, be valid and configured.</p>
+<p>The custom host is being specified into the same field as a "friendly URL" previously, e.g.:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_CustomDomainNames_1.png" /><br />
+Final URL for the service endpoint will be generated using the specified host and friendly URL:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_CustomDomainNames_2.png" /></p>
+<p>For more details see <a href="../../../manual/10_Manage_Tools/10.5._Launch_a_Tool/#launch-a-tool-with-friendly-url">here</a>.</p>
 <h2 id="displaying-of-the-additional-support-iconinfo">Displaying of the additional support icon/info</h2>
 <p>In certain cases, users shall have a quick access to the help/support information (e.g. links to docs/faq/support request/etc.)</p>
 <p>In the current version, the ability to display additional "support" icon with the corresponding info in the bottom of the main menu was implemented:<br />
@@ -1262,6 +1292,15 @@ But in certain use cases, it is beneficial to launch runs on a scheduled basis.<
 </li>
 </ul>
 <p>For more details see <a href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/#user-interface">UI system settings</a>.</p>
+<h2 id="pass-proxy-settings-to-the-dind-containers">Pass proxy settings to the <code>DIND</code> containers</h2>
+<p>Previously, <code>DIND</code> containers configuration included only registry credentials and a couple of driver settings.<br />
+In certain environments, it is not possible to access external networks (e.g. for the packages installation) without the proxy settings.<br />
+So the users had to pass this manually every time when using the <code>docker run</code> command.</p>
+<p>In the current version, a new system preference <strong><code>launch.dind.container.vars</code></strong> is introduced. It allows to specify all the additions variables, which will be passed to the <code>DIND</code> containers (if they are set for the host environment).  </p>
+<p>By default, the following variables are set for the <code>launch.dind.container.vars</code> preference (and so will be passed to <code>DIND</code> container): <code>http_proxy</code>,<code>https_proxy</code>, <code>no_proxy</code>, <code>API</code>, <code>API_TOKEN</code>. Variables are being specified as a comma-separated list.</p>
+<p>Example of using:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_DINDvariations_1.png" /></p>
+<p>At the same time, a new system parameter (per run) was added - <strong><code>CP_CAP_DIND_CONTAINER_NO_VARS</code></strong>, which disables described behavior. You can set it before any run if you don't want to pass any additional variations to the <code>DIND</code> container.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="incorrect-behavior-of-the-global-search-filter">Incorrect behavior of the global search filter</h3>
@@ -1350,6 +1389,9 @@ Now, checks that instance associated with <code>SpotRequest</code> (created for 
 <h3 id="resume-job-timeout-throws-strange-error-message">Resume job timeout throws strange error message</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/832">#832</a></p>
 <p>Previously, the non-informative error message was shown if the paused run could't be resumed in a reasonable amount of time - the count of attempts to resume was displaying incorrectly.</p>
+<h3 id="ge-autoscaler-doesnt-remove-dead-additional-workers-from-cluster">GE autoscaler doesn't remove dead additional workers from cluster</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/946">#946</a></p>
+<p>Previously, the Grid Engine Autoscaler didn't properly handle dead workers downscaling. For example, if some spot worker instance was preempted during the run then the autoscaler could not remove such worker from GE. Moreover, such cluster was blocked from accepting new jobs.</p>
 <h3 id="broken-layouts">Broken layouts</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/553">#553</a>, <a href="https://github.com/epam/cloud-pipeline/issues/619">#619</a>, <a href="https://github.com/epam/cloud-pipeline/issues/643">#643</a>, <a href="https://github.com/epam/cloud-pipeline/issues/644">#644</a>, <a href="https://github.com/epam/cloud-pipeline/issues/915">#915</a></p>
 <p>Previously, <strong>pipeline versions page</strong> had broken layout if there were pipeline versions with long description.<br />

@@ -559,7 +559,12 @@
 <li><a href="#node-information-page">Node information page</a><ul>
 <li><a href="#general-info">GENERAL INFO</a></li>
 <li><a href="#jobs">JOBS</a></li>
-<li><a href="#monitor">MONITOR</a></li>
+<li><a href="#monitor">MONITOR</a><ul>
+<li><a href="#filters">Filters</a></li>
+<li><a href="#zooming-and-scrolling-features">Zoom and scroll</a></li>
+<li><a href="#export-utilization-data">Export data</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -616,7 +621,8 @@
 <ul>
 <li><strong>Name</strong> of the job; clicking "<strong>+</strong>" icon next to the name expands a list of containers needed for the job.</li>
 <li><strong>Namespace</strong> for a job to be executed at;</li>
-<li><strong>Status</strong> of the job.</li>
+<li><strong>Status</strong> of the job;</li>
+<li><strong>Requests</strong> and <strong>Limits</strong> of resources for the job.</li>
 </ul>
 <p><img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_3.png" /></p>
 <h3 id="monitor">MONITOR</h3>
@@ -648,6 +654,24 @@
 </tbody>
 </table>
 <p><img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_4.png" /></p>
+<p>The current state of the resources utilization is available for all active runs.<br />
+The maximum storage period for this data is set by the system preference <strong><code>system.resource.monitoring.stats.retention.period</code></strong> (in days, by default - 5).<br />
+So, any utilization data older than that period is unavailable for users (no matter the run duration).</p>
+<p>The historical resources utilization is also available for completed runs (during the specified time storage period). It can be useful for debugging/optimization purposes.<br />
+To view the monitor of resources utilization for the completed run:</p>
+<ol>
+<li>Open the <strong>COMPLETED RUNS</strong> page. Click the run you wish to view the resources utilization data, e.g.:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_13.png" /></li>
+<li>At the opened <strong>Run logs</strong> page expand the "Instance" section:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_14.png" /><br />
+    Click the node IP hyperlink.</li>
+<li>The monitor of the node resources utilization will appear:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_15.png" /></li>
+</ol>
+<blockquote>
+<p>Please note, the resources utilization data for the completed run is available during <strong><code>system.resource.monitoring.stats.retention.period</code></strong> days.<br />
+If you'll try to view monitor of the completed run after the specified period is over - the monitor will be empty.</p>
+</blockquote>
 <h4 id="filters">Filters</h4>
 <p>User can manage plots date configurations. For this purpose the system has number of filters:<br />
 <img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_5.png" /></p>
@@ -658,6 +682,9 @@ If this filter is unmarked, user can zoom or scroll any plot without any change 
 If this checkbox is marked the charts data will be updated every 5 seconds in a real-time manner. The fields with dates will be updated as well.<br />
 This filter can be marked only in pair with the <strong>Common range for all charts</strong> filter.<br />
 If both checkboxes were unmarked and user set the <strong>Live update</strong> filter active, the system would mark both checkboxes.</p>
+<blockquote>
+<p>This feature is available only for active runs.</p>
+</blockquote>
 <p><strong>Set range (3)</strong><br />
 User can select the predefined time range for all plots from the list:</p>
 <ul>
@@ -702,6 +729,18 @@ To zoom a chart:</p>
 <img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_10.png" /><br />
     Click the desired button and the chart will be zoomed.</li>
 </ul>
+<h4 id="export-utilization-data">Export utilization data</h4>
+<p>Users have the ability to export the utilization information into a <code>.csv</code> file.<br />
+This can be useful, if the user wants to keep locally the information for a longer period of time than defined by the preference <strong><code>system.resource.monitoring.stats.retention.period</code></strong>.</p>
+<p>To export resources utilization data at the <strong>Monitor</strong> page of the node:</p>
+<ol>
+<li>Hover over the <strong>Export</strong> button in the right upper corner of the page:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_16.png" /></li>
+<li>In the appeared list (the list size depends on the run duration) select the interval of resources utilization statistics you wish to export, e.g.:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_17.png" /></li>
+<li>The corresponding <code>.csv</code> file will be downloaded automatically. Example of such file:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_18.png" /></li>
+</ol>
               
             </div>
           </div>
