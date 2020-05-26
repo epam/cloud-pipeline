@@ -67,7 +67,7 @@ public class RunToBillingRequestConverterImplTest {
     private static final Long PIPELINE_ID = 1L;
     private static final String TOOL_IMAGE = "cp/tool:latest";
     private static final BigDecimal PRICE = BigDecimal.valueOf(4, 2);
-    private static final List<String> USER_GROUPS = java.util.Arrays.asList(GROUP_1, GROUP_2);
+    private static final List<String> USER_GROUPS = Arrays.asList(GROUP_1, GROUP_2);
     private static final String NODE_ID = "nodeId";
     private static final LocalDateTime NO_DATE = null;
 
@@ -663,7 +663,7 @@ public class RunToBillingRequestConverterImplTest {
     }
     
     private void assertRunsActivityStats(final List<RunStatus> adjustedStatuses, final RunStatus... statuses) {
-        assertThat(adjustedStatuses.size(), is (statuses.length));
+        assertThat(adjustedStatuses.size(), is(statuses.length));
         for (int i = 0; i < statuses.length; i++) {
             assertThat(adjustedStatuses.get(i).getStatus(), is(statuses[i].getStatus()));
             assertThat(adjustedStatuses.get(i).getTimestamp(), is(statuses[i].getTimestamp()));
