@@ -167,7 +167,7 @@ def view_all_pipes():
     pipes_table.field_names = ["ID", "Name", "Latest version", "Created", "Source repo"]
     pipes_table.align = "r"
     try:
-        pipelines = list(Pipeline.list())
+        pipelines = Pipeline.list()
         if len(pipelines) > 0:
             for pipeline_model in pipelines:
                 pipes_table.add_row([pipeline_model.identifier,
@@ -493,7 +493,7 @@ def view_all_cluster():
     nodes_table.field_names = ["Name", "Pipeline", "Run", "Addresses", "Created"]
     nodes_table.align = "l"
     try:
-        nodes = list(Cluster.list())
+        nodes = Cluster.list()
         if len(nodes) > 0:
             for node_model in nodes:
                 info_lines = []
