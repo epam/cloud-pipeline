@@ -70,7 +70,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -589,84 +588,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         Assert.assertEquals(2, stats.get(run2.getId()).getRunStatuses().size());
         Assert.assertEquals(2, stats.get(run3.getId()).getRunStatuses().size());
         Assert.assertEquals(1, stats.get(run4.getId()).getRunStatuses().size());
-        Assert.assertEquals(1, stats.get(run5.getId()).getRunStatuses().size());
-    }
-
-    @Test
-    public void testAdjustStatuses() {
-        final List<RunStatus> statuses = new ArrayList<>();
-        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.RUNNING, null, SYNC_PERIOD_START.minusHours(HOURS_24)));
-        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.PAUSED, null, SYNC_PERIOD_START.minusHours(HOURS_18)));
-        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.RUNNING, null, SYNC_PERIOD_START.minusHours(HOURS_12)));
-        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.PAUSED, null, SYNC_PERIOD_START.plusHours(HOURS_12)));
-        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.RUNNING, null, SYNC_PERIOD_START.plusHours(HOURS_18)));
-        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.PAUSED, null, SYNC_PERIOD_END.plusHours(HOURS_12)));
-
-        final List<RunStatus> adjustedStatuses =
-            pipelineRunManager.adjustStatuses(statuses, SYNC_PERIOD_START, SYNC_PERIOD_END);
-
-        Assert.assertEquals(3, adjustedStatuses.size());
-
-        Assert.assertEquals(TaskStatus.RUNNING, adjustedStatuses.get(0).getStatus());
-        Assert.assertEquals(SYNC_PERIOD_START, adjustedStatuses.get(0).getTimestamp());
-
-        Assert.assertEquals(TaskStatus.PAUSED, adjustedStatuses.get(1).getStatus());
-        Assert.assertEquals(SYNC_PERIOD_START.plusHours(HOURS_12), adjustedStatuses.get(1).getTimestamp());
-
-        Assert.assertEquals(TaskStatus.RUNNING, adjustedStatuses.get(2).getStatus());
-        Assert.assertEquals(SYNC_PERIOD_START.plusHours(HOURS_18), adjustedStatuses.get(2).getTimestamp());
-    }
-
-    @Test
-    public void testCreateRunStatuses() {
-        final LocalDateTime syncStartMinus24 = SYNC_PERIOD_START.minusHours(HOURS_24);
-        final LocalDateTime syncStartMinus12 = SYNC_PERIOD_START.minusHours(HOURS_12);
-        final LocalDateTime syncStartPlus12 = SYNC_PERIOD_START.plusHours(HOURS_12);
-        final LocalDateTime syncStartPlus18 = SYNC_PERIOD_START.plusHours(HOURS_18);
-        final LocalDateTime syncEndPlus12 = SYNC_PERIOD_END.plusHours(HOURS_12);
-        final LocalDateTime syncEndPlus18 = SYNC_PERIOD_END.plusHours(HOURS_18);
-
-        final PipelineRun run1 = launchPipeline(configuration, INSTANCE_TYPE, null);
-        run1.setStartDate(Timestamp.valueOf(syncStartMinus12));
-        pipelineRunManager.createRunStatusesForRun(run1, SYNC_PERIOD_START, SYNC_PERIOD_END);
-        assertCreatedRunStatuses(run1, SYNC_PERIOD_START, SYNC_PERIOD_END);
-
-        final PipelineRun run2 = launchRunWithStartEndDate(syncStartMinus24, syncStartMinus12);
-        pipelineRunManager.createRunStatusesForRun(run2, SYNC_PERIOD_START, SYNC_PERIOD_END);
-        final List<RunStatus> runStatuses2 = run2.getRunStatuses();
-        Assert.assertNull(runStatuses2);
-
-        final PipelineRun run3 = launchRunWithStartEndDate(syncStartMinus24, syncStartPlus12);
-        pipelineRunManager.createRunStatusesForRun(run3, SYNC_PERIOD_START, SYNC_PERIOD_END);
-        assertCreatedRunStatuses(run3, SYNC_PERIOD_START, syncStartPlus12);
-
-        final PipelineRun run4 = launchRunWithStartEndDate(syncStartPlus12, syncStartPlus18);
-        pipelineRunManager.createRunStatusesForRun(run4, SYNC_PERIOD_START, SYNC_PERIOD_END);
-        assertCreatedRunStatuses(run4, syncStartPlus12, syncStartPlus18);
-
-        final PipelineRun run5 = launchRunWithStartEndDate(syncStartPlus12, syncEndPlus18);
-        pipelineRunManager.createRunStatusesForRun(run5, SYNC_PERIOD_START, SYNC_PERIOD_END);
-        assertCreatedRunStatuses(run5, syncStartPlus12, SYNC_PERIOD_END);
-
-        final PipelineRun run6 = launchRunWithStartEndDate(syncEndPlus12, syncEndPlus18);
-        pipelineRunManager.createRunStatusesForRun(run6, SYNC_PERIOD_START, SYNC_PERIOD_END);
-        Assert.assertNull(run6.getRunStatuses());
-    }
-
-    private PipelineRun launchRunWithStartEndDate(final LocalDateTime startDate, final LocalDateTime endDate) {
-        final PipelineRun run = launchPipeline(configuration, INSTANCE_TYPE, null);
-        run.setStartDate(Timestamp.valueOf(startDate));
-        run.setEndDate(Timestamp.valueOf(endDate));
-        return run;
-    }
-
-    private void assertCreatedRunStatuses(final PipelineRun run,
-                                          final LocalDateTime firstStatusTimestamp,
-                                          final LocalDateTime secondStatusTimestamp) {
-        final List<RunStatus> runStatuses = run.getRunStatuses();
-        Assert.assertEquals(2, runStatuses.size());
-        Assert.assertEquals(firstStatusTimestamp, runStatuses.get(0).getTimestamp());
-        Assert.assertEquals(secondStatusTimestamp, runStatuses.get(1).getTimestamp());
+        Assert.assertEquals(3, stats.get(run5.getId()).getRunStatuses().size());
+        Assert.assertEquals(2, stats.get(run6.getId()).getRunStatuses().size());
     }
 
     private PipelineRun launchPipelineRun(final LocalDateTime startDate, final LocalDateTime stopDate) {
