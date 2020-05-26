@@ -32,7 +32,6 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.BooleanUtils;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 
@@ -46,10 +45,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 @Data
@@ -100,44 +101,96 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         return billing.getCost() > 0L || billing.getUsageMinutes() > 0L || billing.getPausedMinutes() > 0L;
     }
 
-    private List<RunStatus> adjustStatuses(final PipelineRun run,
-                                           final LocalDateTime previousSync,
-                                           final LocalDateTime syncStart) {
+    protected List<RunStatus> adjustStatuses(final PipelineRun run,
+                                             final LocalDateTime previousSync,
+                                             final LocalDateTime syncStart) {
         final List<RunStatus> statuses = run.getRunStatuses();
-        if (CollectionUtils.isNotEmpty(statuses)) {
-            addFirstRunningStatusIfRequired(run, statuses);
-            statuses.sort(Comparator.comparing(RunStatus::getTimestamp));
-            final RunStatus lastStatus = statuses.get(statuses.size() - 1);
-            if (isNotFinal(lastStatus)) {
-                final LocalDateTime lastTimestamp = Optional.ofNullable(run.getEndDate())
-                        .map(DateUtils::toLocalDateTime)
-                        .orElse(syncStart);
-                statuses.add(new RunStatus(null, null, lastTimestamp.toLocalDate().atStartOfDay()));
+        final LocalDateTime start = previousSync.toLocalDate().atStartOfDay();
+        final LocalDateTime end = syncStart.toLocalDate().atStartOfDay();
+        return CollectionUtils.isNotEmpty(statuses) 
+                ? getAdjustedStatuses(run, statuses, start, end) 
+                : getDefaultStatuses(run, start, end);
+    }
+
+    private List<RunStatus> getAdjustedStatuses(final PipelineRun run, final List<RunStatus> statuses, 
+                                                final LocalDateTime start, final LocalDateTime end) {
+        final List<RunStatus> sortedStatuses = statuses.stream()
+                .sorted(Comparator.comparing(RunStatus::getTimestamp))
+                .collect(Collectors.toList());
+        final int firstStatusIndex = getFirstOverlappingStatusIndex(start, sortedStatuses);
+        final int lastStatusIndex = getLastOverlappingStatusIndex(end, sortedStatuses);
+        final RunStatus firstStatus = sortedStatuses.get(firstStatusIndex);
+        final RunStatus lastStatus = sortedStatuses.get(lastStatusIndex);
+
+        final List<RunStatus> resultingStatuses = 
+                new ArrayList<>(sortedStatuses.subList(firstStatusIndex, lastStatusIndex + 1));
+        if (firstStatus.getTimestamp().isAfter(start)) {
+            if (firstStatus.getStatus() != TaskStatus.RUNNING) {
+                resultingStatuses.add(0, getSyntheticFirstRunningStatus(run, start));
             }
         } else {
-            return Arrays.asList(
-                new RunStatus(null, TaskStatus.RUNNING, previousSync.toLocalDate().atStartOfDay()),
-                new RunStatus(null, null, syncStart.toLocalDate().atStartOfDay()));
+            resultingStatuses.set(0, getAdjustedStatus(firstStatus, start));
         }
-        return statuses;
+        if (lastStatus.getTimestamp().isBefore(end)) {
+            if (!lastStatus.getStatus().isFinal()) {
+                resultingStatuses.add(getSyntheticLastStoppedStatus(run, end));
+            }
+        } else {
+            resultingStatuses.set(resultingStatuses.size() - 1, getAdjustedStatus(lastStatus, end));
+        }
+        return resultingStatuses;
     }
 
-    private Boolean isNotFinal(final RunStatus lastStatus) {
-        return Optional.ofNullable(lastStatus)
-                .map(RunStatus::getStatus)
-                .map(TaskStatus::isFinal)
-                .map(BooleanUtils::negate)
-                .orElse(true);
+    private int getFirstOverlappingStatusIndex(final LocalDateTime start, final List<RunStatus> sortedStatuses) {
+        return IntStream.range(0, sortedStatuses.size() - 1)
+                .filter(i -> sortedStatuses.get(i + 1).getTimestamp().isAfter(start))
+                .findFirst()
+                .orElse(sortedStatuses.size() - 1);
     }
 
-    private void addFirstRunningStatusIfRequired(final PipelineRun run,
-                                                 final List<RunStatus> statuses) {
-        final RunStatus first = statuses.get(0);
-        if (!TaskStatus.RUNNING.equals(first.getStatus())) {
-            final RunStatus inserted = new RunStatus(first.getRunId(), TaskStatus.RUNNING,
-                    DateUtils.toLocalDateTime(run.getStartDate()));
-            statuses.add(0, inserted);
-        }
+    private int getLastOverlappingStatusIndex(final LocalDateTime end, final List<RunStatus> sortedStatuses) {
+        return IntStream.range(0, sortedStatuses.size())
+                .filter(i -> sortedStatuses.get(i).getTimestamp().isAfter(end))
+                .findFirst()
+                .orElse(sortedStatuses.size() - 1);
+    }
+
+    private RunStatus getSyntheticFirstRunningStatus(final PipelineRun run, final LocalDateTime start) {
+        return new RunStatus(run.getId(), TaskStatus.RUNNING, max(start, getStart(run)));
+    }
+
+    private RunStatus getSyntheticLastStoppedStatus(final PipelineRun run, final LocalDateTime end) {
+        return new RunStatus(run.getId(), TaskStatus.STOPPED, min(end, getEnd(run)));
+    }
+
+    private RunStatus getAdjustedStatus(final RunStatus status, final LocalDateTime date) {
+        return new RunStatus(status.getRunId(), status.getStatus(), date);
+    }
+
+    private LocalDateTime getStart(final PipelineRun run) {
+        return getDate(run, PipelineRun::getStartDate).orElse(LocalDateTime.MIN);
+    }
+
+    private LocalDateTime getEnd(final PipelineRun run) {
+        return getDate(run, PipelineRun::getEndDate).orElse(LocalDateTime.MAX);
+    }
+
+    private Optional<LocalDateTime> getDate(final PipelineRun run, final Function<PipelineRun, Date> function) {
+        return Optional.ofNullable(run).map(function).map(DateUtils::toLocalDateTime);
+    }
+
+    private LocalDateTime min(final LocalDateTime first, final LocalDateTime second) {
+        return second.isBefore(first) ? second : first;
+    }
+
+    private LocalDateTime max(final LocalDateTime first, final LocalDateTime second) {
+        return second.isAfter(first) ? second : first;
+    }
+
+    private List<RunStatus> getDefaultStatuses(final PipelineRun run, final LocalDateTime start, final LocalDateTime end) {
+        return Arrays.asList(
+                new RunStatus(run.getId(), TaskStatus.RUNNING, start),
+                new RunStatus(run.getId(), TaskStatus.STOPPED, end));
     }
 
     private RunPrice getPrice(final EntityContainer<PipelineRunWithType> runContainer) {
