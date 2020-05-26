@@ -69,6 +69,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     private String loadAllStoragesWithParentsQuery;
     private String loadStorageWithParentsQuery;
     private String loadDataStorageByPrefixesQuery;
+    private String loadDataStoragesByIdsQuery;
 
     @Autowired
     private DaoHelper daoHelper;
@@ -104,6 +105,13 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
     public List<AbstractDataStorage> loadAllDataStorages() {
         return getNamedParameterJdbcTemplate().query(loadAllDataStoragesQuery,
+                DataStorageParameters.getRowMapper());
+    }
+
+    public List<AbstractDataStorage> loadDataStoragesByIds(final List<Long> ids) {
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(DataStorageParameters.DATASTORAGE_IDS.name(), ids);
+        return getNamedParameterJdbcTemplate().query(loadDataStoragesByIdsQuery, params,
                 DataStorageParameters.getRowMapper());
     }
 
@@ -253,6 +261,10 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         this.loadDataStorageByPrefixesQuery = loadDataStorageByPrefixesQuery;
     }
 
+    public void setLoadDataStoragesByIdsQuery(String loadDataStoragesByIdsQuery) {
+        this.loadDataStoragesByIdsQuery = loadDataStoragesByIdsQuery;
+    }
+
     public enum DataStorageParameters {
         DATASTORAGE_ID,
         DATASTORAGE_NAME,
@@ -282,7 +294,10 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         // cloud specific fields
         REGION_ID,
 
-        SENSITIVE;
+        SENSITIVE,
+
+        DATASTORAGE_IDS;
+
 
         static MapSqlParameterSource getParameters(AbstractDataStorage dataStorage) {
             MapSqlParameterSource params = new MapSqlParameterSource();

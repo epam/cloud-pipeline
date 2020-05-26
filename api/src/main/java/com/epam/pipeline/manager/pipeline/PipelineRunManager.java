@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
@@ -827,15 +828,20 @@ public class PipelineRunManager {
         return run;
     }
 
-    private boolean checkRunForSensitivity(Map<String, PipeConfValueVO> parameters) {
-        return parameters.entrySet().stream()
-                .filter(v->v.getKey().equals(CP_CAP_LIMIT_MOUNTS))
+    private boolean checkRunForSensitivity(final Map<String, PipeConfValueVO> parameters) {
+        List<Long> datastorageIds = MapUtils.emptyIfNull(parameters).entrySet().stream()
+                .filter(v -> v.getKey().equals(CP_CAP_LIMIT_MOUNTS))
                 .map(Map.Entry::getValue)
                 .flatMap(pipeConfValueVO -> Arrays.stream(
                         StringUtils.commaDelimitedListToStringArray(pipeConfValueVO.getValue()))
                 )
                 .map(Long::valueOf)
-                .anyMatch(id -> dataStorageManager.load(id).isSensitive());
+                .collect(Collectors.toList());
+        if (datastorageIds.isEmpty()) {
+            return false;
+        }
+        return dataStorageManager.getDatastoragesByIds(datastorageIds)
+                .stream().anyMatch(AbstractDataStorage::isSensitive);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

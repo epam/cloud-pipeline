@@ -161,6 +161,7 @@ public class DataStorageManager implements SecuredEntityManager {
         final AbstractCloudRegion fromRegion = Optional.ofNullable(fromRegionId)
                 .map(cloudRegionManager::load).orElse(null);
         return getDataStorages().stream()
+                .filter(dataStorage -> !dataStorage.isSensitive())
                 .map(storage -> {
                     if (storage.getFileShareMountId() != null) {
                         return new DataStorageWithShareMount(storage,
@@ -178,6 +179,13 @@ public class DataStorageManager implements SecuredEntityManager {
         Assert.notNull(dbDataStorage, messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND, id));
         dbDataStorage.setHasMetadata(this.metadataManager.hasMetadata(new EntityVO(id, AclClass.DATA_STORAGE)));
         return dbDataStorage;
+    }
+
+    public List<AbstractDataStorage> getDatastoragesByIds(final List<Long> ids) {
+        if(CollectionUtils.isEmpty(ids)) {
+            return Collections.emptyList();
+        }
+        return dataStorageDao.loadDataStoragesByIds(ids);
     }
 
     @Override

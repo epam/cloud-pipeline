@@ -702,7 +702,7 @@
                       r.non_pause,
                       r.node_real_disk,
                       r.node_cloud_provider,
-                      r.tags
+                      r.tags,
                       r.sensitive
                     FROM
                         pipeline.pipeline_run r

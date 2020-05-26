@@ -61,7 +61,7 @@ public class UtilsManager {
         }
     }
 
-    private boolean runIsNotSensitive(Long runId) {
+    private boolean runIsNotSensitive(final Long runId) {
         return !BooleanUtils.toBoolean(runManager.loadPipelineRun(runId).getSensitive());
     }
 
