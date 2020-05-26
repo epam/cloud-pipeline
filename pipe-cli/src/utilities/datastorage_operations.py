@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -157,14 +157,14 @@ class DataStorageOperations(object):
     @classmethod
     def save_data_storage(cls, name, description, sts_duration, lts_duration, versioning,
                           backup_duration, type, parent_folder, on_cloud, path, region_id):
-        directory = None
-        if parent_folder:
-            directory = Folder.load(parent_folder)
-            if directory is None:
-                click.echo("Error: Directory with name '{}' not found! "
-                           "Check if it exists and you have permission to read it".format(parent_folder), err=True)
-                sys.exit(1)
         try:
+            directory = None
+            if parent_folder:
+                directory = Folder.load(parent_folder)
+                if directory is None:
+                    click.echo("Error: Directory with name '{}' not found! "
+                               "Check if it exists and you have permission to read it".format(parent_folder), err=True)
+                    sys.exit(1)
             DataStorage.save(name, path, description, sts_duration, lts_duration, versioning, backup_duration, type,
                              directory.id if directory else None, on_cloud, region_id)
         except ALL_ERRORS as error:
