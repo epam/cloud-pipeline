@@ -154,22 +154,22 @@ class DataStorageOperations(object):
     @classmethod
     def save_data_storage(cls, name, description, sts_duration, lts_duration, versioning,
                           backup_duration, type, parent_folder, on_cloud, path, region_id):
-        directory = None
-        if parent_folder:
-            directory = Folder.load(parent_folder)
-            if directory is None:
-                click.echo("Error: Directory with name '{}' not found! "
-                           "Check if it exists and you have permission to read it".format(parent_folder), err=True)
-                sys.exit(1)
-        if region_id == 'default':
-            region_id = None
-        else:
-            try:
-                region_id = int(region_id)
-            except ValueError:
-                click.echo("Error: Given region id '{}' is not a number.".format(region_id))
-                sys.exit(1)
         try:
+            directory = None
+            if parent_folder:
+                directory = Folder.load(parent_folder)
+                if directory is None:
+                    click.echo("Error: Directory with name '{}' not found! "
+                               "Check if it exists and you have permission to read it".format(parent_folder), err=True)
+                    sys.exit(1)
+            if region_id == 'default':
+                region_id = None
+            else:
+                try:
+                    region_id = int(region_id)
+                except ValueError:
+                    click.echo("Error: Given region id '{}' is not a number.".format(region_id))
+                    sys.exit(1)
             DataStorage.save(name, path, description, sts_duration, lts_duration, versioning, backup_duration, type,
                              directory.id if directory else None, on_cloud, region_id)
         except ALL_ERRORS as error:
