@@ -36,7 +36,7 @@ public class AzureHelper {
         return builder.authenticate(new File(authFile));
     }
 
-    private static AzureCliCredentials getAzureCliCredentials() throws IOException {
+    public static AzureCliCredentials getAzureCliCredentials() throws IOException {
         File customAzureProfile = Paths.get(CP_CLOUD_CREDENTIALS_LOCATION, "azureProfile.json").toFile();
         File customAccessToken = Paths.get(CP_CLOUD_CREDENTIALS_LOCATION, "accessTokens.json").toFile();
         if (customAzureProfile.exists() && customAccessToken.exists()) {

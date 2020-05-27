@@ -411,6 +411,7 @@ function init_kube_secrets {
         # Create credentials secret for azure from user auth files if it is specified instead of service-principal
         kubectl create secret generic cp-cloud-credentials \
                                 --from-file=$CP_AZURE_PROFILE_FILE --from-file=$CP_AZURE_ACCESS_TOKEN_FILE
+        export CP_CLOUD_CREDENTIALS_LOCATION=""
     else
         kubectl create secret generic cp-cloud-credentials \
                                 --from-file=$CP_CLOUD_CREDENTIALS_LOCATION

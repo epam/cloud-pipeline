@@ -696,6 +696,25 @@ EOF
             print_err "Unable to get azure meter name for region $CP_CLOUD_REGION_ID, but this is required to setup a region, you will have to specify them manually via GUI/API"
             return 1
         fi
+        if [ -z $CP_CLOUD_CREDENTIALS_LOCATION ] || [ ! -f $CP_CLOUD_CREDENTIALS_LOCATION ]; then
+read -r -d '' payload <<-EOF
+{
+    "regionId":"$region_name",
+    "provider":"AZURE",
+    "name":"$region_name",
+    "default":true,
+    "storageAccount": "$CP_AZURE_STORAGE_ACCOUNT",
+    "storageAccountKey": "$CP_AZURE_STORAGE_KEY",
+    "resourceGroup": "$CP_AZURE_DEFAULT_RESOURCE_GROUP",
+    "subscription": "$CP_AZURE_SUBSCRIPTION_ID",
+    "sshPublicKeyPath": "$CP_PREF_CLUSTER_SSH_KEY_PATH",
+    "meterRegionName": "$azure_meter_name",
+    "azureApiUrl": "$CP_AZURE_API_URL",
+    "priceOfferId": "$CP_AZURE_OFFER_DURABLE_ID",
+    "corsRules": "$cors_rules"
+}
+EOF
+        else
 read -r -d '' payload <<-EOF
 {
     "regionId":"$region_name",
@@ -714,6 +733,7 @@ read -r -d '' payload <<-EOF
     "corsRules": "$cors_rules"
 }
 EOF
+        fi
     elif [ "$CP_CLOUD_PLATFORM" == "$CP_GOOGLE" ]; then
         api_setup_file_based_preferences "$INSTALL_SCRIPT_PATH/../cloud-configs/$CP_GOOGLE/prerequisites"
         local gcp_custom_instance_types_json="$(get_file_based_preference gcp.custom.instance.types other $CP_GOOGLE)"

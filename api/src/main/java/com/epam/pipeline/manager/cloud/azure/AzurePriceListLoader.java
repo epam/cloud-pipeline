@@ -22,9 +22,11 @@ import com.epam.pipeline.entity.pricing.azure.AzurePricingResult;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
+import com.epam.pipeline.manager.datastorage.providers.azure.AzureHelper;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.credentials.ApplicationTokenCredentials;
+import com.microsoft.azure.credentials.AzureTokenCredentials;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.compute.ComputeResourceType;
 import com.microsoft.azure.management.compute.ResourceSkuCapabilities;
@@ -106,8 +108,8 @@ public class AzurePriceListLoader {
     }
 
     public List<InstanceOffer> load(final AbstractCloudRegion region) throws IOException {
-        final ApplicationTokenCredentials credentials = ApplicationTokenCredentials.fromFile(new File(authPath));
-        final Azure client = Azure.authenticate(new File(authPath)).withDefaultSubscription();
+        final AzureTokenCredentials credentials = getAzureCredentials();
+        final Azure client = AzureHelper.buildClient(authPath);
 
         final Map<String, ResourceSkuInner> vmSkusByName = client.computeSkus()
                 .listbyRegionAndResourceType(Region.fromName(region.getRegionCode()),
@@ -129,6 +131,13 @@ public class AzurePriceListLoader {
                 .map(p -> mergeSkusWithPrices(p.getMeters(), vmSkusByName, diskSkusByName,
                         meterRegionName, region.getId()))
                 .orElseGet(() -> getOffersFromSku(vmSkusByName, diskSkusByName, region.getId()));
+    }
+
+    private AzureTokenCredentials getAzureCredentials() throws IOException {
+        if (StringUtils.isBlank(authPath)) {
+            return AzureHelper.getAzureCliCredentials();
+        }
+        return ApplicationTokenCredentials.fromFile(new File(authPath));
     }
 
     private List<InstanceOffer> getOffersFromSku(final Map<String, ResourceSkuInner> vmSkusByName,
@@ -189,7 +198,7 @@ public class AzurePriceListLoader {
     }
 
     private Optional<AzurePricingResult> getPricing(final String subscription,
-                                                    final ApplicationTokenCredentials credentials) throws IOException {
+                                                    final AzureTokenCredentials credentials) throws IOException {
         if (StringUtils.isBlank(offerId)) {
             return Optional.empty();
         }
