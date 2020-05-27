@@ -63,6 +63,34 @@ class PipelineServer(object):
         except:
             print 'Error: ', traceback.format_exc()
 
+    def synchronize_users(self, git_servers=[]):
+        try:
+            self.__users__ = self.__users_api__.list()
+            __users_with_email__ = filter(lambda x: x.email is not None, self.__users__)
+            emails = map(lambda x: x.email.lower(), __users_with_email__)
+            self.__duplicated_users__ = list(set(filter(lambda x: emails.count(x) > 1, emails)))
+            if len(self.__duplicated_users__) > 0:
+                print 'Following users wont be synchronized:'
+                for duplicate in self.__duplicated_users__:
+                    duplicates = map(
+                        lambda x: '{} ({})'.format(x.friendly_name, x.username),
+                        list(filter(lambda x: x.email.lower() == duplicate, __users_with_email__))
+                    )
+                    print '{}: duplicated email \'{}\'.'.format(', '.join(duplicates), duplicate)
+            for git_server_url in git_servers:
+                git_server = GitServer(git_server_url, self)
+                git_server.initialize()
+                if git_server.initialized:
+                    for user in self.__users__:
+                        if user.username is not None:
+                            git_server.synchronize_user(user.username)
+        except RuntimeError as error:
+            print error.message
+        except KeyboardInterrupt:
+            raise
+        except:
+            print 'Error: ', traceback.format_exc()
+
     def synchronize_pipeline(self, pipeline):
         try:
             print 'Processing pipeline #{} {}.'.format(pipeline.identifier, pipeline.name)

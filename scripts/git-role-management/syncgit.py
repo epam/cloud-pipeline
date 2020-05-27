@@ -110,6 +110,29 @@ def main(argv):
                 exit(2)
             print ''
             print 'Synchronization time: {} seconds'.format(time.time() - start)
+        elif command == 'sync-users':
+            try:
+                config = Config.instance()
+                if config.api is None:
+                    print 'API path is not configured'
+                    help()
+                    exit(1)
+                elif config.access_key is None:
+                    print 'API token is not configured'
+                    help()
+                    exit(1)
+            except ConfigNotFoundError as error:
+                print error.message
+                help()
+                exit(1)
+            start = time.time()
+            pipeline_server = PipelineServer()
+            try:
+                pipeline_server.synchronize_users(argv[1:])
+            except KeyboardInterrupt:
+                exit(2)
+            print ''
+            print 'Synchronization time: {} seconds'.format(time.time() - start)
         elif command == 'purge':
             try:
                 config = Config.instance()
