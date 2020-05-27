@@ -9,9 +9,12 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 
 @Slf4j
 public class AzureHelper {
+
+    private static final String CP_CLOUD_CREDENTIALS_LOCATION = "/root/.cloud";
 
     public static Azure buildClient(final String authFile) {
         try {
@@ -28,9 +31,17 @@ public class AzureHelper {
     private static Azure.Authenticated authenticate(final String authFile,
                                              Azure.Configurable builder) throws IOException {
         if (StringUtils.isBlank(authFile)) {
-            return builder.authenticate(AzureCliCredentials.create());
+            return builder.authenticate(getAzureCliCredentials());
         }
         return builder.authenticate(new File(authFile));
     }
 
+    private static AzureCliCredentials getAzureCliCredentials() throws IOException {
+        File customAzureProfile = Paths.get(CP_CLOUD_CREDENTIALS_LOCATION, "azureProfile.json").toFile();
+        File customAccessToken = Paths.get(CP_CLOUD_CREDENTIALS_LOCATION, "accessTokens.json").toFile();
+        if (customAzureProfile.exists() && customAccessToken.exists()) {
+            return AzureCliCredentials.create(customAzureProfile, customAccessToken);
+        }
+        return AzureCliCredentials.create();
+    }
 }

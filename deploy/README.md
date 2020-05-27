@@ -42,7 +42,7 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
 
                 # Cloud Provider credentials
                 ## Common
-                -env CP_CLOUD_CREDENTIALS_FILE= \                   # Cloud credentials can be specified as a file for any cloud provider (the only available option for Azure and GCP)
+                -env CP_CLOUD_CREDENTIALS_FILE= \                   # Cloud credentials can be specified as a file for any cloud provider (the only available option for GCP)
                 ## AWS
                 -env CP_AWS_ACCESS_KEY_ID= \                        # For AWS key id can be specified via environment variables
                 -env CP_AWS_SECRET_ACCESS_KEY= \                    # For AWS key secret can be specified via environment variables
@@ -50,6 +50,8 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE= \
                 -env CP_DOCKER_STORAGE_ROOT_DIR= \                  # Root directory within a $CP_DOCKER_STORAGE_CONTAINER, used to store images blobs. If not set - "cloud-pipeline-${CP_DEPLOYMENT_ID}" will be used
                 ## Azure
+                -env CP_AZURE_PROFILE_FILE= \                       # Azure profile file from cli autentication
+                -env CP_AZURE_ACCESS_TOKEN_FILE= \                  # Azure access token file from cli autentication
                 -env CP_AZURE_STORAGE_ACCOUNT= \                    # Default storage account name, that will be used to manage BLOB/FS storages and persist docker images (if CP_DOCKER_STORAGE_TYPE=obj)
                 -env CP_AZURE_STORAGE_KEY= \                        # Key for the default storage account (CP_AZURE_STORAGE_ACCOUNT)
                 -env CP_AZURE_DEFAULT_RESOURCE_GROUP= \             # Which Azure resource group will be used by default

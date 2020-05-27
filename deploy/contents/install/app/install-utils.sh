@@ -293,6 +293,12 @@ EOF
     elif [ "$CP_CLOUD_PLATFORM" == "$CP_AZURE" ]; then
         if [ -f "$CP_CLOUD_CREDENTIALS_FILE" ]; then
             print_info "Azure access keys are defined via CP_CLOUD_CREDENTIALS_FILE"
+        elif [ ! -z $CP_AZURE_PROFILE_FILE ] && [ ! -z $CP_AZURE_ACCESS_TOKEN_FILE ]; then
+            print_info "Azure access keys are defined via CP_AZURE_PROFILE_FILE and CP_AZURE_ACCESS_TOKEN_FILE env vars"
+        elif [ -f ~/.azure/azureProfile.json ] && [ -f ~/.azure/accessTokens.json ]; then
+            print_info "Azure access keys are defined via CLI auth files"
+            export CP_AZURE_PROFILE_FILE="~/.azure/azureProfile.json"
+            export CP_AZURE_ACCESS_TOKEN_FILE="~/.azure/accessTokens.json"
         else
             print_err "Azure access keys are not defined, please use -env option to define CP_CLOUD_CREDENTIALS_FILE path to the azure credentials"
             return 1
@@ -376,10 +382,12 @@ EOF
         print_warn "File storage hosts parameter is not set. File storage mounts WILL NOT be available. Please specify it using \"-env CP_CLOUD_REGION_FILE_STORAGE_HOSTS=\" option (comma separated list is accepted)"
     fi
 
-    mkdir -p $(dirname $CP_CLOUD_CREDENTIALS_LOCATION)
 
-    # \ in the beginning of cp - bypasses any alias (e.g. cp -i) that may introduce interactive prompt for overwiting the destination
-    \cp "$CP_CLOUD_CREDENTIALS_FILE" "$CP_CLOUD_CREDENTIALS_LOCATION" &>/dev/null
+    if [ -f $CP_CLOUD_CREDENTIALS_FILE ]; then
+        mkdir -p $(dirname $CP_CLOUD_CREDENTIALS_LOCATION)
+        # \ in the beginning of cp - bypasses any alias (e.g. cp -i) that may introduce interactive prompt for overwiting the destination
+        \cp "$CP_CLOUD_CREDENTIALS_FILE" "$CP_CLOUD_CREDENTIALS_LOCATION" &>/dev/null
+    fi
 
     return 0
 }
@@ -399,10 +407,16 @@ function init_kube_secrets {
     kubectl delete secret cp-cloud-credentials
 
     print_info "Creating a new cloud secret"
-    kubectl create secret generic cp-cloud-credentials \
+    if [ "$CP_CLOUD_PLATFORM" == "$CP_AZURE" ] && [ ! -z $CP_AZURE_PROFILE_FILE ] && [ ! -z $CP_AZURE_ACCESS_TOKEN_FILE ]; then
+        # Create credentials secret for azure from user auth files if it is specified instead of service-principal
+        kubectl create secret generic cp-cloud-credentials \
+                                --from-file=$CP_AZURE_PROFILE_FILE --from-file=$CP_AZURE_ACCESS_TOKEN_FILE
+    else
+        kubectl create secret generic cp-cloud-credentials \
                                 --from-file=$CP_CLOUD_CREDENTIALS_LOCATION
+        rm -f $CP_CLOUD_CREDENTIALS_LOCATION
+    fi
 
-    rm -f $CP_CLOUD_CREDENTIALS_LOCATION
 
     # SSH creds
     print_info "Trying to delete existing cluster SSH secret, if it exists"
