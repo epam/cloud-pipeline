@@ -54,7 +54,6 @@ public class AzureInstancePriceService implements CloudInstancePriceService<Azur
     public List<InstanceOffer> refreshPriceListForRegion(final AzureRegion region) {
         try {
             final String authPath = region.getAuthFile();
-            Assert.isTrue(StringUtils.isNotBlank(authPath), "Azure auth file path must be specified");
             return new AzurePriceListLoader(authPath, region.getPriceOfferId(),
                     region.getMeterRegionName(), region.getAzureApiUrl())
                     .load(region);
