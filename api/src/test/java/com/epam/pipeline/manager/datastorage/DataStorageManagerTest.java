@@ -46,6 +46,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.mockito.Matchers.any;
@@ -110,6 +112,29 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         AbstractDataStorage loaded = storageManager.load(saved.getId());
         compareDataStorage(saved, loaded);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void loadByIdsDataStorageTest() throws Exception {
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+        storageVO.setName(storageVO.getName() + UUID.randomUUID());
+        storageVO.setPath(storageVO.getPath() + UUID.randomUUID());
+        AbstractDataStorage saved2 = storageManager.create(storageVO, false, false, false).getEntity();
+        storageVO.setName(storageVO.getName() + UUID.randomUUID());
+        storageVO.setPath(storageVO.getPath() + UUID.randomUUID());
+        storageManager.create(storageVO, false, false, false).getEntity();
+
+        List<AbstractDataStorage> loaded = storageManager.getDatastoragesByIds(
+                Arrays.asList(saved.getId(), saved2.getId())
+        );
+        Assert.assertTrue(
+                loaded.stream().anyMatch(ds -> ds.getId().equals(saved.getId()) || ds.getId().equals(saved2.getId()))
+        );
+        Assert.assertEquals(2, loaded.size());
     }
 
     @Test

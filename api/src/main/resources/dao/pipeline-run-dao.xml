@@ -68,7 +68,8 @@
                         non_pause,
                         node_real_disk,
                         node_cloud_provider,
-                        tags)
+                        tags,
+                        sensitive)
                     VALUES (
                         :RUN_ID,
                         :PIPELINE_ID,
@@ -114,7 +115,8 @@
                         :NON_PAUSE,
                         :NODE_REAL_DISK,
                         :NODE_CLOUD_PROVIDER,
-                        to_jsonb(:TAGS::jsonb))
+                        to_jsonb(:TAGS::jsonb),
+                        :SENSITIVE)
                 ]]>
             </value>
         </property>
@@ -167,6 +169,7 @@
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
+                        r.sensitive,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -255,7 +258,8 @@
                         non_pause,
                         node_real_disk,
                         node_cloud_provider,
-                        tags
+                        tags,
+                        sensitive
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -313,7 +317,8 @@
                         non_pause,
                         node_real_disk,
                         node_cloud_provider,
-                        tags
+                        tags,
+                        sensitive
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -371,7 +376,8 @@
                         non_pause,
                         node_real_disk,
                         node_cloud_provider,
-                        tags
+                        tags,
+                        sensitive
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -466,7 +472,8 @@
                         state_reason = :STATE_REASON,
                         non_pause = :NON_PAUSE,
                         node_real_disk =:NODE_REAL_DISK,
-                        tags = to_jsonb(:TAGS::jsonb)
+                        tags = to_jsonb(:TAGS::jsonb),
+                        sensitive = :SENSITIVE
                     WHERE
                         run_id = :RUN_ID
                 ]]>
@@ -574,6 +581,7 @@
                       r.node_real_disk,
                       r.node_cloud_provider,
                       r.tags,
+                      r.sensitive,
                       TRUE as initialization_finished,
                       FALSE as queued,
                       p.pipeline_name
@@ -634,6 +642,7 @@
                       r.node_real_disk,
                       r.node_cloud_provider,
                       r.tags,
+                      r.sensitive,
                       TRUE as initialization_finished,
                       FALSE as queued,
                       p.pipeline_name
@@ -693,7 +702,8 @@
                       r.non_pause,
                       r.node_real_disk,
                       r.node_cloud_provider,
-                      r.tags
+                      r.tags,
+                      r.sensitive
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -744,7 +754,8 @@
                       active_run.non_pause,
                       active_run.node_real_disk,
                       active_run.node_cloud_provider,
-                      active_run.tags
+                      active_run.tags,
+                      active_run.sensitive
                     FROM active_run
                     INNER JOIN
                         (SELECT DISTINCT run_id
@@ -808,7 +819,8 @@
                       r.non_pause,
                       r.node_real_disk,
                       r.node_cloud_provider,
-                      r.tags
+                      r.tags,
+                      r.sensitive
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -858,7 +870,8 @@
                       active_run.non_pause,
                       active_run.node_real_disk,
                       active_run.node_cloud_provider,
-                      active_run.tags
+                      active_run.tags,
+                      active_run.sensitive
                     FROM active_run
                     INNER JOIN
                         (SELECT DISTINCT run_id
@@ -919,7 +932,8 @@
                         r.non_pause,
                         r.node_real_disk,
                         r.node_cloud_provider,
-                        r.tags
+                        r.tags,
+                        r.sensitive
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -975,7 +989,8 @@
                         r.non_pause,
                         r.node_real_disk,
                         r.node_cloud_provider,
-                        r.tags
+                        r.tags,
+                        r.sensitive
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -1032,6 +1047,7 @@
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
+                        r.sensitive,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1124,6 +1140,7 @@
                         runs.node_real_disk,
                         runs.node_cloud_provider,
                         runs.tags,
+                        runs.sensitive,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1196,7 +1213,8 @@
                             p.non_pause,
                             p.node_real_disk,
                             p.node_cloud_provider,
-                            p.tags
+                            p.tags,
+                            p.sensitive
                         FROM (SELECT *
                             FROM pipeline.pipeline_run r
                             WHERE parent_id ISNULL @WHERE@
@@ -1248,7 +1266,8 @@
                             c.non_pause,
                             c.node_real_disk,
                             c.node_cloud_provider,
-                            c.tags
+                            c.tags,
+                            c.sensitive
                         FROM
                             pipeline.pipeline_run c
                         INNER JOIN runs ON runs.run_id = c.parent_id
@@ -1299,6 +1318,7 @@
                         runs.node_real_disk,
                         runs.node_cloud_provider,
                         runs.tags,
+                        runs.sensitive,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1445,7 +1465,8 @@
                         non_pause,
                         node_real_disk,
                         node_cloud_provider,
-                        tags
+                        tags,
+                        sensitive
                     FROM
                         pipeline.pipeline_run r
                     INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
@@ -1517,7 +1538,8 @@
                         non_pause,
                         node_real_disk,
                         node_cloud_provider,
-                        tags
+                        tags,
+                        sensitive
                     FROM
                         pipeline.pipeline_run
                     WHERE

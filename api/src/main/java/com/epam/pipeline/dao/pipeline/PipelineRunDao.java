@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
@@ -704,7 +705,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         QUEUED,
         NODEUP_TASK,
         ACCESS_TYPE,
-        TAGS;
+        TAGS,
+        SENSITIVE;
 
         public static final RunAccessType DEFAULT_ACCESS_TYPE = RunAccessType.ENDPOINT;
 
@@ -749,6 +751,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(STATE_REASON.name(), run.getStateReasonMessage());
             params.addValue(NON_PAUSE.name(), run.isNonPause());
             params.addValue(TAGS.name(), JsonMapper.convertDataToJsonStringForQuery(run.getTags()));
+            params.addValue(SENSITIVE.name(), BooleanUtils.toBoolean(run.getSensitive()));
             addInstanceFields(run, params);
             return params;
         }
@@ -832,6 +835,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             run.setDockerImage(rs.getString(DOCKER_IMAGE.name()));
             run.setCmdTemplate(rs.getString(CMD_TEMPLATE.name()));
             run.setActualCmd(rs.getString(ACTUAL_CMD.name()));
+            run.setSensitive(rs.getBoolean(SENSITIVE.name()));
             RunInstance instance = new RunInstance();
             instance.setNodeDisk(rs.getInt(NODE_DISK.name()));
             instance.setEffectiveNodeDisk(rs.getInt(NODE_REAL_DISK.name()));

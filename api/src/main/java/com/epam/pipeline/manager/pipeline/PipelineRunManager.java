@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
@@ -117,6 +118,7 @@ public class PipelineRunManager {
     private static final String SHOW_ACTIVE_WORKERS_ONLY_PARAMETER = "CP_SHOW_ACTIVE_WORKERS_ONLY";
     private static final int USER_PRICE_SCALE = 2;
     private static final int BILLING_PRICE_SCALE = 5;
+    public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -810,6 +812,7 @@ public class PipelineRunManager {
         if (CollectionUtils.isNotEmpty(entityIds)) {
             run.setEntitiesIds(entityIds);
         }
+        run.setSensitive(checkRunForSensitivity(configuration.getParameters()));
         run.setConfigurationId(configurationId);
         run.setExecutionPreferences(Optional.ofNullable(configuration.getExecutionPreferences())
                 .orElse(ExecutionPreferences.getDefault()));
@@ -821,6 +824,22 @@ public class PipelineRunManager {
             run.setNonPause(configuration.isNonPause());
         }
         return run;
+    }
+
+    private boolean checkRunForSensitivity(final Map<String, PipeConfValueVO> parameters) {
+        List<Long> datastorageIds = MapUtils.emptyIfNull(parameters).entrySet().stream()
+                .filter(v -> v.getKey().equals(CP_CAP_LIMIT_MOUNTS))
+                .map(Map.Entry::getValue)
+                .flatMap(pipeConfValueVO -> Arrays.stream(
+                        StringUtils.commaDelimitedListToStringArray(pipeConfValueVO.getValue()))
+                )
+                .map(Long::valueOf)
+                .collect(Collectors.toList());
+        if (datastorageIds.isEmpty()) {
+            return false;
+        }
+        return dataStorageManager.getDatastoragesByIds(datastorageIds)
+                .stream().anyMatch(AbstractDataStorage::isSensitive);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -1098,7 +1117,7 @@ public class PipelineRunManager {
 
     /**
      * Adjusts run price per hour including provided node disks.
-     * 
+     *
      * @param runId of {@link PipelineRun} to update price for.
      * @param disks of {@link PipelineRun} instance.
      * @return Updated pipeline run.
@@ -1367,7 +1386,7 @@ public class PipelineRunManager {
         if (!instance.isEmpty()) {
             run.setInstance(instance);
             InstancePrice runPrice = instanceOfferManager.getInstanceEstimatedPrice(
-                    instance.getNodeType(), instance.getEffectiveNodeDisk(), instance.getSpot(), 
+                    instance.getNodeType(), instance.getEffectiveNodeDisk(), instance.getSpot(),
                     instance.getCloudRegionId());
             LOGGER.debug("Expected price per hour: {}", runPrice.getPricePerHour());
             run.setPricePerHour(scaledForUser(runPrice.getPricePerHour()));

@@ -68,6 +68,7 @@
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
+                        r.sensitive,
                         pipelines.pipeline_name
                     FROM
                         pipeline.pipeline_run r

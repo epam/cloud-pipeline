@@ -889,7 +889,9 @@ else
 fi
 
 #install FS Browser
-if [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
+if [ ! -z "$CP_SENSITIVE_RUN" ]; then
+      echo "Run is sensitive, FSBrowser will not be installed"
+elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
       echo "Setup FSBrowser"
       echo "-"
 
