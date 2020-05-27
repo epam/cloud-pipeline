@@ -40,6 +40,7 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -69,6 +70,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
      *
      * @param runContainer Pipeline run to build request
      * @param indexPrefix common billing prefix for index to insert requests into
+     * @param previousSync nullable time point, where the previous synchronization was started
      * @param syncStart time point, where the whole synchronization process was started
      * @return list of requests to be performed (deletion index request if no billing requests created)
      */
@@ -106,11 +108,26 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
                                              final LocalDateTime previousSync,
                                              final LocalDateTime syncStart) {
         final List<RunStatus> statuses = run.getRunStatuses();
-        final LocalDateTime start = previousSync.toLocalDate().atStartOfDay();
-        final LocalDateTime end = syncStart.toLocalDate().atStartOfDay();
+        final LocalDateTime start = getBillingPeriodStart(previousSync);
+        final LocalDateTime end = getBillingPeriodEnd(syncStart);
         return CollectionUtils.isNotEmpty(statuses) 
                 ? getAdjustedStatuses(run, statuses, start, end) 
                 : getDefaultStatuses(run, start, end);
+    }
+
+    private LocalDateTime getBillingPeriodStart(final LocalDateTime periodStart) {
+        return toStartOfDay(periodStart).orElse(LocalDateTime.MIN);
+    }
+
+    private LocalDateTime getBillingPeriodEnd(final LocalDateTime periodEnd) {
+        return toStartOfDay(periodEnd)
+                .orElseThrow(() -> new IllegalArgumentException("Billing period end date should be provided."));
+    }
+
+    private Optional<LocalDateTime> toStartOfDay(final LocalDateTime previousSync) {
+        return Optional.ofNullable(previousSync)
+                .map(LocalDateTime::toLocalDate)
+                .map(LocalDate::atStartOfDay);
     }
 
     private List<RunStatus> getAdjustedStatuses(final PipelineRun run, final List<RunStatus> statuses, 
@@ -291,12 +308,20 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
 
     private List<LocalDateTime> getTimePoints(final LocalDateTime start, final LocalDateTime end,
                                               final PipelineRunWithType run) {
+        if (isPeriodTooLong(start, end)) {
+            log.warn("Billing period for run #{} is too big. It will be skipped.", run.getPipelineRun().getId());
+            return Collections.emptyList();
+        }
         return Stream.of(Stream.of(start, end), periodTimePoints(start, end), diskAttachTimePoints(start, end, run))
                 .reduce(Stream::concat)
                 .orElseGet(Stream::empty)
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
+    }
+
+    private boolean isPeriodTooLong(final LocalDateTime start, final LocalDateTime end) {
+        return Period.between(start.toLocalDate(), end.toLocalDate()).getYears() > 100;
     }
 
     private Stream<LocalDateTime> periodTimePoints(final LocalDateTime start, final LocalDateTime end) {

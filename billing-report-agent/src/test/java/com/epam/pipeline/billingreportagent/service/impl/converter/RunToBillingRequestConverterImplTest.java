@@ -53,6 +53,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SuppressWarnings("checkstyle:magicnumber")
 public class RunToBillingRequestConverterImplTest {
@@ -660,6 +661,47 @@ public class RunToBillingRequestConverterImplTest {
 
         assertRunsActivityStats(adjustedStatuses,
                 status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 20, 0, 0, 0)));
+    }
+
+    @Test
+    public void testAdjustStatusesWorksWithoutSyncStartDate() {
+        final PipelineRun run = run(
+                LocalDateTime.of(2020, 5, 19, 12, 0, 0),
+                NO_DATE);
+
+        final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
+                NO_DATE,
+                LocalDate.of(2020, 5, 21).atStartOfDay());
+
+        assertRunsActivityStats(adjustedStatuses,
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 19, 12, 0, 0)),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 21, 0, 0, 0)));
+    }
+
+    @Test
+    public void testAdjustStatusesFailsWithoutSyncEndDate() {
+        final PipelineRun run = run(
+                LocalDateTime.of(2020, 5, 19, 12, 0, 0),
+                NO_DATE);
+
+        assertThrows(IllegalArgumentException.class, () -> converter.adjustStatuses(run,
+                LocalDate.of(2020, 5, 20).atStartOfDay(),
+                NO_DATE));
+    }
+
+    @Test
+    public void testAdjustStatusesReturnsInfiniteIntervalForRunWithoutStartDate() {
+        final PipelineRun run = run(
+                NO_DATE,
+                NO_DATE);
+
+        final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
+                NO_DATE,
+                LocalDate.of(2020, 5, 21).atStartOfDay());
+
+        assertRunsActivityStats(adjustedStatuses,
+                status(TaskStatus.RUNNING, LocalDateTime.MIN),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 21, 0, 0, 0)));
     }
     
     private void assertRunsActivityStats(final List<RunStatus> adjustedStatuses, final RunStatus... statuses) {
