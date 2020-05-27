@@ -616,6 +616,8 @@ public class SystemPreferences {
     // Billing Reports
     public static final StringPreference BILLING_USER_NAME_ATTRIBUTE = new StringPreference(
             "billing.reports.user.name.attribute", null, BILLING_GROUP, pass);
+    public static final BooleanPreference BILLING_REPORTS_ENABLED = new BooleanPreference(
+            "billing.reports.enabled", true, BILLING_GROUP, pass);
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 
