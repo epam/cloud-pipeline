@@ -77,6 +77,12 @@ class PreferencesLoad extends Remote {
     return !!this.getPreferenceValue('search.elastic.host');
   }
 
+  @computed
+  get billingEnabled () {
+    const value = this.getPreferenceValue('billing.reports.enabled');
+    return value && `${value}`.toLowerCase() === 'true';
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&

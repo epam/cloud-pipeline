@@ -35,7 +35,8 @@ export default class Navigation extends React.Component {
     deploymentName: PropTypes.string,
     openSearchDialog: PropTypes.func,
     searchControlVisible: PropTypes.bool,
-    searchEnabled: PropTypes.bool
+    searchEnabled: PropTypes.bool,
+    billingEnabled: PropTypes.bool
   };
 
   state = {
@@ -195,6 +196,9 @@ export default class Navigation extends React.Component {
         return <div
           key={`divider_${index}`}
           style={{height: 1, width: '100%', backgroundColor: '#fff', opacity: 0.5}} />;
+      }
+      if (navigationItem.key === 'billing' && !this.props.billingEnabled) {
+        return null;
       }
       if (navigationItem.key === 'search') {
         if (!this.props.searchEnabled) {

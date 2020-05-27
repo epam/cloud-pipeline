@@ -108,6 +108,7 @@ export default class App extends Component {
               openSearchDialog={this.openSearchDialog}
               searchControlVisible={this.state.searchFormVisible}
               searchEnabled={preferences.loaded && preferences.searchEnabled}
+              billingEnabled={preferences.loaded && preferences.billingEnabled}
               router={this.props.router} />
           </Layout.Sider>
           <Layout.Content
