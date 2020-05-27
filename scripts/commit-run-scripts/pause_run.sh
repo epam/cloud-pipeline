@@ -50,7 +50,7 @@ commit_file_and_stop_docker() {
 
     commit_hook ${tmp_container} "post" false true ${POST_COMMIT_COMMAND}
 
-    pipe_exec "docker commit ${tmp_container} ${NEW_IMAGE_NAME} > /dev/null" "$TASK_NAME"
+    pipe_exec "docker commit --pause false ${tmp_container} ${NEW_IMAGE_NAME} > /dev/null" "$TASK_NAME"
     check_last_exit_code $? "[ERROR] Error occured while committing container" \
                             "[INFO] Container was successfully committed with name: $NEW_IMAGE_NAME"
 

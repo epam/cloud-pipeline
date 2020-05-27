@@ -70,7 +70,7 @@ commit_file() {
     image_name=$1
     pipe_log_info "[INFO] Committing pipeline's image ..." "$TASK_NAME"
 
-    pipe_exec "docker commit ${CONTAINER_ID} $image_name > /dev/null" "$TASK_NAME"
+    pipe_exec "docker commit --pause false ${CONTAINER_ID} $image_name > /dev/null" "$TASK_NAME"
 }
 
 install_pip() {
