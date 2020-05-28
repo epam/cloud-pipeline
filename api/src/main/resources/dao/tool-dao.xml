@@ -38,7 +38,8 @@
                         endpoints,
                         owner,
                         disk,
-                        instance_type)
+                        instance_type,
+                        link)
                     VALUES (
                         :ID,
                         :IMAGE,
@@ -53,7 +54,8 @@
                         :ENDPOINTS,
                         :OWNER,
                         :DISK,
-                        :INSTANCE_TYPE)
+                        :INSTANCE_TYPE,
+                        :LINK)
                 ]]>
             </value>
         </property>
@@ -82,30 +84,32 @@
                     SELECT
                         t.id,
                         t.image,
-                        t.description,
-                        t.short_description,
-                        t.cpu,
-                        t.ram,
+                        COALESCE(tl.description, t.description) AS description,
+                        COALESCE(tl.short_description, t.short_description) AS short_description,
+                        COALESCE(tl.cpu, t.cpu) AS cpu,
+                        COALESCE(tl.ram, t.ram) AS ram,
                         t.registry_id,
                         t.tool_group_id,
-                        t.default_command,
-                        t.labels,
-                        t.endpoints,
+                        COALESCE(tl.default_command, t.default_command) AS default_command,
+                        COALESCE(tl.labels, t.labels) AS labels,
+                        COALESCE(tl.endpoints, t.endpoints) AS endpoints,
                         t.owner,
-                        t.disk,
-                        t.instance_type,
-                        t.icon_id,
+                        COALESCE(tl.disk, t.disk) AS disk,
+                        COALESCE(tl.instance_type, t.instance_type) AS instance_type,
+                        COALESCE(tl.icon_id, t.icon_id) AS icon_id,
+                        t.link,
                         dr.path as registry,
                         dr.secret_name
                     FROM
                         pipeline.tool t
                     INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
+                    LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
                     WHERE
                         (:REGISTRY_ID IS NULL OR t.registry_id = :REGISTRY_ID)
                     AND
                         (array_length(:LABELS_TO_SEARCH, 1) IS NULL
                         OR array_length(:LABELS_TO_SEARCH, 1) = 0
-                        OR :LABELS_TO_SEARCH && t.labels)
+                        OR :LABELS_TO_SEARCH && COALESCE(tl.labels, t.labels))
                 ]]>
             </value>
         </property>
@@ -115,26 +119,27 @@
                     SELECT
                         t.id,
                         t.image,
-                        t.description,
-                        t.short_description,
-                        t.cpu,
-                        t.ram,
+                        COALESCE(tl.description, t.description) AS description,
+                        COALESCE(tl.short_description, t.short_description) AS short_description,
+                        COALESCE(tl.cpu, t.cpu) AS cpu,
+                        COALESCE(tl.ram, t.ram) AS ram,
                         t.registry_id,
                         t.tool_group_id,
-                        t.default_command,
-                        t.labels,
-                        t.endpoints,
+                        COALESCE(tl.default_command, t.default_command) AS default_command,
+                        COALESCE(tl.labels, t.labels) AS labels,
+                        COALESCE(tl.endpoints, t.endpoints) AS endpoints,
                         t.owner,
-                        t.disk,
-                        t.instance_type,
-                        t.icon_id,
+                        COALESCE(tl.disk, t.disk) AS disk,
+                        COALESCE(tl.instance_type, t.instance_type) AS instance_type,
+                        COALESCE(tl.icon_id, t.icon_id) AS icon_id,
+                        t.link,
                         dr.path as registry,
                         dr.secret_name
                     FROM
                         pipeline.tool t
                     INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
-                    AND
-                        t.id = ?
+                    LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
+                    WHERE t.id = ?
                 ]]>
             </value>
         </property>
@@ -151,24 +156,26 @@
                     SELECT
                         t.id,
                         t.image,
-                        t.description,
-                        t.short_description,
-                        t.cpu,
-                        t.ram,
+                        COALESCE(tl.description, t.description) AS description,
+                        COALESCE(tl.short_description, t.short_description) AS short_description,
+                        COALESCE(tl.cpu, t.cpu) AS cpu,
+                        COALESCE(tl.ram, t.ram) AS ram,
                         t.registry_id,
                         t.tool_group_id,
-                        t.default_command,
-                        t.labels,
-                        t.endpoints,
+                        COALESCE(tl.default_command, t.default_command) AS default_command,
+                        COALESCE(tl.labels, t.labels) AS labels,
+                        COALESCE(tl.endpoints, t.endpoints) AS endpoints,
                         t.owner,
-                        t.disk,
-                        t.instance_type,
-                        t.icon_id,
+                        COALESCE(tl.disk, t.disk) AS disk,
+                        COALESCE(tl.instance_type, t.instance_type) AS instance_type,
+                        COALESCE(tl.icon_id, t.icon_id) AS icon_id,
+                        t.link,
                         dr.path as registry,
                         dr.secret_name
                     FROM
                         pipeline.tool t
                     INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
+                    LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
                     WHERE
                         t.image = :IMAGE
                         AND
@@ -182,24 +189,26 @@
                     SELECT
                         t.id,
                         t.image,
-                        t.description,
-                        t.short_description,
-                        t.cpu,
-                        t.ram,
+                        COALESCE(tl.description, t.description) AS description,
+                        COALESCE(tl.short_description, t.short_description) AS short_description,
+                        COALESCE(tl.cpu, t.cpu) AS cpu,
+                        COALESCE(tl.ram, t.ram) AS ram,
                         t.registry_id,
                         t.tool_group_id,
-                        t.default_command,
-                        t.labels,
-                        t.endpoints,
+                        COALESCE(tl.default_command, t.default_command) AS default_command,
+                        COALESCE(tl.labels, t.labels) AS labels,
+                        COALESCE(tl.endpoints, t.endpoints) AS endpoints,
                         t.owner,
-                        t.disk,
-                        t.instance_type,
-                        t.icon_id,
+                        COALESCE(tl.disk, t.disk) AS disk,
+                        COALESCE(tl.instance_type, t.instance_type) AS instance_type,
+                        COALESCE(tl.icon_id, t.icon_id) AS icon_id,
+                        t.link,
                         dr.path as registry,
                         dr.secret_name
                     FROM
                         pipeline.tool t
                     INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
+                    LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
                     WHERE
                         t.tool_group_id = ?
                 ]]>
@@ -211,29 +220,31 @@
                     SELECT
                         t.id,
                         t.image,
-                        t.description,
-                        t.short_description,
-                        t.cpu,
-                        t.ram,
+                        COALESCE(tl.description, t.description) AS description,
+                        COALESCE(tl.short_description, t.short_description) AS short_description,
+                        COALESCE(tl.cpu, t.cpu) AS cpu,
+                        COALESCE(tl.ram, t.ram) AS ram,
                         t.registry_id,
                         t.tool_group_id,
-                        t.default_command,
-                        t.labels,
-                        t.endpoints,
+                        COALESCE(tl.default_command, t.default_command) AS default_command,
+                        COALESCE(tl.labels, t.labels) AS labels,
+                        COALESCE(tl.endpoints, t.endpoints) AS endpoints,
                         t.owner,
-                        t.disk,
-                        t.instance_type,
-                        t.icon_id,
+                        COALESCE(tl.disk, t.disk) AS disk,
+                        COALESCE(tl.instance_type, t.instance_type) AS instance_type,
+                        COALESCE(tl.icon_id, t.icon_id) AS icon_id,
+                        t.link,
                         dr.path as registry,
                         dr.secret_name,
 						count(i.issue_id) AS issues_count
                     FROM
                         pipeline.tool t
                     INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
-					LEFT JOIN issue AS i ON i.entity_id = t.id AND i.entity_class = 'TOOL'
+                    LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
+					LEFT JOIN issue AS i ON i.entity_id = COALESCE(tl.id, t.id) AND i.entity_class = 'TOOL'
                     WHERE
                         t.tool_group_id = ?
-					GROUP BY t.id, dr.path, dr.secret_name
+					GROUP BY t.id, tl.id, dr.path, dr.secret_name
                 ]]>
             </value>
         </property>
@@ -243,24 +254,26 @@
                     SELECT
                         t.id,
                         t.image,
-                        t.description,
-                        t.short_description,
-                        t.cpu,
-                        t.ram,
+                        COALESCE(tl.description, t.description) AS description,
+                        COALESCE(tl.short_description, t.short_description) AS short_description,
+                        COALESCE(tl.cpu, t.cpu) AS cpu,
+                        COALESCE(tl.ram, t.ram) AS ram,
                         t.registry_id,
                         t.tool_group_id,
-                        t.default_command,
-                        t.labels,
-                        t.endpoints,
+                        COALESCE(tl.default_command, t.default_command) AS default_command,
+                        COALESCE(tl.labels, t.labels) AS labels,
+                        COALESCE(tl.endpoints, t.endpoints) AS endpoints,
                         t.owner,
-                        t.disk,
-                        t.instance_type,
-                        t.icon_id,
+                        COALESCE(tl.disk, t.disk) AS disk,
+                        COALESCE(tl.instance_type, t.instance_type) AS instance_type,
+                        COALESCE(tl.icon_id, t.icon_id) AS icon_id,
+                        t.link,
                         dr.path as registry,
                         dr.secret_name
                     FROM
                         pipeline.tool t
                     INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
+                    LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
                     WHERE
                         t.image = :IMAGE AND dr.path != :REGISTRY
                 ]]>
@@ -272,24 +285,26 @@
                     SELECT
                         t.id,
                         t.image,
-                        t.description,
-                        t.short_description,
-                        t.cpu,
-                        t.ram,
+                        COALESCE(tl.description, t.description) AS description,
+                        COALESCE(tl.short_description, t.short_description) AS short_description,
+                        COALESCE(tl.cpu, t.cpu) AS cpu,
+                        COALESCE(tl.ram, t.ram) AS ram,
                         t.registry_id,
                         t.tool_group_id,
-                        t.default_command,
-                        t.labels,
-                        t.endpoints,
+                        COALESCE(tl.default_command, t.default_command) AS default_command,
+                        COALESCE(tl.labels, t.labels) AS labels,
+                        COALESCE(tl.endpoints, t.endpoints) AS endpoints,
                         t.owner,
-                        t.disk,
-                        t.instance_type,
-                        t.icon_id,
+                        COALESCE(tl.disk, t.disk) AS disk,
+                        COALESCE(tl.instance_type, t.instance_type) AS instance_type,
+                        COALESCE(tl.icon_id, t.icon_id) AS icon_id,
+                        t.link,
                         dr.path as registry,
                         dr.secret_name
                     FROM
                         pipeline.tool t
                     INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
+                    LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
                     WHERE
                         t.tool_group_id = :TOOL_GROUP_ID
                         AND t.image = :IMAGE

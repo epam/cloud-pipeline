@@ -41,6 +41,7 @@ public class Tool extends AbstractSecuredEntity {
     private String registry;
     private Long toolGroupId;
     private String toolGroup;
+    private Long link;
 
     @JsonIgnore
     private String secretName;

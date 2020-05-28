@@ -231,6 +231,7 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         OWNER,
         DISK,
         INSTANCE_TYPE,
+        LINK,
         ICON_ID
     }
 
@@ -266,6 +267,7 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         params.addValue(ToolParameters.OWNER.name(), tool.getOwner());
         params.addValue(ToolParameters.DISK.name(), tool.getDisk());
         params.addValue(ToolParameters.INSTANCE_TYPE.name(), tool.getInstanceType());
+        params.addValue(ToolParameters.LINK.name(), tool.getLink());
         Array labelsSqlArray = DaoHelper.mapListToSqlArray(tool.getLabels(), connection);
         params.addValue(ToolParameters.LABELS.name(), labelsSqlArray);
 
@@ -306,6 +308,10 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         tool.setOwner(rs.getString(ToolParameters.OWNER.name()));
         tool.setDisk(rs.getInt(ToolParameters.DISK.name()));
         tool.setInstanceType(rs.getString(ToolParameters.INSTANCE_TYPE.name()));
+        long link = rs.getLong(ToolParameters.LINK.name());
+        if (!rs.wasNull()) {
+            tool.setLink(link);
+        }
 
         long longVal = rs.getLong(ToolParameters.ICON_ID.name());
         tool.setHasIcon(!rs.wasNull());
