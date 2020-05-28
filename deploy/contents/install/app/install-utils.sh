@@ -295,10 +295,10 @@ EOF
             print_info "Azure access keys are defined via CP_CLOUD_CREDENTIALS_FILE"
         elif [ ! -z $CP_AZURE_PROFILE_FILE ] && [ ! -z $CP_AZURE_ACCESS_TOKEN_FILE ]; then
             print_info "Azure access keys are defined via CP_AZURE_PROFILE_FILE and CP_AZURE_ACCESS_TOKEN_FILE env vars"
-        elif [ -f ~/.azure/azureProfile.json ] && [ -f ~/.azure/accessTokens.json ]; then
+        elif [ -f /root/.azure/azureProfile.json ] && [ -f /root/.azure/accessTokens.json ]; then
             print_info "Azure access keys are defined via CLI auth files"
-            export CP_AZURE_PROFILE_FILE="~/.azure/azureProfile.json"
-            export CP_AZURE_ACCESS_TOKEN_FILE="~/.azure/accessTokens.json"
+            export CP_AZURE_PROFILE_FILE="/root/.azure/azureProfile.json"
+            export CP_AZURE_ACCESS_TOKEN_FILE="/root/.azure/accessTokens.json"
         else
             print_err "Azure access keys are not defined, please use -env option to define CP_CLOUD_CREDENTIALS_FILE path to the azure credentials"
             return 1

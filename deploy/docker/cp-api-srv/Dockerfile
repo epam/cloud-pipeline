@@ -66,10 +66,10 @@ RUN pip install -I awscli==1.16.139 \
 # Azure - specific packages
 RUN pip install -I  azure-common==1.1.18 \
                     azure==4.0.0 \
-                    azure-mgmt-resource==2.1.0 \
+                    azure-mgmt-resource==2.0.0 \
                     azure-mgmt-compute==4.5.1 \
                     azure-mgmt-containerinstance==1.4.1 \
-                    azure-cli-core==2.0.61
+                    azure-cli-core==2.0.52
 
 # GCP - specific packages
 RUN pip install -I google-api-python-client
