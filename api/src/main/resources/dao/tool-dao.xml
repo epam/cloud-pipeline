@@ -70,11 +70,20 @@
                         default_command = :DEFAULT_COMMAND,
                         labels = :LABELS,
                         endpoints = :ENDPOINTS,
-                        owner = :OWNER,
                         disk = :DISK,
                         instance_type = :INSTANCE_TYPE
                     WHERE
                         image = :IMAGE AND registry_id = :REGISTRY_ID
+                ]]>
+            </value>
+        </property>
+        <property name="updateOwnerQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.tool SET
+                        owner = :OWNER
+                    WHERE
+                        id = :ID
                 ]]>
             </value>
         </property>

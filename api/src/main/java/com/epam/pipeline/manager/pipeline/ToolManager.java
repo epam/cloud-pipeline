@@ -232,7 +232,7 @@ public class ToolManager implements SecuredEntityManager {
     public AbstractSecuredEntity changeOwner(Long id, String owner) {
         Tool tool = toolDao.loadTool(id);
         tool.setOwner(owner);
-        toolDao.updateTool(tool);
+        toolDao.updateOwner(tool);
         return tool;
     }
 

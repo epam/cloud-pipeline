@@ -302,6 +302,31 @@ public class ToolDaoTest extends AbstractSpringTest {
         final ToolWithIssuesCount loadedSymlink = loadToolWithIssuesCount(symlink);
         assertThat(loadedSymlink.getIssuesCount(), is(2L));
     }
+    
+    @Test
+    @Transactional
+    public void testToolOwnerCanBeUpdatedUsingTheCorrespondingMethod() {
+        final Tool tool = createTool();
+        tool.setOwner(TEST_ANOTHER_USER);
+        
+        toolDao.updateOwner(tool);
+
+        final Tool loadedTool = toolDao.loadTool(tool.getId());
+        assertThat(loadedTool.getOwner(), is(TEST_ANOTHER_USER));
+    }
+    
+    @Test
+    @Transactional
+    public void testSymlinkOwnerCanBeUpdatedUsingTheCorrespondingMethod() {
+        final Tool tool = createTool();
+        final Tool symlink = createSymlink(tool);
+        symlink.setOwner(TEST_USER);
+        
+        toolDao.updateOwner(symlink);
+
+        final Tool loadedSymlink = toolDao.loadTool(symlink.getId());
+        assertThat(loadedSymlink.getOwner(), is(TEST_USER));
+    }
 
     private Tool createTool() {
         final Tool tool = generateToolWithAllFields();

@@ -57,6 +57,7 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
 
     private String createToolQuery;
     private String updateToolQuery;
+    private String updateOwnerQuery;
     private String loadToolQuery;
     private String loadAllToolsQuery;
     private String loadToolsByGroupQuery;
@@ -95,6 +96,11 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void updateTool(Tool tool) {
         getNamedParameterJdbcTemplate().update(updateToolQuery, getParameters(tool, getConnection()));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void updateOwner(Tool tool) {
+        getNamedParameterJdbcTemplate().update(updateOwnerQuery, getParameters(tool, getConnection()));
     }
 
     public List<Tool> loadAllTools(Long registryId) {
@@ -371,6 +377,11 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setUpdateToolQuery(String updateToolQuery) {
         this.updateToolQuery = updateToolQuery;
+    }
+
+    @Required
+    public void setUpdateOwnerQuery(String updateOwnerQuery) {
+        this.updateOwnerQuery = updateOwnerQuery;
     }
 
     @Required
