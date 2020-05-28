@@ -32,8 +32,17 @@ SYNC_GIT_PERIOD=${SYNC_GIT_PERIOD:-300}
 python $SYNC_GIT_HOME/syncgit.py configure --api=$SYNC_GIT_API --key=$SYNC_GIT_API_KEY
 
 # Start sync loop
-mkdir -p /opt/git-sync/logs
+SYNC_LOG_FILE_NAME="${SYNC_LOG_FILE_NAME:-/opt/git-sync/logs/syncgit.log}"
+mkdir -p "$(dirname $SYNC_LOG_FILE_NAME)"
 while "true"; do
-    python $SYNC_GIT_HOME/syncgit.py sync | tee -a /opt/git-sync/logs/syncgit.log
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] General sync iteration" | tee -a $SYNC_LOG_FILE_NAME
+    python $SYNC_GIT_HOME/syncgit.py sync | tee -a $SYNC_LOG_FILE_NAME
+
+    if [ "$SYNC_GIT_FORCE_USERS_ENABLED" == "true" ]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Users sync iteration" | tee -a $SYNC_LOG_FILE_NAME
+        python $SYNC_GIT_HOME/syncgit.py sync-users "https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}"
+    fi
+    
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Iteration done" | tee -a $SYNC_LOG_FILE_NAME
     sleep $SYNC_GIT_PERIOD
 done
