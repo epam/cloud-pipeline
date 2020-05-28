@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.datastorage.providers.nfs;
 
+import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
@@ -31,19 +32,21 @@ public class NFSHelperTest {
 
     @Test
     public void getNFSMountOption() {
-        String result = NFSHelper.getNFSMountOption(new AwsRegion(), null, EMPTY_STRING);
+        String protocol = MountType.NFS.getProtocol();
+        String result = NFSHelper.getNFSMountOption(new AwsRegion(), null, EMPTY_STRING, protocol);
         Assert.assertEquals(EMPTY_STRING, result);
 
+        protocol = MountType.SMB.getProtocol();
         AzureRegion azureRegion = ObjectCreatorUtils.getDefaultAzureRegion(RESOURCE_GROUP, "account");
         AzureRegionCredentials credentials = ObjectCreatorUtils.getAzureCredentials("key");
-        result = NFSHelper.getNFSMountOption(azureRegion, credentials, EMPTY_STRING);
+        result = NFSHelper.getNFSMountOption(azureRegion, credentials, EMPTY_STRING, protocol);
         Assert.assertEquals("-o ,username=account,password=key", result);
 
-        result = NFSHelper.getNFSMountOption(azureRegion, credentials, "options");
+        result = NFSHelper.getNFSMountOption(azureRegion, credentials, "options", protocol);
         Assert.assertEquals("-o options,username=account,password=key", result);
 
         azureRegion = ObjectCreatorUtils.getDefaultAzureRegion(RESOURCE_GROUP, null);
-        result = NFSHelper.getNFSMountOption(azureRegion, null, EMPTY_STRING);
+        result = NFSHelper.getNFSMountOption(azureRegion, null, EMPTY_STRING, protocol);
         Assert.assertEquals(EMPTY_STRING, result);
 
     }

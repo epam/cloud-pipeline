@@ -179,7 +179,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
                          regionManager.loadCredentials(cloudRegion) : null;
 
                 String mountOptions = NFSHelper.getNFSMountOption(cloudRegion, credentials,
-                        dataStorage.getMountOptions());
+                        dataStorage.getMountOptions(), protocol);
 
                 String rootNfsPath = formatNfsPath(getNfsRootPath(dataStorage.getPath()), protocol);
 
