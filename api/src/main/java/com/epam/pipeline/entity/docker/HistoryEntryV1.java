@@ -21,9 +21,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class HistoryEntry {
+@JsonIgnoreProperties(ignoreUnknown=true)
+public class HistoryEntryV1 {
 
-    @JsonProperty("v1Compatibility")
-    private String v1Compatibility;
+    @JsonProperty("created")
+    private String created;
+
+    @JsonProperty("container_config")
+    private ContainerConfig containerConfig;
 }

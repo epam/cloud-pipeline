@@ -16,9 +16,10 @@
 
 package com.epam.pipeline.manager.docker;
 
+import com.epam.pipeline.entity.docker.ContainerConfig;
 import com.epam.pipeline.entity.docker.HistoryEntry;
+import com.epam.pipeline.entity.docker.HistoryEntryV1;
 import com.epam.pipeline.entity.docker.RawImageDescription;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 
@@ -32,70 +33,68 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 public final class DockerParsingUtils {
     private static final int MAX_MICRO_SECONDS_LENGTH = 9;
     private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
-    private static final String PATTERN = "created\\W*([\\d-]+)T([\\d:.]+)";
+    private static final String PATTERN = "([\\d-]+)T([\\d:.]+)";
     private static final DateTimeFormatter FORMATTER = new DateTimeFormatterBuilder()
             .appendPattern(DATE_TIME_FORMAT)
             .appendFraction(ChronoField.MICRO_OF_SECOND, 0, MAX_MICRO_SECONDS_LENGTH, true)
             .toFormatter();
     private static final String NOP_PREFIX = "#(nop)";
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    public static Date getEarliestDate(RawImageDescription rawImage) {
-        return rawImage.getHistory()
-                .stream()
-                .map(historyEntry -> parseDate(historyEntry.getV1Compatibility()))
-                .sorted()
-                .findFirst()
-                .orElseThrow(RuntimeException::new);
+    public static Date getEarliestDate(final RawImageDescription rawImage) {
+        return getMinElement(getDateStream(rawImage), Comparator.naturalOrder());
     }
 
-    public static Date getLatestDate(RawImageDescription rawImage) {
-        return rawImage.getHistory()
-                .stream()
-                .map(historyEntry -> parseDate(historyEntry.getV1Compatibility()))
-                .sorted(Comparator.reverseOrder())
-                .findFirst()
-                .orElseThrow(RuntimeException::new);
+    public static Date getLatestDate(final RawImageDescription rawImage) {
+        return getMinElement(getDateStream(rawImage), Comparator.reverseOrder());
     }
 
     public static List<String> getBuildHistory(final RawImageDescription rawImage) {
-        final List<String> commands = rawImage.getHistory().stream()
-            .map(DockerParsingUtils::extractCommand)
+        final List<String> commandsHistory = getHistoryEntryStream(rawImage)
+            .map(HistoryEntryV1::getContainerConfig)
+            .map(ContainerConfig::getCommands)
+            .map(commands -> String.join(StringUtils.EMPTY, commands))
+            .map(DockerParsingUtils::cropNopPrefix)
             .map(command -> command.replaceAll("\\t", StringUtils.EMPTY))
-            .map(String::trim)
             .collect(Collectors.toList());
-        Collections.reverse(commands);
-        return commands;
+        Collections.reverse(commandsHistory);
+        return commandsHistory;
     }
 
-    private static String extractCommand(final HistoryEntry v1Compatibility) {
-        final ObjectMapper mapper = new ObjectMapper();
+    private static Stream<HistoryEntryV1> getHistoryEntryStream(final RawImageDescription rawImage) {
+        return rawImage.getHistory().stream()
+            .map(HistoryEntry::getV1Compatibility)
+            .map(DockerParsingUtils::parseHistoryEntry);
+    }
+
+    private static HistoryEntryV1 parseHistoryEntry(final String jsonString) {
         try {
-            final JsonNode jsonNode = mapper.readValue(v1Compatibility.getV1Compatibility(), JsonNode.class);
-            final String fullCommand = Optional.ofNullable(jsonNode.get("container_config"))
-                .map(config -> config.get("Cmd"))
-                .map(Iterable::spliterator)
-                .map(spliterator -> StreamSupport.stream(spliterator, false))
-                .orElse(Stream.empty())
-                .map(JsonNode::asText)
-                .collect(Collectors.joining());
-            final int nopIndex = fullCommand.lastIndexOf(NOP_PREFIX);
-            return nopIndex == -1
-                   ? fullCommand
-                   : fullCommand.substring(nopIndex + NOP_PREFIX.length() + 1);
+            return MAPPER.readValue(jsonString, HistoryEntryV1.class);
         } catch (IOException e) {
             throw new IllegalArgumentException(
                 "History entry received has illegal format and can't be parsed correctly.");
         }
+    }
+
+    private static String cropNopPrefix(final String command) {
+        final int nopIndex = command.lastIndexOf(NOP_PREFIX);
+        return nopIndex == -1
+               ? command
+               : command.substring(nopIndex + NOP_PREFIX.length() + 1);
+    }
+
+    private static Stream<Date> getDateStream(final RawImageDescription rawImage) {
+        return getHistoryEntryStream(rawImage)
+            .map(HistoryEntryV1::getCreated)
+            .map(DockerParsingUtils::parseDate);
     }
 
     private static Date parseDate(String v1Compatibility) {
@@ -112,6 +111,10 @@ public final class DockerParsingUtils {
 
     private static LocalDateTime extractDateTime(String date, String time) {
         return LocalDateTime.parse(date + " " + time, FORMATTER);
+    }
+
+    private static <T> T getMinElement(Stream<T> stream, Comparator<T> comparator) {
+        return stream.min(comparator).orElseThrow(RuntimeException::new);
     }
 
     private DockerParsingUtils() {

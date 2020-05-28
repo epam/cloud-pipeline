@@ -138,7 +138,8 @@ public class ToolApiService {
         if (toolScanResult != null) {
             return new ToolScanResultView(toolScanResult.getToolId(),
                     toolScanResult.getToolVersionScanResults().values().stream().map(vsr ->
-                            ToolVersionScanResultView.from(vsr, toolManager.isToolOSVersionAllowed(vsr.getToolOSVersion()))
+                            ToolVersionScanResultView.from(vsr,
+                                                           toolManager.isToolOSVersionAllowed(vsr.getToolOSVersion()))
                     ).collect(Collectors.toMap(ToolVersionScanResultView::getVersion, vsrv -> vsrv)));
         } else {
             return null;

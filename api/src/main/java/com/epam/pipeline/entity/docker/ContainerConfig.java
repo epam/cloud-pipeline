@@ -20,10 +20,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
-@Data
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class HistoryEntry {
+import java.util.List;
 
-    @JsonProperty("v1Compatibility")
-    private String v1Compatibility;
+@Data
+@JsonIgnoreProperties(ignoreUnknown=true)
+public class ContainerConfig {
+
+    @JsonProperty("Cmd")
+    private List<String> commands;
 }
