@@ -498,7 +498,7 @@ class NFSMounter(StorageMounter):
         mount_options = self.storage.mount_options if self.storage.mount_options else self.share_mount.mount_options
 
         region_id = str(self.share_mount.region_id) if self.share_mount.region_id is not None else ""
-        if os.getenv("CP_CLOUD_PROVIDER_" + region_id) == "AZURE":
+        if os.getenv("CP_CLOUD_PROVIDER_" + region_id) == "AZURE" and self.share_mount.mount_type == "SMB":
             az_acc_id, az_acc_key, _, _ = self._get_credentials_by_region_id(region_id)
             creds_options = ",".join(["username=" + az_acc_id, "password=" + az_acc_key])
 
