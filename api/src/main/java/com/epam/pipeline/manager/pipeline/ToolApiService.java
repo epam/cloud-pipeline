@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,6 +113,12 @@ public class ToolApiService {
             + "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')")
     public ImageDescription getImageDescription(Long id, String tag) {
         return toolManager.loadToolDescription(id, tag);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') OR "
+            + "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')")
+    public List<String> getImageHistory(final Long id, final String tag) {
+        return toolManager.loadToolHistory(id, tag);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)

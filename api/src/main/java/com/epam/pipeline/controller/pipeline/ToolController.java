@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -177,6 +177,20 @@ public class ToolController extends AbstractRestController {
     public Result<ImageDescription> loadImageDescription(@PathVariable final Long id,
             @RequestParam(value = "tag") final String tag) {
         return Result.success(toolApiService.getImageDescription(id, tag));
+    }
+
+    @RequestMapping(value = "/tool/{id}/history", method= RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+        value = "Returns a history of a tool, specified by ID and tag.",
+        notes = "Returns a history of a tool, which contains list of commands by layers of the image.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        })
+    public Result<List<String>> loadImageHistory(@PathVariable final Long id,
+                                                 @RequestParam(value = "tag") final String tag) {
+        return Result.success(toolApiService.getImageHistory(id, tag));
     }
 
     @RequestMapping(value = "/tool/scan", method = RequestMethod.POST)

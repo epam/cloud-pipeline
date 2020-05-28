@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -178,6 +178,16 @@ public class DockerClient {
         RawImageDescription rawImage = getRawImageDescription(registry, imageName, tag, getAuthHeaders());
         rawImage.setRegistry(registry.getId());
         return rawImage.getImageDescription();
+    }
+
+    /**
+     * Returns a history of commands called during an image build, retrieved from image manifest
+     * @param registry a registry to search version in
+     * @param imageName an image name
+     * @param tag an image tag
+     */
+    public List<String> getImageHistory(final DockerRegistry registry, final String imageName, final String tag) {
+        return DockerParsingUtils.getBuildHistory(getRawImageDescription(registry, imageName, tag, getAuthHeaders()));
     }
 
     /**
@@ -397,6 +407,6 @@ public class DockerClient {
     }
 
     private Date getLatestDate(DockerRegistry registry, String imageName, String tag) {
-        return DockerDateUtils.getLatestDate(getRawImageDescription(registry, imageName, tag, getAuthHeaders()));
+        return DockerParsingUtils.getLatestDate(getRawImageDescription(registry, imageName, tag, getAuthHeaders()));
     }
 }

@@ -399,6 +399,13 @@ public class ToolManager implements SecuredEntityManager {
                 dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag);
     }
 
+    public List<String> loadToolHistory(final Long id, final String tag) {
+        final Tool tool = load(id);
+        Assert.notNull(tool, messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND, id));
+        return dockerRegistryManager.getImageHistory(
+                dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag);
+    }
+
     @Transactional(propagation = Propagation.REQUIRED)
     public void updateToolVulnerabilities(List<Vulnerability> vulnerabilities, long toolId, String version) {
         LOGGER.debug("Update tool with id: " + toolId + " and version "
