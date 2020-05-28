@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.docker.ImageDescription;
+import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.docker.ToolVersion;
@@ -399,7 +400,7 @@ public class ToolManager implements SecuredEntityManager {
                 dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag);
     }
 
-    public List<String> loadToolHistory(final Long id, final String tag) {
+    public List<ImageHistoryLayer> loadToolHistory(final Long id, final String tag) {
         final Tool tool = load(id);
         Assert.notNull(tool, messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND, id));
         return dockerRegistryManager.getImageHistory(

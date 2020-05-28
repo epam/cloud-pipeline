@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.docker.ImageDescription;
+import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.Tool;
@@ -117,7 +118,7 @@ public class ToolApiService {
 
     @PreAuthorize("hasRole('ADMIN') OR "
             + "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')")
-    public List<String> getImageHistory(final Long id, final String tag) {
+    public List<ImageHistoryLayer> getImageHistory(final Long id, final String tag) {
         return toolManager.loadToolHistory(id, tag);
     }
 

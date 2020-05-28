@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.docker.DockerRegistryList;
 import com.epam.pipeline.entity.docker.DockerRegistrySecret;
 import com.epam.pipeline.entity.docker.ImageDescription;
+import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.DockerRegistryEvent;
@@ -309,7 +310,8 @@ public class DockerRegistryManager implements SecuredEntityManager {
                 .getImageDescription(registry, imageName, tag);
     }
 
-    public List<String> getImageHistory(final DockerRegistry registry, final String imageName, final String tag) {
+    public List<ImageHistoryLayer> getImageHistory(final DockerRegistry registry, final String imageName,
+                                                   final String tag) {
         final String token = getImageToken(registry, imageName);
         return dockerClientFactory.getDockerClient(registry, token).getImageHistory(registry, imageName, tag);
     }
