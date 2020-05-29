@@ -57,6 +57,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.security.AuthManager;
+import org.springframework.util.StreamUtils;
 
 public class ToolDaoTest extends AbstractSpringTest {
 
@@ -85,6 +86,13 @@ public class ToolDaoTest extends AbstractSpringTest {
     private static final Integer DISK = 100;
     private static final String INSTANCE_TYPE = "Instance type";
     private static final Long NO_LINK = null;
+    private static final byte[] BYTES = getRandomBytes();
+
+    private static byte[] getRandomBytes() {
+        final byte[] bytes = new byte[10];
+        new Random().nextBytes(bytes);
+        return bytes;
+    }
 
     private DockerRegistry firstRegistry;
     private DockerRegistry secondRegistry;
@@ -216,9 +224,7 @@ public class ToolDaoTest extends AbstractSpringTest {
         tool.setToolGroupId(library1.getId());
         toolDao.createTool(tool);
 
-        byte[] randomBytes = new byte[10];
-        new Random().nextBytes(randomBytes);
-        long iconId = toolDao.updateIcon(tool.getId(), TEST_FILE_NAME, randomBytes);
+        long iconId = toolDao.updateIcon(tool.getId(), TEST_FILE_NAME, BYTES);
 
         Tool loaded = toolDao.loadTool(tool.getId());
         Assert.assertTrue(loaded.isHasIcon());
@@ -240,13 +246,12 @@ public class ToolDaoTest extends AbstractSpringTest {
             IOUtils.copy(imageStream, os);
             byte[] loadedBytes = os.toByteArray();
             for (int i = 0; i < loadedBytes.length; i++) {
-                Assert.assertEquals(randomBytes[i], loadedBytes[i]);
+                Assert.assertEquals(BYTES[i], loadedBytes[i]);
             }
         }
 
         // update again
-        new Random().nextBytes(randomBytes);
-        toolDao.updateIcon(tool.getId(), TEST_FILE_NAME, randomBytes);
+        toolDao.updateIcon(tool.getId(), TEST_FILE_NAME, BYTES);
         loaded = toolDao.loadTool(tool.getId());
         Assert.assertTrue(loaded.isHasIcon());
 
@@ -327,6 +332,29 @@ public class ToolDaoTest extends AbstractSpringTest {
         final Tool loadedSymlink = toolDao.loadTool(symlink.getId());
         assertThat(loadedSymlink.getOwner(), is(TEST_USER));
     }
+    
+    @Test
+    @Transactional
+    public void testToolIconCanBeLoaded() throws IOException {
+        final Tool tool = createTool();
+
+        final Pair<String, InputStream> icon = toolDao.loadIcon(tool.getId()).orElseThrow(RuntimeException::new);
+
+        assertThat(icon.getLeft(), is(TEST_FILE_NAME));
+        assertThat(StreamUtils.copyToByteArray(icon.getRight()), is(BYTES));
+    }
+    
+    @Test
+    @Transactional
+    public void testSymlinkIconCanBeLoaded() throws IOException {
+        final Tool tool = createTool();
+        final Tool symlink = createSymlink(tool);
+
+        final Pair<String, InputStream> icon = toolDao.loadIcon(symlink.getId()).orElseThrow(RuntimeException::new);
+
+        assertThat(icon.getLeft(), is(TEST_FILE_NAME));
+        assertThat(StreamUtils.copyToByteArray(icon.getRight()), is(BYTES));
+    }
 
     private Tool createTool() {
         final Tool tool = generateToolWithAllFields();
@@ -379,9 +407,7 @@ public class ToolDaoTest extends AbstractSpringTest {
     }
 
     private long updateToolIcon(final Tool tool) {
-        byte[] randomBytes = new byte[10];
-        new Random().nextBytes(randomBytes);
-        return toolDao.updateIcon(tool.getId(), TEST_FILE_NAME, randomBytes);
+        return toolDao.updateIcon(tool.getId(), TEST_FILE_NAME, BYTES);
     }
 
     private void assertToolCannotBeLoaded(final Tool tool) {
