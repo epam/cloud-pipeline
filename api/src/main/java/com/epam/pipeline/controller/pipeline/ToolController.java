@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.scan.ToolScanPolicy;
 import com.epam.pipeline.entity.scan.ToolScanResultView;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
+import com.epam.pipeline.entity.tool.ToolSymlinkRequest;
 import com.epam.pipeline.manager.pipeline.ToolApiService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import io.swagger.annotations.Api;
@@ -295,5 +296,18 @@ public class ToolController extends AbstractRestController {
     public Result<List<ToolVersion>> loadToolVersionSettings(@PathVariable final Long toolId,
                                                              @RequestParam(required = false) final String version) {
         return Result.success(toolApiService.loadToolVersionSettings(toolId, version));
+    }
+
+    @RequestMapping(value = "/tool/symlink", method= RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Symlinks an existing tool.",
+            notes = "Symlinks an existing tool.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<Tool> symlinkTool(@RequestBody final ToolSymlinkRequest request) {
+        return Result.success(toolApiService.symlink(request));
     }
 }

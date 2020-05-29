@@ -87,6 +87,15 @@ public final class MessageConstants {
     public static final String ERROR_TOOL_VERSION_INVALID_SIZE = "error.tool.version.invalid.size";
     public static final String ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED = "error.tool.cloud.region.not.allowed";
 
+    public static final String ERROR_TOOL_SYMLINK_SOURCE_TOOL_ID_MISSING = "error.tool.symlink.source.tool.id.missing";
+    public static final String ERROR_TOOL_SYMLINK_TARGET_GROUP_ID_MISSING = 
+            "error.tool.symlink.target.group.id.missing";
+    public static final String ERROR_TOOL_SYMLINK_SOURCE_TOOL_NOT_FOUND = "error.tool.symlink.source.tool.not.found";
+    public static final String ERROR_TOOL_SYMLINK_TARGET_GROUP_NOT_FOUND = "error.tool.symlink.target.group.not.found";
+    public static final String ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED = 
+            "error.tool.symlink.modification.not.supported";
+    public static final String ERROR_TOOL_SYMLINK_TARGET_SYMLINK = "error.tool.symlink.target.symlink";
+
     // Registry messages
     public static final String DEBUG_DOCKER_REGISTRY_AUTO_ENABLE = "debug.docker.registry.auto.enable";
     public static final String DEBUG_DOCKER_REGISTRY_AUTO_ENABLE_SUCCESS = "debug.docker.registry.auto.enable.success";

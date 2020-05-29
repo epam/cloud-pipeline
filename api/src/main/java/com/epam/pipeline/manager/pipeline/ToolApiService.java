@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.scan.ToolScanResult;
 import com.epam.pipeline.entity.scan.ToolScanResultView;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResultView;
+import com.epam.pipeline.entity.tool.ToolSymlinkRequest;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
@@ -179,5 +180,14 @@ public class ToolApiService {
     @PreAuthorize("hasRole('ADMIN') OR hasPermission(#toolId, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')")
     public List<ToolVersion> loadToolVersionSettings(final Long toolId, final String version) {
         return toolVersionManager.loadToolVersionSettings(toolId, version);
+    }
+
+    // TODO 26.05.2020: Move to AclExpressions class
+    @PreAuthorize(AclExpressions.ADMIN_ONLY +
+            "OR hasPermission(#request.toolId, 'com.epam.pipeline.entity.pipeline.Tool', 'READ') " +
+            "AND hasRole('TOOL_GROUP_MANAGER') " +
+            "AND @grantPermissionManager.toolGroupPermission(#request.groupId, 'WRITE')")
+    public Tool symlink(final ToolSymlinkRequest request) {
+        return toolManager.symlink(request);
     }
 }

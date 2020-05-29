@@ -29,6 +29,8 @@ import com.epam.pipeline.entity.scan.ToolOSVersion;
 import com.epam.pipeline.entity.scan.ToolScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.tool.ToolSymlinkRequest;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.docker.DockerClient;
@@ -50,6 +52,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 
@@ -85,6 +90,8 @@ public class ToolManagerTest extends AbstractManagerTest {
     private static final String ON_DEMAND = "OnDemand";
     public static final String CENTOS = "centos";
     public static final String CENTOS_VERSION = "6.10";
+    private static final String TEST_SOURCE_IMAGE = "library/image";
+    private static final String TEST_SYMLINK_IMAGE = "test/image";
 
     @Autowired
     private DockerRegistryDao registryDao;
@@ -702,6 +709,93 @@ public class ToolManagerTest extends AbstractManagerTest {
         versionScan = toolManager.loadToolVersionScan(tool.getId(), LATEST_TAG).get();
         Assert.assertEquals(newScanDate, versionScan.getScanDate());
         Assert.assertEquals(scanDate, versionScan.getSuccessScanDate());
+    }
+
+    @Test
+    @Transactional
+    public void testSymlinkCreationFailsForNonExistingTool() {
+        assertThrows(IllegalArgumentException.class,
+                () -> toolManager.symlink(new ToolSymlinkRequest(null, firstToolGroup.getId())));
+        assertThrows(IllegalArgumentException.class,
+                () -> toolManager.symlink(new ToolSymlinkRequest(-1L, firstToolGroup.getId())));
+    }
+
+    @Test
+    @Transactional
+    public void testSymlinkCreationFailsForNonExistingToolGroup() {
+        final Tool tool = generateTool(TEST_GROUP_ID1);
+        tool.setToolGroupId(firstToolGroup.getId());
+        toolManager.create(tool, true);
+        
+        assertThrows(IllegalArgumentException.class,
+                () -> toolManager.symlink(new ToolSymlinkRequest(tool.getId(), null)));
+        assertThrows(IllegalArgumentException.class,
+                () -> toolManager.symlink(new ToolSymlinkRequest(tool.getId(), -1L)));
+    }
+
+    @Test
+    @Transactional
+    public void testSymlinkCreationFailsInTheSameToolGroup() {
+        final Tool tool = generateTool(TEST_GROUP_ID1);
+        tool.setImage(TEST_SOURCE_IMAGE);
+        tool.setToolGroupId(firstToolGroup.getId());
+        toolManager.create(tool, true);
+        
+        assertThrows(IllegalArgumentException.class,
+                () -> toolManager.symlink(new ToolSymlinkRequest(tool.getId(), firstToolGroup.getId())));
+    }
+
+    @Test
+    @Transactional
+    public void testSymlinkCreationFailsIfTheSameToolAlreadyExists() {
+        final Tool tool = generateTool(TEST_GROUP_ID2);
+        tool.setImage(TEST_SYMLINK_IMAGE);
+        tool.setToolGroupId(secondToolGroup.getId());
+        toolManager.create(tool, true);
+        
+        assertThrows(IllegalArgumentException.class,
+                () -> toolManager.symlink(new ToolSymlinkRequest(tool.getId(), secondToolGroup.getId())));
+    }
+
+    @Test
+    @Transactional
+    public void testSymlinkCreationShouldSaveNewToolWithAdaptedImageName() {
+        final Tool tool = generateTool(TEST_GROUP_ID1);
+        tool.setToolGroupId(firstToolGroup.getId());
+        toolManager.create(tool, true);
+
+        final Tool symlink = toolManager.symlink(new ToolSymlinkRequest(tool.getId(), secondToolGroup.getId()));
+
+        final Tool loadedSymlink = toolManager.load(symlink.getId());
+        assertThat(loadedSymlink.getImage(), is(TEST_SYMLINK_IMAGE));
+    }
+
+    @Test
+    @Transactional
+    public void testSymlinkModificationFails() {
+        final Tool tool = generateTool(TEST_GROUP_ID1);
+        tool.setToolGroupId(firstToolGroup.getId());
+        toolManager.create(tool, true);
+        final Tool symlink = toolManager.symlink(new ToolSymlinkRequest(tool.getId(), secondToolGroup.getId()));
+
+        assertThrows(IllegalArgumentException.class, () -> toolManager.deleteToolIcon(symlink.getId()));
+        assertThrows(IllegalArgumentException.class,
+                () -> toolManager.deleteToolVersion(firstRegistry.getPath(), symlink.getImage(), LATEST_TAG));
+        assertThrows(IllegalArgumentException.class,
+                () -> toolManager.clearToolScan(firstRegistry.getPath(), symlink.getImage(), LATEST_TAG));
+        assertThrows(IllegalArgumentException.class, () -> toolManager.updateTool(symlink));
+        assertThrows(IllegalArgumentException.class, 
+                () -> toolManager.updateToolVersionScanStatus(symlink.getId(), ToolScanStatus.COMPLETED, 
+                        DateUtils.now(), LATEST_TAG, new ToolOSVersion(CENTOS, CENTOS_VERSION), LAYER_REF, DIGEST));
+        assertThrows(IllegalArgumentException.class, 
+                () -> toolManager.updateToolVersionScanStatus(symlink.getId(), ToolScanStatus.COMPLETED, 
+                        DateUtils.now(), LATEST_TAG, LAYER_REF, DIGEST));
+        assertThrows(IllegalArgumentException.class, 
+                () -> toolManager.updateToolDependencies(Collections.emptyList(), symlink.getId(), LATEST_TAG));
+        assertThrows(IllegalArgumentException.class, 
+                () -> toolManager.updateToolVulnerabilities(Collections.emptyList(), symlink.getId(), LATEST_TAG));
+        assertThrows(IllegalArgumentException.class, 
+                () -> toolManager.updateWhiteListWithToolVersionStatus(symlink.getId(), LATEST_TAG, true));
     }
 
     private List<String> generateLabels(String... labels) {
