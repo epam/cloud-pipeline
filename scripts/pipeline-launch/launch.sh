@@ -457,6 +457,30 @@ function initialise_wrappers {
     export PATH="$_WRAPPERS_PATH_BKP"
 }
 
+# This function installs any prerequisite, which is not available in the public repos or it is not desired to use those
+function install_private_packages {
+      # Separate python distro setup
+      # ====
+      #    Delete an existing installation, if it's a paused run
+      #    We can probably keep it, but it will fail if we need to update a resumed run
+      rm -rf "${CP_USR_BIN}/conda"
+      CP_CONDA_DISTRO_URL="${CP_CONDA_DISTRO_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz}"
+      
+      # Download the distro from a public bucket
+      echo "Getting python distro from $CP_CONDA_DISTRO_URL"
+      wget -q "${CP_CONDA_DISTRO_URL}" -O "${TMP_DIR}/conda.tgz" &> /dev/null
+      if [ $? -ne 0 ]; then
+            echo "[ERROR] Can't download the python distro"
+            return 1
+      fi
+
+      # Unpack into the CP_USR_BIN
+      tar -zxf "${TMP_DIR}/conda.tgz" -C "${TMP_DIR}"
+      mv "${TMP_DIR}/conda" "${CP_USR_BIN}/"
+      rm -f "${TMP_DIR}/conda.tgz"
+      echo "Python distro is installed into ${CP_USR_BIN}/conda"
+}
+
 function list_storage_mounts() {
     local _MOUNT_ROOT="$1"
     echo $(df -T | awk 'index($2, "fuse")' | awk '{ print $7 }' | grep "^$_MOUNT_ROOT")
@@ -517,18 +541,38 @@ then
 fi
 
 # Install dependencies
+### First install whatever we need from the public repos
 _DEPS_INSTALL_COMMAND=
-get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python git curl wget fuse python-docutils tzdata acl \
-                                                            coreutils"
+_CP_INIT_DEPS_LIST="git curl wget fuse tzdata acl coreutils"
+get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "$_CP_INIT_DEPS_LIST"
 eval "$_DEPS_INSTALL_COMMAND"
 
-# Check if python2 installed, if no - fail, as we'll not be able to run Pipe CLI commands
-export CP_PYTHON2_PATH=$(command -v python2)
-if [ -z "$CP_PYTHON2_PATH" ]
-then
-      echo "[ERROR] python2 environment not found, exiting."
-      exit 1
+### Then install any "private"/preferred packages
+install_private_packages
+
+# Check if python2 installed:
+# If it was installed into a private location - use it
+# Otherwise - find the "global" version, if not found - try to install
+# If none found - fail, as we'll not be able to run Pipe CLI commands
+export CP_PYTHON2_PATH="/usr/cpbin/conda/bin/python2"
+if [ ! -f "$CP_PYTHON2_PATH" ]; then
+      echo "[WARN] Private python not found, trying to get the global one"
+      export CP_PYTHON2_PATH=$(command -v python2)
+      if [ -z "$CP_PYTHON2_PATH" ]
+      then
+            echo "[WARN] Global python not found as well, trying to install from a public repo"
+            _DEPS_INSTALL_COMMAND=
+            get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python python-docutils"
+            eval "$_DEPS_INSTALL_COMMAND"
+            export CP_PYTHON2_PATH=$(command -v python2)
+            if [ -z "$CP_PYTHON2_PATH" ]
+            then
+                  echo "[ERROR] python2 environment not found, exiting."
+                  exit 1
+            fi
+      fi    
 fi
+echo "Local python interpreter found: $CP_PYTHON2_PATH"
 
 check_python_module_installed "pip --version" || { curl -s https://bootstrap.pypa.io/get-pip.py | $CP_PYTHON2_PATH; };
 
@@ -658,6 +702,13 @@ fi
 echo "Creating default scripts directory at ${SCRIPTS_DIR}. Please use 'SCRIPTS_DIR' variable to run pipeline script"
 create_sys_dir $SCRIPTS_DIR
 
+# Setup directory for any CP-specific binaries/wrapper
+if [ -z "$CP_USR_BIN" ] ;
+    then 
+        export CP_USR_BIN="/usr/cpbin"
+        echo "CP_USR_BIN is not defined, setting to ${CP_USR_BIN}"
+fi
+create_sys_dir $CP_USR_BIN
 
 # Setup cluster specific variables directory
 if [ -z "$SHARED_FOLDER" ] ;
@@ -1193,10 +1244,6 @@ echo
 echo "Create restriction wrappers"
 echo "-"
 ######################################################
-
-CP_USR_BIN="/usr/cpbin"
-
-mkdir -p "$CP_USR_BIN"
 
 initialise_wrappers "$CP_RESTRICTING_PACKAGE_MANAGERS" "package_manager_restrictor" "$CP_USR_BIN"
 
