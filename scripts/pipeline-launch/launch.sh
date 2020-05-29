@@ -922,7 +922,7 @@ else
     cd ..
 fi
 
-#install pipe CLI
+# Install pipe CLI
 if [ "$CP_PIPELINE_CLI_FROM_DIST_TAR" ]; then
       install_pip_package PipelineCLI
 else
@@ -938,7 +938,7 @@ else
       chmod +x /usr/bin/pipe
 fi
 
-#install FS Browser
+# Install FS Browser
 if [ ! -z "$CP_SENSITIVE_RUN" ]; then
       echo "Run is sensitive, FSBrowser will not be installed"
 elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
@@ -951,6 +951,12 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
             echo "[ERROR] Unable to install FSBrowser"
             exit 1
       fi
+      # If the "private" python distro was used - symlink fsbrowser to the path, which is exported via PATH
+      CP_FSBROWSER_BIN=$(dirname $CP_PYTHON2_PATH)/fsbrowser
+      if [ -f "$CP_FSBROWSER_BIN" ]; then
+            ln -sf $CP_FSBROWSER_BIN $CP_USR_BIN/fsbrowser
+      fi
+
       fsbrowser_setup
       echo "------"
       echo
