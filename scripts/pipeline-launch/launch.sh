@@ -454,26 +454,27 @@ function initialise_wrappers {
 
 # This function installs any prerequisite, which is not available in the public repos or it is not desired to use those
 function install_private_packages {
+      local _install_path="$1"
+      local _tmp_install_dir="/tmp/"
       # Separate python distro setup
       # ====
       #    Delete an existing installation, if it's a paused run
       #    We can probably keep it, but it will fail if we need to update a resumed run
-      rm -rf "${CP_USR_BIN}/conda"
+      rm -rf "${_install_path}/conda"
       CP_CONDA_DISTRO_URL="${CP_CONDA_DISTRO_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz}"
       
       # Download the distro from a public bucket
       echo "Getting python distro from $CP_CONDA_DISTRO_URL"
-      wget -q "${CP_CONDA_DISTRO_URL}" -O "${TMP_DIR}/conda.tgz" &> /dev/null
+      wget -q "${CP_CONDA_DISTRO_URL}" -O "${_tmp_install_dir}/conda.tgz" &> /dev/null
       if [ $? -ne 0 ]; then
             echo "[ERROR] Can't download the python distro"
             return 1
       fi
 
-      # Unpack into the CP_USR_BIN
-      tar -zxf "${TMP_DIR}/conda.tgz" -C "${TMP_DIR}"
-      mv "${TMP_DIR}/conda" "${CP_USR_BIN}/"
-      rm -f "${TMP_DIR}/conda.tgz"
-      echo "Python distro is installed into ${CP_USR_BIN}/conda"
+      # Unpack and remove tarball
+      tar -zxf "${_tmp_install_dir}/conda.tgz" -C "${_install_path}"
+      rm -f "${_tmp_install_dir}/conda.tgz"
+      echo "Python distro is installed into ${_install_path}/conda"
 }
 
 function list_storage_mounts() {
@@ -546,10 +547,16 @@ else
       eval "$_DEPS_INSTALL_COMMAND"
 fi
 
-### Then install any "private"/preferred packages
-install_private_packages
+### Then Setup directory for any CP-specific binaries/wrapper
+### and install any "private"/preferred packages
+if [ -z "$CP_USR_BIN" ]; then 
+        export CP_USR_BIN="/usr/cpbin"
+        echo "CP_USR_BIN is not defined, setting to ${CP_USR_BIN}"
+fi
+create_sys_dir $CP_USR_BIN
+install_private_packages $CP_USR_BIN
 
-# Check if python2 installed:
+# Check if python2 is installed:
 # If it was installed into a private location - use it
 # Otherwise - find the "global" version, if not found - try to install
 # If none found - fail, as we'll not be able to run Pipe CLI commands
@@ -700,14 +707,6 @@ if [ -z "$SCRIPTS_DIR" ] ;
 fi
 echo "Creating default scripts directory at ${SCRIPTS_DIR}. Please use 'SCRIPTS_DIR' variable to run pipeline script"
 create_sys_dir $SCRIPTS_DIR
-
-# Setup directory for any CP-specific binaries/wrapper
-if [ -z "$CP_USR_BIN" ] ;
-    then 
-        export CP_USR_BIN="/usr/cpbin"
-        echo "CP_USR_BIN is not defined, setting to ${CP_USR_BIN}"
-fi
-create_sys_dir $CP_USR_BIN
 
 # Setup cluster specific variables directory
 if [ -z "$SHARED_FOLDER" ] ;
