@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,27 +25,27 @@ import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DockerDateUtilsTest {
-    private static final String LATEST_DATE = ",\"created\":\"2017-10-02T18:59:07.729529044Z\",";
-    private static final String EARLIEST_DATE = ",\"created\":\"2017-10-02T18:57:48.784338364Z\",";
-    private static final String SHORT_DATE = ",\"created\":\"2017-10-02T18:58:48.784338Z\",";
+public class DockerParsingUtilsTest {
+    private static final String LATEST_DATE_ENTRY_JSON = "{\"created\":\"2017-10-02T18:59:07.729529044Z\"}";
+    private static final String EARLIEST_DATE_ENTRY_JSON = "{\"created\":\"2017-10-02T18:57:48.784338364Z\"}";
+    private static final String SHORT_DATE_ENTRY_JSON = "{\"created\":\"2017-10-02T18:58:48.784338Z\"}";
     private static final int EARLIEST_MINUTES = 57;
     private static final int LATEST_MINUTES = 59;
 
     @Test
     public void shouldCalculateLatestAndEarliestDateTimeProperly() {
         HistoryEntry entryWithEarliestDate = new HistoryEntry();
-        entryWithEarliestDate.setV1Compatibility(EARLIEST_DATE);
+        entryWithEarliestDate.setV1Compatibility(EARLIEST_DATE_ENTRY_JSON);
         HistoryEntry entryWithLatestDate = new HistoryEntry();
-        entryWithLatestDate.setV1Compatibility(LATEST_DATE);
+        entryWithLatestDate.setV1Compatibility(LATEST_DATE_ENTRY_JSON);
         HistoryEntry entryWithShortDate = new HistoryEntry();
-        entryWithShortDate.setV1Compatibility(SHORT_DATE);
+        entryWithShortDate.setV1Compatibility(SHORT_DATE_ENTRY_JSON);
         RawImageDescription description = new RawImageDescription();
         description.setHistory(Arrays.asList(entryWithEarliestDate, entryWithLatestDate, entryWithShortDate));
 
-        assertThat(DockerDateUtils.getEarliestDate(description).toInstant().atZone(ZoneOffset.UTC).getMinute())
+        assertThat(DockerParsingUtils.getEarliestDate(description).toInstant().atZone(ZoneOffset.UTC).getMinute())
                 .isEqualTo(EARLIEST_MINUTES);
-        assertThat(DockerDateUtils.getLatestDate(description).toInstant().atZone(ZoneOffset.UTC).getMinute())
+        assertThat(DockerParsingUtils.getLatestDate(description).toInstant().atZone(ZoneOffset.UTC).getMinute())
                 .isEqualTo(LATEST_MINUTES);
     }
 }

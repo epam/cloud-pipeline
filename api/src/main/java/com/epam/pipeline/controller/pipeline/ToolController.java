@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.docker.ImageDescription;
+import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.Tool;
@@ -177,6 +178,20 @@ public class ToolController extends AbstractRestController {
     public Result<ImageDescription> loadImageDescription(@PathVariable final Long id,
             @RequestParam(value = "tag") final String tag) {
         return Result.success(toolApiService.getImageDescription(id, tag));
+    }
+
+    @RequestMapping(value = "/tool/{id}/history", method= RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+        value = "Returns a history of a tool, specified by ID and version.",
+        notes = "Returns a history of a tool, which contains list of commands by layers of the image.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        })
+    public Result<List<ImageHistoryLayer>> loadImageHistory(@PathVariable final Long id,
+                                                            @RequestParam(value = "version") final String version) {
+        return Result.success(toolApiService.getImageHistory(id, version));
     }
 
     @RequestMapping(value = "/tool/scan", method = RequestMethod.POST)

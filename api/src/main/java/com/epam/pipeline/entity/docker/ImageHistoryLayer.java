@@ -16,26 +16,11 @@
 
 package com.epam.pipeline.entity.docker;
 
-import com.epam.pipeline.manager.docker.DockerParsingUtils;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.Data;
 
-import java.util.Date;
+@Data
+public class ImageHistoryLayer {
 
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-public class ImageDescription {
-    private Long registryId;
-    private String image;
-    private String tag;
-    private Date createdDate;
-
-    public ImageDescription(RawImageDescription rawImage) {
-        this.registryId = rawImage.getRegistry();
-        this.image = rawImage.getImage();
-        this.tag = rawImage.getTag();
-        this.createdDate = DockerParsingUtils.getEarliestDate(rawImage);
-    }
+    private String command;
+    private Long size;
 }

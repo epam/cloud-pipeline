@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.docker.DockerRegistryList;
 import com.epam.pipeline.entity.docker.DockerRegistrySecret;
 import com.epam.pipeline.entity.docker.ImageDescription;
+import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.DockerRegistryEvent;
@@ -307,6 +308,12 @@ public class DockerRegistryManager implements SecuredEntityManager {
         String token = getImageToken(registry, imageName);
         return dockerClientFactory.getDockerClient(registry, token)
                 .getImageDescription(registry, imageName, tag);
+    }
+
+    public List<ImageHistoryLayer> getImageHistory(final DockerRegistry registry, final String imageName,
+                                                   final String tag) {
+        final String token = getImageToken(registry, imageName);
+        return dockerClientFactory.getDockerClient(registry, token).getImageHistory(registry, imageName, tag);
     }
 
     public List<String> loadImageTags(DockerRegistry registry, Tool tool) {
