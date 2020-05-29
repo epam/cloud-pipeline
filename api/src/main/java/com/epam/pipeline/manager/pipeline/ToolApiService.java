@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.docker.ImageDescription;
+import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.Tool;
@@ -115,6 +116,12 @@ public class ToolApiService {
         return toolManager.loadToolDescription(id, tag);
     }
 
+    @PreAuthorize("hasRole('ADMIN') OR "
+            + "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')")
+    public List<ImageHistoryLayer> getImageHistory(final Long id, final String tag) {
+        return toolManager.loadToolHistory(id, tag);
+    }
+
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public void forceScanTool(String registry, String image, String version, final Boolean rescan) {
         toolScanScheduler.forceScheduleScanTool(registry, image, version, rescan);
@@ -131,7 +138,8 @@ public class ToolApiService {
         if (toolScanResult != null) {
             return new ToolScanResultView(toolScanResult.getToolId(),
                     toolScanResult.getToolVersionScanResults().values().stream().map(vsr ->
-                            ToolVersionScanResultView.from(vsr, toolManager.isToolOSVersionAllowed(vsr.getToolOSVersion()))
+                            ToolVersionScanResultView.from(vsr,
+                                                           toolManager.isToolOSVersionAllowed(vsr.getToolOSVersion()))
                     ).collect(Collectors.toMap(ToolVersionScanResultView::getVersion, vsrv -> vsrv)));
         } else {
             return null;

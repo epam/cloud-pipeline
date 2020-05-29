@@ -16,26 +16,16 @@
 
 package com.epam.pipeline.entity.docker;
 
-import com.epam.pipeline.manager.docker.DockerParsingUtils;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 
-import java.util.Date;
+import java.util.List;
 
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-public class ImageDescription {
-    private Long registryId;
-    private String image;
-    private String tag;
-    private Date createdDate;
+@Data
+@JsonIgnoreProperties(ignoreUnknown=true)
+public class ContainerConfig {
 
-    public ImageDescription(RawImageDescription rawImage) {
-        this.registryId = rawImage.getRegistry();
-        this.image = rawImage.getImage();
-        this.tag = rawImage.getTag();
-        this.createdDate = DockerParsingUtils.getEarliestDate(rawImage);
-    }
+    @JsonProperty("Cmd")
+    private List<String> commands;
 }

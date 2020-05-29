@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.docker;
 
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.docker.ImageDescription;
+import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.docker.RawImageDescription;
 import com.epam.pipeline.entity.docker.RegistryListing;
@@ -67,11 +68,16 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * Provides methods to operate Docker Registry API
@@ -178,6 +184,44 @@ public class DockerClient {
         RawImageDescription rawImage = getRawImageDescription(registry, imageName, tag, getAuthHeaders());
         rawImage.setRegistry(registry.getId());
         return rawImage.getImageDescription();
+    }
+
+    /**
+     * Returns a history of commands called during an image build, retrieved from image manifest
+     * @param registry a registry to search version in
+     * @param imageName an image name
+     * @param tag an image tag
+     */
+    public List<ImageHistoryLayer> getImageHistory(final DockerRegistry registry, final String imageName,
+                                                   final String tag) {
+        final RawImageDescription rawImage = getRawImageDescription(registry, imageName, tag, getAuthHeaders());
+        final List<String> buildHistory = DockerParsingUtils.getBuildHistory(rawImage);
+        final Map<String, Long> layersSize = getLayersSize(registry, imageName, tag);
+        final List<String> layersDigest = getLayersDigestDirectCreationOrder(rawImage);
+        return IntStream.range(0, buildHistory.size())
+            .mapToObj(i -> {
+                final ImageHistoryLayer layer = new ImageHistoryLayer();
+                layer.setCommand(buildHistory.get(i));
+                layer.setSize(layersSize.getOrDefault(layersDigest.get(i), 0L));
+                return layer;
+            }).collect(Collectors.toList());
+    }
+
+    private Map<String, Long> getLayersSize(final DockerRegistry registry, final String imageName, final String tag) {
+        return getManifest(registry, imageName, tag)
+            .map(ManifestV2::getLayers)
+            .map(Collection::stream)
+            .orElse(Stream.empty())
+            .collect(Collectors.toMap(ManifestV2.Config::getDigest, ManifestV2.Config::getSize));
+    }
+
+    private List<String> getLayersDigestDirectCreationOrder(final RawImageDescription rawImage) {
+        final List<String> layers = rawImage.getFsLayers().stream()
+            .map(Map::values)
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
+        Collections.reverse(layers);
+        return layers;
     }
 
     /**
@@ -397,6 +441,6 @@ public class DockerClient {
     }
 
     private Date getLatestDate(DockerRegistry registry, String imageName, String tag) {
-        return DockerDateUtils.getLatestDate(getRawImageDescription(registry, imageName, tag, getAuthHeaders()));
+        return DockerParsingUtils.getLatestDate(getRawImageDescription(registry, imageName, tag, getAuthHeaders()));
     }
 }
