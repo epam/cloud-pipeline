@@ -33,7 +33,7 @@ data:
           "delegate": {
                "hairpinMode": true,
                "isDefaultGateway": true
-             }
+          },
           "log_level": "info",
           "datastore_type": "kubernetes",
           "nodename": "__KUBERNETES_NODE_NAME__",
