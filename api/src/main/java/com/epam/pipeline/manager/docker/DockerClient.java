@@ -212,7 +212,7 @@ public class DockerClient {
             .map(ManifestV2::getLayers)
             .map(Collection::stream)
             .orElse(Stream.empty())
-            .collect(Collectors.toMap(ManifestV2.Config::getDigest, ManifestV2.Config::getSize, Long::sum));
+            .collect(Collectors.toMap(ManifestV2.Config::getDigest, ManifestV2.Config::getSize, (s1, s2) -> s1));
     }
 
     private List<String> getLayersDigestDirectCreationOrder(final RawImageDescription rawImage) {
