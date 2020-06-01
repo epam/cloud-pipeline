@@ -71,4 +71,9 @@ public class Tool extends AbstractSecuredEntity {
         }
         return toolGroupId == null ? null : new ToolGroup(toolGroupId);
     }
+
+    @JsonIgnore
+    public boolean isSymlink() {
+        return link != null;
+    }
 }
