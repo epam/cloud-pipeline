@@ -50,6 +50,7 @@ import ToolVersion from '../tools/tool-version';
 import ToolScanningInfo from '../tools/tool-version/scanning-info';
 import ToolSettings from '../tools/tool-version/settings';
 import ToolPackages from '../tools/tool-version/packages';
+import ToolHistory from '../tools/tool-version/history';
 import ProjectHistory from '../pipelines/browser/ProjectHistory';
 
 @inject('history')
@@ -77,6 +78,7 @@ export default class AppRouter extends React.Component {
           <Route path="scaninfo" component={ToolScanningInfo} tabKey="scaninfo" />
           <Route path="settings" component={ToolSettings} tabKey="settings" />
           <Route path="packages" component={ToolPackages} tabKey="packages" />
+          <Route path="history" component={ToolHistory} tabKey="history" />
         </Route>
         <Route path="/tools(/:registryId(/:groupId))" component={Tools} />
         <Route path="/launch" component={LaunchPipeline} />
