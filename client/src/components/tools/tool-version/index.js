@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react/index';
+import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import LoadTool from '../../../models/tools/LoadTool';
 import {
@@ -24,7 +24,7 @@ import {
   Icon,
   Row,
   Tabs,
-  Card,
+  Card
 } from 'antd';
 import LoadingView from '../../special/LoadingView';
 import roleModel from '../../../utils/roleModel';
@@ -105,6 +105,7 @@ export default class ToolVersion extends React.Component {
           }
           <Tabs.TabPane key="settings" tab="SETTINGS" />
           <Tabs.TabPane key="packages" tab="PACKAGES" />
+          <Tabs.TabPane key="history" tab="IMAGE HISTORY" />
         </Tabs>
         <div style={{flex: 1, overflow: 'auto'}}>
           {this.props.children}
