@@ -176,6 +176,7 @@ class Logs extends React.Component {
           columns={columns}
           dataSource={this.logMessages}
           loading={this.logs.pending}
+          rowKey="eventId"
           size="small"
           pagination={false}
         />

@@ -24,10 +24,10 @@ import {
   Checkbox,
   DatePicker,
   Input,
+  Row,
   Select
 } from 'antd';
 import moment from 'moment-timezone';
-import UserName from '../../special/UserName';
 import SystemLogsFilterDictionaries from '../../../models/system-logs/filter-dictionaries';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
@@ -44,7 +44,7 @@ function Filter ({label, children, display = true}) {
   );
 }
 
-@inject('users')
+@inject('authenticatedUserInfo', 'users')
 @observer
 class Filters extends React.Component {
   state = {
@@ -75,6 +75,14 @@ class Filters extends React.Component {
       return ((this.dictionaries.value || {}).types || []).map(o => o);
     }
     return [];
+  }
+
+  @computed
+  get myUserName () {
+    if (this.props.authenticatedUserInfo.loaded) {
+      return this.props.authenticatedUserInfo.value.userName;
+    }
+    return undefined;
   }
 
   componentDidMount () {
@@ -109,6 +117,33 @@ class Filters extends React.Component {
     }, () => {
       onExpand && onExpand(!showAdvanced);
     });
+  };
+
+  getUserLabel = (user) => (
+    <span>{user.userName}{user.userName === this.myUserName ? <b> (you)</b> : ''}</span>
+  );
+
+  renderUserName = (user) => {
+    if (user.attributes) {
+      const getAttributesValues = () => {
+        const values = [];
+        for (let key in user.attributes) {
+          if (user.attributes.hasOwnProperty(key)) {
+            values.push(user.attributes[key]);
+          }
+        }
+        return values;
+      };
+      const attributesString = getAttributesValues().join(', ');
+      return (
+        <Row type="flex" style={{flexDirection: 'column'}}>
+          <Row>{this.getUserLabel(user)}</Row>
+          <Row><span style={{fontSize: 'smaller'}}>{attributesString}</span></Row>
+        </Row>
+      );
+    } else {
+      return user.userName;
+    }
   };
 
   render () {
@@ -223,6 +258,8 @@ class Filters extends React.Component {
           <Select
             allowClear
             showSearch
+            dropdownMatchSelectWidth={false}
+            optionLabelProp="label"
             mode="multiple"
             placeholder="User"
             style={commonStyle}
@@ -235,8 +272,12 @@ class Filters extends React.Component {
           >
             {
               this.users.map((user) => (
-                <Select.Option key={user.userName} value={user.userName}>
-                  <UserName userName={user.userName} />
+                <Select.Option
+                  key={user.userName}
+                  value={user.userName}
+                  label={this.getUserLabel(user)}
+                >
+                  {this.renderUserName(user)}
                 </Select.Option>
               ))
             }
