@@ -24,10 +24,10 @@ import {
   Checkbox,
   DatePicker,
   Input,
+  Row,
   Select
 } from 'antd';
 import moment from 'moment-timezone';
-import UserName from '../../special/UserName';
 import SystemLogsFilterDictionaries from '../../../models/system-logs/filter-dictionaries';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
@@ -44,7 +44,7 @@ function Filter ({label, children, display = true}) {
   );
 }
 
-@inject('users')
+@inject('authenticatedUserInfo', 'users')
 @observer
 class Filters extends React.Component {
   state = {
@@ -77,6 +77,14 @@ class Filters extends React.Component {
     return [];
   }
 
+  @computed
+  get myUserName () {
+    if (this.props.authenticatedUserInfo.loaded) {
+      return this.props.authenticatedUserInfo.value.userName;
+    }
+    return undefined;
+  }
+
   componentDidMount () {
     const {onInitialized} = this.props;
     onInitialized && onInitialized(this);
@@ -96,7 +104,26 @@ class Filters extends React.Component {
   get users () {
     const {users} = this.props;
     if (users.loaded) {
-      return (users.value || []);
+      const mapUserAttributes = (user) => {
+        if (user.attributes) {
+          const getAttributesValues = () => {
+            const values = [];
+            for (let key in user.attributes) {
+              if (user.attributes.hasOwnProperty(key)) {
+                values.push(user.attributes[key]);
+              }
+            }
+            return values;
+          };
+          return getAttributesValues().join(', ');
+        } else {
+          return user.userName;
+        }
+      };
+      return (users.value || []).map((user) => ({
+        ...user,
+        attributesString: mapUserAttributes(user) || ''
+      }));
     }
     return [];
   }
@@ -109,6 +136,23 @@ class Filters extends React.Component {
     }, () => {
       onExpand && onExpand(!showAdvanced);
     });
+  };
+
+  getUserLabel = (user) => (
+    <span>{user.userName}{user.userName === this.myUserName ? <b> (you)</b> : ''}</span>
+  );
+
+  renderUserName = (user) => {
+    if (user.attributesString) {
+      return (
+        <Row type="flex" style={{flexDirection: 'column'}}>
+          <Row>{this.getUserLabel(user)}</Row>
+          <Row><span style={{fontSize: 'smaller'}}>{user.attributesString}</span></Row>
+        </Row>
+      );
+    } else {
+      return user.userName;
+    }
   };
 
   render () {
@@ -223,20 +267,27 @@ class Filters extends React.Component {
           <Select
             allowClear
             showSearch
+            dropdownMatchSelectWidth={false}
+            optionLabelProp="label"
             mode="multiple"
             placeholder="User"
             style={commonStyle}
             filterOption={
               (input, option) =>
-                option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                option.props.attributesString.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
             value={users}
             onChange={onFieldChanged('users', true)}
           >
             {
               this.users.map((user) => (
-                <Select.Option key={user.userName} value={user.userName}>
-                  <UserName userName={user.userName} />
+                <Select.Option
+                  key={user.userName}
+                  value={user.userName}
+                  attributesString={user.attributesString}
+                  label={this.getUserLabel(user)}
+                >
+                  {this.renderUserName(user)}
                 </Select.Option>
               ))
             }
