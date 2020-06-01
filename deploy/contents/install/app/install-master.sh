@@ -209,13 +209,24 @@ unset bkp_http_proxy bkp_https_proxy bkp_no_proxy
 # --------------------------------
 
 # Apply flannel network config
-CP_KUBE_FLANNEL_YAML="$K8S_SPECS_HOME/kube-system/kube-flannel.yaml"
-if [ ! -f "$CP_KUBE_FLANNEL_YAML" ]; then
-  echo "Unable to find flannel spec file at ${CP_KUBE_FLANNEL_YAML}, exiting"
+CP_KUBE_NETWORK_YAML="$K8S_SPECS_HOME/kube-system/canal.yaml"
+if [ ! -f "$CP_KUBE_NETWORK_YAML" ]; then
+  echo "Unable to find flannel spec file at ${CP_KUBE_NETWORK_YAML}, exiting"
   exit 1
 fi
-envsubst '${CP_KUBE_FLANNEL_CIDR}' < "$CP_KUBE_FLANNEL_YAML" | kubectl apply -f -
+envsubst '${CP_KUBE_FLANNEL_CIDR}' < "$CP_KUBE_NETWORK_YAML" | kubectl apply -f -
 sleep 10
+
+# Create network policy if provided
+CP_KUBE_NETWORK_POLICY_PATH=${CP_KUBE_NETWORK_POLICY_PATH:-"$K8S_SPECS_HOME/kube-system/network-policy"}
+if [ ! -d "$CP_KUBE_NETWORK_POLICY_PATH" ] || [ ! -d "$CP_KUBE_NETWORK_POLICY_PATH" ]; then
+  print_warn "Network policies are not provided in the directory $CP_KUBE_NETWORK_POLICY_PATH"
+else
+  for entry in $(find $CP_KUBE_NETWORK_POLICY_PATH -type f -name "*.yaml"); do
+    print_info "Appling network policy from $entry"
+    kubectl apply -f "$entry"
+  done
+fi
 
 # --------------------------------
 
