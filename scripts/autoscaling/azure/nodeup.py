@@ -37,6 +37,7 @@ from pipeline import Logger, TaskStatus, PipelineAPI, pack_script_contents
 VM_NAME_PREFIX = "az-"
 UUID_LENGHT = 16
 
+DISABLE_ACCESS = 'disable_external_access'
 NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
 LIMIT_EXCEEDED_EXIT_CODE = 6
@@ -220,14 +221,17 @@ def run_instance(api_url, api_token, instance_name, instance_type, cloud_region,
     ins_key = read_ssh_key(ssh_pub_key)
     swap_size = get_swap_size(cloud_region, ins_type, is_spot)
     user_data_script = get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size)
+    access_config = get_access_config(cloud_region)
+    disable_external_access = False
+    if access_config is not None:
+        disable_external_access = DISABLE_ACCESS in access_config and access_config[DISABLE_ACCESS]
     if not is_spot:
-        create_public_ip_address(instance_name, run_id)
-        create_nic(instance_name, run_id)
+        create_nic(instance_name, run_id, disable_external_access)
         return create_vm(instance_name, run_id, instance_type, ins_img, ins_hdd,
                          user_data_script, ins_key, user, swap_size)
     else:
         return create_low_priority_vm(instance_name, run_id, instance_type, ins_img, ins_hdd,
-                                      user_data_script, ins_key, user, swap_size)
+                                      user_data_script, ins_key, user, swap_size, disable_external_access)
 
 
 def read_ssh_key(ssh_pub_key):
@@ -257,13 +261,7 @@ def create_public_ip_address(instance_name, run_id):
     return creation_result.result()
 
 
-def create_nic(instance_name, run_id):
-
-    public_ip_address = network_client.public_ip_addresses.get(
-        resource_group_name,
-        instance_name + '-ip'
-    )
-
+def create_nic(instance_name, run_id, disable_external_access):
     subnet_info = get_subnet_info()
     security_group_info = get_security_group_info()
 
@@ -271,7 +269,6 @@ def create_nic(instance_name, run_id):
         'location': zone,
         'ipConfigurations': [{
             'name': 'IPConfig',
-            'publicIpAddress': public_ip_address,
             'subnet': {
                 'id': subnet_info.id
             }
@@ -281,6 +278,15 @@ def create_nic(instance_name, run_id):
         },
         'tags': get_tags(run_id)
     }
+
+    if not disable_external_access:
+        create_public_ip_address(instance_name, run_id)
+        public_ip_address = network_client.public_ip_addresses.get(
+            resource_group_name,
+            instance_name + '-ip'
+        )
+        nic_params["ipConfigurations"][0]["publicIpAddress"] = public_ip_address
+
     creation_result = network_client.network_interfaces.create_or_update(
         resource_group_name,
         instance_name + '-nic',
@@ -288,6 +294,10 @@ def create_nic(instance_name, run_id):
     )
 
     return creation_result.result()
+
+
+def get_access_config(cloud_region):
+    return get_cloud_config_section(cloud_region, "access_config")
 
 
 def get_security_group_info():
@@ -444,7 +454,7 @@ def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_d
 
 
 def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image, disk, user_data_script,
-                           ssh_pub_key, user, swap_size):
+                           ssh_pub_key, user, swap_size, disable_external_access):
 
     pipe_log('Create VMScaleSet with low priority instance for run: {}'.format(run_id))
     resource_group, image_name = get_res_grp_and_res_name_from_string(instance_image, 'images')
@@ -487,9 +497,6 @@ def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image
                                 "ipConfigurations": [
                                     {
                                         "name": scale_set_name + "-ip",
-                                        "publicIPAddressConfiguration": {
-                                            "name": scale_set_name + "-publicip"
-                                        },
                                         "properties": {
                                             "subnet": {
                                                 "id": subnet_info.id
@@ -505,6 +512,11 @@ def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image
         },
         'tags': get_tags(run_id)
     }
+    if not disable_external_access:
+        vmss_parameters['properties']['virtualMachineProfile'] \
+                       ['network_profile']['networkInterfaceConfigurations'][0] \
+                       ['properties']['ipConfigurations'][0] \
+                       ['publicIPAddressConfiguration'] = {"name": scale_set_name + "-publicip"}
     create_node_resource(service, scale_set_name, vmss_parameters)
     return get_instance_name_and_private_ip_from_vmss(scale_set_name)
 

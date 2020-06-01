@@ -33,6 +33,7 @@ import utils
 VM_NAME_PREFIX = "az-"
 UUID_LENGHT = 16
 LOW_PRIORITY_INSTANCE_ID_TEMPLATE = '(az-[a-z0-9]{16})[0-9A-Z]{6}'
+DISABLE_ACCESS = 'disable_external_access'
 
 
 def azure_resource_type_cmp(r1, r2):
@@ -60,15 +61,17 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             user_data_script = utils.get_user_data_script(self.zone, ins_type, ins_img, kube_ip, kubeadm_token,
                                                           swap_size)
             instance_name = "az-" + uuid.uuid4().hex[0:16]
-
+            access_config = utils.get_access_config(self.cloud_region)
+            disable_external_access = False
+            if access_config is not None:
+                disable_external_access = DISABLE_ACCESS in access_config and access_config[DISABLE_ACCESS]
             if not is_spot:
-                self.__create_public_ip_address(instance_name, run_id)
-                self.__create_nic(instance_name, run_id)
+                self.__create_nic(instance_name, run_id, disable_external_access)
                 return self.__create_vm(instance_name, run_id, ins_type, ins_img, ins_hdd, user_data_script,
                                         ins_key, "pipeline", swap_size)
             else:
                 return self.__create_low_priority_vm(instance_name, run_id, ins_type, ins_img, ins_hdd,
-                                                     user_data_script, ins_key, "pipeline", swap_size)
+                                                     user_data_script, ins_key, "pipeline", swap_size, disable_external_access)
         except Exception as e:
             self.__delete_all_by_run_id(run_id)
             raise RuntimeError(e)
@@ -208,12 +211,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
 
         return creation_result.result()
 
-    def __create_nic(self, instance_name, run_id):
-
-        public_ip_address = self.network_client.public_ip_addresses.get(
-            self.resource_group_name,
-            instance_name + '-ip'
-        )
+    def __create_nic(self, instance_name, run_id, disable_external_access):
 
         subnet_info = self.__get_subnet_info()
         security_group_info = self.__get_security_group_info()
@@ -222,7 +220,6 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             'location': self.zone,
             'ipConfigurations': [{
                 'name': 'IPConfig',
-                'publicIpAddress': public_ip_address,
                 'subnet': {
                     'id': subnet_info.id
                 }
@@ -232,6 +229,15 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             },
             'tags': AzureInstanceProvider.get_tags(run_id)
         }
+
+        if not disable_external_access:
+            self.__create_public_ip_address(instance_name, run_id)
+            public_ip_address = self.network_client.public_ip_addresses.get(
+                self.resource_group_name,
+                instance_name + '-ip'
+            )
+            nic_params["ipConfigurations"][0]["publicIpAddress"] = public_ip_address
+
         creation_result = self.network_client.network_interfaces.create_or_update(
             self.resource_group_name,
             instance_name + '-nic',
@@ -316,7 +322,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         return instance_name, private_ip
 
     def __create_low_priority_vm(self, scale_set_name, run_id, instance_type, instance_image,
-                                 disk, user_data_script, ssh_pub_key, user, swap_size):
+                                 disk, user_data_script, ssh_pub_key, user, swap_size, disable_external_access):
 
         resource_group, image_name = AzureInstanceProvider.get_res_grp_and_res_name_from_string(instance_image, 'images')
 
@@ -358,9 +364,6 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                                     "ipConfigurations": [
                                         {
                                             "name": scale_set_name + "-ip",
-                                            "publicIPAddressConfiguration": {
-                                                "name": scale_set_name + "-publicip"
-                                            },
                                             "properties": {
                                                 "subnet": {
                                                     "id": subnet_info.id
@@ -377,6 +380,11 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             'tags': AzureInstanceProvider.get_tags(run_id)
         }
 
+        if not disable_external_access:
+            vmss_parameters['properties']['virtualMachineProfile'] \
+                ['network_profile']['networkInterfaceConfigurations'][0] \
+                ['properties']['ipConfigurations'][0] \
+                ['publicIPAddressConfiguration'] = {"name": scale_set_name + "-publicip"}
         self.__create_node_resource(service, scale_set_name, vmss_parameters)
 
         return self.__get_instance_name_and_private_ip_from_vmss(scale_set_name)
