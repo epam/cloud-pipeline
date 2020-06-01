@@ -955,6 +955,7 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
       CP_FSBROWSER_BIN=$(dirname $CP_PYTHON2_PATH)/fsbrowser
       if [ -f "$CP_FSBROWSER_BIN" ]; then
             ln -sf $CP_FSBROWSER_BIN $CP_USR_BIN/fsbrowser
+            ln -sf $CP_FSBROWSER_BIN /usr/bin/fsbrowser
       fi
 
       fsbrowser_setup
