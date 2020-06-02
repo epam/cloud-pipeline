@@ -909,7 +909,7 @@ else
     fi
     _INSTALL_RESULT=0
     tar xf pipe-common.tar.gz
-    $CP_PYTHON2_PATH -m pip install . -q -I
+    $CP_PYTHON2_PATH -m pip install . -q
     _INSTALL_RESULT=$?
     if [ "$_INSTALL_RESULT" -ne 0 ];
     then

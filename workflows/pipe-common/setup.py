@@ -24,6 +24,6 @@ setup(name='pipeline',
       packages=find_packages(),
       include_package_data=True,
       install_requires=[
-          'luigi', 'requests', 'pykube',
+          'luigi==2.8.13', 'requests==2.22.0', 'pykube==0.15.0',
       ],
       zip_safe=False)
