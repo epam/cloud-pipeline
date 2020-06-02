@@ -93,6 +93,9 @@ if [ $? -ne 0 ]; then
 fi
 
 # Configure the modules setup
+if [ -f $MODULES_INSTALL_DIR/init/profile.sh ]; then
+    rm -f /etc/profile.d/modules.sh
+fi
 ln -s $MODULES_INSTALL_DIR/init/profile.sh /etc/profile.d/modules.sh
 
 # Cleanup

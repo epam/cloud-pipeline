@@ -1350,6 +1350,7 @@ echo "-"
 
 if [ "$CP_CAP_MODULES" == "true" ]; then
       modules_setup
+      source /etc/profile.d/modules.sh
 else
     echo "Environment Modules support is not requested"
 fi
