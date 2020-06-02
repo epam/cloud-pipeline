@@ -38,8 +38,11 @@ public abstract class AbstractContextualPreferenceHandlerTest {
     static final List<String> SEVERAL_NAMES = Arrays.asList(NAME, ANOTHER_NAME);
     static final String VALUE = "value";
     static final String RESOURCE_ID = "1";
+    static final String ANOTHER_RESOURCE_ID = "2";
     final ContextualPreferenceExternalResource resource =
             new ContextualPreferenceExternalResource(level(), RESOURCE_ID);
+    final ContextualPreferenceExternalResource anotherResource =
+            new ContextualPreferenceExternalResource(level(), ANOTHER_RESOURCE_ID);
     final ContextualPreferenceExternalResource notSuitableResource =
             new ContextualPreferenceExternalResource(anotherLevel(), RESOURCE_ID);
 
