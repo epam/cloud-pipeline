@@ -40,7 +40,7 @@ public class UserExporter {
 
     private static final String LIST_DELIMITER = "|";
     private static final DateTimeFormatter USER_DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("yy-MM-dd HH:mm");
+            DateTimeFormatter.ofPattern("dd-MM-yy HH:mm");
 
     public String exportUsers(final PipelineUserExportVO exportSettings,
                               final Collection<PipelineUserWithStoragePath> users) {
