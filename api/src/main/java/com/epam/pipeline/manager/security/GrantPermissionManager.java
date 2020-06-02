@@ -226,8 +226,11 @@ public class GrantPermissionManager {
         Permission permission = permissionFactory.buildFromMask(grantVO.getMask());
         String sidName = grantVO.getUserName().toUpperCase();
         Sid sid = aclService.createOrGetSid(sidName, grantVO.getPrincipal());
-        LOGGER.info("Granting permissions. Entity: class={} id={},  mask: {}. Sid: name={} isPrincipal={}",
-                entity.getAclClass(), entity.getId(), permission.getMask(), sidName, grantVO.getPrincipal());
+        LOGGER.info("Granting permissions. Entity: class={} id={}, name={}, permission: {}" +
+                        " (mask: {}). Sid: name={} isPrincipal={}",
+                entity.getAclClass(), entity.getId(), entity.getName(),
+                AclPermission.getReadableView(permission.getMask()),
+                permission.getMask(), sidName, grantVO.getPrincipal());
         int sidEntryIndex = findSidEntry(acl, sid);
         if (sidEntryIndex != -1) {
             acl.deleteAce(sidEntryIndex);
