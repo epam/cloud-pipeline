@@ -318,6 +318,35 @@ public class ToolManager implements SecuredEntityManager {
         return toolName.replace(registryPath, dockerRegistry.getExternalUrl());
     }
 
+    /**
+     * Resolves tool symlinks if there are any by the given image name.
+     * 
+     * @param image Image name.
+     * @return Resolved tool.
+     */
+    public Tool resolveSymlinks(final String image) {
+        final Tool tool = loadToolWithFullImageName(image);
+        return tool.isNotSymlink() ? tool : loadToolWithFullImageName(tool.getLink());
+    }
+
+    private Tool loadToolWithFullImageName(final String image) {
+        final Tool tool = loadByNameOrId(image);
+        validateToolNotNull(tool, image);
+        tool.setImage(getFullImageName(tool));
+        return tool;
+    }
+
+    private Tool loadToolWithFullImageName(final Long id) {
+        final Tool tool = load(id);
+        validateToolNotNull(tool, id);
+        tool.setImage(getFullImageName(tool));
+        return tool;
+    }
+
+    private String getFullImageName(final Tool linkedTool) {
+        return linkedTool.getRegistry() + TOOL_DELIMETER + linkedTool.getImage();
+    }
+
     @Override
     public Integer loadTotalCount() {
         throw new UnsupportedOperationException();
@@ -373,7 +402,7 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     private void deleteTool(final Tool tool, final String image, final boolean hard) {
-        if (!tool.isSymlink()) {
+        if (tool.isNotSymlink()) {
             if (hard) {
                 DockerRegistry dockerRegistry = dockerRegistryManager.load(tool.getRegistryId());
                 List<String> tags = dockerRegistryManager.loadImageTags(dockerRegistry, image);
@@ -848,7 +877,7 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     private void validateToolCanBeModified(final Tool tool) {
-        Assert.isTrue(!tool.isSymlink(), messageHelper.getMessage(
+        Assert.isTrue(tool.isNotSymlink(), messageHelper.getMessage(
                 MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED));
     }
 

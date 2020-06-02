@@ -105,6 +105,7 @@ public final class MessageConstants {
     // Registry access
     public static final String ERROR_REGISTRY_IS_NOT_ALLOWED = "error.registry.not.allowed";
     public static final String ERROR_REGISTRY_ACTION_IS_NOT_ALLOWED = "error.registry.action.not.allowed";
+    public static final String ERROR_REGISTRY_IMAGE_ACTION_IS_NOT_ALLOWED = "error.registry.image.action.not.allowed";
 
     // ToolGroup errors
     public static final String ERROR_TOOL_GROUP_ALREADY_EXIST = "error.tool.group.already.exists";

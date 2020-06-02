@@ -41,6 +41,7 @@ import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
+import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -94,6 +95,9 @@ public class DockerContainerOperationManager {
     private KubernetesManager kubernetesManager;
 
     @Autowired
+    private ToolManager toolManager;
+
+    @Autowired
     private ToolGroupManager toolGroupManager;
 
     @Autowired
@@ -134,8 +138,8 @@ public class DockerContainerOperationManager {
 
     public PipelineRun commitContainer(PipelineRun run, DockerRegistry registry,
                                        String newImageName, boolean clearContainer, boolean stopPipeline) {
-        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(
-                run.getPodId(), run.getDockerImage());
+        final String image = toolManager.resolveSymlinks(run.getDockerImage()).getImage();
+        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(), image);
 
         final String apiToken = authManager.issueTokenForCurrentUser(null).getToken();
 
@@ -208,8 +212,8 @@ public class DockerContainerOperationManager {
     @Async("pauseRunExecutor")
     public void pauseRun(PipelineRun run) {
         try {
-            final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(
-                    run.getPodId(), run.getDockerImage());
+            final String image = toolManager.resolveSymlinks(run.getDockerImage()).getImage();
+            final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(), image);
             final String apiToken = authManager.issueTokenForCurrentUser().getToken();
             Assert.notNull(containerId,
                     messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
@@ -223,7 +227,7 @@ public class DockerContainerOperationManager {
                     .runId(String.valueOf(run.getId()))
                     .containerId(containerId)
                     .timeout(String.valueOf(preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT)))
-                    .newImageName(run.getDockerImage())
+                    .newImageName(image)
                     .defaultTaskName(run.getTaskName())
                     .preCommitCommand(preferenceManager.getPreference(SystemPreferences.PRE_COMMIT_COMMAND_PATH))
                     .postCommitCommand(preferenceManager.getPreference(SystemPreferences.POST_COMMIT_COMMAND_PATH))

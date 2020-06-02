@@ -76,4 +76,9 @@ public class Tool extends AbstractSecuredEntity {
     public boolean isSymlink() {
         return link != null;
     }
+
+    @JsonIgnore
+    public boolean isNotSymlink() {
+        return !isSymlink();
+    }
 }
