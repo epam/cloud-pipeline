@@ -42,7 +42,7 @@ public class UserExporter {
     private static final String LIST_DELIMITER = "|";
     private static final DateTimeFormatter USER_DATE_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    public static final String COMMA = ", ";
+    public static final String SPACE = " ";
 
     public String exportUsers(final PipelineUserExportVO exportSettings,
                               final Collection<PipelineUserWithStoragePath> users) {
@@ -81,11 +81,11 @@ public class UserExporter {
         }
         if (exportSettings.isIncludeRegistrationDate()) {
             result.add(PipelineUserWithStoragePath.PipelineUserFields.REGISTRATION_DATE.getValue()
-                    + COMMA + TimeZone.getDefault().toZoneId());
+                    + SPACE + TimeZone.getDefault().toZoneId());
         }
         if (exportSettings.isIncludeFirstLoginDate()) {
             result.add(PipelineUserWithStoragePath.PipelineUserFields.FIRST_LOGIN_DATE.getValue()
-                    + COMMA + TimeZone.getDefault().toZoneId());
+                    + SPACE + TimeZone.getDefault().toZoneId());
         }
         if (exportSettings.isIncludeRoles()) {
             result.add(PipelineUserWithStoragePath.PipelineUserFields.ROLES.getValue());
