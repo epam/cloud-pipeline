@@ -450,12 +450,6 @@ public class ToolDaoTest extends AbstractSpringTest {
                 .orElseThrow(RuntimeException::new);
     }
 
-    private void assertSymlinkIssuesCountCanBeLoaded(final Tool tool, final Tool symlink) {
-        final ToolWithIssuesCount loadedTool = loadToolWithIssuesCount(tool);
-        final ToolWithIssuesCount loadedSymlink = loadToolWithIssuesCount(symlink);
-        assertThat(loadedSymlink.getIssuesCount(), is(loadedTool.getIssuesCount()));
-    }
-
     private ToolWithIssuesCount loadToolWithIssuesCount(final Tool symlink) {
         return toolDao.loadToolsWithIssuesCountByGroup(symlink.getToolGroupId())
                 .stream()
