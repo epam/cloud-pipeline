@@ -64,6 +64,16 @@ public class AclPermission extends AbstractPermission {
                                                                            NO_WRITE.getMask() | NO_EXECUTE.getMask());
 
     protected static final Map<Permission, Permission> DENYING_PERMISSIONS = new HashMap<>();
+
+    public static final String NO_READ_NAME = "NO_READ";
+    public static final String NO_WRITE_NAME = "NO_WRITE";
+    public static final String NO_EXECUTE_NAME = "NO_EXECUTE";
+    public static final String READ_NAME = "READ";
+    public static final String WRITE_NAME = "WRITE";
+    public static final String EXECUTE_NAME = "EXECUTE";
+    public static final String OWNER_NAME = "OWNER";
+    public static final String COMMA = ",";
+
     static {
         DENYING_PERMISSIONS.put(READ, NO_READ);
         DENYING_PERMISSIONS.put(WRITE, NO_WRITE);
@@ -79,11 +89,12 @@ public class AclPermission extends AbstractPermission {
     }
 
     protected static final Map<String, AclPermission> NAME_PERMISSION_MAP = new HashMap<>();
+
     static {
-        NAME_PERMISSION_MAP.put("READ", (AclPermission)READ);
-        NAME_PERMISSION_MAP.put("WRITE", (AclPermission)WRITE);
-        NAME_PERMISSION_MAP.put("EXECUTE", (AclPermission)EXECUTE);
-        NAME_PERMISSION_MAP.put("OWNER", (AclPermission)OWNER);
+        NAME_PERMISSION_MAP.put(READ_NAME, (AclPermission)READ);
+        NAME_PERMISSION_MAP.put(WRITE_NAME, (AclPermission)WRITE);
+        NAME_PERMISSION_MAP.put(EXECUTE_NAME, (AclPermission)EXECUTE);
+        NAME_PERMISSION_MAP.put(OWNER_NAME, (AclPermission)OWNER);
     }
 
     private boolean granting = true;
@@ -116,5 +127,29 @@ public class AclPermission extends AbstractPermission {
 
     public static AclPermission getAclPermissionByName(String permissionName) {
         return NAME_PERMISSION_MAP.get(permissionName);
+    }
+
+    public static String getReadableView(int mask) {
+        final StringBuilder viewBuilder = new StringBuilder();
+        if ((mask & AclPermission.READ.getMask()) != 0) {
+            viewBuilder.append(COMMA + READ_NAME);
+        }
+        if ((mask & AclPermission.NO_READ.getMask()) != 0) {
+            viewBuilder.append(COMMA + NO_READ_NAME);
+        }
+        if ((mask & AclPermission.WRITE.getMask()) != 0) {
+            viewBuilder.append(COMMA + WRITE_NAME);
+        }
+        if ((mask & AclPermission.NO_WRITE.getMask()) != 0) {
+            viewBuilder.append(COMMA + NO_WRITE_NAME);
+        }
+        if ((mask & AclPermission.EXECUTE.getMask()) != 0) {
+            viewBuilder.append(COMMA + EXECUTE_NAME);
+        }
+        if ((mask & AclPermission.NO_EXECUTE.getMask()) != 0) {
+            viewBuilder.append(COMMA + NO_EXECUTE_NAME);
+        }
+        // remove first comma
+        return viewBuilder.deleteCharAt(0).toString();
     }
 }
