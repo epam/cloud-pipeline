@@ -73,6 +73,7 @@ public class AclPermission extends AbstractPermission {
     public static final String EXECUTE_NAME = "EXECUTE";
     public static final String OWNER_NAME = "OWNER";
     public static final String COMMA = ",";
+    public static final String EMPTY_STRING = "";
 
     static {
         DENYING_PERMISSIONS.put(READ, NO_READ);
@@ -130,6 +131,9 @@ public class AclPermission extends AbstractPermission {
     }
 
     public static String getReadableView(int mask) {
+        if (mask == 0) {
+            return EMPTY_STRING;
+        }
         final StringBuilder viewBuilder = new StringBuilder();
         if ((mask & AclPermission.READ.getMask()) != 0) {
             viewBuilder.append(COMMA + READ_NAME);
@@ -150,6 +154,6 @@ public class AclPermission extends AbstractPermission {
             viewBuilder.append(COMMA + NO_EXECUTE_NAME);
         }
         // remove first comma
-        return viewBuilder.deleteCharAt(0).toString();
+        return viewBuilder.length() > 0 ? viewBuilder.deleteCharAt(0).toString() : viewBuilder.toString();
     }
 }
