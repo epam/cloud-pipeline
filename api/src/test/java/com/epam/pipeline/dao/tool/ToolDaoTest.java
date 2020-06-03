@@ -346,6 +346,18 @@ public class ToolDaoTest extends AbstractSpringTest {
     
     @Test
     @Transactional
+    public void testToolIconCanBeLoadedIfThereIsSymlinkForThatTool() throws IOException {
+        final Tool tool = createTool();
+        createSymlink(tool);
+
+        final Pair<String, InputStream> icon = toolDao.loadIcon(tool.getId()).orElseThrow(RuntimeException::new);
+
+        assertThat(icon.getLeft(), is(TEST_FILE_NAME));
+        assertThat(StreamUtils.copyToByteArray(icon.getRight()), is(BYTES));
+    }
+    
+    @Test
+    @Transactional
     public void testSymlinkIconCanBeLoaded() throws IOException {
         final Tool tool = createTool();
         final Tool symlink = createSymlink(tool);

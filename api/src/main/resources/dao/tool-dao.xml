@@ -351,7 +351,7 @@
                     FROM pipeline.tool_icon i
                     INNER JOIN pipeline.tool tl ON (tl.id = i.tool_id)
                     LEFT JOIN pipeline.tool t ON (t.link = tl.id)
-                    WHERE COALESCE(t.id, tl.id) = ?
+                    WHERE ? IN (t.id, tl.id)
                 ]]>
             </value>
         </property>
