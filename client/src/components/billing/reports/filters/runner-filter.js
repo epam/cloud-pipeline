@@ -322,6 +322,13 @@ class RunnerFilter extends React.Component {
   };
 
   onFocus = () => {
+    const {searchCriteria} = this.state;
+    if (!searchCriteria) {
+      this.setState({
+        filteredCenters: undefined,
+        filteredUsers: []
+      });
+    }
     this.setState({focused: true});
   }
 
@@ -331,7 +338,7 @@ class RunnerFilter extends React.Component {
       const {onChange} = this.props;
       onChange && onChange(filter);
     }
-    this.setState({focused: false});
+    this.setState({focused: false, searchCriteria: undefined});
   };
 
   render () {
