@@ -18,6 +18,7 @@ package com.epam.pipeline.security.jwt;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -25,9 +26,13 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.epam.pipeline.controller.MultiReadableHttpServletRequestWrapper;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
+import com.epam.pipeline.security.RequestDetails;
 import com.epam.pipeline.security.UserContext;
+import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.ThreadContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -39,6 +44,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtFilterAuthenticationFilter.class);
 
+    public static final String REQUEST_DETAILS = "request_details";
+
     private JwtTokenVerifier tokenVerifier;
 
     public JwtFilterAuthenticationFilter(JwtTokenVerifier tokenVerifier) {
@@ -48,7 +55,9 @@ public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
+        request = new MultiReadableHttpServletRequestWrapper(request);
         final JwtRawToken rawToken = fetchJwtRawToken(request);
+        putRequestDataToLogContext(request, rawToken);
         try {
             if (!StringUtils.isEmpty(rawToken)) {
                 JwtTokenClaims claims = tokenVerifier.readClaims(rawToken.getToken());
@@ -61,6 +70,7 @@ public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
         } catch (TokenVerificationException e) {
             LOGGER.info("JWT authentication failed!", e);
         }
+        removeRequestDataFromLogContext();
         filterChain.doFilter(request, response);
     }
 
@@ -97,5 +107,33 @@ public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         return null;
+    }
+
+    private void removeRequestDataFromLogContext() {
+        ThreadContext.clearAll();
+    }
+
+    private void putRequestDataToLogContext(HttpServletRequest request, JwtRawToken rawToken) {
+        try {
+            ThreadContext.put(REQUEST_DETAILS, getRequestDetails(request, rawToken).toString());
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private RequestDetails getRequestDetails(HttpServletRequest request, JwtRawToken rawToken) throws IOException {
+        final RequestDetails.RequestDetailsBuilder builder = RequestDetails.builder();
+        final String httpMethod = request.getMethod();
+        builder.path(request.getRequestURL())
+                .authorization(rawToken.toHeader())
+                .httpMethod(httpMethod)
+                .query(request.getQueryString())
+                .body(readBody(request));
+
+        return builder.build();
+    }
+
+    private String readBody(HttpServletRequest request) throws IOException {
+        return IOUtils.toString(request.getInputStream(), StandardCharsets.UTF_8);
     }
 }
