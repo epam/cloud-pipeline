@@ -555,7 +555,9 @@ if [ -z "$CP_USR_BIN" ]; then
         echo "CP_USR_BIN is not defined, setting to ${CP_USR_BIN}"
 fi
 create_sys_dir $CP_USR_BIN
-install_private_packages $CP_USR_BIN
+if [ "$CP_CAP_INSTALL_PRIVATE_DEPS" == "true" ]; then
+      install_private_packages $CP_USR_BIN
+fi
 
 # Check if python2 is installed:
 # If it was installed into a private location - use it
