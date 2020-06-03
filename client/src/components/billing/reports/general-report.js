@@ -364,12 +364,13 @@ class BillingCentersTable extends React.Component {
       height
     } = this.props;
     const {current} = this.state;
-    const pageSize = 2;
+    const pageSize = 6;
     const pending = requests.filter(r => r.pending).length > 0;
     const loaded = requests.filter(r => !r.loaded).length === 0;
     const rawData = loaded ? requests.map(r => r.value || {}) : {};
     const data = discounts.applyGroupedDataDiscounts(rawData, discountsFn);
     const tableData = loaded ? Object.values(data) : [];
+    tableData.sort((a, b) => (b.spendings || 0) - (a.spendings || 0));
     const slicedData = tableData.slice((current - 1) * pageSize, current * pageSize);
     const paginationEnabled = tableData.length > pageSize;
     return (
