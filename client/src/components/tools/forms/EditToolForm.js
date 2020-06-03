@@ -673,6 +673,9 @@ export default class EditToolForm extends React.Component {
   };
 
   openConfigureClusterDialog = () => {
+    if (this.props.readOnly) {
+      return;
+    }
     this.setState({
       configureClusterDialogVisible: true
     });

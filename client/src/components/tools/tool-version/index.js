@@ -28,6 +28,7 @@ import {
 } from 'antd';
 import LoadingView from '../../special/LoadingView';
 import roleModel from '../../../utils/roleModel';
+import ToolLink from '../elements/ToolLink';
 import styles from './ToolVersion.css';
 
 @inject('preferences', 'dockerRegistries')
@@ -92,7 +93,9 @@ export default class ToolVersion extends React.Component {
               size="small"
               style={{marginBottom: 3, verticalAlign: 'middle', lineHeight: 'inherit'}}>
               <Icon type="arrow-left" />
-            </Button> {this.props.tool.value.image}:{this.props.version}
+            </Button>
+            <ToolLink link={this.props.tool.value.link} style={{marginLeft: 5}} />
+            <span style={{marginLeft: 5}}>{this.props.tool.value.image}:{this.props.version}</span>
           </Row>
         </Row>
         <Tabs

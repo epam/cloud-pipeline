@@ -115,7 +115,11 @@ export default class ToolSetttings extends React.Component {
       <EditToolForm
         toolId={this.props.toolId}
         onInitialized={form => { this.versionSettingsForm = form; }}
-        readOnly={this.state.operationInProgress || !roleModel.writeAllowed(this.props.tool.value)}
+        readOnly={
+          this.state.operationInProgress ||
+          !roleModel.writeAllowed(this.props.tool.value) ||
+          !!this.props.tool.value.link
+        }
         defaultPriceTypeIsSpot={this.props.preferences.useSpot}
         configuration={this.settings}
         onSubmit={this.operationWrapper(this.updateTool)} />

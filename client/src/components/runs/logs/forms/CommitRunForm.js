@@ -85,14 +85,21 @@ export default class CommitRunForm extends localization.LocalizedReactComponent 
       this.props.form.validateFieldsAndScroll((err, values) => {
         if (!err) {
           (async () => {
-            const result = await this.checkDockerImage(values.newImageName);
+            const {newTool, newVersion, isLink} = await this.checkDockerImage(values.newImageName);
+            if (isLink) {
+              Modal.error({
+                title: `You cannot push to linked tool ${values.newImageName}`
+              });
+              resolve(null);
+              return;
+            }
             const doCommit = () => {
               const registryPath = values.newImageName.split('/')[0];
               const [registry] = this.registries.filter(r => r.path === registryPath);
               values.registryToCommitId = registry.id;
               resolve(values);
             };
-            if (result) {
+            if (newTool || newVersion) {
               doCommit();
             } else {
               Modal.confirm({
@@ -131,15 +138,20 @@ export default class CommitRunForm extends localization.LocalizedReactComponent 
         const toolImageName = `${groupName}/${image}`;
         const [tool] = (group.tools || []).filter(t => t.image === toolImageName);
         if (tool) {
+          if (tool.link) {
+            return {isLink: true};
+          }
           const tags = new LoadToolTags(tool.id);
           await tags.fetch();
           if (!tags.error) {
-            return (tags.value || []).indexOf(version) === -1;
+            return {
+              newVersion: (tags.value || []).indexOf(version) === -1
+            };
           }
         }
       }
     }
-    return true;
+    return {newTool: true};
   };
 
   get registries () {
@@ -217,34 +229,43 @@ export default class CommitRunForm extends localization.LocalizedReactComponent 
       callback('You cannot use more than two underscores subsequently');
     } else {
       if (value) {
-        const parts = value.split('/');
-        const registry = parts.shift();
-        const group = parts.shift();
-        const toolAndVersion = parts.join('/');
-        if (registry === undefined || group === undefined || toolAndVersion === undefined) {
-          callback('Docker image name is required');
-          return;
-        } else {
-          const nameRegExp = /^[\da-z]([\da-z\\.\-_]*[\da-z]+)*$/;
-          const toolAndVersionParts = toolAndVersion.split(':');
-          const tool = toolAndVersionParts.shift();
-          const version = toolAndVersionParts.join(':');
-          if (!/^[\da-zA-Z.\-_:]+$/.test(registry)) {
-            callback('Registry path should contain valid URL');
-            return;
-          } else if (!nameRegExp.test(group)) {
-            callback('Tool group should contain only lowercase letters, digits, separators (-, ., _) and should not start or end with a separator');
-            return;
-          } else if (!nameRegExp.test(tool)) {
-            callback('Image name should contain only lowercase letters, digits, separators (-, ., _) and should not start or end with a separator');
-            return;
-          } else if (version && !nameRegExp.test(version)) {
-            callback('Version should contain only lowercase letters, digits, separators (-, ., _) and should not start or end with a separator');
-            return;
-          }
-        }
+        this.checkDockerImage(value)
+          .then((res) => {
+            const {isLink} = res;
+            if (isLink) {
+              callback('You cannot push to linked tool');
+              return;
+            }
+            const parts = value.split('/');
+            const registry = parts.shift();
+            const group = parts.shift();
+            const toolAndVersion = parts.join('/');
+            if (registry === undefined || group === undefined || toolAndVersion === undefined) {
+              callback('Docker image name is required');
+              return;
+            } else {
+              const nameRegExp = /^[\da-z]([\da-z\\.\-_]*[\da-z]+)*$/;
+              const toolAndVersionParts = toolAndVersion.split(':');
+              const tool = toolAndVersionParts.shift();
+              const version = toolAndVersionParts.join(':');
+              if (!/^[\da-zA-Z.\-_:]+$/.test(registry)) {
+                callback('Registry path should contain valid URL');
+                return;
+              } else if (!nameRegExp.test(group)) {
+                callback('Tool group should contain only lowercase letters, digits, separators (-, ., _) and should not start or end with a separator');
+                return;
+              } else if (!nameRegExp.test(tool)) {
+                callback('Image name should contain only lowercase letters, digits, separators (-, ., _) and should not start or end with a separator');
+                return;
+              } else if (version && !nameRegExp.test(version)) {
+                callback('Version should contain only lowercase letters, digits, separators (-, ., _) and should not start or end with a separator');
+                return;
+              }
+            }
+          });
+      } else {
+        callback();
       }
-      callback();
     }
   };
 

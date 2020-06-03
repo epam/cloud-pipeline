@@ -17,8 +17,9 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
-import ToolImage from '../../models/tools/ToolImage';
 import {Button, Col, Row, Icon} from 'antd';
+import ToolLink from './elements/ToolLink';
+import ToolImage from '../../models/tools/ToolImage';
 import highlightText from '../special/highlightText';
 import styles from './Tools.css';
 
@@ -87,7 +88,12 @@ export default class ToolsTable extends React.Component {
         <Row type="flex" align="middle" justify="space-between" style={{flex: 1}}>
           <div className={styles.toolRowTitle} style={tool.iconId ? {paddingLeft: 0} : {}}>
             <span className={styles.toolTitle}>
-              {tool.endpoints && tool.endpoints.length > 0 ? <Icon type="export" style={{margin: '0px 3px', fontSize: 'larger'}} /> : undefined}
+              <ToolLink link={tool.link} style={{margin: '0px 3px', fontSize: 'larger'}} />
+              {
+                tool.endpoints && tool.endpoints.length > 0
+                  ? (<Icon type="export" style={{margin: '0px 3px', fontSize: 'larger'}} />)
+                  : undefined
+              }
               {highlightText(tool.image, this.props.searchString)}
             </span>
             <span className={styles.toolDescription}>
