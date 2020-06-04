@@ -20,11 +20,9 @@ import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.container.ContainerMemoryResourceService;
 import com.epam.pipeline.manager.cluster.container.ContainerResources;
-import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -84,29 +82,26 @@ public class PipelineExecutor {
     private final PreferenceManager preferenceManager;
     private final String kubeNamespace;
     private final AuthManager authManager;
-    private final ToolManager toolManager;
     private final Map<ContainerMemoryResourcePolicy, ContainerMemoryResourceService> memoryRequestServices;
 
     public PipelineExecutor(final PreferenceManager preferenceManager,
                             final AuthManager authManager,
-                            final ToolManager toolManager,
                             final List<ContainerMemoryResourceService> memoryRequestServices,
                             @Value("${kube.namespace}") final String kubeNamespace) {
         this.preferenceManager = preferenceManager;
         this.kubeNamespace = kubeNamespace;
         this.authManager = authManager;
-        this.toolManager = toolManager;
         this.memoryRequestServices = CommonUtils.groupByKey(memoryRequestServices,
                 ContainerMemoryResourceService::policy);
     }
 
     public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
-                              String pipelineId, String nodeIdLabel, String clusterId) {
-        launchRootPod(command, run, envVars, endpoints, pipelineId, nodeIdLabel, clusterId, true);
+                              String pipelineId, String nodeIdLabel, String secretName, String clusterId) {
+        launchRootPod(command, run, envVars, endpoints, pipelineId, nodeIdLabel, secretName, clusterId, true);
     }
 
     public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
-                              String pipelineId, String nodeIdLabel, String clusterId, boolean pullImage) {
+            String pipelineId, String nodeIdLabel, String secretName, String clusterId, boolean pullImage) {
         try (KubernetesClient client = new DefaultKubernetesClient()) {
             Map<String, String> labels = new HashMap<>();
             labels.put("spawned_by", "pipeline-api");
@@ -131,8 +126,7 @@ public class PipelineExecutor {
 
             OkHttpClient httpClient = HttpClientUtils.createHttpClient(client.getConfiguration());
             ObjectMeta metadata = getObjectMeta(run, labels);
-            Tool tool = toolManager.resolveSymlinks(run.getDockerImage());
-            PodSpec spec = getPodSpec(run, envVars, tool.getSecretName(), nodeSelector, tool.getImage(), command,
+            PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, run.getActualDockerImage(), command,
                     pullImage, nodeIdLabel.equals(runIdLabel));
             Pod pod = new Pod("v1", "Pod", metadata, spec, null);
             Pod created = new PodOperationsImpl(httpClient, client.getConfiguration(), kubeNamespace).create(pod);

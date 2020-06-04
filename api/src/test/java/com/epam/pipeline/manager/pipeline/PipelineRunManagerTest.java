@@ -201,6 +201,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
                 COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR);
 
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(notScannedTool);
+        when(toolManager.resolveSymlinks(TEST_IMAGE)).thenReturn(notScannedTool);
         when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID), eq(true))).thenReturn(true);
         when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID), eq(false))).thenReturn(true);
         when(instanceOfferManager.isToolInstanceAllowed(anyString(), any(), eq(REGION_ID), eq(true))).thenReturn(true);

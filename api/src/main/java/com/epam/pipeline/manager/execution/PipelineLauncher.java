@@ -135,7 +135,7 @@ public class PipelineLauncher {
                 : pipelineCommand;
         LOGGER.debug("Start script command: {}", rootPodCommand);
         executor.launchRootPod(rootPodCommand, run, envVars,
-                endpoints, pipelineId, nodeIdLabel, clusterId, pullImage);
+                endpoints, pipelineId, nodeIdLabel, configuration.getSecretName(), clusterId, pullImage);
         return pipelineCommand;
     }
 
