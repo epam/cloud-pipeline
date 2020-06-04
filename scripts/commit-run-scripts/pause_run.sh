@@ -92,7 +92,7 @@ commit_file_and_stop_docker() {
     # - if this is a cloud-pipeline job - it may hang if some of the in-container process enters D-state
     # So we wait for 5 mins for the kubeadm, if it does not finish - we try to find "docker-runc kill" command and kill it
     # If kubeadm is still running - we wait for 1 more minute and kill kubeadm itself
-    pipe_log_info "Running kubeadm reset" "$TASK_NAME"
+    echo "Running kubeadm reset"
     kubeadm reset &
     CP_KUBEADM_RESET_PID=$!
     echo "Waiting for kubeadm to finish (PID: $CP_KUBEADM_RESET_PID)"
@@ -105,7 +105,7 @@ commit_file_and_stop_docker() {
         kill_process_by_pattern "docker rm --force"
 
         if ! wait_for_process $CP_KUBEADM_RESET_PID 6 10; then
-            pipe_log_warn "[WARN] kubeadm is still hasn't finished - killing it (PID: $CP_KUBEADM_RESET_PID)" "$TASK_NAME"
+            echo "[WARN] kubeadm is still hasn't finished - killing it (PID: $CP_KUBEADM_RESET_PID)"
             kill -9 $CP_KUBEADM_RESET_PID
         fi
     fi
