@@ -59,6 +59,7 @@ import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import org.springframework.util.StreamUtils;
 
+@SuppressWarnings("PMD.TooManyStaticImports")
 public class ToolDaoTest extends AbstractSpringTest {
 
     private static final String ISSUE_NAME = "Issue name";
@@ -446,7 +447,8 @@ public class ToolDaoTest extends AbstractSpringTest {
                 toolDao.loadToolByGroupAndImage(group.getId(), image)
                         .orElseThrow(RuntimeException::new),
                 selectMatching(toolDao.loadToolsWithIssuesCountByGroup(group.getId()), toolId),
-                selectMatching(toolDao.loadWithSameImageNameFromOtherRegistries(image, registry.getPath() + "salt"), toolId),
+                selectMatching(toolDao.loadWithSameImageNameFromOtherRegistries(image, 
+                        registry.getPath() + registry.getPath()), toolId),
                 selectMatching(toolDao.loadToolsByGroup(group.getId()), toolId),
                 selectMatching(toolDao.loadAllTools(), toolId),
                 selectMatching(toolDao.loadAllTools(registry.getId()), toolId),

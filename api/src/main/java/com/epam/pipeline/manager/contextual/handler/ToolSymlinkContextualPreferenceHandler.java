@@ -27,7 +27,7 @@ public class ToolSymlinkContextualPreferenceHandler extends AbstractContextualPr
 
     @Override
     boolean externalEntityExists(final ContextualPreference preference) {
-        return isSymlinkResource(preference) ? false : validateUsingNextHandler(preference).orElse(false);
+        return !isSymlinkResource(preference) && validateUsingNextHandler(preference).orElse(false);
     }
 
     private boolean isSymlinkResource(final ContextualPreference preference) {

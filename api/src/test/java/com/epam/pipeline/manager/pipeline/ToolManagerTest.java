@@ -715,9 +715,9 @@ public class ToolManagerTest extends AbstractManagerTest {
     @Transactional
     public void testSymlinkCreationFailsForNonExistingTool() {
         assertThrows(IllegalArgumentException.class,
-                () -> toolManager.symlink(new ToolSymlinkRequest(null, firstToolGroup.getId())));
+            () -> toolManager.symlink(new ToolSymlinkRequest(null, firstToolGroup.getId())));
         assertThrows(IllegalArgumentException.class,
-                () -> toolManager.symlink(new ToolSymlinkRequest(-1L, firstToolGroup.getId())));
+            () -> toolManager.symlink(new ToolSymlinkRequest(-1L, firstToolGroup.getId())));
     }
 
     @Test
@@ -728,9 +728,9 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolManager.create(tool, true);
         
         assertThrows(IllegalArgumentException.class,
-                () -> toolManager.symlink(new ToolSymlinkRequest(tool.getId(), null)));
+            () -> toolManager.symlink(new ToolSymlinkRequest(tool.getId(), null)));
         assertThrows(IllegalArgumentException.class,
-                () -> toolManager.symlink(new ToolSymlinkRequest(tool.getId(), -1L)));
+            () -> toolManager.symlink(new ToolSymlinkRequest(tool.getId(), -1L)));
     }
 
     @Test
@@ -742,7 +742,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolManager.create(tool, true);
         
         assertThrows(IllegalArgumentException.class,
-                () -> toolManager.symlink(new ToolSymlinkRequest(tool.getId(), firstToolGroup.getId())));
+            () -> toolManager.symlink(new ToolSymlinkRequest(tool.getId(), firstToolGroup.getId())));
     }
 
     @Test
@@ -754,7 +754,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolManager.create(tool, true);
         
         assertThrows(IllegalArgumentException.class,
-                () -> toolManager.symlink(new ToolSymlinkRequest(tool.getId(), secondToolGroup.getId())));
+            () -> toolManager.symlink(new ToolSymlinkRequest(tool.getId(), secondToolGroup.getId())));
     }
 
     @Test
@@ -780,22 +780,22 @@ public class ToolManagerTest extends AbstractManagerTest {
 
         assertThrows(IllegalArgumentException.class, () -> toolManager.deleteToolIcon(symlink.getId()));
         assertThrows(IllegalArgumentException.class,
-                () -> toolManager.deleteToolVersion(firstRegistry.getPath(), symlink.getImage(), LATEST_TAG));
+            () -> toolManager.deleteToolVersion(firstRegistry.getPath(), symlink.getImage(), LATEST_TAG));
         assertThrows(IllegalArgumentException.class,
-                () -> toolManager.clearToolScan(firstRegistry.getPath(), symlink.getImage(), LATEST_TAG));
+            () -> toolManager.clearToolScan(firstRegistry.getPath(), symlink.getImage(), LATEST_TAG));
         assertThrows(IllegalArgumentException.class, () -> toolManager.updateTool(symlink));
         assertThrows(IllegalArgumentException.class, 
-                () -> toolManager.updateToolVersionScanStatus(symlink.getId(), ToolScanStatus.COMPLETED, 
-                        DateUtils.now(), LATEST_TAG, new ToolOSVersion(CENTOS, CENTOS_VERSION), LAYER_REF, DIGEST));
+            () -> toolManager.updateToolVersionScanStatus(symlink.getId(), ToolScanStatus.COMPLETED, 
+                    DateUtils.now(), LATEST_TAG, new ToolOSVersion(CENTOS, CENTOS_VERSION), LAYER_REF, DIGEST));
         assertThrows(IllegalArgumentException.class, 
-                () -> toolManager.updateToolVersionScanStatus(symlink.getId(), ToolScanStatus.COMPLETED, 
-                        DateUtils.now(), LATEST_TAG, LAYER_REF, DIGEST));
+            () -> toolManager.updateToolVersionScanStatus(symlink.getId(), ToolScanStatus.COMPLETED, 
+                    DateUtils.now(), LATEST_TAG, LAYER_REF, DIGEST));
         assertThrows(IllegalArgumentException.class, 
-                () -> toolManager.updateToolDependencies(Collections.emptyList(), symlink.getId(), LATEST_TAG));
+            () -> toolManager.updateToolDependencies(Collections.emptyList(), symlink.getId(), LATEST_TAG));
         assertThrows(IllegalArgumentException.class, 
-                () -> toolManager.updateToolVulnerabilities(Collections.emptyList(), symlink.getId(), LATEST_TAG));
+            () -> toolManager.updateToolVulnerabilities(Collections.emptyList(), symlink.getId(), LATEST_TAG));
         assertThrows(IllegalArgumentException.class, 
-                () -> toolManager.updateWhiteListWithToolVersionStatus(symlink.getId(), LATEST_TAG, true));
+            () -> toolManager.updateWhiteListWithToolVersionStatus(symlink.getId(), LATEST_TAG, true));
     }
 
     private List<String> generateLabels(String... labels) {

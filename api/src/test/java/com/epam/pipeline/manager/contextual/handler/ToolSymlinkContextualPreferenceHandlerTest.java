@@ -21,6 +21,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("PMD.TooManyStaticImports")
 public class ToolSymlinkContextualPreferenceHandlerTest extends AbstractContextualPreferenceHandlerTest {
 
     private final ToolDao toolDao = mock(ToolDao.class);
