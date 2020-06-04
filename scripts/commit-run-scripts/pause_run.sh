@@ -14,6 +14,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+wait_for_process() {
+    local process_id=$1
+    local wait_iter=$2
+    local wait_sec=$3
+    for cp_wait_iter_num in $(seq 1 $wait_iter); do
+        if ! kill -0 $process_id &> /dev/null; then
+            return 0
+        fi
+        sleep $wait_sec
+    done
+    return 1
+}
+
+kill_process_by_pattern() {
+    local pattern="$1"
+    pkill -f -9 "$pattern"
+    if [ $? -eq 0 ]; then
+        echo "[WARN] $pattern process found and killed"
+    else
+        echo "[WARN] $pattern process was NOT found"
+    fi
+}
+
 check_free_disc_space() {
     # Verify free disk space is enough for committing a docker image
     local free_disc_space_kb=`df -k --output=avail /ebs | tail -n1` #Kb
@@ -62,7 +85,32 @@ commit_file_and_stop_docker() {
                             "exit 126"
 
     stop_service kubelet
-    kubeadm reset
+    
+    # From time to time kubeadm reset may hang forever. This is caused by the following behavior:
+    # - kubeadm reset tries to delete all the running containers with k8s_ prefix
+    # - deletion is performed by the "docker runc kill --all" command
+    # - if this is a cloud-pipeline job - it may hang if some of the in-container process enters D-state
+    # So we wait for 5 mins for the kubeadm, if it does not finish - we try to find "docker-runc kill" command and kill it
+    # If kubeadm is still running - we wait for 1 more minute and kill kubeadm itself
+    pipe_log_info "Running kubeadm reset" "$TASK_NAME"
+    kubeadm reset &
+    CP_KUBEADM_RESET_PID=$!
+    echo "Waiting for kubeadm to finish (PID: $CP_KUBEADM_RESET_PID)"
+    if ! wait_for_process $CP_KUBEADM_RESET_PID 30 15; then
+        echo "[WARN] kubeadm didn't finish in time, checking for issues"
+        # Try to find and kill "docker-runc kill"
+        kill_process_by_pattern "docker-runc"
+        
+        # Try to find and kill "docker rm"
+        kill_process_by_pattern "docker rm --force"
+
+        if ! wait_for_process $CP_KUBEADM_RESET_PID 6 10; then
+            pipe_log_warn "[WARN] kubeadm is still hasn't finished - killing it (PID: $CP_KUBEADM_RESET_PID)" "$TASK_NAME"
+            kill -9 $CP_KUBEADM_RESET_PID
+        fi
+    fi
+
+
     stop_service docker
     check_last_exit_code $? "[ERROR] Error occured while stopping docker service" \
                             "[INFO] Docker service was successfully stopped"
