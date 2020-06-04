@@ -272,7 +272,7 @@ public class DockerRegistryDaoTest extends AbstractSpringTest {
         assertRegistryTools(loadedRegistries, expectedRegistries.subList(1, 2));
     }
 
-    // TODO 02.06.2020: Why is it commented out?
+    // TODO 02.06.2020: Why is it ignored out?
     @Test
     @Ignore
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)

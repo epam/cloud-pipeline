@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class PipeRunCmdBuilderTest {
 
     private static final String TEST_VERSION = "draft";
