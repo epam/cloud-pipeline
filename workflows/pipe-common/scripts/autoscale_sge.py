@@ -945,7 +945,8 @@ class GridEngineAutoscaler:
                     Logger.info('Latest job started less than %s seconds. '
                                 'Scaling down is not required.' % self.scale_down_timeout.seconds)
             else:
-                Logger.info('There are no previously running jobs. Scaling is skipped.')
+                Logger.info('There are no previously running jobs. Scaling down is required.')
+                self._scale_down(running_jobs, additional_hosts)
         Logger.info('Finish scaling step at %s.' % self.clock.now())
         post_scale_additional_hosts = self.host_storage.load_hosts()
         Logger.info('There are %s additional pipelines.' % len(post_scale_additional_hosts))
