@@ -477,7 +477,11 @@ public class ToolManager implements SecuredEntityManager {
 
     public List<ImageHistoryLayer> loadToolHistory(final Long id, final String tag) {
         final Tool tool = load(id);
-        Assert.notNull(tool, messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND, id));
+        validateToolNotNull(tool, id);
+        return tool.isSymlink() ? loadToolHistory(tool.getLink(), tag) : loadToolHistory(tool, tag);
+    }
+
+    private List<ImageHistoryLayer> loadToolHistory(final Tool tool, final String tag) {
         return dockerRegistryManager.getImageHistory(
                 dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag);
     }
