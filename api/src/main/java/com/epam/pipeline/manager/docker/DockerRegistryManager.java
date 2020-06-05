@@ -591,6 +591,12 @@ public class DockerRegistryManager implements SecuredEntityManager {
                 }
             }
 
+            if (isSymlink(entity)) {
+                throw new DockerAuthorizationException(registry.getPath(), messageHelper
+                        .getMessage(MessageConstants.ERROR_REGISTRY_IMAGE_ACTION_IS_NOT_ALLOWED, scope,
+                                claim.getImageName(), userName, registry.getPath()));
+            }
+
             if (!permissionManager.isActionAllowedForUser(entity, userName, permissions)) {
                 throw new DockerAuthorizationException(registry.getPath(), messageHelper
                                 .getMessage(MessageConstants.ERROR_REGISTRY_ACTION_IS_NOT_ALLOWED, scope,
@@ -602,6 +608,10 @@ public class DockerRegistryManager implements SecuredEntityManager {
 
     public DockerRegistry getDockerRegistryTree(Long registryId) {
         return dockerRegistryDao.loadDockerRegistryTree(registryId);
+    }
+
+    private boolean isSymlink(final AbstractSecuredEntity entity) {
+        return entity instanceof Tool && ((Tool) entity).isSymlink();
     }
 
     private String getToken(DockerRegistry registry, DockerRegistryClaim claim) {

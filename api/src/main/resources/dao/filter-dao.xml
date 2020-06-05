@@ -40,6 +40,7 @@
                         r.node_image,
                         r.node_cloud_region,
                         r.docker_image,
+                        r.actual_docker_image,
                         r.cmd_template,
                         r.actual_cmd,
                         r.timeout,

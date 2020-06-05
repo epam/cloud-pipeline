@@ -54,6 +54,7 @@ public class ToolVersionManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void updateOrCreateToolVersion(final Long toolId, final String version, final String imageName,
                                           final DockerRegistry registry, final DockerClient dockerClient) {
+        validateToolExistsAndCanBeModified(toolId);
         Optional<ToolVersion> toolVersion = toolVersionDao.loadToolVersion(toolId, version);
         ToolVersion versionAttributes = dockerClient.getVersionAttributes(registry, imageName, version);
         versionAttributes.setToolId(toolId);
@@ -71,6 +72,7 @@ public class ToolVersionManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteToolVersions(final Long toolId) {
+        validateToolExistsAndCanBeModified(toolId);
         toolVersionDao.deleteToolVersions(toolId);
     }
 
@@ -81,6 +83,7 @@ public class ToolVersionManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteToolVersion(final Long toolId, final String version) {
+        validateToolExistsAndCanBeModified(toolId);
         toolVersionDao.deleteToolVersion(toolId, version);
     }
 
@@ -102,8 +105,7 @@ public class ToolVersionManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public ToolVersion createToolVersionSettings(final Long toolId, final String version,
                                                  final List<ConfigurationEntry> settings) {
-        Tool tool = toolManager.load(toolId);
-        Assert.notNull(tool, messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND));
+        validateToolExistsAndCanBeModified(toolId);
         Optional<ToolVersion> toolVersion = toolVersionDao.loadToolVersion(toolId, version);
         ToolVersion toolVersionWithSettings;
         if (toolVersion.isPresent()) {
@@ -134,5 +136,20 @@ public class ToolVersionManager {
                     .orElse(Collections.emptyList());
         }
         return toolVersionDao.loadToolWithSettings(toolId);
+    }
+
+    private void validateToolExistsAndCanBeModified(final Long toolId) {
+        final Tool tool = toolManager.load(toolId);
+        validateToolNotNull(tool, toolId);
+        validateToolCanBeModified(tool);
+    }
+
+    private void validateToolNotNull(final Tool tool, final Long toolId) {
+        Assert.notNull(tool, messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND, toolId));
+    }
+
+    private void validateToolCanBeModified(final Tool tool) {
+        Assert.isTrue(tool.isNotSymlink(), messageHelper.getMessage(
+                MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED));
     }
 }

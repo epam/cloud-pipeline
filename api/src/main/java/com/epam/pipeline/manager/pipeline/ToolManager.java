@@ -41,6 +41,7 @@ import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResultView;
 import com.epam.pipeline.entity.scan.Vulnerability;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.tool.ToolSymlinkRequest;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.docker.DockerConnectionException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -90,6 +91,7 @@ public class ToolManager implements SecuredEntityManager {
 
     private static final Pattern REPOSITORY_AND_IMAGE = Pattern.compile("^(.*)\\/(.*\\/.*)$");
     private static final String TAG_DELIMITER = ":";
+    private static final String TOOL_DELIMETER = "/";
     private static final String LATEST_TAG = "latest";
     private static final int KB_SIZE = 1000;
     private static final long SECONDS_IN_HOUR = 3600;
@@ -147,6 +149,7 @@ public class ToolManager implements SecuredEntityManager {
         if (!StringUtils.hasText(tool.getOwner())) {
             tool.setOwner(authManager.getAuthorizedUser());
         }
+        tool.setLink(null);
 
         Assert.isTrue(isToolUniqueInGroup(tool.getImage(), group.getId()),
                       messageHelper.getMessage(MessageConstants.ERROR_TOOL_ALREADY_EXIST, tool.getImage(),
@@ -184,8 +187,8 @@ public class ToolManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public Tool updateTool(Tool tool) {
         Tool loadedTool = toolDao.loadTool(tool.getRegistryId(), tool.getImage());
-        Assert.notNull(loadedTool,
-                messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND, tool.getImage()));
+        validateToolNotNull(loadedTool, tool.getImage());
+        validateToolCanBeModified(loadedTool);
 
         if (!StringUtils.isEmpty(tool.getCpu())) {
             loadedTool.setCpu(tool.getCpu());
@@ -232,7 +235,7 @@ public class ToolManager implements SecuredEntityManager {
     public AbstractSecuredEntity changeOwner(Long id, String owner) {
         Tool tool = toolDao.loadTool(id);
         tool.setOwner(owner);
-        toolDao.updateTool(tool);
+        toolDao.updateOwner(tool);
         return tool;
     }
 
@@ -315,6 +318,35 @@ public class ToolManager implements SecuredEntityManager {
         return toolName.replace(registryPath, dockerRegistry.getExternalUrl());
     }
 
+    /**
+     * Resolves tool symlinks if there are any by the given image name.
+     * 
+     * @param image Image name.
+     * @return Resolved tool.
+     */
+    public Tool resolveSymlinks(final String image) {
+        final Tool tool = loadToolWithFullImageName(image);
+        return tool.isNotSymlink() ? tool : loadToolWithFullImageName(tool.getLink());
+    }
+
+    private Tool loadToolWithFullImageName(final String image) {
+        final Tool tool = loadByNameOrId(image);
+        validateToolNotNull(tool, image);
+        tool.setImage(getFullImageName(tool));
+        return tool;
+    }
+
+    private Tool loadToolWithFullImageName(final Long id) {
+        final Tool tool = load(id);
+        validateToolNotNull(tool, id);
+        tool.setImage(getFullImageName(tool));
+        return tool;
+    }
+
+    private String getFullImageName(final Tool linkedTool) {
+        return linkedTool.getRegistry() + TOOL_DELIMETER + linkedTool.getImage();
+    }
+
     @Override
     public Integer loadTotalCount() {
         throw new UnsupportedOperationException();
@@ -355,7 +387,7 @@ public class ToolManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public Tool delete(String registry, final String image, boolean hard) {
         Tool tool = loadTool(registry, image);
-        deleteToolWithDependent(tool, image, hard);
+        deleteTool(tool, image, hard);
         return tool;
     }
 
@@ -365,8 +397,41 @@ public class ToolManager implements SecuredEntityManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public Tool delete(final Tool tool) {
-        deleteToolWithDependent(tool, tool.getImage(), false);
+        deleteTool(tool, tool.getImage(), false);
         return tool;
+    }
+
+    private void deleteTool(final Tool tool, final String image, final boolean hard) {
+        if (tool.isNotSymlink()) {
+            if (hard) {
+                DockerRegistry dockerRegistry = dockerRegistryManager.load(tool.getRegistryId());
+                List<String> tags = dockerRegistryManager.loadImageTags(dockerRegistry, image);
+
+                for (String tag : tags) {
+                    Optional<ManifestV2> manifestOpt =
+                            dockerRegistryManager.deleteImage(dockerRegistry, tool.getImage(), tag);
+                    manifestOpt.ifPresent(manifest -> {
+                        dockerRegistryManager.deleteLayer(dockerRegistry, image, manifest.getConfig().getDigest());
+
+                        Collections.reverse(manifest.getLayers());
+                        for (ManifestV2.Config layer : manifest.getLayers()) {
+                            dockerRegistryManager.deleteLayer(dockerRegistry, image, layer.getDigest());
+                        }
+                    });
+                }
+            }
+            toolVulnerabilityDao.loadAllToolVersionScans(tool.getId()).values()
+                    .forEach(versionScan -> deleteToolVersionScan(tool.getId(), versionScan.getVersion()));
+            toolDao.deleteToolIcon(tool.getId());
+            toolVersionManager.deleteToolVersions(tool.getId());
+        }
+        toolDao.deleteTool(tool.getId());
+    }
+
+    private void deleteToolVersionScan(Long toolId, String version) {
+        toolVulnerabilityDao.deleteToolVersionScan(toolId, version);
+        toolVulnerabilityDao.deleteVulnerabilities(toolId, version);
+        toolVulnerabilityDao.deleteDependencies(toolId, version);
     }
 
     /**
@@ -380,6 +445,8 @@ public class ToolManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public Tool deleteToolVersion(String registry, final String image, String version) {
         Tool tool = loadTool(registry, image);
+        validateToolNotNull(tool, image);
+        validateToolCanBeModified(tool);
         deleteToolVersionScan(tool.getId(), version);
         toolVersionManager.deleteToolVersion(tool.getId(), version);
         DockerRegistry dockerRegistry = dockerRegistryManager.load(tool.getRegistryId());
@@ -389,20 +456,32 @@ public class ToolManager implements SecuredEntityManager {
 
     public List<String> loadTags(Long id) {
         Tool tool = load(id);
-        Assert.notNull(tool, messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND, id));
+        validateToolNotNull(tool, id);
+        return tool.isSymlink() ? loadTags(tool.getLink()) : loadTags(tool);
+    }
+
+    private List<String> loadTags(final Tool tool) {
         return dockerRegistryManager.loadImageTags(dockerRegistryManager.load(tool.getRegistryId()), tool);
     }
 
     public ImageDescription loadToolDescription(Long id, String tag) {
         Tool tool = load(id);
-        Assert.notNull(tool, messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND, id));
+        validateToolNotNull(tool, id);
+        return tool.isSymlink() ? loadToolDescription(tool.getLink(), tag) : loadToolDescription(tool, tag);
+    }
+
+    private ImageDescription loadToolDescription(final Tool tool, final String tag) {
         return dockerRegistryManager.getImageDescription(
                 dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag);
     }
 
     public List<ImageHistoryLayer> loadToolHistory(final Long id, final String tag) {
         final Tool tool = load(id);
-        Assert.notNull(tool, messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND, id));
+        validateToolNotNull(tool, id);
+        return tool.isSymlink() ? loadToolHistory(tool.getLink(), tag) : loadToolHistory(tool, tag);
+    }
+
+    private List<ImageHistoryLayer> loadToolHistory(final Tool tool, final String tag) {
         return dockerRegistryManager.getImageHistory(
                 dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag);
     }
@@ -411,6 +490,9 @@ public class ToolManager implements SecuredEntityManager {
     public void updateToolVulnerabilities(List<Vulnerability> vulnerabilities, long toolId, String version) {
         LOGGER.debug("Update tool with id: " + toolId + " and version "
                 + version + " with " + vulnerabilities.size() + " vulnerabilities");
+        final Tool tool = load(toolId);
+        validateToolNotNull(tool, toolId);
+        validateToolCanBeModified(tool);
         vulnerabilities.forEach(v -> v.setCreatedDate(new Date()));
         toolVulnerabilityDao.deleteVulnerabilities(toolId, version);
         toolVulnerabilityDao.createVulnerabilityRecords(vulnerabilities, toolId, version);
@@ -420,6 +502,9 @@ public class ToolManager implements SecuredEntityManager {
     public void updateToolDependencies(List<ToolDependency> dependencies, long toolId, String version) {
         LOGGER.debug("Update tool with id: " + toolId + " and version "
                 + version + " with " + dependencies.size() + " dependencies");
+        final Tool tool = load(toolId);
+        validateToolNotNull(tool, toolId);
+        validateToolCanBeModified(tool);
         toolVulnerabilityDao.deleteDependencies(toolId, version);
         toolVulnerabilityDao.createDependencyRecords(dependencies, toolId, version);
     }
@@ -428,7 +513,10 @@ public class ToolManager implements SecuredEntityManager {
     public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate,
                                             String version, ToolOSVersion toolOSVersion,
                                             String layerRef, String digest) {
-        Optional<ToolVersionScanResult> prev = loadToolVersionScan(toolId, version);
+        final Tool tool = load(toolId);
+        validateToolNotNull(tool, toolId);
+        validateToolCanBeModified(tool);
+        Optional<ToolVersionScanResult> prev = loadToolVersionScan(tool, version);
         if(prev.isPresent()) {
             ToolVersionScanResult scanResult = prev.get();
             boolean whiteList = scanResult.isFromWhiteList();
@@ -453,17 +541,26 @@ public class ToolManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public ToolVersionScanResult updateWhiteListWithToolVersionStatus(long toolId, String version,
                                                                       boolean fromWhiteList) {
-        Optional<ToolVersionScanResult> toolVersionScanResult = loadToolVersionScan(toolId, version);
+        final Tool tool = load(toolId);
+        validateToolNotNull(tool, toolId);
+        validateToolCanBeModified(tool);
+        Optional<ToolVersionScanResult> toolVersionScanResult = loadToolVersionScan(tool, version);
         if (!toolVersionScanResult.isPresent()) {
             toolVulnerabilityDao.insertToolVersionScan(toolId, version, null, null, null, ToolScanStatus.NOT_SCANNED,
                     DateUtils.now());
         }
         toolVulnerabilityDao.updateWhiteListWithToolVersion(toolId, version, fromWhiteList);
-        return loadToolVersionScan(toolId, version).orElse(null);
+        return loadToolVersionScan(tool, version).orElse(null);
     }
 
     public Optional<ToolVersionScanResult> loadToolVersionScan(long toolId, String version) {
-        final Optional<ToolVersionScanResult> result = toolVulnerabilityDao.loadToolVersionScan(toolId, version);
+        final Tool tool = load(toolId);
+        validateToolNotNull(tool, toolId);
+        return tool.isSymlink() ? loadToolVersionScan(tool.getLink(), version) : loadToolVersionScan(tool, version);
+    }
+
+    private Optional<ToolVersionScanResult> loadToolVersionScan(final Tool tool, final String version) {
+        final Optional<ToolVersionScanResult> result = toolVulnerabilityDao.loadToolVersionScan(tool.getId(), version);
         result.ifPresent(scanResult -> {
             if (scanResult.getScanDate() != null) {
                 int graceHours = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_GRACE_HOURS);
@@ -482,7 +579,36 @@ public class ToolManager implements SecuredEntityManager {
      */
     public ToolScanResult loadToolScanResult(String registry, String id) {
         Tool tool = loadTool(registry, id);
-        return loadToolScanResult(tool);
+        validateToolNotNull(tool, id);
+        return tool.isSymlink() ? loadToolScanResult(tool.getLink()) : loadToolScan(tool);
+    }
+
+    /**
+     * Loads {@link ToolScanResult} for the specified tool
+     * that contains information about scan result for each tool version
+     * @param tool for which {@link ToolScanResult} will be loaded
+     * @return a {@link ToolScanResult}
+     */
+    public ToolScanResult loadToolScanResult(Tool tool) {
+        return tool.isSymlink() ? loadToolScanResult(tool.getLink()) : loadToolScan(tool);
+    }
+
+    private ToolScanResult loadToolScanResult(final Long toolId) {
+        Tool tool = load(toolId);
+        validateToolNotNull(tool, toolId);
+        return tool.isSymlink() ? loadToolScanResult(tool.getLink()) : loadToolScan(tool);
+    }
+
+    private ToolScanResult loadToolScan(final Tool tool) {
+        ToolScanResult result = new ToolScanResult();
+        result.setToolId(tool.getId());
+        Map<String, ToolVersionScanResult> versionScanResults =
+                toolVulnerabilityDao.loadAllToolVersionScans(tool.getId());
+        for (String tag : loadTags(tool.getId())) {
+            ToolVersionScanResult versionScan = getToolVersionScanResult(tool, versionScanResults, tag);
+            result.getToolVersionScanResults().put(tag, versionScan);
+        }
+        return result;
     }
 
     /**
@@ -500,25 +626,6 @@ public class ToolManager implements SecuredEntityManager {
             return getImageTag(image);
         }
     }
-
-    /**
-     * Loads {@link ToolScanResult} for the specified tool
-     * that contains information about scan result for each tool version
-     * @param tool for which {@link ToolScanResult} will be loaded
-     * @return a {@link ToolScanResult}
-     */
-    public ToolScanResult loadToolScanResult(Tool tool) {
-        ToolScanResult result = new ToolScanResult();
-        result.setToolId(tool.getId());
-        Map<String, ToolVersionScanResult> versionScanResults =
-                toolVulnerabilityDao.loadAllToolVersionScans(tool.getId());
-        for (String tag : loadTags(tool.getId())) {
-            ToolVersionScanResult versionScan = getToolVersionScanResult(tool, versionScanResults, tag);
-            result.getToolVersionScanResults().put(tag, versionScan);
-        }
-        return result;
-    }
-
 
     public boolean isToolScanningEnabled() {
         return preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED);
@@ -564,7 +671,8 @@ public class ToolManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public long updateToolIcon(long toolId, String fileName, byte[] image) {
         Tool tool = load(toolId);
-        Assert.notNull(tool, messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND, toolId));
+        validateToolNotNull(tool, toolId);
+        validateToolCanBeModified(tool);
         int allowedIconSize = preferenceManager.getPreference(SystemPreferences.MISC_MAX_TOOL_ICON_SIZE_KB) * KB_SIZE;
         Assert.isTrue(image.length <= allowedIconSize,
                       messageHelper.getMessage(MessageConstants.ERROR_TOOL_ICON_TOO_LARGE, image.length,
@@ -575,31 +683,40 @@ public class ToolManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteToolIcon(long toolId) {
         Tool tool = load(toolId);
-        Assert.notNull(tool, messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND, toolId));
+        validateToolNotNull(tool, toolId);
+        validateToolCanBeModified(tool);
         toolDao.deleteToolIcon(toolId);
     }
 
     public ToolDescription loadToolAttributes(Long toolId) {
         Tool tool = load(toolId);
+        validateToolNotNull(tool, toolId);
+        return tool.isSymlink() ? loadToolAttributes(tool.getLink()) : loadToolAttributes(tool);
+    }
+
+    private ToolDescription loadToolAttributes(final Tool tool) {
         Map<String, ToolVersionScanResult> versionScanResults =
-                toolVulnerabilityDao.loadAllToolVersionScans(toolId);
+                toolVulnerabilityDao.loadAllToolVersionScans(tool.getId());
         ToolDescription toolDescription = new ToolDescription();
-        toolDescription.setToolId(toolId);
+        toolDescription.setToolId(tool.getId());
         List<ToolVersionAttributes> versions = ListUtils
-                .emptyIfNull(loadTags(toolId)).stream()
+                .emptyIfNull(loadTags(tool.getId())).stream()
                 .map(version -> {
                     ToolVersionScanResult vScanResult = getToolVersionScanResult(tool, versionScanResults, version);
                     return ToolVersionAttributes.builder()
                             .version(version)
-                            .attributes(getToolVersion(toolId, version))
+                            .attributes(getToolVersion(tool.getId(), version))
                             .scanResult(ToolVersionScanResultView.from(vScanResult,
-                                            isToolOSVersionAllowed(vScanResult.getToolOSVersion()))
-                            )
+                                    isToolOSVersionAllowed(vScanResult.getToolOSVersion())))
                             .build();
                 })
                 .collect(Collectors.toList());
         toolDescription.setVersions(versions);
         return toolDescription;
+    }
+
+    private ToolVersion getToolVersion(Long toolId, String version) {
+        return toolVersionManager.loadToolVersion(toolId, version);
     }
 
     public boolean isToolOSVersionAllowed(final ToolOSVersion toolOSVersion) {
@@ -628,25 +745,36 @@ public class ToolManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void clearToolScan(final String registry, final String image, final String version) {
         Tool tool = loadTool(registry, image);
-        toolVulnerabilityDao.deleteToolVersionScan(tool.getId(), version);
-        toolVulnerabilityDao.deleteDependencies(tool.getId(), version);
-        toolVulnerabilityDao.deleteVulnerabilities(tool.getId(), version);
+        validateToolNotNull(tool, image);
+        validateToolCanBeModified(tool);
+        deleteToolVersionScan(tool.getId(), version);
     }
 
     public long getCurrentImageSize(final String dockerImage) {
         LOGGER.info("Getting size of image {}", dockerImage);
         Tool tool = loadByNameOrId(dockerImage);
+        validateToolNotNull(tool, dockerImage);
+        return tool.isSymlink() ? getCurrentImageSize(tool.getLink()) : getCurrentImageSize(tool);
+    }
 
+    private long getCurrentImageSize(final Long toolId) {
+        Tool tool = load(toolId);
+        validateToolNotNull(tool, toolId);
+        return getCurrentImageSize(tool);
+    }
+
+    private long getCurrentImageSize(final Tool tool) {
         DockerRegistry dockerRegistry = dockerRegistryManager.load(tool.getRegistryId());
         String imageWithoutTag = getImageWithoutTag(tool.getImage());
-        String tag = getTagFromImageName(dockerImage);
+        String tag = getTagFromImageName(tool.getImage());
         DockerClient dockerClient = dockerRegistryManager.getDockerClient(dockerRegistry,
                 imageWithoutTag);
         try {
             ToolVersion toolVersion = dockerClient.getVersionAttributes(dockerRegistry,
                     imageWithoutTag, tag);
             if (Objects.isNull(toolVersion) || Objects.isNull(toolVersion.getSize())) {
-                LOGGER.warn(messageHelper.getMessage(MessageConstants.ERROR_TOOL_VERSION_INVALID_SIZE, dockerImage));
+                LOGGER.warn(messageHelper.getMessage(MessageConstants.ERROR_TOOL_VERSION_INVALID_SIZE, 
+                        tool.getImage()));
                 return 0;
             }
             return toolVersion.getSize();
@@ -656,8 +784,51 @@ public class ToolManager implements SecuredEntityManager {
         }
     }
 
-    private ToolVersion getToolVersion(Long toolId, String version) {
-        return toolVersionManager.loadToolVersion(toolId, version);
+    /**
+     * Creates a symlink for a tool by the given request.
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public Tool symlink(final ToolSymlinkRequest request) {
+        Assert.notNull(request.getToolId(), messageHelper.getMessage(
+                MessageConstants.ERROR_TOOL_SYMLINK_SOURCE_TOOL_ID_MISSING));
+        Assert.notNull(request.getGroupId(), messageHelper.getMessage(
+                MessageConstants.ERROR_TOOL_SYMLINK_TARGET_GROUP_ID_MISSING));
+
+        final Tool sourceTool = load(request.getToolId());
+        final ToolGroup targetGroup = toolGroupManager.load(request.getGroupId());
+
+        Assert.notNull(sourceTool, messageHelper.getMessage(MessageConstants.ERROR_TOOL_SYMLINK_SOURCE_TOOL_NOT_FOUND,
+                request.getToolId()));
+        Assert.notNull(targetGroup, messageHelper.getMessage(MessageConstants.ERROR_TOOL_SYMLINK_TARGET_GROUP_NOT_FOUND,
+                request.getGroupId()));
+        Assert.isTrue(!sourceTool.isSymlink(), messageHelper.getMessage(
+                MessageConstants.ERROR_TOOL_SYMLINK_TARGET_SYMLINK));
+        
+        final String targetImage = getSymlinkTargetImage(sourceTool, targetGroup);
+
+        Assert.isTrue(!Objects.equals(sourceTool.getToolGroupId(), targetGroup.getId()), messageHelper.getMessage(
+                MessageConstants.ERROR_TOOL_ALREADY_EXIST, targetImage, targetGroup.getName()));
+        Assert.isTrue(isToolUniqueInGroup(targetImage, targetGroup.getId()), messageHelper.getMessage(
+                MessageConstants.ERROR_TOOL_ALREADY_EXIST, targetImage, targetGroup.getName()));
+
+        final Tool tool = new Tool();
+        tool.setImage(targetImage);
+        tool.setParent(targetGroup);
+        tool.setToolGroupId(targetGroup.getId());
+        tool.setRegistryId(targetGroup.getRegistryId());
+        tool.setLink(sourceTool.getId());
+        tool.setOwner(authManager.getAuthorizedUser());
+        tool.setCpu(sourceTool.getCpu());
+        tool.setRam(sourceTool.getRam());
+
+        toolDao.createTool(tool);
+
+        return load(tool.getId());
+    }
+
+    private String getSymlinkTargetImage(final Tool sourceTool, final ToolGroup targetGroup) {
+        return targetGroup.getName() + TOOL_DELIMETER +
+                toolGroupManager.getGroupAndTool(sourceTool.getImage()).getRight();
     }
 
     private ToolVersionScanResult getToolVersionScanResult(Tool tool,
@@ -679,18 +850,12 @@ public class ToolManager implements SecuredEntityManager {
         return !imageWithTag.endsWith(TAG_DELIMITER) && numberOfElements <= 2;
     }
 
-    private void deleteToolVersionScan(Long toolId, String version) {
-        toolVulnerabilityDao.deleteToolVersionScan(toolId, version);
-        toolVulnerabilityDao.deleteVulnerabilities(toolId, version);
-        toolVulnerabilityDao.deleteDependencies(toolId, version);
-    }
-
     private Tool fetchTool(String registry, String image) {
         Long registryId = !StringUtils.isEmpty(registry)
                 ? dockerRegistryManager.loadByNameOrId(registry).getId()
                 : null;
         Tool tool = toolDao.loadTool(registryId, getImageWithoutTag(image));
-        Assert.notNull(tool, messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND, image));
+        validateToolNotNull(tool, image);
         return tool;
     }
 
@@ -707,6 +872,19 @@ public class ToolManager implements SecuredEntityManager {
         }
     }
 
+    private void validateToolNotNull(final Tool tool, final long toolId) {
+        Assert.notNull(tool, messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND, toolId));
+    }
+
+    private void validateToolNotNull(final Tool tool, final String image) {
+        Assert.notNull(tool, messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND, image));
+    }
+
+    private void validateToolCanBeModified(final Tool tool) {
+        Assert.isTrue(tool.isNotSymlink(), messageHelper.getMessage(
+                MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED));
+    }
+
     private void validateInstanceType(final Tool tool) {
         Assert.isTrue(isInstanceTypeAllowed(tool.getId(), tool.getInstanceType()),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED,
@@ -721,32 +899,4 @@ public class ToolManager implements SecuredEntityManager {
         return !StringUtils.hasText(instanceType)
                 || instanceOfferManager.isToolInstanceAllowedInAnyRegion(instanceType, resource);
     }
-
-    private void deleteToolWithDependent(final Tool tool, final String image, final boolean hard) {
-        if (hard) {
-            DockerRegistry dockerRegistry = dockerRegistryManager.load(tool.getRegistryId());
-            List<String> tags = dockerRegistryManager.loadImageTags(dockerRegistry, image);
-
-            for (String tag : tags) {
-                Optional<ManifestV2> manifestOpt =
-                        dockerRegistryManager.deleteImage(dockerRegistry, tool.getImage(), tag);
-                manifestOpt.ifPresent(manifest -> {
-                    dockerRegistryManager.deleteLayer(dockerRegistry, image, manifest.getConfig().getDigest());
-
-                    Collections.reverse(manifest.getLayers());
-                    for (ManifestV2.Config layer : manifest.getLayers()) {
-                        dockerRegistryManager.deleteLayer(dockerRegistry, image, layer.getDigest());
-                    }
-                });
-            }
-        }
-        toolVulnerabilityDao.loadAllToolVersionScans(tool.getId())
-                .values()
-                .forEach(versionScan -> deleteToolVersionScan(tool.getId(), versionScan.getVersion()));
-        toolDao.deleteToolIcon(tool.getId());
-        toolVersionManager.deleteToolVersions(tool.getId());
-        toolDao.deleteTool(tool.getId());
-    }
-
-
 }

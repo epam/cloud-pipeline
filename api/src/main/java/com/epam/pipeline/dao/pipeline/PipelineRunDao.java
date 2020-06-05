@@ -666,6 +666,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         NODE_CLOUD_REGION,
         NODE_CLOUD_PROVIDER,
         DOCKER_IMAGE,
+        ACTUAL_DOCKER_IMAGE,
         CMD_TEMPLATE,
         ACTUAL_CMD,
         TIMEOUT,
@@ -726,6 +727,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(POD_ID.name(), run.getPodId());
             params.addValue(TIMEOUT.name(), run.getTimeout());
             params.addValue(DOCKER_IMAGE.name(), run.getDockerImage());
+            params.addValue(ACTUAL_DOCKER_IMAGE.name(), run.getActualDockerImage());
             params.addValue(CMD_TEMPLATE.name(), run.getCmdTemplate());
             params.addValue(ACTUAL_CMD.name(), run.getActualCmd());
             params.addValue(OWNER.name(), run.getOwner());
@@ -833,6 +835,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             }
 
             run.setDockerImage(rs.getString(DOCKER_IMAGE.name()));
+            run.setActualDockerImage(rs.getString(ACTUAL_DOCKER_IMAGE.name()));
             run.setCmdTemplate(rs.getString(CMD_TEMPLATE.name()));
             run.setActualCmd(rs.getString(ACTUAL_CMD.name()));
             run.setSensitive(rs.getBoolean(SENSITIVE.name()));

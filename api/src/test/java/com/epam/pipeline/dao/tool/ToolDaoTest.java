@@ -16,14 +16,20 @@
 
 package com.epam.pipeline.dao.tool;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 
@@ -35,6 +41,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,7 +57,9 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.security.AuthManager;
+import org.springframework.util.StreamUtils;
 
+@SuppressWarnings("PMD.TooManyStaticImports")
 public class ToolDaoTest extends AbstractSpringTest {
 
     private static final String ISSUE_NAME = "Issue name";
@@ -58,18 +67,39 @@ public class ToolDaoTest extends AbstractSpringTest {
     private static final String ISSUE_TEXT = "Issue text";
     private static final String AUTHOR = "author";
 
-    private static final String TEST_USER = "test";
+    private static final String TEST_FILE_NAME = "test";
+    private static final String TEST_USER = TEST_FILE_NAME;
+    private static final String TEST_ANOTHER_USER = "test2";
     private static final String TEST_IMAGE = "image";
+    private static final String TEST_SOURCE_IMAGE = "library/image";
+    private static final String TEST_SYMLINK_IMAGE = "user/image";
     private static final String TEST_CPU = "500m";
     private static final String TEST_RAM = "1Gi";
     private static final String TEST_REPO = "repository";
     private static final String TEST_REPO_2 = "repository2";
     private static final String TOOL_GROUP_NAME = "library";
+    private static final String USER_GROUP_NAME = "user";
+    private static final String DESCRIPTION = "description";
+    private static final String SHORT_DESCRIPTION = "short description";
+    private static final List<String> LABELS = Arrays.asList("label1", "label2");
+    private static final List<String> ENDPOINTS = Arrays.asList("endpoint1", "endpoint2");
+    private static final String DEFAULT_COMMAND = "default command";
+    private static final Integer DISK = 100;
+    private static final String INSTANCE_TYPE = "Instance type";
+    private static final Long NO_LINK = null;
+    private static final byte[] BYTES = getRandomBytes();
+
+    private static byte[] getRandomBytes() {
+        final byte[] bytes = new byte[10];
+        new Random().nextBytes(bytes);
+        return bytes;
+    }
 
     private DockerRegistry firstRegistry;
     private DockerRegistry secondRegistry;
     private ToolGroup library1;
     private ToolGroup library2;
+    private ToolGroup userGroup;
 
     @Autowired
     private ToolDao toolDao;
@@ -108,6 +138,14 @@ public class ToolDaoTest extends AbstractSpringTest {
         library2.setRegistryId(secondRegistry.getId());
         library2.setOwner(TEST_USER);
         toolGroupDao.createToolGroup(library2);
+        
+        userGroup = new ToolGroup();
+        userGroup.setName(USER_GROUP_NAME);
+        userGroup.setRegistryId(secondRegistry.getId());
+        userGroup.setOwner(TEST_USER);
+        toolGroupDao.createToolGroup(userGroup);
+
+        when(authManager.getAuthorizedUser()).thenReturn(AUTHOR);
     }
 
     @Test
@@ -140,13 +178,9 @@ public class ToolDaoTest extends AbstractSpringTest {
         tool.setToolGroupId(library1.getId());
         toolDao.createTool(tool);
         //create issues
-        when(authManager.getAuthorizedUser()).thenReturn(AUTHOR);
-        EntityVO entityVO = new EntityVO(tool.getId(), AclClass.TOOL);
-        IssueVO issueVO = getIssueVO(ISSUE_NAME, ISSUE_TEXT, entityVO);
-        issueManager.createIssue(issueVO);
-        verify(notificationManager).notifyIssue(any(), any(), any());
-        issueVO.setName(ISSUE_NAME2);
-        issueManager.createIssue(issueVO);
+        createIssue(tool, ISSUE_NAME);
+        createIssue(tool, ISSUE_NAME2);
+        verify(notificationManager, times(2)).notifyIssue(any(), any(), any());
 
         List<ToolWithIssuesCount> loaded = toolDao.loadToolsWithIssuesCountByGroup(library1.getId());
         Assert.assertEquals(1, loaded.size());
@@ -191,10 +225,7 @@ public class ToolDaoTest extends AbstractSpringTest {
         tool.setToolGroupId(library1.getId());
         toolDao.createTool(tool);
 
-        byte[] randomBytes = new byte[10];
-        new Random().nextBytes(randomBytes);
-        String testFileName = "test";
-        long iconId = toolDao.updateIcon(tool.getId(), testFileName, randomBytes);
+        long iconId = toolDao.updateIcon(tool.getId(), TEST_FILE_NAME, BYTES);
 
         Tool loaded = toolDao.loadTool(tool.getId());
         Assert.assertTrue(loaded.isHasIcon());
@@ -210,24 +241,269 @@ public class ToolDaoTest extends AbstractSpringTest {
         Assert.assertEquals(iconId, loaded.getIconId().longValue());
 
         Optional<Pair<String, InputStream>> loadedImage = toolDao.loadIcon(tool.getId());
-        Assert.assertEquals(testFileName, loadedImage.get().getLeft());
+        Assert.assertEquals(TEST_FILE_NAME, loadedImage.get().getLeft());
         try (InputStream imageStream = loadedImage.get().getRight()) {
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             IOUtils.copy(imageStream, os);
             byte[] loadedBytes = os.toByteArray();
             for (int i = 0; i < loadedBytes.length; i++) {
-                Assert.assertEquals(randomBytes[i], loadedBytes[i]);
+                Assert.assertEquals(BYTES[i], loadedBytes[i]);
             }
         }
 
         // update again
-        new Random().nextBytes(randomBytes);
-        toolDao.updateIcon(tool.getId(), testFileName, randomBytes);
+        toolDao.updateIcon(tool.getId(), TEST_FILE_NAME, BYTES);
         loaded = toolDao.loadTool(tool.getId());
         Assert.assertTrue(loaded.isHasIcon());
 
-        toolDao.deleteToolIcon(tool.getId());
+        deleteTool(loaded);
+    }
+    
+    @Test
+    @Transactional
+    public void testToolCanBeLoadedWithAnyAvailableMethod() {
+        final Tool tool = createTool();
+
+        assertToolCanBeLoaded(tool);
+    }
+
+    @Test
+    @Transactional
+    public void testSymlinkCanBeLoadedWithAnyAvailableMethod() {
+        final Tool tool = createTool();
+        final Tool symlink = createSymlink(tool);
+
+        assertSymlinkCanBeLoaded(tool, symlink);
+    }
+
+    @Test(expected = DataIntegrityViolationException.class)
+    @Transactional
+    public void testToolCannotBeDeletedIfThereAreSymlinksForIt() {
+        final Tool tool = createTool();
+        createSymlink(tool);
+
+        deleteTool(tool);
+    }
+
+    @Test
+    @Transactional
+    public void testToolIsNotAffectedAfterSymlinkIsDeleted() {
+        final Tool tool = createTool();
+        final Tool symlink = createSymlink(tool);
+        
+        assertToolCanBeLoaded(tool);
+        deleteSymlink(symlink);
+        assertToolCanBeLoaded(tool);
+        assertToolCannotBeLoaded(symlink);
+    }
+    
+    @Test
+    @Transactional
+    public void testSymlinkWithIssuesCountCanBeLoaded() {
+        final Tool tool = createTool();
+        final Tool symlink = createSymlink(tool);
+        createIssue(tool, ISSUE_NAME);
+        createIssue(tool, ISSUE_NAME2);
+
+        final ToolWithIssuesCount loadedSymlink = loadToolWithIssuesCount(symlink);
+        assertThat(loadedSymlink.getIssuesCount(), is(2L));
+    }
+    
+    @Test
+    @Transactional
+    public void testToolOwnerCanBeUpdatedUsingTheCorrespondingMethod() {
+        final Tool tool = createTool();
+        tool.setOwner(TEST_ANOTHER_USER);
+        
+        toolDao.updateOwner(tool);
+
+        final Tool loadedTool = toolDao.loadTool(tool.getId());
+        assertThat(loadedTool.getOwner(), is(TEST_ANOTHER_USER));
+    }
+    
+    @Test
+    @Transactional
+    public void testSymlinkOwnerCanBeUpdatedUsingTheCorrespondingMethod() {
+        final Tool tool = createTool();
+        final Tool symlink = createSymlink(tool);
+        symlink.setOwner(TEST_USER);
+        
+        toolDao.updateOwner(symlink);
+
+        final Tool loadedSymlink = toolDao.loadTool(symlink.getId());
+        assertThat(loadedSymlink.getOwner(), is(TEST_USER));
+    }
+    
+    @Test
+    @Transactional
+    public void testToolIconCanBeLoaded() throws IOException {
+        final Tool tool = createTool();
+
+        final Pair<String, InputStream> icon = toolDao.loadIcon(tool.getId()).orElseThrow(RuntimeException::new);
+
+        assertThat(icon.getLeft(), is(TEST_FILE_NAME));
+        assertThat(StreamUtils.copyToByteArray(icon.getRight()), is(BYTES));
+    }
+    
+    @Test
+    @Transactional
+    public void testToolIconCanBeLoadedIfThereIsSymlinkForThatTool() throws IOException {
+        final Tool tool = createTool();
+        createSymlink(tool);
+
+        final Pair<String, InputStream> icon = toolDao.loadIcon(tool.getId()).orElseThrow(RuntimeException::new);
+
+        assertThat(icon.getLeft(), is(TEST_FILE_NAME));
+        assertThat(StreamUtils.copyToByteArray(icon.getRight()), is(BYTES));
+    }
+    
+    @Test
+    @Transactional
+    public void testSymlinkIconCanBeLoaded() throws IOException {
+        final Tool tool = createTool();
+        final Tool symlink = createSymlink(tool);
+
+        final Pair<String, InputStream> icon = toolDao.loadIcon(symlink.getId()).orElseThrow(RuntimeException::new);
+
+        assertThat(icon.getLeft(), is(TEST_FILE_NAME));
+        assertThat(StreamUtils.copyToByteArray(icon.getRight()), is(BYTES));
+    }
+
+    private Tool createTool() {
+        final Tool tool = generateToolWithAllFields();
+        toolDao.createTool(tool);
+        final long iconId = updateToolIcon(tool);
+        tool.setIconId(iconId);
+        return tool;
+    }
+
+    private Tool createSymlink(final Tool tool) {
+        final Tool symlink = generateSymlink(tool);
+        toolDao.createTool(symlink);
+        return symlink;
+    }
+
+    private Tool generateToolWithAllFields() {
+        final Tool tool = new Tool();
+        tool.setImage(TEST_SOURCE_IMAGE);
+        tool.setRam(TEST_RAM);
+        tool.setCpu(TEST_CPU);
+        tool.setOwner(TEST_USER);
+        tool.setRegistryId(firstRegistry.getId());
+        tool.setToolGroupId(library1.getId());
+        tool.setDescription(DESCRIPTION);
+        tool.setShortDescription(SHORT_DESCRIPTION);
+        tool.setLabels(LABELS);
+        tool.setEndpoints(ENDPOINTS);
+        tool.setDefaultCommand(DEFAULT_COMMAND);
+        tool.setDisk(DISK);
+        tool.setInstanceType(INSTANCE_TYPE);
+        return tool;
+    }
+
+    private Tool generateSymlink(final Tool tool) {
+        final Tool symlink = new Tool();
+        symlink.setImage(TEST_SYMLINK_IMAGE);
+        symlink.setOwner(TEST_ANOTHER_USER);
+        symlink.setRam(tool.getRam());
+        symlink.setCpu(tool.getCpu());
+        symlink.setLink(tool.getId());
+        symlink.setRegistryId(secondRegistry.getId());
+        symlink.setToolGroupId(userGroup.getId());
+        return symlink;
+    }
+
+    private void createIssue(final Tool tool, final String issueName) {
+        final EntityVO entityVO = new EntityVO(tool.getId(), AclClass.TOOL);
+        final IssueVO issueVO = getIssueVO(issueName, ISSUE_TEXT, entityVO);
+        issueManager.createIssue(issueVO);
+    }
+
+    private long updateToolIcon(final Tool tool) {
+        return toolDao.updateIcon(tool.getId(), TEST_FILE_NAME, BYTES);
+    }
+
+    private void assertToolCannotBeLoaded(final Tool tool) {
+        assertNull(toolDao.loadTool(tool.getId()));    
+    }
+
+    private void assertToolCanBeLoaded(final Tool tool) {
+        loadToolWithAllTheAvailableMethods(tool.getId(), firstRegistry, library1, TEST_SOURCE_IMAGE)
+                .forEach(loadedTool -> assertToolFields(tool.getId(), loadedTool, library1, firstRegistry,
+                        TEST_USER, TEST_SOURCE_IMAGE, NO_LINK, tool.getIconId()));
+    }
+
+    private void assertSymlinkCanBeLoaded(final Tool tool, final Tool symlink) {
+        loadToolWithAllTheAvailableMethods(symlink.getId(), secondRegistry, userGroup, TEST_SYMLINK_IMAGE)
+                .forEach(loadedSymlink -> assertToolFields(symlink.getId(), loadedSymlink, userGroup, secondRegistry,
+                        TEST_ANOTHER_USER, TEST_SYMLINK_IMAGE, tool.getId(), tool.getIconId()));
+    }
+
+    private List<Tool> loadToolWithAllTheAvailableMethods(final Long toolId, final DockerRegistry registry, 
+                                                          final ToolGroup group, final String image) {
+        return Arrays.asList(
+                toolDao.loadTool(toolId),
+                toolDao.loadTool(registry.getId(), image),
+                toolDao.loadToolByGroupAndImage(group.getId(), image)
+                        .orElseThrow(RuntimeException::new),
+                selectMatching(toolDao.loadToolsWithIssuesCountByGroup(group.getId()), toolId),
+                selectMatching(toolDao.loadWithSameImageNameFromOtherRegistries(image, 
+                        registry.getPath() + registry.getPath()), toolId),
+                selectMatching(toolDao.loadToolsByGroup(group.getId()), toolId),
+                selectMatching(toolDao.loadAllTools(), toolId),
+                selectMatching(toolDao.loadAllTools(registry.getId()), toolId),
+                selectMatching(toolDao.loadAllTools(LABELS), toolId),
+                selectMatching(toolDao.loadAllTools(registry.getId(), LABELS), toolId)
+        );
+    }
+
+    private Tool selectMatching(final List<? extends Tool> tools, final Long id) {
+        return tools.stream()
+                .filter(it -> Objects.equals(it.getId(), id))
+                .findFirst()
+                .orElseThrow(RuntimeException::new);
+    }
+
+    private ToolWithIssuesCount loadToolWithIssuesCount(final Tool symlink) {
+        return toolDao.loadToolsWithIssuesCountByGroup(symlink.getToolGroupId())
+                .stream()
+                .filter(it -> Objects.equals(it.getId(), symlink.getId()))
+                .findFirst()
+                .orElseThrow(RuntimeException::new);
+    }
+
+    private void assertToolFields(final Long toolId, final Tool tool, final ToolGroup group,
+                                  final DockerRegistry registry, final String user, final String image,
+                                  final Long linkId, final Long iconId) {
+        assertThat(tool.getId(), is(toolId));
+        assertThat(tool.getImage(), is(image));
+        assertThat(tool.getRegistryId(), is(registry.getId()));
+        assertThat(tool.getToolGroupId(), is(group.getId()));
+        assertThat(tool.getOwner(), is(user));
+        assertThat(tool.getLink(), is(linkId));
+        assertThat(tool.getRegistry(), is(registry.getPath()));
+        assertThat(tool.getSecretName(), is(registry.getSecretName()));
+        assertThat(tool.getDescription(), is(DESCRIPTION));
+        assertThat(tool.getShortDescription(), is(SHORT_DESCRIPTION));
+        assertThat(tool.getCpu(), is(TEST_CPU));
+        assertThat(tool.getRam(), is(TEST_RAM));
+        assertThat(tool.getDefaultCommand(), is(DEFAULT_COMMAND));
+        assertThat(tool.getLabels(), is(LABELS));
+        assertThat(tool.getEndpoints(), is(ENDPOINTS));
+        assertThat(tool.getDisk(), is(DISK));
+        assertThat(tool.getInstanceType(), is(INSTANCE_TYPE));
+        assertThat(tool.getIconId(), is(iconId));
+    }
+
+    private void deleteTool(final Tool tool) {
+        if (tool.isHasIcon()) {
+            toolDao.deleteToolIcon(tool.getId());
+        }
         toolDao.deleteTool(tool.getId());
+    }
+
+    private void deleteSymlink(final Tool symlink) {
+        toolDao.deleteTool(symlink.getId());
     }
 
     public static Tool generateTool() {

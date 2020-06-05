@@ -39,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.concurrent.DelegatingSecurityContextCallable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -116,39 +117,45 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
         List<DockerRegistry> registries = scanAllRegistries ? dockerRegistryDao.loadAllDockerRegistry() :
                                           dockerRegistryDao.loadDockerRegistriesWithSecurityScanEnabled();
         for (DockerRegistry registry : registries) {
-            LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_TOOL_SCAN_REGISTRY_STARTED, registry.getPath()));
-
-            for (Tool tool : registry.getTools()) {
-                DockerClient dockerClient = getDockerClient(registry, tool);
-
-                try {
-                    List<String> versions = toolManager.loadTags(tool.getId());
-                    for (String version : versions) {
-                        try {
-                            ToolVersionScanResult result = toolScanManager.scanTool(tool, version, false);
-                            toolManager.updateToolVulnerabilities(result.getVulnerabilities(),
-                                                                  tool.getId(), version);
-                            toolManager.updateToolDependencies(result.getDependencies(), tool.getId(), version);
-                            toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED, new Date(),
-                                                             version, result.getToolOSVersion(),
-                                                             result.getLastLayerRef(), result.getDigest());
-                            updateToolVersion(tool, version, registry, dockerClient);
-                        } catch (ToolScanExternalServiceException e) {
-                            LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED,
-                                                                  tool.getImage(), version), e);
-                            toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                                                             version, null, null);
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage()), e);
-                    toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                                                     "latest", null, null);
-                }
-            }
+            scanRegistry(registry);
         }
 
         LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_TOOL_SCAN_SCHEDULED_DONE));
+    }
+
+    private void scanRegistry(final DockerRegistry registry) {
+        LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_TOOL_SCAN_REGISTRY_STARTED, registry.getPath()));
+        registry.getTools()
+                .stream()
+                .filter(Tool::isNotSymlink)
+                .forEach(tool -> scanTool(registry, tool));
+    }
+
+    private void scanTool(final DockerRegistry registry, final Tool tool) {
+        DockerClient dockerClient = getDockerClient(registry, tool);
+        try {
+            List<String> versions = toolManager.loadTags(tool.getId());
+            for (String version : versions) {
+                try {
+                    ToolVersionScanResult result = toolScanManager.scanTool(tool, version, false);
+                    toolManager.updateToolVulnerabilities(result.getVulnerabilities(), tool.getId(), version);
+                    toolManager.updateToolDependencies(result.getDependencies(), tool.getId(), version);
+                    toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED, new Date(),
+                            version, result.getToolOSVersion(),
+                            result.getLastLayerRef(), result.getDigest());
+                    updateToolVersion(tool, version, registry, dockerClient);
+                } catch (ToolScanExternalServiceException e) {
+                    LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED,
+                            tool.getImage(), version), e);
+                    toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
+                            version, null, null);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage()), e);
+            toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
+                    "latest", null, null);
+        }
     }
 
     /**
@@ -167,6 +174,8 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
         }
 
         Tool tool = toolManager.loadTool(registry, id);
+        Assert.isTrue(tool.isNotSymlink(), messageHelper.getMessage(
+                MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED));
         Optional<ToolVersionScanResult> toolVersionScanResult = toolManager.loadToolVersionScan(tool.getId(), version);
         ToolScanStatus curentStatus = toolVersionScanResult
                 .map(ToolVersionScanResult::getStatus)

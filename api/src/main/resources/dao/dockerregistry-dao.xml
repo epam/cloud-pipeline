@@ -89,19 +89,21 @@
                       g.owner as group_owner,
                       t.id as tool_id,
                       t.image as tool_image,
-                      t.cpu as tool_cpu,
-                      t.ram as tool_ram,
-                      t.default_command as tool_default_command,
-                      t.labels as tool_labels,
-                      t.endpoints as tool_endpoints,
-                      NULL as tool_description,
-                      t.short_description as tool_short_description,
-                      t.owner as tool_owner,
-                      t.icon_id as tool_icon_id
+                      t.link as tool_link,
+                      COALESCE(tl.cpu, t.cpu) AS tool_cpu,
+                      COALESCE(tl.ram, t.ram) AS tool_ram,
+                      COALESCE(tl.default_command, t.default_command) AS tool_default_command,
+                      COALESCE(tl.labels, t.labels) AS tool_labels,
+                      COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
+                      NULL AS tool_description,
+                      COALESCE(tl.short_description, t.short_description) AS tool_short_description,
+                      COALESCE(tl.owner, t.owner) as tool_owner,
+                      COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                   FROM
                       pipeline.docker_registry dr
                   LEFT JOIN pipeline.tool_group g ON g.registry_id = dr.id
                   LEFT JOIN pipeline.tool t ON t.tool_group_id = g.id
+                  LEFT JOIN pipeline.tool tl ON t.link = tl.id
                   WHERE
                       dr.id = ?
                 ]]>
@@ -128,19 +130,21 @@
                       g.owner as group_owner,
                       t.id as tool_id,
                       t.image as tool_image,
-                      t.cpu as tool_cpu,
-                      t.ram as tool_ram,
-                      t.default_command as tool_default_command,
-                      t.labels as tool_labels,
-                      t.endpoints as tool_endpoints,
-                      NULL as tool_description,
-                      t.short_description as tool_short_description,
-                      t.owner as tool_owner,
-                      t.icon_id as tool_icon_id
+                      t.link as tool_link,
+                      COALESCE(tl.cpu, t.cpu) AS tool_cpu,
+                      COALESCE(tl.ram, t.ram) AS tool_ram,
+                      COALESCE(tl.default_command, t.default_command) AS tool_default_command,
+                      COALESCE(tl.labels, t.labels) AS tool_labels,
+                      COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
+                      NULL AS tool_description,
+                      COALESCE(tl.short_description, t.short_description) AS tool_short_description,
+                      COALESCE(tl.owner, t.owner) as tool_owner,
+                      COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                   FROM
                       pipeline.docker_registry dr
                   LEFT JOIN pipeline.tool_group g ON g.registry_id = dr.id
                   LEFT JOIN pipeline.tool t ON t.tool_group_id = g.id
+                  LEFT JOIN pipeline.tool tl ON t.link = tl.id
                   ORDER BY
                       dr.id
                 ]]>
@@ -163,17 +167,19 @@
                         dr.security_scan_enabled,
                         t.id as tool_id,
                         t.image as tool_image,
-                        t.cpu as tool_cpu,
-                        t.ram as tool_ram,
-                        t.default_command as tool_default_command,
-                        t.labels as tool_labels,
-                        t.endpoints as tool_endpoints,
-                        t.description as tool_description,
-                        t.short_description as tool_short_description,
-                        t.icon_id as tool_icon_id
+                        t.link as tool_link,
+                        COALESCE(tl.cpu, t.cpu) AS tool_cpu,
+                        COALESCE(tl.ram, t.ram) AS tool_ram,
+                        COALESCE(tl.default_command, t.default_command) AS tool_default_command,
+                        COALESCE(tl.labels, t.labels) AS tool_labels,
+                        COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
+                        COALESCE(tl.description, t.description) AS tool_description,
+                        COALESCE(tl.short_description, t.short_description) AS tool_short_description,
+                        COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                     FROM
                         pipeline.docker_registry dr
                         LEFT JOIN pipeline.tool t ON t.registry_id = dr.id
+                        LEFT JOIN pipeline.tool tl ON t.link = tl.id
                     ORDER BY
                         dr.id
                 ]]>
@@ -203,17 +209,19 @@
                         dr.security_scan_enabled,
                         t.id as tool_id,
                         t.image as tool_image,
-                        t.cpu as tool_cpu,
-                        t.ram as tool_ram,
-                        t.default_command as tool_default_command,
-                        t.labels as tool_labels,
-                        t.endpoints as tool_endpoints,
-                        t.description as tool_description,
-                        t.short_description as tool_short_description,
-                        t.icon_id as tool_icon_id
+                        t.link as tool_link,
+                        COALESCE(tl.cpu, t.cpu) AS tool_cpu,
+                        COALESCE(tl.ram, t.ram) AS tool_ram,
+                        COALESCE(tl.default_command, t.default_command) AS tool_default_command,
+                        COALESCE(tl.labels, t.labels) AS tool_labels,
+                        COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
+                        COALESCE(tl.description, t.description) AS tool_description,
+                        COALESCE(tl.short_description, t.short_description) AS tool_short_description,
+                        COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                     FROM
                         pipeline.docker_registry dr
                         LEFT JOIN pipeline.tool t ON t.registry_id = dr.id
+                        LEFT JOIN pipeline.tool tl ON t.link = tl.id
                     WHERE
                         dr.id = ?
                 ]]>
@@ -236,17 +244,19 @@
                         dr.security_scan_enabled,
                         t.id as tool_id,
                         t.image as tool_image,
-                        t.cpu as tool_cpu,
-                        t.ram as tool_ram,
-                        t.default_command as tool_default_command,
-                        t.labels as tool_labels,
-                        t.endpoints as tool_endpoints,
-                        t.description as tool_description,
-                        t.short_description as tool_short_description,
-                        t.icon_id as tool_icon_id
+                        t.link as tool_link,
+                        COALESCE(tl.cpu, t.cpu) AS tool_cpu,
+                        COALESCE(tl.ram, t.ram) AS tool_ram,
+                        COALESCE(tl.default_command, t.default_command) AS tool_default_command,
+                        COALESCE(tl.labels, t.labels) AS tool_labels,
+                        COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
+                        COALESCE(tl.description, t.description) AS tool_description,
+                        COALESCE(tl.short_description, t.short_description) AS tool_short_description,
+                        COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                     FROM
                         pipeline.docker_registry dr
                         LEFT JOIN pipeline.tool t ON t.registry_id = dr.id
+                        LEFT JOIN pipeline.tool tl ON t.link = tl.id
                     WHERE
                         dr.path = ?
                 ]]>
@@ -269,17 +279,19 @@
                         dr.security_scan_enabled,
                         t.id as tool_id,
                         t.image as tool_image,
-                        t.cpu as tool_cpu,
-                        t.ram as tool_ram,
-                        t.default_command as tool_default_command,
-                        t.labels as tool_labels,
-                        t.endpoints as tool_endpoints,
-                        t.description as tool_description,
-                        t.short_description as tool_short_description,
-                        t.icon_id as tool_icon_id
+                        t.link as tool_link,
+                        COALESCE(tl.cpu, t.cpu) AS tool_cpu,
+                        COALESCE(tl.ram, t.ram) AS tool_ram,
+                        COALESCE(tl.default_command, t.default_command) AS tool_default_command,
+                        COALESCE(tl.labels, t.labels) AS tool_labels,
+                        COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
+                        COALESCE(tl.description, t.description) AS tool_description,
+                        COALESCE(tl.short_description, t.short_description) AS tool_short_description,
+                        COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                     FROM
                         pipeline.docker_registry dr
                         LEFT JOIN pipeline.tool t ON t.registry_id = dr.id
+                        LEFT JOIN pipeline.tool tl ON t.link = tl.id
                     WHERE
                         dr.external_url = ?
                 ]]>
@@ -306,19 +318,21 @@
                       g.owner as group_owner,
                       t.id as tool_id,
                       t.image as tool_image,
-                      t.cpu as tool_cpu,
-                      t.ram as tool_ram,
-                      t.default_command as tool_default_command,
-                      t.labels as tool_labels,
-                      t.endpoints as tool_endpoints,
-                      NULL as tool_description,
-                      t.short_description as tool_short_description,
-                      t.owner as tool_owner,
-                      t.icon_id as tool_icon_id
+                      t.link as tool_link,
+                      COALESCE(tl.cpu, t.cpu) AS tool_cpu,
+                      COALESCE(tl.ram, t.ram) AS tool_ram,
+                      COALESCE(tl.default_command, t.default_command) AS tool_default_command,
+                      COALESCE(tl.labels, t.labels) AS tool_labels,
+                      COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
+                      NULL AS tool_description,
+                      COALESCE(tl.short_description, t.short_description) AS tool_short_description,
+                      COALESCE(tl.owner, t.owner) as tool_owner,
+                      COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                   FROM
                       pipeline.docker_registry dr
                   LEFT JOIN pipeline.tool_group g ON g.registry_id = dr.id
                   LEFT JOIN pipeline.tool t ON t.tool_group_id = g.id
+                  LEFT JOIN pipeline.tool tl ON t.link = tl.id
                   WHERE
                       dr.ca_cert NOTNULL AND length(dr.ca_cert) > 0
                 ]]>
@@ -341,17 +355,19 @@
                         dr.security_scan_enabled,
                         t.id as tool_id,
                         t.image as tool_image,
-                        t.cpu as tool_cpu,
-                        t.ram as tool_ram,
-                        t.default_command as tool_default_command,
-                        t.labels as tool_labels,
-                        t.endpoints as tool_endpoints,
-                        t.description as tool_description,
-                        t.short_description as tool_short_description,
-                        t.icon_id as tool_icon_id
+                        t.link as tool_link,
+                        COALESCE(tl.cpu, t.cpu) AS tool_cpu,
+                        COALESCE(tl.ram, t.ram) AS tool_ram,
+                        COALESCE(tl.default_command, t.default_command) AS tool_default_command,
+                        COALESCE(tl.labels, t.labels) AS tool_labels,
+                        COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
+                        COALESCE(tl.description, t.description) AS tool_description,
+                        COALESCE(tl.short_description, t.short_description) AS tool_short_description,
+                        COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                     FROM
                         pipeline.docker_registry dr
                         LEFT JOIN pipeline.tool t ON t.registry_id = dr.id
+                        LEFT JOIN pipeline.tool tl ON t.link = tl.id
                     WHERE
                         dr.security_scan_enabled
                     ORDER BY

@@ -87,6 +87,15 @@ public final class MessageConstants {
     public static final String ERROR_TOOL_VERSION_INVALID_SIZE = "error.tool.version.invalid.size";
     public static final String ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED = "error.tool.cloud.region.not.allowed";
 
+    public static final String ERROR_TOOL_SYMLINK_SOURCE_TOOL_ID_MISSING = "error.tool.symlink.source.tool.id.missing";
+    public static final String ERROR_TOOL_SYMLINK_TARGET_GROUP_ID_MISSING = 
+            "error.tool.symlink.target.group.id.missing";
+    public static final String ERROR_TOOL_SYMLINK_SOURCE_TOOL_NOT_FOUND = "error.tool.symlink.source.tool.not.found";
+    public static final String ERROR_TOOL_SYMLINK_TARGET_GROUP_NOT_FOUND = "error.tool.symlink.target.group.not.found";
+    public static final String ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED = 
+            "error.tool.symlink.modification.not.supported";
+    public static final String ERROR_TOOL_SYMLINK_TARGET_SYMLINK = "error.tool.symlink.target.symlink";
+
     // Registry messages
     public static final String DEBUG_DOCKER_REGISTRY_AUTO_ENABLE = "debug.docker.registry.auto.enable";
     public static final String DEBUG_DOCKER_REGISTRY_AUTO_ENABLE_SUCCESS = "debug.docker.registry.auto.enable.success";
@@ -96,6 +105,7 @@ public final class MessageConstants {
     // Registry access
     public static final String ERROR_REGISTRY_IS_NOT_ALLOWED = "error.registry.not.allowed";
     public static final String ERROR_REGISTRY_ACTION_IS_NOT_ALLOWED = "error.registry.action.not.allowed";
+    public static final String ERROR_REGISTRY_IMAGE_ACTION_IS_NOT_ALLOWED = "error.registry.image.action.not.allowed";
 
     // ToolGroup errors
     public static final String ERROR_TOOL_GROUP_ALREADY_EXIST = "error.tool.group.already.exists";
@@ -347,7 +357,8 @@ public final class MessageConstants {
     //Pipeline notification
     public static final String ERROR_NOTIFICATION_SETTINGS_NOT_FOUND = "error.notification.settings.not.found";
     public static final String INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED = "info.notification.template.not.configured";
-    public static final String INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION = "info.run.status.not.configured.for.notification";
+    public static final String INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION = 
+            "info.run.status.not.configured.for.notification";
     public static final String ERROR_TEMPLATE_ID_SHOULD_BE_EQUAL_TO_TYPE = "error.template.id.should.be.equal.to.type";
     public static final String ERROR_NOTIFICATION_SUBJECT_NOT_SPECIFIED = "error.notification.subject.not.specified";
     public static final String ERROR_NOTIFICATION_BODY_NOT_SPECIFIED = "error.notification.body.not.specified";
