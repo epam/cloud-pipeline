@@ -20,9 +20,11 @@ import java.util.Map;
 import java.util.function.Consumer;
 import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.disappear;
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_CONFIGURATION;
@@ -40,6 +42,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.TEMPLATE;
 import static com.epam.pipeline.autotests.ao.Profile.profileWithName;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
+import static org.openqa.selenium.By.className;
 
 public class PipelineConfigurationTabAO extends AbstractPipelineTabAO<PipelineConfigurationTabAO> {
     private final SelenideElement context = $(byClassName("pipeline-details__full-height-container"));
@@ -81,6 +84,20 @@ public class PipelineConfigurationTabAO extends AbstractPipelineTabAO<PipelineCo
         profile.context().shouldBe(visible);
         action.accept(profile);
         profile.context().shouldBe(visible);
+        return this;
+    }
+
+    public PipelineConfigurationTabAO setTypeValue(String type) {
+        $(byText("Node type"))
+                .closest(".launch-pipeline-form__form-item")
+                .find(className("ant-select-selection"))
+                .shouldBe(visible)
+                .doubleClick();
+
+        $(byClassName("ant-select-dropdown-menu"))
+                .findAll(byClassName("ant-select-dropdown-menu-item"))
+                .find(text(type))
+                .click();
         return this;
     }
 

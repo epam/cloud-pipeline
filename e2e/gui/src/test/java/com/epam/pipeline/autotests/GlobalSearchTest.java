@@ -15,10 +15,13 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.DocumentTabAO;
 import com.epam.pipeline.autotests.ao.GlobalSearchAO;
 import com.epam.pipeline.autotests.ao.LibraryFolderAO;
 import com.epam.pipeline.autotests.ao.NavigationHomeAO;
 import com.epam.pipeline.autotests.ao.NavigationMenuAO;
+import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
+import com.epam.pipeline.autotests.ao.PipelineLibraryContentAO;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -29,15 +32,20 @@ import org.testng.annotations.Test;
 import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.hasText;
+import static com.codeborne.selenide.Condition.have;
 import static com.codeborne.selenide.Condition.matchText;
+import static com.codeborne.selenide.Condition.selected;
+import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byText;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigation {
+public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest implements Navigation {
+    //AbstractBfxPipelineTest
 
     private final String folder = "globalSearchFolder" + Utils.randomSuffix();
     private final String pipeline = "globalSearchPipeline" + Utils.randomSuffix();
@@ -50,6 +58,10 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
     private final String defaultRegistry = C.DEFAULT_REGISTRY;
     private final String defaultGroup = C.DEFAULT_GROUP;
     private final String testingTool = C.TESTING_TOOL_NAME;
+    private final String defaultProfile = "default";
+    private final String configurationName = "test_conf";
+    private final String configurationNodeType = "c5.large (CPU: 2, RAM: 4)";
+    private final String configurationDisk = "23";
 
     private final String title = "testIssue" + Utils.randomSuffix();
     private final String description = "testIssueDescription";
@@ -113,6 +125,101 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .close()
                 .ensureAll(enabled, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
                 .ensure(SEARCH, empty)
+                .close();
+    }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-2658"})
+    public void searchForPipeline() {
+        library()
+                .cd(folder)
+                .clickOnDraftVersion(pipeline)
+                .configurationTab()
+                .editConfiguration(defaultProfile, profile ->
+                        profile
+                                .expandTab(EXEC_ENVIRONMENT)
+                                .expandTab(ADVANCED_PANEL)
+                                .clear(NAME).setValue(NAME,configurationName)
+                                .clear(DISK).setValue(DISK,configurationDisk)
+                                .setTypeValue(configurationNodeType)
+                                .sleep(2, SECONDS)
+                                .click(SAVE)
+                                .sleep(2, SECONDS)
+                );
+        home().sleep(2, MINUTES);
+        search()
+                .search(pipeline)
+                .enter()
+                .sleep(2, SECONDS)
+                .ensureAll(GlobalSearchAO.disable, FOLDERS, RUNS, TOOLS, DATA, ISSUES)
+                .ensureAll(enabled, PIPELINES)
+                .ensure(PIPELINES, hasText("3 PIPELINES"))
+                .validateCountSearchResults(3)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItem(pipeline)
+                .ensure(TITLE, hasText(pipeline))
+                .ensure(HIGHLIGHTS, hasText("Found in name"))
+                .ensure(INFO, hasText("draft-"))
+                .parent()
+                .openSearchResultItem("docs/README.md")
+                .ensure(TITLE, hasText("README.md"))
+                .ensure(HIGHLIGHTS, hasText("Found in pipelineName"))
+                .ensure(PREVIEW, hasText("Job definition"))
+                .parent()
+                .openSearchResultItem("config.json")
+                .ensure(TITLE, hasText("config.json"))
+                .ensure(DESCRIPTION, hasText(pipeline))
+                .ensure(HIGHLIGHTS, hasText("Found in pipelineName"))
+                .ensure(PREVIEW, hasText(configurationDisk))
+                .ensure(PREVIEW, hasText(configurationName))
+                .ensure(PREVIEW, hasText(configurationNodeType.substring(0, configurationNodeType.indexOf(" "))))
+                .parent()
+                .moveToSearchResultItem(pipeline, () -> new PipelineLibraryContentAO(pipeline))
+                .assertPipelineName(pipeline);
+        search()
+                .search(pipeline)
+                .enter()
+                .sleep(2, SECONDS)
+                .moveToSearchResultItem("docs/README.md", () -> new DocumentTabAO(pipeline))
+                .shouldContainDocument("README.md");
+        search()
+                .search(pipeline)
+                .enter()
+                .sleep(2, SECONDS)
+                .moveToSearchResultItem("config.json", () -> new PipelineCodeTabAO(pipeline))
+                .ensure(byText("config.json"), visible);
+    }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-2662"})
+    public void searchForPipelineWithRuns() {
+        library()
+                .cd(folder)
+                .clickOnPipeline(pipeline)
+                .clickRunButton()
+                .launch(this)
+                .showLog(getLastRunId())
+                .waitForCompletion();
+        library()
+                .cd(folder)
+                .clickOnPipeline(pipeline)
+                .clickRunButton()
+                .launch(this)
+                .stopRun(getLastRunId());
+        library()
+                .cd(folder)
+                .clickOnPipeline(pipeline)
+                .clickRunButton()
+                .launch(this);
+        search()
+                .click(PIPELINES)
+                .search(pipeline)
+                .enter()
+                .sleep(2, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItem(pipeline)
+                .checkCompletedField()
+                .close()
                 .close();
     }
 

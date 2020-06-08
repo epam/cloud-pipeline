@@ -26,6 +26,7 @@ import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.and;
 import static com.codeborne.selenide.Condition.attribute;
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
@@ -47,6 +48,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.SET_AS_DEFAULT;
 import static com.epam.pipeline.autotests.ao.Primitive.TIMEOUT;
 import static com.codeborne.selenide.Condition.visible;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.openqa.selenium.By.className;
 
 public class Profile implements AccessObject<Profile> {
     private final SelenideElement context;
@@ -171,6 +173,20 @@ public class Profile implements AccessObject<Profile> {
     public Profile setCommand(final String command) {
         Utils.clearTextField(cmdTemplate());
         Utils.clickAndSendKeysWithSlashes(cmdTemplate(), command);
+        return this;
+    }
+
+    public Profile setTypeValue(String type) {
+        $(byText("Node type"))
+                .closest(".launch-pipeline-form__form-item")
+                .find(className("ant-select-selection"))
+                .shouldBe(visible)
+                .doubleClick();
+
+        $(byClassName("ant-select-dropdown-menu"))
+                .findAll(byClassName("ant-select-dropdown-menu-item"))
+                .find(text(type))
+                .click();
         return this;
     }
 

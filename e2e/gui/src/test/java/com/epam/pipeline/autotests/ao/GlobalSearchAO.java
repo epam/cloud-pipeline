@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
@@ -78,7 +79,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
     };
 
     public static By searchItem(final String item) {
-        return confine(byText(item), byId("search-results"),"search result item");
+        return confine(byText(item), byId("search-results"), "search result item");
     }
 
     public GlobalSearchAO search(final String query) {
@@ -109,6 +110,13 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
                 .findAll(".earch__search-result-item")
                 .shouldHaveSize(count)
                 .forEach(i -> i.shouldHave(text(itemName)));
+        return this;
+    }
+
+    public GlobalSearchAO validateCountSearchResults(final int count) {
+        get(SEARCH_RESULT)
+                .findAll(".earch__search-result-item")
+                .shouldHaveSize(count);
         return this;
     }
 
@@ -143,8 +151,12 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
                 entry(TITLE, context().find(byClassName("review__title"))),
                 entry(DESCRIPTION, context().find(byClassName("review__description"))),
                 entry(HIGHLIGHTS, context().find(byClassName("review__highlights"))),
-                entry(PREVIEW, context().find(byClassName("review__content-preview")))
+                entry(PREVIEW, context().find(byClassName("review__content-preview"))),
+                entry(INFO, context().find(byClassName("review__info"))),
+                entry(INFO_TAB, context().find(byClassName("review__run-table")))
         );
+        private static Condition completed = Condition.or("finished", LogAO.Status.SUCCESS.reached, LogAO.Status.STOPPED.reached, LogAO.Status.FAILURE.reached);
+        private static Condition running = Condition.or("running", LogAO.Status.LOADING.reached, LogAO.Status.WORKING.reached);
 
         SearchResultItemPreviewAO(final GlobalSearchAO parentAO) {
             super(parentAO);
@@ -162,6 +174,23 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
         @Override
         public Map<Primitive, SelenideElement> elements() {
             return elements;
+        }
+
+        public SearchResultItemPreviewAO checkCompletedField() {
+            ElementsCollection list = get(INFO_TAB).findAll(By.xpath(".//tr"));
+            for (int i = 1; i < list.size(); i++) {
+                list.get(i).shouldBe(completedFieldCorrespondStatus());
+            }
+            return this;
+        }
+
+        private Condition completedFieldCorrespondStatus() {
+            return new Condition("completed field correspond Status") {
+                @Override
+                public boolean apply(final WebElement element) {
+                    return $(element).find(By.xpath("./td[1]")).has(completed) ? $(element).find(By.xpath("./td[4]")).text().contains(":") : $(element).find(By.xpath("./td[4]")).text().equals("");
+                }
+            };
         }
     }
 }

@@ -23,6 +23,7 @@ import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.disappear;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.hasText;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
@@ -51,6 +52,7 @@ import static com.epam.pipeline.autotests.utils.Utils.getPopupByTitle;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
+import static org.openqa.selenium.By.xpath;
 
 public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryContentAO> {
 
@@ -102,6 +104,10 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
         return ensure(FIRST_VERSION, text(version));
     }
 
+    public PipelineLibraryContentAO assertPipelineName(String name){
+        return ensure(xpath("//div[@class = 'browser__item-header']//span"),hasText(name));
+    }
+
     public PipelineLibraryContentAO assertVersionNot(String version) {
         return ensure(FIRST_VERSION, not(text(version)));
     }
@@ -130,6 +136,12 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
     public PipelineLibraryContentAO assertRunButtonIsDisplayed() {
         $$(tagName("button")).find(text("Run")).shouldBe(visible);
         return this;
+    }
+
+    public PipelineRunFormAO clickRunButton() {
+        sleep(5, SECONDS);
+        $$(tagName("button")).find(text("Run")).shouldBe(visible).click();
+        return new PipelineRunFormAO();
     }
 
     public MetadataSectionAO showMetadata() {
