@@ -93,6 +93,7 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjuster;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -205,7 +206,7 @@ public class BillingManager {
     public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {
         final BillingChartRequest formattedRequest = verifyAndAdjustRequest(request);
         try (RestClient lowLevelEsClient = elasticHelper.buildLowLevelClient()) {
-            final RestHighLevelClient elasticsearchClient = new RestHighLevelClient(client);
+            final RestHighLevelClient elasticsearchClient = new RestHighLevelClient(lowLevelEsClient);
             final LocalDate from = formattedRequest.getFrom();
             final LocalDate to = formattedRequest.getTo();
             final BillingGrouping grouping = formattedRequest.getGrouping();
@@ -263,12 +264,12 @@ public class BillingManager {
         final LocalDate from = request.getFrom();
         final LocalDate to = request.getTo();
         if (from.isAfter(to)) {
-            throw new IllegalStateException(messageHelper
-                                                .getMessage(MessageConstants.ERROR_BILLING_FROM_DATE_AFTER_TO));
+            throw new IllegalArgumentException(messageHelper
+                                                   .getMessage(MessageConstants.ERROR_BILLING_FROM_DATE_AFTER_TO));
         }
         if (from.isAfter(currentDate)) {
-            throw new IllegalStateException(messageHelper
-                                                .getMessage(MessageConstants.ERROR_BILLING_ONCOMING_FROM_DATE));
+            throw new IllegalArgumentException(messageHelper
+                                                   .getMessage(MessageConstants.ERROR_BILLING_ONCOMING_FROM_DATE));
         }
 
         final BillingChartRequest.BillingChartRequestBuilder requestBuilder = request.toBuilder();
@@ -321,16 +322,21 @@ public class BillingManager {
         setFiltersAndPeriodForSearchRequest(from, to, filters, searchSource, searchRequest);
 
         try {
-            final SearchResponse searchResponse = elasticsearchClient.search(searchRequest);
-            return Optional.ofNullable(searchResponse.getAggregations())
-                .map(aggs -> aggs.get(HISTOGRAM_AGGREGATION_NAME))
-                .map(ParsedDateHistogram.class::cast)
+            return getBillingHistogram(elasticsearchClient, searchRequest)
                 .map(histogram -> parseHistogram(interval, histogram))
                 .orElse(Collections.emptyList());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
         }
+    }
+
+    Optional<ParsedDateHistogram> getBillingHistogram(final RestHighLevelClient elasticsearchClient,
+                                                      final SearchRequest searchRequest) throws IOException {
+        final SearchResponse searchResponse = elasticsearchClient.search(searchRequest);
+        return Optional.ofNullable(searchResponse.getAggregations())
+            .map(aggs -> aggs.get(HISTOGRAM_AGGREGATION_NAME))
+            .map(ParsedDateHistogram.class::cast);
     }
 
     private List<BillingChartInfo> getBillingStats(final RestClient elasticsearchLowLevelClient,

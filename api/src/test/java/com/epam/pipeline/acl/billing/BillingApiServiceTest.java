@@ -55,16 +55,16 @@ public class BillingApiServiceTest extends AbstractAclTest {
 
         billingCenters = Collections.singletonList("billing center");
 
-        billingChartRequest = new BillingChartRequest(
-                LocalDate.MIN,
-                LocalDate.MAX,
-                Collections.singletonMap("filter", Collections.singletonList("filter")),
-                DateHistogramInterval.DAY,
-                BillingGrouping.BILLING_CENTER,
-                true,
-                1L,
-                1L
-        );
+        billingChartRequest = BillingChartRequest.builder()
+            .from(LocalDate.MIN)
+            .to(LocalDate.MAX)
+            .filters(Collections.singletonMap("filter", Collections.singletonList("filter")))
+            .interval(DateHistogramInterval.DAY)
+            .grouping(BillingGrouping.BILLING_CENTER)
+            .loadDetails(true)
+            .pageSize(1L)
+            .pageNum(1L)
+            .build();
     }
 
     @Test
