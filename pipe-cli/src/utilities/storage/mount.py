@@ -127,7 +127,7 @@ class Mount(object):
     def mount_storages(self, mountpoint, file=False, bucket=None, options=None, custom_options=None, quiet=False,
                        log_file=None, log_level=None, threading=False, mode=700):
         config = Config.instance()
-        username = config.get_current_user()
+        username = self.normalize_user_name(config.get_current_user())
         mount = FrozenMount() if is_frozen() else SourceMount()
         if file:
             web_dav_url = PreferenceAPI.get_preference('base.dav.auth.url').value
@@ -137,6 +137,11 @@ class Mount(object):
         else:
             self.mount_storage(mount, config, mountpoint, options, custom_options, bucket, mode,
                                log_file=log_file, log_level=log_level, threading=threading)
+
+    # Split username by @ to get only first part of the user name,
+    # because webdav trail user name as well to get get user folder name
+    def normalize_username(self, username):
+        return username.split('@')[0]
 
     def mount_dav(self, mount, config, mountpoint, options, custom_options, web_dav_url, mode,
                   log_file=None, log_level=None, threading=False):
