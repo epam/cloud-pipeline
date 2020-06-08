@@ -915,6 +915,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 ? getBooleanValue(parameter.value)
                 : (parameter.value || ''),
               required: `${parameter.required || false}`.toLowerCase() === 'true',
+              description: parameter.description,
               enum: parameter.enumeration
             };
           }
@@ -944,6 +945,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 ? getBooleanValue(parameter.value)
                 : (parameter.value || ''),
               required: `${parameter.required || false}`.toLowerCase() === 'true',
+              description: parameter.description,
               enum: parameter.enumeration
             };
           }
@@ -1100,6 +1102,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               ? getBooleanValue(parameter.value)
               : (parameter.value || ''),
             required: `${parameter.required || false}`.toLowerCase() === 'true',
+            description: parameter.description,
             enum: parameter.enumeration
           };
         }
@@ -1527,6 +1530,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           let type = 'string';
           let required = false;
           let readOnly = false;
+          let description;
           let enumeration;
           const parameter = this.props.parameters.parameters[key];
           if (parameter.value !== undefined ||
@@ -1543,6 +1547,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             value = prevValue && !parameter.value ? prevValue : parameter.value;
             type = parameter.type || 'string';
             enumeration = parameter.enum;
+            description = parameter.description;
             if (type.toLowerCase() === 'boolean') {
               value = getBooleanValue(value);
             }
@@ -1558,6 +1563,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               key: `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`,
               type: type,
               enumeration,
+              description,
               value: value,
               required: required,
               readOnly: readOnly,
@@ -1612,7 +1618,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderSelectionParameter = (
     sectionName,
-    {key, value, required, readOnly, enumeration},
+    {key, value, required, readOnly, enumeration, description},
     system = false
   ) => {
     const rules = [];
@@ -2484,12 +2490,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             getSystemParameterDisabledState(this, name);
           let required = parameter ? `${parameter.required}` === 'true' : false;
           let enumeration = parameter ? parameter.enumeration : undefined;
+          let description = parameter ? parameter.description : undefined;
           const systemParameter = this.getSystemParameter(parameter);
-          const systemParameterHint = systemParameter && systemParameter.description
-            ? () => {
-              return systemParameter.description;
-            }
-            : null;
+          const parameterHint = systemParameter ? systemParameter.description : description;
+          const parameterHintFn = parameterHint
+            ? () => { return parameterHint; } : undefined;
           let formItem;
           switch (type.toLowerCase()) {
             case 'path':
@@ -2498,7 +2503,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             case 'common':
               formItem = this.renderPathParameter(
                 sectionName,
-                {key, value, required, readOnly},
+                {key, value, required, readOnly, description},
                 type,
                 isSystemParametersSection
               );
@@ -2506,20 +2511,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             case 'boolean':
               formItem = this.renderBooleanParameter(
                 sectionName,
-                {key, value, readOnly}
+                {key, value, readOnly, description}
               );
               break;
             default:
               if (enumeration) {
                 formItem = this.renderSelectionParameter(
                   sectionName,
-                  {key, value, required, readOnly, enumeration},
+                  {key, value, required, readOnly, enumeration, description},
                   isSystemParametersSection
                 );
               } else {
                 formItem = this.renderStringParameter(
                   sectionName,
-                  {key, value, required, readOnly},
+                  {key, value, required, readOnly, description},
                   isSystemParametersSection
                 );
               }
@@ -2568,6 +2573,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.required`,
                     {initialValue: `${required}`}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.description`,
+                    {initialValue: description}
                   )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
                 }
               </FormItem>
@@ -2635,15 +2648,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         className="dynamic-delete-button"
                         type="minus-circle-o"
                         onClick={() => this.removeParameter(sectionName, key)}
+                        style={{marginLeft: 15, width: 15}}
                       />
                     )
-                    : undefined
+                    : <div style={{marginLeft: 15, width: 15, display: 'inline-block'}}>{'\u00A0'}</div>
                 }
                 {
-                  isSystemParametersSection && systemParameterHint &&
+                  parameterHintFn &&
                   hints.renderHint(
                     this.localizedStringWithSpotDictionaryFn,
-                    systemParameterHint,
+                    parameterHintFn,
                     null,
                     {marginLeft: 15}
                   )
