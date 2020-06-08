@@ -156,7 +156,6 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
                 entry(INFO_TAB, context().find(byClassName("review__run-table")))
         );
         private static Condition completed = Condition.or("finished", LogAO.Status.SUCCESS.reached, LogAO.Status.STOPPED.reached, LogAO.Status.FAILURE.reached);
-        private static Condition running = Condition.or("running", LogAO.Status.LOADING.reached, LogAO.Status.WORKING.reached);
 
         SearchResultItemPreviewAO(final GlobalSearchAO parentAO) {
             super(parentAO);

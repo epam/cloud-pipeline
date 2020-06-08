@@ -32,10 +32,7 @@ import org.testng.annotations.Test;
 import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.hasText;
-import static com.codeborne.selenide.Condition.have;
 import static com.codeborne.selenide.Condition.matchText;
-import static com.codeborne.selenide.Condition.selected;
-import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
@@ -45,7 +42,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest implements Navigation {
-    //AbstractBfxPipelineTest
 
     private final String folder = "globalSearchFolder" + Utils.randomSuffix();
     private final String pipeline = "globalSearchPipeline" + Utils.randomSuffix();
