@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller.vo.billing;
 
 import com.epam.pipeline.entity.billing.BillingGrouping;
+import lombok.Builder;
 import lombok.Value;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 
@@ -24,6 +25,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+@Builder(toBuilder = true)
 @Value
 public class BillingChartRequest {
 

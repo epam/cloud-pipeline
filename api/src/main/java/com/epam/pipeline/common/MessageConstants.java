@@ -521,6 +521,8 @@ public final class MessageConstants {
     public static final String ERROR_BILLING_DETAILS_NOT_SUPPORTED = "error.billing.details.not.supported";
     public static final String ERROR_BILLING_INTERVAL_NOT_SUPPORTED = "error.billing.interval.not.supported";
     public static final String ERROR_ILLEGAL_PAGING_PARAMETERS = "error.billing.invalid.paging";
+    public static final String ERROR_BILLING_ONCOMING_FROM_DATE = "error.billing.invalid.from.date";
+    public static final String ERROR_BILLING_FROM_DATE_AFTER_TO = "error.billing.invalid.interval.from.after.to";
 
     //Disks    
     public static final String ERROR_DISK_NODE_MISSING = "error.disk.node.missing";

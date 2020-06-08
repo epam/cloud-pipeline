@@ -203,16 +203,15 @@ public class BillingManager {
     }
 
     public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {
-        verifyRequest(request);
+        final BillingChartRequest formattedRequest = verifyAndAdjustRequest(request);
         try (RestClient lowLevelEsClient = elasticHelper.buildLowLevelClient()) {
-            final RestHighLevelClient elasticsearchClient = new RestHighLevelClient(lowLevelEsClient);
-            final LocalDate from = request.getFrom();
-            final LocalDate to = request.getTo();
-            final BillingGrouping grouping = request.getGrouping();
-            final DateHistogramInterval interval = request.getInterval();
-            final Map<String, List<String>> filters = MapUtils.isEmpty(request.getFilters())
-                                                      ? new HashMap<>()
-                                                      : request.getFilters();
+            final RestHighLevelClient elasticsearchClient = new RestHighLevelClient(client);
+            final LocalDate from = formattedRequest.getFrom();
+            final LocalDate to = formattedRequest.getTo();
+            final BillingGrouping grouping = formattedRequest.getGrouping();
+            final DateHistogramInterval interval = formattedRequest.getInterval();
+            final Map<String, List<String>> filters = formattedRequest.getFilters();
+
             setAuthorizationFilters(filters);
             if (interval != null) {
                 return getBillingStats(elasticsearchClient, from, to, filters, interval);
@@ -246,7 +245,7 @@ public class BillingManager {
         }
     }
 
-    private void verifyRequest(final BillingChartRequest request) {
+    private BillingChartRequest verifyAndAdjustRequest(final BillingChartRequest request) {
         final DateHistogramInterval interval = request.getInterval();
         final BillingGrouping grouping = request.getGrouping();
         if (interval != null
@@ -260,6 +259,26 @@ public class BillingManager {
             throw new IllegalArgumentException(messageHelper
                                                    .getMessage(MessageConstants.ERROR_BILLING_DETAILS_NOT_SUPPORTED));
         }
+        final LocalDate currentDate = LocalDate.now();
+        final LocalDate from = request.getFrom();
+        final LocalDate to = request.getTo();
+        if (from.isAfter(to)) {
+            throw new IllegalStateException(messageHelper
+                                                .getMessage(MessageConstants.ERROR_BILLING_FROM_DATE_AFTER_TO));
+        }
+        if (from.isAfter(currentDate)) {
+            throw new IllegalStateException(messageHelper
+                                                .getMessage(MessageConstants.ERROR_BILLING_ONCOMING_FROM_DATE));
+        }
+
+        final BillingChartRequest.BillingChartRequestBuilder requestBuilder = request.toBuilder();
+        if (MapUtils.isEmpty(request.getFilters())) {
+            requestBuilder.filters(new HashMap<>());
+        }
+        if (to.isAfter(currentDate)) {
+            requestBuilder.to(currentDate.minusDays(1L));
+        }
+        return requestBuilder.build();
     }
 
     private void setAuthorizationFilters(final Map<String, List<String>> filters) {
