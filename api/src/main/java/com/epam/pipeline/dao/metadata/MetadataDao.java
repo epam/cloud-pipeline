@@ -46,7 +46,7 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     private static final String VALUE = "VALUE";
 
     private Pattern dataKeyPattern = Pattern.compile("@KEY@");
-    private Pattern entitiesValuePatten = Pattern.compile("@ENTITIES@");
+    private Pattern entitiesValuePattern = Pattern.compile("@ENTITIES@");
 
     private String createMetadataItemQuery;
     private String uploadMetadataItemQuery;
@@ -105,14 +105,16 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     }
 
     public MetadataEntry loadMetadataItem(EntityVO entity) {
-        List<MetadataEntry> items = getJdbcTemplate().query(loadMetadataItemQuery,
-                MetadataParameters.getRowMapper(), entity.getEntityId(), entity.getEntityClass().name());
+        List<MetadataEntry> items = getNamedParameterJdbcTemplate().query(loadMetadataItemQuery,
+                MetadataParameters.getParameters(entity), 
+                MetadataParameters.getRowMapper());
         return items.isEmpty() ? null : items.get(0);
     }
 
     public boolean hasMetadata(EntityVO entity) {
-        List<MetadataEntry> items = getJdbcTemplate().query(loadMetadataItemQuery,
-                MetadataParameters.getRowMapper(), entity.getEntityId(), entity.getEntityClass().name());
+        List<MetadataEntry> items = getNamedParameterJdbcTemplate().query(loadMetadataItemQuery,
+                MetadataParameters.getParameters(entity), 
+                MetadataParameters.getRowMapper());
         return !items.isEmpty() && items.get(0).getData() != null && !items.get(0).getData().isEmpty();
     }
 
@@ -143,7 +145,7 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     }
 
     private String convertEntitiesToString(String query, List<EntityVO> entities) {
-        return entitiesValuePatten.matcher(query)
+        return entitiesValuePattern.matcher(query)
                 .replaceAll(entities.stream()
                         .map(entityVO -> String.format("(%s,'%s')", entityVO.getEntityId(), entityVO.getEntityClass()))
                         .collect(Collectors.joining(",")));
