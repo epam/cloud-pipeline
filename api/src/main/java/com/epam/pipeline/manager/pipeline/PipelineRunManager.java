@@ -1144,6 +1144,12 @@ public class PipelineRunManager {
         return updateRunInfo(run);
     }
 
+    public Optional<PipelineRun> loadActiveRunsByPodIP(final String ip) {
+        return pipelineRunDao.loadRunByPodIP(ip, Arrays.stream(TaskStatus.values())
+                .filter(status -> !status.isFinal())
+                .collect(Collectors.toList()));
+    }
+
     private int getTotalSize(final List<InstanceDisk> disks) {
         return (int) disks.stream().mapToLong(InstanceDisk::getSize).sum();
     }
@@ -1482,4 +1488,5 @@ public class PipelineRunManager {
         pipelineRun.setSshPassword(pipelineRunDao.loadSshPassword(runId));
         return pipelineRun;
     }
+
 }

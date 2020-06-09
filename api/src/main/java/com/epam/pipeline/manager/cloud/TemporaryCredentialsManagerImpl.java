@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.datastorage.leakagepolicy.SensitiveStorageOperation;
 import com.epam.pipeline.utils.CommonUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -52,6 +53,7 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
         this.dataStorageManager = dataStorageManager;
     }
 
+    @SensitiveStorageOperation
     @Override
     public TemporaryCredentials generate(final List<DataStorageAction> actions) {
         final AbstractDataStorage dataStorage = ListUtils.emptyIfNull(actions)

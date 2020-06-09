@@ -230,6 +230,9 @@ public final class MessageConstants {
     public static final String ERROR_AZURE_STORAGE_CREDENTIAL_INVALID = "error.azure.storage.credentials.invalid";
     public static final String ERROR_SENSITIVE_DATASTORAGE_OPERATION =
         "error.sensitive.datastorage.forbidden.operation";
+    public static final String ERROR_SENSITIVE_REQUEST_WRONG_CONTEXT =
+            "error.sensitive.request.wrong.context";
+    public static final String ERROR_SENSITIVE_WRITE_FORBIDDEN = "error.sensitive.datastorage.write.forbidden";
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
