@@ -435,7 +435,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         params.addValue(LIST_PARAMETER, statuses.stream()
                 .map(TaskStatus::getId)
                 .collect(Collectors.toList()));
-        params.addValue(PipelineRunParameters.POD_ID.name(), ip);
+        params.addValue(PipelineRunParameters.POD_IP.name(), ip);
         return ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
                 .query(loadRunByPodIPQuery, params, PipelineRunParameters.getRowMapper()))
                 .stream()
