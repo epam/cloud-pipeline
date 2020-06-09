@@ -73,7 +73,7 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
                 }
                 final JsonNode description = child.get(DESCRIPTION_FIELD);
                 if (hasValue(description)) {
-                    parameter.setValue(description.asText());
+                    parameter.setDescription(description.asText());
                 }
             }
             parameters.put(name, parameter);
