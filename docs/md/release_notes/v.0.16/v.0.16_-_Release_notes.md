@@ -21,6 +21,7 @@
 - [Enable Slurm for the Cloud Pipeline's clusters](#enable-slurm-workload-manager-for-the-cloud-pipelines-clusters)
 - [The ability to generate the `pipe run` command from the GUI](#the-ability-to-generate-the-pipe-run-command-from-the-gui)
 - [`pipe` CLI: view tools definitions](#pipe-cli-view-tools-definitions)
+- [List the users/groups/objects permissions globally via `pipe` CLI](#list-the-usersgroupsobjects-permissions-globally-via-pipe-cli)
 - [Storage usage statistics retrieval via `pipe`](#storage-usage-statistics-retrieval-via-pipe)
 - [GE Autoscaler respects CPU requirements of the job in the queue](#ge-autoscaler-respects-cpu-requirements-of-the-job-in-the-queue)
 - [Search the tool by its version/package name](#the-ability-to-find-the-tool-by-its-versionpackage-name)
@@ -440,6 +441,24 @@ Also the specifying of "path" to the object (registry/group/tool) is supported. 
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_ViewTools_03.png)
 
 For more details and usage examples see [here](../../manual/14_CLI/14.8._View_tools_definitions_via_CLI.md).
+
+## List the users/groups/objects permissions globally via `pipe` CLI
+
+Administrators may need to receive the following information - in a quick and convenient way:
+
+- Which objects are accessible by a user?
+- Which objects are accessible by a user group?
+- Which user(s)/group(s) have access to the object?
+
+The lattest case was implemented early - see the command [`pipe view-acl`](../../manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI.md#view-permissions).
+
+For other cases, new commands were implemented: `pipe view-user-objects <Username> [OPTIONS]` and `pipe view-group-objects <Groupname> [OPTIONS]` - to get a list of objects accessible by a user and by a user group/role respectively:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ViewUserGroupObjects_1.png)
+
+Each of these commands has the non-required option `-t` (`--object-type`) `<OBJECT_TYPE>` - to restrict the output list of accessible objects only for the specific type (e.g., "pipeline" or "tool", etc.):  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ViewUserGroupObjects_2.png)
+
+For more details see: [`pipe view-user-objects`](../../manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI.md#view-the-list-of-objects-accessible-by-a-user) and [`pipe view-group-objects`](../../manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI.md#view-the-list-of-objects-accessible-by-a-group).
 
 ## Storage usage statistics retrieval via `pipe`
 
