@@ -127,7 +127,7 @@ class Mount(object):
     def mount_storages(self, mountpoint, file=False, bucket=None, options=None, custom_options=None, quiet=False,
                        log_file=None, log_level=None, threading=False, mode=700):
         config = Config.instance()
-        username = self.normalize_user_name(config.get_current_user())
+        username = self.normalize_username(config.get_current_user())
         mount = FrozenMount() if is_frozen() else SourceMount()
         if file:
             web_dav_url = PreferenceAPI.get_preference('base.dav.auth.url').value
