@@ -1223,6 +1223,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           this.state.showIssuesPanel &&
           <Issues
             key={ISSUES_PANEL_KEY}
+            readOnly={!!this.link}
             canNavigateBack={false}
             onCloseIssuePanel={this.closeIssuesPanel}
             entityId={this.props.toolId}
@@ -1233,7 +1234,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           this.state.metadata &&
           <Metadata
             key={METADATA_PANEL_KEY}
-            readOnly={!roleModel.isOwner(this.props.tool.value)}
+            readOnly={!roleModel.isOwner(this.props.tool.value) || !!this.link}
             entityId={this.props.toolId}
             entityClass="TOOL" />
         }
