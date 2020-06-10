@@ -115,6 +115,13 @@ const HYBRID_AUTOSCALED_CLUSTER_TOOLTIP = (
     But the size of the node will vary.
   </div>
 );
+const AUTOSCALE_PRICE_TYPE = (
+  <div>
+    <Row>
+      This is a convenience option for the <b>"CP_CAP_AUTOSCALE_PRICE_TYPE"</b> parameter.
+    </Row>
+  </div>
+);
 
 export const LaunchClusterTooltip = {
   clusterMode: 'cluster mode',
@@ -126,7 +133,8 @@ export const LaunchClusterTooltip = {
   autoScaledCluster: {
     autoScaledUpTo: 'up to',
     defaultNodesCount: 'default nodes count',
-    hybridAutoScaledCluster: 'hybrid'
+    hybridAutoScaledCluster: 'hybrid',
+    autoScalePriceType: 'auto scale price type'
   }
 };
 
@@ -144,7 +152,8 @@ const tooltips = {
   [LaunchClusterTooltip.autoScaledCluster.defaultNodesCount]:
     AUTOSCALED_CLUSTER_DEFAULT_NODES_COUNT_TOOLTIP,
   [LaunchClusterTooltip.autoScaledCluster.hybridAutoScaledCluster]:
-    HYBRID_AUTOSCALED_CLUSTER_TOOLTIP
+    HYBRID_AUTOSCALED_CLUSTER_TOOLTIP,
+  [LaunchClusterTooltip.autoScaledCluster.autoScalePriceType]: AUTOSCALE_PRICE_TYPE
 };
 
 export function renderTooltip (tooltip, style) {

@@ -48,12 +48,14 @@ import {
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
+  CP_CAP_AUTOSCALE_PRICE_TYPE,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState,
   gridEngineEnabled,
   sparkEnabled,
-  slurmEnabled
+  slurmEnabled,
+  getAutoScaledPriceTypeValue
 } from '../../pipelines/launch/form/utilities/launch-cluster';
 import AWSRegionTag from '../../special/AWSRegionTag';
 
@@ -110,6 +112,7 @@ export default class EditToolForm extends React.Component {
     nodesCount: 0,
     maxNodesCount: 0,
     autoScaledCluster: false,
+    autoScaledPriceType: undefined,
     hybridAutoScaledClusterEnabled: false,
     gridEngineEnabled: false,
     sparkEnabled: false,
@@ -191,6 +194,13 @@ export default class EditToolForm extends React.Component {
               type: 'int',
               value: +this.state.maxNodesCount
             });
+            if (this.state.autoScaledPriceType) {
+              params.push({
+                name: CP_CAP_AUTOSCALE_PRICE_TYPE,
+                type: 'string',
+                value: `${this.state.autoScaledPriceType}`
+              });
+            }
             if (this.state.hybridAutoScaledClusterEnabled) {
               params.push({
                 name: CP_CAP_AUTOSCALE_HYBRID,
@@ -351,6 +361,8 @@ export default class EditToolForm extends React.Component {
         state.gridEngineEnabled = props.configuration && gridEngineEnabled(props.configuration.parameters);
         state.sparkEnabled = props.configuration && sparkEnabled(props.configuration.parameters);
         state.slurmEnabled = props.configuration && slurmEnabled(props.configuration.parameters);
+        state.autoScaledPriceType = props.configuration &&
+          getAutoScaledPriceTypeValue(props.configuration.parameters);
         state.launchCluster = state.nodesCount > 0 || state.autoScaledCluster;
         this.defaultCommand = props.configuration && props.configuration.cmd_template
           ? props.configuration.cmd_template
@@ -635,6 +647,8 @@ export default class EditToolForm extends React.Component {
       sparkEnabled(this.props.configuration.parameters);
     const slurmEnabledValue = this.props.configuration &&
       slurmEnabled(this.props.configuration.parameters);
+    const autoScaledPriceTypeValue = this.props.configuration &&
+      getAutoScaledPriceTypeValue(this.props.configuration.parameters);
     const launchCluster = nodesCount > 0 || autoScaledCluster;
     return configurationFormFieldChanged('is_spot') ||
       configurationFormFieldChanged('instance_size', 'instanceType') ||
@@ -650,6 +664,7 @@ export default class EditToolForm extends React.Component {
       !!gridEngineEnabledValue !== !!this.state.gridEngineEnabled ||
       !!sparkEnabledValue !== !!this.state.sparkEnabled ||
       !!slurmEnabledValue !== !!this.state.slurmEnabled ||
+      autoScaledPriceTypeValue !== this.state.autoScaledPriceType ||
       (this.state.launchCluster && nodesCount !== this.state.nodesCount) ||
       (this.state.launchCluster && this.state.autoScaledCluster && maxNodesCount !== this.state.maxNodesCount) ||
       limitMountsFieldChanged() || cloudRegionFieldChanged();
@@ -696,7 +711,8 @@ export default class EditToolForm extends React.Component {
       maxNodesCount,
       gridEngineEnabled,
       sparkEnabled,
-      slurmEnabled
+      slurmEnabled,
+      autoScaledPriceType
     } = configuration;
     this.setState({
       launchCluster,
@@ -706,7 +722,8 @@ export default class EditToolForm extends React.Component {
       maxNodesCount,
       gridEngineEnabled,
       sparkEnabled,
-      slurmEnabled
+      slurmEnabled,
+      autoScaledPriceType
     }, this.closeConfigureClusterDialog);
   };
 
@@ -1038,6 +1055,8 @@ export default class EditToolForm extends React.Component {
               <ConfigureClusterDialog
                 instanceName={this.props.form.getFieldValue('instanceType')}
                 launchCluster={this.state.launchCluster}
+                cloudRegionProvider={this.getCloudProvider()}
+                autoScaledPriceType={this.state.autoScaledPriceType}
                 autoScaledCluster={this.state.autoScaledCluster}
                 hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
                 gridEngineEnabled={this.state.gridEngineEnabled}
