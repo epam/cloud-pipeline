@@ -23,7 +23,6 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
 
 @Slf4j
 public class PlainCmdExecutor implements CmdExecutor {
@@ -69,10 +68,10 @@ public class PlainCmdExecutor implements CmdExecutor {
     public Process launchCommand(final String command, final Map<String, String> environmentVariables,
                                  final File workDir, final String username) {
         try {
+            String[] userCmd = {"su", "-c", command, "-", username};
             String[] plainCmd = {DEFAULT_SHELL, "-c", command};
             String[] cmd = (username != null)
-                           ? ArrayUtils.addAll(new String[]{"sudo", "-u", username},
-                                               plainCmd)
+                           ? userCmd
                            : plainCmd;
             if (environmentVariables.isEmpty()) {
                 return Runtime.getRuntime().exec(cmd, null, workDir);
