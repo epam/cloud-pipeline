@@ -114,7 +114,7 @@ elif [ "$CP_CAP_SHARE_FS_TYPE" == "lfs" ]; then
     fi
     mkdir -p ${SHARED_PATH} && \
     rm -rf ${SHARED_PATH}/* && \
-    nohup mfsmount -f -H lizardfs-master ${MOUNT_OPTIONS} ${SHARED_PATH} > /var/log/mfsmount.out 2>&1 &
+    mfsmount -H lizardfs-master ${MOUNT_OPTIONS} ${SHARED_PATH}
     
     if [ $? -ne 0 ]
     then
