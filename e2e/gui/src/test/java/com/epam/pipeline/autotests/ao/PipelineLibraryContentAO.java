@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ import static com.epam.pipeline.autotests.utils.Utils.getPopupByTitle;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
+import static org.openqa.selenium.By.xpath;
 
 public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryContentAO> {
 
@@ -102,8 +103,16 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
         return ensure(FIRST_VERSION, text(version));
     }
 
+    public PipelineLibraryContentAO assertPipelineName(String name){
+        return ensure(xpath("//div[@class = 'browser__item-header']//span"), text(name));
+    }
+
     public PipelineLibraryContentAO assertVersionNot(String version) {
         return ensure(FIRST_VERSION, not(text(version)));
+    }
+
+    public String getFirstVersionName(){
+        return $(byCssSelector(".browser__tree-item-version")).text();
     }
 
     public PipelineLibraryContentAO assertReleaseButton() {

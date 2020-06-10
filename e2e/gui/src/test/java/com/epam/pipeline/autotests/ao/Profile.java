@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,12 +40,15 @@ import static com.epam.pipeline.autotests.ao.Primitive.DISK;
 import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATE_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE;
+import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SET_AS_DEFAULT;
 import static com.epam.pipeline.autotests.ao.Primitive.TIMEOUT;
 import static com.codeborne.selenide.Condition.visible;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxOf;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.fieldWithLabel;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Profile implements AccessObject<Profile> {
@@ -75,7 +78,8 @@ public class Profile implements AccessObject<Profile> {
                 entry(ADVANCED_PANEL, context().find(byId("launch-pipeline-advanced-panel"))),
                 entry(PARAMETERS, context().find(byId("launch-pipeline-parameters-panel"))),
                 entry(DELETE, context().find(byId("remove-pipeline-configuration-button"))),
-                entry(ADD_PARAMETER, context().find(byId("add-parameter-button")))
+                entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
+                entry(INSTANCE_TYPE, context().find(comboboxOf(fieldWithLabel("Node type"))))
         );
     }
 

@@ -15,10 +15,13 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.DocumentTabAO;
 import com.epam.pipeline.autotests.ao.GlobalSearchAO;
 import com.epam.pipeline.autotests.ao.LibraryFolderAO;
 import com.epam.pipeline.autotests.ao.NavigationHomeAO;
 import com.epam.pipeline.autotests.ao.NavigationMenuAO;
+import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
+import com.epam.pipeline.autotests.ao.PipelineLibraryContentAO;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -28,16 +31,17 @@ import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
-import static com.codeborne.selenide.Condition.hasText;
 import static com.codeborne.selenide.Condition.matchText;
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byText;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigation {
+public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest implements Navigation {
 
     private final String folder = "globalSearchFolder" + Utils.randomSuffix();
     private final String pipeline = "globalSearchPipeline" + Utils.randomSuffix();
@@ -50,9 +54,15 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
     private final String defaultRegistry = C.DEFAULT_REGISTRY;
     private final String defaultGroup = C.DEFAULT_GROUP;
     private final String testingTool = C.TESTING_TOOL_NAME;
+    private final String defaultProfile = "default";
+    private final String configurationName = "test_conf";
+    private final String configurationNodeType = "c5.large (CPU: 2, RAM: 4)";
+    private final String configurationDisk = "23";
+    private final String configVar = "config.json";
 
     private final String title = "testIssue" + Utils.randomSuffix();
     private final String description = "testIssueDescription";
+    private String draftVersionName = "";
 
     @BeforeClass
     @TestCase(value = {"EPMCMBIBPC-2653"})
@@ -117,6 +127,110 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
     }
 
     @Test
+    @TestCase(value = {"EPMCMBIBPC-2658"})
+    public void searchForPipeline() {
+        library().cd(folder)
+                .clickOnDraftVersion(pipeline)
+                .configurationTab()
+                .editConfiguration(defaultProfile, profile ->
+                        profile
+                                .expandTab(EXEC_ENVIRONMENT)
+                                .expandTab(ADVANCED_PANEL)
+                                .clear(NAME).setValue(NAME,configurationName)
+                                .clear(DISK).setValue(DISK,configurationDisk)
+                                .selectValue(INSTANCE_TYPE, configurationNodeType)
+                                .sleep(2, SECONDS)
+                                .click(SAVE)
+                                .sleep(2, SECONDS)
+                );
+        draftVersionName = library()
+                .cd(folder)
+                .clickOnPipeline(pipeline)
+                .getFirstVersionName();
+        home().sleep(2, MINUTES);
+        search()
+                .search(pipeline)
+                .enter()
+                .sleep(2, SECONDS)
+                .ensureAll(GlobalSearchAO.disable, FOLDERS, RUNS, TOOLS, DATA, ISSUES)
+                .ensureAll(enabled, PIPELINES)
+                .ensure(PIPELINES, text("3 PIPELINES"))
+                .validateCountSearchResults(3)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItem(pipeline)
+                .ensure(TITLE, text(pipeline))
+                .ensure(HIGHLIGHTS, text("Found in name"))
+                .ensure(INFO, text(draftVersionName))
+                .parent()
+                .openSearchResultItem("docs/README.md")
+                .ensure(TITLE, text("README.md"))
+                .ensure(HIGHLIGHTS, text("Found in pipelineName"))
+                .ensure(PREVIEW, text("Job definition"))
+                .parent()
+                .openSearchResultItem(configVar)
+                .ensure(TITLE, text(configVar))
+                .ensure(DESCRIPTION, text(pipeline))
+                .ensure(HIGHLIGHTS, text("Found in pipelineName"))
+                .ensure(PREVIEW, text(configurationDisk))
+                .ensure(PREVIEW, text(configurationName))
+                .ensure(PREVIEW, text(configurationNodeType.substring(0, configurationNodeType.indexOf(" "))))
+                .parent()
+                .moveToSearchResultItem(pipeline, () -> new PipelineLibraryContentAO(pipeline))
+                .assertPipelineName(pipeline);
+        search()
+                .search(pipeline)
+                .enter()
+                .sleep(2, SECONDS)
+                .moveToSearchResultItem("docs/README.md", () -> new DocumentTabAO(pipeline))
+                .shouldContainDocument("README.md");
+        search()
+                .search(pipeline)
+                .enter()
+                .sleep(2, SECONDS)
+                .moveToSearchResultItem(configVar, () -> new PipelineCodeTabAO(pipeline))
+                .ensure(byText(configVar), visible);
+    }
+
+    @Test(dependsOnMethods = {"searchForPipeline"})
+    @TestCase(value = {"EPMCMBIBPC-2662"})
+    public void searchForPipelineWithRuns() {
+        library()
+                .cd(folder)
+                .clickOnPipeline(pipeline)
+                .firstVersion()
+                .runPipeline()
+                .launch(this)
+                .showLog(getLastRunId())
+                .waitForCompletion();
+        library()
+                .cd(folder)
+                .clickOnPipeline(pipeline)
+                .firstVersion()
+                .runPipeline()
+                .launch(this)
+                .stopRun(getLastRunId());
+        library()
+                .cd(folder)
+                .clickOnPipeline(pipeline)
+                .firstVersion()
+                .runPipeline()
+                .launch(this);
+        search()
+                .click(PIPELINES)
+                .search(pipeline)
+                .enter()
+                .sleep(2, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItem(pipeline)
+                .ensure(TITLE, text(pipeline))
+                .ensure(HIGHLIGHTS, text("Found in name"))
+                .ensure(INFO, text(draftVersionName))
+                .checkCompletedField()
+                .close()
+                .close();
+    }
+
+    @Test
     @TestCase(value = {"EPMCMBIBPC-2670"})
     public void issueSearch() {
         library()
@@ -131,10 +245,10 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .sleep(2, SECONDS)
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(title)
-                .ensure(TITLE, hasText(title))
+                .ensure(TITLE, text(title))
                 .ensure(DESCRIPTION, matchText("Opened .* by You"))
-                .ensure(HIGHLIGHTS, hasText("Found in name"))
-                .ensure(PREVIEW, hasText(description))
+                .ensure(HIGHLIGHTS, text("Found in name"))
+                .ensure(PREVIEW, text(description))
                 .close()
                 .close();
         search()
@@ -143,10 +257,10 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .enter()
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(title)
-                .ensure(TITLE, hasText(title))
+                .ensure(TITLE, text(title))
                 .ensure(DESCRIPTION, matchText("Opened .* by You"))
-                .ensure(HIGHLIGHTS, hasText("Found in text"))
-                .ensure(PREVIEW, hasText(description))
+                .ensure(HIGHLIGHTS, text("Found in text"))
+                .ensure(PREVIEW, text(description))
                 .close()
                 .close();
     }
@@ -164,8 +278,8 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .enter()
                 .ensureAll(GlobalSearchAO.disable, PIPELINES, RUNS, TOOLS, DATA)
                 .ensureAll(enabled, FOLDERS, ISSUES)
-                .ensure(FOLDERS, hasText("1 FOLDER"))
-                .ensure(ISSUES, hasText("1 ISSUE"))
+                .ensure(FOLDERS, text("1 FOLDER"))
+                .ensure(ISSUES, text("1 ISSUE"))
                 .validateSearchResults(2, title)
                 .click(FOLDERS)
                 .ensureAll(enabled, FOLDERS, ISSUES)
@@ -182,7 +296,7 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .enter()
                 .ensureAll(GlobalSearchAO.disable, FOLDERS, PIPELINES, RUNS, TOOLS, DATA)
                 .ensure(ISSUES, enabled)
-                .ensure(ISSUES, hasText("1 ISSUE"))
+                .ensure(ISSUES, text("1 ISSUE"))
                 .ensure(ISSUES, GlobalSearchAO.selected)
                 .validateSearchResults(1, title)
                 .click(ISSUES)
@@ -202,9 +316,9 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .validateSearchResults(1, innerFolder1)
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(innerFolder1)
-                .ensure(TITLE, hasText(innerFolder1))
-                .ensure(HIGHLIGHTS, hasText("Found in name"))
-                .ensure(PREVIEW, hasText(innerFolder2))
+                .ensure(TITLE, text(innerFolder1))
+                .ensure(HIGHLIGHTS, text("Found in name"))
+                .ensure(PREVIEW, text(innerFolder2))
                 .parent()
                 .moveToSearchResultItem(innerFolder1, () -> new LibraryFolderAO(innerFolder1))
                 .ensureAll(visible, SETTINGS, UPLOAD_METADATA);
@@ -218,9 +332,9 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .enter()
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(innerFolder1)
-                .ensure(TITLE, hasText(innerFolder1))
-                .ensure(HIGHLIGHTS, hasText("Found in name"))
-                .ensure(PREVIEW, hasText(innerFolder2))
+                .ensure(TITLE, text(innerFolder1))
+                .ensure(HIGHLIGHTS, text("Found in name"))
+                .ensure(PREVIEW, text(innerFolder2))
                 .parent()
                 .moveToSearchResultItem(innerFolder1, () -> new LibraryFolderAO(innerFolder1))
                 .ensureAll(visible, SETTINGS, UPLOAD_METADATA);
