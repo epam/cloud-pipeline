@@ -28,6 +28,7 @@ import org.openqa.selenium.WebElement;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.text;
@@ -155,9 +156,8 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
                 entry(INFO, context().find(byClassName("review__info"))),
                 entry(INFO_TAB, context().find(byClassName("review__run-table")))
         );
-        private static Condition completed = Condition.or("finished", LogAO.Status.SUCCESS.reached,
-                                                                            LogAO.Status.STOPPED.reached,
-                                                                            LogAO.Status.FAILURE.reached);
+        private static Condition completed = Condition.or("finished",
+                LogAO.Status.SUCCESS.reached, LogAO.Status.STOPPED.reached, LogAO.Status.FAILURE.reached);
 
         SearchResultItemPreviewAO(final GlobalSearchAO parentAO) {
             super(parentAO);
@@ -179,9 +179,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
 
         public SearchResultItemPreviewAO checkCompletedField() {
             ElementsCollection list = get(INFO_TAB).findAll(By.xpath(".//tr"));
-            for (int i = 1; i < list.size(); i++) {
-                list.get(i).shouldBe(completedFieldCorrespondStatus());
-            }
+            IntStream.range(1, list.size()).forEach(i -> list.get(i).shouldBe(completedFieldCorrespondStatus()));
             return this;
         }
 
@@ -189,9 +187,9 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
             return new Condition("completed field correspond Status") {
                 @Override
                 public boolean apply(final WebElement element) {
-                    String DATE_REGEX = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$";
-                    return $(element).find(By.xpath("./td[1]")).has(completed) ?
-                            $(element).find(By.xpath("./td[4]")).text().matches(DATE_REGEX)
+                    final String dateRegex = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$";
+                    return $(element).find(By.xpath("./td[1]")).has(completed)
+                            ? $(element).find(By.xpath("./td[4]")).text().matches(dateRegex)
                             : $(element).find(By.xpath("./td[4]")).text().equals("");
                 }
             };
