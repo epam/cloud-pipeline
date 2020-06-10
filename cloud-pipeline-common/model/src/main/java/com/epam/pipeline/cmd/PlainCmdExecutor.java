@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,20 +23,23 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 
 @Slf4j
 public class PlainCmdExecutor implements CmdExecutor {
 
     private static final String DEFAULT_SHELL = "bash";
+    private static final String PERMISSION_DENIED = "Permission denied";
 
     @Override
     public String executeCommand(final String command,
                                  final Map<String, String> environmentVariables,
-                                 final File workDir) {
+                                 final File workDir,
+                                 final String username) {
         StringBuilder output = new StringBuilder();
         StringBuilder errors = new StringBuilder();
         try {
-            Process p = launchCommand(command, environmentVariables, workDir);
+            Process p = launchCommand(command, environmentVariables, workDir, username);
             Thread stdReader = new Thread(() -> readOutputStream(command, output,
                     new InputStreamReader(p.getInputStream())));
             Thread errReader = new Thread(() -> readOutputStream(command, errors,
@@ -47,8 +50,14 @@ public class PlainCmdExecutor implements CmdExecutor {
             stdReader.join();
             errReader.join();
             if (exitCode != 0) {
-                log.error("Command '{}' err output: {}.", command, errors.toString());
-                throw new CmdExecutionException(command, errors.toString());
+                final String errorMessage = errors.toString();
+                if (errorMessage.trim().endsWith(PERMISSION_DENIED)) {
+                    log.error("Permission denied to execute command '{}' under requested `{}` user, "
+                              + "trying to execute with default one.", command, username);
+                    return executeCommand(command, environmentVariables, workDir);
+                }
+                log.error("Command '{}' err output: {}.", command, errorMessage);
+                throw new CmdExecutionException(command, errorMessage);
             }
         } catch (InterruptedException e) {
             throw new CmdExecutionException(command, e);
@@ -58,9 +67,13 @@ public class PlainCmdExecutor implements CmdExecutor {
 
     @Override
     public Process launchCommand(final String command, final Map<String, String> environmentVariables,
-                                 final File workDir) {
+                                 final File workDir, final String username) {
         try {
-            String[] cmd = {DEFAULT_SHELL, "-c", command};
+            String[] plainCmd = {DEFAULT_SHELL, "-c", command};
+            String[] cmd = (username != null)
+                           ? ArrayUtils.addAll(new String[]{"sudo", "-u", username},
+                                               plainCmd)
+                           : plainCmd;
             if (environmentVariables.isEmpty()) {
                 return Runtime.getRuntime().exec(cmd, null, workDir);
             } else {

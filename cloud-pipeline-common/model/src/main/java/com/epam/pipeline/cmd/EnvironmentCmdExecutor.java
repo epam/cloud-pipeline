@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,10 +46,24 @@ public class EnvironmentCmdExecutor implements CmdExecutor {
     }
 
     @Override
+    public String executeCommand(String command, Map<String, String> environmentVariables, File workDir,
+                                 String username) {
+        return executor.executeCommand(command, environmentVariables, workDir, username);
+    }
+
+    @Override
     public Process launchCommand(final String command,
                                  final Map<String, String> environmentVariables,
                                  final File workDir) {
         return executor.launchCommand(command, withDefaults(environmentVariables), workDir);
+    }
+
+    @Override
+    public Process launchCommand(final String command,
+                                 final Map<String, String> environmentVariables,
+                                 final File workDir,
+                                 final String username) {
+        return executor.launchCommand(command, withDefaults(environmentVariables), workDir, username);
     }
 
     private Map<String, String> withDefaults(final Map<String, String> environmentVariables) {

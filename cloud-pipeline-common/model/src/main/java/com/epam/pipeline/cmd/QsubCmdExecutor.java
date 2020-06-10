@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,12 @@ public class QsubCmdExecutor implements CmdExecutor {
         }
     }
 
+    @Override
+    public String executeCommand(String command, Map<String, String> environmentVariables, File workDir,
+                                 String username) {
+        throw new UnsupportedOperationException("Execution under a specified user isn't supported for this executor.");
+    }
+
     private void executeCommand(final Map<String, String> environmentVariables, final File workDir,
                                 final String qsubCommand) {
         try {
@@ -82,6 +88,12 @@ public class QsubCmdExecutor implements CmdExecutor {
         } catch (CmdExecutionException e) {
             throw new CmdExecutionException(String.format("Qsub execution '%s' went bad", qsubCommand), e);
         }
+    }
+
+    @Override
+    public Process launchCommand(String command, Map<String, String> environmentVariables, File workDir,
+                                 String username) {
+        throw new UnsupportedOperationException("Launching under a specified user isn't supported for this executor.");
     }
 
     @Override
