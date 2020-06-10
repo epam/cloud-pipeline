@@ -1722,7 +1722,6 @@ export default class Tool extends localization.LocalizedReactComponent {
       });
       hide();
       if (request.error) {
-        message.error(request.error, 5);
         return {error: request.error};
       } else {
         return request.value;
