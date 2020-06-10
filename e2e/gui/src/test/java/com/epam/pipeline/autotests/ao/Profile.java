@@ -26,7 +26,6 @@ import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.and;
 import static com.codeborne.selenide.Condition.attribute;
-import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
@@ -51,7 +50,6 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.fieldWithLabel;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.openqa.selenium.By.className;
 
 public class Profile implements AccessObject<Profile> {
     private final SelenideElement context;
