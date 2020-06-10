@@ -1328,7 +1328,7 @@ if __name__ == '__main__':
     instance_disk = os.environ['instance_disk']
     instance_type = os.environ['instance_size']
     instance_image = os.environ['docker_image']
-    price_type = os.environ['price_type']
+    price_type = os.getenv('CP_CAP_AUTOSCALE_PRICE_TYPE', os.environ['price_type'])
     region_id = os.environ['CLOUD_REGION_ID']
     instance_cores = int(os.getenv('CLOUD_PIPELINE_NODE_CORES', multiprocessing.cpu_count()))
     additional_hosts = int(os.getenv('CP_CAP_AUTOSCALE_WORKERS', 3))
