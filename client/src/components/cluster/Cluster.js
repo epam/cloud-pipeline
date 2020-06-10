@@ -16,7 +16,18 @@
 
 import React from 'react';
 import moment from 'moment-timezone';
-import {Alert, Button, Card, Col, Input, message, Modal, Row, Table} from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Input,
+  message,
+  Modal,
+  Row,
+  Table,
+  Tooltip
+} from 'antd';
 import clusterNodes from '../../models/cluster/ClusterNodes';
 import nodesFilter from '../../models/cluster/FilterClusterNodes';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
@@ -305,6 +316,31 @@ export default class Cluster extends localization.LocalizedReactComponent {
   };
 
   generateNodeInstancesTable (nodes, isLoading) {
+    const createdCellContent = (date) => (
+      <div className={styles.clusterNodeCellCreated}>
+        <span className={styles.clusterNodeContentCreated}>
+          {displayDate(date, 'YYYY-MM-DD')}
+        </span>
+        <span className={styles.clusterNodeContentCreated}>
+          {displayDate(date, 'HH:mm:ss')}
+        </span>
+      </div>
+    );
+    const addressesCellContent = (addresses) => (
+      <div className={styles.clusterNodeCellAddresses}>
+        {addresses.map(a => (
+          <Tooltip
+            placement="topLeft"
+            title={a.address}
+            key={a.address}
+          >
+            <span className={styles.clusterNodeContentAddresses}>
+              {a.address}
+            </span>
+          </Tooltip>)
+        )}
+      </div>
+    );
     const columns = [
       {
         dataIndex: 'name',
@@ -334,15 +370,16 @@ export default class Cluster extends localization.LocalizedReactComponent {
         key: 'addresses',
         title: 'Addresses',
         ...this.getInputFilter('address', 'IP'),
-        className: styles.clusterNodeRowAddresses
+        className: styles.clusterNodeRowAddresses,
+        render: (addresses) => addressesCellContent(addresses)
       },
       {
         dataIndex: 'created',
         key: 'created',
         title: 'Created',
-        render: (date) => displayDate(date),
         sorter: this.dateSorter,
-        className: styles.clusterNodeRowCreated
+        className: styles.clusterNodeRowCreated,
+        render: (date) => createdCellContent(date)
       },
       {
         key: 'terminate',
@@ -355,7 +392,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
       const node = nodes[i];
       dataSource.push({
         name: node.name,
-        addresses: node.addresses.map(a => a.address).join(', '),
+        addresses: node.addresses,
         created: node.creationTimestamp,
         labels: node.labels,
         uid: node.uid,
