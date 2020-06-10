@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,6 +98,13 @@ const AUTOSCALED_CLUSTER_DEFAULT_NODES_COUNT_TOOLTIP = (
     </Row>
   </div>
 );
+const AUTOSCALE_PRICE_TYPE = (
+  <div>
+    <Row>
+      This is a convenience option for the <b>"CP_CAP_AUTOSCALE_PRICE_TYPE"</b> parameter.
+    </Row>
+  </div>
+);
 
 export const LaunchClusterTooltip = {
   clusterMode: 'cluster mode',
@@ -107,7 +114,8 @@ export const LaunchClusterTooltip = {
   },
   autoScaledCluster: {
     autoScaledUpTo: 'up to',
-    defaultNodesCount: 'default nodes count'
+    defaultNodesCount: 'default nodes count',
+    autoScalePriceType: 'auto scale price type'
   }
 };
 
@@ -121,7 +129,8 @@ const tooltips = {
   [LaunchClusterTooltip.autoScaledCluster.autoScaledUpTo]:
     AUTOSCALED_CLUSTER_UP_TO_TOOLTIP,
   [LaunchClusterTooltip.autoScaledCluster.defaultNodesCount]:
-    AUTOSCALED_CLUSTER_DEFAULT_NODES_COUNT_TOOLTIP
+    AUTOSCALED_CLUSTER_DEFAULT_NODES_COUNT_TOOLTIP,
+  [LaunchClusterTooltip.autoScaledCluster.autoScalePriceType]: AUTOSCALE_PRICE_TYPE
 };
 
 export function renderTooltip (tooltip, style) {

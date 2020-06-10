@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Checkbox, InputNumber, Icon, Modal, Radio, Row} from 'antd';
+import {Checkbox, InputNumber, Icon, Modal, Radio, Row, Select} from 'antd';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {
@@ -28,6 +28,7 @@ export const CP_CAP_SGE = 'CP_CAP_SGE';
 export const CP_CAP_SPARK = 'CP_CAP_SPARK';
 export const CP_CAP_AUTOSCALE = 'CP_CAP_AUTOSCALE';
 export const CP_CAP_AUTOSCALE_WORKERS = 'CP_CAP_AUTOSCALE_WORKERS';
+export const CP_CAP_AUTOSCALE_PRICE_TYPE = 'CP_CAP_AUTOSCALE_PRICE_TYPE';
 
 const PARAMETER_TITLE_WIDTH = 110;
 const PARAMETER_TITLE_RIGHT_MARGIN = 5;
@@ -56,6 +57,21 @@ export function sparkEnabled (parameters) {
   return booleanParameterIsSetToValue(parameters, CP_CAP_SPARK);
 }
 
+export const AUTO_SCALE_PRICE_TYPES = {
+  master: 'master',
+  spot: 'spot',
+  onDemand: 'on-demand'
+};
+
+export function getAutoScaledPriceTypeValue (parameters) {
+  if (!parameters || !parameters.hasOwnProperty(CP_CAP_AUTOSCALE_PRICE_TYPE)) {
+    return undefined;
+  }
+  return [AUTO_SCALE_PRICE_TYPES.spot, AUTO_SCALE_PRICE_TYPES.onDemand]
+    .includes(`${parameters[CP_CAP_AUTOSCALE_PRICE_TYPE].value}`)
+    ? `${parameters[CP_CAP_AUTOSCALE_PRICE_TYPE].value}` : undefined;
+}
+
 export const CLUSTER_TYPE = {
   singleNode: 0,
   fixedCluster: 1,
@@ -69,7 +85,13 @@ export function getSkippedSystemParametersList (controller) {
       controller.state.gridEngineEnabled ||
       controller.state.sparkEnabled
     )) {
-    return [CP_CAP_SGE, CP_CAP_SPARK, CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS];
+    return [
+      CP_CAP_SGE,
+      CP_CAP_SPARK,
+      CP_CAP_AUTOSCALE,
+      CP_CAP_AUTOSCALE_WORKERS,
+      CP_CAP_AUTOSCALE_PRICE_TYPE
+    ];
   }
   return [CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS];
 }
@@ -84,7 +106,8 @@ export function setClusterParameterValue (form, sectionName, configuration) {
   }
   const {
     gridEngineEnabled,
-    sparkEnabled
+    sparkEnabled,
+    autoScaledPriceType
   } = configuration;
   const formValue = form.getFieldValue(sectionName);
   if (!formValue || !formValue.hasOwnProperty('params')) {
@@ -107,6 +130,10 @@ export function setClusterParameterValue (form, sectionName, configuration) {
       value.value = `${sparkEnabled}`;
       modified = true;
     }
+    if (value.name === CP_CAP_AUTOSCALE_PRICE_TYPE && autoScaledPriceType) {
+      value.value = `${autoScaledPriceType}`;
+      modified = true;
+    }
   }
   if (modified) {
     form.setFieldsValue(
@@ -123,7 +150,8 @@ export function setSingleNodeMode (controller, callback) {
     autoScaledCluster: false,
     setDefaultNodesCount: false,
     gridEngineEnabled: false,
-    sparkEnabled: false
+    sparkEnabled: false,
+    autoScaledPriceType: undefined
   }, callback);
 }
 
@@ -134,6 +162,7 @@ export function setFixedClusterMode (controller, callback) {
     setDefaultNodesCount: false,
     gridEngineEnabled: false,
     sparkEnabled: false,
+    autoScaledPriceType: undefined,
     nodesCount: Math.max(1,
       !isNaN(controller.state.maxNodesCount)
         ? controller.state.maxNodesCount
@@ -150,6 +179,7 @@ export function setAutoScaledMode (controller, callback) {
     nodesCount: undefined,
     gridEngineEnabled: false,
     sparkEnabled: false,
+    autoScaledPriceType: undefined,
     maxNodesCount: Math.max(1,
       !isNaN(controller.state.nodesCount)
         ? controller.state.nodesCount
@@ -219,6 +249,7 @@ class ConfigureClusterDialog extends React.Component {
     autoScaledCluster: PropTypes.bool,
     gridEngineEnabled: PropTypes.bool,
     sparkEnabled: PropTypes.bool,
+    autoScaledPriceType: PropTypes.string,
     nodesCount: PropTypes.number,
     maxNodesCount: PropTypes.number,
     onChange: PropTypes.func,
@@ -232,6 +263,7 @@ class ConfigureClusterDialog extends React.Component {
     setDefaultNodesCount: false,
     gridEngineEnabled: false,
     sparkEnabled: false,
+    autoScaledPriceType: undefined,
     nodesCount: 0,
     maxNodesCount: 0,
     validation: {
@@ -416,6 +448,38 @@ class ConfigureClusterDialog extends React.Component {
         ];
       }
     };
+    const renderAutoScaledPriceTypeSelect = () => (
+      <Row key="autoScalePriceType" type="flex" align="middle" style={{marginTop: 5}}>
+        <span style={PARAMETER_TITLE_STYLE}>Workers price type:</span>
+        <Select
+          style={{flex: 1}}
+          value={
+            this.state.autoScaledPriceType
+              ? this.state.autoScaledPriceType
+              : AUTO_SCALE_PRICE_TYPES.master
+          }
+          onSelect={(autoScaledPriceType) => {
+            if (autoScaledPriceType === AUTO_SCALE_PRICE_TYPES.master) {
+              this.setState({autoScaledPriceType: undefined});
+            } else {
+              this.setState({autoScaledPriceType});
+            }
+          }}
+        >
+          <Select.Option key={AUTO_SCALE_PRICE_TYPES.master}>Master's config</Select.Option>
+          <Select.Option key={AUTO_SCALE_PRICE_TYPES.spot}>
+            Spot
+          </Select.Option>
+          <Select.Option key={AUTO_SCALE_PRICE_TYPES.onDemand}>
+            On-demand
+          </Select.Option>
+        </Select>
+        {renderTooltip(
+          LaunchClusterTooltip.autoScaledCluster.autoScalePriceType,
+          {marginLeft: 5}
+        )}
+      </Row>
+    );
     return [
       <Row key="max nodes count" type="flex" align="middle" style={{marginTop: 5}}>
         <span style={PARAMETER_TITLE_STYLE}>Auto-scaled up to:</span>
@@ -430,7 +494,8 @@ class ConfigureClusterDialog extends React.Component {
       </Row>,
       this.getValidationRow('maxNodesCount'),
       ...renderSetDefaultNodesCount(),
-      this.getValidationRow('nodesCount')
+      this.getValidationRow('nodesCount'),
+      renderAutoScaledPriceTypeSelect()
     ].filter(r => !!r);
   };
 
@@ -450,7 +515,8 @@ class ConfigureClusterDialog extends React.Component {
         launchCluster: this.state.launchCluster,
         autoScaledCluster: this.state.autoScaledCluster,
         gridEngineEnabled: this.state.gridEngineEnabled,
-        sparkEnabled: this.state.sparkEnabled
+        sparkEnabled: this.state.sparkEnabled,
+        autoScaledPriceType: this.state.autoScaledPriceType
       });
     }
   };
@@ -583,6 +649,7 @@ class ConfigureClusterDialog extends React.Component {
         autoScaledCluster: nextProps.autoScaledCluster,
         gridEngineEnabled: nextProps.gridEngineEnabled,
         sparkEnabled: nextProps.sparkEnabled,
+        autoScaledPriceType: nextProps.autoScaledPriceType,
         setDefaultNodesCount: nextProps.nodesCount > 0,
         nodesCount: nextProps.nodesCount && !isNaN(nextProps.nodesCount) ? nextProps.nodesCount : 0,
         maxNodesCount: nextProps.maxNodesCount,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,11 +44,13 @@ import {
   CP_CAP_SPARK,
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
+  CP_CAP_AUTOSCALE_PRICE_TYPE,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState,
   gridEngineEnabled,
-  sparkEnabled
+  sparkEnabled,
+  getAutoScaledPriceTypeValue
 } from '../../pipelines/launch/form/utilities/launch-cluster';
 
 const Panels = {
@@ -105,6 +107,7 @@ export default class EditToolForm extends React.Component {
     nodesCount: 0,
     maxNodesCount: 0,
     autoScaledCluster: false,
+    autoScaledPriceType: undefined,
     gridEngineEnabled: false,
     sparkEnabled: false,
     launchCluster: false
@@ -176,6 +179,13 @@ export default class EditToolForm extends React.Component {
               type: 'int',
               value: +this.state.maxNodesCount
             });
+            if (this.state.autoScaledPriceType) {
+              params.push({
+                name: CP_CAP_AUTOSCALE_PRICE_TYPE,
+                type: 'string',
+                value: `${this.state.autoScaledPriceType}`
+              });
+            }
           }
           if (this.state.launchCluster && this.state.gridEngineEnabled) {
             params.push({
@@ -283,6 +293,8 @@ export default class EditToolForm extends React.Component {
         state.autoScaledCluster = props.configuration && autoScaledClusterEnabled(props.configuration.parameters);
         state.gridEngineEnabled = props.configuration && gridEngineEnabled(props.configuration.parameters);
         state.sparkEnabled = props.configuration && sparkEnabled(props.configuration.parameters);
+        state.autoScaledPriceType = props.configuration &&
+          getAutoScaledPriceTypeValue(props.configuration.parameters);
         state.launchCluster = state.nodesCount > 0 || state.autoScaledCluster;
         this.defaultCommand = props.configuration && props.configuration.cmd_template
           ? props.configuration.cmd_template
@@ -498,6 +510,8 @@ export default class EditToolForm extends React.Component {
       gridEngineEnabled(this.props.configuration.parameters);
     const sparkEnabledValue = this.props.configuration &&
       sparkEnabled(this.props.configuration.parameters);
+    const autoScaledPriceTypeValue = this.props.configuration &&
+      getAutoScaledPriceTypeValue(this.props.configuration.parameters);
     const launchCluster = nodesCount > 0 || autoScaledCluster;
     return configurationFormFieldChanged('is_spot') ||
       configurationFormFieldChanged('instance_size', 'instanceType') ||
@@ -511,6 +525,7 @@ export default class EditToolForm extends React.Component {
       !!autoScaledCluster !== !!this.state.autoScaledCluster ||
       !!gridEngineEnabledValue !== !!this.state.gridEngineEnabled ||
       !!sparkEnabledValue !== !!this.state.sparkEnabled ||
+      autoScaledPriceTypeValue !== this.state.autoScaledPriceType ||
       (this.state.launchCluster && nodesCount !== this.state.nodesCount) ||
       (this.state.launchCluster && this.state.autoScaledCluster && maxNodesCount !== this.state.maxNodesCount) ||
       limitMountsFieldChanged();
@@ -552,7 +567,8 @@ export default class EditToolForm extends React.Component {
       nodesCount,
       maxNodesCount,
       gridEngineEnabled,
-      sparkEnabled
+      sparkEnabled,
+      autoScaledPriceType
     } = configuration;
     this.setState({
         launchCluster,
@@ -560,7 +576,8 @@ export default class EditToolForm extends React.Component {
         autoScaledCluster,
         maxNodesCount,
         gridEngineEnabled,
-        sparkEnabled
+        sparkEnabled,
+        autoScaledPriceType
       },
       this.closeConfigureClusterDialog
     );
@@ -819,6 +836,7 @@ export default class EditToolForm extends React.Component {
               <ConfigureClusterDialog
                 instanceName={this.props.form.getFieldValue('instanceType')}
                 launchCluster={this.state.launchCluster}
+                autoScaledPriceType={this.state.autoScaledPriceType}
                 autoScaledCluster={this.state.autoScaledCluster}
                 gridEngineEnabled={this.state.gridEngineEnabled}
                 sparkEnabled={this.state.sparkEnabled}
