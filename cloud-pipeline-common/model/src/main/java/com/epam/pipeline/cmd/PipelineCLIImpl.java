@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ public class PipelineCLIImpl implements PipelineCLI {
     }
 
     @Override
-    public String uploadData(String source, String destination, List<String> include) {
+    public String uploadData(String source, String destination, List<String> include, String username) {
         if (!forceUpload && isFileAlreadyLoaded(source, destination)) {
             log.info(String.format("Skip file %s uploading. " +
                     "It already exists in the remote bucket: %s", source, destination));
@@ -70,7 +70,7 @@ public class PipelineCLIImpl implements PipelineCLI {
 
             while (attempts < retryCount) {
                 try {
-                    cmdExecutor.executeCommand(pipeCP(source, destination, include));
+                    cmdExecutor.executeCommand(pipeCP(source, destination, include), username);
                     log.info(String.format("Successfully uploaded from %s to %s", source, destination));
                     return destination;
                 } catch (CmdExecutionException e) {
@@ -91,13 +91,13 @@ public class PipelineCLIImpl implements PipelineCLI {
     }
 
     @Override
-    public void downloadData(String source, String destination, List<String> include) {
+    public void downloadData(String source, String destination, List<String> include, String username) {
         log.info(String.format("Download from %s to %s", source, destination));
         int attempts = 0;
 
         while (attempts < retryCount) {
             try {
-                cmdExecutor.executeCommand(pipeCP(source, destination, include));
+                cmdExecutor.executeCommand(pipeCP(source, destination, include), username);
                 log.info(String.format("Successfully downloaded from %s to %s", source, destination));
                 return;
             } catch (CmdExecutionException e) {

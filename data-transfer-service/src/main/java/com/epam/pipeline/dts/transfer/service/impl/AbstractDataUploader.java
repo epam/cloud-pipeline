@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,10 +32,10 @@ public abstract class AbstractDataUploader implements DataUploader {
         final StorageItem destination = transferTask.getDestination();
         if (source.getType() == StorageType.LOCAL) {
             Utils.checkLocalPathReadability(source.getPath());
-            upload(source, destination, transferTask.getIncluded());
+            upload(source, destination, transferTask.getIncluded(), transferTask.getUser());
         } else {
             checkStoragePath(source.getPath());
-            download(source, destination, transferTask.getIncluded());
+            download(source, destination, transferTask.getIncluded(), transferTask.getUser());
         }
     }
 
@@ -45,9 +45,9 @@ public abstract class AbstractDataUploader implements DataUploader {
             String.format("%s path must have %s scheme.", getStorageType(), expectedPathPrefix));
     }
 
-    public abstract void upload(StorageItem source, StorageItem destination, List<String> include);
+    public abstract void upload(StorageItem source, StorageItem destination, List<String> include, String username);
 
-    public abstract void download(StorageItem source, StorageItem destination, List<String> include);
+    public abstract void download(StorageItem source, StorageItem destination, List<String> include, String username);
 
     public abstract String getFilesPathPrefix();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,7 +109,7 @@ public class S3DataUploaderTest extends AbstractTransferTest {
 
         dataUploader.transfer(taskOf(source, destination));
 
-        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), any());
+        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), isNull());
     }
 
     @Test
@@ -119,7 +119,7 @@ public class S3DataUploaderTest extends AbstractTransferTest {
 
         dataUploader.transfer(taskOf(source, destination));
 
-        verify(pipelineCli).downloadData(eq(source.getPath()), eq(destination.getPath()), any());
+        verify(pipelineCli).downloadData(eq(source.getPath()), eq(destination.getPath()), any(), isNull());
     }
 
     @Test
@@ -143,7 +143,7 @@ public class S3DataUploaderTest extends AbstractTransferTest {
 
         dataUploader.transfer(taskOf(source, destination));
 
-        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), any());
+        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), any(), isNull());
     }
 
     @Test
@@ -151,15 +151,17 @@ public class S3DataUploaderTest extends AbstractTransferTest {
         final StorageItem source = existingLocalItem();
         final StorageItem destination = s3Item();
         final List<String> included = Arrays.asList("a", "b", "c");
+        final String username = "manager";
         final TransferTask transferTask = TransferTask.builder()
             .source(source)
             .destination(destination)
             .included(included)
+            .user(username)
             .build();
 
         dataUploader.transfer(transferTask);
 
-        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), eq(included));
+        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), eq(included), eq(username));
     }
 
     private StorageItem existingLocalItem() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,9 +51,11 @@ public class GSDataUploader extends AbstractDataUploader {
 
     /**
      * @param include Is not supported yet.
+     * @param username not supported.
      */
     @Override
-    public void upload(final StorageItem source, final StorageItem destination, final List<String> include) {
+    public void upload(final StorageItem source, final StorageItem destination, final List<String> include,
+                       final String username) {
         upload(source.getPath(), destination.getPath(), destination.getCredentials());
     }
 
@@ -80,9 +82,11 @@ public class GSDataUploader extends AbstractDataUploader {
 
     /**
      * @param include Is not supported yet.
+     * @param username not supported.
      */
     @Override
-    public void download(final StorageItem source, final StorageItem destination, final List<String> include) {
+    public void download(final StorageItem source, final StorageItem destination, final List<String> include,
+                         final String username) {
         download(source.getPath(), destination.getPath(), source.getCredentials());
     }
 
