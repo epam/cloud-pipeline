@@ -31,8 +31,8 @@ import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
-import static com.codeborne.selenide.Condition.hasText;
 import static com.codeborne.selenide.Condition.matchText;
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
@@ -58,9 +58,11 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     private final String configurationName = "test_conf";
     private final String configurationNodeType = "c5.large (CPU: 2, RAM: 4)";
     private final String configurationDisk = "23";
+    private final String configVar = "config.json";
 
     private final String title = "testIssue" + Utils.randomSuffix();
     private final String description = "testIssueDescription";
+    private String draftVersionName = "";
 
     @BeforeClass
     @TestCase(value = {"EPMCMBIBPC-2653"})
@@ -127,8 +129,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test
     @TestCase(value = {"EPMCMBIBPC-2658"})
     public void searchForPipeline() {
-        library()
-                .cd(folder)
+        library().cd(folder)
                 .clickOnDraftVersion(pipeline)
                 .configurationTab()
                 .editConfiguration(defaultProfile, profile ->
@@ -137,11 +138,15 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                                 .expandTab(ADVANCED_PANEL)
                                 .clear(NAME).setValue(NAME,configurationName)
                                 .clear(DISK).setValue(DISK,configurationDisk)
-                                .setTypeValue(configurationNodeType)
+                                .selectValue(INSTANCE_TYPE, configurationNodeType)
                                 .sleep(2, SECONDS)
                                 .click(SAVE)
                                 .sleep(2, SECONDS)
                 );
+        draftVersionName = library()
+                .cd(folder)
+                .clickOnPipeline(pipeline)
+                .getFirstVersionName();
         home().sleep(2, MINUTES);
         search()
                 .search(pipeline)
@@ -149,26 +154,26 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .sleep(2, SECONDS)
                 .ensureAll(GlobalSearchAO.disable, FOLDERS, RUNS, TOOLS, DATA, ISSUES)
                 .ensureAll(enabled, PIPELINES)
-                .ensure(PIPELINES, hasText("3 PIPELINES"))
+                .ensure(PIPELINES, text("3 PIPELINES"))
                 .validateCountSearchResults(3)
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(pipeline)
-                .ensure(TITLE, hasText(pipeline))
-                .ensure(HIGHLIGHTS, hasText("Found in name"))
-                .ensure(INFO, hasText("draft-"))
+                .ensure(TITLE, text(pipeline))
+                .ensure(HIGHLIGHTS, text("Found in name"))
+                .ensure(INFO, text(draftVersionName))
                 .parent()
                 .openSearchResultItem("docs/README.md")
-                .ensure(TITLE, hasText("README.md"))
-                .ensure(HIGHLIGHTS, hasText("Found in pipelineName"))
-                .ensure(PREVIEW, hasText("Job definition"))
+                .ensure(TITLE, text("README.md"))
+                .ensure(HIGHLIGHTS, text("Found in pipelineName"))
+                .ensure(PREVIEW, text("Job definition"))
                 .parent()
-                .openSearchResultItem("config.json")
-                .ensure(TITLE, hasText("config.json"))
-                .ensure(DESCRIPTION, hasText(pipeline))
-                .ensure(HIGHLIGHTS, hasText("Found in pipelineName"))
-                .ensure(PREVIEW, hasText(configurationDisk))
-                .ensure(PREVIEW, hasText(configurationName))
-                .ensure(PREVIEW, hasText(configurationNodeType.substring(0, configurationNodeType.indexOf(" "))))
+                .openSearchResultItem(configVar)
+                .ensure(TITLE, text(configVar))
+                .ensure(DESCRIPTION, text(pipeline))
+                .ensure(HIGHLIGHTS, text("Found in pipelineName"))
+                .ensure(PREVIEW, text(configurationDisk))
+                .ensure(PREVIEW, text(configurationName))
+                .ensure(PREVIEW, text(configurationNodeType.substring(0, configurationNodeType.indexOf(" "))))
                 .parent()
                 .moveToSearchResultItem(pipeline, () -> new PipelineLibraryContentAO(pipeline))
                 .assertPipelineName(pipeline);
@@ -182,30 +187,33 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .search(pipeline)
                 .enter()
                 .sleep(2, SECONDS)
-                .moveToSearchResultItem("config.json", () -> new PipelineCodeTabAO(pipeline))
-                .ensure(byText("config.json"), visible);
+                .moveToSearchResultItem(configVar, () -> new PipelineCodeTabAO(pipeline))
+                .ensure(byText(configVar), visible);
     }
 
-    @Test
+    @Test(dependsOnMethods = {"searchForPipeline"})
     @TestCase(value = {"EPMCMBIBPC-2662"})
     public void searchForPipelineWithRuns() {
         library()
                 .cd(folder)
                 .clickOnPipeline(pipeline)
-                .clickRunButton()
+                .firstVersion()
+                .runPipeline()
                 .launch(this)
                 .showLog(getLastRunId())
                 .waitForCompletion();
         library()
                 .cd(folder)
                 .clickOnPipeline(pipeline)
-                .clickRunButton()
+                .firstVersion()
+                .runPipeline()
                 .launch(this)
                 .stopRun(getLastRunId());
         library()
                 .cd(folder)
                 .clickOnPipeline(pipeline)
-                .clickRunButton()
+                .firstVersion()
+                .runPipeline()
                 .launch(this);
         search()
                 .click(PIPELINES)
@@ -214,6 +222,9 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .sleep(2, SECONDS)
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(pipeline)
+                .ensure(TITLE, text(pipeline))
+                .ensure(HIGHLIGHTS, text("Found in name"))
+                .ensure(INFO, text(draftVersionName))
                 .checkCompletedField()
                 .close()
                 .close();
@@ -234,10 +245,10 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .sleep(2, SECONDS)
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(title)
-                .ensure(TITLE, hasText(title))
+                .ensure(TITLE, text(title))
                 .ensure(DESCRIPTION, matchText("Opened .* by You"))
-                .ensure(HIGHLIGHTS, hasText("Found in name"))
-                .ensure(PREVIEW, hasText(description))
+                .ensure(HIGHLIGHTS, text("Found in name"))
+                .ensure(PREVIEW, text(description))
                 .close()
                 .close();
         search()
@@ -246,10 +257,10 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(title)
-                .ensure(TITLE, hasText(title))
+                .ensure(TITLE, text(title))
                 .ensure(DESCRIPTION, matchText("Opened .* by You"))
-                .ensure(HIGHLIGHTS, hasText("Found in text"))
-                .ensure(PREVIEW, hasText(description))
+                .ensure(HIGHLIGHTS, text("Found in text"))
+                .ensure(PREVIEW, text(description))
                 .close()
                 .close();
     }
@@ -267,8 +278,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .ensureAll(GlobalSearchAO.disable, PIPELINES, RUNS, TOOLS, DATA)
                 .ensureAll(enabled, FOLDERS, ISSUES)
-                .ensure(FOLDERS, hasText("1 FOLDER"))
-                .ensure(ISSUES, hasText("1 ISSUE"))
+                .ensure(FOLDERS, text("1 FOLDER"))
+                .ensure(ISSUES, text("1 ISSUE"))
                 .validateSearchResults(2, title)
                 .click(FOLDERS)
                 .ensureAll(enabled, FOLDERS, ISSUES)
@@ -285,7 +296,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .ensureAll(GlobalSearchAO.disable, FOLDERS, PIPELINES, RUNS, TOOLS, DATA)
                 .ensure(ISSUES, enabled)
-                .ensure(ISSUES, hasText("1 ISSUE"))
+                .ensure(ISSUES, text("1 ISSUE"))
                 .ensure(ISSUES, GlobalSearchAO.selected)
                 .validateSearchResults(1, title)
                 .click(ISSUES)
@@ -305,9 +316,9 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .validateSearchResults(1, innerFolder1)
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(innerFolder1)
-                .ensure(TITLE, hasText(innerFolder1))
-                .ensure(HIGHLIGHTS, hasText("Found in name"))
-                .ensure(PREVIEW, hasText(innerFolder2))
+                .ensure(TITLE, text(innerFolder1))
+                .ensure(HIGHLIGHTS, text("Found in name"))
+                .ensure(PREVIEW, text(innerFolder2))
                 .parent()
                 .moveToSearchResultItem(innerFolder1, () -> new LibraryFolderAO(innerFolder1))
                 .ensureAll(visible, SETTINGS, UPLOAD_METADATA);
@@ -321,9 +332,9 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(innerFolder1)
-                .ensure(TITLE, hasText(innerFolder1))
-                .ensure(HIGHLIGHTS, hasText("Found in name"))
-                .ensure(PREVIEW, hasText(innerFolder2))
+                .ensure(TITLE, text(innerFolder1))
+                .ensure(HIGHLIGHTS, text("Found in name"))
+                .ensure(PREVIEW, text(innerFolder2))
                 .parent()
                 .moveToSearchResultItem(innerFolder1, () -> new LibraryFolderAO(innerFolder1))
                 .ensureAll(visible, SETTINGS, UPLOAD_METADATA);

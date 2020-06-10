@@ -105,11 +105,15 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
     }
 
     public PipelineLibraryContentAO assertPipelineName(String name){
-        return ensure(xpath("//div[@class = 'browser__item-header']//span"),hasText(name));
+        return ensure(xpath("//div[@class = 'browser__item-header']//span"), text(name));
     }
 
     public PipelineLibraryContentAO assertVersionNot(String version) {
         return ensure(FIRST_VERSION, not(text(version)));
+    }
+
+    public String getFirstVersionName(){
+        return $(byCssSelector(".browser__tree-item-version")).text();
     }
 
     public PipelineLibraryContentAO assertReleaseButton() {
@@ -136,12 +140,6 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
     public PipelineLibraryContentAO assertRunButtonIsDisplayed() {
         $$(tagName("button")).find(text("Run")).shouldBe(visible);
         return this;
-    }
-
-    public PipelineRunFormAO clickRunButton() {
-        sleep(5, SECONDS);
-        $$(tagName("button")).find(text("Run")).shouldBe(visible).click();
-        return new PipelineRunFormAO();
     }
 
     public MetadataSectionAO showMetadata() {

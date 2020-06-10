@@ -41,12 +41,15 @@ import static com.epam.pipeline.autotests.ao.Primitive.DISK;
 import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATE_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE;
+import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SET_AS_DEFAULT;
 import static com.epam.pipeline.autotests.ao.Primitive.TIMEOUT;
 import static com.codeborne.selenide.Condition.visible;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxOf;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.fieldWithLabel;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 
@@ -77,7 +80,8 @@ public class Profile implements AccessObject<Profile> {
                 entry(ADVANCED_PANEL, context().find(byId("launch-pipeline-advanced-panel"))),
                 entry(PARAMETERS, context().find(byId("launch-pipeline-parameters-panel"))),
                 entry(DELETE, context().find(byId("remove-pipeline-configuration-button"))),
-                entry(ADD_PARAMETER, context().find(byId("add-parameter-button")))
+                entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
+                entry(INSTANCE_TYPE, context().find(comboboxOf(fieldWithLabel("Node type"))))
         );
     }
 
@@ -173,20 +177,6 @@ public class Profile implements AccessObject<Profile> {
     public Profile setCommand(final String command) {
         Utils.clearTextField(cmdTemplate());
         Utils.clickAndSendKeysWithSlashes(cmdTemplate(), command);
-        return this;
-    }
-
-    public Profile setTypeValue(String type) {
-        $(byText("Node type"))
-                .closest(".launch-pipeline-form__form-item")
-                .find(className("ant-select-selection"))
-                .shouldBe(visible)
-                .doubleClick();
-
-        $(byClassName("ant-select-dropdown-menu"))
-                .findAll(byClassName("ant-select-dropdown-menu-item"))
-                .find(text(type))
-                .click();
         return this;
     }
 

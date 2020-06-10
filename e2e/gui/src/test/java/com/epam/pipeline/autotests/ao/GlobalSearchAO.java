@@ -155,7 +155,9 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
                 entry(INFO, context().find(byClassName("review__info"))),
                 entry(INFO_TAB, context().find(byClassName("review__run-table")))
         );
-        private static Condition completed = Condition.or("finished", LogAO.Status.SUCCESS.reached, LogAO.Status.STOPPED.reached, LogAO.Status.FAILURE.reached);
+        private static Condition completed = Condition.or("finished", LogAO.Status.SUCCESS.reached,
+                                                                            LogAO.Status.STOPPED.reached,
+                                                                            LogAO.Status.FAILURE.reached);
 
         SearchResultItemPreviewAO(final GlobalSearchAO parentAO) {
             super(parentAO);
@@ -187,7 +189,10 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
             return new Condition("completed field correspond Status") {
                 @Override
                 public boolean apply(final WebElement element) {
-                    return $(element).find(By.xpath("./td[1]")).has(completed) ? $(element).find(By.xpath("./td[4]")).text().contains(":") : $(element).find(By.xpath("./td[4]")).text().equals("");
+                    String DATE_REGEX = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$";
+                    return $(element).find(By.xpath("./td[1]")).has(completed) ?
+                            $(element).find(By.xpath("./td[4]")).text().matches(DATE_REGEX)
+                            : $(element).find(By.xpath("./td[4]")).text().equals("");
                 }
             };
         }

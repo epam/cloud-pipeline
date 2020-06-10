@@ -87,20 +87,6 @@ public class PipelineConfigurationTabAO extends AbstractPipelineTabAO<PipelineCo
         return this;
     }
 
-    public PipelineConfigurationTabAO setTypeValue(String type) {
-        $(byText("Node type"))
-                .closest(".launch-pipeline-form__form-item")
-                .find(className("ant-select-selection"))
-                .shouldBe(visible)
-                .doubleClick();
-
-        $(byClassName("ant-select-dropdown-menu"))
-                .findAll(byClassName("ant-select-dropdown-menu-item"))
-                .find(text(type))
-                .click();
-        return this;
-    }
-
     public PipelineConfigurationTabAO deleteConfiguration(final String profileName, final Consumer<ConfirmationPopupAO<PipelineConfigurationTabAO>> action) {
         return editConfiguration(profileName, profile -> {
             profile.click(DELETE);
