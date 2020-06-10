@@ -261,8 +261,10 @@ export default class CommitRunForm extends localization.LocalizedReactComponent 
                 callback('Version should contain only lowercase letters, digits, separators (-, ., _) and should not start or end with a separator');
                 return;
               }
+              callback();
             }
-          });
+          })
+          .catch(e => callback(e.toString()));
       } else {
         callback();
       }
