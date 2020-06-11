@@ -27,6 +27,7 @@ from src.config import Config, ConfigNotFoundError, silent_print_config_info, is
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
 from src.utilities.du_format_type import DuFormatType
+from src.utilities.pipeline_run_share_manager import PipelineRunShareManager
 from src.utilities.tool_operations import ToolOperations
 from src.utilities import date_utilities, time_zone_param_type, state_utilities
 from src.utilities.acl_operations import ACLOperations
@@ -1325,6 +1326,56 @@ def token(user_id, duration):
     Prints a JWT token for specified user
     """
     UserTokenOperations().print_user_token(user_id, duration)
+
+
+@cli.group()
+def share():
+    """ Pipeline run share commands
+    """
+    pass
+
+
+@share.command(name='get')
+@click.argument('run-id', required=True)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@Config.validate_access_token
+def get_share_run(run_id):
+    """
+    Returns users and groups this run shared
+    """
+    PipelineRunShareManager().get(run_id)
+
+
+@share.command(name='add')
+@click.argument('run-id', required=True)
+@click.option('-su', '--shared-user', required=False, multiple=True,
+              help='The user to enable run sharing. Multiple options supported.')
+@click.option('-sg', '--shared-group', required=False, multiple=True,
+              help='The group to enable run sharing. Multiple options supported.')
+@click.option('-ssh', '--share-ssh', required=False, is_flag=True, default=False, help='Indicates ssh share')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@Config.validate_access_token
+def add_share_run(run_id, shared_user, shared_group, share_ssh):
+    """
+    Shares specified pipeline run with users or groups
+    """
+    PipelineRunShareManager().add(run_id, shared_user, shared_group, share_ssh)
+
+
+@share.command(name='remove')
+@click.argument('run-id', required=True)
+@click.option('-su', '--shared-user', required=False, multiple=True,
+              help='The user to disable run sharing. Multiple options supported.')
+@click.option('-sg', '--shared-group', required=False, multiple=True,
+              help='The group to disable run sharing. Multiple options supported.')
+@click.option('-ssh', '--share-ssh', required=False, is_flag=True, default=False, help='Indicates ssh unshare')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@Config.validate_access_token
+def remove_share_run(run_id, shared_user, shared_group, share_ssh):
+    """
+    Disables shared pipeline run for specified users or groups
+    """
+    PipelineRunShareManager().remove(run_id, shared_user, shared_group, share_ssh)
 
 
 # Used to run a PyInstaller "freezed" version
