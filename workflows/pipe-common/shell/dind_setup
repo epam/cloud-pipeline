@@ -90,6 +90,7 @@ if [ $? -eq 0 ]; then
                     nvidia-container-runtime-2.0.0-3.docker18.09.6* \
                     install nvidia-docker2-2.0.3-3.docker18.09.6*
         _DIND_NVIDIA_DEP_INSTALL_RESULT=$?
+        find /etc/yum.repos.d -type f \( -name "*nvidia*" -o -name "*docker*" \)  -exec rm -f {} \;
     else
         docker_ce_version="5:18.09.6~3-0~${os}-${os_release}"
         sources_list=/etc/apt/sources.list
@@ -106,6 +107,7 @@ if [ $? -eq 0 ]; then
                         nvidia-docker2=2.0.3+docker18.09.6-3
         _DIND_NVIDIA_DEP_INSTALL_RESULT=$?
         sed -i '$ d' $sources_list
+        rm /etc/apt/sources.list.d/nvidia-docker.list
     fi
     if [ $_DIND_NVIDIA_DEP_INSTALL_RESULT -ne 0 ]; then
         pipe_log_info "Unable to install NVIDIA DIND, 'nvidia' runtime will not be available" "$DIND_SETUP_TASK"
