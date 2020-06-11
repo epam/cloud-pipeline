@@ -619,8 +619,8 @@ class GridEngineScaleUpHandler:
                            'cluster_role_type additional ' \
                            'CP_CAP_SGE false ' \
                            'CP_CAP_AUTOSCALE false ' \
-                           'CP_CAP_AUTOSCALE_WORKERS 0' \
-                           'CP_DISABLE_RUN_ENDPOINTS true' \
+                           'CP_CAP_AUTOSCALE_WORKERS 0 ' \
+                           'CP_DISABLE_RUN_ENDPOINTS true ' \
                            % (self.instance_disk, instance, self.instance_image, self.parent_run_id,
                               self._pipe_cli_price_type(self.price_type), self.region_id)
         run_id = int(self.executor.execute_to_lines(pipe_run_command)[0])
