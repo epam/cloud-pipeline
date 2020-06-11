@@ -58,8 +58,9 @@ class PipelineRunShareManager(object):
 
         result = PipelineRun.update_run_sids(run_id, existing_users.values() + existing_groups.values())
         if not result:
-            raise RuntimeError("Failed to share run '%s'" % str(run_id))
-        click.echo("Run was successfully shared")
+            click.echo("Failed to share run '%s'" % str(run_id), err=True)
+            exit(1)
+        click.echo("Done")
 
     def remove(self, run_id, users, groups, ssh):
         run = PipelineRun.get(run_id)
@@ -70,8 +71,7 @@ class PipelineRunShareManager(object):
 
         if not users and not groups or len(users) == 0 and len(groups) == 0:
             sids_to_delete = list()
-            for sid in run.run_sids:
-                sids_to_delete.append(self._model_to_json(sid, run_id))
+            click.echo("Run '%s' will be unshared for all users and groups", str(run_id))
         else:
             existing_users, existing_groups = self._get_existing_sids(run, run_id)
             self._delete_sids(users, existing_users, run_id, ssh, True, run)
@@ -79,7 +79,9 @@ class PipelineRunShareManager(object):
             sids_to_delete = self._filter_nulls(existing_users.values()) + self._filter_nulls(existing_groups.values())
         result = PipelineRun.update_run_sids(run_id, sids_to_delete)
         if not result:
-            raise RuntimeError("Failed to unshare run '%s'" % str(run_id))
+            click.echo("Failed to unshare run '%s'" % str(run_id), err=True)
+            exit(1)
+        click.echo("Done")
 
     @staticmethod
     def _check_run_is_running(run):
@@ -115,7 +117,7 @@ class PipelineRunShareManager(object):
                     existing_sids.update({sid: self._to_json(sid, is_principal, 'ENDPOINT', run_id)})
                 else:
                     existing_sids.update({sid: None})
-                click.echo("Run '%s' was successfully unshared for user or group '%s'" % (str(run_id), sid))
+                click.echo("Run '%s' will be unshared for user or group '%s'" % (str(run_id), sid))
 
     @staticmethod
     def _filter_nulls(sids):
