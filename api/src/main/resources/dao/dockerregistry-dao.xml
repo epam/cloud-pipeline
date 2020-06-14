@@ -98,6 +98,7 @@
                       NULL AS tool_description,
                       COALESCE(tl.short_description, t.short_description) AS tool_short_description,
                       COALESCE(tl.owner, t.owner) as tool_owner,
+                      COALESCE(tl.allow_sensitive, t.allow_sensitive) as tool_allow_sensitive,
                       COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                   FROM
                       pipeline.docker_registry dr
@@ -139,6 +140,7 @@
                       NULL AS tool_description,
                       COALESCE(tl.short_description, t.short_description) AS tool_short_description,
                       COALESCE(tl.owner, t.owner) as tool_owner,
+                      COALESCE(tl.allow_sensitive, t.allow_sensitive) as tool_allow_sensitive,
                       COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                   FROM
                       pipeline.docker_registry dr
@@ -175,6 +177,7 @@
                         COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
                         COALESCE(tl.description, t.description) AS tool_description,
                         COALESCE(tl.short_description, t.short_description) AS tool_short_description,
+                        COALESCE(tl.allow_sensitive, t.allow_sensitive) as tool_allow_sensitive,
                         COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                     FROM
                         pipeline.docker_registry dr
@@ -217,6 +220,7 @@
                         COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
                         COALESCE(tl.description, t.description) AS tool_description,
                         COALESCE(tl.short_description, t.short_description) AS tool_short_description,
+                        COALESCE(tl.allow_sensitive, t.allow_sensitive) as tool_allow_sensitive,
                         COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                     FROM
                         pipeline.docker_registry dr
@@ -252,6 +256,7 @@
                         COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
                         COALESCE(tl.description, t.description) AS tool_description,
                         COALESCE(tl.short_description, t.short_description) AS tool_short_description,
+                        COALESCE(tl.allow_sensitive, t.allow_sensitive) as tool_allow_sensitive,
                         COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                     FROM
                         pipeline.docker_registry dr
@@ -287,6 +292,7 @@
                         COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
                         COALESCE(tl.description, t.description) AS tool_description,
                         COALESCE(tl.short_description, t.short_description) AS tool_short_description,
+                        COALESCE(tl.allow_sensitive, t.allow_sensitive) as tool_allow_sensitive,
                         COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                     FROM
                         pipeline.docker_registry dr
@@ -327,6 +333,7 @@
                       NULL AS tool_description,
                       COALESCE(tl.short_description, t.short_description) AS tool_short_description,
                       COALESCE(tl.owner, t.owner) as tool_owner,
+                      COALESCE(tl.allow_sensitive, t.allow_sensitive) as tool_allow_sensitive,
                       COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                   FROM
                       pipeline.docker_registry dr
@@ -363,6 +370,7 @@
                         COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
                         COALESCE(tl.description, t.description) AS tool_description,
                         COALESCE(tl.short_description, t.short_description) AS tool_short_description,
+                        COALESCE(tl.allow_sensitive, t.allow_sensitive) as tool_allow_sensitive,
                         COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
                     FROM
                         pipeline.docker_registry dr

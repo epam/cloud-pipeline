@@ -233,6 +233,7 @@ public final class MessageConstants {
     public static final String ERROR_SENSITIVE_REQUEST_WRONG_CONTEXT =
             "error.sensitive.request.wrong.context";
     public static final String ERROR_SENSITIVE_WRITE_FORBIDDEN = "error.sensitive.datastorage.write.forbidden";
+    public static final String ERROR_SENSITIVE_RUN_NOT_ALLOWED_FOR_TOOL = "error.sensitive.tool.forbidden";
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";

@@ -345,8 +345,13 @@ public class PipelineRunManager {
 
         List<String> endpoints = configuration.isEraseRunEndpoints() ? Collections.emptyList() : tool.getEndpoints();
         configuration.setSecretName(tool.getSecretName());
+        final boolean sensitive = checkRunForSensitivity(configuration.getParameters());
+        Assert.isTrue(!sensitive || tool.isAllowSensitive(),
+                messageHelper.getMessage(
+                        MessageConstants.ERROR_SENSITIVE_RUN_NOT_ALLOWED_FOR_TOOL, tool.getImage()));
+
         PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, region, parentRun.orElse(null), 
-                entityIds, configurationId);
+                entityIds, configurationId, sensitive);
         if (parentNodeId != null && !parentNodeId.equals(run.getId())) {
             setParentInstance(run, parentNodeId);
         }
@@ -778,7 +783,7 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun createPipelineRun(String version, PipelineConfiguration configuration, Pipeline pipeline,
                                          Tool tool, AbstractCloudRegion region, PipelineRun parentRun, 
-                                         List<Long> entityIds, Long configurationId) {
+                                         List<Long> entityIds, Long configurationId, boolean sensitive) {
         validateRunParameters(configuration, pipeline);
 
         RunInstance instance = configureRunInstance(configuration, region);
@@ -814,7 +819,7 @@ public class PipelineRunManager {
         if (CollectionUtils.isNotEmpty(entityIds)) {
             run.setEntitiesIds(entityIds);
         }
-        run.setSensitive(checkRunForSensitivity(configuration.getParameters()));
+        run.setSensitive(sensitive);
         run.setConfigurationId(configurationId);
         run.setExecutionPreferences(Optional.ofNullable(configuration.getExecutionPreferences())
                 .orElse(ExecutionPreferences.getDefault()));

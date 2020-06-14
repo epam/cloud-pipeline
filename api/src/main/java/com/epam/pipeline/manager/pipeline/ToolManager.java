@@ -205,6 +205,7 @@ public class ToolManager implements SecuredEntityManager {
         loadedTool.setLabels(tool.getLabels());
         loadedTool.setEndpoints(tool.getEndpoints());
         loadedTool.setDefaultCommand(tool.getDefaultCommand());
+        loadedTool.setAllowSensitive(tool.isAllowSensitive());
 
         toolDao.updateTool(loadedTool);
         return loadedTool;

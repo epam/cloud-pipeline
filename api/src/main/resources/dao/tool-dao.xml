@@ -39,7 +39,8 @@
                         owner,
                         disk,
                         instance_type,
-                        link)
+                        link,
+                        allow_sensitive)
                     VALUES (
                         :ID,
                         :IMAGE,
@@ -55,7 +56,8 @@
                         :OWNER,
                         :DISK,
                         :INSTANCE_TYPE,
-                        :LINK)
+                        :LINK,
+                        :ALLOW_SENSITIVE)
                 ]]>
             </value>
         </property>
@@ -71,7 +73,8 @@
                         labels = :LABELS,
                         endpoints = :ENDPOINTS,
                         disk = :DISK,
-                        instance_type = :INSTANCE_TYPE
+                        instance_type = :INSTANCE_TYPE,
+                        allow_sensitive = :ALLOW_SENSITIVE
                     WHERE
                         image = :IMAGE AND registry_id = :REGISTRY_ID
                 ]]>
@@ -107,6 +110,7 @@
                         COALESCE(tl.instance_type, t.instance_type) AS instance_type,
                         COALESCE(tl.icon_id, t.icon_id) AS icon_id,
                         t.link,
+                        COALESCE(tl.allow_sensitive, t.allow_sensitive) as allow_sensitive,
                         dr.path as registry,
                         dr.secret_name
                     FROM
@@ -142,6 +146,7 @@
                         COALESCE(tl.instance_type, t.instance_type) AS instance_type,
                         COALESCE(tl.icon_id, t.icon_id) AS icon_id,
                         t.link,
+                        COALESCE(tl.allow_sensitive, t.allow_sensitive) as allow_sensitive,
                         dr.path as registry,
                         dr.secret_name
                     FROM
@@ -179,6 +184,7 @@
                         COALESCE(tl.instance_type, t.instance_type) AS instance_type,
                         COALESCE(tl.icon_id, t.icon_id) AS icon_id,
                         t.link,
+                        COALESCE(tl.allow_sensitive, t.allow_sensitive) as allow_sensitive,
                         dr.path as registry,
                         dr.secret_name
                     FROM
@@ -212,6 +218,7 @@
                         COALESCE(tl.instance_type, t.instance_type) AS instance_type,
                         COALESCE(tl.icon_id, t.icon_id) AS icon_id,
                         t.link,
+                        COALESCE(tl.allow_sensitive, t.allow_sensitive) as allow_sensitive,
                         dr.path as registry,
                         dr.secret_name
                     FROM
@@ -243,6 +250,7 @@
                         COALESCE(tl.instance_type, t.instance_type) AS instance_type,
                         COALESCE(tl.icon_id, t.icon_id) AS icon_id,
                         t.link,
+                        COALESCE(tl.allow_sensitive, t.allow_sensitive) as allow_sensitive,
                         dr.path as registry,
                         dr.secret_name,
 						count(i.issue_id) AS issues_count
@@ -277,6 +285,7 @@
                         COALESCE(tl.instance_type, t.instance_type) AS instance_type,
                         COALESCE(tl.icon_id, t.icon_id) AS icon_id,
                         t.link,
+                        COALESCE(tl.allow_sensitive, t.allow_sensitive) as allow_sensitive,
                         dr.path as registry,
                         dr.secret_name
                     FROM
@@ -308,6 +317,7 @@
                         COALESCE(tl.instance_type, t.instance_type) AS instance_type,
                         COALESCE(tl.icon_id, t.icon_id) AS icon_id,
                         t.link,
+                        COALESCE(tl.allow_sensitive, t.allow_sensitive) as allow_sensitive,
                         dr.path as registry,
                         dr.secret_name
                     FROM

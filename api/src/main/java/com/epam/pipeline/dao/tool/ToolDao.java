@@ -238,7 +238,8 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         DISK,
         INSTANCE_TYPE,
         LINK,
-        ICON_ID
+        ICON_ID,
+        ALLOW_SENSITIVE
     }
 
     enum ToolIconParameters {
@@ -274,6 +275,7 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         params.addValue(ToolParameters.DISK.name(), tool.getDisk());
         params.addValue(ToolParameters.INSTANCE_TYPE.name(), tool.getInstanceType());
         params.addValue(ToolParameters.LINK.name(), tool.getLink());
+        params.addValue(ToolParameters.ALLOW_SENSITIVE.name(), tool.isAllowSensitive());
         Array labelsSqlArray = DaoHelper.mapListToSqlArray(tool.getLabels(), connection);
         params.addValue(ToolParameters.LABELS.name(), labelsSqlArray);
 
@@ -314,6 +316,7 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         tool.setOwner(rs.getString(ToolParameters.OWNER.name()));
         tool.setDisk(rs.getInt(ToolParameters.DISK.name()));
         tool.setInstanceType(rs.getString(ToolParameters.INSTANCE_TYPE.name()));
+        tool.setAllowSensitive(rs.getBoolean(ToolParameters.ALLOW_SENSITIVE.name()));
         long link = rs.getLong(ToolParameters.LINK.name());
         if (!rs.wasNull()) {
             tool.setLink(link);

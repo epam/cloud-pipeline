@@ -154,6 +154,7 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
         TOOL_DEFAULT_COMMAND,
         TOOL_OWNER,
         TOOL_ICON_ID,
+        TOOL_ALLOW_SENSITIVE,
         GROUP_ID,
         GROUP_NAME,
         GROUP_DESCRIPTION,
@@ -251,6 +252,7 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
             tool.setRegistry(registry.getPath());
             tool.setDescription(rs.getString(TOOL_DESCRIPTION.name()));
             tool.setShortDescription(rs.getString(TOOL_SHORT_DESCRIPTION.name()));
+            tool.setAllowSensitive(rs.getBoolean(TOOL_ALLOW_SENSITIVE.name()));
             long toolLink = rs.getLong(TOOL_LINK.name());
             if (!rs.wasNull()) {
                 tool.setLink(toolLink);

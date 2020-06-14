@@ -52,6 +52,7 @@ public class Tool extends AbstractSecuredEntity {
     private String defaultCommand;
     private boolean hasIcon;
     private Long iconId;
+    private boolean allowSensitive = false;
 
     public void setIconId(Long iconId) {
         this.iconId = iconId;
