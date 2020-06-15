@@ -21,7 +21,7 @@ import argparse
 import os
 from abc import ABCMeta, abstractmethod
 
-from pipeline import PipelineAPI, Logger, common
+from pipeline import PipelineAPI, Logger, common, DataStorageWithShareMount
 
 READ_MASK = 1
 WRITE_MASK = 1 << 1
@@ -100,6 +100,11 @@ class MountStorageTask:
                 try:
                     limited_storages_list = [int(x.strip()) for x in limited_storages.split(',')]
                     available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.id in limited_storages_list]
+                    # append sensitive storages since they are not returned in common mounts
+                    for storage_id in limited_storages_list:
+                        storage = self.api.find_datastorage(str(storage_id))
+                        if storage.sensitive:
+                            available_storages_with_mounts.append(DataStorageWithShareMount(storage, None))
                     Logger.info('Run is launched with mount limits ({}) Only {} storages will be mounted'.format(limited_storages, len(available_storages_with_mounts)), task_name=self.task_name)
                 except Exception as limited_storages_ex:
                     Logger.warn('Unable to parse CP_CAP_LIMIT_MOUNTS value({}) with error: {}.'.format(limited_storages, str(limited_storages_ex.message)), task_name=self.task_name)
