@@ -900,7 +900,6 @@ then
     echo "[ERROR] Distribution URL is not defined. Exiting"
     exit 1
 else
-    $CP_PYTHON2_PATH -m pip install --upgrade setuptools
     cd $COMMON_REPO_DIR
     download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
     _DOWNLOAD_RESULT=$?
