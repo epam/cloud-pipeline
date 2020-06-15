@@ -123,7 +123,8 @@ function getFormItemClassName (rootClass, key) {
   'awsRegions',
   'dtsList',
   'preferences',
-  'dockerRegistries'
+  'dockerRegistries',
+  'dataStorageAvailable'
 )
 @localization.localizedComponent
 @roleModel.authenticationInfo
@@ -341,6 +342,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   @observable _toolSettings;
   @observable regionDisabledByToolSettings = false;
   @observable toolCloudRegion = null;
+  @observable toolAllowSensitive = true;
 
   @action
   formFieldsChanged = async () => {
@@ -2910,7 +2912,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this._toolSettings = null;
     this.regionDisabledByToolSettings = false;
     this.toolCloudRegion = null;
+    this.toolAllowSensitive = true;
   };
+
+  lastConfirmedImage;
 
   loadToolSettings = async (dockerImage) => {
     await this.props.dockerRegistries.fetchIfNeededOrWait();
@@ -2926,6 +2931,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const [im] = (imageGroup.tools || [])
             .filter(i => i.image.toLowerCase() === `${group}/${image}`);
           if (im && im.id) {
+            this.toolAllowSensitive = im.allowSensitive;
             this._toolSettings = new LoadToolVersionSettings(im.id, version);
             await this._toolSettings.fetchIfNeededOrWait();
 
@@ -2941,8 +2947,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               this.regionDisabledByToolSettings = false;
               this.toolCloudRegion = null;
             }
+          } else {
+            this.toolAllowSensitive = true;
           }
+        } else {
+          this.toolAllowSensitive = true;
         }
+      } else {
+        this.toolAllowSensitive = true;
       }
     }
   };
@@ -3442,28 +3454,40 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         className={getFormItemClassName(styles.formItemRow, 'limitMounts')}
         {...this.cmdTemplateFormItemLayout}
         label="Limit mounts">
-        <Row type="flex" align="middle">
-          <div style={{flex: 1}}>
-            <FormItem
-              className={styles.formItemRow}
-              hasFeedback>
-              {this.getSectionFieldDecorator(ADVANCED)('limitMounts',
-                {
-                  initialValue: getDefaultValue()
-                }
-              )(
-                <LimitMountsInput
-                  disabled={
-                    !!this.state.fireCloudMethodName ||
-                    (this.props.readOnly && !this.props.canExecute)
-                  } />
-              )}
-            </FormItem>
-          </div>
-          <div style={{marginLeft: 7, marginTop: 3}}>
-            {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.limitMountsHint)}
-          </div>
-        </Row>
+        <div>
+          <Row type="flex" align="middle">
+            <div style={{flex: 1}}>
+              <FormItem
+                className={styles.formItemRow}
+                hasFeedback>
+                {this.getSectionFieldDecorator(ADVANCED)('limitMounts',
+                  {
+                    initialValue: getDefaultValue()
+                  }
+                )(
+                  <LimitMountsInput
+                    allowSensitive={this.toolAllowSensitive}
+                    disabled={
+                      !!this.state.fireCloudMethodName ||
+                      (this.props.readOnly && !this.props.canExecute)
+                    } />
+                )}
+              </FormItem>
+            </div>
+            <div style={{marginLeft: 7, marginTop: 3}}>
+              {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.limitMountsHint)}
+            </div>
+          </Row>
+          {
+            !this.toolAllowSensitive && (
+              <Alert
+                type="warning"
+                showIcon
+                message="Tool configuration restricts selection of sensitive storages"
+              />
+            )
+          }
+        </div>
       </FormItem>
     );
   };

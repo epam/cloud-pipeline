@@ -20,11 +20,13 @@ import {computed, observable} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Button,
+  Checkbox,
   Col,
   Collapse,
   Form,
   Icon,
   Input,
+  Modal,
   Row,
   Select,
   Tag
@@ -69,7 +71,14 @@ const Panels = {
 const regionNotConfiguredValue = 'not_configured';
 
 @Form.create()
-@inject('awsRegions', 'allowedInstanceTypes', 'spotToolInstanceTypes', 'onDemandToolInstanceTypes', 'runDefaultParameters')
+@inject(
+  'awsRegions',
+  'allowedInstanceTypes',
+  'dataStorageAvailable',
+  'spotToolInstanceTypes',
+  'onDemandToolInstanceTypes',
+  'runDefaultParameters'
+)
 @observer
 export default class EditToolForm extends React.Component {
   static propTypes = {
@@ -82,11 +91,18 @@ export default class EditToolForm extends React.Component {
       defaultCommand: PropTypes.string,
       endpoints: PropTypes.object
     }),
+    allowSensitive: PropTypes.bool,
+    mode: PropTypes.oneOf(['tool', 'version']),
     configuration: PropTypes.object,
     onSubmit: PropTypes.func,
     readOnly: PropTypes.bool,
     onInitialized: PropTypes.func,
     executionEnvironmentDisabled: PropTypes.bool
+  };
+
+  static defaultProps = {
+    allowSensitive: false,
+    mode: 'tool'
   };
 
   formItemLayout = {
@@ -266,7 +282,8 @@ export default class EditToolForm extends React.Component {
               endpoints: this.endpointControl ? values.endpoints : [],
               labels: this.state.labels,
               cpu: '1000mi',
-              ram: '1Gi'
+              ram: '1Gi',
+              allowSensitive: values.allowSensitive
             }, configuration);
           }
           this.setState({pending: false});
@@ -282,6 +299,7 @@ export default class EditToolForm extends React.Component {
       case 'is_spot': return this.getPriceTypeInitialValue();
       case 'instance_size': return this.getInstanceTypeInitialValue();
       case 'instance_disk': return this.getDiskInitialValue();
+      case 'allowSensitive': return this.getAllowSensitiveInitialValue();
       default: return this.props.configuration ? this.props.configuration[field] : undefined;
     }
   };
@@ -328,6 +346,15 @@ export default class EditToolForm extends React.Component {
     return this.props.configuration && this.props.configuration.cloudRegionId
       ? `${this.props.configuration.cloudRegionId}`
       : regionNotConfiguredValue;
+  };
+
+  getAllowSensitiveInitialValue = () => {
+    if (this.props.mode === 'version') {
+      return this.props.allowSensitive;
+    }
+    return this.props.tool
+      ? `${this.props.tool.allowSensitive}`.toLowerCase() === 'true'
+      : true;
   };
 
   getInitialCloudRegionNotAvailable = () => {
@@ -653,6 +680,7 @@ export default class EditToolForm extends React.Component {
     return configurationFormFieldChanged('is_spot') ||
       configurationFormFieldChanged('instance_size', 'instanceType') ||
       configurationFormFieldChanged('instance_disk', 'disk') ||
+      configurationFormFieldChanged('allowSensitive') ||
       commandChanged() ||
       !compareArrays(toolEndpointArray, toolEndpointArrayFormValue) ||
       !compareArrays(toolLabelsArray, this.state.labels) ||
@@ -860,9 +888,43 @@ export default class EditToolForm extends React.Component {
     return value;
   };
 
+  correctSensitiveMounts = async (e) => {
+    const {dataStorageAvailable, form} = this.props;
+    const initialLimitMounts = (form.getFieldValue('limitMounts') || this.defaultLimitMounts || '');
+    const storages = initialLimitMounts
+      .split(',')
+      .map(id => +id);
+    await dataStorageAvailable.fetchIfNeededOrWait();
+    const hasSensitive = (dataStorageAvailable.value || [])
+      .filter(s => s.sensitive && storages.indexOf(+s.id) >= 0)
+      .length > 0;
+    if (!e.target.checked && hasSensitive) {
+      const cancel = () => {
+        form.setFieldsValue({allowSensitive: true, limitMounts: initialLimitMounts});
+      };
+      const submit = () => {
+        form.setFieldsValue({
+          limitMounts: (dataStorageAvailable.value || [])
+            .filter(s => !s.sensitive && storages.indexOf(+s.id) >= 0)
+            .map(s => s.id)
+            .join(',')
+        });
+      };
+      Modal.confirm({
+        title: 'Sensitive storages will be removed from Limit Mounts setting',
+        onOk: submit,
+        onCancel: cancel
+      });
+    }
+  };
+
   renderExecutionEnvironment = () => {
     const renderExecutionEnvironmentSection = () => {
-      const {getFieldDecorator} = this.props.form;
+      const {getFieldDecorator, getFieldValue} = this.props.form;
+      let allowSensitive = getFieldValue('allowSensitive');
+      if (allowSensitive === undefined) {
+        allowSensitive = this.getAllowSensitiveInitialValue();
+      }
       return (
         <div>
           {this.renderSeparator('Execution defaults')}
@@ -970,7 +1032,22 @@ export default class EditToolForm extends React.Component {
                   {
                     initialValue: this.defaultLimitMounts
                   })(
-                  <LimitMountsInput disabled={this.state.pending || this.props.readOnly} />
+                  <LimitMountsInput
+                    allowSensitive={allowSensitive}
+                    disabled={this.state.pending || this.props.readOnly}
+                  />
+                )}
+              </Form.Item>
+              <Form.Item {...this.formItemLayout} label="Allow sensitive storages" style={{marginTop: 10, marginBottom: 10}}>
+                {getFieldDecorator('allowSensitive',
+                  {
+                    initialValue: this.getAllowSensitiveInitialValue(),
+                    valuePropName: 'checked'
+                  })(
+                  <Checkbox
+                    disabled={this.state.pending || this.props.readOnly || this.props.mode === 'version'}
+                    onChange={this.correctSensitiveMounts}
+                  />
                 )}
               </Form.Item>
               <Row type="flex" align="middle" style={{marginBottom: 10}}>
@@ -1132,14 +1209,15 @@ export default class EditToolForm extends React.Component {
 
   render () {
     const {getFieldDecorator} = this.props.form;
+    const isTool = this.props.mode === 'tool';
 
     return (
       <Form>
         {
-          this.props.tool && this.renderSeparator('Tool endpoints')
+          isTool && this.renderSeparator('Tool endpoints')
         }
         {
-          this.props.tool &&
+          isTool &&
           <Row type="flex">
             <Col xs={24} sm={6} />
             <Col xs={24} sm={12}>
@@ -1156,9 +1234,9 @@ export default class EditToolForm extends React.Component {
             </Col>
           </Row>
         }
-        {this.props.tool && this.renderSeparator('Tool attributes')}
+        {isTool && this.renderSeparator('Tool attributes')}
         {
-          this.props.tool &&
+          isTool &&
           <Row style={{marginBottom: 10, marginTop: 10}}>
             <Col xs={24} sm={6} className={styles.toolSettingsTitle}>Labels:</Col>
             <Col xs={24} sm={12}>
