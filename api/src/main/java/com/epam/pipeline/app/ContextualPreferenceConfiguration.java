@@ -26,7 +26,6 @@ import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceReducer;
 import com.epam.pipeline.manager.contextual.handler.DefaultContextualPreferenceReducer;
 import com.epam.pipeline.manager.contextual.handler.RoleContextualPreferenceHandler;
-import com.epam.pipeline.manager.contextual.handler.ToolSymlinkContextualPreferenceHandler;
 import com.epam.pipeline.manager.contextual.handler.SystemPreferenceHandler;
 import com.epam.pipeline.manager.contextual.handler.ToolContextualPreferenceHandler;
 import com.epam.pipeline.manager.contextual.handler.UserContextualPreferenceHandler;
@@ -52,17 +51,10 @@ public class ContextualPreferenceConfiguration {
     public RoleContextualPreferenceHandler roleContextualPreferenceHandler(
             final RoleDao roleDao,
             final ContextualPreferenceDao contextualPreferenceDao,
-            final ToolSymlinkContextualPreferenceHandler toolSymlinkContextualPreferenceHandler,
+            final ToolContextualPreferenceHandler toolContextualPreferenceHandler,
             final DefaultContextualPreferenceReducer defaultContextualPreferenceReducer) {
-        return new RoleContextualPreferenceHandler(roleDao, contextualPreferenceDao, 
-                toolSymlinkContextualPreferenceHandler, defaultContextualPreferenceReducer);
-    }
-
-    @Bean
-    public ToolSymlinkContextualPreferenceHandler toolSymlinkContextualPreferenceHandler(
-            final ToolDao toolDao,
-            final ToolContextualPreferenceHandler toolContextualPreferenceHandler) {
-        return new ToolSymlinkContextualPreferenceHandler(toolDao, toolContextualPreferenceHandler);
+        return new RoleContextualPreferenceHandler(roleDao, contextualPreferenceDao,
+                toolContextualPreferenceHandler, defaultContextualPreferenceReducer);
     }
 
     @Bean
