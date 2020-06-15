@@ -67,68 +67,45 @@ pipe_log_info "DIND dependencies installed" "$DIND_SETUP_TASK"
 export DOCKER_CHANNEL="stable"
 export DOCKER_VERSION="18.09.6"
 export DOCKER_ARCH="x86_64"
-docker_installed=0
+
+wget -q -O docker.tgz "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/${DOCKER_ARCH}/docker-${DOCKER_VERSION}.tgz"
+
+if [ $? -ne 0 ]; then
+    pipe_log_fail "Unable to install download docker distribution ${DOCKER_CHANNEL}/${DOCKER_ARCH}/docker-${DOCKER_VERSION}" "$DIND_SETUP_TASK"
+    exit 1
+fi
+
+tar --extract --file docker.tgz --strip-components 1 --directory /usr/local/bin/
+rm -f docker.tgz
+
+pipe_log_info "Docker installed: ${DOCKER_CHANNEL}/${DOCKER_ARCH}/docker-${DOCKER_VERSION}" "$DIND_SETUP_TASK"
 
 nvidia-smi
-if [ $? -eq 0 ]; then
+REQUIRES_GPU_DIND=$?
+if [ $REQUIRES_GPU_DIND -eq 0 ]; then
     pipe_log_info "Active CUDA environment detected, try to install NVIDIA Docker" "$DIND_SETUP_TASK"
-    os=$(. /etc/os-release;echo $ID)
-    os_release=$(. /etc/os-release;echo $VERSION_CODENAME)
     distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
     if [ $IS_RPM_BASED -eq 0 ]; then
         curl -s -L https://nvidia.github.io/nvidia-container-runtime/$distribution/nvidia-container-runtime.repo | \
         tee /etc/yum.repos.d/nvidia-container-runtime.repo
-        curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | \
-        tee /etc/yum.repos.d/libnvidia-container.repo
-        curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.repo | \
-        tee /etc/yum.repos.d/nvidia-docker.repo
-        curl -s -L https://download.docker.com/linux/$os/docker-ce.repo | \
-        tee /etc/yum.repos.d/docker-ce.repo
-        yum install -y docker-ce-${DOCKER_VERSION}* \
-                    docker-ce-cli-${DOCKER_VERSION}* \
-                    containerd.io \
-                    nvidia-container-runtime-2.0.0-3.docker18.09.6* \
-                    install nvidia-docker2-2.0.3-3.docker18.09.6*
+        yum install -y -q nvidia-container-runtime-2.0.0-3.docker18.09.6*
         _DIND_NVIDIA_DEP_INSTALL_RESULT=$?
         find /etc/yum.repos.d -type f \( -name "*nvidia*" -o -name "*docker*" \)  -exec rm -f {} \;
     else
-        docker_ce_version="5:18.09.6~3-0~${os}-${os_release}"
+        os=$(. /etc/os-release;echo $ID)
+        os_release=$(. /etc/os-release;echo $VERSION_CODENAME)
         sources_list=/etc/apt/sources.list
         curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add -
         curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list \
         | tee /etc/apt/sources.list.d/nvidia-docker.list
-        curl -fsSL https://download.docker.com/linux/$os/gpg | apt-key add -
-        echo "deb [arch=amd64] https://download.docker.com/linux/$os/ ${os_release} ${DOCKER_CHANNEL}" >> $sources_list
         apt-get update -yq && \
-        apt-get install -yq docker-ce=${docker_ce_version} \
-                        docker-ce-cli=${docker_ce_version} \
-                        containerd.io \
-                        nvidia-container-runtime=2.0.0+docker18.09.6-3 \
-                        nvidia-docker2=2.0.3+docker18.09.6-3
+        apt-get install -yq nvidia-container-runtime=2.0.0+docker18.09.6-3
         _DIND_NVIDIA_DEP_INSTALL_RESULT=$?
-        sed -i '$ d' $sources_list
         rm /etc/apt/sources.list.d/nvidia-docker.list
     fi
     if [ $_DIND_NVIDIA_DEP_INSTALL_RESULT -ne 0 ]; then
         pipe_log_info "Unable to install NVIDIA DIND, 'nvidia' runtime will not be available" "$DIND_SETUP_TASK"
-        pipe_log_info "Trying to install download docker distribution" "$DIND_SETUP_TASK"
-    else
-        pipe_log_info "Docker ${DOCKER_VERSION} with NVIDIA runtime installed" "$DIND_SETUP_TASK"
-        docker_installed=1
     fi
-fi
-if [ $docker_installed -eq 0 ]; then
-    wget -q -O docker.tgz "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/${DOCKER_ARCH}/docker-${DOCKER_VERSION}.tgz"
-
-    if [ $? -ne 0 ]; then
-        pipe_log_fail "Unable to install download docker distribution ${DOCKER_CHANNEL}/${DOCKER_ARCH}/docker-${DOCKER_VERSION}" "$DIND_SETUP_TASK"
-        exit 1
-    fi
-
-    tar --extract --file docker.tgz --strip-components 1 --directory /usr/local/bin/
-    rm -f docker.tgz
-
-    pipe_log_info "Docker installed: ${DOCKER_CHANNEL}/${DOCKER_ARCH}/docker-${DOCKER_VERSION}" "$DIND_SETUP_TASK"
 fi
 
 ######################################################
@@ -156,6 +133,18 @@ DIND_DATA_ROOT="${DIND_DATA_ROOT:-"$RUNS_ROOT/docker"}"
 pipe_log_info "DIND data root is set to: $DIND_DATA_ROOT" "$DIND_SETUP_TASK"
 mkdir -p "$DIND_DATA_ROOT"
 mkdir -p "/etc/docker"
+if [ $REQUIRES_GPU_DIND -eq 0 ] && [ $_DIND_NVIDIA_DEP_INSTALL_RESULT -eq 0 ]; then
+cat <<EOT > /etc/docker/daemon.json
+{
+    "runtimes": {
+        "nvidia": {
+            "path": "nvidia-container-runtime",
+            "runtimeArgs": []
+        }
+    }
+}
+EOT
+else
 cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "$DIND_DATA_ROOT",
@@ -165,6 +154,7 @@ cat <<EOT > /etc/docker/daemon.json
   ]
 }
 EOT
+fi
 
 ######################################################
 # Start dockerd
