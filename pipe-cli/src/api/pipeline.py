@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ class Pipeline(API):
                         instance_disk=None, instance_type=None,
                         docker_image=None, cmd_template=None,
                         timeout=None, config_name=None, instance_count=None,
-                        price_type=None, region_id=None, parent_node=None, non_pause=None):
+                        price_type=None, region_id=None, parent_node=None, non_pause=None, friendly_url=None):
         api = cls.instance()
         params = {}
         for parameter in parameters:
@@ -134,6 +134,8 @@ class Pipeline(API):
             cls.__add_parent_node_params(payload, parent_node)
         if non_pause is not None:
             payload['nonPause'] = non_pause
+        if friendly_url:
+            payload['prettyUrl'] = friendly_url
         data = json.dumps(payload)
         response_data = api.call('run', data)
         return PipelineRunModel.load(response_data['payload'])
@@ -142,7 +144,7 @@ class Pipeline(API):
     def launch_command(cls, instance_disk, instance_type,
                        docker_image, cmd_template, parameters,
                        timeout=None, instance_count=None, price_type=None,
-                       region_id=None, parent_node=None, non_pause=None):
+                       region_id=None, parent_node=None, non_pause=None, friendly_url=None):
         api = cls.instance()
         payload = {}
         if instance_disk is not None:
@@ -165,6 +167,8 @@ class Pipeline(API):
             cls.__add_parent_node_params(payload, parent_node)
         if non_pause is not None:
             payload['nonPause'] = non_pause
+        if friendly_url:
+            payload['prettyUrl'] = friendly_url
         if parameters is not None:
             params = {}
             for key in parameters.keys():
@@ -211,4 +215,3 @@ class Pipeline(API):
                 params['instanceType'] = ins_param[1]
         params['parentRunId'] = parent_node
         params['parentNodeId'] = parent_node
-
