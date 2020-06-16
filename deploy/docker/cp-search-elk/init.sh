@@ -142,6 +142,22 @@ INDEX_TEMPLATE="{
             }
           }
         },
+        \"auth_type\": {
+          \"type\": \"text\",
+          \"fields\": {
+            \"keyword\": {
+              \"type\": \"keyword\"
+            }
+          }
+        },
+        \"request_details\": {
+          \"type\": \"text\",
+          \"fields\": {
+            \"keyword\": {
+              \"type\": \"keyword\"
+            }
+          }
+        },
         \"thread\": {
           \"type\": \"text\",
           \"fields\": {

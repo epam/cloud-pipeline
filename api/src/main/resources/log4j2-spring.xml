@@ -63,6 +63,8 @@
             </Policies>
             <JsonLayout complete="false" compact="true" eventEol="true" stacktraceAsString="true">
                 <KeyValuePair key="user" value="$${ctx:user:-NotAuthorized}" />
+                <KeyValuePair key="auth_type" value="$${ctx:auth_type:-}" />
+                <KeyValuePair key="request_details" value="$${ctx:request_details:-}" />
                 <KeyValuePair key="log_context" value="Security" />
                 <KeyValuePair key="timestamp" value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSSZ}" />
             </JsonLayout>
