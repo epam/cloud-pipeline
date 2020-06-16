@@ -26,12 +26,10 @@ import org.springframework.util.StringUtils;
 public class RequestDetails {
 
     private static final String H_CONTENT_TYPE_APPLICATION_JSON = "-H 'Content-Type: application/json'";
-    private static final String H_AUTHORIZATION = "-H 'Authorization: %s'";
     private static final String QUOTE = "'";
     private static final String PARAMS_MARK = "?";
     private static final String DATA = "--data";
 
-    private final String authorization;
     private final String httpMethod;
     private final StringBuffer path;
     private final String query;
@@ -41,9 +39,8 @@ public class RequestDetails {
     @Override
     public String toString() {
         StringBuilder curl = new StringBuilder(
-                String.format("curl -k %s %s -X%s '%s",
+                String.format("curl -k %s -X%s '%s",
                         H_CONTENT_TYPE_APPLICATION_JSON,
-                        String.format(H_AUTHORIZATION, authorization),
                         httpMethod,
                         path
                 )

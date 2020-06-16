@@ -57,7 +57,7 @@ public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain) throws ServletException, IOException {
         request = new MultiReadableHttpServletRequestWrapper(request);
         final JwtRawToken rawToken = fetchJwtRawToken(request);
-        putRequestDataToLogContext(request, rawToken);
+        putRequestDataToLogContext(request);
         try {
             if (!StringUtils.isEmpty(rawToken)) {
                 JwtTokenClaims claims = tokenVerifier.readClaims(rawToken.getToken());
@@ -113,19 +113,18 @@ public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
         ThreadContext.clearAll();
     }
 
-    private void putRequestDataToLogContext(HttpServletRequest request, JwtRawToken rawToken) {
+    private void putRequestDataToLogContext(HttpServletRequest request) {
         try {
-            ThreadContext.put(REQUEST_DETAILS, getRequestDetails(request, rawToken).toString());
+            ThreadContext.put(REQUEST_DETAILS, getRequestDetails(request).toString());
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    private RequestDetails getRequestDetails(HttpServletRequest request, JwtRawToken rawToken) throws IOException {
+    private RequestDetails getRequestDetails(HttpServletRequest request) throws IOException {
         final RequestDetails.RequestDetailsBuilder builder = RequestDetails.builder();
         final String httpMethod = request.getMethod();
         builder.path(request.getRequestURL())
-                .authorization(rawToken.toHeader())
                 .httpMethod(httpMethod)
                 .query(request.getQueryString())
                 .body(readBody(request));
