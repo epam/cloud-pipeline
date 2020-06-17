@@ -226,6 +226,5 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
             }
             return this;
         }
-
     }
 }
