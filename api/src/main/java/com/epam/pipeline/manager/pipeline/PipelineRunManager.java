@@ -258,6 +258,7 @@ public class PipelineRunManager {
         run.setPipelineName(PipelineRun.DEFAULT_PIPELINE_NAME);
         run.setPodId(getRootPodIDFromTool(tool.getImage(), run.getId()));
         run.setDockerImage(configuration.getDockerImage());
+        run.setActualDockerImage(tool.getImage());
         run.setCmdTemplate(determinateCmdTemplateForRun(configuration));
         run.setTimeout(runVO.getTimeout());
         run.setCommitStatus(CommitStatus.NOT_COMMITTED);
@@ -344,8 +345,13 @@ public class PipelineRunManager {
 
         List<String> endpoints = configuration.isEraseRunEndpoints() ? Collections.emptyList() : tool.getEndpoints();
         configuration.setSecretName(tool.getSecretName());
-        PipelineRun run = createPipelineRun(version, configuration, pipeline, region, parentRun.orElse(null), entityIds,
-                configurationId);
+        final boolean sensitive = checkRunForSensitivity(configuration.getParameters());
+        Assert.isTrue(!sensitive || tool.isAllowSensitive(),
+                messageHelper.getMessage(
+                        MessageConstants.ERROR_SENSITIVE_RUN_NOT_ALLOWED_FOR_TOOL, tool.getImage()));
+
+        PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, region, parentRun.orElse(null), 
+                entityIds, configurationId, sensitive);
         if (parentNodeId != null && !parentNodeId.equals(run.getId())) {
             setParentInstance(run, parentNodeId);
         }
@@ -776,8 +782,8 @@ public class PipelineRunManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun createPipelineRun(String version, PipelineConfiguration configuration, Pipeline pipeline,
-                                         AbstractCloudRegion region, PipelineRun parentRun, List<Long> entityIds,
-                                         Long configurationId) {
+                                         Tool tool, AbstractCloudRegion region, PipelineRun parentRun, 
+                                         List<Long> entityIds, Long configurationId, boolean sensitive) {
         validateRunParameters(configuration, pipeline);
 
         RunInstance instance = configureRunInstance(configuration, region);
@@ -804,6 +810,7 @@ public class PipelineRunManager {
         run.convertParamsToString(configuration.getParameters());
         run.setTimeout(configuration.getTimeout());
         run.setDockerImage(configuration.getDockerImage());
+        run.setActualDockerImage(Optional.ofNullable(tool).map(Tool::getImage).orElse(configuration.getDockerImage()));
         run.setCmdTemplate(determinateCmdTemplateForRun(configuration));
         run.setNodeCount(configuration.getNodeCount());
         setRunPrice(instance, run);
@@ -812,7 +819,7 @@ public class PipelineRunManager {
         if (CollectionUtils.isNotEmpty(entityIds)) {
             run.setEntitiesIds(entityIds);
         }
-        run.setSensitive(checkRunForSensitivity(configuration.getParameters()));
+        run.setSensitive(sensitive);
         run.setConfigurationId(configurationId);
         run.setExecutionPreferences(Optional.ofNullable(configuration.getExecutionPreferences())
                 .orElse(ExecutionPreferences.getDefault()));
@@ -892,7 +899,7 @@ public class PipelineRunManager {
     }
 
     public Tool getToolForRun(PipelineConfiguration configuration) {
-        return toolManager.loadByNameOrId(configuration.getDockerImage());
+        return toolManager.resolveSymlinks(configuration.getDockerImage());
     }
 
     /**
@@ -1142,6 +1149,12 @@ public class PipelineRunManager {
         return updateRunInfo(run);
     }
 
+    public Optional<PipelineRun> loadActiveRunsByPodIP(final String ip) {
+        return pipelineRunDao.loadRunByPodIP(ip, Arrays.stream(TaskStatus.values())
+                .filter(status -> !status.isFinal())
+                .collect(Collectors.toList()));
+    }
+
     private int getTotalSize(final List<InstanceDisk> disks) {
         return (int) disks.stream().mapToLong(InstanceDisk::getSize).sum();
     }
@@ -1278,7 +1291,7 @@ public class PipelineRunManager {
     }
 
     private String retrieveImageName(PipelineRun pipelineRun) {
-        String[] registryAndDockerImageFromRun = pipelineRun.getDockerImage().split("/");
+        String[] registryAndDockerImageFromRun = pipelineRun.getActualDockerImage().split("/");
         return registryAndDockerImageFromRun.length == 1
             ? registryAndDockerImageFromRun[0]
             : registryAndDockerImageFromRun[1];
@@ -1437,6 +1450,7 @@ public class PipelineRunManager {
         restartedRun.parseParameters();
         restartedRun.setTimeout(run.getTimeout());
         restartedRun.setDockerImage(run.getDockerImage());
+        restartedRun.setActualDockerImage(run.getActualDockerImage());
         restartedRun.setCmdTemplate(run.getCmdTemplate());
         restartedRun.setNodeCount(run.getNodeCount());
         RunInstance instance = copyInstance(run.getInstance());
@@ -1479,4 +1493,5 @@ public class PipelineRunManager {
         pipelineRun.setSshPassword(pipelineRunDao.loadSshPassword(runId));
         return pipelineRun;
     }
+
 }

@@ -288,8 +288,22 @@ rm -f $_KUBELET_INITD_DROPIN_PATH
 
 ## Configure kubelet reservations
 ## FIXME: shall be moved to the preferences
-_KUBE_RESERVED_ARGS="--kube-reserved cpu=500m,memory=500Mi,storage=1Gi"
-_KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=500m,memory=500Mi,storage=1Gi"
+
+## Here we calculate reservation for RAM, depending on the machine size
+## By default, we reserve 5% of the available RAM, but not less that 500Mi and not more than 2000Mi
+_KUBE_RESERVED_RATIO=5
+_KUBE_RESERVED_MIN_MB=500
+_KUBE_RESERVED_MAX_MB=2000
+### Getting total RAM in Mb
+_KUBE_NODE_MEM_TOTAL_MB=$(awk '/MemTotal/ { printf "%.0f", $2/1024 }' /proc/meminfo)
+### Calculate 5% reservation for each of the two system services (kubelet and system)
+_KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_TOTAL_MB * $_KUBE_RESERVED_RATIO / 100 / 2 ))
+### Apply upper and lower limits restrictions (500 and 2000)
+_KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_RESERVED_MB > $_KUBE_RESERVED_MAX_MB ? $_KUBE_RESERVED_MAX_MB : $_KUBE_NODE_MEM_RESERVED_MB ))
+_KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_RESERVED_MB < $_KUBE_RESERVED_MIN_MB ? $_KUBE_RESERVED_MIN_MB : $_KUBE_NODE_MEM_RESERVED_MB ))
+### Setup the  calculated values into the kubelet args
+_KUBE_RESERVED_ARGS="--kube-reserved cpu=500m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,storage=1Gi"
+_KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=500m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,storage=1Gi"
 _KUBE_EVICTION_ARGS="--eviction-hard= --eviction-soft= --eviction-soft-grace-period="
 
 ## Append extra kube-config to the systemd config

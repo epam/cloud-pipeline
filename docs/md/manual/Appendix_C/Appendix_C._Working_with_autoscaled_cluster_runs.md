@@ -80,6 +80,7 @@ The autoscaler will detect such situations and replace weak addition workers wit
 | `CP_CAP_AUTOSCALE_HYBRID_FAMILY`            | Hybrid cluster additional worker instance type family. For example `c5` or `r5` instance families can be used for AWS. |
 | `CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE` | The maximum number of cores that hybrid cluster additional worker instances can have. |
 | `CP_CAP_AUTOSCALE_VERBOSE`                  | Enables verbose logging. |
+| `CP_CAP_AUTOSCALE_PRICE_TYPE`               | Cluster additional worker instance price type. Defaults to master instance price type. |
 | `CP_CAP_SGE_MASTER_CORES`                   | The number of cores that master run can use for job submissions. If set to 0 then no jobs will be executed on the master. Defaults to all the master instance cores. |
 | `CP_CAP_SGE_WORKER_FREE_CORES`              | The number of cores that all worker and master runs have to reserve from job submissions. Defaults to 0 which means that all instance cores will be used for job submissions. |
 

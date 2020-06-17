@@ -98,6 +98,9 @@ if [ "$CP_CAP_MODULES_TYPE" == "tcl" ]; then
     fi
 
     # Configure the modules setup
+    if [ -f $MODULES_INSTALL_DIR/init/profile.sh ]; then
+        rm -f /etc/profile.d/modules.sh
+    fi
     ln -s $MODULES_INSTALL_DIR/init/profile.sh /etc/profile.d/modules.sh
 
 elif [ "$CP_CAP_MODULES_TYPE" == "lmod" ]; then
@@ -138,7 +141,13 @@ elif [ "$CP_CAP_MODULES_TYPE" == "lmod" ]; then
     fi
 
     # Configure the modules setup
+    if [ -f $MODULES_INSTALL_DIR/lmod/lmod/init/profile ]; then
+        rm -f /etc/profile.d/lmod.sh
+        rm -f /etc/profile.d/modules.sh
+    fi
     ln -s $MODULES_INSTALL_DIR/lmod/lmod/init/profile /etc/profile.d/lmod.sh
+    # modules.sh will be source by the launch.sh to make the "module" command available for the init process (e.g. "pipelines" scripts)
+    ln -s /etc/profile.d/lmod.sh /etc/profile.d/modules.sh
     MODULES_FILES_DIR="${CP_CAP_MODULES_FILES_DIR:-$MODULES_INSTALL_DIR/lmod/lmod/modulesfiles/Core}"
     echo "export MODULES_FILES_DIR="$MODULES_FILES_DIR"" >> /etc/cp_env.sh
     echo "export MODULEPATH="\$MODULEPATH:\$MODULES_FILES_DIR"" >> /etc/cp_env.sh

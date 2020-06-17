@@ -619,8 +619,8 @@ class GridEngineScaleUpHandler:
                            'cluster_role_type additional ' \
                            'CP_CAP_SGE false ' \
                            'CP_CAP_AUTOSCALE false ' \
-                           'CP_CAP_AUTOSCALE_WORKERS 0' \
-                           'CP_DISABLE_RUN_ENDPOINTS true' \
+                           'CP_CAP_AUTOSCALE_WORKERS 0 ' \
+                           'CP_DISABLE_RUN_ENDPOINTS true ' \
                            % (self.instance_disk, instance, self.instance_image, self.parent_run_id,
                               self._pipe_cli_price_type(self.price_type), self.region_id)
         run_id = int(self.executor.execute_to_lines(pipe_run_command)[0])
@@ -945,7 +945,8 @@ class GridEngineAutoscaler:
                     Logger.info('Latest job started less than %s seconds. '
                                 'Scaling down is not required.' % self.scale_down_timeout.seconds)
             else:
-                Logger.info('There are no previously running jobs. Scaling is skipped.')
+                Logger.info('There are no previously running jobs. Scaling down is required.')
+                self._scale_down(running_jobs, additional_hosts)
         Logger.info('Finish scaling step at %s.' % self.clock.now())
         post_scale_additional_hosts = self.host_storage.load_hosts()
         Logger.info('There are %s additional pipelines.' % len(post_scale_additional_hosts))
@@ -1327,7 +1328,7 @@ if __name__ == '__main__':
     instance_disk = os.environ['instance_disk']
     instance_type = os.environ['instance_size']
     instance_image = os.environ['docker_image']
-    price_type = os.environ['price_type']
+    price_type = os.getenv('CP_CAP_AUTOSCALE_PRICE_TYPE', os.environ['price_type'])
     region_id = os.environ['CLOUD_REGION_ID']
     instance_cores = int(os.getenv('CLOUD_PIPELINE_NODE_CORES', multiprocessing.cpu_count()))
     additional_hosts = int(os.getenv('CP_CAP_AUTOSCALE_WORKERS', 3))

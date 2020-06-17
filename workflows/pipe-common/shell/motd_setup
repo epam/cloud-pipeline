@@ -1,0 +1,28 @@
+#!/bin/bash
+
+function motd_section() {
+    echo "==========================================================================" >> /etc/motd
+}
+
+function motd_init() {
+    echo "" > /etc/motd
+    motd_section
+}
+
+function motd_add() {
+    local motd_section="$1"
+    echo "$motd_section" >> /etc/motd
+    motd_section
+}
+
+_command="$1"
+_arg="$2"
+
+if [[ "$_command" == "init" ]]; then
+    motd_init
+elif [[ "$_command" == "add" ]]; then
+    motd_add "$_arg"
+else
+    echo "No arguments are specified"
+    exit 1
+fi

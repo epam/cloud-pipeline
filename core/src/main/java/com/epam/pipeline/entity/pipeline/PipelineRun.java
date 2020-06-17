@@ -65,6 +65,7 @@ public class PipelineRun extends AbstractSecuredEntity {
     private String params;
 
     private String dockerImage;
+    private String actualDockerImage;
     private String cmdTemplate;
     private String actualCmd;
     private String serviceUrl;

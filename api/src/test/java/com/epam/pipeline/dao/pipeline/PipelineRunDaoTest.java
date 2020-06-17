@@ -115,6 +115,8 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     private static final String TAG_VALUE_1 = "value1";
     private static final String TAG_VALUE_2 = "value2";
     private static final ZoneId ZONE_ID = ZoneId.systemDefault();
+    private static final String DOCKER_IMAGE = "dockerImage";
+    private static final String ACTUAL_DOCKER_IMAGE = "actualDockerImage";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -293,7 +295,6 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         String actualCmd = "ActualCmd";
         run.setCmdTemplate(cmdTemplate);
         run.setActualCmd(actualCmd);
-        run.setDockerImage("dockerImage");
 
         pipelineRunDao.createPipelineRun(run);
 
@@ -301,6 +302,20 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         assertEquals(loadedRun.getCmdTemplate(), cmdTemplate);
         assertEquals(loadedRun.getActualCmd(), actualCmd);
 
+    }
+
+    @Test
+    @Transactional
+    public void pipelineRunShouldHaveDockerImageAndActualDockerImage() {
+        PipelineRun run = buildPipelineRun(testPipeline.getId(), TEST_SERVICE_URL);
+        run.setDockerImage(DOCKER_IMAGE);
+        run.setActualDockerImage(ACTUAL_DOCKER_IMAGE);
+
+        pipelineRunDao.createPipelineRun(run);
+        
+        PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertEquals(loadedRun.getDockerImage(), DOCKER_IMAGE);
+        assertEquals(loadedRun.getActualDockerImage(), ACTUAL_DOCKER_IMAGE);
     }
 
     @Test

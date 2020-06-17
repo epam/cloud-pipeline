@@ -647,6 +647,8 @@ def view_cluster_for_node(node_name):
 @click.option('-pn', '--parent-node', help='Parent instance Run ID. That allows to run a pipeline as a child job on the existing running instance', type=int, required=False)
 @click.option('-np', '--non-pause', help='Allow to switch off auto-pause option. Supported for on-demand runs only',
               is_flag=True)
+@click.option('-fu', '--friendly-url', help='A friendly URL. The URL should have the following formats: '
+                                            '<domain>/<path> or <path>', type=str, required=False)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def run(pipeline,
@@ -666,12 +668,13 @@ def run(pipeline,
         price_type,
         region_id,
         parent_node,
-        non_pause):
+        non_pause,
+        friendly_url):
     """Schedules a pipeline execution
     """
     PipelineRunOperations.run(pipeline, config, parameters, yes, run_params, instance_disk, instance_type,
                               docker_image, cmd_template, timeout, quiet, instance_count, cores, sync, price_type,
-                              region_id, parent_node, non_pause)
+                              region_id, parent_node, non_pause, friendly_url)
 
 
 @cli.command(name='stop')

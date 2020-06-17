@@ -89,7 +89,11 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
     public AzureRegion mergeRegions(final AzureRegion originalRegion, final AzureRegion updatedRegion) {
         originalRegion.setName(updatedRegion.getName());
         originalRegion.setDefault(updatedRegion.isDefault());
-        originalRegion.setAzurePolicy(updatedRegion.getAzurePolicy());
+        if (azurePolicyExist(updatedRegion.getAzurePolicy())) {
+            originalRegion.setAzurePolicy(updatedRegion.getAzurePolicy());
+        } else {
+            originalRegion.setAzurePolicy(null);
+        }
         originalRegion.setCorsRules(updatedRegion.getCorsRules());
         originalRegion.setAuthFile(updatedRegion.getAuthFile());
         originalRegion.setPriceOfferId(updatedRegion.getPriceOfferId());
@@ -99,6 +103,11 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
         originalRegion.setFileShareMounts(updatedRegion.getFileShareMounts());
         originalRegion.setMountStorageRule(updatedRegion.getMountStorageRule());
         return originalRegion;
+    }
+
+    private boolean azurePolicyExist(AzurePolicy policy) {
+        return !Objects.isNull(policy) &&
+                (StringUtils.isNotBlank(policy.getIpMax()) && StringUtils.isNotBlank(policy.getIpMin()));
     }
 
     @Override
@@ -147,11 +156,12 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
     }
 
     void validateStoragePolicy(final AzurePolicy policy) {
-        if (Objects.isNull(policy)) {
+        if (Objects.isNull(policy) ||
+                (StringUtils.isBlank(policy.getIpMax()) && StringUtils.isBlank(policy.getIpMin()))) {
             return;
         }
 
-        Assert.isTrue(StringUtils.isNotBlank(policy.getIpMax()) || StringUtils.isNotBlank(policy.getIpMin()),
+        Assert.isTrue(StringUtils.isNotBlank(policy.getIpMax()) && StringUtils.isNotBlank(policy.getIpMin()),
                 messageHelper.getMessage(MessageConstants.ERROR_AZURE_IP_RANGE_IS_INVALID, policy.getIpMax(),
                         policy.getIpMin()));
         Assert.isTrue(NetworkUtils.isValidIpAddress(policy.getIpMax()),

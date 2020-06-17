@@ -36,7 +36,12 @@ export class LimitMountsInput extends React.Component {
   static propTypes = {
     onChange: PropTypes.func,
     value: PropTypes.string,
-    disabled: PropTypes.bool
+    disabled: PropTypes.bool,
+    allowSensitive: PropTypes.bool
+  };
+
+  static defaultProps = {
+    allowSensitive: true
   };
 
   state = {
@@ -44,10 +49,32 @@ export class LimitMountsInput extends React.Component {
     limitMountsDialogVisible: false
   };
 
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (prevProps.allowSensitive !== this.props.allowSensitive && !this.props.allowSensitive) {
+      this.restrictSensitiveStorages();
+    }
+  }
+
+  restrictSensitiveStorages = async () => {
+    await this.props.dataStorageAvailable.fetchIfNeededOrWait();
+    const nonSensitiveStorageIds = (this.props.dataStorageAvailable.value || [])
+      .filter(s => !s.sensitive)
+      .map(s => +s.id);
+    const mountsIds = (this.state.value || this.props.value || '')
+      .split(',')
+      .map(id => +id)
+      .filter(id => nonSensitiveStorageIds.indexOf(id) >= 0);
+    this.setState({
+      value: mountsIds ? mountsIds.map(i => `${i}`).join(',') : null
+    }, this.handleChange);
+  };
+
   @computed
   get availableStorages () {
     if (this.props.dataStorageAvailable.loaded) {
-      return (this.props.dataStorageAvailable.value || []).map(s => s);
+      return (this.props.dataStorageAvailable.value || [])
+        .filter(s => this.props.allowSensitive || !s.sensitive)
+        .map(s => s);
     }
     return [];
   }

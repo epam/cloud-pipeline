@@ -60,46 +60,84 @@
         <property name="loadMetadataItemQuery">
             <value>
                 <![CDATA[
-                    SELECT
-                        entity_id,
-                        entity_class,
-                        data
-                    FROM
-                        pipeline.metadata
-                    WHERE
-                        entity_id = ?
-                    AND
-                        entity_class = ?
+                    (
+                        SELECT
+                            m.entity_id,
+                            m.entity_class,
+                            m.data
+                        FROM pipeline.metadata AS m
+                        WHERE m.entity_id = :ENTITY_ID
+                        AND m.entity_class = :ENTITY_CLASS
+                    )
+                    UNION
+                    (
+                        SELECT
+                            t.id AS entity_id,
+                            m.entity_class,
+                            m.data
+                        FROM pipeline.metadata AS m
+                        JOIN pipeline.tool tl ON tl.id = m.entity_id
+                        JOIN pipeline.tool t ON t.link = tl.id
+                        WHERE t.id = :ENTITY_ID
+                        AND m.entity_class = :ENTITY_CLASS
+                    )
                 ]]>
             </value>
         </property>
         <property name="loadMetadataItemsQuery">
             <value>
                 <![CDATA[
-                SELECT
-                        entity_id,
-                        entity_class,
-                        data
-                    FROM
-                        pipeline.metadata AS m
-                    WHERE (m.entity_id, m.entity_class) IN (@ENTITIES@)
+                    (
+                        SELECT
+                            m.entity_id,
+                            m.entity_class,
+                            m.data
+                        FROM pipeline.metadata AS m
+                        WHERE (m.entity_id, m.entity_class) IN (@ENTITIES@)
+                    )
+                    UNION
+                    (
+                        SELECT
+                            t.id AS entity_id,
+                            m.entity_class,
+                            m.data
+                        FROM pipeline.metadata AS m
+                        JOIN pipeline.tool tl ON tl.id = m.entity_id
+                        JOIN pipeline.tool t ON t.link = tl.id
+                        WHERE (t.id, m.entity_class) in (@ENTITIES@)
+                    )
                 ]]>
             </value>
         </property>
         <property name="loadMetadataItemsWithIssuesQuery">
             <value>
                 <![CDATA[
-                SELECT
-                    CASE WHEN m.entity_id IS NULL THEN i.entity_id ELSE m.entity_id END,
-                    CASE WHEN m.entity_class IS NULL THEN i.entity_class ELSE m.entity_class END,
-                    m.data,
-                    count(i.issue_id) AS issues_count
-                FROM
-                    pipeline.metadata AS m
-                    FULL OUTER JOIN issue AS i ON i.entity_id = m.entity_id AND i.entity_class = m.entity_class
-                WHERE (m.entity_id, m.entity_class) IN (@ENTITIES@)
-                    OR (i.entity_id, i.entity_class) IN (@ENTITIES@)
-                    GROUP BY m.entity_id, m.entity_class, m.data, i.entity_id, i.entity_class
+                    (
+                        SELECT
+                            COALESCE(m.entity_id, i.entity_id) AS entity_id,
+                            COALESCE(m.entity_class, i.entity_class) AS entity_class,
+                            m.data,
+                            count(i.issue_id) AS issues_count
+                        FROM pipeline.metadata AS m
+                        FULL OUTER JOIN issue AS i ON i.entity_id = m.entity_id AND i.entity_class = m.entity_class
+                        WHERE (m.entity_id, m.entity_class) IN (@ENTITIES@)
+                        OR (i.entity_id, i.entity_class) IN (@ENTITIES@)
+                        GROUP BY m.entity_id, m.entity_class, m.data, i.entity_id, i.entity_class
+                    )
+                    UNION
+                    (
+                        SELECT
+                            t.id AS entity_id,
+                            m.entity_class,
+                            m.data,
+                            count(i.issue_id) AS issues_count
+                        FROM pipeline.metadata AS m
+                        JOIN issue AS i ON i.entity_id = m.entity_id AND i.entity_class = m.entity_class
+                        JOIN pipeline.tool tl ON tl.id = m.entity_id
+                        JOIN pipeline.tool t ON t.link = tl.id
+                        WHERE (t.id, m.entity_class) IN (@ENTITIES@)
+                        GROUP BY t.id, m.entity_class, m.data
+                    )
                 ]]>
             </value>
         </property>

@@ -44,6 +44,7 @@ import localization from '../../../utils/localization';
 export default class Issues extends localization.LocalizedReactComponent {
 
   static propTypes = {
+    readOnly: PropTypes.bool,
     entityId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     entityClass: PropTypes.oneOf([
       'PIPELINE',
@@ -201,7 +202,11 @@ export default class Issues extends localization.LocalizedReactComponent {
     }
     if (this.state.selectedIssue) {
       return (
-        <Issue issue={this.state.selectedIssue} onNavigateBack={(shouldReload) => this.onSelectIssue(null, shouldReload)} />
+        <Issue
+          issue={this.state.selectedIssue}
+          readOnly={this.props.readOnly}
+          onNavigateBack={(shouldReload) => this.onSelectIssue(null, shouldReload)}
+        />
       );
     } else {
       return (
@@ -224,14 +229,18 @@ export default class Issues extends localization.LocalizedReactComponent {
               }
             </div>
             <Row className={styles.actions}>
-              { roleModel.readAllowed(this.props.entity) &&
+              {
+                roleModel.readAllowed(this.props.entity) &&
                 !this.state.createNewIssueDialogVisible &&
-                <Button
-                  type="primary"
-                  size="small"
-                  onClick={this.openCreateIssueDialog}>
-                  New {this.localizedString('issue')}
-                </Button>
+                !this.props.readOnly &&
+                (
+                  <Button
+                    type="primary"
+                    size="small"
+                    onClick={this.openCreateIssueDialog}>
+                    New {this.localizedString('issue')}
+                  </Button>
+                )
               }
             </Row>
           </Row>

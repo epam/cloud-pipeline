@@ -44,7 +44,6 @@ import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners.confine;
 import static java.util.stream.Collectors.toList;
-import static jdk.nashorn.internal.objects.NativeArray.forEach;
 
 public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
 
@@ -197,6 +196,24 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
         @Override
         public Map<Primitive, SelenideElement> elements() {
             return elements;
+        }
+
+        public SearchResultItemPreviewAO checkCompletedField() {
+            ElementsCollection list = get(INFO_TAB).findAll(By.xpath(".//tr"));
+            IntStream.range(1, list.size()).forEach(i -> list.get(i).shouldBe(completedFieldCorrespondStatus()));
+            return this;
+        }
+
+        private Condition completedFieldCorrespondStatus() {
+            return new Condition("completed field correspond Status") {
+                @Override
+                public boolean apply(final WebElement element) {
+                    final String dateRegex = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$";
+                    return $(element).find(By.xpath("./td[1]")).has(completed)
+                            ? $(element).find(By.xpath("./td[4]")).text().matches(dateRegex)
+                            : $(element).find(By.xpath("./td[4]")).text().equals("");
+                }
+            };
         }
 
         public SearchResultItemPreviewAO checkCompletedField() {

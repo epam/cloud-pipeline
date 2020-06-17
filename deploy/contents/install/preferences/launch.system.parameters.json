@@ -181,6 +181,12 @@
         "defaultValue": "true"
     },
     {
+        "name": "CP_CAP_AUTOSCALE_PRICE_TYPE",
+        "type": "boolean",
+        "description": "Instance price type that will be used for cluster additional workers",
+        "defaultValue": ""
+    },
+    {
         "name": "CP_CAP_AUTOSCALE_HYBRID",
         "type": "boolean",
         "description": "Enables hybrid cluster autoscaling",

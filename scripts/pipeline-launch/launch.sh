@@ -457,6 +457,31 @@ function initialise_wrappers {
     export PATH="$_WRAPPERS_PATH_BKP"
 }
 
+# This function installs any prerequisite, which is not available in the public repos or it is not desired to use those
+function install_private_packages {
+      local _install_path="$1"
+      local _tmp_install_dir="/tmp/"
+      # Separate python distro setup
+      # ====
+      #    Delete an existing installation, if it's a paused run
+      #    We can probably keep it, but it will fail if we need to update a resumed run
+      rm -rf "${_install_path}/conda"
+      CP_CONDA_DISTRO_URL="${CP_CONDA_DISTRO_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz}"
+      
+      # Download the distro from a public bucket
+      echo "Getting python distro from $CP_CONDA_DISTRO_URL"
+      wget -q "${CP_CONDA_DISTRO_URL}" -O "${_tmp_install_dir}/conda.tgz" &> /dev/null
+      if [ $? -ne 0 ]; then
+            echo "[ERROR] Can't download the python distro"
+            return 1
+      fi
+
+      # Unpack and remove tarball
+      tar -zxf "${_tmp_install_dir}/conda.tgz" -C "${_install_path}"
+      rm -f "${_tmp_install_dir}/conda.tgz"
+      echo "Python distro is installed into ${_install_path}/conda"
+}
+
 function list_storage_mounts() {
     local _MOUNT_ROOT="$1"
     echo $(df -T | awk 'index($2, "fuse")' | awk '{ print $7 }' | grep "^$_MOUNT_ROOT")
@@ -517,18 +542,46 @@ then
 fi
 
 # Install dependencies
+### First install whatever we need from the public repos
 _DEPS_INSTALL_COMMAND=
-get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python git curl wget fuse python-docutils tzdata acl \
-                                                            coreutils"
+_CP_INIT_DEPS_LIST="git curl wget fuse tzdata acl coreutils"
+get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "$_CP_INIT_DEPS_LIST"
 eval "$_DEPS_INSTALL_COMMAND"
 
-# Check if python2 installed, if no - fail, as we'll not be able to run Pipe CLI commands
-export CP_PYTHON2_PATH=$(command -v python2)
-if [ -z "$CP_PYTHON2_PATH" ]
-then
-      echo "[ERROR] python2 environment not found, exiting."
-      exit 1
+### Then Setup directory for any CP-specific binaries/wrapper
+### and install any "private"/preferred packages
+if [ -z "$CP_USR_BIN" ]; then 
+        export CP_USR_BIN="/usr/cpbin"
+        echo "CP_USR_BIN is not defined, setting to ${CP_USR_BIN}"
 fi
+create_sys_dir $CP_USR_BIN
+if [ "$CP_CAP_INSTALL_PRIVATE_DEPS" == "true" ]; then
+      install_private_packages $CP_USR_BIN
+fi
+
+# Check if python2 is installed:
+# If it was installed into a private location - use it
+# Otherwise - find the "global" version, if not found - try to install
+# If none found - fail, as we'll not be able to run Pipe CLI commands
+export CP_PYTHON2_PATH="/usr/cpbin/conda/bin/python2"
+if [ ! -f "$CP_PYTHON2_PATH" ]; then
+      echo "[WARN] Private python not found, trying to get the global one"
+      export CP_PYTHON2_PATH=$(command -v python2)
+      if [ -z "$CP_PYTHON2_PATH" ]
+      then
+            echo "[WARN] Global python not found as well, trying to install from a public repo"
+            _DEPS_INSTALL_COMMAND=
+            get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python python-docutils"
+            eval "$_DEPS_INSTALL_COMMAND"
+            export CP_PYTHON2_PATH=$(command -v python2)
+            if [ -z "$CP_PYTHON2_PATH" ]
+            then
+                  echo "[ERROR] python2 environment not found, exiting."
+                  exit 1
+            fi
+      fi    
+fi
+echo "Local python interpreter found: $CP_PYTHON2_PATH"
 
 check_python_module_installed "pip --version" || { curl -s https://bootstrap.pypa.io/get-pip.py | $CP_PYTHON2_PATH; };
 
@@ -657,7 +710,6 @@ if [ -z "$SCRIPTS_DIR" ] ;
 fi
 echo "Creating default scripts directory at ${SCRIPTS_DIR}. Please use 'SCRIPTS_DIR' variable to run pipeline script"
 create_sys_dir $SCRIPTS_DIR
-
 
 # Setup cluster specific variables directory
 if [ -z "$SHARED_FOLDER" ] ;
@@ -848,7 +900,6 @@ then
     echo "[ERROR] Distribution URL is not defined. Exiting"
     exit 1
 else
-    $CP_PYTHON2_PATH -m pip install --upgrade setuptools
     cd $COMMON_REPO_DIR
     download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
     _DOWNLOAD_RESULT=$?
@@ -872,7 +923,7 @@ else
     cd ..
 fi
 
-#install pipe CLI
+# Install pipe CLI
 if [ "$CP_PIPELINE_CLI_FROM_DIST_TAR" ]; then
       install_pip_package PipelineCLI
 else
@@ -888,7 +939,7 @@ else
       chmod +x /usr/bin/pipe
 fi
 
-#install FS Browser
+# Install FS Browser
 if [ ! -z "$CP_SENSITIVE_RUN" ]; then
       echo "Run is sensitive, FSBrowser will not be installed"
 elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
@@ -901,6 +952,13 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
             echo "[ERROR] Unable to install FSBrowser"
             exit 1
       fi
+      # If the "private" python distro was used - symlink fsbrowser to the path, which is exported via PATH
+      CP_FSBROWSER_BIN=$(dirname $CP_PYTHON2_PATH)/fsbrowser
+      if [ -f "$CP_FSBROWSER_BIN" ]; then
+            ln -sf $CP_FSBROWSER_BIN $CP_USR_BIN/fsbrowser
+            ln -sf $CP_FSBROWSER_BIN /usr/bin/fsbrowser
+      fi
+
       fsbrowser_setup
       echo "------"
       echo
@@ -937,6 +995,16 @@ echo
 ######################################################
 
 
+
+######################################################
+echo "Setting up general motd config"
+echo "-"
+######################################################
+motd_setup init
+
+echo "------"
+echo
+######################################################
 
 
 
@@ -1194,10 +1262,6 @@ echo "Create restriction wrappers"
 echo "-"
 ######################################################
 
-CP_USR_BIN="/usr/cpbin"
-
-mkdir -p "$CP_USR_BIN"
-
 initialise_wrappers "$CP_RESTRICTING_PACKAGE_MANAGERS" "package_manager_restrictor" "$CP_USR_BIN"
 
 if [[ "$CP_ALLOWED_MOUNT_TRANSFER_SIZE" ]]
@@ -1324,6 +1388,7 @@ echo "-"
 
 if [ "$CP_CAP_MODULES" == "true" ]; then
       modules_setup
+      source /etc/profile.d/modules.sh
 else
     echo "Environment Modules support is not requested"
 fi

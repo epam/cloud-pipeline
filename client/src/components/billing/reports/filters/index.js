@@ -34,13 +34,23 @@ class Filters extends React.Component {
   static runnerTypes = RunnerType;
 
   @observable filterStore = new FilterStore();
-
   componentWillReceiveProps (nextProps, nextContext) {
     this.filterStore.rebuild(this.props);
   }
 
   componentDidMount () {
     this.filterStore.rebuild(this.props);
+  }
+
+  componentDidUpdate (prevProps) {
+    const {location} = this.props;
+    if (location) {
+      const {pathname, search} = location;
+      const {pathname: prevPathname, search: prevSearch} = prevProps.location;
+      if (prevSearch !== search || prevPathname !== pathname) {
+        this.filterStore.rebuild(this.props);
+      }
+    }
   }
 
   render () {

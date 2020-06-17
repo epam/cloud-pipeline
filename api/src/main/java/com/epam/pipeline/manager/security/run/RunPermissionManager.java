@@ -133,7 +133,7 @@ public class RunPermissionManager {
                     image.substring(registry.getPath().length() + 1) : image;
             ToolGroup toolGroup = toolGroupManager.loadToolGroupByImage(registry.getPath(), trimmedImage);
             Optional<Tool> tool = toolManager.loadToolInGroup(trimmedImage, toolGroup.getId());
-            return tool.map(t -> permissionsHelper.isAllowed(permission, t))
+            return tool.map(t -> t.isNotSymlink() && permissionsHelper.isAllowed(permission, t))
                     .orElseGet(() -> permissionsHelper.isAllowed(permission, toolGroup));
         } catch (IllegalArgumentException e) {
             //case when tool group doesn't exist

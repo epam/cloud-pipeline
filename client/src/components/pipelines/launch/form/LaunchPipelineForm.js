@@ -73,6 +73,7 @@ import {
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
+  CP_CAP_AUTOSCALE_PRICE_TYPE,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState,
@@ -80,6 +81,7 @@ import {
   sparkEnabled,
   slurmEnabled,
   setClusterParameterValue,
+  getAutoScaledPriceTypeValue
 } from './utilities/launch-cluster';
 import checkModifiedState from './utilities/launch-form-modified-state';
 import {
@@ -121,7 +123,8 @@ function getFormItemClassName (rootClass, key) {
   'awsRegions',
   'dtsList',
   'preferences',
-  'dockerRegistries'
+  'dockerRegistries',
+  'dataStorageAvailable'
 )
 @localization.localizedComponent
 @roleModel.authenticationInfo
@@ -219,6 +222,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
+    autoScaledPriceType: undefined,
     nodesCount: 0,
     maxNodesCount: 0,
     configureClusterDialogVisible: false,
@@ -338,6 +342,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   @observable _toolSettings;
   @observable regionDisabledByToolSettings = false;
   @observable toolCloudRegion = null;
+  @observable toolAllowSensitive = true;
 
   @action
   formFieldsChanged = async () => {
@@ -762,6 +767,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
     const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
+    const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.props.parameters.parameters);
     if (keepPipeline) {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
@@ -777,6 +783,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
         slurmEnabled: slurmEnabledValue,
+        autoScaledPriceType: autoScaledPriceTypeValue,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
@@ -825,6 +832,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
         slurmEnabled: slurmEnabledValue,
+        autoScaledPriceType: autoScaledPriceTypeValue,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
@@ -915,6 +923,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 ? getBooleanValue(parameter.value)
                 : (parameter.value || ''),
               required: `${parameter.required || false}`.toLowerCase() === 'true',
+              description: parameter.description,
               enum: parameter.enumeration
             };
           }
@@ -944,6 +953,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 ? getBooleanValue(parameter.value)
                 : (parameter.value || ''),
               required: `${parameter.required || false}`.toLowerCase() === 'true',
+              description: parameter.description,
               enum: parameter.enumeration
             };
           }
@@ -962,6 +972,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           type: 'int',
           value: +this.state.maxNodesCount
         };
+        if (this.state.autoScaledPriceType) {
+          payload[PARAMETERS][CP_CAP_AUTOSCALE_PRICE_TYPE] = {
+            type: 'string',
+            value: this.state.autoScaledPriceType
+          };
+        } else {
+          delete payload[PARAMETERS][CP_CAP_AUTOSCALE_PRICE_TYPE];
+        }
         if (this.state.hybridAutoScaledClusterEnabled) {
           payload[PARAMETERS][CP_CAP_AUTOSCALE_HYBRID] = {
             type: 'boolean',
@@ -1100,6 +1118,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               ? getBooleanValue(parameter.value)
               : (parameter.value || ''),
             required: `${parameter.required || false}`.toLowerCase() === 'true',
+            description: parameter.description,
             enum: parameter.enumeration
           };
         }
@@ -1118,6 +1137,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         type: 'int',
         value: +this.state.maxNodesCount
       };
+      if (this.state.autoScaledPriceType) {
+        payload.params[CP_CAP_AUTOSCALE_PRICE_TYPE] = {
+          type: 'string',
+          value: this.state.autoScaledPriceType
+        };
+      } else {
+        delete payload.params[CP_CAP_AUTOSCALE_PRICE_TYPE];
+      }
       if (this.state.hybridAutoScaledClusterEnabled) {
         payload.params[CP_CAP_AUTOSCALE_HYBRID] = {
           type: 'boolean',
@@ -1280,6 +1307,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
     const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
+    const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.props.parameters.parameters);
     let state = {
       launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
       autoScaledCluster: autoScaledCluster,
@@ -1287,6 +1315,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       gridEngineEnabled: gridEngineEnabledValue,
       sparkEnabled: sparkEnabledValue,
       slurmEnabled: slurmEnabledValue,
+      autoScaledPriceType: autoScaledPriceTypeValue,
       nodesCount: +this.props.parameters.node_count,
       maxNodesCount: this.props.parameters.parameters &&
       this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
@@ -1527,6 +1556,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           let type = 'string';
           let required = false;
           let readOnly = false;
+          let description;
           let enumeration;
           const parameter = this.props.parameters.parameters[key];
           if (parameter.value !== undefined ||
@@ -1543,6 +1573,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             value = prevValue && !parameter.value ? prevValue : parameter.value;
             type = parameter.type || 'string';
             enumeration = parameter.enum;
+            description = parameter.description;
             if (type.toLowerCase() === 'boolean') {
               value = getBooleanValue(value);
             }
@@ -1558,6 +1589,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               key: `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`,
               type: type,
               enumeration,
+              description,
               value: value,
               required: required,
               readOnly: readOnly,
@@ -1612,7 +1644,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderSelectionParameter = (
     sectionName,
-    {key, value, required, readOnly, enumeration},
+    {key, value, required, readOnly, enumeration, description},
     system = false
   ) => {
     const rules = [];
@@ -2484,12 +2516,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             getSystemParameterDisabledState(this, name);
           let required = parameter ? `${parameter.required}` === 'true' : false;
           let enumeration = parameter ? parameter.enumeration : undefined;
+          let description = parameter ? parameter.description : undefined;
           const systemParameter = this.getSystemParameter(parameter);
-          const systemParameterHint = systemParameter && systemParameter.description
-            ? () => {
-              return systemParameter.description;
-            }
-            : null;
+          const parameterHint = systemParameter ? systemParameter.description : description;
+          const parameterHintFn = parameterHint
+            ? () => { return parameterHint; } : undefined;
           let formItem;
           switch (type.toLowerCase()) {
             case 'path':
@@ -2498,7 +2529,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             case 'common':
               formItem = this.renderPathParameter(
                 sectionName,
-                {key, value, required, readOnly},
+                {key, value, required, readOnly, description},
                 type,
                 isSystemParametersSection
               );
@@ -2506,20 +2537,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             case 'boolean':
               formItem = this.renderBooleanParameter(
                 sectionName,
-                {key, value, readOnly}
+                {key, value, readOnly, description}
               );
               break;
             default:
               if (enumeration) {
                 formItem = this.renderSelectionParameter(
                   sectionName,
-                  {key, value, required, readOnly, enumeration},
+                  {key, value, required, readOnly, enumeration, description},
                   isSystemParametersSection
                 );
               } else {
                 formItem = this.renderStringParameter(
                   sectionName,
-                  {key, value, required, readOnly},
+                  {key, value, required, readOnly, description},
                   isSystemParametersSection
                 );
               }
@@ -2568,6 +2599,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.required`,
                     {initialValue: `${required}`}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.description`,
+                    {initialValue: description}
                   )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
                 }
               </FormItem>
@@ -2635,15 +2674,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         className="dynamic-delete-button"
                         type="minus-circle-o"
                         onClick={() => this.removeParameter(sectionName, key)}
+                        style={{marginLeft: 15, width: 15}}
                       />
                     )
-                    : undefined
+                    : <div style={{marginLeft: 15, width: 15, display: 'inline-block'}}>{'\u00A0'}</div>
                 }
                 {
-                  isSystemParametersSection && systemParameterHint &&
+                  parameterHintFn &&
                   hints.renderHint(
                     this.localizedStringWithSpotDictionaryFn,
-                    systemParameterHint,
+                    parameterHintFn,
                     null,
                     {marginLeft: 15}
                   )
@@ -2872,7 +2912,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this._toolSettings = null;
     this.regionDisabledByToolSettings = false;
     this.toolCloudRegion = null;
+    this.toolAllowSensitive = true;
   };
+
+  lastConfirmedImage;
 
   loadToolSettings = async (dockerImage) => {
     await this.props.dockerRegistries.fetchIfNeededOrWait();
@@ -2888,6 +2931,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const [im] = (imageGroup.tools || [])
             .filter(i => i.image.toLowerCase() === `${group}/${image}`);
           if (im && im.id) {
+            this.toolAllowSensitive = im.allowSensitive;
             this._toolSettings = new LoadToolVersionSettings(im.id, version);
             await this._toolSettings.fetchIfNeededOrWait();
 
@@ -2903,8 +2947,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               this.regionDisabledByToolSettings = false;
               this.toolCloudRegion = null;
             }
+          } else {
+            this.toolAllowSensitive = true;
           }
+        } else {
+          this.toolAllowSensitive = true;
         }
+      } else {
+        this.toolAllowSensitive = true;
       }
     }
   };
@@ -3024,7 +3074,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       maxNodesCount,
       gridEngineEnabled,
       sparkEnabled,
-      slurmEnabled
+      slurmEnabled,
+      autoScaledPriceType
     } = configuration;
     this.setState({
       launchCluster,
@@ -3034,7 +3085,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       sparkEnabled,
       slurmEnabled,
       nodesCount,
-      maxNodesCount
+      maxNodesCount,
+      autoScaledPriceType
     }, this.closeConfigureClusterDialog);
   };
 
@@ -3402,28 +3454,40 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         className={getFormItemClassName(styles.formItemRow, 'limitMounts')}
         {...this.cmdTemplateFormItemLayout}
         label="Limit mounts">
-        <Row type="flex" align="middle">
-          <div style={{flex: 1}}>
-            <FormItem
-              className={styles.formItemRow}
-              hasFeedback>
-              {this.getSectionFieldDecorator(ADVANCED)('limitMounts',
-                {
-                  initialValue: getDefaultValue()
-                }
-              )(
-                <LimitMountsInput
-                  disabled={
-                    !!this.state.fireCloudMethodName ||
-                    (this.props.readOnly && !this.props.canExecute)
-                  } />
-              )}
-            </FormItem>
-          </div>
-          <div style={{marginLeft: 7, marginTop: 3}}>
-            {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.limitMountsHint)}
-          </div>
-        </Row>
+        <div>
+          <Row type="flex" align="middle">
+            <div style={{flex: 1}}>
+              <FormItem
+                className={styles.formItemRow}
+                hasFeedback>
+                {this.getSectionFieldDecorator(ADVANCED)('limitMounts',
+                  {
+                    initialValue: getDefaultValue()
+                  }
+                )(
+                  <LimitMountsInput
+                    allowSensitive={this.toolAllowSensitive}
+                    disabled={
+                      !!this.state.fireCloudMethodName ||
+                      (this.props.readOnly && !this.props.canExecute)
+                    } />
+                )}
+              </FormItem>
+            </div>
+            <div style={{marginLeft: 7, marginTop: 3}}>
+              {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.limitMountsHint)}
+            </div>
+          </Row>
+          {
+            !this.toolAllowSensitive && (
+              <Alert
+                type="warning"
+                showIcon
+                message="Tool configuration restricts selection of sensitive storages"
+              />
+            )
+          }
+        </div>
       </FormItem>
     );
   };
@@ -4175,6 +4239,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     <ConfigureClusterDialog
                       instanceName={this.getSectionFieldValue(EXEC_ENVIRONMENT)('type')}
                       launchCluster={this.state.launchCluster}
+                      cloudRegionProvider={this.currentCloudRegionProvider}
+                      autoScaledPriceType={this.state.autoScaledPriceType}
                       autoScaledCluster={this.state.autoScaledCluster}
                       hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
                       gridEngineEnabled={this.state.gridEngineEnabled}

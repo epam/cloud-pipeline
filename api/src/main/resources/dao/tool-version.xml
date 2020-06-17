@@ -77,16 +77,17 @@
             <value>
                 <![CDATA[
                     SELECT
-                        tv.id,
+                        DISTINCT tv.id,
                         tv.tool_id,
                         tv.version,
                         tv.digest,
                         tv.size,
                         tv.modified_date
-                    FROM
-                        pipeline.tool_version AS tv
-                    WHERE
-                        tv.tool_id = ? AND tv.version = ?
+                    FROM pipeline.tool_version AS tv
+                    INNER JOIN pipeline.tool tl ON (tl.id = tv.tool_id)
+                    LEFT JOIN pipeline.tool t ON (t.link = tl.id)
+                    WHERE ? IN (t.id, tl.id) 
+                    AND tv.version = ?
                 ]]>
             </value>
         </property>
@@ -94,15 +95,16 @@
             <value>
                 <![CDATA[
                     SELECT
-                        tv.id,
+                        DISTINCT tv.id,
                         tv.tool_id,
                         tv.version,
                         tv.settings,
                         tv.size
-                    FROM
-                        pipeline.tool_version AS tv
-                    WHERE
-                        tv.tool_id = ? AND tv.version = ?
+                    FROM pipeline.tool_version AS tv
+                    INNER JOIN pipeline.tool tl ON (tl.id = tv.tool_id)
+                    LEFT JOIN pipeline.tool t ON (t.link = tl.id)
+                    WHERE ? IN (t.id, tl.id)
+                    AND tv.version = ?
                 ]]>
             </value>
         </property>
@@ -110,15 +112,15 @@
             <value>
                 <![CDATA[
                     SELECT
-                        tv.id,
+                        DISTINCT tv.id,
                         tv.tool_id,
                         tv.version,
                         tv.settings,
                         tv.size
-                    FROM
-                        pipeline.tool_version AS tv
-                    WHERE
-                        tv.tool_id = ?
+                    FROM pipeline.tool_version AS tv
+                    INNER JOIN pipeline.tool tl ON (tl.id = tv.tool_id)
+                    LEFT JOIN pipeline.tool t ON (t.link = tl.id)
+                    WHERE ? IN (t.id, tl.id)
                 ]]>
             </value>
         </property>
