@@ -37,6 +37,7 @@ import static com.codeborne.selenide.Selectors.byAttribute;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
@@ -83,6 +84,10 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
         return confine(byText(item), byId("search-results"), "search result item");
     }
 
+    public static By searchItemWithText(final String item) {
+        return confine(withText(item), byId("search-results"), "search result item");
+    }
+
     public GlobalSearchAO search(final String query) {
         clear(SEARCH);
         get(SEARCH).shouldBe(enabled).sendKeys(Keys.chord(Keys.CONTROL), query);
@@ -95,9 +100,22 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
         return new SearchResultItemPreviewAO(this);
     }
 
+    public SearchResultItemPreviewAO openSearchResultItemWithText(final String item) {
+        final By searchItem = searchItemWithText(item);
+        hover(searchItem);
+        return new SearchResultItemPreviewAO(this);
+    }
+
     public <TARGET extends AccessObject<TARGET>> TARGET moveToSearchResultItem(final String name,
                                                                                final Supplier<TARGET> targetSupplier) {
         final By searchItem = searchItem(name);
+        click(searchItem);
+        return targetSupplier.get();
+    }
+
+    public <TARGET extends AccessObject<TARGET>> TARGET moveToSearchResultItemWithText(final String name,
+                                                                                       final Supplier<TARGET> targetSupplier) {
+        final By searchItem = searchItemWithText(name);
         click(searchItem);
         return targetSupplier.get();
     }
@@ -154,7 +172,10 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
                 entry(HIGHLIGHTS, context().find(byClassName("review__highlights"))),
                 entry(PREVIEW, context().find(byClassName("review__content-preview"))),
                 entry(INFO, context().find(byClassName("review__info"))),
-                entry(INFO_TAB, context().find(byClassName("review__run-table")))
+                entry(INFO_TAB, context().find(byClassName("review__run-table"))),
+                entry(TAGS, context().find(byClassName("review__tags"))),
+                entry(PREVIEW_TAB, context().find(By.xpath(".//div[@class='review__content-preview'][2]"))),
+                entry(ATTRIBUTES, context().find(byClassName("review__attribute")))
         );
         private static Condition completed = Condition.or("finished",
                 LogAO.Status.SUCCESS.reached, LogAO.Status.STOPPED.reached, LogAO.Status.FAILURE.reached);
@@ -193,6 +214,17 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
                             : $(element).find(By.xpath("./td[4]")).text().equals("");
                 }
             };
+        }
+
+        public SearchResultItemPreviewAO checkTags(String ... list) {
+            String tags = String.format("%s %s %s %s", get(TAGS).find(By.xpath("./span[2]/span")).text(),
+                    get(TAGS).find(By.xpath("./span[3]")).text(),
+                    get(TAGS).find(By.xpath("./span[4]")).text(),
+                    get(TAGS).find(By.xpath("./span[5]")).text());
+            for( String i:list) {
+                tags.contains(i);
+            }
+            return this;
         }
     }
 }
