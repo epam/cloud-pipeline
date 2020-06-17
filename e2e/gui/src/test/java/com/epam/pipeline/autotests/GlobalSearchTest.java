@@ -29,6 +29,7 @@ import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -37,7 +38,9 @@ import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
 import static com.epam.pipeline.autotests.utils.C.LOGIN;
@@ -295,7 +298,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .sleep(2, SECONDS)
                 .validateCountSearchResults(2)
                 .ensure(DATA, text("2 DATA"))
-                .ensureAll(GlobalSearchAO.disable, FOLDERS, PIPELINES, RUNS, TOOLS, ISSUES)
+                .ensureAll(GlobalSearchAO.disable, FOLDERS, PIPELINES, TOOLS, ISSUES)
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(storage)
                 .ensure(TITLE, text(storage))
@@ -471,5 +474,12 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
 
     private GlobalSearchAO search() {
         return new NavigationMenuAO().search();
+    }
+
+    @AfterTest
+    public void checkCloseSearch(){
+        if($(byClassName("earch__search-container")).is(visible)) {
+            $(byClassName("earch__search-container")).click();
+        }
     }
 }
