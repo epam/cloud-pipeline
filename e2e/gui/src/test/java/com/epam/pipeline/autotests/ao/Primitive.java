@@ -246,5 +246,7 @@ public enum Primitive {
     WRITE_TAB,
     PREVIEW_TAB,
     PREVIEW,
-    HIGHLIGHTS
+    HIGHLIGHTS,
+    TAGS,
+    ATTRIBUTES
 }
