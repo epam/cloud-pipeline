@@ -80,6 +80,34 @@ rm -f docker.tgz
 
 pipe_log_info "Docker installed: ${DOCKER_CHANNEL}/${DOCKER_ARCH}/docker-${DOCKER_VERSION}" "$DIND_SETUP_TASK"
 
+nvidia-smi
+REQUIRES_GPU_DIND=$?
+if [ $REQUIRES_GPU_DIND -eq 0 ]; then
+    pipe_log_info "Active CUDA environment detected, try to install NVIDIA Docker" "$DIND_SETUP_TASK"
+    distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+    if [ $IS_RPM_BASED -eq 0 ]; then
+        curl -s -L https://nvidia.github.io/nvidia-container-runtime/$distribution/nvidia-container-runtime.repo | \
+        tee /etc/yum.repos.d/nvidia-container-runtime.repo
+        yum install -y -q nvidia-container-runtime-2.0.0-3.docker18.09.6*
+        _DIND_NVIDIA_DEP_INSTALL_RESULT=$?
+        find /etc/yum.repos.d -type f \( -name "*nvidia*" -o -name "*docker*" \)  -exec rm -f {} \;
+    else
+        os=$(. /etc/os-release;echo $ID)
+        os_release=$(. /etc/os-release;echo $VERSION_CODENAME)
+        sources_list=/etc/apt/sources.list
+        curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add -
+        curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list \
+        | tee /etc/apt/sources.list.d/nvidia-docker.list
+        apt-get update -yq && \
+        apt-get install -yq nvidia-container-runtime=2.0.0+docker18.09.6-3
+        _DIND_NVIDIA_DEP_INSTALL_RESULT=$?
+        rm /etc/apt/sources.list.d/nvidia-docker.list
+    fi
+    if [ $_DIND_NVIDIA_DEP_INSTALL_RESULT -ne 0 ]; then
+        pipe_log_info "Unable to install NVIDIA DIND, 'nvidia' runtime will not be available" "$DIND_SETUP_TASK"
+    fi
+fi
+
 ######################################################
 # Fix dockerd for DIND
 ######################################################
@@ -114,6 +142,15 @@ cat <<EOT > /etc/docker/daemon.json
   ]
 }
 EOT
+if [ $REQUIRES_GPU_DIND -eq 0 ] && [ $_DIND_NVIDIA_DEP_INSTALL_RESULT -eq 0 ]; then
+sed -i '1a \
+  "runtimes": {\
+      "nvidia": {\
+          "path": "nvidia-container-runtime",\
+          "runtimeArgs": []\
+      }\
+  },' /etc/docker/daemon.json
+fi
 
 ######################################################
 # Start dockerd
