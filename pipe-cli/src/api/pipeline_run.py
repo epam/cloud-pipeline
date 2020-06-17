@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -84,3 +84,11 @@ class PipelineRun(API):
         response_data = api.call('run/{}/ssh'.format(run_id), None)
         if 'payload' in response_data:
             return response_data['payload']
+
+    @classmethod
+    def update_run_sids(cls, run_id, sids):
+        api = cls.instance()
+        response_data = api.call('run/%s/updateSids' % str(run_id), json.dumps(sids))
+        if response_data and 'payload' in response_data:
+            return response_data['payload']
+        return None

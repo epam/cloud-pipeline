@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,14 @@
 import datetime
 from .pipeline_run_parameter_model import PipelineRunParameterModel
 from ..utilities import date_utilities
+
+
+class RunSid(object):
+
+    def __init__(self, name, is_principal, access_type):
+        self.name = name
+        self.is_principal = is_principal
+        self.access_type = access_type
 
 
 class PipelineRunModel(object):
@@ -35,6 +43,7 @@ class PipelineRunModel(object):
         self.instance = {}
         self.owner = None
         self.endpoints = []
+        self.run_sids = []
 
     @property
     def is_initialized(self):
@@ -88,6 +97,10 @@ class PipelineRunModel(object):
         if instance.status is not None and instance.status.upper() == 'RUNNING' and \
                 (instance.instance is None or not node_ip_exists):
             instance.status = 'SCHEDULED'
+
+        if 'runSids' in json and json['runSids'] is not None and len(json['runSids']) > 0:
+            for item in json['runSids']:
+                instance.run_sids.append(RunSid(item['name'], item['isPrincipal'], item['accessType']))
 
         return instance
 
