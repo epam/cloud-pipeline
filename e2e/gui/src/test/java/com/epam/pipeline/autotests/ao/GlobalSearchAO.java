@@ -216,24 +216,6 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
             };
         }
 
-        public SearchResultItemPreviewAO checkCompletedField() {
-            ElementsCollection list = get(INFO_TAB).findAll(By.xpath(".//tr"));
-            IntStream.range(1, list.size()).forEach(i -> list.get(i).shouldBe(completedFieldCorrespondStatus()));
-            return this;
-        }
-
-        private Condition completedFieldCorrespondStatus() {
-            return new Condition("completed field correspond Status") {
-                @Override
-                public boolean apply(final WebElement element) {
-                    final String dateRegex = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$";
-                    return $(element).find(By.xpath("./td[1]")).has(completed)
-                            ? $(element).find(By.xpath("./td[4]")).text().matches(dateRegex)
-                            : $(element).find(By.xpath("./td[4]")).text().equals("");
-                }
-            };
-        }
-
         public SearchResultItemPreviewAO checkTags(String ... list) {
             String tags = String.format("%s %s %s %s", get(TAGS).find(By.xpath("./span[2]/span")).text(),
                     get(TAGS).find(By.xpath("./span[3]")).text(),
@@ -241,7 +223,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
                     get(TAGS).find(By.xpath("./span[5]")).text());
             for( String i:list) {
                 tags.contains(i);
-            };
+            }
             return this;
         }
 
