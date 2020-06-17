@@ -91,7 +91,7 @@ if [ $REQUIRES_GPU_DIND -eq 0 ]; then
     if [ $IS_RPM_BASED -eq 0 ]; then
       ncr_version=$NVIDIA_CONTAINER_RUNTIME_VERSION_RPM
     else
-      ncr_version=$NVIDIA_CONTAINER_RUNTIME_VERSION_DEB
+      ncr_version=$(echo "$NVIDIA_CONTAINER_RUNTIME_VERSION_DEB" | sed -s 's/+/-/g')
     fi
     wget -q -O nvidia-container-runtime.tgz \
           "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/docker/nvidia/nvidia-container-runtime-$ncr_version-$distribution.tgz"
