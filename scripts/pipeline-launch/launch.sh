@@ -900,6 +900,8 @@ then
     exit 1
 else
     cd $COMMON_REPO_DIR
+    # Fixed setuptools version to be comaptible with the pipe-common package
+    pip install -I -q setuptools==44.1.1
     download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
     _DOWNLOAD_RESULT=$?
     if [ "$_DOWNLOAD_RESULT" -ne 0 ];
