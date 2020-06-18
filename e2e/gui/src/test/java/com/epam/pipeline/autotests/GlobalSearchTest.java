@@ -31,6 +31,7 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.empty;
@@ -70,12 +71,11 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     private final String configurationNodeType = "c5.large (CPU: 2, RAM: 4)";
     private final String configurationDisk = "23";
     private final String configVar = "config.json";
-
     private final String title = "testIssue" + Utils.randomSuffix();
     private final String description = "testIssueDescription";
     private String draftVersionName = "";
     private String testRunID = "";
-    private String pipelineWithRun = String.format("%s-%s",pipeline.toLowerCase(), testRunID);
+    private String pipelineWithRun = String.format("%s-%s", pipeline.toLowerCase(), testRunID);
 
     @BeforeClass
     @TestCase(value = {"EPMCMBIBPC-2653"})
@@ -128,6 +128,13 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .close();
 
         sleep(2, MINUTES);
+    }
+
+    @BeforeTest
+    public void checkCloseSearch() {
+        if($(byClassName("earch__search-container")).is(visible)) {
+            $(byClassName("earch__search-container")).click();
+        }
     }
 
     @Test
@@ -262,13 +269,13 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .openSearchResultItemWithText(pipelineWithRun)
                 .ensure(TITLE, Status.SUCCESS.reached, text(testRunID), text(pipeline), text(draftVersionName))
                 .checkTags(configurationDisk, configurationNodeType)
-                .ensure(HIGHLIGHTS, text("Found in pipelineName"), text("Found in description")/*,
-                        text("Found in logs")*/)
+                .ensure(HIGHLIGHTS, text("Found in pipelineName"), text("Found in description"),
+                        text("Found in podId"))
                 .ensure(PREVIEW, text("Owner"), text(LOGIN), text("Scheduled"), text("Started"),
                         text("Finished"), text("Estimated price"))
                 .ensure(PREVIEW_TAB, text("InitializeNode"))
                 .parent()
-                .moveToSearchResultItemWithText(pipelineWithRun, () -> new LogAO())
+                .moveToSearchResultItemWithText(pipelineWithRun, LogAO::new)
                 .ensure(STATUS, text(String.format("Run #%s", testRunID)));
     }
 
@@ -312,13 +319,13 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(ATTRIBUTES, text(LOGIN))
                 .ensure(PREVIEW, text(storageFileContent))
                 .parent()
-                .moveToSearchResultItem(storage, () -> new StorageContentAO())
+                .moveToSearchResultItem(storage, StorageContentAO::new)
                 .validateHeader(storage);
         search()
                 .search(storage)
                 .enter()
                 .sleep(2, SECONDS)
-                .moveToSearchResultItem(storageFile, () -> new StorageContentAO())
+                .moveToSearchResultItem(storageFile, StorageContentAO::new)
                 .validateHeader(storage);
     }
 
@@ -474,12 +481,5 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
 
     private GlobalSearchAO search() {
         return new NavigationMenuAO().search();
-    }
-
-    @AfterTest
-    public void checkCloseSearch(){
-        if($(byClassName("earch__search-container")).is(visible)) {
-            $(byClassName("earch__search-container")).click();
-        }
     }
 }

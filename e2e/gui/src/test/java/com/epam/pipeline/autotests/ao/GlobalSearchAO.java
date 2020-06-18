@@ -25,6 +25,7 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -95,27 +96,31 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
     }
 
     public SearchResultItemPreviewAO openSearchResultItem(final String item) {
-        final By searchItem = searchItem(item);
-        hover(searchItem);
-        return new SearchResultItemPreviewAO(this);
+        return getSearchResultItemPreviewAO(searchItem(item));
     }
 
     public SearchResultItemPreviewAO openSearchResultItemWithText(final String item) {
-        final By searchItem = searchItemWithText(item);
+        return getSearchResultItemPreviewAO(searchItemWithText(item));
+    }
+
+    public SearchResultItemPreviewAO getSearchResultItemPreviewAO(final By searchItem) {
         hover(searchItem);
         return new SearchResultItemPreviewAO(this);
     }
 
-    public <TARGET extends AccessObject<TARGET>> TARGET moveToSearchResultItem(final String name,
-                                                                               final Supplier<TARGET> targetSupplier) {
-        final By searchItem = searchItem(name);
-        click(searchItem);
-        return targetSupplier.get();
+    public <TARGET extends AccessObject<TARGET>> TARGET moveToSearchResultItem(
+            final String name,
+            final Supplier<TARGET> targetSupplier) {
+        return getTarget(targetSupplier, searchItem(name));
     }
 
-    public <TARGET extends AccessObject<TARGET>> TARGET moveToSearchResultItemWithText(final String name,
-                                                                                       final Supplier<TARGET> targetSupplier) {
-        final By searchItem = searchItemWithText(name);
+    public <TARGET extends AccessObject<TARGET>> TARGET moveToSearchResultItemWithText(
+            final String name,
+            final Supplier<TARGET> targetSupplier) {
+        return getTarget(targetSupplier, searchItemWithText(name));
+    }
+
+    private <TARGET extends AccessObject<TARGET>> TARGET getTarget(final Supplier<TARGET> targetSupplier, final By searchItem) {
         click(searchItem);
         return targetSupplier.get();
     }
@@ -221,10 +226,9 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
                     get(TAGS).find(By.xpath("./span[3]")).text(),
                     get(TAGS).find(By.xpath("./span[4]")).text(),
                     get(TAGS).find(By.xpath("./span[5]")).text());
-            for( String i:list) {
-                tags.contains(i);
-            }
+            Arrays.stream(list).forEach(tags::contains);
             return this;
         }
     }
+
 }
