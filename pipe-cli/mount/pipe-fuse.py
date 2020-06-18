@@ -39,7 +39,8 @@ from pipefuse.buff import BufferedFileSystemClient
 from pipefuse.trunc import CopyOnDownTruncateFileSystemClient, \
     WriteNullsOnUpTruncateFileSystemClient, \
     WriteLastNullOnUpTruncateFileSystemClient
-from pipefuse.api import CloudPipelineClient
+from pipefuse.api import CloudPipelineClient, CloudType
+from pipefuse.gcp import GCPClient
 from pipefuse.webdav import CPWebDavClient
 from pipefuse.s3 import S3Client
 from pipefuse.pipefs import PipeFS
@@ -72,14 +73,22 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
     bearer = os.environ.get('API_TOKEN', '')
     chunk_size = os.environ.get('CP_PIPE_FUSE_CHUNK_SIZE', chunk_size)
     if not bearer:
-        raise RuntimeError("Cloud Pipeline API_TOKEN should be specified.")
+        raise RuntimeError('Cloud Pipeline API_TOKEN should be specified.')
     if webdav:
         client = CPWebDavClient(webdav_url=webdav, bearer=bearer)
     else:
         if not api:
-            raise RuntimeError("Cloud Pipeline API should be specified.")
+            raise RuntimeError('Cloud Pipeline API should be specified.')
         pipe = CloudPipelineClient(api=api, token=bearer)
-        client = S3Client(bucket, pipe=pipe, chunk_size=chunk_size)
+        path_chunks = bucket.rstrip('/').split('/')
+        bucket_name = path_chunks[0]
+        bucket_object = pipe.get_storage(bucket_name)
+        if bucket_object.type == CloudType.S3:
+            client = S3Client(bucket, pipe=pipe, chunk_size=chunk_size)
+        elif bucket_object.type == CloudType.GS:
+            client = GCPClient(bucket, pipe=pipe)
+        else:
+            raise RuntimeError('Cloud storage type %s is not supported.' % bucket_object.type)
     if recording:
         client = RecordingFileSystemClient(client)
     if cache_ttl > 0 and cache_size > 0:
