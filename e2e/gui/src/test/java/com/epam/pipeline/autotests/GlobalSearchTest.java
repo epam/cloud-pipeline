@@ -77,7 +77,6 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     private final String description = "testIssueDescription";
     private String draftVersionName = "";
     private String testRunID = "";
-    private String pipelineWithRun = String.format("%s-%s", pipeline.toLowerCase(), testRunID);
 
     @BeforeClass
     @TestCase(value = {"EPMCMBIBPC-2653"})
@@ -268,7 +267,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .sleep(2, SECONDS)
                 .hover(SEARCH_RESULT)
-                .openSearchResultItemWithText(pipelineWithRun)
+                .openSearchResultItemWithText(pipelineWithRun())
                 .ensure(TITLE, Status.SUCCESS.reached, text(testRunID), text(pipeline), text(draftVersionName))
                 .checkTags(configurationDisk, configurationNodeType)
                 .ensure(HIGHLIGHTS, text("Found in pipelineName"), text("Found in description"),
@@ -277,7 +276,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                         text("Finished"), text("Estimated price"))
                 .ensure(PREVIEW_TAB, text("InitializeNode"))
                 .parent()
-                .moveToSearchResultItemWithText(pipelineWithRun, LogAO::new)
+                .moveToSearchResultItemWithText(pipelineWithRun(), LogAO::new)
                 .ensure(STATUS, text(String.format("Run #%s", testRunID)));
     }
 
@@ -290,7 +289,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .sleep(2, SECONDS)
                 .hover(SEARCH_RESULT)
-                .openSearchResultItemWithText(pipelineWithRun)
+                .openSearchResultItemWithText(pipelineWithRun())
                 .ensure(TITLE, Status.SUCCESS.reached, text(testRunID), text(pipeline))
                 .ensure(HIGHLIGHTS, text("Found in id"), text("Found in logs"))
                 .close()
@@ -537,5 +536,9 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
 
     private GlobalSearchAO search() {
         return new NavigationMenuAO().search();
+    }
+
+    private String pipelineWithRun(){
+        return String.format("%s-%s", pipeline.toLowerCase(), testRunID);
     }
 }
