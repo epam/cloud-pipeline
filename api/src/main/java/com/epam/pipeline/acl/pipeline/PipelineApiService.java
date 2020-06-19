@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -299,5 +299,12 @@ public class PipelineApiService {
     public List<GitRepositoryEntry> getPipelineRepositoryContents(Long id, String version, String path)
             throws GitClientException {
         return gitManager.getRepositoryContents(id, version, path);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') OR hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Pipeline', 'READ') AND "
+            + "(#parentFolderId != null AND hasRole('PIPELINE_MANAGER') AND "
+            + "hasPermission(#parentFolderId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
+    public Pipeline copyPipeline(final Long id, final Long parentFolderId, final String newName) {
+        return pipelineManager.copyPipeline(id, parentFolderId, newName);
     }
 }

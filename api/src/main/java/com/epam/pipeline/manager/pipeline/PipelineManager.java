@@ -39,6 +39,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.utils.GitUtils;
+import com.epam.pipeline.utils.PasswordGenerator;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -317,6 +318,31 @@ public class PipelineManager implements SecuredEntityManager {
         return gitManager.getGitCredentials(pipelineId, false, true).getUrl();
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public Pipeline copyPipeline(final Long id, final Long parentFolderId, final String newName) {
+        final Pipeline loadedPipeline = load(id);
+
+        final String sourceProjectName = GitUtils.convertPipeNameToProject(loadedPipeline.getName());
+        final String uuid = PasswordGenerator.generateRandomString(20);
+        final String newProjectName = buildCopyProjectName(sourceProjectName, uuid, newName);
+        final String newRepository =
+                GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepository(), newProjectName);
+        final String newRepositorySsh =
+                GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepositorySsh(), newProjectName);
+
+        loadedPipeline.setRepository(newRepository);
+        loadedPipeline.setRepositorySsh(newRepositorySsh);
+        loadedPipeline.setName(newProjectName);
+        loadedPipeline.setParentFolderId(parentFolderId);
+        setFolderIfPresent(loadedPipeline);
+        loadedPipeline.setOwner(securityManager.getAuthorizedUser());
+        loadedPipeline.setRepositoryType(null);
+        loadedPipeline.setLocked(false);
+        final Pipeline newPipeline = crudManager.save(loadedPipeline);
+        gitManager.copyRepository(sourceProjectName, newProjectName, uuid);
+        return newPipeline;
+    }
+
     private void setCurrentVersion(Pipeline pipeline) {
         try {
             pipeline.setRepositoryError(null);
@@ -335,5 +361,12 @@ public class PipelineManager implements SecuredEntityManager {
             Folder parent = folderManager.load(dbPipeline.getParentFolderId());
             dbPipeline.setParent(parent);
         }
+    }
+
+    private String buildCopyProjectName(final String sourceProjectName, final String uuid,
+                                        final String newProjectName) {
+        return StringUtils.isNotBlank(newProjectName)
+                ? newProjectName
+                : String.format("%s_copy%s", sourceProjectName, uuid);
     }
 }

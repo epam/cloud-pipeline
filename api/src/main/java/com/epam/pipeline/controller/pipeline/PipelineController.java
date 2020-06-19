@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -671,5 +671,18 @@ public class PipelineController extends AbstractRestController {
             @RequestParam(value = VERSION) final String version,
             @RequestParam(value = PATH) final String path) throws GitClientException {
         return Result.success(pipelineApiService.getPipelineRepositoryContents(id, version, path));
+    }
+
+    @PostMapping(value = "/pipeline/{id}/copy")
+    @ResponseBody
+    @ApiOperation(
+            value = "Copies specified pipeline.",
+            notes = "Copies specified pipeline.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Pipeline> copyPipeline(@PathVariable(ID) final Long id,
+                                         @RequestParam(value = "parentId", required = false) final Long parentId,
+                                         @RequestParam(value = "name", required = false) final String name) {
+        return Result.success(pipelineApiService.copyPipeline(id, parentId, name));
     }
 }

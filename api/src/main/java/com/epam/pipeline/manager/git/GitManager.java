@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitGroup;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitPushCommitActionEntry;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
@@ -858,6 +859,55 @@ public class GitManager {
     public GitProject updateRepositoryName(final String projectIdOrName, final String newName) {
         try {
             return getDefaultGitlabClient().updateProjectName(projectIdOrName, newName);
+        } catch (GitClientException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
+
+    public GitProject copyRepository(final String projectName, final String newProjectName, final String uuid) {
+        final String tmpGroupName = String.format("TMP_FORK_%s", uuid);
+        final String defaultNamespace = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
+
+        createGitGroup(tmpGroupName);
+        LOGGER.debug("The temporary git group '{}' was created for fork operation", tmpGroupName);
+
+        final GitProject forkedProject = copyProject(projectName, newProjectName, tmpGroupName, defaultNamespace);
+
+        deleteGitGroup(tmpGroupName);
+        LOGGER.debug("The temporary git group '{}' was deleted", tmpGroupName);
+
+        return forkedProject;
+    }
+
+    private GitProject copyProject(final String projectName, final String newProjectName, final String tmpGroupName,
+                                   final String defaultNamespace) {
+        try {
+            final GitlabClient gitlabClient = getDefaultGitlabClient();
+            gitlabClient.forkProject(projectName, defaultNamespace, tmpGroupName);
+            LOGGER.debug("The project '{}' was forked to temporary namespace '{}'", projectName, tmpGroupName);
+
+            gitlabClient.updateProjectName(projectName, newProjectName, tmpGroupName);
+
+            final GitProject resultProject = gitlabClient.forkProject(newProjectName, tmpGroupName, defaultNamespace);
+            LOGGER.debug("The project '{}' was forked to default namespace '{}'", newProjectName, defaultNamespace);
+            return resultProject;
+        } catch (GitClientException e) {
+            deleteGitGroup(tmpGroupName);
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
+
+    private GitGroup createGitGroup(final String groupName) {
+        try {
+            return getDefaultGitlabClient().createGroup(groupName);
+        } catch (GitClientException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
+
+    private GitGroup deleteGitGroup(final String groupName) {
+        try {
+            return getDefaultGitlabClient().deleteGroup(groupName);
         } catch (GitClientException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
