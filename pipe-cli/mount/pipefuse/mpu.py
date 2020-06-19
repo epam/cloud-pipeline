@@ -369,6 +369,101 @@ class OutOfBoundsFillingMultipartCopyUpload(MultipartUploadDecorator):
             self._mpu.upload_copy_part(start, end, offset, part_number)
 
 
+class DownloadingMultipartCopyUpload(MultipartUploadDecorator):
+
+    def __init__(self, mpu, download_func):
+        """
+        Downloading multipart copy upload.
+
+        Downloads all the required copy parts and upload them as regular parts.
+
+        :param mpu: Wrapping multipart upload.
+        :param download_func: Function that retrieves content from the original file by its offset and length.
+        """
+        super(DownloadingMultipartCopyUpload, self).__init__(mpu)
+        self._mpu = mpu
+        self._download_func = download_func
+
+    def upload_copy_part(self, start, end, offset=None, part_number=None):
+        self._mpu.upload_part(self._download_func(start, end - start), offset, part_number)
+
+
+class CompositeMultipartUpload(MultipartUpload):
+
+    def __init__(self, bucket, path, new_mpu_func, max_composite_parts=32):
+        """
+        Composite object multipart upload.
+
+        :param bucket: Destination bucket name.
+        :param path: Destination bucket relative path.
+        :param new_mpu_func: Function that instantiates new multipart upload.
+        :param max_composite_parts: Number of allowed composite object parts.
+        """
+        self._bucket = bucket
+        self._path = path
+        self._new_mpu_func = new_mpu_func
+        self._max_composite_parts = max_composite_parts
+        self._bucket_object = None
+        self._blob_object = None
+        self._parts = []
+        self._mpus = {}
+
+    @property
+    def path(self):
+        return self._path
+
+    def initiate(self):
+        pass
+
+    def upload_part(self, buf, offset=None, part_number=None):
+        mpu_number = part_number / self._max_composite_parts
+        mpu = self._mpus.get(mpu_number, None)
+        if not mpu:
+            mpu_path = self._mpu_path(mpu_number)
+            mpu = self._new_mpu_func(mpu_path)
+            mpu.initiate()
+            self._mpus[mpu_number] = mpu
+        mpu.upload_part(buf, offset, part_number)
+
+    def upload_copy_part(self, start, end, offset=None, part_number=None):
+        mpu_number = part_number / self._max_composite_parts
+        mpu = self._mpus.get(mpu_number, None)
+        if not mpu:
+            mpu_path = self._mpu_path(mpu_number)
+            mpu = self._new_mpu_func(mpu_path)
+            mpu.initiate()
+            self._mpus[mpu_number] = mpu
+        mpu.upload_copy_part(start, end, offset, part_number)
+
+    def _mpu_path(self, mpu_number):
+        return '%s_%s_%d.tmp' % (self._path, str(abs(hash(self._path))), mpu_number)
+
+    def complete(self):
+        for mpu in self._mpus.values():
+            mpu.complete()
+        self._compose([(mpu_number, self._mpus[mpu_number]) for mpu_number in sorted(self._mpus.keys())])
+
+    def _compose(self, mpus):
+        if not mpus:
+            return
+        if len(mpus) > self._max_composite_parts:
+            self._compose([self._merge(mpus[:self._max_composite_parts])] + [mpus[self._max_composite_parts:]])
+        else:
+            self._merge(mpus)
+
+    def _merge(self, mpus):
+        merged_mpu = self._new_mpu_func(self._path)
+        merged_mpu.initiate()
+        for mpu_number, mpu in mpus:
+            merged_mpu.upload_copy_part(None, None, None, mpu_number)
+        merged_mpu.complete()
+        return 0, merged_mpu
+
+    def abort(self):
+        for mpu in self._mpus.values():
+            mpu.abort()
+
+
 class TruncatingMultipartCopyUpload(MultipartUploadDecorator):
 
     def __init__(self, mpu, length, min_part_number=1):

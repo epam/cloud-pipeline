@@ -41,12 +41,11 @@ def _http_range(start, end):
 
 class S3MultipartUpload(MultipartUpload):
 
-    def __init__(self, path, offset, bucket, s3):
+    def __init__(self, path, bucket, s3):
         """
         Plain multipart upload.
 
         :param path: Destination bucket relative path.
-        :param offset: First upload part offset.
         :param bucket: Destination bucket name.
         :param s3: Boto S3 client.
         """
@@ -55,7 +54,6 @@ class S3MultipartUpload(MultipartUpload):
         self._s3 = s3
         self._upload_id = None
         self._parts = {}
-        self._offset = offset
 
     @property
     def path(self):
@@ -202,7 +200,7 @@ class S3Client(FileSystemClient):
         for page in page_iterator:
             if 'CommonPrefixes' in page:
                 for folder in page['CommonPrefixes']:
-                    name = S3Client.get_item_name(folder['Prefix'], prefix=prefix)
+                    name = fuseutils.get_item_name(folder['Prefix'], prefix=prefix)
                     items.append(self.get_folder_object(name))
             if 'Contents' in page:
                 for file in page['Contents']:
@@ -230,23 +228,6 @@ class S3Client(FileSystemClient):
             return ''
         return full_path.lstrip(self._delimiter)
 
-    @classmethod
-    def get_item_name(cls, path, prefix, delimiter='/'):
-        possible_folder_name = prefix if prefix.endswith(delimiter) else \
-            prefix + delimiter
-        if prefix and path.startswith(prefix) and path != possible_folder_name and path != prefix:
-            if not path == prefix:
-                splitted = prefix.split(delimiter)
-                return splitted[len(splitted) - 1] + path[len(prefix):]
-            else:
-                return path[len(prefix):]
-        elif not path.endswith(delimiter) and path == prefix:
-            return os.path.basename(path)
-        elif path == possible_folder_name:
-            return os.path.basename(path.rstrip(delimiter)) + delimiter
-        else:
-            return path
-
     def get_folder_object(self, name):
         return File(name=name,
                     size=0,
@@ -256,7 +237,7 @@ class S3Client(FileSystemClient):
                     is_dir=True)
 
     def get_file_name(self, file, prefix, recursive):
-        return file['Key'] if recursive else S3Client.get_item_name(file['Key'], prefix=prefix)
+        return file['Key'] if recursive else fuseutils.get_item_name(file['Key'], prefix=prefix)
 
     def get_file_object(self, file, name):
         return File(name=name,
@@ -336,10 +317,10 @@ class S3Client(FileSystemClient):
                         and file_size < self._SINGLE_UPLOAD_SIZE \
                         and offset < self._SINGLE_UPLOAD_SIZE:
                     logging.info('Using single range upload approach for %d:%s' % (fh, path))
-                    self._upload_single_range(fh, buf, source_path, offset)
+                    self._upload_single_range(fh, buf, source_path, offset, file_size)
                 else:
                     logging.info('Using multipart upload approach for %d:%s' % (fh, path))
-                    mpu = self._new_mpu(source_path, file_size, offset)
+                    mpu = self._new_mpu(source_path, file_size)
                     self._mpus[source_path] = mpu
                     mpu.initiate()
                     mpu.upload_part(buf, offset)
@@ -370,8 +351,8 @@ class S3Client(FileSystemClient):
                 mpu.abort()
             raise
 
-    def _new_mpu(self, source_path, file_size, offset):
-        mpu = S3MultipartUpload(source_path, offset, self.bucket, self._s3)
+    def _new_mpu(self, source_path, file_size):
+        mpu = S3MultipartUpload(source_path, self.bucket, self._s3)
         mpu = OutOfBoundsFillingMultipartCopyUpload(mpu, original_size=file_size,
                                                     download_func=self._generate_region_download_function(source_path))
         mpu = SplittingMultipartCopyUpload(mpu, min_part_size=self._MIN_PART_SIZE, max_part_size=self._MAX_PART_SIZE)
@@ -389,10 +370,13 @@ class S3Client(FileSystemClient):
                 return buf.getvalue()
         return download_func
 
-    def _upload_single_range(self, fh, buf, path, offset):
-        with io.BytesIO() as original_buf:
-            self.download_range(fh, original_buf, path, expand_path=False)
-            original_bytes = bytearray(original_buf.getvalue())
+    def _upload_single_range(self, fh, buf, path, offset, file_size):
+        if file_size:
+            with io.BytesIO() as original_buf:
+                self.download_range(fh, original_buf, path, expand_path=False)
+                original_bytes = bytearray(original_buf.getvalue())
+        else:
+            original_bytes = bytearray()
         modified_bytes = bytearray(max(offset + len(buf), len(original_bytes)))
         modified_bytes[0: len(original_bytes)] = original_bytes
         modified_bytes[offset: offset + len(buf)] = buf
@@ -432,7 +416,7 @@ class S3Client(FileSystemClient):
                                'Use some of the existing filesystem client decorators.')
 
     def _new_truncating_mpu(self, source_path, length):
-        mpu = S3MultipartUpload(source_path, offset=0, bucket=self.bucket, s3=self._s3)
+        mpu = S3MultipartUpload(source_path, bucket=self.bucket, s3=self._s3)
         mpu = SplittingMultipartCopyUpload(mpu, min_part_size=self._MIN_PART_SIZE, max_part_size=self._MAX_PART_SIZE)
         mpu = TruncatingMultipartCopyUpload(mpu, length=length, min_part_number=self._MIN_CHUNK)
         return mpu

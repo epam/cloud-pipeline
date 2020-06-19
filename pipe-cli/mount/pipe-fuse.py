@@ -86,7 +86,7 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
         if bucket_object.type == CloudType.S3:
             client = S3Client(bucket, pipe=pipe, chunk_size=chunk_size)
         elif bucket_object.type == CloudType.GS:
-            client = GCPClient(bucket, pipe=pipe)
+            client = GCPClient(bucket, pipe=pipe, chunk_size=chunk_size)
         else:
             raise RuntimeError('Cloud storage type %s is not supported.' % bucket_object.type)
     if recording:
@@ -201,7 +201,7 @@ if __name__ == '__main__':
     if not args.webdav and not args.bucket:
         parser.error('Either --webdav or --bucket parameter should be specified.')
     if args.bucket and (args.chunk_size < 5 * MB or args.chunk_size > 5 * GB):
-        parser.error('Chunk size can vary from 5 MB to 5 GB due to AWS s3 multipart upload limitations.')
+        parser.error('Chunk size can vary from 5 MB to 5 GB due to AWS S3 multipart upload limitations.')
     if args.logging_level not in _allowed_logging_levels:
         parser.error('Only the following logging level are allowed: %s.' % _allowed_logging_levels_string)
     recording = args.logging_level in [_info_logging_level, _debug_logging_level]

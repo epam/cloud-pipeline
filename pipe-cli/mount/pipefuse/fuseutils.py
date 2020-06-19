@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 DEFAULT_DELIMITER = '/'
 KB = 1024
 MB = KB * KB
@@ -49,3 +51,20 @@ def lazy_range(start, end):
 def without_prefix(string, prefix):
     if string.startswith(prefix):
         return string[len(prefix):]
+
+
+def get_item_name(path, prefix, delimiter='/'):
+    possible_folder_name = prefix if prefix.endswith(delimiter) else \
+        prefix + delimiter
+    if prefix and path.startswith(prefix) and path != possible_folder_name and path != prefix:
+        if not path == prefix:
+            splitted = prefix.split(delimiter)
+            return splitted[len(splitted) - 1] + path[len(prefix):]
+        else:
+            return path[len(prefix):]
+    elif not path.endswith(delimiter) and path == prefix:
+        return os.path.basename(path)
+    elif path == possible_folder_name:
+        return os.path.basename(path.rstrip(delimiter)) + delimiter
+    else:
+        return path

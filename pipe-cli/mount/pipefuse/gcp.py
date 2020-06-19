@@ -1,3 +1,4 @@
+import io
 import logging
 import time
 from datetime import datetime
@@ -9,8 +10,67 @@ from google.cloud.storage import Client
 from google.oauth2.credentials import Credentials
 
 from fsclient import FileSystemClient, File
-from fuseutils import MB, GB
-from pipefuse import fuseutils
+from fuseutils import MB
+import fuseutils
+from mpu import MultipartUpload, ChunkedMultipartUpload, SplittingMultipartCopyUpload, \
+    DownloadingMultipartCopyUpload, CompositeMultipartUpload
+
+_ANY_ERROR = Exception
+
+
+class GCPMultipartUpload(MultipartUpload):
+
+    def __init__(self, bucket, path, gcp):
+        """
+        GCP composite object multipart upload.
+
+        :param bucket: Destination bucket name.
+        :param path: Destination bucket relative path.
+        :param gcp: CGP client.
+        """
+        self._bucket = bucket
+        self._path = path
+        self._gcp = gcp
+        self._bucket_object = None
+        self._blob_object = None
+        self._parts = {}
+
+    @property
+    def path(self):
+        return self._path
+
+    def initiate(self):
+        logging.info('Initializing multipart upload for %s' % self._path)
+        self._bucket_object = self._gcp.bucket(self._bucket)
+        self._blob_object = self._bucket_object.blob(self._path)
+
+    def upload_part(self, buf, offset=None, part_number=None):
+        logging.info('Uploading multipart upload part range %d-%d for %s' % (offset, offset + len(buf), self._path))
+        start = offset or 0
+        end = start + len(buf)
+        part_path = '%s_%d.tmp' % (self._path[:-4] if self._path.endswith('.tmp') else self._path, part_number)
+        part_blob = self._bucket_object.blob(part_path)
+        part_blob.upload_from_string(str(buf))
+        self._parts[part_number] = part_blob
+
+    def upload_copy_part(self, start, end, offset=None, part_number=None):
+        logging.info('Uploading multipart upload part %d for %s' % (part_number, self._path))
+        p = self._path[:-4] if self._path.endswith('.tmp') else self._path
+        part_path = '%s_%s_%d.tmp' % (p, str(abs(hash(p))), part_number)
+        part_blob = self._bucket_object.blob(part_path)
+        self._parts[part_number] = part_blob
+
+    def complete(self):
+        logging.info('Completing multipart upload for %s' % self._path)
+        self._blob_object.compose([self._parts[part_number] for part_number in sorted(self._parts.keys())])
+        for part_number in sorted(self._parts.keys()):
+            self._parts[part_number].delete()
+            del self._parts[part_number]
+
+    def abort(self):
+        logging.error('Aborting multipart upload for %s' % self._path)
+        for part_number in sorted(self._parts.keys()):
+            self._parts[part_number].delete()
 
 
 class _RefreshingCredentials(Credentials):
@@ -41,16 +101,18 @@ class _RefreshingClient(Client):
 class GCPClient(FileSystemClient):
     _MIN_CHUNK = 1
     _MAX_CHUNK = 10000
+    _MAX_COMPOSITE_PARTS = 32
     _MIN_PART_SIZE = 5 * MB
-    _MAX_PART_SIZE = 5 * GB
+    _MAX_PART_SIZE = 500 * MB
     _SINGLE_UPLOAD_SIZE = 5 * MB
 
-    def __init__(self, bucket, pipe):
+    def __init__(self, bucket, pipe, chunk_size):
         """
         GCP API client for single bucket operations.
 
         :param bucket: Name of the GCP bucket.
         :param pipe: Cloud Pipeline API client.
+        :param chunk_size: Multipart upload chunk size.
         """
         super(GCPClient, self).__init__()
         self._delimiter = '/'
@@ -59,6 +121,8 @@ class GCPClient(FileSystemClient):
         self.bucket = path_chunks[0]
         self.root_path = self._delimiter.join(path_chunks[1:]) if len(path_chunks) > 1 else ''
         self._gcp = self._generate_gcp(pipe)
+        self._chunk_size = chunk_size
+        self._mpus = {}
 
     def _generate_gcp(self, pipe):
         bucket_object = pipe.get_storage(self.bucket)
@@ -99,9 +163,7 @@ class GCPClient(FileSystemClient):
         return full_path.lstrip(self._delimiter)
 
     def _get_file_object(self, blob, prefix, recursive):
-        # todo: Extract the method to common utils
-        from s3 import S3Client
-        return File(name=blob.name if recursive else S3Client.get_item_name(blob.name, prefix=prefix),
+        return File(name=blob.name if recursive else fuseutils.get_item_name(blob.name, prefix=prefix),
                     size=blob.size,
                     mtime=time.mktime(blob.updated.astimezone(pytz.utc).timetuple()),
                     ctime=None,
@@ -120,7 +182,7 @@ class GCPClient(FileSystemClient):
         destination_path = self.build_full_path(path) if expand_path else path
         bucket_object = self._gcp.bucket(self.bucket)
         blob = bucket_object.blob(destination_path)
-        blob.upload_from_string(str(buf))
+        blob.upload_from_string(str(buf or ''))
 
     def delete(self, path, expand_path=True):
         prefix = self.build_full_path(path) if expand_path else path
@@ -157,8 +219,78 @@ class GCPClient(FileSystemClient):
         for file in self.ls(fuseutils.append_delimiter(path), depth=-1):
             self.delete(file.name, expand_path=False)
 
-    def download_range(self, fh, buf, path, offset, length):
-        pass
+    def download_range(self, fh, buf, path, offset=0, length=0, expand_path=True):
+        source_path = self.build_full_path(path) if expand_path else path
+        source_bucket = self._gcp.bucket(self.bucket)
+        source_blob = source_bucket.blob(source_path)
+        body = source_blob.download_as_string(start=offset, end=offset + length)
+        buf.write(body)
 
-    def upload_range(self, fh, buf, path, offset):
+    def upload_range(self, fh, buf, path, offset=0):
+        source_path = self.build_full_path(path)
+        mpu = self._mpus.get(source_path, None)
+        try:
+            if not mpu:
+                file_size = self.attrs(path).size
+                buf_size = len(buf)
+                if buf_size < self._SINGLE_UPLOAD_SIZE and file_size < self._SINGLE_UPLOAD_SIZE:
+                    logging.info('Using single range upload approach')
+                    self._upload_single_range(fh, buf, source_path, offset, file_size)
+                else:
+                    logging.info('Using multipart upload approach')
+                    mpu = self._new_mpu(source_path, file_size)
+                    self._mpus[source_path] = mpu
+                    mpu.initiate()
+                    mpu.upload_part(buf, offset)
+            else:
+                mpu.upload_part(buf, offset)
+        except _ANY_ERROR:
+            if mpu:
+                mpu.abort()
+                del self._mpus[source_path]
+            raise
+
+    def _new_mpu(self, source_path, file_size):
+        mpu = CompositeMultipartUpload(self.bucket, path=source_path,
+                                       new_mpu_func=lambda path: GCPMultipartUpload(self.bucket, path, self._gcp),
+                                       max_composite_parts=self._MAX_COMPOSITE_PARTS)
+        mpu = DownloadingMultipartCopyUpload(mpu, download_func=self._generate_region_download_function(source_path))
+        mpu = SplittingMultipartCopyUpload(mpu, min_part_size=self._MIN_PART_SIZE, max_part_size=self._MAX_PART_SIZE)
+        mpu = ChunkedMultipartUpload(mpu, original_size=file_size,
+                                     download_func=self._generate_region_download_function(source_path),
+                                     chunk_size=self._chunk_size, min_chunk=self._MIN_CHUNK, max_chunk=self._MAX_CHUNK)
+        return mpu
+
+    def _generate_region_download_function(self, path):
+        def download_func(region_offset, region_length):
+            with io.BytesIO() as buf:
+                self.download_range(None, buf, path, region_offset, region_length, expand_path=False)
+                return buf.getvalue()
+        return download_func
+
+    def _upload_single_range(self, fh, buf, path, offset, file_size):
+        if file_size:
+            with io.BytesIO() as original_buf:
+                self.download_range(fh, original_buf, path, offset=0, length=file_size, expand_path=False)
+                modified_bytes = bytearray(original_buf.getvalue())
+        else:
+            modified_bytes = bytearray()
+        modified_bytes[offset: offset + len(buf)] = buf
+        logging.info('Uploading range %d-%d for %s' % (offset, offset + len(buf), path))
+        self.upload(modified_bytes, path, expand_path=False)
+
+    def flush(self, fh, path):
+        source_path = self.build_full_path(path)
+        mpu = self._mpus.get(source_path, None)
+        if mpu:
+            try:
+                mpu.complete()
+            except _ANY_ERROR:
+                mpu.abort()
+                raise
+            finally:
+                del self._mpus[source_path]
+
+    def truncate(self, fh, path, length):
+        # todo: Implement
         pass
