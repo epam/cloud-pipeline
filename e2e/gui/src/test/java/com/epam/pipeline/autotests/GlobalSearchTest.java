@@ -29,6 +29,7 @@ import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.openqa.selenium.Keys;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -41,6 +42,7 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
 import static com.epam.pipeline.autotests.utils.C.LOGIN;
@@ -132,8 +134,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
 
     @BeforeMethod
     public void checkCloseSearch() {
-        if($(byClassName("earch__search-container")).is(visible)) {
-            $(byClassName("earch__search-container")).click();
+        while($(byClassName("earch__search-container")).is(visible)) {
+            actions().sendKeys(Keys.ESCAPE).perform();
         }
     }
 
@@ -505,6 +507,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .validateCountSearchResults(2)
                 .ensure(FOLDERS, text("2 FOLDERS"))
                 .ensure(SEARCH_RESULT, text(innerFolder1), text(folderWithExpression))
+                .close()
                 .close();
     }
 
