@@ -18,15 +18,19 @@ package com.epam.pipeline.autotests;
 import com.epam.pipeline.autotests.ao.DocumentTabAO;
 import com.epam.pipeline.autotests.ao.GlobalSearchAO;
 import com.epam.pipeline.autotests.ao.LibraryFolderAO;
+import com.epam.pipeline.autotests.ao.LogAO;
+import com.epam.pipeline.autotests.ao.LogAO.Status;
 import com.epam.pipeline.autotests.ao.NavigationHomeAO;
 import com.epam.pipeline.autotests.ao.NavigationMenuAO;
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
 import com.epam.pipeline.autotests.ao.PipelineLibraryContentAO;
+import com.epam.pipeline.autotests.ao.StorageContentAO;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.empty;
@@ -34,9 +38,12 @@ import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
+import static com.epam.pipeline.autotests.utils.C.LOGIN;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -48,6 +55,10 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     private final String configuration = "globalSearchConf" + Utils.randomSuffix();
     private final String innerFolder1 = "globalSearchInnerFolder1" + Utils.randomSuffix();
     private final String innerFolder2 = "globalSearchInnerFolder2" + Utils.randomSuffix();
+    private final String storage = "globalSearchStorage" + Utils.randomSuffix();
+    private final String storageFolder = "globalSearchStorageFolder" + Utils.randomSuffix();
+    private final String storageFile = "globalSearchStorageFile" + Utils.randomSuffix();
+    private final String storageFileContent = "globalSearchStorageFileContent" + Utils.randomSuffix();
     private final String customConfigurationProfile = "custom-profile";
     private final String customDisk = "22";
     private final String defaultInstanceType = C.DEFAULT_INSTANCE;
@@ -59,10 +70,11 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     private final String configurationNodeType = "c5.large (CPU: 2, RAM: 4)";
     private final String configurationDisk = "23";
     private final String configVar = "config.json";
-
     private final String title = "testIssue" + Utils.randomSuffix();
     private final String description = "testIssueDescription";
     private String draftVersionName = "";
+    private String testRunID = "";
+    private String pipelineWithRun = String.format("%s-%s", pipeline.toLowerCase(), testRunID);
 
     @BeforeClass
     @TestCase(value = {"EPMCMBIBPC-2653"})
@@ -93,6 +105,13 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .cd(folder)
                 .cd(innerFolder1)
                 .createFolder(innerFolder2);
+        navigationMenu()
+                .library()
+                .cd(folder)
+                .createStorage(storage)
+                .selectStorage(storage)
+                .createFolder(storageFolder)
+                .createAndEditFile(storageFile, storageFileContent);
         home()
                 .globalSearch()
                 .ensureVisible(FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES, SEARCH, QUESTION_MARK)
@@ -108,6 +127,13 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .close();
 
         sleep(2, MINUTES);
+    }
+
+    @BeforeTest
+    public void checkCloseSearch() {
+        if($(byClassName("earch__search-container")).is(visible)) {
+            $(byClassName("earch__search-container")).click();
+        }
     }
 
     @Test
@@ -171,9 +197,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(TITLE, text(configVar))
                 .ensure(DESCRIPTION, text(pipeline))
                 .ensure(HIGHLIGHTS, text("Found in pipelineName"))
-                .ensure(PREVIEW, text(configurationDisk))
-                .ensure(PREVIEW, text(configurationName))
-                .ensure(PREVIEW, text(configurationNodeType.substring(0, configurationNodeType.indexOf(" "))))
+                .ensure(PREVIEW, text(configurationDisk), text(configurationName),
+                        text(configurationNodeType.substring(0, configurationNodeType.indexOf(" "))))
                 .parent()
                 .moveToSearchResultItem(pipeline, () -> new PipelineLibraryContentAO(pipeline))
                 .assertPipelineName(pipeline);
@@ -200,7 +225,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .firstVersion()
                 .runPipeline()
                 .launch(this)
-                .showLog(getLastRunId())
+                .showLog(testRunID=getLastRunId())
                 .waitForCompletion();
         library()
                 .cd(folder)
@@ -228,6 +253,79 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .checkCompletedField()
                 .close()
                 .close();
+    }
+
+    @Test(dependsOnMethods = {"searchForPipelineWithRuns"})
+    @TestCase(value = {"EPMCMBIBPC-2663"})
+    public void searchForPipelineRun() {
+        home();
+        search()
+                .click(RUNS)
+                .search(pipeline)
+                .enter()
+                .sleep(2, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItemWithText(pipelineWithRun)
+                .ensure(TITLE, Status.SUCCESS.reached, text(testRunID), text(pipeline), text(draftVersionName))
+                .checkTags(configurationDisk, configurationNodeType)
+                .ensure(HIGHLIGHTS, text("Found in pipelineName"), text("Found in description"),
+                        text("Found in podId"))
+                .ensure(PREVIEW, text("Owner"), text(LOGIN), text("Scheduled"), text("Started"),
+                        text("Finished"), text("Estimated price"))
+                .ensure(PREVIEW_TAB, text("InitializeNode"))
+                .parent()
+                .moveToSearchResultItemWithText(pipelineWithRun, LogAO::new)
+                .ensure(STATUS, text(String.format("Run #%s", testRunID)));
+    }
+
+    @Test(dependsOnMethods = {"searchForPipelineWithRuns"})
+    @TestCase(value = {"EPMCMBIBPC-2665"})
+    public void searchForPipelineRunByID() {
+        home();
+        search()
+                .search(testRunID)
+                .enter()
+                .sleep(2, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItemWithText(pipelineWithRun)
+                .ensure(TITLE, Status.SUCCESS.reached, text(testRunID), text(pipeline))
+                .ensure(HIGHLIGHTS, text("Found in id"), text("Found in logs"))
+                .close()
+                .close();
+    }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-2660"})
+    public void searchForStorage() {
+        home();
+        search()
+                .search(storage)
+                .enter()
+                .sleep(2, SECONDS)
+                .validateCountSearchResults(2)
+                .ensure(DATA, text("2 DATA"))
+                .ensureAll(GlobalSearchAO.disable, FOLDERS, PIPELINES, TOOLS, ISSUES)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItem(storage)
+                .ensure(TITLE, text(storage))
+                .ensure(HIGHLIGHTS, text("Found in name"))
+                .ensure(PREVIEW, text(storageFolder), text(storageFile))
+                .parent()
+                .openSearchResultItem(storageFile)
+                .ensure(TITLE, text(storageFile))
+                .ensure(HIGHLIGHTS, text("Found in storage_name"))
+                .ensure(INFO, text(storage), text(String.format("s3://%s%s", storage, storageFile)))
+                .ensure(ATTRIBUTES, text(LOGIN))
+                .ensure(PREVIEW, text(storageFileContent))
+                .parent()
+                .moveToSearchResultItem(storage, StorageContentAO::new)
+                .validateHeader(storage);
+        search()
+                .search(storage)
+                .enter()
+                .sleep(2, SECONDS)
+                .moveToSearchResultItem(storageFile, StorageContentAO::new)
+                .validateHeader(storage);
     }
 
     @Test
