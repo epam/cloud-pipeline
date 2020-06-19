@@ -300,7 +300,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test
     @TestCase(value = {"EPMCMBIBPC-2660"})
     public void searchForStorage() {
-        home();
+        home().sleep(2, SECONDS);
         search()
                 .search(storage)
                 .enter()
