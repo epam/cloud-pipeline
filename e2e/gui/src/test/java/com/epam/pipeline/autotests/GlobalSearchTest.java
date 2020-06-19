@@ -30,7 +30,7 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.empty;
@@ -59,6 +59,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     private final String storageFolder = "globalSearchStorageFolder" + Utils.randomSuffix();
     private final String storageFile = "globalSearchStorageFile" + Utils.randomSuffix();
     private final String storageFileContent = "globalSearchStorageFileContent" + Utils.randomSuffix();
+    private final String storageAlias = "globalSearchStorageAlias" + Utils.randomSuffix();
     private final String customConfigurationProfile = "custom-profile";
     private final String customDisk = "22";
     private final String defaultInstanceType = C.DEFAULT_INSTANCE;
@@ -129,7 +130,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         sleep(2, MINUTES);
     }
 
-    @BeforeTest
+    @BeforeMethod
     public void checkCloseSearch() {
         if($(byClassName("earch__search-container")).is(visible)) {
             $(byClassName("earch__search-container")).click();
@@ -328,6 +329,39 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .validateHeader(storage);
     }
 
+    @Test(dependsOnMethods = {"searchForStorage"})
+    @TestCase(value = {"EPMCMBIBPC-2661"})
+    public void searchForStorageWithChangedName() {
+        home();
+        library()
+                .cd(folder)
+                .selectStorage(storage)
+                .clickEditStorageButton()
+                .setAlias(storageAlias)
+                .ok();
+        home().sleep(3, MINUTES);
+        search()
+                .search(storageAlias)
+                .enter()
+                .sleep(2, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItem(storageAlias)
+                .ensure(TITLE, text(storageAlias))
+                .ensure(HIGHLIGHTS, text("Found in name"))
+                .ensure(PREVIEW, text(storageFolder), text(storageFile))
+                .parent()
+                .search(storage.toLowerCase())
+                .enter()
+                .sleep(2, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItem(storageAlias)
+                .ensure(TITLE, text(storageAlias))
+                .ensure(HIGHLIGHTS, text("Found in path"))
+                .ensure(PREVIEW, text(storageFolder), text(storageFile))
+                .close()
+                .close();
+    }
+
     @Test
     @TestCase(value = {"EPMCMBIBPC-2670"})
     public void issueSearch() {
@@ -451,6 +485,26 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .validateSearchResults(0, "")
                 .close()
+                .close();
+    }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-2675"})
+    public void searchWithSpecialExpressions() {
+        String folderWithExpression = innerFolder1 + "suffix";
+        navigationMenu()
+                .library()
+                .cd(folder)
+                .createFolder(folderWithExpression);
+        home().sleep(2, MINUTES);
+        search()
+                .search(innerFolder1 + "*")
+                .enter()
+                .hover(SEARCH_RESULT)
+                .sleep(2, SECONDS)
+                .validateCountSearchResults(2)
+                .ensure(FOLDERS, text("2 FOLDERS"))
+                .ensure(SEARCH_RESULT, text(innerFolder1), text(folderWithExpression))
                 .close();
     }
 
