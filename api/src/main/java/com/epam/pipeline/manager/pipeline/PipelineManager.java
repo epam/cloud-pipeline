@@ -365,8 +365,11 @@ public class PipelineManager implements SecuredEntityManager {
 
     private String buildCopyProjectName(final String sourceProjectName, final String uuid,
                                         final String newProjectName) {
-        return StringUtils.isNotBlank(newProjectName)
-                ? newProjectName
-                : String.format("%s_copy%s", sourceProjectName, uuid);
+        if (StringUtils.isNotBlank(newProjectName)) {
+            Assert.isTrue(!gitManager.checkProjectExists(newProjectName),
+                    messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_REPO_EXISTS, newProjectName));
+            return newProjectName;
+        }
+        return String.format("%s_copy%s", sourceProjectName, uuid);
     }
 }

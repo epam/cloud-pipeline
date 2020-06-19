@@ -879,6 +879,7 @@ public class GitManager {
         return forkedProject;
     }
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private GitProject copyProject(final String projectName, final String newProjectName, final String tmpGroupName,
                                    final String defaultNamespace) {
         try {
@@ -891,8 +892,9 @@ public class GitManager {
             final GitProject resultProject = gitlabClient.forkProject(newProjectName, tmpGroupName, defaultNamespace);
             LOGGER.debug("The project '{}' was forked to default namespace '{}'", newProjectName, defaultNamespace);
             return resultProject;
-        } catch (GitClientException e) {
+        } catch (Exception e) {
             deleteGitGroup(tmpGroupName);
+            LOGGER.debug("The temporary git group '{}' was deleted due to unexpected error", tmpGroupName);
             throw new IllegalArgumentException(e.getMessage(), e);
         }
     }
