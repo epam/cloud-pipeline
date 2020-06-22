@@ -45,19 +45,14 @@ class GCPMultipartUpload(MultipartUpload):
         self._bucket_object = self._gcp.bucket(self._bucket)
         self._blob_object = self._bucket_object.blob(self._path)
 
-    def upload_part(self, buf, offset=None, part_number=None):
-        logging.info('Uploading multipart upload part range %d-%d for %s' % (offset, offset + len(buf), self._path))
-        start = offset or 0
-        end = start + len(buf)
-        part_path = '%s_%d.tmp' % (self._path[:-4] if self._path.endswith('.tmp') else self._path, part_number)
+    def upload_part(self, buf, offset=None, part_number=None, part_path=None):
+        logging.info('Uploading multipart upload part range %d-%d  as %s for %s' % (offset, offset + len(buf), part_path, self._path))
         part_blob = self._bucket_object.blob(part_path)
         part_blob.upload_from_string(str(buf))
         self._parts[part_number] = part_blob
 
-    def upload_copy_part(self, start, end, offset=None, part_number=None):
-        logging.info('Uploading multipart upload part %d for %s' % (part_number, self._path))
-        p = self._path[:-4] if self._path.endswith('.tmp') else self._path
-        part_path = '%s_%s_%d.tmp' % (p, str(abs(hash(p))), part_number)
+    def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None):
+        logging.info('Using multipart upload part copy %s for %s' % (part_path, self._path))
         part_blob = self._bucket_object.blob(part_path)
         self._parts[part_number] = part_blob
 
@@ -252,12 +247,13 @@ class GCPClient(FileSystemClient):
 
     def _new_mpu(self, source_path, file_size):
         mpu = CompositeMultipartUpload(self.bucket, path=source_path,
-                                       new_mpu_func=lambda path: GCPMultipartUpload(self.bucket, path, self._gcp),
+                                       new_mpu=lambda path: GCPMultipartUpload(self.bucket, path, self._gcp),
+                                       mv=lambda old_path, path: self.mv(old_path, path),
                                        max_composite_parts=self._MAX_COMPOSITE_PARTS)
-        mpu = DownloadingMultipartCopyUpload(mpu, download_func=self._generate_region_download_function(source_path))
+        mpu = DownloadingMultipartCopyUpload(mpu, download=self._generate_region_download_function(source_path))
         mpu = SplittingMultipartCopyUpload(mpu, min_part_size=self._MIN_PART_SIZE, max_part_size=self._MAX_PART_SIZE)
         mpu = ChunkedMultipartUpload(mpu, original_size=file_size,
-                                     download_func=self._generate_region_download_function(source_path),
+                                     download=self._generate_region_download_function(source_path),
                                      chunk_size=self._chunk_size, min_chunk=self._MIN_CHUNK, max_chunk=self._MAX_CHUNK)
         return mpu
 

@@ -68,7 +68,7 @@ class S3MultipartUpload(MultipartUpload):
         )
         self._upload_id = response['UploadId']
 
-    def upload_part(self, buf, offset=None, part_number=None):
+    def upload_part(self, buf, offset=None, part_number=None, part_path=None):
         logging.info('Uploading multipart upload part %d range %d-%d for %s'
                      % (part_number, offset, offset + len(buf), self._path))
         with io.BytesIO(buf) as body:
@@ -81,7 +81,7 @@ class S3MultipartUpload(MultipartUpload):
             )
         self._parts[part_number] = response['ETag']
 
-    def upload_copy_part(self, start, end, offset=None, part_number=None):
+    def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None):
         logging.info('Uploading multipart upload part %d copy range %d-%d for %s'
                      % (part_number, start, end, self._path))
         response = self._s3.upload_part_copy(
@@ -359,7 +359,7 @@ class S3Client(FileSystemClient):
         mpu = OutOfBoundsSplittingMultipartCopyUpload(mpu, original_size=file_size,
                                                       min_part_size=self._MIN_PART_SIZE, max_part_size=self._chunk_size)
         mpu = ChunkedMultipartUpload(mpu, original_size=file_size,
-                                     download_func=self._generate_region_download_function(source_path),
+                                     download=self._generate_region_download_function(source_path),
                                      chunk_size=self._chunk_size, min_chunk=self._MIN_CHUNK, max_chunk=self._MAX_CHUNK)
         return mpu
 
