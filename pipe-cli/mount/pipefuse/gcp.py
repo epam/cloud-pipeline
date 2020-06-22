@@ -1,5 +1,6 @@
 import io
 import logging
+import sys
 import time
 from datetime import datetime
 
@@ -89,8 +90,7 @@ class _RefreshingCredentials(Credentials):
 
 
 class _RefreshingClient(Client):
-    # todo: Attempt limits should be removed
-    MAX_REFRESH_ATTEMPTS = 100
+    MAX_REFRESH_ATTEMPTS = sys.maxint
 
     def __init__(self, refresh):
         credentials = _RefreshingCredentials(refresh)
@@ -290,7 +290,3 @@ class GCPClient(FileSystemClient):
                 raise
             finally:
                 del self._mpus[source_path]
-
-    def truncate(self, fh, path, length):
-        # todo: Implement
-        pass

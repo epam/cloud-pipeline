@@ -72,6 +72,7 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
     api = os.environ.get('API', '')
     bearer = os.environ.get('API_TOKEN', '')
     chunk_size = os.environ.get('CP_PIPE_FUSE_CHUNK_SIZE', chunk_size)
+    bucket_type = None
     if not bearer:
         raise RuntimeError('Cloud Pipeline API_TOKEN should be specified.')
     if webdav:
@@ -83,6 +84,7 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
         path_chunks = bucket.rstrip('/').split('/')
         bucket_name = path_chunks[0]
         bucket_object = pipe.get_storage(bucket_name)
+        bucket_type = bucket_object.type
         if bucket_object.type == CloudType.S3:
             client = S3Client(bucket, pipe=pipe, chunk_size=chunk_size)
         elif bucket_object.type == CloudType.GS:
@@ -107,7 +109,10 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
         if webdav:
             client = CopyOnDownTruncateFileSystemClient(client, capacity=trunc_buffer_size)
             client = WriteLastNullOnUpTruncateFileSystemClient(client)
-        else:
+        elif bucket_type == CloudType.S3:
+            client = WriteNullsOnUpTruncateFileSystemClient(client, capacity=trunc_buffer_size)
+        elif bucket_type == CloudType.GS:
+            client = CopyOnDownTruncateFileSystemClient(client, capacity=trunc_buffer_size)
             client = WriteNullsOnUpTruncateFileSystemClient(client, capacity=trunc_buffer_size)
     else:
         logging.info('Truncating support is disabled.')
