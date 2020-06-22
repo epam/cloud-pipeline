@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package com.epam.pipeline.manager.git;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitFile;
+import com.epam.pipeline.entity.git.GitGroup;
+import com.epam.pipeline.entity.git.GitGroupRequest;
 import com.epam.pipeline.entity.git.GitHookRequest;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitProjectRequest;
@@ -375,12 +377,35 @@ public class GitlabClient {
     }
 
     public GitProject updateProjectName(final String currentName, final String newName) throws GitClientException {
+        return updateProjectName(currentName, newName, namespace);
+    }
+
+    public GitProject updateProjectName(final String currentName, final String newName, final String namespace)
+            throws GitClientException {
         final String normalizedNewName = GitUtils.convertPipeNameToProject(newName);
         return execute(gitLabApi.updateProject(makeProjectId(namespace, GitUtils.convertPipeNameToProject(currentName)),
                                                GitProjectRequest.builder()
                                                    .name(normalizedNewName)
                                                    .path(normalizedNewName)
                                                    .build()));
+    }
+
+    public GitGroup createGroup(final String newGroupName) throws GitClientException {
+        return execute(gitLabApi.createGroup(
+                GitGroupRequest.builder()
+                        .name(newGroupName)
+                        .path(newGroupName)
+                        .build()));
+    }
+
+    public GitGroup deleteGroup(final String groupName) throws GitClientException {
+        return execute(gitLabApi.deleteGroup(groupName));
+    }
+
+    public GitProject forkProject(final String projectName, final String namespaceFrom, final String namespaceTo)
+            throws GitClientException {
+        return execute(gitLabApi.forkProject(
+                makeProjectId(namespaceFrom, GitUtils.convertPipeNameToProject(projectName)), namespaceTo));
     }
 
     private <R> R execute(Call<R> call) throws GitClientException {

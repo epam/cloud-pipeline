@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,12 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.PipelineVO;
+import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,6 +48,7 @@ public class PipelineManagerTest {
     private static final String REPOSITORY_HTTPS = "https://example.com:repository/repository.git";
     private static final String REPOSITORY_SSH = "git@example.com:repository/repository.git";
     private static final String REPOSITORY_TOKEN = "token";
+    private static final Long ID = 1L;
 
     @Mock
     private GitManager gitManager;
@@ -60,6 +63,12 @@ public class PipelineManagerTest {
 
     @Mock
     private PipelineCRUDManager crudManager;
+
+    @Mock
+    private PipelineDao pipelineDao;
+
+    @Mock
+    private MetadataManager metadataManager;
 
     @InjectMocks
     private PipelineManager pipelineManager = new PipelineManager();
@@ -151,5 +160,32 @@ public class PipelineManagerTest {
 
         assertThat(pipeline.getRepository(), is(REPOSITORY_HTTPS));
         assertThat(pipeline.getRepositorySsh(), is(REPOSITORY_SSH));
+    }
+
+    @Test
+    public void shouldCopyPipeline() {
+        final String newName = REPOSITORY_NAME + "_copy";
+        final String newRepository = "https://example.com:repository/repository_copy.git";
+        final String newRepositorySsh = "git@example.com:repository/repository_copy.git";
+
+        final PipelineVO pipelineVO = new PipelineVO();
+        pipelineVO.setId(ID);
+        pipelineVO.setName(REPOSITORY_NAME);
+        pipelineVO.setRepository(REPOSITORY_HTTPS);
+        pipelineVO.setRepositoryToken(REPOSITORY_TOKEN);
+        pipelineVO.setRepositorySsh(REPOSITORY_SSH);
+
+        when(gitManager.copyRepository(any(), any(), any())).thenReturn(null);
+        when(metadataManager.hasMetadata(any())).thenReturn(true);
+        when(pipelineDao.loadPipeline(ID)).thenReturn(pipelineVO.toPipeline());
+
+        final Pipeline copiedPipeline = pipelineManager.copyPipeline(ID, null, newName);
+
+        assertThat(copiedPipeline.getName(), is(newName));
+        assertThat(copiedPipeline.getRepository(), is(newRepository));
+        assertThat(copiedPipeline.getRepositorySsh(), is(newRepositorySsh));
+        assertThat(copiedPipeline.getDescription(), is(pipelineVO.getDescription()));
+        assertThat(copiedPipeline.getParentFolderId(), is(pipelineVO.getParentFolderId()));
+        assertThat(copiedPipeline.getRepositoryToken(), is(pipelineVO.getRepositoryToken()));
     }
 }
