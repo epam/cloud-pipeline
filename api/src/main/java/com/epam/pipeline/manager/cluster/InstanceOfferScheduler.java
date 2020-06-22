@@ -85,8 +85,7 @@ public class InstanceOfferScheduler extends AbstractSchedulingManager {
         this.instanceOfferManager = instanceOfferManager;
     }
 
-    @SchedulerLock(name = "InstanceOfferScheduler_checkAndUpdatePriceList",
-        lockAtLeastForString = "PT59M", lockAtMostForString = "PT1H")
+    @SchedulerLock(name = "InstanceOfferScheduler_checkAndUpdatePriceList", lockAtMostForString = "PT1H")
     public void checkAndUpdatePriceListIfNecessary() {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.DEBUG_INSTANCE_OFFERS_EXPIRATION_CHECK_RUNNING));
 

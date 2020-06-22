@@ -135,17 +135,13 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     }
 
     @Scheduled(cron = "0 0 0 ? * *")
-    @SchedulerLock(name = "ResourceMonitoringManager_removeOldIndices",
-        lockAtLeastForString = "PT23H59M",
-        lockAtMostForString = "PT24H")
+    @SchedulerLock(name = "ResourceMonitoringManager_removeOldIndices", lockAtMostForString = "PT1H")
     public void removeOldIndices() {
         monitoringDao.deleteIndices(preferenceManager.getPreference(
             SystemPreferences.SYSTEM_RESOURCE_MONITORING_STATS_RETENTION_PERIOD));
     }
 
-    @SchedulerLock(name = "ResourceMonitoringManager_monitorResourceUsage",
-        lockAtLeastForString = "PT59S",
-        lockAtMostForString = "PT59S")
+    @SchedulerLock(name = "ResourceMonitoringManager_monitorResourceUsage", lockAtMostForString = "PT10M")
     public void monitorResourceUsage() {
         List<PipelineRun> runs = pipelineRunManager.loadRunningPipelineRuns();
         processIdleRuns(runs);

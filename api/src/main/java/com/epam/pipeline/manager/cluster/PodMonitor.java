@@ -146,7 +146,7 @@ public class PodMonitor extends AbstractSchedulingManager {
     /**
      * Queries statuses of pods of running tasks and adjust task statuses corresponding to pods statuses
      */
-    @SchedulerLock(name = "PodMonitor_updateStatus", lockAtLeastForString = "PT29S", lockAtMostForString = "PT30S")
+    @SchedulerLock(name = "PodMonitor_updateStatus", lockAtMostForString = "PT5M")
     public void updateStatus() {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.DEBUG_MONITOR_CHECK_RUNNING));
         List<PipelineRun> running = pipelineRunManager.loadRunningAndTerminatedPipelineRuns();

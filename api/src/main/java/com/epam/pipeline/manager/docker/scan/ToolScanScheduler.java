@@ -140,8 +140,7 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
         this.dockerRegistryManager = dockerRegistryManager;
     }
 
-    @SchedulerLock(name = "ToolScanScheduler_scheduledToolScan",
-        lockAtLeastForString = "PT23H59M", lockAtMostForString = "PT24H")
+    @SchedulerLock(name = "ToolScanScheduler_scheduledToolScan", lockAtMostForString = "PT48H")
     public void scheduledToolScan() {
         if (!preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED)) {
             LOGGER.info(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_DISABLED));

@@ -30,7 +30,7 @@ import javax.sql.DataSource;
 
 @Configuration
 @EnableScheduling
-@EnableSchedulerLock(defaultLockAtMostFor = "PT30S")
+@EnableSchedulerLock(defaultLockAtMostFor = "PT3M")
 public class AppConfiguration {
 
     @Bean(name = "elasticsearchAgentThreadPool")

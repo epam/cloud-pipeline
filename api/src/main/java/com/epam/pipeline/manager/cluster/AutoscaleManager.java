@@ -139,8 +139,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         this.preferenceManager = preferenceManager;
     }
 
-    @SchedulerLock(name = "AutoscaleManager_runAutoscaling",
-        lockAtLeastForString = "PT39S", lockAtMostForString = "PT40S")
+    @SchedulerLock(name = "AutoscaleManager_runAutoscaling", lockAtMostForString = "PT10M")
     public void runAutoscaling() {
         LOGGER.debug("Starting autoscaling job.");
         Config config = new Config();

@@ -72,7 +72,7 @@ public class ElasticsearchAgentService {
      */
     @Scheduled(fixedDelayString = "${sync.scheduler.delay}")
     @Transactional(propagation = Propagation.REQUIRED)
-    @SchedulerLock(name = "ElasticsearchAgentService_startElasticsearchAgent")
+    @SchedulerLock(name = "ElasticsearchAgentService_startElasticsearchAgent", lockAtMostForString = "PT3H")
     public void startElasticsearchAgent() {
         log.debug("Start scheduled database changes...");
 
