@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -210,12 +210,14 @@ public class ResourceMonitoringManagerTest {
                 null, null, "autoscaleMasterRun", false, null, null));
         autoscaleMasterRun.setPodId("autoscaleMasterRun");
         autoscaleMasterRun.setId(TEST_AUTOSCALE_RUN_ID);
-        autoscaleMasterRun.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1, ChronoUnit.MINUTES)
-                .toEpochMilli()));
+        autoscaleMasterRun
+            .setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1, ChronoUnit.MINUTES)
+                                       .toEpochMilli()));
         autoscaleMasterRun.setProlongedAtTime(DateUtils.nowUTC().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
                 ChronoUnit.MINUTES));
         autoscaleMasterRun.setTags(stubTagMap);
-        autoscaleMasterRun.setPipelineRunParameters(Collections.singletonList(new PipelineRunParameter("CP_CAP_AUTOSCALE", "true")));
+        autoscaleMasterRun
+            .setPipelineRunParameters(Collections.singletonList(new PipelineRunParameter("CP_CAP_AUTOSCALE", "true")));
 
         idleOnDemandRun = new PipelineRun();
         idleOnDemandRun.setInstance(

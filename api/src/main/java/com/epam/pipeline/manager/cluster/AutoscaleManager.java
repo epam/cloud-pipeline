@@ -671,5 +671,4 @@ public class AutoscaleManager extends AbstractSchedulingManager {
 
     }
     }
-
 }
