@@ -424,7 +424,7 @@ class CompositeMultipartUpload(MultipartUpload):
             mpu = self._new_mpu(mpu_path)
             mpu.initiate()
             self._mpus[mpu_number] = mpu
-        mpu.upload_part(buf, offset, part_number, self._path_path(mpu_number, part_number))
+        mpu.upload_part(buf, offset, part_number, self._part_path(mpu_number, part_number))
 
     def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None):
         mpu_number = part_number / self._max_composite_parts
@@ -434,13 +434,7 @@ class CompositeMultipartUpload(MultipartUpload):
             mpu = self._new_mpu(mpu_path)
             mpu.initiate()
             self._mpus[mpu_number] = mpu
-        mpu.upload_copy_part(start, end, offset, part_number, self._path_path(mpu_number, part_number))
-
-    def _mpu_path(self, mpu_number):
-        return '%s_%s_%d.tmp' % (self._path, str(abs(hash(self._path))), mpu_number)
-
-    def _path_path(self, mpu_number, part_number):
-        return '%s_%s_%d_%d.tmp' % (self._path, str(abs(hash(self._path))), mpu_number, part_number)
+        mpu.upload_copy_part(start, end, offset, part_number, self._part_path(mpu_number, part_number))
 
     def complete(self):
         for mpu in self._mpus.values():
@@ -451,31 +445,43 @@ class CompositeMultipartUpload(MultipartUpload):
         if not mpus:
             return
         remaining_mpus = list(mpus)
-        composing_mpu = None
+        composed_mpu = None
         while remaining_mpus:
-            if not composing_mpu:
-                composing_mpu = self._merge(remaining_mpus[:self._max_composite_parts])
-                remaining_mpus = remaining_mpus[self._max_composite_parts:]
-            else:
-                composing_mpu = self._merge([(0, composing_mpu)] + remaining_mpus[:self._max_composite_parts - 1])
+            if composed_mpu:
+                merging_mpus = remaining_mpus[:self._max_composite_parts - 1]
+                composed_mpu = self._merge([(0, composed_mpu)] + merging_mpus)
                 remaining_mpus = remaining_mpus[self._max_composite_parts - 1:]
-        self._mv(composing_mpu.path, self._path)
+            else:
+                merging_mpus = remaining_mpus[:self._max_composite_parts]
+                composed_mpu = self._merge(merging_mpus)
+                remaining_mpus = remaining_mpus[self._max_composite_parts:]
+            for mpu_number, _ in merging_mpus:
+                del self._mpus[mpu_number]
+        self._mv(composed_mpu.path, self._path)
 
     def _merge(self, mpus):
-        start_mpu_number = mpus[0][0]
-        end_mpu_number = mpus[-1][0]
-        merged_mpu = self._new_mpu('%s_%s_%d:%d.tmp' % (self._path, str(abs(hash(self._path))), start_mpu_number, end_mpu_number))
+        merged_mpu = self._new_mpu(self._composed_mpu_path(mpus[0][0], mpus[-1][0]))
         merged_mpu.initiate()
         for mpu_number, mpu in mpus:
             merged_mpu.upload_copy_part(None, None, None, mpu_number, mpu.path)
-            if mpu_number in self._mpus:
-                del self._mpus[mpu_number]
         merged_mpu.complete()
         return merged_mpu
 
     def abort(self):
         for mpu in self._mpus.values():
             mpu.abort()
+
+    def _mpu_path(self, mpu_number):
+        return '%s_%s_%d.tmp' % (self._path, self._hashed_path(), mpu_number)
+
+    def _part_path(self, mpu_number, part_number):
+        return '%s_%s_%d.%d.tmp' % (self._path, self._hashed_path(), mpu_number, part_number)
+
+    def _composed_mpu_path(self, left_mpu_number, right_mpu_number):
+        return '%s_%s_%d:%d.tmp' % (self._path, self._hashed_path(), left_mpu_number, right_mpu_number)
+
+    def _hashed_path(self):
+        return str(abs(hash(self._path)))
 
 
 class TruncatingMultipartCopyUpload(MultipartUploadDecorator):
