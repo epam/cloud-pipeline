@@ -98,6 +98,7 @@ public class AutoscaleManagerTest {
         autoscaleManagerCore = new AutoscaleManager.AutoscaleManagerCore(pipelineRunManager, executorService,
                                                                          autoscalerService, nodesManager,
                                                                          nodeDiskManager, kubernetesManager,
+                                                                         preferenceManager,
                                                                          TEST_KUBE_NAMESPACE, cloudFacade);
         Whitebox.setInternalState(autoscaleManagerCore, "preferenceManager", preferenceManager);
 

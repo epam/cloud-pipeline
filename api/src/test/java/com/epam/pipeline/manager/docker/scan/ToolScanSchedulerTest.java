@@ -125,7 +125,7 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
                                                      messageHelper,
                                                      toolVersionManager,
                                                      dockerClientFactory,
-                                                     dockerRegistryManager);
+                                                     dockerRegistryManager, null);
         toolScanScheduler = new ToolScanScheduler(core);
         Whitebox.setInternalState(toolScanScheduler, "authManager", authManager);
         Whitebox.setInternalState(toolScanScheduler, "scheduler", taskScheduler);
@@ -209,6 +209,7 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     public void testForceScheduleToolScan() throws ExecutionException, InterruptedException {
         PreferenceManager preferenceManager = mock(PreferenceManager.class);
         Whitebox.setInternalState(toolScanScheduler, "preferenceManager", preferenceManager);
+        Whitebox.setInternalState(core, "preferenceManager", preferenceManager);
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED)).thenReturn(true);
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_SCHEDULE_CRON)).thenReturn(
                 SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_SCHEDULE_CRON.getDefaultValue());

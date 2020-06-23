@@ -143,7 +143,8 @@ public class ResourceMonitoringManagerTest {
             new ResourceMonitoringManager.ResourceMonitoringManagerCore(pipelineRunManager,
                                                                         notificationManager,
                                                                         monitoringESDao,
-                                                                        messageHelper);
+                                                                        messageHelper,
+                                                                        preferenceManager);
         resourceMonitoringManager = new ResourceMonitoringManager(instanceOfferManager, core);
         Whitebox.setInternalState(resourceMonitoringManager, "authManager", authManager);
         Whitebox.setInternalState(resourceMonitoringManager, "preferenceManager", preferenceManager);

@@ -86,7 +86,6 @@ public class PodMonitor extends AbstractSchedulingManager {
 
     @PostConstruct
     public void setup() {
-        core.setPreferenceManager(preferenceManager);
         scheduleFixedDelay(core::updateStatus, SystemPreferences.LAUNCH_TASK_STATUS_UPDATE_RATE, "Task Status Update");
     }
 
@@ -102,11 +101,9 @@ public class PodMonitor extends AbstractSchedulingManager {
         private static final long DELETE_RETRY_DELAY = 5L;
         private static final int POD_RELEASE_TIMEOUT = 3000;
 
-        private BlockingQueue<PipelineRun> queueToKill = new LinkedBlockingQueue<>();
+        private final BlockingQueue<PipelineRun> queueToKill = new LinkedBlockingQueue<>();
 
-        @Value("${kube.namespace}")
-        private String kubeNamespace;
-
+        private final String kubeNamespace;
         private final RunLogManager runLogManager;
         private final PipelineRunManager pipelineRunManager;
         private final MessageHelper messageHelper;
@@ -116,7 +113,7 @@ public class PodMonitor extends AbstractSchedulingManager {
         private final ToolManager toolManager;
         private final RestartRunManager restartRunManager;
         private final CloudFacade cloudFacade;
-        private PreferenceManager preferenceManager;
+        private final PreferenceManager preferenceManager;
 
         @Autowired
         PodMonitorCore(final RunLogManager runLogManager,
@@ -127,7 +124,9 @@ public class PodMonitor extends AbstractSchedulingManager {
                        final NotificationManager notificationManager,
                        final ToolManager toolManager,
                        final RestartRunManager restartRunManager,
-                       final CloudFacade cloudFacade) {
+                       final CloudFacade cloudFacade,
+                       final PreferenceManager preferenceManager,
+                       final @Value("${kube.namespace}") String kubeNamespace) {
             this.runLogManager = runLogManager;
             this.pipelineRunManager = pipelineRunManager;
             this.messageHelper = messageHelper;
@@ -137,10 +136,8 @@ public class PodMonitor extends AbstractSchedulingManager {
             this.toolManager = toolManager;
             this.restartRunManager = restartRunManager;
             this.cloudFacade = cloudFacade;
-        }
-
-        private void setPreferenceManager(final PreferenceManager preferenceManager) {
             this.preferenceManager = preferenceManager;
+            this.kubeNamespace = kubeNamespace;
         }
 
         /**

@@ -88,13 +88,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
     @PostConstruct
     public void init() {
         if (preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING)) {
-            core.setPreferenceManager(preferenceManager);
             scheduleFixedDelay(core::runAutoscaling, SystemPreferences.CLUSTER_AUTOSCALE_RATE, "Autoscaling job");
         }
-    }
-
-    public void runAutoscaling() {
-        core.runAutoscaling();
     }
 
     @Component
@@ -107,8 +102,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         private final NodeDiskManager nodeDiskManager;
         private final KubernetesManager kubernetesManager;
         private final CloudFacade cloudFacade;
-        private PreferenceManager preferenceManager;
-        private String kubeNamespace;
+        private final PreferenceManager preferenceManager;
+        private final String kubeNamespace;
 
         private final Set<Long> nodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
         private final Map<Long, Integer> nodeUpAttempts = new ConcurrentHashMap<>();
@@ -118,13 +113,14 @@ public class AutoscaleManager extends AbstractSchedulingManager {
 
         @Autowired
         AutoscaleManagerCore(final PipelineRunManager pipelineRunManager,
-                                    final ParallelExecutorService executorService,
-                                    final AutoscalerService autoscalerService,
-                                    final NodesManager nodesManager,
-                                    final NodeDiskManager nodeDiskManager,
-                                    final KubernetesManager kubernetesManager,
-                                    @Value("${kube.namespace}") String kubeNamespace,
-                                    final CloudFacade cloudFacade) {
+                             final ParallelExecutorService executorService,
+                             final AutoscalerService autoscalerService,
+                             final NodesManager nodesManager,
+                             final NodeDiskManager nodeDiskManager,
+                             final KubernetesManager kubernetesManager,
+                             final PreferenceManager preferenceManager,
+                             final @Value("${kube.namespace}") String kubeNamespace,
+                             final CloudFacade cloudFacade) {
             this.pipelineRunManager = pipelineRunManager;
             this.executorService = executorService;
             this.autoscalerService = autoscalerService;
@@ -133,9 +129,6 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             this.kubernetesManager = kubernetesManager;
             this.cloudFacade = cloudFacade;
             this.kubeNamespace = kubeNamespace;
-        }
-
-        private void setPreferenceManager(final PreferenceManager preferenceManager) {
             this.preferenceManager = preferenceManager;
         }
 

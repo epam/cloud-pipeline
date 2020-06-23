@@ -69,23 +69,15 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
         this.core = core;
     }
 
-    /**
-     * A single thread executor to run force scans
-     */
-    private ExecutorService forceScanExecutor;
-
     @PostConstruct
     public void init() {
-        forceScanExecutor = Executors.newSingleThreadExecutor();
-        core.setExecutorService(forceScanExecutor);
-        core.setPreferenceManager(preferenceManager);
         scheduleSecured(core::scheduledToolScan, SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_SCHEDULE_CRON,
                 "Tool Security Scan");
     }
 
     @PreDestroy
     public void shutDown() {
-        forceScanExecutor.shutdownNow();
+        core.shutDown();
     }
 
     /**
@@ -121,8 +113,8 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
         private final ToolVersionManager toolVersionManager;
         private final DockerClientFactory dockerClientFactory;
         private final DockerRegistryManager dockerRegistryManager;
-        private PreferenceManager preferenceManager;
-        private ExecutorService forceScanExecutor;
+        private final PreferenceManager preferenceManager;
+        private final ExecutorService forceScanExecutor = Executors.newSingleThreadExecutor();
 
         @Autowired
         ToolScanSchedulerCore(final DockerRegistryDao dockerRegistryDao,
@@ -131,7 +123,8 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
                               final MessageHelper messageHelper,
                               final ToolVersionManager toolVersionManager,
                               final DockerClientFactory dockerClientFactory,
-                              final DockerRegistryManager dockerRegistryManager) {
+                              final DockerRegistryManager dockerRegistryManager,
+                              final PreferenceManager preferenceManager) {
             this.dockerRegistryDao = dockerRegistryDao;
             this.toolScanManager = toolScanManager;
             this.toolManager = toolManager;
@@ -139,6 +132,12 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
             this.toolVersionManager = toolVersionManager;
             this.dockerClientFactory = dockerClientFactory;
             this.dockerRegistryManager = dockerRegistryManager;
+            this.preferenceManager = preferenceManager;
+        }
+
+        @PreDestroy
+        public void shutDown() {
+            forceScanExecutor.shutdownNow();
         }
 
         @SchedulerLock(name = "ToolScanScheduler_scheduledToolScan", lockAtMostForString = "PT48H")
@@ -193,14 +192,6 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
                 toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
                         "latest", null, null);
             }
-        }
-
-        private void setPreferenceManager(final PreferenceManager preferenceManager) {
-            this.preferenceManager = preferenceManager;
-        }
-
-        private void setExecutorService(final ExecutorService forceScanExecutor) {
-            this.forceScanExecutor = forceScanExecutor;
         }
 
         private Future<ToolVersionScanResult> forceScheduleScanTool(final String registry, final String id,

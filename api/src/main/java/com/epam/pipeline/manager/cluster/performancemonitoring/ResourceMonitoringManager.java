@@ -91,7 +91,6 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
     @PostConstruct
     public void init() {
-        core.setPreferenceManager(preferenceManager);
         Observable<List<InstanceType>> instanceTypesObservable = instanceOfferManager.getAllInstanceTypesObservable();
         instanceTypesObservable
                 .subscribe(instanceTypes -> core.setInstanceTypeMap(
@@ -117,21 +116,19 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         private final NotificationManager notificationManager;
         private final MonitoringESDao monitoringDao;
         private final MessageHelper messageHelper;
-        private PreferenceManager preferenceManager;
+        private final PreferenceManager preferenceManager;
         private Map<String, InstanceType> instanceTypeMap = new HashMap<>();
 
         @Autowired
-        ResourceMonitoringManagerCore(PipelineRunManager pipelineRunManager,
-                                      NotificationManager notificationManager,
-                                      MonitoringESDao monitoringDao,
-                                      MessageHelper messageHelper) {
+        ResourceMonitoringManagerCore(final PipelineRunManager pipelineRunManager,
+                                      final NotificationManager notificationManager,
+                                      final MonitoringESDao monitoringDao,
+                                      final MessageHelper messageHelper,
+                                      final PreferenceManager preferenceManager) {
             this.pipelineRunManager = pipelineRunManager;
             this.messageHelper = messageHelper;
             this.notificationManager = notificationManager;
             this.monitoringDao = monitoringDao;
-        }
-
-        private void setPreferenceManager(final PreferenceManager preferenceManager) {
             this.preferenceManager = preferenceManager;
         }
 
