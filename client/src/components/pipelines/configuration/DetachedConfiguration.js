@@ -956,13 +956,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
           align="middle"
           style={{marginBottom: 10, minHeight: 41}}>
           <Col className={browserStyles.itemHeader}>
-            <Icon type="setting" className={`${browserStyles.editableControl} ${configurationTitleClassName}`} />
-            {
-              this.props.configurations.value.locked &&
-              <Icon
-                className={`${browserStyles.editableControl} ${configurationTitleClassName}`}
-                type="lock" />
-            }
             <Breadcrumbs
               id={parseInt(this.props.configurationId)}
               type={ItemTypes.configuration}
@@ -970,6 +963,11 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
               onSaveEditableField={this.renameConfiguration}
               editStyleEditableField={{flex: 1}}
               readOnlyEditableField={!this.canModifySources}
+              icon="setting"
+              iconClassName={`${browserStyles.editableControl} ${configurationTitleClassName}`}
+              lock={this.props.configurations.value.locked}
+              lockClassName={`${browserStyles.editableControl} ${configurationTitleClassName}`}
+              subject={this.props.configurations.value}
             />
           </Col>
           <Col className={styles.actionButtons}>

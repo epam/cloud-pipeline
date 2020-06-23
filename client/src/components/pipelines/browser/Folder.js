@@ -1697,13 +1697,6 @@ export default class Folder extends localization.LocalizedReactComponent {
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
         <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
           <Col className={styles.itemHeader}>
-            <Icon type={isProject ? 'solution' : 'folder'} className={`${styles.editableControl} ${folderTitleClassName}`} />
-            {
-              this.props.folder.value.locked &&
-              <Icon
-                className={`${styles.editableControl} ${folderTitleClassName}`}
-                type="lock" />
-            }
             <Breadcrumbs
               id={parseInt(this.props.folderId)}
               type={ItemTypes.folder}
@@ -1716,6 +1709,11 @@ export default class Folder extends localization.LocalizedReactComponent {
               classNameEditableField={folderTitleClassName}
               onSaveEditableField={this.renameCurrentFolder}
               editStyleEditableField={{flex: 1}}
+              icon={isProject ? 'solution' : 'folder'}
+              iconClassName={`${styles.editableControl} ${folderTitleClassName}`}
+              lock={this.props.folder.value.locked}
+              lockClassName={`${styles.editableControl} ${folderTitleClassName}`}
+              subject={this.props.folder.value}
             />
           </Col>
           <Col className={styles.currentFolderActions}>

@@ -1369,47 +1369,39 @@ export default class DataStorage extends React.Component {
     return (
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
         <Row type="flex" justify="space-between" align="middle">
-          <Col>
-            <Row type="flex" className={styles.itemHeader} align="middle">
-              {
+          <Col className={styles.itemHeader}>
+            <Breadcrumbs
+              style={{height: '31px'}}
+              id={parseInt(this.props.storageId)}
+              type={ItemTypes.storage}
+              textEditableField={this.props.info.value.name}
+              onSaveEditableField={this.renameDataStorage}
+              readOnlyEditableField={!roleModel.writeAllowed(this.props.info.value)}
+              editStyleEditableField={{flex: 1}}
+              icon={
                 this.props.info.value && this.props.info.value.type.toLowerCase() !== 'nfs'
-                  ? <Icon
-                    type="inbox"
-                    className={`${styles.editableControl} ${storageTitleClassName}`} />
-                  : <Icon
-                    type="hdd"
-                    className={`${styles.editableControl} ${storageTitleClassName}`} />
+                  ? 'inbox'
+                  : 'hdd'
               }
-              {
-                this.props.info.value.locked &&
-                <Icon
-                  className={`${styles.editableControl} ${storageTitleClassName}`}
-                  type="lock" />
-              }
-              <Breadcrumbs
-                style={{height: '31px'}}
-                id={parseInt(this.props.storageId)}
-                type={ItemTypes.storage}
-                textEditableField={this.props.info.value.name}
-                onSaveEditableField={this.renameDataStorage}
-                readOnlyEditableField={!roleModel.writeAllowed(this.props.info.value)}
-                editStyleEditableField={{flex: 1}}
-                displayTextEditableField={
-                  <span>
+              iconClassName={`${styles.editableControl} ${storageTitleClassName}`}
+              lock={this.props.info.value.locked}
+              lockClassName={`${styles.editableControl} ${storageTitleClassName}`}
+              displayTextEditableField={
+                <span>
                     {this.props.info.value.name}
-                    <AWSRegionTag
-                      className={styles.storageRegion}
-                      darkMode
-                      displayName
-                      flagStyle={{fontSize: 'smaller'}}
-                      providerStyle={{fontSize: 'smaller'}}
-                      regionId={this.props.info.value.regionId}
-                      style={{marginLeft: 5, fontSize: 'medium'}}
-                    />
+                  <AWSRegionTag
+                    className={styles.storageRegion}
+                    darkMode
+                    displayName
+                    flagStyle={{fontSize: 'smaller'}}
+                    providerStyle={{fontSize: 'smaller'}}
+                    regionId={this.props.info.value.regionId}
+                    style={{marginLeft: 5, fontSize: 'medium'}}
+                  />
                   </span>
-                }
-              />
-            </Row>
+              }
+              subject={this.props.info.value}
+            />
           </Col>
           <Col>
             <Row type="flex" justify="end" className={styles.currentFolderActions}>

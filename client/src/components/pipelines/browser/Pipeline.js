@@ -606,20 +606,19 @@ export default class Pipeline extends localization.LocalizedReactComponent {
         <div>
           <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
             <Col className={styles.itemHeader}>
-                    <Icon type="fork" className={`${styles.editableControl} ${pipelineTitleClassName}`} />
-                    {
-                      this.props.pipeline.value.locked &&
-                      <Icon
-                        className={`${styles.editableControl} ${pipelineTitleClassName}`}
-                        type="lock" />
-                    }
-                    <Breadcrumbs
-                      id={parseInt(this.props.pipelineId)}
-                      type={ItemTypes.pipeline}
-                      readOnlyEditableField={!roleModel.writeAllowed(this.props.pipeline.value) || this.props.readOnly}
-                      textEditableField={this.props.pipeline.value.name}
-                      onSaveEditableField={this.renamePipeline}
-                      editStyleEditableField={{flex: 1}} />
+              <Breadcrumbs
+                id={parseInt(this.props.pipelineId)}
+                type={ItemTypes.pipeline}
+                readOnlyEditableField={!roleModel.writeAllowed(this.props.pipeline.value) || this.props.readOnly}
+                textEditableField={this.props.pipeline.value.name}
+                onSaveEditableField={this.renamePipeline}
+                editStyleEditableField={{flex: 1}}
+                icon="fork"
+                iconClassName={`${styles.editableControl} ${pipelineTitleClassName}`}
+                lock={this.props.pipeline.value.locked}
+                lockClassName={`${styles.editableControl} ${pipelineTitleClassName}`}
+                subject={this.props.pipeline.value}
+              />
             </Col>
             <Col className={styles.currentFolderActions}>
                   {

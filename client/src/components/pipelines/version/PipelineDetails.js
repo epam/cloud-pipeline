@@ -245,7 +245,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         className={styles.fullHeightContainer}>
         <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
           <Col className={browserStyles.itemHeader}>
-            <Icon type="tag" className={browserStyles.editableControl} />
             <Breadcrumbs
               id={parseInt(this.props.pipelineId)}
               type={ItemTypes.pipeline}
@@ -254,6 +253,11 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
               editStyleEditableField={{flex: 1}}
               displayTextEditableField={`${this.props.pipeline.value.name} (${this.props.version})`}
               textEditableField={this.props.pipeline.value.name}
+              icon="tag"
+              iconClassName={browserStyles.editableControl}
+              lock={this.props.pipeline.value.locked}
+              lockClassName={browserStyles.editableControl}
+              subject={this.props.pipeline.value}
             />
           </Col>
           <Col className={styles.actionButtons}>

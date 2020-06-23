@@ -17,11 +17,12 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {findPath, generateTreeData, ItemTypes} from '../pipelines/model/treeStructureFunctions';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
-import EditableField from './EditableField';
 import {Icon} from 'antd';
+import EditableField from './EditableField';
+import {findPath, generateTreeData, ItemTypes} from '../pipelines/model/treeStructureFunctions';
+import Owner from './owner';
 import styles from './Breadcrumbs.css';
 
 @inject('pipelinesLibrary')
@@ -37,7 +38,12 @@ export default class Breadcrumbs extends React.Component {
     styleEditableField: PropTypes.object,
     editStyleEditableField: PropTypes.object,
     onSaveEditableField: PropTypes.func,
-    displayTextEditableField: PropTypes.oneOfType([PropTypes.string, PropTypes.object])
+    displayTextEditableField: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
+    icon: PropTypes.string,
+    iconClassName: PropTypes.string,
+    lock: PropTypes.bool,
+    lockClassName: PropTypes.string,
+    subject: PropTypes.object
   };
 
   state = {
@@ -90,6 +96,12 @@ export default class Breadcrumbs extends React.Component {
     } else {
       items = findPath(`${this.props.type}_${this.props.id || 'root'}`, this.state.rootItems);
     }
+    if (items && items.length > 0) {
+      items[0].icon = this.props.icon;
+      items[0].iconClassName = this.props.iconClassName;
+      items[0].lock = this.props.lock;
+      items[0].lockClassName = this.props.lockClassName;
+    }
     return items || [];
   }
 
@@ -110,7 +122,7 @@ export default class Breadcrumbs extends React.Component {
       <div
         style={{
           padding: 5,
-          minWidth: '200px',
+          minWidth: '150px',
           display: 'inline-block',
           fontSize: '18px'
         }}>
@@ -125,6 +137,24 @@ export default class Breadcrumbs extends React.Component {
                     display: 'inline-block',
                     marginLeft: -2
                   }}>
+                  {
+                    item.icon ? (
+                      <Icon
+                        type={item.icon}
+                        className={item.iconClassName}
+                        style={{marginRight: 5}}
+                      />
+                    ) : null
+                  }
+                  {
+                    item.lock ? (
+                      <Icon
+                        type="lock"
+                        className={item.lockClassName}
+                        style={{marginRight: 5}}
+                      />
+                    ) : null
+                  }
                   <EditableField
                     text={this.props.textEditableField}
                     displayText={this.props.displayTextEditableField || `${this.props.textEditableField || item.name}`}
@@ -154,6 +184,24 @@ export default class Breadcrumbs extends React.Component {
                     verticalAlign: 'baseline',
                     color: 'inherit'
                   }}>
+                  {
+                    item.icon ? (
+                      <Icon
+                        type={item.icon}
+                        className={item.iconClassName}
+                        style={{marginRight: 5}}
+                      />
+                    ) : null
+                  }
+                  {
+                    item.lock ? (
+                      <Icon
+                        type="lock"
+                        className={item.lockClassName}
+                        style={{marginRight: 5}}
+                      />
+                    ) : null
+                  }
                   {item.name}
                 </Link>,
                 <Icon
@@ -171,6 +219,9 @@ export default class Breadcrumbs extends React.Component {
             result.push(...itemsArray.filter(i => !!i));
             return result;
           }, [])
+        }
+        {
+          this.props.subject ? (<Owner subject={this.props.subject} />) : null
         }
       </div>
     );
