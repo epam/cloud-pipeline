@@ -42,7 +42,6 @@ import io.reactivex.subjects.Subject;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -75,8 +74,8 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     private static final String TEST_LAYER_DIGEST = "testDigest";
     public static final long DOCKER_SIZE = 123456L;
 
-    @InjectMocks
     private ToolScanScheduler toolScanScheduler;
+
     private ToolScanScheduler.ToolScanSchedulerCore core;
 
     @Autowired
@@ -169,6 +168,7 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     public void testScheduledToolScan() {
         PreferenceManager preferenceManager = mock(PreferenceManager.class);
         Whitebox.setInternalState(toolScanScheduler, "preferenceManager", preferenceManager);
+        Whitebox.setInternalState(core, "preferenceManager", preferenceManager);
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED)).thenReturn(true);
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ALL_REGISTRIES))
             .thenReturn(false);

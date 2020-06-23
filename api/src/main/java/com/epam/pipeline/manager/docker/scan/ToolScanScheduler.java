@@ -100,9 +100,10 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
      * Schedule a Tool for security scan. Since a Tool's scan is a time costly operation, there's a queue for that.
      * A tool is added to that queue and will be processed in order. Once the tool is added to a queue, it's scanStatus
      * field is being set to {@link ToolScanStatus}.PENDING
+     *
      * @param registry a registry path, where tool is located
-     * @param id Tool's id or image
-     * @param version Tool's version (Docker tag)
+     * @param id       Tool's id or image
+     * @param version  Tool's version (Docker tag)
      * @param rescan
      */
     public Future<ToolVersionScanResult> forceScheduleScanTool(final String registry, final String id,
@@ -113,156 +114,159 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
     @Component
     static class ToolScanSchedulerCore {
 
-    private final DockerRegistryDao dockerRegistryDao;
-    private final ToolScanManager toolScanManager;
-    private final ToolManager toolManager;
-    private final MessageHelper messageHelper;
-    private final ToolVersionManager toolVersionManager;
-    private final DockerClientFactory dockerClientFactory;
-    private final DockerRegistryManager dockerRegistryManager;
-    private PreferenceManager preferenceManager;
-    private ExecutorService forceScanExecutor;
+        private final DockerRegistryDao dockerRegistryDao;
+        private final ToolScanManager toolScanManager;
+        private final ToolManager toolManager;
+        private final MessageHelper messageHelper;
+        private final ToolVersionManager toolVersionManager;
+        private final DockerClientFactory dockerClientFactory;
+        private final DockerRegistryManager dockerRegistryManager;
+        private PreferenceManager preferenceManager;
+        private ExecutorService forceScanExecutor;
 
-    @Autowired
-    ToolScanSchedulerCore(final DockerRegistryDao dockerRegistryDao,
-                          final ToolScanManager toolScanManager,
-                          final ToolManager toolManager,
-                          final MessageHelper messageHelper,
-                          final ToolVersionManager toolVersionManager,
-                          final DockerClientFactory dockerClientFactory,
-                          final DockerRegistryManager dockerRegistryManager) {
-        this.dockerRegistryDao = dockerRegistryDao;
-        this.toolScanManager = toolScanManager;
-        this.toolManager = toolManager;
-        this.messageHelper = messageHelper;
-        this.toolVersionManager = toolVersionManager;
-        this.dockerClientFactory = dockerClientFactory;
-        this.dockerRegistryManager = dockerRegistryManager;
-    }
-
-    @SchedulerLock(name = "ToolScanScheduler_scheduledToolScan", lockAtMostForString = "PT48H")
-    public void scheduledToolScan() {
-        if (!preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED)) {
-            LOGGER.info(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_DISABLED));
-            return;
-        } else {
-            LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_TOOL_SCAN_SCHEDULED_STARTED));
-        }
-        boolean scanAllRegistries = preferenceManager.getPreference(
-                SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ALL_REGISTRIES);
-        List<DockerRegistry> registries = scanAllRegistries ? dockerRegistryDao.loadAllDockerRegistry() :
-                                          dockerRegistryDao.loadDockerRegistriesWithSecurityScanEnabled();
-        for (DockerRegistry registry : registries) {
-            scanRegistry(registry);
+        @Autowired
+        ToolScanSchedulerCore(final DockerRegistryDao dockerRegistryDao,
+                              final ToolScanManager toolScanManager,
+                              final ToolManager toolManager,
+                              final MessageHelper messageHelper,
+                              final ToolVersionManager toolVersionManager,
+                              final DockerClientFactory dockerClientFactory,
+                              final DockerRegistryManager dockerRegistryManager) {
+            this.dockerRegistryDao = dockerRegistryDao;
+            this.toolScanManager = toolScanManager;
+            this.toolManager = toolManager;
+            this.messageHelper = messageHelper;
+            this.toolVersionManager = toolVersionManager;
+            this.dockerClientFactory = dockerClientFactory;
+            this.dockerRegistryManager = dockerRegistryManager;
         }
 
-        LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_TOOL_SCAN_SCHEDULED_DONE));
-    }
-
-    private void scanRegistry(final DockerRegistry registry) {
-        LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_TOOL_SCAN_REGISTRY_STARTED, registry.getPath()));
-        registry.getTools()
-                .stream()
-                .filter(Tool::isNotSymlink)
-                .forEach(tool -> scanTool(registry, tool));
-    }
-
-    private void scanTool(final DockerRegistry registry, final Tool tool) {
-        DockerClient dockerClient = getDockerClient(registry, tool);
-        try {
-            List<String> versions = toolManager.loadTags(tool.getId());
-            for (String version : versions) {
-                try {
-                    ToolVersionScanResult result = toolScanManager.scanTool(tool, version, false);
-                    toolManager.updateToolVulnerabilities(result.getVulnerabilities(), tool.getId(), version);
-                    toolManager.updateToolDependencies(result.getDependencies(), tool.getId(), version);
-                    toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED, new Date(),
-                            version, result.getToolOSVersion(),
-                            result.getLastLayerRef(), result.getDigest());
-                    updateToolVersion(tool, version, registry, dockerClient);
-                } catch (ToolScanExternalServiceException e) {
-                    LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED,
-                            tool.getImage(), version), e);
-                    toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                            version, null, null);
-                }
+        @SchedulerLock(name = "ToolScanScheduler_scheduledToolScan", lockAtMostForString = "PT48H")
+        public void scheduledToolScan() {
+            if (!preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED)) {
+                LOGGER.info(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_DISABLED));
+                return;
+            } else {
+                LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_TOOL_SCAN_SCHEDULED_STARTED));
             }
-        } catch (Exception e) {
-            LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage()), e);
-            toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                    "latest", null, null);
-        }
-    }
+            boolean scanAllRegistries = preferenceManager.getPreference(
+                    SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ALL_REGISTRIES);
+            List<DockerRegistry> registries = scanAllRegistries ? dockerRegistryDao.loadAllDockerRegistry() :
+                    dockerRegistryDao.loadDockerRegistriesWithSecurityScanEnabled();
+            for (DockerRegistry registry : registries) {
+                scanRegistry(registry);
+            }
 
-    private void setPreferenceManager (final PreferenceManager preferenceManager) {
-        this.preferenceManager = preferenceManager;
-    }
-
-    private void setExecutorService(final ExecutorService forceScanExecutor) {
-        this.forceScanExecutor = forceScanExecutor;
-    }
-
-    private Future<ToolVersionScanResult> forceScheduleScanTool(final String registry, final String id,
-                                                               final String version, final Boolean rescan) {
-        if (!preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED)) {
-            throw new IllegalArgumentException(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_DISABLED));
+            LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_TOOL_SCAN_SCHEDULED_DONE));
         }
 
-        Tool tool = toolManager.loadTool(registry, id);
-        Assert.isTrue(tool.isNotSymlink(), messageHelper.getMessage(
-                MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED));
-        Optional<ToolVersionScanResult> toolVersionScanResult = toolManager.loadToolVersionScan(tool.getId(), version);
-        ToolScanStatus curentStatus = toolVersionScanResult
-                .map(ToolVersionScanResult::getStatus)
-                .orElse(ToolScanStatus.NOT_SCANNED);
-        // The tool is already in the queue
-        if (curentStatus != ToolScanStatus.PENDING) {
-            String layerRef = toolVersionScanResult
-                    .map(ToolVersionScanResult::getLastLayerRef)
-                    .orElse(null);
-            String digest = toolVersionScanResult
-                    .map(ToolVersionScanResult::getDigest)
-                    .orElse(null);
-            toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.PENDING, null,
-                                             version, layerRef, digest);
-            return forceScanExecutor.submit(new DelegatingSecurityContextCallable<>(() -> {
-                LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_TOOL_FORCE_SCAN_STARTED, tool.getImage()));
+        private void scanRegistry(final DockerRegistry registry) {
+            LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_TOOL_SCAN_REGISTRY_STARTED, registry.getPath()));
+            registry.getTools()
+                    .stream()
+                    .filter(Tool::isNotSymlink)
+                    .forEach(tool -> scanTool(registry, tool));
+        }
 
-                try {
-                    ToolVersionScanResult scanResult = toolScanManager.scanTool(tool, version, rescan);
-                    toolManager.updateToolVulnerabilities(scanResult.getVulnerabilities(), tool.getId(),
-                            version);
-                    toolManager.updateToolDependencies(scanResult.getDependencies(), tool.getId(), version);
-                    toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED,
-                            scanResult.getScanDate(), version, scanResult.getToolOSVersion(),
-                            scanResult.getLastLayerRef(), scanResult.getDigest());
-                    return scanResult;
-                } catch (Exception e) {
-                    toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                            version, null, null);
-                    LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage()), e);
-                    throw new PipelineException(e);
+        private void scanTool(final DockerRegistry registry, final Tool tool) {
+            DockerClient dockerClient = getDockerClient(registry, tool);
+            try {
+                List<String> versions = toolManager.loadTags(tool.getId());
+                for (String version : versions) {
+                    try {
+                        ToolVersionScanResult result = toolScanManager.scanTool(tool, version, false);
+                        toolManager.updateToolVulnerabilities(result.getVulnerabilities(), tool.getId(), version);
+                        toolManager.updateToolDependencies(result.getDependencies(), tool.getId(), version);
+                        toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED, new Date(),
+                                version, result.getToolOSVersion(),
+                                result.getLastLayerRef(), result.getDigest());
+                        updateToolVersion(tool, version, registry, dockerClient);
+                    } catch (ToolScanExternalServiceException e) {
+                        LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED,
+                                tool.getImage(), version), e);
+                        toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
+                                version, null, null);
+                    }
                 }
-            }, SecurityContextHolder.getContext()));
+            } catch (Exception e) {
+                LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage()), e);
+                toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
+                        "latest", null, null);
+            }
         }
 
-        return CompletableFuture.completedFuture(new ToolVersionScanResult(ToolScanStatus.PENDING, null,
-                                                                    Collections.emptyList(), Collections.emptyList()));
-    }
-
-    private void updateToolVersion(Tool tool, String version, DockerRegistry registry, DockerClient dockerClient) {
-        try {
-            toolVersionManager.updateOrCreateToolVersion(tool.getId(), version, tool.getImage(),
-                    registry, dockerClient);
-        } catch (Exception e) {
-            LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_UPDATE_TOOL_VERSION_FAILED,
-                    tool.getImage(), version), e);
+        private void setPreferenceManager(final PreferenceManager preferenceManager) {
+            this.preferenceManager = preferenceManager;
         }
-    }
 
-    private DockerClient getDockerClient(DockerRegistry registry, Tool tool) {
-        String token = dockerRegistryManager.getImageToken(registry, tool.getImage());
-        return dockerClientFactory.getDockerClient(registry, token);
-    }
+        private void setExecutorService(final ExecutorService forceScanExecutor) {
+            this.forceScanExecutor = forceScanExecutor;
+        }
+
+        private Future<ToolVersionScanResult> forceScheduleScanTool(final String registry, final String id,
+                                                                    final String version, final Boolean rescan) {
+            if (!preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED)) {
+                throw new IllegalArgumentException(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_DISABLED));
+            }
+
+            Tool tool = toolManager.loadTool(registry, id);
+            Assert.isTrue(tool.isNotSymlink(), messageHelper.getMessage(
+                    MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED));
+            Optional<ToolVersionScanResult> toolVersionScanResult = toolManager.loadToolVersionScan(
+                    tool.getId(), version);
+            ToolScanStatus curentStatus = toolVersionScanResult
+                    .map(ToolVersionScanResult::getStatus)
+                    .orElse(ToolScanStatus.NOT_SCANNED);
+            // The tool is already in the queue
+            if (curentStatus != ToolScanStatus.PENDING) {
+                String layerRef = toolVersionScanResult
+                        .map(ToolVersionScanResult::getLastLayerRef)
+                        .orElse(null);
+                String digest = toolVersionScanResult
+                        .map(ToolVersionScanResult::getDigest)
+                        .orElse(null);
+                toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.PENDING, null,
+                        version, layerRef, digest);
+                return forceScanExecutor.submit(new DelegatingSecurityContextCallable<>(() -> {
+                    LOGGER.info(messageHelper.getMessage(
+                            MessageConstants.INFO_TOOL_FORCE_SCAN_STARTED, tool.getImage()));
+
+                    try {
+                        ToolVersionScanResult scanResult = toolScanManager.scanTool(tool, version, rescan);
+                        toolManager.updateToolVulnerabilities(scanResult.getVulnerabilities(), tool.getId(),
+                                version);
+                        toolManager.updateToolDependencies(scanResult.getDependencies(), tool.getId(), version);
+                        toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED,
+                                scanResult.getScanDate(), version, scanResult.getToolOSVersion(),
+                                scanResult.getLastLayerRef(), scanResult.getDigest());
+                        return scanResult;
+                    } catch (Exception e) {
+                        toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
+                                version, null, null);
+                        LOGGER.error(messageHelper.getMessage(
+                                MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage()), e);
+                        throw new PipelineException(e);
+                    }
+                }, SecurityContextHolder.getContext()));
+            }
+
+            return CompletableFuture.completedFuture(new ToolVersionScanResult(ToolScanStatus.PENDING, null,
+                    Collections.emptyList(), Collections.emptyList()));
+        }
+
+        private void updateToolVersion(Tool tool, String version, DockerRegistry registry, DockerClient dockerClient) {
+            try {
+                toolVersionManager.updateOrCreateToolVersion(tool.getId(), version, tool.getImage(),
+                        registry, dockerClient);
+            } catch (Exception e) {
+                LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_UPDATE_TOOL_VERSION_FAILED,
+                        tool.getImage(), version), e);
+            }
+        }
+
+        private DockerClient getDockerClient(DockerRegistry registry, Tool tool) {
+            String token = dockerRegistryManager.getImageToken(registry, tool.getImage());
+            return dockerClientFactory.getDockerClient(registry, token);
+        }
     }
 }
