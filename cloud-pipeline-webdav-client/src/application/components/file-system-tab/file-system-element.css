@@ -1,0 +1,50 @@
+.element {
+  line-height: 30px;
+  height: 30px;
+  border-bottom: 1px solid #fafafa;
+  color: rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+  display: flex;
+  width: 100%;
+  align-items: center;
+}
+
+.element:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.element:last-child {
+  border: none;
+}
+
+.icon {
+  margin: 0 4px;
+}
+
+.element.selected {
+  font-weight: bold;
+  background-color: rgba(34, 130, 191, 0.15);
+}
+
+.element.hovered {
+  color: rgba(0, 0, 0, 0.85);
+  background-color: rgba(34, 130, 191, 0.05);
+}
+
+.element.drop-target {
+  font-weight: bold;
+  background-color: rgba(34, 130, 191, 0.25);
+}
+
+.element-name-container {
+  min-width: 0;
+  flex: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.element-name {
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
