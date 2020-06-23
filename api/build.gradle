@@ -204,6 +204,10 @@ dependencies {
 
     //Tests
     compile group: "org.springframework.boot", name: "spring-boot-starter-test", version: project.ext.versionSpringBoot
+
+    //ShedLock
+    compile group: 'net.javacrumbs.shedlock', name: 'shedlock-spring', version: '3.0.0'
+    compile group: 'net.javacrumbs.shedlock', name: 'shedlock-provider-jdbc-template', version: '3.0.0'
 }
 
 // >>>>> processes profiles

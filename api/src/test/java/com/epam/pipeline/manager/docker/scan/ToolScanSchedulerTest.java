@@ -42,7 +42,6 @@ import io.reactivex.subjects.Subject;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -75,8 +74,9 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     private static final String TEST_LAYER_DIGEST = "testDigest";
     public static final long DOCKER_SIZE = 123456L;
 
-    @InjectMocks
-    private ToolScanScheduler toolScanScheduler = new ToolScanScheduler();
+    private ToolScanScheduler toolScanScheduler;
+
+    private ToolScanScheduler.ToolScanSchedulerCore core;
 
     @Autowired
     private DockerRegistryDao dockerRegistryDao;
@@ -119,12 +119,17 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        Whitebox.setInternalState(toolScanScheduler, "dockerRegistryDao", dockerRegistryDao);
-        Whitebox.setInternalState(toolScanScheduler, "toolManager", toolManager);
-        Whitebox.setInternalState(toolScanScheduler, "messageHelper", messageHelper);
+        core = new ToolScanScheduler.ToolScanSchedulerCore(dockerRegistryDao,
+                                                     toolScanManager,
+                                                     toolManager,
+                                                     messageHelper,
+                                                     toolVersionManager,
+                                                     dockerClientFactory,
+                                                     dockerRegistryManager);
+        toolScanScheduler = new ToolScanScheduler(core);
         Whitebox.setInternalState(toolScanScheduler, "authManager", authManager);
         Whitebox.setInternalState(toolScanScheduler, "scheduler", taskScheduler);
-
+        Whitebox.setInternalState(toolScanScheduler, "core", core);
         when(dockerClientFactory.getDockerClient(Mockito.any(DockerRegistry.class), Mockito.anyString()))
             .thenReturn(mockClient);
         when(mockClient.getImageTags(Mockito.anyString(), Mockito.anyString()))
@@ -163,6 +168,7 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     public void testScheduledToolScan() {
         PreferenceManager preferenceManager = mock(PreferenceManager.class);
         Whitebox.setInternalState(toolScanScheduler, "preferenceManager", preferenceManager);
+        Whitebox.setInternalState(core, "preferenceManager", preferenceManager);
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED)).thenReturn(true);
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ALL_REGISTRIES))
             .thenReturn(false);
@@ -215,7 +221,8 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
         try {
 
             ToolManagerMock toolManagerMock = new ToolManagerMock(tool);
-            Whitebox.setInternalState(toolScanScheduler, "toolManager", toolManagerMock);
+
+            Whitebox.setInternalState(core, "toolManager", toolManagerMock);
 
             Future<ToolVersionScanResult> result = toolScanScheduler.forceScheduleScanTool(
                     null, tool.getImage(), LATEST_VERSION, false);

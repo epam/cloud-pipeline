@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.epam.pipeline.elasticsearchagent.service;
 
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.io.input.ReversedLinesFileReader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -71,6 +72,7 @@ public class ElasticsearchAgentService {
      */
     @Scheduled(fixedDelayString = "${sync.scheduler.delay}")
     @Transactional(propagation = Propagation.REQUIRED)
+    @SchedulerLock(name = "ElasticsearchAgentService_startElasticsearchAgent", lockAtMostForString = "PT3H")
     public void startElasticsearchAgent() {
         log.debug("Start scheduled database changes...");
 
