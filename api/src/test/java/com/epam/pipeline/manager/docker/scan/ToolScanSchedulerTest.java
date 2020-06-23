@@ -73,10 +73,11 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     private static final String TEST_LAYER_REF = "testRef";
     private static final String TEST_LAYER_DIGEST = "testDigest";
     public static final long DOCKER_SIZE = 123456L;
+    public static final String PREFERENCE_MANAGER = "preferenceManager";
 
     private ToolScanScheduler toolScanScheduler;
 
-    private ToolScanScheduler.ToolScanSchedulerCore core;
+    private ToolScanSchedulerCore core;
 
     @Autowired
     private DockerRegistryDao dockerRegistryDao;
@@ -119,7 +120,7 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        core = new ToolScanScheduler.ToolScanSchedulerCore(dockerRegistryDao,
+        core = new ToolScanSchedulerCore(dockerRegistryDao,
                                                      toolScanManager,
                                                      toolManager,
                                                      messageHelper,
@@ -167,8 +168,8 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testScheduledToolScan() {
         PreferenceManager preferenceManager = mock(PreferenceManager.class);
-        Whitebox.setInternalState(toolScanScheduler, "preferenceManager", preferenceManager);
-        Whitebox.setInternalState(core, "preferenceManager", preferenceManager);
+        Whitebox.setInternalState(toolScanScheduler, PREFERENCE_MANAGER, preferenceManager);
+        Whitebox.setInternalState(core, PREFERENCE_MANAGER, preferenceManager);
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED)).thenReturn(true);
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ALL_REGISTRIES))
             .thenReturn(false);
@@ -208,8 +209,8 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     @Transactional(propagation = Propagation.NEVER, rollbackFor = Throwable.class)
     public void testForceScheduleToolScan() throws ExecutionException, InterruptedException {
         PreferenceManager preferenceManager = mock(PreferenceManager.class);
-        Whitebox.setInternalState(toolScanScheduler, "preferenceManager", preferenceManager);
-        Whitebox.setInternalState(core, "preferenceManager", preferenceManager);
+        Whitebox.setInternalState(toolScanScheduler, PREFERENCE_MANAGER, preferenceManager);
+        Whitebox.setInternalState(core, PREFERENCE_MANAGER, preferenceManager);
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED)).thenReturn(true);
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_SCHEDULE_CRON)).thenReturn(
                 SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_SCHEDULE_CRON.getDefaultValue());
