@@ -1,0 +1,31 @@
+.layout {
+  width: 100vw;
+  height: 100vh;
+}
+
+.layout .header,
+.layout .footer {
+  line-height: 30px;
+  height: 30px;
+  background-color: #fafafa;
+  padding: 0 2px;
+}
+
+.layout .content {
+  border: 1px solid #ddd;
+  border-left: none;
+  border-right: none;
+  min-height: 0;
+}
+
+.file-system-tab {
+  display: inline-block;
+  width: 50%;
+  height: 100%;
+  padding: 2px;
+  border-right: 1px solid #ddd;
+}
+
+.file-system-tab:last-child {
+  border-right: none;
+}

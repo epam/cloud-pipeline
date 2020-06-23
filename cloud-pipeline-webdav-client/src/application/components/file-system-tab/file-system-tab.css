@@ -1,0 +1,23 @@
+.active {
+  border: 1px solid #2282bf;
+}
+
+.file-system-tab-container {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.spin-container {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.directory-contents {
+  overflow: auto;
+  flex: 1;
+}
