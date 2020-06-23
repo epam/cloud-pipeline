@@ -14,7 +14,7 @@ from fsclient import FileSystemClient, File
 from fuseutils import MB
 import fuseutils
 from mpu import MultipartUpload, ChunkedMultipartUpload, SplittingMultipartCopyUpload, \
-    DownloadingMultipartCopyUpload, CompositeMultipartUpload
+    CompositeMultipartUpload
 
 _ANY_ERROR = Exception
 
@@ -246,23 +246,28 @@ class GCPClient(FileSystemClient):
             raise
 
     def _new_mpu(self, source_path, file_size):
-        mpu = CompositeMultipartUpload(self.bucket, path=source_path,
+        mpu = CompositeMultipartUpload(self.bucket, path=source_path, original_size=file_size,
+                                       chunk_size=self._chunk_size,
+                                       download=self._generate_region_download_function(),
                                        new_mpu=lambda path: GCPMultipartUpload(self.bucket, path, self._gcp),
                                        mv=lambda old_path, path: self.mv(old_path, path),
                                        max_composite_parts=self._MAX_COMPOSITE_PARTS)
-        mpu = DownloadingMultipartCopyUpload(mpu, download=self._generate_region_download_function(source_path))
         mpu = SplittingMultipartCopyUpload(mpu, min_part_size=self._MIN_PART_SIZE, max_part_size=self._MAX_PART_SIZE)
         mpu = ChunkedMultipartUpload(mpu, original_size=file_size,
                                      download=self._generate_region_download_function(source_path),
                                      chunk_size=self._chunk_size, min_chunk=self._MIN_CHUNK, max_chunk=self._MAX_CHUNK)
         return mpu
 
-    def _generate_region_download_function(self, path):
-        def download_func(region_offset, region_length):
+    def _generate_region_download_function(self, path=None):
+        def download_region_by_default_path(region_offset, region_length):
             with io.BytesIO() as buf:
                 self.download_range(None, buf, path, region_offset, region_length, expand_path=False)
                 return buf.getvalue()
-        return download_func
+        def download_region_by_path(path, region_offset, region_length):
+            with io.BytesIO() as buf:
+                self.download_range(None, buf, path, region_offset, region_length, expand_path=False)
+                return buf.getvalue()
+        return download_region_by_default_path if path else download_region_by_path
 
     def _upload_single_range(self, fh, buf, path, offset, file_size):
         if file_size:
