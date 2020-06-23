@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ import EditFolderForm from './forms/EditFolderForm';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
 import {DataStorageEditDialog, ServiceTypes} from './forms/DataStorageEditDialog';
 import {extractFileShareMountList} from './forms/DataStoragePathInput';
-import CloneFolderForm from './forms/CloneFolderForm';
+import CloneForm from './forms/CloneForm';
 import EditDetachedConfigurationForm from '../configuration/forms/EditDetachedConfigurationForm';
 import dataStorages from '../../../models/dataStorage/DataStorages';
 import {FolderLock, FolderUnLock} from '../../../models/folders/FolderLock';
@@ -1778,7 +1778,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           pending={this.state.operationInProgress}
           onCancel={this.closeCreateConfigurationDialog}
           visible={this.state.createConfigurationDialog} />
-        <CloneFolderForm
+        <CloneForm
           parentId={this.props.folder.value.parentId}
           visible={this.state.cloneFolderDialogVisible}
           pending={this.state.operationInProgress}
