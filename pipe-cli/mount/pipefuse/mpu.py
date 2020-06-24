@@ -21,7 +21,7 @@ import intervals
 
 from fuseutils import MB, GB
 
-CopyPart = namedtuple('CopyPart', ['start', 'end', 'offset', 'part_number', 'part_path'])
+_CopyPart = namedtuple('CopyPart', ['start', 'end', 'offset', 'part_number', 'part_path', 'keep'])
 
 
 class UnmanageableMultipartUploadException(RuntimeError):
@@ -43,11 +43,11 @@ class MultipartUpload:
         pass
 
     @abstractmethod
-    def upload_part(self, buf, offset=None, part_number=None, part_path=None):
+    def upload_part(self, buf, offset=None, part_number=None, part_path=None, keep=False):
         pass
 
     @abstractmethod
-    def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None):
+    def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None, keep=False):
         pass
 
     @abstractmethod
@@ -71,10 +71,10 @@ class MultipartUploadDecorator(MultipartUpload):
     def initiate(self):
         self._mpu.initiate()
 
-    def upload_part(self, buf, offset=None, part_number=None, part_path=None):
+    def upload_part(self, buf, offset=None, part_number=None, part_path=None, keep=False):
         self._mpu.upload_part(buf, offset, part_number)
 
-    def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None):
+    def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None, keep=False):
         self._mpu.upload_copy_part(start, end, offset, part_number)
 
     def complete(self):
@@ -175,11 +175,11 @@ class ChunkedMultipartUpload(MultipartUploadDecorator):
         It can be calculated multiplying chunk size by max chunk number. F.e. for chunk size of 10MB and 10000 chunks
         it will be 100GB, for chunk size of 100MB and 10000 chunks it will be 1TB.
 
-        Fills gaps between uploaded parts with the original file's content.
+        Fills gaps between uploaded parts with the copy parts of unlimited size.
 
         :param mpu: Wrapping multipart upload.
         :param original_size: Destination file original size.
-        :param download: Function that retrieves content from the original file by its offset and length.
+        :param download: Function that retrieves content from an object by its path, offset and length.
         :param chunk_size: Size of a single upload part.
         :param min_chunk: Minimum allowed chunk number.
         :param max_chunk: Maximum allowed chunk number.
@@ -193,7 +193,7 @@ class ChunkedMultipartUpload(MultipartUploadDecorator):
         self._min_chunk = min_chunk
         self._max_chunk = max_chunk
 
-    def upload_part(self, buf, offset=None, part_number=None, part_path=None):
+    def upload_part(self, buf, offset=None, part_number=None, part_path=None, keep=False):
         chunk = self._resolve_chunk(offset)
         chunk_offset = self._chunk_offset(chunk)
         chunk_shift = offset - chunk_offset
@@ -263,12 +263,12 @@ class ChunkedMultipartUpload(MultipartUploadDecorator):
                                              bytearray(actual_end - actual_start))
                 elif actual_start < self._original_size < actual_end:
                     partial_chunk.append(missing_start,
-                                         self._download(actual_start, self._original_size - actual_start))
+                                         self._download(self.path, actual_start, self._original_size - actual_start))
                     if chunk_number < last_written_chunk:
                         partial_chunk.append(missing_start + self._original_size - actual_start,
                                              bytearray(actual_end - self._original_size))
                 else:
-                    partial_chunk.append(missing_start, self._download(actual_start, actual_end - actual_start))
+                    partial_chunk.append(missing_start, self._download(self.path, actual_start, actual_end - actual_start))
             chunk = partial_chunk.collect()
             self._mpu.upload_part(chunk, partial_chunk.offset, chunk_number)
         self._mpu.complete()
@@ -292,7 +292,7 @@ class SplittingMultipartCopyUpload(MultipartUploadDecorator):
         self._min_part_size = min_part_size
         self._max_part_size = max_part_size
 
-    def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None):
+    def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None, keep=False):
         copy_part_length = end - start
         if copy_part_length > self._max_part_size:
             logging.debug('Splitting copy upload part %d into pieces for %s' % (part_number, self.path))
@@ -379,47 +379,119 @@ class DownloadingMultipartCopyUpload(MultipartUploadDecorator):
         """
         Downloading multipart copy upload.
 
-        Downloads all the required copy parts and upload them as regular parts.
+        Downloads all copy parts from original file and uploads them as regular parts.
 
         :param mpu: Wrapping multipart upload.
-        :param download: Function that retrieves content from the original file by its offset and length.
+        :param download: Function that retrieves content from an object by its path, offset and length.
         """
         super(DownloadingMultipartCopyUpload, self).__init__(mpu)
         self._mpu = mpu
         self._download = download
 
-    def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None):
-        self._mpu.upload_part(self._download(start, end - start), offset, part_number)
+    def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None, keep=False):
+        self._mpu.upload_part(self._download(self.path, start, end - start), offset, part_number, part_path, keep)
+
+
+class PrefixOptimizedCompositeMultipartCopyUpload(MultipartUploadDecorator):
+
+    def __init__(self, mpu, original_size, chunk_size, download):
+        """
+        Prefix optimized composite multipart copy upload.
+
+        Optimizes original file prefix copying and because of this expects upload parts to be chunked.
+
+        Uploads copy parts as regular parts using content of the original file.
+
+        :param mpu: Wrapping composite multipart upload.
+        :param original_size: Destination file original size.
+        :param chunk_size: Size of a single upload part.
+        :param download: Function that retrieves content from an object by its path, offset and length.
+        """
+        super(PrefixOptimizedCompositeMultipartCopyUpload, self).__init__(mpu)
+        self._mpu = mpu
+        self._original_size = original_size
+        self._chunk_size = chunk_size
+        self._download = download
+        self._copy_parts = []
+        self._chunks = []
+        self._first_chunk = sys.maxint
+        self._first_chunk_offset = 0
+
+    def upload_part(self, buf, offset=None, part_number=None, part_path=None, keep=False):
+        self._mpu.upload_part(buf, offset, part_number, part_path)
+        if part_number < self._first_chunk:
+            self._first_chunk = part_number
+            self._first_chunk_offset = offset
+
+    def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None, keep=False):
+        self._copy_parts.append(_CopyPart(start, end, offset, part_number, part_path, keep))
+
+    def complete(self):
+        sorted_copy_parts = sorted(self._copy_parts, key=lambda copy_part: copy_part.offset)
+        prefix_end, prefix_last_index = self._find_prefix(sorted_copy_parts)
+        if self._prefix_exists(prefix_end):
+            self._mpu.upload_copy_part(0, self._original_size, offset=0, part_number=0,
+                                       part_path=self.path, keep=True)
+            self._reupload_first_part(prefix_end)
+            remaining_copy_parts = sorted_copy_parts[prefix_last_index + 1:]
+            self._upload_copy_parts(remaining_copy_parts)
+        else:
+            self._upload_copy_parts(sorted_copy_parts)
+        self._mpu.complete()
+
+    def _find_prefix(self, copy_parts):
+        prefix_end = 0
+        prefix_last_index = 0
+        for copy_index, copy_part in enumerate(copy_parts):
+            if copy_part.offset != prefix_end:
+                break
+            length = copy_part.end - copy_part.start
+            prefix_end += length
+            prefix_last_index = copy_index
+        return prefix_end, prefix_last_index
+
+    def _prefix_exists(self, prefix_end):
+        return prefix_end and prefix_end + self._chunk_size >= self._original_size
+
+    def _reupload_first_part(self, prefix_end):
+        diff_offset = self._original_size - prefix_end
+        if diff_offset > 0:
+            part_path = self._mpu.composite_part_path(self._first_chunk)
+            self._mpu.upload_part(self._download(part_path, diff_offset, self._chunk_size),
+                                  offset=self._first_chunk_offset, part_number=self._first_chunk,
+                                  part_path=part_path)
+
+    def _upload_copy_parts(self, copy_parts):
+        for copy_part in copy_parts:
+            self._mpu.upload_copy_part(copy_part.start, copy_part.end, offset=copy_part.offset,
+                                       part_number=copy_part.part_number, part_path=copy_part.keep,
+                                       keep=copy_part.keep)
 
 
 class CompositeMultipartUpload(MultipartUpload):
 
-    def __init__(self, bucket, path, original_size, chunk_size, download, new_mpu, mv, max_composite_parts=32):
+    def __init__(self, bucket, path, new_mpu, mv, max_composite_parts=32):
         """
-        Composite object multipart upload.
+        Limited composite object multipart upload.
+
+        Uploads each part as an independent file then merges all the files into a single composite one.
+
+        Takes into the account maximum composite object parts.
 
         :param bucket: Destination bucket name.
         :param path: Destination bucket relative path.
-        :param original_size: Destination file original size.
-        :param chunk_size: Size of a single upload part.
-        :param download: Function that retrieves content from the original file by its offset and length.
         :param new_mpu: Function that instantiates new multipart upload.
         :param mv: Function that moves object within bucket.
         :param max_composite_parts: Number of allowed composite object parts.
         """
         self._bucket = bucket
         self._path = path
-        self._original_size = original_size
-        self._chunk_size = chunk_size
-        self._download = download
         self._new_mpu = new_mpu
         self._mv = mv
         self._max_composite_parts = max_composite_parts
         self._bucket_object = None
         self._blob_object = None
         self._mpus = {}
-        self._copy_parts = []
-        self._min_chunk = sys.maxint
 
     @property
     def path(self):
@@ -428,11 +500,10 @@ class CompositeMultipartUpload(MultipartUpload):
     def initiate(self):
         pass
 
-    def upload_part(self, buf, offset=None, part_number=None, part_path=None):
+    def upload_part(self, buf, offset=None, part_number=None, part_path=None, keep=False):
         mpu_number = self._mpu_number(part_number)
         mpu = self._get_mpu(mpu_number)
-        mpu.upload_part(buf, offset, part_number, self._part_path(mpu_number, part_number))
-        self._min_chunk = min(self._min_chunk, part_number)
+        mpu.upload_part(buf, offset, part_number, self._part_path(mpu_number, part_number), keep)
 
     def _mpu_number(self, part_number):
         return part_number / self._max_composite_parts
@@ -446,57 +517,15 @@ class CompositeMultipartUpload(MultipartUpload):
             self._mpus[mpu_number] = mpu
         return mpu
 
-    def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None):
-        self._copy_parts.append(CopyPart(start, end, offset, part_number, part_path))
+    def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None, keep=False):
+        mpu_number = self._mpu_number(part_number)
+        mpu = self._get_mpu(mpu_number)
+        mpu.upload_copy_part(start, end, offset, part_number, part_path, keep)
 
     def complete(self):
-        self._complete_copy_parts()
         for mpu in self._mpus.values():
             mpu.complete()
         self._compose([(mpu_number, self._mpus[mpu_number]) for mpu_number in sorted(self._mpus.keys())])
-
-    def _complete_copy_parts(self):
-        copy_parts = sorted(self._copy_parts, key=lambda copy_part: copy_part.offset)
-        prefix_copy_part_index = self._upload_copy_part_prefix(copy_parts)
-        self._upload_copy_parts(copy_parts[prefix_copy_part_index + 1:]
-                                if prefix_copy_part_index is not None
-                                else copy_parts)
-
-    def _upload_copy_part_prefix(self, copy_parts):
-        prefix_end, prefix_last_index = self._find_copy_part_prefix(copy_parts)
-        if prefix_end and prefix_end + self._chunk_size >= self._original_size:
-            mpu = self._get_mpu(0)
-            mpu.upload_copy_part(None, None, None, part_number=0, part_path=self.path)
-            diff_offset = self._original_size - prefix_end
-            if diff_offset > 0:
-                part_number = self._min_chunk
-                mpu_number = self._mpu_number(part_number)
-                mpu = self._get_mpu(mpu_number)
-                part_path = self._part_path(mpu_number, part_number)
-                mpu.upload_part(self._download(part_path, diff_offset, self._chunk_size),
-                                offset=0, part_number=part_number, part_path=part_path)
-            return prefix_last_index
-        else:
-            return None
-
-    def _find_copy_part_prefix(self, copy_parts):
-        prefix_end = 0
-        prefix_last_index = 0
-        for copy_index, copy_part in enumerate(copy_parts):
-            if copy_part.offset != prefix_end:
-                break
-            length = copy_part.end - copy_part.start
-            prefix_end += length
-            prefix_last_index = copy_index
-        return prefix_end, prefix_last_index
-
-    def _upload_copy_parts(self, copy_parts):
-        for copy_part in copy_parts:
-            mpu_number = self._mpu_number(copy_part.part_number)
-            mpu = self._get_mpu(mpu_number)
-            part_path = self._part_path(mpu_number, copy_part.part_number)
-            mpu.upload_part(self._download(self.path, copy_part.start, copy_part.end - copy_part.start),
-                            offset=copy_part.offset, part_number=copy_part.part_number, part_path=part_path)
 
     def _compose(self, mpus):
         if not mpus:
@@ -517,7 +546,7 @@ class CompositeMultipartUpload(MultipartUpload):
         self._mv(composed_mpu.path, self._path)
 
     def _merge(self, mpus):
-        merged_mpu = self._new_mpu(self._composed_mpu_path(mpus[0][0], mpus[-1][0]))
+        merged_mpu = self._new_mpu(self._merged_mpu_path(mpus[0][0], mpus[-1][0]))
         merged_mpu.initiate()
         for mpu_number, mpu in mpus:
             merged_mpu.upload_copy_part(None, None, None, mpu_number, mpu.path)
@@ -528,13 +557,16 @@ class CompositeMultipartUpload(MultipartUpload):
         for mpu in self._mpus.values():
             mpu.abort()
 
+    def composite_part_path(self, part_number):
+        return self._part_path(self._mpu_number(part_number), part_number)
+
     def _mpu_path(self, mpu_number):
         return '%s_%s_%d.tmp' % (self._path, self._hashed_path(), mpu_number)
 
     def _part_path(self, mpu_number, part_number):
         return '%s_%s_%d.%d.tmp' % (self._path, self._hashed_path(), mpu_number, part_number)
 
-    def _composed_mpu_path(self, left_mpu_number, right_mpu_number):
+    def _merged_mpu_path(self, left_mpu_number, right_mpu_number):
         return '%s_%s_%d:%d.tmp' % (self._path, self._hashed_path(), left_mpu_number, right_mpu_number)
 
     def _hashed_path(self):
