@@ -68,7 +68,7 @@ class S3MultipartUpload(MultipartUpload):
         )
         self._upload_id = response['UploadId']
 
-    def upload_part(self, buf, offset=None, part_number=None, part_path=None):
+    def upload_part(self, buf, offset=None, part_number=None, part_path=None, keep=False):
         logging.info('Uploading multipart upload part %d range %d-%d for %s'
                      % (part_number, offset, offset + len(buf), self._path))
         with io.BytesIO(buf) as body:
@@ -81,7 +81,7 @@ class S3MultipartUpload(MultipartUpload):
             )
         self._parts[part_number] = response['ETag']
 
-    def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None):
+    def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None, keep=False):
         logging.info('Uploading multipart upload part %d copy range %d-%d for %s'
                      % (part_number, start, end, self._path))
         response = self._s3.upload_part_copy(
@@ -131,9 +131,7 @@ class S3Client(FileSystemClient):
         super(S3Client, self).__init__()
         self._delimiter = '/'
         self._is_read_only = False
-        path_chunks = bucket.rstrip(self._delimiter).split(self._delimiter)
-        self.bucket = path_chunks[0]
-        self.root_path = self._delimiter.join(path_chunks[1:]) if len(path_chunks) > 1 else ''
+        self.bucket = bucket
         self._s3 = self._generate_s3_client(bucket, pipe)
         self._chunk_size = chunk_size
         self._min_chunk = 1
@@ -180,12 +178,12 @@ class S3Client(FileSystemClient):
     def is_read_only(self):
         return self._is_read_only
 
-    def exists(self, path, expand_path=True):
-        return len(self.ls(path, expand_path=expand_path)) > 0
+    def exists(self, path):
+        return len(self.ls(path)) > 0
 
-    def ls(self, path, depth=1, expand_path=True):
+    def ls(self, path, depth=1):
         paginator = self._s3.get_paginator('list_objects_v2')
-        prefix = self.build_full_path(path) if expand_path else path
+        prefix = (path or '').lstrip(self._delimiter)
         recursive = depth < 0
         operation_parameters = {
             'Bucket': self.bucket
@@ -215,18 +213,6 @@ class S3Client(FileSystemClient):
         _, file_name = fuseutils.split_path(path)
         return [item for item in items if item.name.rstrip(self._delimiter) == file_name]
 
-    def build_full_path(self, path):
-        full_path = None
-        if not self.root_path:
-            full_path = path
-        elif not path:
-            full_path = self.root_path
-        else:
-            full_path = self.root_path + self._delimiter + path.lstrip(self._delimiter)
-        if not full_path:
-            return ''
-        return full_path.lstrip(self._delimiter)
-
     def get_folder_object(self, name):
         return File(name=name,
                     size=0,
@@ -246,27 +232,27 @@ class S3Client(FileSystemClient):
                     contenttype='',
                     is_dir=False)
 
-    def upload(self, buf, path, expand_path=True):
-        destination_path = self.build_full_path(path) if expand_path else path
+    def upload(self, buf, path):
+        destination_path = path.lstrip(self._delimiter)
         with io.BytesIO(bytearray(buf)) as body:
             self._s3.put_object(Bucket=self.bucket, Key=destination_path, Body=body,
                                 ACL='bucket-owner-full-control')
 
     def delete(self, path, expand_path=True):
-        source_path = self.build_full_path(path) if expand_path else path
+        source_path = path.lstrip(self._delimiter)
         self._s3.delete_object(Bucket=self.bucket, Key=source_path)
 
     def mv(self, old_path, path):
-        source_path = self.build_full_path(old_path)
-        destination_path = self.build_full_path(path)
+        source_path = old_path.lstrip(self._delimiter)
+        destination_path = path.lstrip(self._delimiter)
         folder_source_path = fuseutils.append_delimiter(source_path)
-        if self.exists(folder_source_path, expand_path=False):
+        if self.exists(folder_source_path):
             self._mvdir(folder_source_path, destination_path)
         else:
             self._mvfile(source_path, destination_path)
 
     def _mvdir(self, folder_source_path, folder_destination_path):
-        for file in self.ls(fuseutils.append_delimiter(folder_source_path), depth=-1, expand_path=False):
+        for file in self.ls(fuseutils.append_delimiter(folder_source_path), depth=-1):
             relative_path = fuseutils.without_prefix(file.name, folder_source_path)
             destination_path = fuseutils.join_path_with_delimiter(folder_destination_path, relative_path)
             self._mvfile(file.name, destination_path)
@@ -285,11 +271,11 @@ class S3Client(FileSystemClient):
 
     def rmdir(self, path):
         for file in self.ls(fuseutils.append_delimiter(path), depth=-1):
-            self.delete(file.name, expand_path=False)
+            self.delete(file.name)
 
-    def download_range(self, fh, buf, path, offset=0, length=0, expand_path=True):
+    def download_range(self, fh, buf, path, offset=0, length=0):
         logging.info('Downloading range %d-%d for %s' % (offset, offset + length, path))
-        source_path = self.build_full_path(path) if expand_path else path
+        source_path = path.lstrip(self._delimiter)
         source = {
             'Bucket': self.bucket,
             'Key': source_path
@@ -304,7 +290,7 @@ class S3Client(FileSystemClient):
             buf.write(chunk)
 
     def upload_range(self, fh, buf, path, offset=0):
-        source_path = self.build_full_path(path)
+        source_path = path.lstrip(self._delimiter)
         mpu = self._mpus.get(source_path, None)
         try:
             if mpu:
@@ -320,7 +306,7 @@ class S3Client(FileSystemClient):
                 else:
                     logging.info('Using multipart upload approach for %d:%s' % (fh, path))
                     mpu = self._new_mpu(source_path, file_size)
-                    self._mpus[source_path] = mpu
+                    self._mpus[path] = mpu
                     mpu.initiate()
                     mpu.upload_part(buf, offset)
         except UnmanageableMultipartUploadException:
@@ -346,7 +332,7 @@ class S3Client(FileSystemClient):
             if mpu:
                 logging.exception('Multipart upload has failed for %d:%s. '
                                   'Attempting to abort the multipart upload.' % (fh, path))
-                del self._mpus[source_path]
+                del self._mpus[path]
                 mpu.abort()
             raise
 
@@ -365,14 +351,14 @@ class S3Client(FileSystemClient):
     def _generate_region_download_function(self):
         def download(path, region_offset, region_length):
             with io.BytesIO() as buf:
-                self.download_range(None, buf, path, region_offset, region_length, expand_path=False)
+                self.download_range(None, buf, path, region_offset, region_length)
                 return buf.getvalue()
         return download
 
     def _upload_single_range(self, fh, buf, path, offset, file_size):
         if file_size:
             with io.BytesIO() as original_buf:
-                self.download_range(fh, original_buf, path, expand_path=False)
+                self.download_range(fh, original_buf, path, offset=0, length=file_size)
                 original_bytes = bytearray(original_buf.getvalue())
         else:
             original_bytes = bytearray()
@@ -385,8 +371,7 @@ class S3Client(FileSystemClient):
                                 ACL='bucket-owner-full-control')
 
     def flush(self, fh, path):
-        source_path = self.build_full_path(path)
-        mpu = self._mpus.get(source_path, None)
+        mpu = self._mpus.get(path, None)
         if mpu:
             try:
                 mpu.complete()
@@ -394,10 +379,10 @@ class S3Client(FileSystemClient):
                 mpu.abort()
                 raise
             finally:
-                del self._mpus[source_path]
+                del self._mpus[path]
 
     def truncate(self, fh, path, length):
-        source_path = self.build_full_path(path)
+        source_path = path.lstrip(self._delimiter)
         logging.info('Truncating %s to %d' % (source_path, length))
         file_size = self.attrs(path).size
         if not length:
@@ -416,6 +401,6 @@ class S3Client(FileSystemClient):
 
     def _new_truncating_mpu(self, source_path, length):
         mpu = S3MultipartUpload(source_path, bucket=self.bucket, s3=self._s3)
-        mpu = SplittingMultipartCopyUpload(mpu, min_part_size=self._MIN_PART_SIZE, max_part_size=self._MAX_PART_SIZE)
-        mpu = TruncatingMultipartCopyUpload(mpu, length=length, min_part_number=self._MIN_CHUNK)
+        mpu = SplittingMultipartCopyUpload(mpu, min_part_size=self._min_part_size, max_part_size=self._max_part_size)
+        mpu = TruncatingMultipartCopyUpload(mpu, length=length, min_part_number=self._min_chunk)
         return mpu

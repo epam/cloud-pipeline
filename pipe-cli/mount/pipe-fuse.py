@@ -45,6 +45,7 @@ from pipefuse.webdav import CPWebDavClient
 from pipefuse.s3 import S3Client
 from pipefuse.pipefs import PipeFS
 from pipefuse.record import RecordingFS, RecordingFileSystemClient
+from pipefuse.path import PathExpandingStorageFileSystemClient
 from pipefuse.fslock import get_lock
 import ctypes
 import fuse
@@ -73,6 +74,7 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
     bearer = os.environ.get('API_TOKEN', '')
     chunk_size = os.environ.get('CP_PIPE_FUSE_CHUNK_SIZE', chunk_size)
     bucket_type = None
+    root_path = None
     if not bearer:
         raise RuntimeError('Cloud Pipeline API_TOKEN should be specified.')
     if webdav:
@@ -83,16 +85,19 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
         pipe = CloudPipelineClient(api=api, token=bearer)
         path_chunks = bucket.rstrip('/').split('/')
         bucket_name = path_chunks[0]
+        root_path = '/'.join(path_chunks[1:])
         bucket_object = pipe.get_storage(bucket_name)
         bucket_type = bucket_object.type
-        if bucket_object.type == CloudType.S3:
-            client = S3Client(bucket, pipe=pipe, chunk_size=chunk_size)
-        elif bucket_object.type == CloudType.GS:
-            client = GCPClient(bucket, pipe=pipe, chunk_size=chunk_size)
+        if bucket_type == CloudType.S3:
+            client = S3Client(bucket_name, pipe=pipe, chunk_size=chunk_size)
+        elif bucket_type == CloudType.GS:
+            client = GCPClient(bucket_name, pipe=pipe, chunk_size=chunk_size)
         else:
             raise RuntimeError('Cloud storage type %s is not supported.' % bucket_object.type)
     if recording:
         client = RecordingFileSystemClient(client)
+    if bucket_type in [CloudType.S3, CloudType.GS]:
+        client = PathExpandingStorageFileSystemClient(client, root_path=root_path)
     if cache_ttl > 0 and cache_size > 0:
         cache_implementation = TTLCache(maxsize=cache_size, ttl=cache_ttl)
         cache = ListingCache(cache_implementation)
