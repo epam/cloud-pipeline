@@ -10,11 +10,11 @@ from google.auth.transport.requests import AuthorizedSession
 from google.cloud.storage import Client
 from google.oauth2.credentials import Credentials
 
+import fuseutils
 from fsclient import FileSystemClient, File
 from fuseutils import MB, TB
-import fuseutils
 from mpu import MultipartUpload, ChunkedMultipartUpload, SplittingMultipartCopyUpload, \
-    CompositeMultipartUpload, PrefixOptimizedCompositeMultipartCopyUpload
+    CompositeMultipartUpload, AppendOptimizedCompositeMultipartCopyUpload
 
 _ANY_ERROR = Exception
 
@@ -261,7 +261,7 @@ class GCPClient(FileSystemClient):
                                        new_mpu=lambda path: GCPMultipartUpload(self.bucket, path, self._gcp),
                                        mv=lambda old_path, path: self.mv(old_path, path),
                                        max_composite_parts=self._max_composite_parts)
-        mpu = PrefixOptimizedCompositeMultipartCopyUpload(mpu, original_size=file_size, chunk_size=self._chunk_size,
+        mpu = AppendOptimizedCompositeMultipartCopyUpload(mpu, original_size=file_size, chunk_size=self._chunk_size,
                                                           download=self._generate_region_download_function())
         mpu = SplittingMultipartCopyUpload(mpu, min_part_size=self._min_part_size, max_part_size=self._max_part_size)
         mpu = ChunkedMultipartUpload(mpu, original_size=file_size,

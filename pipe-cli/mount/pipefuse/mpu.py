@@ -392,13 +392,14 @@ class DownloadingMultipartCopyUpload(MultipartUploadDecorator):
         self._mpu.upload_part(self._download(self.path, start, end - start), offset, part_number, part_path, keep)
 
 
-class PrefixOptimizedCompositeMultipartCopyUpload(MultipartUploadDecorator):
+class AppendOptimizedCompositeMultipartCopyUpload(MultipartUploadDecorator):
 
     def __init__(self, mpu, original_size, chunk_size, download):
         """
-        Prefix optimized composite multipart copy upload.
+        Append optimized composite multipart copy upload.
 
-        Optimizes original file prefix copying and because of this expects upload parts to be chunked.
+        Uses original object as a pre uploaded composite part in case of append writes.
+        In order to do so it adjusts the first of the already uploaded chunks.
 
         Uploads copy parts as regular parts using content of the original file.
 
@@ -407,7 +408,7 @@ class PrefixOptimizedCompositeMultipartCopyUpload(MultipartUploadDecorator):
         :param chunk_size: Size of a single upload part.
         :param download: Function that retrieves content from an object by its path, offset and length.
         """
-        super(PrefixOptimizedCompositeMultipartCopyUpload, self).__init__(mpu)
+        super(AppendOptimizedCompositeMultipartCopyUpload, self).__init__(mpu)
         self._mpu = mpu
         self._original_size = original_size
         self._chunk_size = chunk_size
@@ -427,33 +428,23 @@ class PrefixOptimizedCompositeMultipartCopyUpload(MultipartUploadDecorator):
         self._copy_parts.append(_CopyPart(start, end, offset, part_number, part_path, keep))
 
     def complete(self):
-        sorted_copy_parts = sorted(self._copy_parts, key=lambda copy_part: copy_part.offset)
-        prefix_end, prefix_last_index = self._find_prefix(sorted_copy_parts)
-        if self._prefix_exists(prefix_end):
-            self._mpu.upload_copy_part(0, self._original_size, offset=0, part_number=0,
-                                       part_path=self.path, keep=True)
-            self._reupload_first_part(prefix_end)
-            remaining_copy_parts = sorted_copy_parts[prefix_last_index + 1:]
-            self._upload_copy_parts(remaining_copy_parts)
+        prefix_copy_part = self._extract_prefix()
+        if prefix_copy_part:
+            self._adjust_first_uploaded_part(self._copy_parts[-1].end)
+            self._upload_copy_part(prefix_copy_part)
         else:
-            self._upload_copy_parts(sorted_copy_parts)
+            self._upload_parts(self._copy_parts)
         self._mpu.complete()
 
-    def _find_prefix(self, copy_parts):
-        prefix_end = 0
-        prefix_last_index = 0
-        for copy_index, copy_part in enumerate(copy_parts):
-            if copy_part.offset != prefix_end:
-                break
-            length = copy_part.end - copy_part.start
-            prefix_end += length
-            prefix_last_index = copy_index
-        return prefix_end, prefix_last_index
+    def _extract_prefix(self):
+        if self._copy_parts:
+            sorted_copy_parts = sorted(self._copy_parts, key=lambda copy_part: copy_part.offset)
+            if sorted_copy_parts[-1].end + self._chunk_size >= self._original_size:
+                return _CopyPart(0, self._original_size, offset=0, part_number=1,
+                                 part_path=self.path, keep=True)
+        return None
 
-    def _prefix_exists(self, prefix_end):
-        return prefix_end and prefix_end + self._chunk_size >= self._original_size
-
-    def _reupload_first_part(self, prefix_end):
+    def _adjust_first_uploaded_part(self, prefix_end):
         diff_offset = self._original_size - prefix_end
         if diff_offset > 0:
             part_path = self._mpu.composite_part_path(self._first_chunk)
@@ -461,22 +452,27 @@ class PrefixOptimizedCompositeMultipartCopyUpload(MultipartUploadDecorator):
                                   offset=self._first_chunk_offset, part_number=self._first_chunk,
                                   part_path=part_path)
 
-    def _upload_copy_parts(self, copy_parts):
+    def _upload_copy_part(self, copy_part):
+        self._mpu.upload_copy_part(copy_part.start, copy_part.end, offset=copy_part.offset,
+                                   part_number=copy_part.part_number, part_path=copy_part.part_path,
+                                   keep=copy_part.keep)
+
+    def _upload_parts(self, copy_parts):
         for copy_part in copy_parts:
-            self._mpu.upload_copy_part(copy_part.start, copy_part.end, offset=copy_part.offset,
-                                       part_number=copy_part.part_number, part_path=copy_part.keep,
-                                       keep=copy_part.keep)
+            self._mpu.upload_part(self._download(self.path, copy_part.start, copy_part.end - copy_part.start),
+                                  offset=copy_part.offset, part_number=copy_part.part_number,
+                                  part_path=copy_part.part_path, keep=copy_part.keep)
 
 
 class CompositeMultipartUpload(MultipartUpload):
 
     def __init__(self, bucket, path, new_mpu, mv, max_composite_parts=32):
         """
-        Limited composite object multipart upload.
-
+        Composite object multipart upload.
+        
         Uploads each part as an independent file then merges all the files into a single composite one.
-
-        Takes into the account maximum composite object parts.
+        
+        Takes into the account maximum allowed composite object parts.
 
         :param bucket: Destination bucket name.
         :param path: Destination bucket relative path.
@@ -506,7 +502,7 @@ class CompositeMultipartUpload(MultipartUpload):
         mpu.upload_part(buf, offset, part_number, self._part_path(mpu_number, part_number), keep)
 
     def _mpu_number(self, part_number):
-        return part_number / self._max_composite_parts
+        return (part_number - 1) / self._max_composite_parts + 1
 
     def _get_mpu(self, mpu_number):
         mpu = self._mpus.get(mpu_number, None)
