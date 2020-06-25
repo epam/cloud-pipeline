@@ -26,11 +26,12 @@ from botocore.credentials import RefreshableCredentials
 from botocore.session import get_session
 
 import fuseutils
-from fsclient import File, FileSystemClient
+from fsclient import File
 from fuseutils import MB, GB
 from mpu import MultipartUpload, SplittingMultipartCopyUpload, ChunkedMultipartUpload, \
-    TruncatingMultipartCopyUpload, UnmanageableMultipartUploadException, OutOfBoundsFillingMultipartCopyUpload, \
+    TruncatingMultipartCopyUpload, OutOfBoundsFillingMultipartCopyUpload, \
     OutOfBoundsSplittingMultipartCopyUpload
+from storage import StorageLowLevelFileSystemClient
 
 _ANY_ERROR = Exception
 
@@ -118,17 +119,17 @@ class S3MultipartUpload(MultipartUpload):
         self._s3.abort_multipart_upload(Bucket=self._bucket, Key=self._path, UploadId=self._upload_id)
 
 
-class S3Client(FileSystemClient):
+class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
 
     def __init__(self, bucket, pipe, chunk_size):
         """
-        AWS S3 API client for single bucket operations.
+        AWS S3 storage low level file system client operations.
 
         :param bucket: Name of the AWS S3 bucket.
         :param pipe: Cloud Pipeline API client.
         :param chunk_size: Multipart upload chunk size.
         """
-        super(S3Client, self).__init__()
+        super(S3StorageLowLevelClient, self).__init__()
         self._delimiter = '/'
         self._is_read_only = False
         self.bucket = bucket
@@ -138,8 +139,6 @@ class S3Client(FileSystemClient):
         self._max_chunk = 10000
         self._min_part_size = 5 * MB
         self._max_part_size = 5 * GB
-        self._single_upload_size = 5 * MB
-        self._mpus = {}
 
     def _generate_s3_client(self, bucket, pipe):
         session = self._generate_aws_session(bucket, pipe)
@@ -177,9 +176,6 @@ class S3Client(FileSystemClient):
 
     def is_read_only(self):
         return self._is_read_only
-
-    def exists(self, path):
-        return len(self.ls(path)) > 0
 
     def ls(self, path, depth=1):
         paginator = self._s3.get_paginator('list_objects_v2')
@@ -233,52 +229,26 @@ class S3Client(FileSystemClient):
                     is_dir=False)
 
     def upload(self, buf, path):
-        destination_path = path.lstrip(self._delimiter)
         with io.BytesIO(bytearray(buf)) as body:
-            self._s3.put_object(Bucket=self.bucket, Key=destination_path, Body=body,
+            self._s3.put_object(Bucket=self.bucket, Key=path, Body=body,
                                 ACL='bucket-owner-full-control')
 
     def delete(self, path, expand_path=True):
-        source_path = path.lstrip(self._delimiter)
-        self._s3.delete_object(Bucket=self.bucket, Key=source_path)
+        self._s3.delete_object(Bucket=self.bucket, Key=path)
 
     def mv(self, old_path, path):
-        source_path = old_path.lstrip(self._delimiter)
-        destination_path = path.lstrip(self._delimiter)
-        folder_source_path = fuseutils.append_delimiter(source_path)
-        if self.exists(folder_source_path):
-            self._mvdir(folder_source_path, destination_path)
-        else:
-            self._mvfile(source_path, destination_path)
-
-    def _mvdir(self, folder_source_path, folder_destination_path):
-        for file in self.ls(fuseutils.append_delimiter(folder_source_path), depth=-1):
-            relative_path = fuseutils.without_prefix(file.name, folder_source_path)
-            destination_path = fuseutils.join_path_with_delimiter(folder_destination_path, relative_path)
-            self._mvfile(file.name, destination_path)
-
-    def _mvfile(self, source_path, destination_path):
         source = {
             'Bucket': self.bucket,
-            'Key': source_path
+            'Key': old_path
         }
-        self._s3.copy(source, self.bucket, destination_path)
+        self._s3.copy(source, self.bucket, path)
         self._s3.delete_object(**source)
-
-    def mkdir(self, path):
-        synthetic_file_path = fuseutils.join_path_with_delimiter(path, '.DS_Store')
-        self.upload([], synthetic_file_path)
-
-    def rmdir(self, path):
-        for file in self.ls(fuseutils.append_delimiter(path), depth=-1):
-            self.delete(file.name)
 
     def download_range(self, fh, buf, path, offset=0, length=0):
         logging.info('Downloading range %d-%d for %s' % (offset, offset + length, path))
-        source_path = path.lstrip(self._delimiter)
         source = {
             'Bucket': self.bucket,
-            'Key': source_path
+            'Key': path
         }
         if offset >= 0 and length >= 0:
             source['Range'] = _http_range(offset, offset + length)
@@ -289,106 +259,25 @@ class S3Client(FileSystemClient):
         for chunk in iter(lambda: response.read(1 * MB), b''):
             buf.write(chunk)
 
-    def upload_range(self, fh, buf, path, offset=0):
-        source_path = path.lstrip(self._delimiter)
-        mpu = self._mpus.get(source_path, None)
-        try:
-            if mpu:
-                mpu.upload_part(buf, offset)
-            else:
-                file_size = self.attrs(path).size
-                buf_size = len(buf)
-                if buf_size < self._single_upload_size \
-                        and file_size < self._single_upload_size \
-                        and offset < self._single_upload_size:
-                    logging.info('Using single range upload approach for %d:%s' % (fh, path))
-                    self._upload_single_range(fh, buf, source_path, offset, file_size)
-                else:
-                    logging.info('Using multipart upload approach for %d:%s' % (fh, path))
-                    mpu = self._new_mpu(source_path, file_size)
-                    self._mpus[path] = mpu
-                    mpu.initiate()
-                    mpu.upload_part(buf, offset)
-        except UnmanageableMultipartUploadException:
-            if mpu:
-                try:
-                    logging.exception('Unmanageable multipart upload detected for %d:%s. '
-                                      'Attempting to reinitialize the multipart upload.' % (fh, path))
-                    mpu.complete()
-                    file_size = self.attrs(path).size
-                    mpu = self._new_mpu(source_path, file_size, offset)
-                    self._mpus[source_path] = mpu
-                    mpu.initiate()
-                    mpu.upload_part(buf, offset)
-                except _ANY_ERROR:
-                    logging.exception('Reinitialized multipart upload has failed for %d:%s. '
-                                      'Attempting to abort the multipart upload.' % (fh, path))
-                    del self._mpus[source_path]
-                    mpu.abort()
-                    raise
-            else:
-                raise
-        except _ANY_ERROR:
-            if mpu:
-                logging.exception('Multipart upload has failed for %d:%s. '
-                                  'Attempting to abort the multipart upload.' % (fh, path))
-                del self._mpus[path]
-                mpu.abort()
-            raise
-
-    def _new_mpu(self, source_path, file_size):
+    def new_mpu(self, source_path, file_size, download):
         mpu = S3MultipartUpload(source_path, self.bucket, self._s3)
         mpu = OutOfBoundsFillingMultipartCopyUpload(mpu, original_size=file_size,
-                                                    download_func=self._generate_region_download_function(source_path))
+                                                    download_func=download)
         mpu = SplittingMultipartCopyUpload(mpu, min_part_size=self._min_part_size, max_part_size=self._max_part_size)
         mpu = OutOfBoundsSplittingMultipartCopyUpload(mpu, original_size=file_size,
                                                       min_part_size=self._min_part_size, max_part_size=self._chunk_size)
         mpu = ChunkedMultipartUpload(mpu, original_size=file_size,
-                                     download=self._generate_region_download_function(source_path),
+                                     download=download,
                                      chunk_size=self._chunk_size, min_chunk=self._min_chunk, max_chunk=self._max_chunk)
         return mpu
 
-    def _generate_region_download_function(self):
-        def download(path, region_offset, region_length):
-            with io.BytesIO() as buf:
-                self.download_range(None, buf, path, region_offset, region_length)
-                return buf.getvalue()
-        return download
-
-    def _upload_single_range(self, fh, buf, path, offset, file_size):
-        if file_size:
-            with io.BytesIO() as original_buf:
-                self.download_range(fh, original_buf, path, offset=0, length=file_size)
-                original_bytes = bytearray(original_buf.getvalue())
-        else:
-            original_bytes = bytearray()
-        modified_bytes = bytearray(max(offset + len(buf), len(original_bytes)))
-        modified_bytes[0: len(original_bytes)] = original_bytes
-        modified_bytes[offset: offset + len(buf)] = buf
-        with io.BytesIO(modified_bytes) as body:
-            logging.info('Uploading range %d-%d for %s' % (offset, offset + len(buf), path))
-            self._s3.put_object(Bucket=self.bucket, Key=path, Body=body,
-                                ACL='bucket-owner-full-control')
-
-    def flush(self, fh, path):
-        mpu = self._mpus.get(path, None)
-        if mpu:
-            try:
-                mpu.complete()
-            except _ANY_ERROR:
-                mpu.abort()
-                raise
-            finally:
-                del self._mpus[path]
-
     def truncate(self, fh, path, length):
-        source_path = path.lstrip(self._delimiter)
-        logging.info('Truncating %s to %d' % (source_path, length))
+        logging.info('Truncating %s to %d' % (path, length))
         file_size = self.attrs(path).size
         if not length:
             self.upload(bytearray(), path)
         elif file_size > length:
-            mpu = self._new_truncating_mpu(source_path, length)
+            mpu = self._new_truncating_mpu(path, length)
             try:
                 mpu.initiate()
                 mpu.complete()

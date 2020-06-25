@@ -40,9 +40,10 @@ from pipefuse.trunc import CopyOnDownTruncateFileSystemClient, \
     WriteNullsOnUpTruncateFileSystemClient, \
     WriteLastNullOnUpTruncateFileSystemClient
 from pipefuse.api import CloudPipelineClient, CloudType
-from pipefuse.gcp import GCPClient
+from pipefuse.gcp import GoogleStorageLowLevelFileSystemClient
 from pipefuse.webdav import CPWebDavClient
-from pipefuse.s3 import S3Client
+from pipefuse.s3 import S3StorageLowLevelClient
+from pipefuse.storage import StorageHighLevelFileSystemClient
 from pipefuse.pipefs import PipeFS
 from pipefuse.record import RecordingFS, RecordingFileSystemClient
 from pipefuse.path import PathExpandingStorageFileSystemClient
@@ -89,11 +90,12 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
         bucket_object = pipe.get_storage(bucket_name)
         bucket_type = bucket_object.type
         if bucket_type == CloudType.S3:
-            client = S3Client(bucket_name, pipe=pipe, chunk_size=chunk_size)
+            client = S3StorageLowLevelClient(bucket_name, pipe=pipe, chunk_size=chunk_size)
         elif bucket_type == CloudType.GS:
-            client = GCPClient(bucket_name, pipe=pipe, chunk_size=chunk_size)
+            client = GoogleStorageLowLevelFileSystemClient(bucket_name, pipe=pipe, chunk_size=chunk_size)
         else:
             raise RuntimeError('Cloud storage type %s is not supported.' % bucket_object.type)
+        client = StorageHighLevelFileSystemClient(client)
     if recording:
         client = RecordingFileSystemClient(client)
     if bucket_type in [CloudType.S3, CloudType.GS]:
@@ -121,10 +123,12 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
             client = WriteNullsOnUpTruncateFileSystemClient(client, capacity=trunc_buffer_size)
     else:
         logging.info('Truncating support is disabled.')
+    logging.info('File system clients pipeline: %s', client.stats())
     fs = PipeFS(client=client, lock=get_lock(threads, monitoring_delay=monitoring_delay), mode=int(default_mode, 8))
     if recording:
         fs = RecordingFS(fs)
 
+    logging.info('Initializing file system.')
     enable_fallocate_support()
     FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=client.is_read_only(), **mount_options)
 

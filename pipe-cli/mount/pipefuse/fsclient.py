@@ -125,6 +125,9 @@ class FileSystemClient:
         """
         pass
 
+    def stats(self):
+        return str(type(self).__name__)
+
 
 class FileSystemClientDecorator(FileSystemClient):
 
@@ -177,6 +180,9 @@ class FileSystemClientDecorator(FileSystemClient):
 
     def truncate(self, fh, path, length):
         self._inner.truncate(fh, path, length)
+
+    def stats(self):
+        return ' -> '.join([str(type(self).__name__), self._inner.stats()])
 
     def __getattr__(self, name):
         if hasattr(self._inner, name):

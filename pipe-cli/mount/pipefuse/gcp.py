@@ -15,6 +15,7 @@ from fsclient import FileSystemClient, File
 from fuseutils import MB, TB
 from mpu import MultipartUpload, ChunkedMultipartUpload, SplittingMultipartCopyUpload, \
     CompositeMultipartUpload, AppendOptimizedCompositeMultipartCopyUpload
+from pipefuse.storage import StorageLowLevelFileSystemClient
 
 _ANY_ERROR = Exception
 
@@ -103,17 +104,17 @@ class _RefreshingClient(Client):
         super(_RefreshingClient, self).__init__(project=credentials.temporary_credentials.secret_key, _http=session)
 
 
-class GCPClient(FileSystemClient):
+class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
 
     def __init__(self, bucket, pipe, chunk_size):
         """
-        GCP API client for single bucket operations.
+        Google storage low level file system client operations.
 
         :param bucket: Name of the GCP bucket.
         :param pipe: Cloud Pipeline API client.
         :param chunk_size: Multipart upload chunk size.
         """
-        super(GCPClient, self).__init__()
+        super(GoogleStorageLowLevelFileSystemClient, self).__init__()
         self._delimiter = '/'
         self._is_read_only = False
         self.bucket = bucket
@@ -124,9 +125,7 @@ class GCPClient(FileSystemClient):
         self._max_chunk = self._max_size / self._chunk_size
         self._min_part_size = 5 * MB
         self._max_part_size = 500 * MB
-        self._single_upload_size = 5 * MB
         self._max_composite_parts = 32
-        self._mpus = {}
 
     def _generate_gcp(self, pipe):
         bucket_object = pipe.get_storage(self.bucket)
@@ -140,14 +139,12 @@ class GCPClient(FileSystemClient):
     def is_read_only(self):
         return self._is_read_only
 
-    def exists(self, path):
-        return len(self.ls(path)) > 0
-
     def ls(self, path, depth=1):
+        prefix = path.lstrip(self._delimiter)
         recursive = depth < 0
         bucket_object = self._gcp.bucket(self.bucket)
-        blobs_iterator = bucket_object.list_blobs(prefix=path, delimiter=self._delimiter if not recursive else None)
-        absolute_files = [self._get_file_object(blob, path, recursive) for blob in blobs_iterator]
+        blobs_iterator = bucket_object.list_blobs(prefix=prefix, delimiter=self._delimiter if not recursive else None)
+        absolute_files = [self._get_file_object(blob, prefix, recursive) for blob in blobs_iterator]
         absolute_folders = [self._get_folder_object(name) for name in blobs_iterator.prefixes]
         absolute_items = absolute_folders + absolute_files
         return absolute_items
@@ -169,115 +166,36 @@ class GCPClient(FileSystemClient):
                     is_dir=True)
 
     def upload(self, buf, path):
-        destination_path = path.lstrip(self._delimiter)
         bucket_object = self._gcp.bucket(self.bucket)
-        blob = bucket_object.blob(destination_path)
+        blob = bucket_object.blob(path)
         blob.upload_from_string(str(buf or ''))
 
     def delete(self, path):
-        source_path = path.lstrip(self._delimiter)
         bucket_object = self._gcp.bucket(self.bucket)
-        blob = bucket_object.blob(source_path)
+        blob = bucket_object.blob(path)
         blob.delete()
 
     def mv(self, old_path, path):
-        source_path = old_path.lstrip(self._delimiter)
-        destination_path = path.lstrip(self._delimiter)
-        folder_source_path = fuseutils.append_delimiter(source_path)
-        if self.exists(folder_source_path):
-            self._mvdir(folder_source_path, destination_path)
-        else:
-            self._mvfile(source_path, destination_path)
-
-    def _mvdir(self, folder_source_path, folder_destination_path):
-        for file in self.ls(fuseutils.append_delimiter(folder_source_path), depth=-1):
-            relative_path = fuseutils.without_prefix(file.name, folder_source_path)
-            destination_path = fuseutils.join_path_with_delimiter(folder_destination_path, relative_path)
-            self._mvfile(file.name, destination_path)
-
-    def _mvfile(self, source_path, destination_path):
         source_bucket = self._gcp.bucket(self.bucket)
-        source_blob = source_bucket.blob(source_path)
-        source_bucket.copy_blob(source_blob, source_bucket, destination_path)
+        source_blob = source_bucket.blob(old_path)
+        source_bucket.copy_blob(source_blob, source_bucket, path)
         source_blob.delete()
 
-    def mkdir(self, path):
-        synthetic_file_path = fuseutils.join_path_with_delimiter(path, '.DS_Store')
-        self.upload([], synthetic_file_path)
-
-    def rmdir(self, path):
-        for file in self.ls(fuseutils.append_delimiter(path), depth=-1):
-            self.delete(file.name)
-
     def download_range(self, fh, buf, path, offset=0, length=0):
-        source_path = path.lstrip(self._delimiter)
         source_bucket = self._gcp.bucket(self.bucket)
-        source_blob = source_bucket.blob(source_path)
+        source_blob = source_bucket.blob(path)
         body = source_blob.download_as_string(start=offset, end=offset + length)
         buf.write(body)
 
-    def upload_range(self, fh, buf, path, offset=0):
-        source_path = path.lstrip(self._delimiter)
-        mpu = self._mpus.get(path, None)
-        try:
-            if not mpu:
-                file_size = self.attrs(path).size
-                buf_size = len(buf)
-                if buf_size < self._single_upload_size and file_size < self._single_upload_size:
-                    logging.info('Using single range upload approach')
-                    self._upload_single_range(fh, buf, source_path, offset, file_size)
-                else:
-                    logging.info('Using multipart upload approach')
-                    mpu = self._new_mpu(source_path, file_size)
-                    self._mpus[path] = mpu
-                    mpu.initiate()
-                    mpu.upload_part(buf, offset)
-            else:
-                mpu.upload_part(buf, offset)
-        except _ANY_ERROR:
-            if mpu:
-                mpu.abort()
-                del self._mpus[path]
-            raise
-
-    def _new_mpu(self, source_path, file_size):
+    def new_mpu(self, source_path, file_size, download):
         mpu = CompositeMultipartUpload(self.bucket, path=source_path,
                                        new_mpu=lambda path: GCPMultipartUpload(self.bucket, path, self._gcp),
                                        mv=lambda old_path, path: self.mv(old_path, path),
                                        max_composite_parts=self._max_composite_parts)
         mpu = AppendOptimizedCompositeMultipartCopyUpload(mpu, original_size=file_size, chunk_size=self._chunk_size,
-                                                          download=self._generate_region_download_function())
+                                                          download=download)
         mpu = SplittingMultipartCopyUpload(mpu, min_part_size=self._min_part_size, max_part_size=self._max_part_size)
         mpu = ChunkedMultipartUpload(mpu, original_size=file_size,
-                                     download=self._generate_region_download_function(),
+                                     download=download,
                                      chunk_size=self._chunk_size, min_chunk=self._min_chunk, max_chunk=self._max_chunk)
         return mpu
-
-    def _generate_region_download_function(self):
-        def download(path, region_offset, region_length):
-            with io.BytesIO() as buf:
-                self.download_range(None, buf, path, region_offset, region_length)
-                return buf.getvalue()
-        return download
-
-    def _upload_single_range(self, fh, buf, path, offset, file_size):
-        if file_size:
-            with io.BytesIO() as original_buf:
-                self.download_range(fh, original_buf, path, offset=0, length=file_size)
-                modified_bytes = bytearray(original_buf.getvalue())
-        else:
-            modified_bytes = bytearray()
-        modified_bytes[offset: offset + len(buf)] = buf
-        logging.info('Uploading range %d-%d for %s' % (offset, offset + len(buf), path))
-        self.upload(modified_bytes, path)
-
-    def flush(self, fh, path):
-        mpu = self._mpus.get(path, None)
-        if mpu:
-            try:
-                mpu.complete()
-            except _ANY_ERROR:
-                mpu.abort()
-                raise
-            finally:
-                del self._mpus[path]
