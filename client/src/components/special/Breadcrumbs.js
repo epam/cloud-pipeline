@@ -38,6 +38,7 @@ export default class Breadcrumbs extends React.Component {
     styleEditableField: PropTypes.object,
     editStyleEditableField: PropTypes.object,
     onSaveEditableField: PropTypes.func,
+    onNavigate: PropTypes.func,
     displayTextEditableField: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
     icon: PropTypes.string,
     iconClassName: PropTypes.string,
@@ -111,6 +112,10 @@ export default class Breadcrumbs extends React.Component {
     }
   };
 
+  navigateToItem = item => () => {
+    this.props.onNavigate && this.props.onNavigate(item);
+  }
+
   render () {
     if (!this.props.pipelinesLibrary.loaded && this.props.pipelinesLibrary.pending) {
       return <Icon type="loading" />;
@@ -176,6 +181,48 @@ export default class Breadcrumbs extends React.Component {
                 </div>
               ];
             } else {
+              if (this.props.onNavigate) {
+                return [
+                  <div
+                    key={`item-${index}`}
+                    onClick={this.navigateToItem(item)}
+                    style={{
+                      color: 'inherit',
+                      cursor: 'pointer',
+                      display: 'inline-block',
+                      verticalAlign: 'baseline'
+                    }}>
+                    {
+                      item.icon ? (
+                        <Icon
+                          type={item.icon}
+                          className={item.iconClassName}
+                          style={{marginRight: 5}}
+                        />
+                      ) : null
+                    }
+                    {
+                      item.lock ? (
+                        <Icon
+                          type="lock"
+                          className={item.lockClassName}
+                          style={{marginRight: 5}}
+                        />
+                      ) : null
+                    }
+                    {item.name}
+                  </div>,
+                  <Icon
+                    key={`divider-${index}`}
+                    type="caret-right"
+                    style={{
+                      lineHeight: 2,
+                      verticalAlign: 'middle',
+                      margin: '0px 5px',
+                      fontSize: 'small'
+                    }} />
+                ];
+              }
               return [
                 <Link
                   key={`item-${index}`}

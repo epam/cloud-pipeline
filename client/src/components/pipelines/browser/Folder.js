@@ -1706,6 +1706,7 @@ export default class Folder extends localization.LocalizedReactComponent {
                 !roleModel.writeAllowed(this.props.folder.value) ||
                 this.props.readOnly
               }
+              onNavigate={this.props.onSelectItem}
               classNameEditableField={folderTitleClassName}
               onSaveEditableField={this.renameCurrentFolder}
               editStyleEditableField={{flex: 1}}
