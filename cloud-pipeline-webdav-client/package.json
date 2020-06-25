@@ -6,7 +6,9 @@
   "main": ".webpack/main",
   "scripts": {
     "start": "DEV_MODE=true electron-forge start",
+    "start:win32": "set DEV_MODE=true && electron-forge start",
     "package": "electron-forge package",
+    "package:win32": "electron-forge package --arch=ia32,x64 --platform=win32",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\""
