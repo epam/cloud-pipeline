@@ -50,7 +50,7 @@ class PathExpandingStorageFileSystemClient(FileSystemClientDecorator):
 
     def rmdir(self, path):
         expanded_path = self._expand_path(path)
-        self._inner.mkdir(expanded_path)
+        self._inner.rmdir(expanded_path)
 
     def download_range(self, fh, buf, path, offset=0, length=0):
         expanded_path = self._expand_path(path)

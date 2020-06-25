@@ -414,7 +414,6 @@ class AppendOptimizedCompositeMultipartCopyUpload(MultipartUploadDecorator):
         self._chunk_size = chunk_size
         self._download = download
         self._copy_parts = []
-        self._chunks = []
         self._first_chunk = sys.maxint
         self._first_chunk_offset = 0
 

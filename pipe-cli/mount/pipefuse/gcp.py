@@ -51,7 +51,8 @@ class GCPMultipartUpload(MultipartUpload):
         logging.info('Uploading multipart upload part #%d range %d-%d as %s for %s'
                      % (part_number, offset, offset + len(buf), part_path, self._path))
         part_blob = self._bucket_object.blob(part_path)
-        part_blob.upload_from_string(str(buf))
+        with io.BytesIO(buf) as body:
+            part_blob.upload_from_file(body)
         self._parts[part_number] = part_blob
 
     def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None, keep=False):
@@ -184,8 +185,7 @@ class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
     def download_range(self, fh, buf, path, offset=0, length=0):
         source_bucket = self._gcp.bucket(self.bucket)
         source_blob = source_bucket.blob(path)
-        body = source_blob.download_as_string(start=offset, end=offset + length)
-        buf.write(body)
+        source_blob.download_to_file(buf, start=offset, end=offset + length - 1)
 
     def new_mpu(self, source_path, file_size, download):
         mpu = CompositeMultipartUpload(self.bucket, path=source_path,
