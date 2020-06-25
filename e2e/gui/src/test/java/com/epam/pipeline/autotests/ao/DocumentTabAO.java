@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 package com.epam.pipeline.autotests.ao;
-
 
 import com.codeborne.selenide.SelenideElement;
 import org.openqa.selenium.By;
@@ -109,7 +108,7 @@ public class DocumentTabAO extends AbstractPipelineTabAO<DocumentTabAO> {
 
     public String getVersion() {
         String fullText = $(byClassName("browser__item-header")).text();
-        return fullText.substring(fullText.lastIndexOf("-") + 1, fullText.length() - 1);
+        return fullText.substring(fullText.lastIndexOf("-") + 1, fullText.lastIndexOf(")"));
     }
 
     public class DocumentRenamingPopupAO extends PopupWithStringFieldAO<DocumentRenamingPopupAO, DocumentTabAO> {
