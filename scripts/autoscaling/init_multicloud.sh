@@ -286,10 +286,9 @@ _KUBE_NODE_NAME="${_KUBE_NODE_NAME:-$(hostname)}"
 _KUBE_NODE_NAME_ARGS="--hostname-override $_KUBE_NODE_NAME"
 
 # FIXME: use the .NodeRegistration.KubeletExtraArgs object in the configuration files
-_KUBELET_INITD_DROPIN_PATH="/etc/sysconfig/kubelet"
+_KUBELET_INITD_DROPIN_PATH="/etc/systemd/system/kubelet.service.d/20-kubelet-labels.conf"
 rm -f $_KUBELET_INITD_DROPIN_PATH
 
-echo "KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS" >> $_KUBELET_INITD_DROPIN_PATH
 ## Configure kubelet reservations
 ## FIXME: shall be moved to the preferences
 
@@ -326,8 +325,6 @@ systemctl start kubelet
 
 update_nameserver "$nameserver_post_val" "infinity"
 
-# Add support for joining node to kube cluster after starting
-echo -e "systemctl start docker\nkubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-verification --node-name $_KUBE_NODE_NAME\nsystemctl start kubelet" >> /etc/rc.local
 _API_URL="@API_URL@"
 _API_TOKEN="@API_TOKEN@"
 _MOUNT_POINT="/ebs"

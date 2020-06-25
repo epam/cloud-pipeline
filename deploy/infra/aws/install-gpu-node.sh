@@ -18,8 +18,13 @@
 yum install -y  nc \
                 python \
                 curl \
+                btrfs-progs \
                 iproute-tc && \
 curl https://bootstrap.pypa.io/get-pip.py | python -
+
+# Install jq
+wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
+chmod +x /usr/bin/jq
 
 # Install nvidia driver deps
 yum install -y  gcc \
@@ -33,23 +38,37 @@ yum install -y yum-utils \
   device-mapper-persistent-data \
   lvm2
 
+# User 18.03 to overcome the 8Gb layer commit limit of 18.06 (see https://github.com/moby/moby/issues/37581)
+# 18.09 and up are not yet available for Amzn Linux 2
 # Try to install from the docker repo
 yum-config-manager \
     --add-repo \
     https://download.docker.com/linux/centos/docker-ce.repo && \
-yum install -y  docker-ce-18.09.1 \
-                docker-ce-cli-18.09.1 \
+yum install -y  docker-ce-18.03* \
+                docker-ce-cli-18.03* \
                 containerd.io
 if [ $? -ne 0 ]; then
-  echo "Unable to install docker from the official repository, trying to use default docker-18.06*"
+  echo "Unable to install docker from the official repository, trying to use default docker-18.03*"
 
   # Otherwise try to install default docker (e.g. if it's amazon linux)
-  yum install -y docker-18.06*
+  yum install -y docker-18.03*
   if [ $? -ne 0 ]; then
-    echo "Unable to install default docker-18.06* too, exiting"
+    echo "Unable to install default docker-18.03* too, exiting"
     exit 1
   fi
 fi
+
+# Get the kube docker images, required by the kubelet
+# This is needed, as we don't want to rely on the external repos
+systemctl start docker && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.7.5/docker/kube-proxy-amd64-v1.7.5.tar" -O /tmp/kube-proxy-amd64-v1.7.5.tar  && \
+docker load -i /tmp/kube-proxy-amd64-v1.7.5.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.7.5/docker/pause-amd64-3.0.tar" -O /tmp/pause-amd64-3.0.tar && \
+docker load -i /tmp/pause-amd64-3.0.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.7.5/docker/flannel-v0.9.0-amd64.tar" -O /tmp/flannel-v0.9.0-amd64.tar && \
+docker load -i /tmp/flannel-v0.9.0-amd64.tar && \
+systemctl stop docker && \
+rm -rf /tmp/*
 
 # Install kubelet
 cat <<EOF >/etc/yum.repos.d/kubernetes.repo
@@ -82,6 +101,10 @@ yum install -y \
             kubectl-1.15.4-0.x86_64 \
             kubelet-1.15.4-0.x86_64
 
+# Setup default cgroups and cadvisor port
+sed -i 's/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=0"/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=4194"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+sed -i 's/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=systemd"/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=cgroupfs"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+
 # Install nvidia driver
 wget http://us.download.nvidia.com/tesla/384.145/NVIDIA-Linux-x86_64-384.145.run && \
 sh NVIDIA-Linux-x86_64-384.145.run --silent
@@ -90,13 +113,13 @@ sh NVIDIA-Linux-x86_64-384.145.run --silent
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID) 
 curl -s -L https://nvidia.github.io/nvidia-container-runtime/$distribution/nvidia-container-runtime.repo | \
   sudo tee /etc/yum.repos.d/nvidia-container-runtime.repo
-curl -s -L https://nvidia.github.io/libnvidia-container/$DIST/libnvidia-container.repo | \
+curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | \
   sudo tee /etc/yum.repos.d/libnvidia-container.repo
 curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.repo | \
   sudo tee /etc/yum.repos.d/nvidia-docker.repo
 
-yum install nvidia-docker2 -y && \
-yum install libnvidia-container1 -y
+yum install nvidia-docker2-2.0.3-1.docker18.03* \
+    nvidia-container-runtime-2.0.0-1.docker18.03* -y
 
 # According to https://aws.amazon.com/ru/premiumsupport/knowledge-center/g2-rhel-boot/ - the following shall be done for p3 instances (p2 work well)
 # 1.    Resize the instance, choosing any instance other than one in the g2 series.

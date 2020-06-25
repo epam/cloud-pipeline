@@ -65,11 +65,6 @@ case $key in
     shift # past argument
     shift # past value
     ;;
-    -dm|--docker-manifest)
-    DOCKER_IMAGES_MANIFEST_FILE="$2"
-    shift # past argument
-    shift # past value
-    ;;
     -k|--keep-manifests)
     KEEP_MANIFEST_FILES="1"
     shift # past argument
@@ -136,16 +131,15 @@ if [ "$CLOUD_IMAGES_MANIFEST_FILE" == "rebuild" ]; then
         rm -f ${CLOUD_IMAGES_MANIFEST_FILE}.az
     fi
 elif [ -z "$CLOUD_IMAGES_MANIFEST_FILE" ] || [[ "$CLOUD_IMAGES_MANIFEST_FILE" == "http"*"://"* ]]; then
+    echo "Cloud images manifest is specified explicitely ($CLOUD_IMAGES_MANIFEST_FILE) via the remote URI, downloading to $CLOUD_IMAGES_MANIFEST_FILE. Cloud image WILL NOT be rebuilt"
     CLOUD_IMAGES_MANIFEST_URI=${CLOUD_IMAGES_MANIFEST_FILE:-"https://s3.amazonaws.com/cloud-pipeline-oss-builds/manifests/cloud-images-manifest.txt"}
     CLOUD_IMAGES_MANIFEST_FILE="$BUILD_DIR/cloud-images-manifest.txt"
-    echo "Cloud images manifest is specified explicitely ($CLOUD_IMAGES_MANIFEST_URI) via the remote URI, downloading to $CLOUD_IMAGES_MANIFEST_FILE. Cloud images WILL NOT be rebuilt"
     if check_installed "wget"; then
         wget "$CLOUD_IMAGES_MANIFEST_URI" -O $CLOUD_IMAGES_MANIFEST_FILE
     elif check_installed "curl"; then
         curl "$CLOUD_IMAGES_MANIFEST_URI" -o $CLOUD_IMAGES_MANIFEST_FILE
     else
         echo "ERROR: wget and curl are not installed, please install one of them to use the remote images manifest"
-        cleanup_build
         exit 1
     fi
 else
@@ -156,60 +150,25 @@ fi
 # Build dockers
 ###############
 
+if ! check_installed "docker"; then
+    echo "Docker is not installed. Please install it and rerun the script"
+    exit 1
+fi
+
+echo
+echo "[BUILDING/PUSHING DOCKER IMAGES]"
 DOCKERS_MANIFEST_DIR="$BUILD_DIR/dockers-manifest"
+DOCKERS_BUILD_OTHER_OPTIONS=""
+if [ "$BUILD_INCLUDE_TESTS" ]; then
+    echo "Test docker images will be included"
+    DOCKERS_BUILD_OTHER_OPTIONS="$DOCKERS_BUILD_OTHER_OPTIONS -t"
+fi
+bash $BUILD_SCRIPT_PATH/docker/build-dockers.sh -c "$DOCKERS_MANIFEST_DIR" -s "$BUILD_SCRIPT_PATH/docker" -v "$BUILD_VERSION" $DOCKERS_BUILD_OTHER_OPTIONS
 
-if [[ "$DOCKER_IMAGES_MANIFEST_FILE" == "http"*"://"* ]]; then
-    DOCKER_IMAGES_MANIFEST_URI="$DOCKER_IMAGES_MANIFEST_FILE"
-    DOCKER_IMAGES_MANIFEST_DIR_TMP="$(mktemp -d)"
-    DOCKER_IMAGES_MANIFEST_FILE="${DOCKER_IMAGES_MANIFEST_DIR_TMP}/dockers-manifest.tgz"
-    echo "Docker images manifest is specified explicitely ($DOCKER_IMAGES_MANIFEST_URI) via the remote URI, downloading to $DOCKER_IMAGES_MANIFEST_FILE. Docker images WILL NOT be rebuilt"
-    if check_installed "wget"; then
-        wget "$DOCKER_IMAGES_MANIFEST_URI" -O $DOCKER_IMAGES_MANIFEST_FILE
-    elif check_installed "curl"; then
-        curl "$DOCKER_IMAGES_MANIFEST_URI" -o $DOCKER_IMAGES_MANIFEST_FILE
-    else
-        echo "ERROR: wget and curl are not installed, please install one of them to use the remote images manifest"
-        cleanup_build
-        exit 1
-    fi
-
-    cd "$DOCKER_IMAGES_MANIFEST_DIR_TMP"
-    tar -zxf $DOCKER_IMAGES_MANIFEST_FILE
-    if [ $? -ne 0 ]; then
-        echo "ERROR: unable to unpack the dockers manifest tarball, exiting"
-        cleanup_build
-        exit 1
-    fi
-    cd -
-    if [ ! -d "$DOCKER_IMAGES_MANIFEST_DIR_TMP/dockers-manifest" ]; then
-        echo "ERROR: unable to find the unpacked dockers-manifest directory, exiting"
-        cleanup_build
-        exit 1
-    fi
-    rm -rf "$DOCKERS_MANIFEST_DIR"
-    \cp -r "$DOCKER_IMAGES_MANIFEST_DIR_TMP/dockers-manifest" "$DOCKERS_MANIFEST_DIR"
-    rm -rf "$DOCKER_IMAGES_MANIFEST_DIR_TMP"
-else
-    if ! check_installed "docker"; then
-        echo "Docker is not installed. Please install it and rerun the script"
-        cleanup_build
-        exit 1
-    fi
-
-    echo
-    echo "[BUILDING/PUSHING DOCKER IMAGES]"
-    DOCKERS_BUILD_OTHER_OPTIONS=""
-    if [ "$BUILD_INCLUDE_TESTS" ]; then
-        echo "Test docker images will be included"
-        DOCKERS_BUILD_OTHER_OPTIONS="$DOCKERS_BUILD_OTHER_OPTIONS -t"
-    fi
-    bash $BUILD_SCRIPT_PATH/docker/build-dockers.sh -c "$DOCKERS_MANIFEST_DIR" -s "$BUILD_SCRIPT_PATH/docker" -v "$BUILD_VERSION" $DOCKERS_BUILD_OTHER_OPTIONS
-
-    if [ $? -ne 0 ]; then
-        echo "ERROR occured while building/pushing docker images, FAILING build"
-        cleanup_build
-        exit 1
-    fi
+if [ $? -ne 0 ]; then
+    echo "ERROR occured while building/pushing docker images, FAILING build"
+    cleanup_build
+    exit 1
 fi
 
 ##########################################################################
