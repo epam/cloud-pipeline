@@ -140,10 +140,6 @@ yum install -y \
             kubectl-1.15.4-0.x86_64 \
             kubelet-1.15.4-0.x86_64
 
-#7
-sed -i 's/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=0"/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=4194"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-sed -i 's/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=systemd"/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=cgroupfs"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-
 #8
 systemctl daemon-reload
 systemctl enable docker
