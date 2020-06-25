@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.SelenideElement;
-import com.epam.pipeline.autotests.ao.NavigationMenuAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.SelenideElements;
@@ -41,18 +40,16 @@ public class PipelineEditingTest extends AbstractBfxPipelineTest implements Navi
     private static final String RENAMED_FILE_NAME = "renamedSeleniumTestFile-" + Double.doubleToLongBits(Math.random());
     private static final String RENAMED_PIPELINE_NAME = "renamedSeleniumTestPipe-" + Double.doubleToLongBits(Math.random());
 
-
     private String currentPipelineName = PIPELINE_NAME;
     private SelenideElement OKButton = $(button("OK"));
 
     @AfterClass(alwaysRun = true)
     @TestCase(value = {"EPMCMBIBPC-287", "EPMCMBIBPC-288"})
     public void cleanUp() {
-        $("#navigation-button-pipelines").click();
-        $(byText(FOLDER_NAME)).should(exist).click();
-        $(byText(currentPipelineName)).shouldBe(visible, enabled).click();
-        deletePipelineTest();
-        deleteFolderTest();
+        library()
+                .cd(FOLDER_NAME)
+                .removePipeline(currentPipelineName)
+                .removeFolder(FOLDER_NAME);
     }
 
     @Test(priority = 0)
@@ -127,15 +124,11 @@ public class PipelineEditingTest extends AbstractBfxPipelineTest implements Navi
     @Test(dependsOnMethods = {"deletePipelineFileTest"})
     @TestCase(value = {"EPMCMBIBPC-292"})
     public void editPipelineTest() {
-        openTestingPipeline();
-        sleep(2, SECONDS);
-        $(byText(PIPELINE_NAME)).shouldBe(visible, enabled).click();
-        $(byId("edit-pipeline-button")).shouldBe(visible, enabled).click();
-        $(cssSelector("input#name.ant-input.ant-input-lg")).shouldBe(visible).clear();
-        $(cssSelector("input#name.ant-input.ant-input-lg")).setValue(RENAMED_PIPELINE_NAME);
-        currentPipelineName = RENAMED_PIPELINE_NAME;
-        sleep(2, SECONDS);
-        $("#edit-pipeline-form-save-button").shouldBe(visible).click();
+        library()
+                .clickOnPipeline(PIPELINE_NAME)
+                .clickEditButton()
+                .rename(currentPipelineName = RENAMED_PIPELINE_NAME)
+                .save();
     }
 
     public void setFolderName(String folderName) {
@@ -162,30 +155,6 @@ public class PipelineEditingTest extends AbstractBfxPipelineTest implements Navi
     private SelenideElement file(final String filename) {
         return SelenideElements.of(tagName("tr"), $(byClassName("pipeline-details__full-height-container")))
                 .findBy(text(filename));
-    }
-
-    private void openTestingPipeline() {
-        navigationMenu()
-                .library()
-                .cd(FOLDER_NAME)
-                .clickOnPipeline(currentPipelineName);
-    }
-
-    private void deletePipelineTest() {
-        openTestingPipeline();
-        sleep(5, SECONDS);
-        $(byId("edit-pipeline-button")).shouldBe(visible).click();
-        sleep(5, SECONDS);
-        $(byId("edit-pipeline-form-delete-button")).shouldBe(visible).click();
-        $(byId("edit-pipeline-delete-dialog-delete-button")).shouldBe(visible).click();
-        sleep(5, SECONDS);
-        refresh();
-    }
-
-    private void deleteFolderTest() {
-        new NavigationMenuAO()
-                .library()
-                .removeFolder(FOLDER_NAME);
     }
 
     private void clickCodeTab() {
