@@ -71,6 +71,12 @@ class WebdavFileSystem extends FileSystem {
         .catch(utilities.rejectError(reject));
     });
   }
+  parsePath (directory) {
+    return (directory || '').split('/');
+  }
+  joinPath (...parts) {
+    return (parts || []).join('/');
+  }
 }
 
 export default WebdavFileSystem;
