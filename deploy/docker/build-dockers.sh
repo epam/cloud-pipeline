@@ -233,6 +233,12 @@ docker build    $DOCKERS_SOURCES_PATH/cp-tinyproxy \
                 -t "$CP_TP_DIST_NAME"
 docker push "$CP_TP_DIST_NAME"
 
+# Leader Elector
+CP_ELECTOR_DIST_NAME=${CP_ELECTOR_DIST_NAME:-"$CP_DIST_REPO_NAME:leader-elector-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-leader-elector \
+                -t "$CP_ELECTOR_DIST_NAME"
+docker push "$CP_ELECTOR_DIST_NAME"
+
 ########################
 # Base tools dockers
 ########################
