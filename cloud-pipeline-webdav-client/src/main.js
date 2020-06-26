@@ -1,5 +1,9 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const readWebdavConfiguration = require('./read-webdav-configuration');
+const {submit} = require('./application/models/commands');
+
+const OPERATION_WIDTH = 400;
+const OPERATION_HEIGHT = 45;
 
 const webdavClientConfig = readWebdavConfiguration();
 global.webdavClient = {
@@ -26,18 +30,93 @@ const createWindow = () => {
       enableRemoteModule: true
     },
   });
-
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools();
+  return mainWindow;
 };
+
+let operationsWindowId;
+
+const createOperationsWindow = (parent) => {
+  const operationsWindow = new BrowserWindow({
+    width: OPERATION_WIDTH,
+    height: OPERATION_HEIGHT,
+    alwaysOnTop: true,
+    show: false,
+    minimizable: false,
+    maximizable: false,
+    resizable: false,
+    fullscreenable: false,
+    parent,
+    webPreferences: {
+      nodeIntegration: true,
+      enableRemoteModule: true
+    },
+  })
+  operationsWindow.loadURL(OPERATIONS_WINDOW_WEBPACK_ENTRY);
+  operationsWindow.on('closed', () => {
+    operationsWindowId = undefined;
+  });
+  return operationsWindow;
+}
+
+const resizeOperationsWindow = () => {
+  if (operationsWindowId) {
+    const window = BrowserWindow.fromId(operationsWindowId);
+    window.setBounds({
+      width: OPERATION_WIDTH,
+      height: Math.min(
+        600,
+        Math.max(1, (global.operations || []).filter(o => !o.finished).length) * OPERATION_HEIGHT + 20
+      )
+    });
+  }
+}
+
+const showOperationsWindow = (parent) => {
+  if (!operationsWindowId) {
+    operationsWindowId = createOperationsWindow(parent).id;
+  }
+  const window = BrowserWindow.fromId(operationsWindowId);
+  resizeOperationsWindow();
+  window.show();
+}
+
+const hideOperationsWindow = () => {
+  if (operationsWindowId) {
+    const window = BrowserWindow.fromId(operationsWindowId);
+    window.hide();
+  }
+}
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', createWindow);
+app.on('ready', () => {
+  const mainWindow = createWindow();
+  global.operations = [];
+  ipcMain.on('operation-start', function (event, ...args) {
+    const {operation, promise} = submit(mainWindow, ...args);
+    if (operation) {
+      global.operations.push(operation);
+      showOperationsWindow(mainWindow);
+      if (promise) {
+        promise.then(() => {
+          mainWindow.webContents.send('operation-end');
+          const operations = global.operations;
+          if (operations.filter(o => !o.finished).length === 0) {
+            hideOperationsWindow();
+          } else {
+            resizeOperationsWindow();
+          }
+        })
+      }
+    }
+  });
+});
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {

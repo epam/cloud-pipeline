@@ -2,10 +2,17 @@ import {createClient} from 'webdav';
 import electron from 'electron';
 import FileSystem from './file-system';
 import * as utilities from './utilities';
+import path from "path";
 
 class WebdavFileSystem extends FileSystem {
   constructor() {
-    const {config: webdavClientConfig} = electron.remote.getGlobal('webdavClient') || {};
+    let cfg;
+    if (electron.remote === undefined) {
+      cfg = global.webdavClient;
+    } else {
+      cfg = electron.remote.getGlobal('webdavClient');
+    }
+    const {config: webdavClientConfig} = cfg || {};
     const {
       server,
       username,
@@ -77,6 +84,75 @@ class WebdavFileSystem extends FileSystem {
   }
   joinPath (...parts) {
     return (parts || []).join('/');
+  }
+  buildSources(item) {
+    const parts = this.parsePath(item);
+    parts.pop();
+    const mapper = (child) => {
+      const itemParts = this.parsePath(child);
+      let idx = 0;
+      while (itemParts.length > 0 && idx < parts.length && itemParts[0] === parts[idx]) {
+        idx += 1;
+        itemParts.shift();
+      }
+      return {
+        path: child,
+        name: this.joinPath(itemParts),
+      }
+    };
+    return new Promise((resolve, reject) => {
+      if (!this.webdavClient) {
+        reject('WebDav client was not initialized');
+      }
+      this.webdavClient.getDirectoryContents(item || '')
+        .then(contents => {
+          resolve(
+            contents
+              .map(item => ({
+                path: item.filename,
+                isDirectory: /^directory$/i.test(item.type)
+              }))
+              .filter(o => !o.isDirectory)
+              .map(o => mapper(o.path))
+          )
+        })
+        .catch(() => resolve([item].map(mapper)));
+    });
+  }
+  getContentsStream(path) {
+    return new Promise((resolve, reject) => {
+      if (!this.webdavClient) {
+        reject('WebDav client was not initialized');
+      }
+      const pathCorrected = path || '';
+      try {
+        resolve(this.webdavClient.createReadStream(pathCorrected));
+      } catch (e) {
+        reject({message: e.message});
+      }
+    });
+  }
+  copy(stream, destinationPath, callback) {
+    return new Promise((resolve, reject) => {
+      if (!this.webdavClient) {
+        reject('WebDav client was not initialized');
+      }
+      // const parentDirectory = path.dirname(destinationPath);// todo:
+      // todo: make directory
+      const writeStream = stream.pipe(this.webdavClient.createWriteStream(destinationPath));
+      writeStream.on('finish', resolve);
+      writeStream.on('error', ({message}) => reject(message));
+    });
+  }
+  remove(path) {
+    return new Promise((resolve, reject) => {
+      if (!this.webdavClient) {
+        reject('WebDav client was not initialized');
+      }
+      this.webdavClient.deleteFile(path)
+        .then(resolve)
+        .catch(({message}) => reject(message))
+    });
   }
 }
 

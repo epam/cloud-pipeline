@@ -1,0 +1,22 @@
+.operation {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  font-size: 9pt;
+}
+
+.operation > * {
+  flex: 1;
+}
+
+.operation.error {
+  color: red;
+}
+
+.operation .info {
+  color: rgba(0, 0, 0, 0.65);
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

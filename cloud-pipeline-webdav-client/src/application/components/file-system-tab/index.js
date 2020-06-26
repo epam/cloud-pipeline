@@ -1,5 +1,6 @@
 import React, {useCallback, useState, useEffect} from 'react';
 import PropTypes from 'prop-types';
+import {ipcRenderer} from 'electron';
 import {
   Alert,
   Button,
@@ -11,6 +12,7 @@ import classNames from 'classnames';
 import FileSystemElement from './file-system-element';
 import PathNavigation from './path-navigation';
 import {FileSystems, initializeFileSystem} from '../../models/file-systems';
+import {Commands} from '../../models/commands';
 import './file-system-tab.css';
 
 function FileSystemTab (
@@ -20,11 +22,13 @@ function FileSystemTab (
     className,
     fileSystem,
     oppositeFileSystemReady,
-    onFileSystemStatusChanged
+    onFileSystemStatusChanged,
+    onCommand,
+    onPathChanged,
   }
 ) {
   const [fileSystemImpl, setFileSystem] = useState(undefined);
-  const [path, setPath] = useState(undefined);
+  const [path, setNewPath] = useState(undefined);
   const [pending, setPending] = useState(true);
   const [error, setError] = useState(undefined);
   const [contents, setContents] = useState([]);
@@ -33,6 +37,14 @@ function FileSystemTab (
   const [lastSelectionIndex, setLastSelectionIndex] = useState(-1);
   const [refreshRequest, setRefreshRequest] = useState(0);
   const onRefresh = () => setRefreshRequest(refreshRequest + 1);
+  const setPath = useCallback((arg) => {
+    setNewPath(arg);
+    onPathChanged && onPathChanged(arg);
+  }, [onPathChanged, setNewPath]);
+  useEffect(() => {
+    ipcRenderer.on('operation-end', onRefresh);
+    return () => ipcRenderer.removeListener('operation-end', onRefresh);
+  }, [onRefresh]);
   useEffect(() => {
     const impl = initializeFileSystem(fileSystem);
     setPath(undefined);
@@ -149,6 +161,22 @@ function FileSystemTab (
     }
     becomeActive();
   }, [becomeActive, selection, setSelection, lastSelectionIndex, setLastSelectionIndex]);
+  const onCreateDirectory = useCallback(() => {
+    onCommand && onCommand(Commands.createDirectory, path);
+    setSelection([]);
+  }, [onCommand, path, setSelection]);
+  const onCopy = useCallback(() => {
+    onCommand && onCommand(Commands.copy, path, selection);
+    setSelection([]);
+  }, [onCommand, path, selection, setSelection]);
+  const onMove = useCallback(() => {
+    onCommand && onCommand(Commands.move, path, selection);
+    setSelection([]);
+  }, [onCommand, path, selection, setSelection]);
+  const onDelete = useCallback(() => {
+    onCommand && onCommand(Commands.delete, path, selection);
+    setSelection([]);
+  }, [onCommand, path, selection, setSelection]);
   let content;
   if (pending) {
     content = (
@@ -187,18 +215,31 @@ function FileSystemTab (
       <div className={classNames('file-system-tab-container', {active})}>
         <div className="file-system-tab-header">
           <ConfigProvider componentSize="small">
-            <Button disabled={!!error} type="primary">
+            <Button
+              disabled={!!error}
+              type="primary"
+              onClick={onCreateDirectory}
+            >
               Create directory
             </Button>
             <Divider type="vertical" />
-            <Button disabled={!!error || !oppositeFileSystemReady || selection.length === 0}>
+            <Button
+              disabled={!!error || !oppositeFileSystemReady || selection.length === 0}
+              onClick={onCopy}
+            >
               Copy
             </Button>
-            <Button disabled={!!error || !oppositeFileSystemReady || selection.length === 0}>
+            <Button
+              disabled={!!error || !oppositeFileSystemReady || selection.length === 0}
+              onClick={onMove}
+            >
               Move
             </Button>
             <Divider type="vertical" />
-            <Button disabled={!!error || selection.length === 0} type="danger">
+            <Button
+              disabled={!!error || selection.length === 0} type="danger"
+              onClick={onDelete}
+            >
               Delete
             </Button>
             <Divider type="vertical" />
@@ -223,8 +264,10 @@ FileSystemTab.propTypes = {
   becomeActive: PropTypes.func,
   className: PropTypes.string,
   fileSystem: PropTypes.oneOf(Object.values(FileSystems)),
-  oppositeFileSystemReady: PropTypes.bool,
   onFileSystemStatusChanged: PropTypes.func,
+  oppositeFileSystemReady: PropTypes.bool,
+  onCommand: PropTypes.func,
+  onPathChanged: PropTypes.func,
 };
 
 export default FileSystemTab;

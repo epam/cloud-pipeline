@@ -49,6 +49,47 @@ class LocalFileSystem extends FileSystem {
   joinPath(...parts) {
     return path.join(...parts);
   }
+  buildSources (item) {
+    const parentDirectory = path.dirname(item);
+    const mapper = (child) => ({
+      path: child,
+      name: path.relative(parentDirectory, child),
+    });
+    return Promise.resolve(utilities.getDirectoryFiles(item).map(mapper));
+  }
+  getContentsStream(path) {
+    return Promise.resolve(fs.createReadStream(path))
+  }
+  copy(stream, destinationPath, callback) {
+    return new Promise((resolve, reject) => {
+      const parentDirectory = path.dirname(destinationPath);
+      if (!fs.existsSync(parentDirectory)) {
+        fs.mkdirSync(parentDirectory, {recursive: true});
+      }
+      const writeStream = stream.pipe(fs.createWriteStream(destinationPath));
+      writeStream.on('finish', resolve);
+      writeStream.on('error', ({message}) => reject(message));
+    });
+  }
+  remove(path) {
+    return new Promise((resolve, reject) => {
+      try {
+        if (fs.existsSync(path)) {
+          if (fs.lstatSync(path).isDirectory()) {
+            console.log('removing directory', path);
+            fs.rmdirSync(path, {recursive: true});
+            resolve();
+          } else {
+            console.log('removing file', path);
+            fs.unlinkSync(path);
+            resolve();
+          }
+        }
+      } catch (e) {
+        reject(e.message);
+      }
+    });
+  }
 }
 
 export default LocalFileSystem;

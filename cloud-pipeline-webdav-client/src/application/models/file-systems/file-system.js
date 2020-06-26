@@ -21,6 +21,21 @@ class FileSystem {
   joinPath (...parts) {
     return (parts || []).join(this.separator);
   }
+  buildSources (item) {
+    return Promise.resolve([item]);
+  }
+  buildDestination (directory) {
+    return directory || this.root || '';
+  }
+  getContentsStream(path) {
+    return Promise.resolve(null);
+  }
+  copy(stream, destinationPath, callback) {
+    return Promise.resolve();
+  }
+  remove(path) {
+    return new Promise.resolve();
+  }
 }
 
 export default FileSystem;
