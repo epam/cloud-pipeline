@@ -36,8 +36,14 @@ def get_my_pod_name():
 
 
 def is_pod_alive(api, pod_id):
-    pods = pykube.Pod.objects(api).filter(field_selector={'metadata.name': pod_id, 'status.phase': 'Running'})
-    return len(pods) == 1
+    pods = pykube.Pod.objects(api).filter(field_selector={'metadata.name': pod_id})
+    if len(pods) == 1:
+        pod = pods.response['items'][0]
+        status_list = pod['status']['conditions']
+        for status in status_list:
+            if status['type'] == 'Ready' and status['status'] == 'True':
+                return True
+    return False
 
 
 def get_kube_api():
@@ -50,6 +56,8 @@ def get_kube_api():
 
 
 def set_leader_labels(api, name, election_time):
+    if not is_pod_alive(api, name):
+        print("Selected pod is not in `Ready` state, keep current leader")
     deploy = pykube.Deployment.objects(api).get_by_name(SERVICE_NAME)
     deploy.labels[ELECTION_TIME_LABEL] = str(election_time)
     deploy.labels[LEADER_NAME_LABEL] = name
