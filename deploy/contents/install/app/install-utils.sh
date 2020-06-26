@@ -1037,8 +1037,7 @@ EOF
     # Trigger dns update (rollout)
     kubectl patch deployment kube-dns \
         -n kube-system \
-        --type='json' \
-        -p="[{\"op\": \"replace\", \"path\": \"/spec/template/metadata/annotations/cp-updated\", \"value\": \"$(date)\" }]"
+        --patch "{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\"cp-updated\": \"$(date)\"}}}}}"
 
     if [ $? -ne 0 ]; then
         print_err "Unable to trigger kube-dns redeployment map after adding $custom_name for ${custom_target_value}"
