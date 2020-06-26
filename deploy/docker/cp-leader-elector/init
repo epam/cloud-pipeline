@@ -14,5 +14,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-nohup python3 /elector/election.py &> /elector/elector.log &
-nohup python3 /elector/endpoint.py &> /elector/endpoint.log
+python3 /elector/election.py &> /elector/elector.log &
+ELECTOR_PID="$!"
+python3 /elector/endpoint.py &> /elector/endpoint.log
+ENDPOINT_PID="$!"
+
+function stop_pid {
+    local pid="$1"
+    if [ $pid -ne 0 ]; then
+        kill -SIGTERM "$pid"
+        wait "$pid"
+    fi
+}
+
+function sigterm_handler {
+    echo "Got SIGTERM, stopping elector-service($ELECTOR_PID)"
+    stop_pid ELECTOR_PID
+    echo "Stopping endpoint($ENDPOINT_PID)"
+    stop_pid $ENDPOINT_PID
+    exit 143
+}
+
+trap 'kill $! ; sigterm_handler' SIGTERM
