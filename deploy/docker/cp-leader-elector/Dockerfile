@@ -23,7 +23,7 @@ RUN yum update -y && \
 
 RUN  curl -s https://bootstrap.pypa.io/get-pip.py | python3 - && \
      pip3 install -I  \
-                pykube-ng==20.5.0 \
+                pykube==0.15.0 \
                 flask==1.1.2
 
 RUN mkdir /elector

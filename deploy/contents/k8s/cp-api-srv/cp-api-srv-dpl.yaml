@@ -18,7 +18,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-api-srv-leader-elector
-          image: cp-leader-elector
+          image: lifescience/cloud-pipeline:leader-elector-$CP_VERSION
           imagePullPolicy: "Always"
           securityContext:
             privileged: true
@@ -44,6 +44,11 @@ spec:
           command: ["/init-api"]
           ports:
             - containerPort: 8080
+          env:
+            - name: CP_KUBE_MASTER_CHECK_URL
+              value: http://127.0.0.1:4040/
+            - name: CP_HA_DEPLOY_ENABLED
+              value: "true"
           envFrom:
           - configMapRef:
               name: cp-config-global
