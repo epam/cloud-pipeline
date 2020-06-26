@@ -14,4 +14,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-nohup python3 /elector/election.py > /elector/elector.log
+nohup python3 /elector/election.py &> /elector/elector.log &
+nohup python3 /elector/endpoint.py &> /elector/endpoint.log

@@ -17,11 +17,20 @@ import os
 import time
 import datetime
 
-ELECTION_VOTE_TIMEOUT_SECONDS = os.environ['ELECTION_TIMEOUT']
-ELECTION_VOTE_EXPIRATION_PERIOD = os.environ['ELECTION_EXP_PERIOD']
-SERVICE_NAME = os.environ['SERVICE_NAME']
-ELECTION_TIME_LABEL = SERVICE_NAME + "/cp-service-leader-election-time"
-LEADER_NAME_LABEL = SERVICE_NAME + "/cp-service-leader"
+
+def get_service_name():
+    return os.environ['SERVICE_NAME']
+
+
+HA_ELECTION_PERIOD_SEC = int(os.environ['HA_ELECTION_PERIOD_SEC'])
+HA_VOTE_EXPIRATION_PERIOD_SEC = int(os.environ['HA_VOTE_EXPIRATION_PERIOD_SEC'])
+SERVICE_NAME = get_service_name()
+ELECTION_TIME_LABEL = SERVICE_NAME + "/service-leader-election-time"
+LEADER_NAME_LABEL = SERVICE_NAME + "/service-leader"
+
+
+def get_my_pod_name():
+    return os.environ['HOSTNAME']
 
 
 def get_kube_api():
@@ -35,44 +44,69 @@ def get_kube_api():
 
 def set_leader_labels(api, name, election_time):
     deploy = pykube.Deployment.objects(api).get_by_name(SERVICE_NAME)
-    deploy.labels[ELECTION_TIME_LABEL] = election_time
+    deploy.labels[ELECTION_TIME_LABEL] = str(election_time)
     deploy.labels[LEADER_NAME_LABEL] = name
     deploy.update()
+    print("[{}] selected as leader".format(name))
 
 
-def set_leader_info_labels(sync_start_epochs):
-    api = get_kube_api()
-    pykube.Deployment.objects(api)
-    service = pykube.Deployment.objects(api).get_by_name(SERVICE_NAME)
-
-    my_name = os.environ['HOSTNAME']
-
-    metadata = service.metadata
+def get_leader_name(metadata):
+    name = None
     if 'labels' in metadata:
         labels = metadata['labels']
         if LEADER_NAME_LABEL in labels:
-            leader_name = labels[LEADER_NAME_LABEL]
-            if ELECTION_TIME_LABEL in labels:
-                prev_leader_selection_time = leader_name = labels[ELECTION_TIME_LABEL]
-                vote_diff = sync_start_epochs - prev_leader_selection_time
-                if my_name != leader_name and vote_diff < ELECTION_VOTE_TIMEOUT_SECONDS * 1000:
-                    print("Keep [{}] as active leader.".format(leader_name))
-                    return
-            else:
-                print("Leader [{}] without election timestamp was found.".format(leader_name))
+            name = labels[LEADER_NAME_LABEL]
+    return name
+
+
+def get_election_time(metadata):
+    time = None
+    if 'labels' in metadata:
+        labels = metadata['labels']
+        if ELECTION_TIME_LABEL in labels:
+            time = labels[ELECTION_TIME_LABEL]
+    return int(time)
+
+
+def check_leader_info_labels(sync_start_epochs):
+    my_name = get_my_pod_name()
+    api = get_kube_api()
+    metadata = get_service_metadata(api, SERVICE_NAME)
+    leader_name = get_leader_name(metadata)
+    if leader_name is not None:
+        prev_leader_selection_time = get_election_time(metadata)
+        if prev_leader_selection_time is not None:
+            vote_diff = sync_start_epochs - prev_leader_selection_time
+            type(vote_diff)
+            type(HA_VOTE_EXPIRATION_PERIOD_SEC)
+            if my_name != leader_name and vote_diff < HA_VOTE_EXPIRATION_PERIOD_SEC:
+                print("Keep [{}] as active leader.".format(leader_name))
+                return
         else:
-            print("No leader found, set current one.")
+            print("Leader [{}] without election timestamp was found, change the leader to current one."
+                  .format(leader_name))
+    else:
+        print("No leader found, set current one.")
     set_leader_labels(api, my_name, sync_start_epochs)
+
+
+def get_service_metadata(api, service_name):
+    service = pykube.Deployment.objects(api).get_by_name(service_name)
+    metadata = service.metadata
+    return metadata
 
 
 def main():
     while True:
         sync_start = datetime.datetime.now()
-        sync_start_epochs = sync_start.timestamp() * 1000
+        sync_start_epochs = int(sync_start.timestamp())
         print("Electing leader at {}".format(sync_start))
-        set_leader_info_labels(sync_start_epochs)
+        try:
+            check_leader_info_labels(sync_start_epochs)
+        except Exception as e:
+            print('Exception occurred during election!')
         print("Electing round is finished")
-        time.sleep(float(ELECTION_VOTE_TIMEOUT_SECONDS))
+        time.sleep(float(HA_ELECTION_PERIOD_SEC))
 
 
 if __name__ == '__main__':

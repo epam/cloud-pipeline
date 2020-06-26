@@ -19,14 +19,19 @@ FROM centos:7
 RUN yum update -y && \
     yum install -y \
                 python3 \
-                python3-pip \
                 curl
 
-RUN  pip3 install -I  pykube-ng==20.5.0
+RUN  curl -s https://bootstrap.pypa.io/get-pip.py | python3 - && \
+     pip3 install -I  \
+                pykube-ng==20.5.0 \
+                flask==1.1.2
 
 RUN mkdir /elector
 
-ADD init /elector/init
 ADD election.py /elector/election.py
+ADD endpoint.py /elector/endpoint.py
+ADD init /elector/init
+
+RUN chmod +x /elector/init
 
 CMD ["/elector/init"]
