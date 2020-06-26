@@ -438,9 +438,13 @@ class AppendOptimizedCompositeMultipartCopyUpload(MultipartUploadDecorator):
     def _extract_prefix(self):
         if self._copy_parts:
             sorted_copy_parts = sorted(self._copy_parts, key=lambda copy_part: copy_part.offset)
-            if sorted_copy_parts[-1].end + self._chunk_size >= self._original_size:
-                return _CopyPart(0, self._original_size, offset=0, part_number=1,
-                                 part_path=self.path, keep=True)
+            prefix_end = 0
+            for copy_index, copy_part in enumerate(sorted_copy_parts):
+                if copy_part.offset != prefix_end:
+                    break
+                prefix_end += copy_part.end - copy_part.start
+            if prefix_end and prefix_end + self._chunk_size >= self._original_size:
+                return _CopyPart(0, self._original_size, offset=0, part_number=1, part_path=self.path, keep=True)
         return None
 
     def _adjust_first_uploaded_part(self, prefix_end):
