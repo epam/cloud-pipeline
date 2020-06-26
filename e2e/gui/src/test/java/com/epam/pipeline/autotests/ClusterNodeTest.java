@@ -102,7 +102,7 @@ public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
         final String ip = clusterMenuAO.getNodeAddress(getRunId());
         final int nodesCountBeforeFiltering = clusterMenuAO.getNodesCount();
 
-        clusterMenuAO.filerBy(ClusterMenuAO.HeaderColumn.ADDRESS, ip);
+        clusterMenuAO.filerBy(ClusterMenuAO.HeaderColumn.ADDRESS, ip.substring(0,ip.indexOf("\n")));
         Thread.sleep(2000);
         assertEquals(clusterMenuAO.getNodesCount(), 1);
 

@@ -25,6 +25,8 @@ import com.epam.pipeline.autotests.ao.NavigationMenuAO;
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
 import com.epam.pipeline.autotests.ao.PipelineLibraryContentAO;
 import com.epam.pipeline.autotests.ao.StorageContentAO;
+import com.epam.pipeline.autotests.ao.ToolPageAO;
+import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -43,6 +45,7 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.actions;
+import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
 import static com.epam.pipeline.autotests.utils.C.LOGIN;
@@ -62,12 +65,17 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     private final String storageFile = "globalSearchStorageFile" + Utils.randomSuffix();
     private final String storageFileContent = "globalSearchStorageFileContent" + Utils.randomSuffix();
     private final String storageAlias = "globalSearchStorageAlias" + Utils.randomSuffix();
+    private final String toolEndpoint = "e2e-endpoints";
+    private final String toolVersion = "latest";
+    private final String toolShortDescription = "Docker image used in E2E automated tests to verify HTTP endpoints and SSH access";
+    private final String toolDescription = "HTTP endpoints work correctly (will perform JWT authentication and print user's name)";
     private final String customConfigurationProfile = "custom-profile";
     private final String customDisk = "22";
     private final String defaultInstanceType = C.DEFAULT_INSTANCE;
     private final String defaultRegistry = C.DEFAULT_REGISTRY;
     private final String defaultGroup = C.DEFAULT_GROUP;
     private final String testingTool = C.TESTING_TOOL_NAME;
+    private final String toolWithGroup = String.format("%s/%s", C.DEFAULT_GROUP, toolEndpoint);
     private final String defaultProfile = "default";
     private final String configurationName = "test_conf";
     private final String configurationNodeType = "c5.large (CPU: 2, RAM: 4)";
@@ -77,6 +85,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     private final String description = "testIssueDescription";
     private String draftVersionName = "";
     private String testRunID = "";
+    private String testRunID_2668 = "";
 
     @BeforeClass
     @TestCase(value = {"EPMCMBIBPC-2653"})
@@ -299,7 +308,6 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test
     @TestCase(value = {"EPMCMBIBPC-2660"})
     public void searchForStorage() {
-        home().sleep(2, SECONDS);
         search()
                 .search(storage)
                 .enter()
@@ -361,6 +369,139 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(PREVIEW, text(storageFolder), text(storageFile))
                 .close()
                 .close();
+    }
+
+
+    @Test(dependsOnMethods = {"searchForStorageWithChangedName"})
+    @TestCase(value = {"EPMCMBIBPC-2664"})
+    public void searchForPipelineRunOverStoragePath() {
+        String runID = "";
+        home();
+        library()
+                .cd(folder)
+                .clickOnPipeline(pipeline)
+                .firstVersion()
+                .runPipeline()
+                .launch(this)
+                .showLog(runID=getLastRunId())
+                .waitForCompletion();
+        home();
+        search()
+                .click(RUNS)
+                .search(storage)
+                .enter()
+                .sleep(2, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItemWithText(runID)
+                .ensure(TITLE, Status.SUCCESS.reached, text(testRunID), text(pipeline), text(draftVersionName))
+                .checkTags(configurationDisk, configurationNodeType)
+                .ensure(HIGHLIGHTS, text("Found in logs"),
+                        text(storage.toLowerCase() + " mounted to"));
+    }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-2667"})
+    public void searchForTool() {
+        home();
+        search()
+                .click(TOOLS)
+                .search(toolEndpoint)
+                .enter()
+                .sleep(2, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItem(toolWithGroup)
+                .ensure(TITLE, text(toolEndpoint))
+                .ensure(TITLE_FIELD, text("registry"), text(C.DEFAULT_GROUP))
+                .ensure(SHORT_DESCRIPTION, text(toolShortDescription))
+                .ensure(HIGHLIGHTS, text("Found in description"))
+                .ensure(PREVIEW, text("latest"), text("test"))
+                .ensure(PREVIEW_TAB, text(toolDescription))
+                .parent()
+                .moveToSearchResultItem(toolWithGroup, () -> new ToolPageAO(toolEndpoint))
+                .ensure(TITLE, text(toolWithGroup));
+    }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-2668"})
+    public void searchForToolRun() {
+        tools()
+                .perform(defaultRegistry, defaultGroup, toolWithGroup, ToolTab::runWithCustomSettings)
+                .launchTool(this, toolEndpoint)
+                .showLog(testRunID_2668 = getLastRunId())
+                .waitForEndpointLink()
+                .clickOnEndpointLink()
+                .sleep(3, SECONDS)
+                .validateEndpointPage()
+                .closeTab();
+        LogAO logAO = new LogAO();
+        String endpointLink = logAO.getEndpointLink();
+        String nodeType = logAO.getParameterValue("Node type");
+        String diskSize = logAO.getParameterValue("Disk");
+        String priceType = logAO.getParameterValue("Price type");
+        home();
+        search()
+                .click(RUNS)
+                .search(testRunID_2668)
+                .enter()
+                .sleep(2, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItemWithText(testRunID_2668)
+                .ensure(TITLE, Status.WORKING.reached, text(testRunID_2668),
+                        text(String.format("%s:%s", toolEndpoint, toolVersion)), text(draftVersionName))
+                .checkTags(nodeType, diskSize, priceType)
+                .ensure(HIGHLIGHTS, text("Found in id"))
+                .ensure(PREVIEW, text("Owner"), text("Scheduled"),
+                        text("Started"), text("Running for"), text("Estimated price"))
+                .checkEndpointsLink(endpointLink)
+                .ensure(PREVIEW_TAB, text("InitializeNode"), text("InputData"), text("InstallNFSClient"),
+                        text("MountDataStorages"), text("InitializeEnvironment"), text("Console"))
+                .parent()
+                .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
+                .ensure(STATUS, text(testRunID_2668));
+        search()
+                .click(RUNS)
+                .search(testRunID_2668)
+                .enter()
+                .sleep(2, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItemWithText(testRunID_2668)
+                .clickOnEndpointLink()
+                .sleep(3, SECONDS)
+                .validateEndpointPage()
+                .closeTab();
+    }
+
+    @Test(dependsOnMethods = {"searchForToolRun"})
+    @TestCase(value = {"EPMCMBIBPC-2669"})
+    public void searchForCompletedToolRun() {
+        runsMenu()
+                .activeRuns()
+                .stopRun(testRunID_2668);
+        home();
+        search()
+                .click(RUNS)
+                .search(testRunID_2668)
+                .enter()
+                .sleep(1, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItemWithText(testRunID_2668)
+                .ensure(TITLE, STOPPED.reached, text(testRunID_2668),
+                        text(String.format("%s:%s", toolEndpoint, toolVersion)), text(draftVersionName))
+                .parent()
+                .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
+                .ensure(STATUS, text(testRunID_2668))
+                .shouldHaveStatus(STOPPED);
+        search()
+                .click(RUNS)
+                .search(testRunID_2668)
+                .enter()
+                .sleep(1, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItemWithText(testRunID_2668)
+                .clickOnEndpointLink()
+                .sleep(3, SECONDS)
+                .assertPageTitleIs("404 Not Found")
+                .closeTab();
     }
 
     @Test

@@ -42,9 +42,11 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
+import static com.codeborne.selenide.Selenide.switchTo;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners.confine;
 import static java.util.stream.Collectors.toList;
+import static org.testng.Assert.assertEquals;
 
 public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
 
@@ -180,10 +182,15 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
                 entry(INFO_TAB, context().find(byClassName("review__run-table"))),
                 entry(TAGS, context().find(byClassName("review__tags"))),
                 entry(PREVIEW_TAB, context().find(By.xpath(".//div[@class='review__content-preview'][2]"))),
-                entry(ATTRIBUTES, context().find(byClassName("review__attribute")))
+                entry(ATTRIBUTES, context().find(byClassName("review__attribute"))),
+                entry(TITLE_FIELD, context().find(byClassName("review__sub-title"))),
+                entry(SHORT_DESCRIPTION, context().find(byClassName("review__tool-description"))),
+                entry(ENDPOINT, $(withText("Endpoints:")).closest("tr").find("a"))
         );
         private static Condition completed = Condition.or("finished",
                 LogAO.Status.SUCCESS.reached, LogAO.Status.STOPPED.reached, LogAO.Status.FAILURE.reached);
+        private static Condition running = Condition.or("running",
+                LogAO.Status.LOADING.reached, LogAO.Status.WORKING.reached);
 
         SearchResultItemPreviewAO(final GlobalSearchAO parentAO) {
             super(parentAO);
@@ -227,6 +234,22 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
                     get(TAGS).find(By.xpath("./span[4]")).text(),
                     get(TAGS).find(By.xpath("./span[5]")).text());
             Arrays.stream(list).forEach(tags::contains);
+            return this;
+        }
+
+        public ToolPageAO clickOnEndpointLink() {
+            String endpoint = getEndpointLink();
+            get(ENDPOINT).click();
+            switchTo().window(1);
+            return new ToolPageAO(endpoint);
+        }
+
+        public String getEndpointLink() {
+            return get(ENDPOINT).shouldBe(visible).attr("href");
+        }
+
+        public SearchResultItemPreviewAO checkEndpointsLink(String expectedLink) {
+            assertEquals(getEndpointLink(), expectedLink);
             return this;
         }
     }
