@@ -43,6 +43,7 @@
 - [Using custom domain names as a "friendly URL" for the interactive services](#the-ability-to-use-custom-domain-names-as-a-friendly-url-for-the-interactive-services)
 - [Displaying of the additional support icon/info](#displaying-of-the-additional-support-iconinfo)
 - [Pass proxy settings to the `DIND` containers](#pass-proxy-settings-to-the-dind-containers)
+- [Interactive endpoints can be (optionally) available to the anonymous users](#interactive-endpoints-can-be-optionally-available-to-the-anonymous-users)
 
 ***
 
@@ -830,6 +831,33 @@ Example of using:
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_DINDvariations_1.png)
 
 At the same time, a new system parameter (per run) was added - **`CP_CAP_DIND_CONTAINER_NO_VARS`**, which disables described behavior. You can set it before any run if you don't want to pass any additional variations to the `DIND` container.
+
+## Interactive endpoints can be (optionally) available to the anonymous users
+
+Cloud Pipeline allows sharing the interactive and SSH endpoints with the other users/groups.
+
+Previously, this necessary required the end-user to be registered in the Cloud Pipeline users database.
+
+For certain use-cases, it is required to allow such type of access for any user, who has successfully passed the IdP authentication but is not registered in the Cloud Pipeline and also such users shall not be automatically registered at all and remain `Anonymous`.
+
+In the current version, such ability is implemented. It's enabled by the following application properties:
+
+- `saml.user.auto.create=EXPLICIT_GROUP`
+- `saml.user.allow.anonymous=true`
+
+After that, to share any interactive run with the `Anonymous` - it's simple enough to share endpoints with the following user group - `ROLE_ANONYMOUS_USER`:
+
+- At the **Run logs** page:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_EndpointToAnonymous_01.png)
+- The user should select the `ROLE_ANONYMOUS_USER` role to share:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_EndpointToAnonymous_03.png)
+- Sharing with the `Anonymous` will be displayed at the Run logs page:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_EndpointToAnonymous_04.png)
+- That's all. Now, the endpoint-link of the run could be sent to the `Anonymous` user.
+
+If that `Anonymous` user passes `SAML` authentication, he will get access to the endpoint. Attempts to open any other Platform pages will fail.
+
+For more details see [here](../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users.md#sharing-runs-with-the-anonymous-users).
 
 ***
 
