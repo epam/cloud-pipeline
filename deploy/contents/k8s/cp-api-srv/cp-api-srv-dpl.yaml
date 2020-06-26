@@ -26,12 +26,12 @@ spec:
           ports:
             - containerPort: 4040
           env:
-            - name: SERVICE_NAME
+            - name: HA_ELECTION_SERVICE_NAME
               value: "cp-api-srv"
             - name: HA_ELECTION_PERIOD_SEC
-              value: "10"
+              value: "5"
             - name: HA_VOTE_EXPIRATION_PERIOD_SEC
-              value: "15"
+              value: "7"
           envFrom:
             - configMapRef:
                 name: cp-config-global

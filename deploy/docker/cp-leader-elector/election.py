@@ -12,14 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pykube
-import os
-import time
 import datetime
+import os
+import pykube
+import time
+import urllib3
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def get_service_name():
-    return os.environ['SERVICE_NAME']
+    return os.environ['HA_ELECTION_SERVICE_NAME']
 
 
 HA_ELECTION_PERIOD_SEC = int(os.environ['HA_ELECTION_PERIOD_SEC'])
@@ -82,8 +84,6 @@ def check_leader_info_labels(sync_start_epochs):
         prev_leader_selection_time = get_election_time(metadata)
         if prev_leader_selection_time is not None:
             vote_diff = sync_start_epochs - prev_leader_selection_time
-            type(vote_diff)
-            type(HA_VOTE_EXPIRATION_PERIOD_SEC)
             if my_name != leader_name and is_pod_alive(api, leader_name) and vote_diff < HA_VOTE_EXPIRATION_PERIOD_SEC:
                 print("Keep [{}] as active leader.".format(leader_name))
                 return
