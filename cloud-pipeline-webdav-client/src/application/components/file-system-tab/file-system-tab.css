@@ -1,13 +1,15 @@
-.active {
-  border: 1px solid #2282bf;
-}
-
 .file-system-tab-container {
   position: relative;
   height: 100%;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  padding: 2px;
+}
+
+.file-system-tab-container.active {
+  outline: 0;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.8);
 }
 
 .spin-container {
@@ -20,4 +22,13 @@
 .directory-contents {
   overflow: auto;
   flex: 1;
+}
+
+.file-system-tab-header {
+  min-height: 30px;
+  line-height: 30px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
 }

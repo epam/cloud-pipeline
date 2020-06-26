@@ -1,13 +1,28 @@
 import React, {useCallback, useState, useEffect} from 'react';
 import PropTypes from 'prop-types';
-import {Alert, Spin} from 'antd';
+import {
+  Alert,
+  Button,
+  ConfigProvider,
+  Divider,
+  Spin,
+} from 'antd';
 import classNames from 'classnames';
 import FileSystemElement from './file-system-element';
 import PathNavigation from './path-navigation';
 import {FileSystems, initializeFileSystem} from '../../models/file-systems';
 import './file-system-tab.css';
 
-function FileSystemTab ({active, becomeActive, className, fileSystem}) {
+function FileSystemTab (
+  {
+    active,
+    becomeActive,
+    className,
+    fileSystem,
+    oppositeFileSystemReady,
+    onFileSystemStatusChanged
+  }
+) {
   const [fileSystemImpl, setFileSystem] = useState(undefined);
   const [path, setPath] = useState(undefined);
   const [pending, setPending] = useState(true);
@@ -16,6 +31,8 @@ function FileSystemTab ({active, becomeActive, className, fileSystem}) {
   const [hovered, setHovered] = useState(undefined);
   const [selection, setSelection] = useState([]);
   const [lastSelectionIndex, setLastSelectionIndex] = useState(-1);
+  const [refreshRequest, setRefreshRequest] = useState(0);
+  const onRefresh = () => setRefreshRequest(refreshRequest + 1);
   useEffect(() => {
     const impl = initializeFileSystem(fileSystem);
     setPath(undefined);
@@ -30,15 +47,25 @@ function FileSystemTab ({active, becomeActive, className, fileSystem}) {
           setPath(undefined);
           setSelection([]);
           setLastSelectionIndex(-1);
+          onFileSystemStatusChanged(true);
         })
         .catch(e => {
           setError(e);
           setPending(false);
+          onFileSystemStatusChanged(false);
         })
       return () => impl.close();
     }
     return undefined;
-  }, [fileSystem]);
+  }, [
+    fileSystem,
+    setFileSystem,
+    setPending,
+    setPath,
+    setSelection,
+    setLastSelectionIndex,
+    onFileSystemStatusChanged,
+  ]);
   useEffect(() => {
     if (fileSystemImpl) {
       setPending(true);
@@ -49,13 +76,24 @@ function FileSystemTab ({active, becomeActive, className, fileSystem}) {
           setPending(false);
           setSelection([]);
           setLastSelectionIndex(-1);
+          onFileSystemStatusChanged(true);
         })
         .catch(e => {
           setError(e)
           setPending(false);
+          onFileSystemStatusChanged(false);
         });
     }
-  }, [fileSystemImpl, path]);
+  }, [
+    fileSystemImpl,
+    path,
+    setPending,
+    setContents,
+    setSelection,
+    setLastSelectionIndex,
+    onFileSystemStatusChanged,
+    refreshRequest,
+  ]);
   const onHover = useCallback((e) => {
     const {path} = e;
     setHovered(path);
@@ -144,9 +182,31 @@ function FileSystemTab ({active, becomeActive, className, fileSystem}) {
   }
   return (
     <div
-      className={classNames({active}, className)}
+      className={className}
     >
-      <div className="file-system-tab-container">
+      <div className={classNames('file-system-tab-container', {active})}>
+        <div className="file-system-tab-header">
+          <ConfigProvider componentSize="small">
+            <Button disabled={!!error} type="primary">
+              Create directory
+            </Button>
+            <Divider type="vertical" />
+            <Button disabled={!!error || !oppositeFileSystemReady || selection.length === 0}>
+              Copy
+            </Button>
+            <Button disabled={!!error || !oppositeFileSystemReady || selection.length === 0}>
+              Move
+            </Button>
+            <Divider type="vertical" />
+            <Button disabled={!!error || selection.length === 0} type="danger">
+              Delete
+            </Button>
+            <Divider type="vertical" />
+            <Button disabled={pending} onClick={onRefresh}>
+              Reload
+            </Button>
+          </ConfigProvider>
+        </div>
         <PathNavigation
           onNavigate={onNavigate}
           path={path}
@@ -162,7 +222,9 @@ FileSystemTab.propTypes = {
   active: PropTypes.bool,
   becomeActive: PropTypes.func,
   className: PropTypes.string,
-  fileSystem: PropTypes.oneOf(Object.values(FileSystems))
+  fileSystem: PropTypes.oneOf(Object.values(FileSystems)),
+  oppositeFileSystemReady: PropTypes.bool,
+  onFileSystemStatusChanged: PropTypes.func,
 };
 
 export default FileSystemTab;

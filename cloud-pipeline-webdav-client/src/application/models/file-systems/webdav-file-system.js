@@ -14,6 +14,7 @@ class WebdavFileSystem extends FileSystem {
     super(server);
     this.username = username;
     this.password = password;
+    this.rootName = '/';
   }
   initialize() {
     if (!this.root) {

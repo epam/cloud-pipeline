@@ -4,6 +4,7 @@ class FileSystem {
   constructor(root) {
     this.root = root;
     this.separator = path.sep;
+    this.rootName = root === this.separator ? 'Root' : root;
   }
   initialize () {
     return Promise.resolve();

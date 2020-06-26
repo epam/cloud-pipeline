@@ -38,7 +38,7 @@ function FileSystemElement (
   }, [onNavigate]);
   const onMouseDown = (e) => {
     e && e.stopPropagation();
-    e && e.preventDefault();
+    e && e.stopPropagation();
     if (element && element.isBackLink) {
       onNavigate && onNavigate(element.path);
     } else {

@@ -48,7 +48,7 @@ function PathNavigation ({path, onNavigate, fileSystem}) {
   }
   const parts = [
     {
-      name: 'Root',
+      name: fileSystem.rootName,
       path: ''
     }
   ]
