@@ -11,13 +11,11 @@ from google.cloud.storage import Client
 from google.oauth2.credentials import Credentials
 
 import fuseutils
-from fsclient import FileSystemClient, File
+from fsclient import File
 from fuseutils import MB, TB
 from mpu import MultipartUpload, ChunkedMultipartUpload, SplittingMultipartCopyUpload, \
     CompositeMultipartUpload, AppendOptimizedCompositeMultipartCopyUpload
-from pipefuse.storage import StorageLowLevelFileSystemClient
-
-_ANY_ERROR = Exception
+from storage import StorageLowLevelFileSystemClient
 
 
 class GCPMultipartUpload(MultipartUpload):
