@@ -58,6 +58,7 @@ def get_kube_api():
 def set_leader_labels(api, name, election_time):
     if not is_pod_alive(api, name):
         print("Selected pod is not in `Ready` state, keep current leader")
+        return 
     deploy = pykube.Deployment.objects(api).get_by_name(SERVICE_NAME)
     deploy.labels[ELECTION_TIME_LABEL] = str(election_time)
     deploy.labels[LEADER_NAME_LABEL] = name
