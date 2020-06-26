@@ -34,11 +34,14 @@ def is_master():
     api = election.get_kube_api()
     metadata = election.get_service_metadata(api, SERVICE_NAME)
     leader_name = election.get_leader_name(metadata)
-    if leader_name is None:
+    if leader_name is None or not election.is_pod_alive(api, leader_name):
         my_name = election.get_my_pod_name()
         now = datetime.datetime.now()
         now_epochs = int(now.timestamp())
-        election.set_leader_labels(api, my_name, now_epochs)
+        try:
+            election.set_leader_labels(api, my_name, now_epochs)
+        except Exception as e:
+            print('Exception occurred during election, force execution from current pod: {}!'.format(str(e)))
         return master_pod_info_response(my_name)
     else:
         return master_pod_info_response(leader_name)

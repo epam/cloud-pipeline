@@ -33,6 +33,11 @@ def get_my_pod_name():
     return os.environ['HOSTNAME']
 
 
+def is_pod_alive(api, pod_id):
+    pods = pykube.Pod.objects(api).filter(field_selector={'metadata.name': pod_id, 'status.phase': 'Running'})
+    return len(pods) == 1
+
+
 def get_kube_api():
     try:
         api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
@@ -79,7 +84,7 @@ def check_leader_info_labels(sync_start_epochs):
             vote_diff = sync_start_epochs - prev_leader_selection_time
             type(vote_diff)
             type(HA_VOTE_EXPIRATION_PERIOD_SEC)
-            if my_name != leader_name and vote_diff < HA_VOTE_EXPIRATION_PERIOD_SEC:
+            if my_name != leader_name and is_pod_alive(api, leader_name) and vote_diff < HA_VOTE_EXPIRATION_PERIOD_SEC:
                 print("Keep [{}] as active leader.".format(leader_name))
                 return
         else:
@@ -104,7 +109,7 @@ def main():
         try:
             check_leader_info_labels(sync_start_epochs)
         except Exception as e:
-            print('Exception occurred during election!')
+            print('Exception occurred during election: {}!'.format(str(e)))
         print("Electing round is finished")
         time.sleep(float(HA_ELECTION_PERIOD_SEC))
 
