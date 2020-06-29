@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const pemEncode = require('./pem-encode');
 
 const DEFAULT_CONFIG = 'webdav.config';
 const DEVELOPMENT_CONFIG = 'webdav.dev.config';
@@ -20,6 +21,16 @@ class PublishWebDavConfigurationPlugin {
   }
   apply(compiler) {
     compiler.hooks.emit.tapPromise('PublishWebDavConfigurationPlugin', async compilation => {
+      const certificatesDirectory = path.resolve(__dirname, '../certs');
+      const certificates = [];
+      if (fs.existsSync(certificatesDirectory)) {
+        const contents = fs.readdirSync(certificatesDirectory);
+        for (let i = 0; i < contents.length; i++) {
+          const certificate = contents[i];
+          const certificateData = pemEncode(fs.readFileSync(path.resolve(certificatesDirectory, certificate)));
+          certificates.push(certificateData);
+        }
+      }
       let config;
       if (this.developmentMode) {
         config = this.readConfig(DEVELOPMENT_CONFIG);
@@ -31,9 +42,10 @@ class PublishWebDavConfigurationPlugin {
         config = Buffer.from('{}');
       }
       if (config) {
+        const data = JSON.stringify(Object.assign({certificates}, JSON.parse(config)));
         compilation.assets[PUBLISH_FILE_NAME] = {
-          source: () => config,
-          size: () => config.length
+          source: () => data,
+          size: () => data.length
         };
       }
     });

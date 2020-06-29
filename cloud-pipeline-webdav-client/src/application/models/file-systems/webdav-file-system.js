@@ -1,5 +1,6 @@
 import {createClient} from 'webdav';
 import electron from 'electron';
+import https from 'https';
 import FileSystem from './file-system';
 import * as utilities from './utilities';
 
@@ -16,11 +17,13 @@ class WebdavFileSystem extends FileSystem {
       server,
       username,
       password,
+      certificates,
     } = webdavClientConfig || {};
     super(server);
     this.username = username;
     this.password = password;
-    this.rootName = '/';
+    this.certificates = certificates;
+    this.rootName = 'Root';
     this.separator = '/';
   }
   initialize() {
@@ -30,8 +33,13 @@ class WebdavFileSystem extends FileSystem {
     return new Promise((resolve, reject) => {
       const options = {
         username: this.username,
-        password: this.password
+        password: this.password,
       };
+      if (this.certificates && this.certificates.length > 0) {
+        options.httpsAgent = new https.Agent({
+          ca: this.certificates
+        });
+      }
       try {
         this.webdavClient = createClient(this.root, options);
       } catch (e) {
@@ -112,7 +120,7 @@ class WebdavFileSystem extends FileSystem {
       }
       return {
         path: child,
-        name: this.joinPath(itemParts),
+        name: this.joinPath(...itemParts),
       }
     };
     return new Promise((resolve, reject) => {
@@ -152,11 +160,21 @@ class WebdavFileSystem extends FileSystem {
       if (!this.webdavClient) {
         reject('WebDav client was not initialized');
       } else {
-        // const parentDirectory = path.dirname(destinationPath);// todo:
-        // todo: make directory
-        const writeStream = stream.pipe(this.webdavClient.createWriteStream(destinationPath));
-        writeStream.on('finish', resolve);
-        writeStream.on('error', ({message}) => reject(message));
+        const parentDirectory = this.joinPath(...this.parsePath(destinationPath).slice(0, -1));
+        const createDirectorySafe = async () => {
+          try {
+            if (await this.webdavClient.exists(parentDirectory) === false) {
+              await this.webdavClient.createDirectory(parentDirectory);
+            }
+          } catch (_) {}
+        };
+        createDirectorySafe()
+          .then(() => {
+            const writeStream = stream.pipe(this.webdavClient.createWriteStream(destinationPath));
+            writeStream.on('finish', resolve);
+            writeStream.on('error', ({message}) => reject(message));
+          })
+          .catch(({message}) => reject(message));
       }
     });
   }
