@@ -40,15 +40,8 @@ def _get_sizes(config):
 
 
 def pytest_sessionstart(session):
-    # random.seed(42)
     sizes = _get_sizes(config=session.config)
     execute('head -c %s %s > %s' % (sizes[-1], '/dev/urandom', source_path))
-    # remaining_size = sizes[-1]
-    # with open(source_path, 'w') as f:
-    #     while remaining_size > 0:
-    #         chunk_size = min(10 * MB, remaining_size)
-    #         f.write(bytearray(map(random.getrandbits, (8,) * chunk_size)))
-    #         remaining_size -= chunk_size
 
 
 def pytest_sessionfinish(session, exitstatus):
