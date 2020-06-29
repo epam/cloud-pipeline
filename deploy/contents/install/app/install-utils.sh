@@ -1138,11 +1138,18 @@ function wait_for_service {
 
 function execute_deployment_command {
     local DEPLOYMENT_NAME=$1
-    local CMD="$2"
+    local CONTAINER_NAME=$2
+    local CMD="$3"
+
+    if [ "$CONTAINER_NAME" != "default" ]; then
+        CONTAINER_NAME="--container $CONTAINER_NAME"
+    else
+        CONTAINER_NAME=
+    fi
 
     pods=$(kubectl get po | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
     for p in $pods; do
-        bash -c "kubectl exec -i $p -- $CMD"
+        bash -c "kubectl exec -i $CONTAINER_NAME $p -- $CMD"
     done
 }
 
@@ -1163,22 +1170,22 @@ function create_user_and_db {
 
     if [ "$CP_FORCE_DATA_ERASE" ]; then
         print_info "Dropping user \"$USERNAME\" and database \"$DBNAME\""
-        execute_deployment_command $DEPLOYMENT_NAME "psql -U postgres -c \"DROP DATABASE $DBNAME;\""
-        execute_deployment_command $DEPLOYMENT_NAME "psql -U postgres -c \"DROP OWNED BY $USERNAME;\""
-        execute_deployment_command $DEPLOYMENT_NAME "psql -U postgres -c \"DROP USER $USERNAME;\""
+        execute_deployment_command $DEPLOYMENT_NAME default "psql -U postgres -c \"DROP DATABASE $DBNAME;\""
+        execute_deployment_command $DEPLOYMENT_NAME default "psql -U postgres -c \"DROP OWNED BY $USERNAME;\""
+        execute_deployment_command $DEPLOYMENT_NAME default "psql -U postgres -c \"DROP USER $USERNAME;\""
     fi
 
-    execute_deployment_command $DEPLOYMENT_NAME "psql -U postgres -c \"CREATE EXTENSION IF NOT EXISTS pg_trgm;\""
+    execute_deployment_command $DEPLOYMENT_NAME default "psql -U postgres -c \"CREATE EXTENSION IF NOT EXISTS pg_trgm;\""
     
     print_info "Creating user $USERNAME"
-    execute_deployment_command $DEPLOYMENT_NAME "psql -U postgres -c \"CREATE USER $USERNAME CREATEDB;\""
-    execute_deployment_command $DEPLOYMENT_NAME "psql -U postgres -c \"ALTER USER $USERNAME WITH SUPERUSER;\""
+    execute_deployment_command $DEPLOYMENT_NAME default "psql -U postgres -c \"CREATE USER $USERNAME CREATEDB;\""
+    execute_deployment_command $DEPLOYMENT_NAME default "psql -U postgres -c \"ALTER USER $USERNAME WITH SUPERUSER;\""
 
     print_info "Setting password for user $USERNAME"
-    execute_deployment_command $DEPLOYMENT_NAME "psql -U postgres -c \"ALTER USER $USERNAME WITH PASSWORD '$PASSWORD';\""
+    execute_deployment_command $DEPLOYMENT_NAME default "psql -U postgres -c \"ALTER USER $USERNAME WITH PASSWORD '$PASSWORD';\""
 
     print_info "Creating database $DBNAME"
-    execute_deployment_command $DEPLOYMENT_NAME "psql -U postgres -c \"CREATE DATABASE $DBNAME OWNER $USERNAME;\""
+    execute_deployment_command $DEPLOYMENT_NAME default "psql -U postgres -c \"CREATE DATABASE $DBNAME OWNER $USERNAME;\""
 }
 
 function delete_deployment_and_service {

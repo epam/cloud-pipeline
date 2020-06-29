@@ -485,13 +485,13 @@ if is_service_requested cp-api-srv; then
         wait_for_deployment "cp-api-srv"
 
         print_info "-> Generating admin JWT token for admin user \"$CP_DEFAULT_ADMIN_NAME\""
-        CP_API_JWT_ADMIN=$(execute_deployment_command cp-api-srv "java  -jar /opt/api/jwt-generator.jar \
-                                                                        --private $CP_API_SRV_CERT_DIR/jwt.key.private \
-                                                                        --expires 94608000 \
-                                                                        --claim user_id=1 \
-                                                                        --claim user_name=$CP_DEFAULT_ADMIN_NAME \
-                                                                        --claim role=ROLE_ADMIN \
-                                                                        --claim group=ADMIN")
+        CP_API_JWT_ADMIN=$(execute_deployment_command cp-api-srv cp-api-srv "java  -jar /opt/api/jwt-generator.jar \
+                                                                            --private $CP_API_SRV_CERT_DIR/jwt.key.private \
+                                                                            --expires 94608000 \
+                                                                            --claim user_id=1 \
+                                                                            --claim user_name=$CP_DEFAULT_ADMIN_NAME \
+                                                                            --claim role=ROLE_ADMIN \
+                                                                            --claim group=ADMIN")
         if [ $? -ne 0 ]; then
             print_err "Error ocurred while generating admin JWT token, docker registry and edge services cannot be configured to integrate with the API Services"
         else
@@ -813,7 +813,7 @@ if is_service_requested cp-git; then
                 init_kube_config_map
 
                 print_info "-> Setting trust for GitLab SSL certificate in API Services"
-                execute_deployment_command cp-api-srv "/update-trust $CP_GITLAB_CERT_DIR/ssl-public-cert.pem cp-git"
+                execute_deployment_command cp-api-srv cp-api-srv "/update-trust $CP_GITLAB_CERT_DIR/ssl-public-cert.pem cp-git"
 
                 print_info "-> Register GitLab in API Services"
                 print_info "Waiting $CP_GITLAB_INIT_TIMEOUT seconds, before registration (while health endpoint reported OK - gitlab may still fail with 502)"

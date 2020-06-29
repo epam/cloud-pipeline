@@ -1069,7 +1069,7 @@ function idp_register_app {
     local cert="$2"
     
     print_info "Creating IdP connection for $issuer with cert $cert"
-    idp_register_app_response=$(execute_deployment_command cp-idp "saml-idp add-connection $issuer -c $cert")
+    idp_register_app_response=$(execute_deployment_command cp-idp default "saml-idp add-connection $issuer -c $cert")
     if [ $? -ne 0 ]; then
         print_err "Error ocurred registering IdP connection for $issuer with cert $cert"
         echo "========"
@@ -1089,7 +1089,7 @@ function idp_register_user {
     local email="$5"
 
     print_info "Registering IdP user $username"
-    idp_register_user_response=$(execute_deployment_command cp-idp "saml-idp add-user $username $password --firstName $firstname --lastName $lastname --email $email")
+    idp_register_user_response=$(execute_deployment_command cp-idp default "saml-idp add-user $username $password --firstName $firstname --lastName $lastname --email $email")
     if [ $? -ne 0 ]; then
         print_err "Error ocurred registering user $username"
         echo "========"
