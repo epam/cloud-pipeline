@@ -2,8 +2,6 @@ import {createClient} from 'webdav';
 import electron from 'electron';
 import FileSystem from './file-system';
 import * as utilities from './utilities';
-import path from "path";
-import fs from "fs";
 
 class WebdavFileSystem extends FileSystem {
   constructor() {
@@ -35,7 +33,6 @@ class WebdavFileSystem extends FileSystem {
         password: this.password
       };
       try {
-        require('https').globalAgent.options.ca = require('ssl-root-cas').create();
         this.webdavClient = createClient(this.root, options);
       } catch (e) {
         utilities.rejectError(reject)(e);

@@ -21,7 +21,7 @@ class CreateDirectoryOperation extends Operation {
                 })
                 .catch(reject);
             })
-            .catch(message => reject({message}));
+            .catch(message => reject({message: `Initialization error: ${message}`}));
         })
         .catch(reject);
     });
@@ -40,7 +40,7 @@ class CreateDirectoryOperation extends Operation {
             this.reportProgress(100, `Creating directory ${name}...`);
             resolve();
           })
-          .catch(message => reject({message}));
+          .catch(message => reject({message: `Error: ${message}`}));
       }
     });
   }
