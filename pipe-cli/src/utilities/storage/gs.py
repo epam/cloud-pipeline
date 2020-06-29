@@ -49,6 +49,7 @@ from src.utilities.storage.common import AbstractRestoreManager, AbstractListing
 
 CP_CLI_DOWNLOAD_BUFFERING_SIZE = 'CP_CLI_DOWNLOAD_BUFFERING_SIZE'
 CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS = 'CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS'
+CP_CLI_RESUMABLE_UPLOAD_ATTEMPTS = 'CP_CLI_RESUMABLE_UPLOAD_ATTEMPTS'
 
 
 class GsProgressPercentage(ProgressPercentage):
@@ -143,7 +144,7 @@ class _ResumableDownloadProgressMixin(Blob):
     def _do_download(self, transport, file_obj, download_url, headers, start=None, end=None):
         stream = _CheckSumOutputStream(_ProgressOutputStream(file_obj, progress_callback=self._progress_callback,
                                                              progress_chunk_size=self._progress_chunk_size))
-        remaining_attempts = self._attempts
+        remaining_attempts = self._download_attempts
         while stream.bytes_transferred < self._size and remaining_attempts:
             try:
                 download = Download(
@@ -157,12 +158,16 @@ class _ResumableDownloadProgressMixin(Blob):
                     raise RuntimeError('Resumable download has failed after %s sequential resumes. '
                                        'You can alter the number of allowed resumes using %s environment variable. '
                                        'Original error: %s.'
-                                       % (self._attempts, CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS, str(e)))
+                                       % (self._download_attempts, CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS, str(e)))
         self.reload()
         stream.validate_checksum(self.md5_hash)
 
 
-class _UploadProgressMixin(Blob):
+class _ResumableUploadProgressMixin(Blob):
+    """
+    Blob upload mixin that checks uploading progress and resumes the upload in
+    case of any low-level error.
+    """
 
     def _do_resumable_upload(self, client, stream, content_type, size, num_retries, predefined_acl):
         upload, transport = self._initiate_resumable_upload(
@@ -176,31 +181,45 @@ class _UploadProgressMixin(Blob):
         )
 
         response = None
-        while not upload.finished:
-            if self._progress_callback:
-                self._progress_callback(upload._bytes_uploaded)
-            response = upload.transmit_next_chunk(transport)
-
+        remaining_attempts = self._upload_attempts
+        while not upload.finished and remaining_attempts:
+            try:
+                if self._progress_callback:
+                    self._progress_callback(upload._bytes_uploaded)
+                response = upload.transmit_next_chunk(transport)
+            except RequestException as e:
+                remaining_attempts -= 1
+                if remaining_attempts:
+                    upload.recover(transport)
+                else:
+                    raise RuntimeError('Resumable upload has failed after %s sequential resumes. '
+                                       'You can alter the number of allowed resumes using %s environment variable. '
+                                       'Original error: %s.'
+                                       % (self._upload_attempts, CP_CLI_RESUMABLE_UPLOAD_ATTEMPTS, str(e)))
         return response
 
 
-class _ProgressBlob(_ResumableDownloadProgressMixin, _UploadProgressMixin, Blob):
+class _ProgressBlob(_ResumableDownloadProgressMixin, _ResumableUploadProgressMixin, Blob):
     PROGRESS_CHUNK_SIZE = 5 * 1024 * 1024  # 5 MB
     DEFAULT_RESUME_ATTEMPTS = 100
 
-    def __init__(self, size, progress_callback, attempts=DEFAULT_RESUME_ATTEMPTS, *args, **kwargs):
+    def __init__(self, size, progress_callback, download_attempts=DEFAULT_RESUME_ATTEMPTS,
+                 upload_attempts=DEFAULT_RESUME_ATTEMPTS, *args, **kwargs):
         """
         The class is a workaround for the absence of support for the uploading and downloading callbacks
         in the official SDK. There are no issues for support of such a feature. Nevertheless if the support for
         uploading and downloading callbacks will be provided the usage of _ProgressBlob class should be removed.
 
         :param size: Total size of the downloading blob.
-        :param attempts: Maximum number of download sequential resumes before failing. Defaults to
+        :param download_attempts: Maximum number of download sequential resumes before failing. Defaults to
         DEFAULT_RESUME_ATTEMPTS and can be overridden with CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS environment variable.
+        :param upload_attempts: Maximum number of upload sequential resumes before failing. Defaults to
+        DEFAULT_RESUME_ATTEMPTS and can be overridden with CP_CLI_RESUMABLE_UPLOAD_ATTEMPTS environment variable.
         """
         self._size = size
         self._progress_callback = progress_callback
-        self._attempts = int(os.environ.get(CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS) or attempts)
+        self._download_attempts = int(os.environ.get(CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS) or download_attempts)
+        self._upload_attempts = int(os.environ.get(CP_CLI_RESUMABLE_UPLOAD_ATTEMPTS) or upload_attempts)
         self._progress_chunk_size = _ProgressBlob.PROGRESS_CHUNK_SIZE
         super(_ProgressBlob, self).__init__(*args, **kwargs)
 
