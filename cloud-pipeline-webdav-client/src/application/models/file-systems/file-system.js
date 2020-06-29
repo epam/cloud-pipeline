@@ -34,7 +34,10 @@ class FileSystem {
     return Promise.resolve();
   }
   remove(path) {
-    return new Promise.resolve();
+    return Promise.resolve();
+  }
+  createDirectory(name) {
+    return Promise.resolve();
   }
 }
 

@@ -55,8 +55,18 @@ module.exports = {
             },
             {
               "html": "./src/operations.html",
-              "js": "./src/operationsRenderer.js",
+              "js": "./src/operations-renderer.js",
               "name": "operations_window"
+            },
+            {
+              "html": "./src/directory-name-dialog.html",
+              "js": "./src/directory-name-renderer.js",
+              "name": "directory_name_dialog"
+            },
+            {
+              "html": "./src/confirmation-dialog.html",
+              "js": "./src/confirmation-dialog-renderer.js",
+              "name": "confirmation_dialog"
             }
           ]
         }

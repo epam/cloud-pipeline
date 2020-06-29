@@ -1,15 +1,11 @@
 .operation {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   padding: 5px 10px;
   font-size: 9pt;
 }
 
-.operation > * {
-  flex: 1;
-}
-
-.operation.error {
+.operation .error {
   color: red;
 }
 

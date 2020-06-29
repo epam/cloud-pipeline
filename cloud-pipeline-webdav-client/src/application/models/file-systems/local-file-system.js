@@ -90,6 +90,16 @@ class LocalFileSystem extends FileSystem {
       }
     });
   }
+  createDirectory(name) {
+    return new Promise((resolve, reject) => {
+      try {
+        fs.mkdirSync(name);
+        resolve();
+      } catch (e) {
+        reject(e.message);
+      }
+    });
+  }
 }
 
 export default LocalFileSystem;

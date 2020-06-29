@@ -37,7 +37,7 @@ function submit (mainWindow, ...args) {
       );
       break;
     case Commands.delete:
-      operation = implementation.RemoveOperation(
+      operation = new implementation.RemoveOperation(
         mainWindow,
         sourceFS,
         elements,

@@ -3,6 +3,7 @@ import electron from 'electron';
 import FileSystem from './file-system';
 import * as utilities from './utilities';
 import path from "path";
+import fs from "fs";
 
 class WebdavFileSystem extends FileSystem {
   constructor() {
@@ -152,6 +153,16 @@ class WebdavFileSystem extends FileSystem {
       this.webdavClient.deleteFile(path)
         .then(resolve)
         .catch(({message}) => reject(message))
+    });
+  }
+  createDirectory(name) {
+    return new Promise((resolve, reject) => {
+      if (!this.webdavClient) {
+        reject('WebDav client was not initialized');
+      }
+      this.webdavClient.createDirectory(name)
+        .then(() => resolve())
+        .catch(e => reject(e.message));
     });
   }
 }

@@ -5,36 +5,32 @@ import './operation.css';
 const OPERATION_HEIGHT = 45;
 
 function Operation ({operation}) {
-  let content;
   if (!operation) {
     return null;
   }
-  if (operation.error) {
-    content = (
-      <div className="error">
-        {operation.error}
-      </div>
-    )
-  } else if (!operation.progress) {
-    content = (
-      <div className="info">
+  const parts = [];
+  if (operation.info) {
+    parts.push((
+      <div key="info" className="info">
         {operation.info}
       </div>
-    )
-  } else {
-    content = (
-      <div style={{width: '100%'}}>
-        <div key="info" className="info">
-          {operation.info}
-        </div>
-        <Progress
-          key="progress"
-          percent={operation.progress}
-          size="small"
-          format={o => `${Math.round(o)}%`}
-        />
+    ));
+  }
+  if (operation.error) {
+    parts.push((
+      <div key="error" className="error">
+        {operation.error}
       </div>
-    );
+    ))
+  } else if (operation.progress) {
+    parts.push((
+      <Progress
+        key="progress"
+        percent={operation.progress}
+        size="small"
+        format={o => `${Math.round(o)}%`}
+      />
+    ));
   }
   return (
     <div
@@ -43,7 +39,7 @@ function Operation ({operation}) {
         height: OPERATION_HEIGHT,
       }}
     >
-      {content}
+      {parts}
     </div>
   );
 }
