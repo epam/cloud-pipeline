@@ -57,7 +57,7 @@ function PathNavigation ({path, onNavigate, fileSystem}) {
         .filter(Boolean)
         .map((name, index, array) => ({
           name,
-          path: fileSystem.joinPath(...array.slice(0, index + 1))
+          path: fileSystem.joinPath(fileSystem.root, ...array.slice(0, index + 1))
         }))
     )
     .map((item, index, array) => ({
