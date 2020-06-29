@@ -35,12 +35,16 @@ class CreateDirectoryOperation extends Operation {
       } else {
         const path = fs.joinPath(this.parent, name);
         this.reportProgress(0, `Creating directory ${name}...`);
-        fs.createDirectory(path)
+        fs.getDirectoryContents()
           .then(() => {
-            this.reportProgress(100, `Creating directory ${name}...`);
-            resolve();
+            fs.createDirectory(path)
+              .then(() => {
+                this.reportProgress(100, `Creating directory ${name}...`);
+                resolve();
+              })
+              .catch(message => reject({message: `Error: ${message}`}));
           })
-          .catch(message => reject({message: `Error: ${message}`}));
+          .catch(message => reject({message:`Error listing directory: ${message}`}));
       }
     });
   }
