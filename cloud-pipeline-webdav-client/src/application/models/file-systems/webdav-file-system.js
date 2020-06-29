@@ -36,9 +36,9 @@ class WebdavFileSystem extends FileSystem {
         password: this.password,
       };
       if (this.certificates && this.certificates.length > 0) {
-        options.httpsAgent = new https.Agent({
-          ca: this.certificates
-        });
+        const cas = https.globalAgent.options.ca || [];
+        cas.push(...this.certificates);
+        https.globalAgent.options.ca = cas;
       }
       try {
         this.webdavClient = createClient(this.root, options);
