@@ -254,9 +254,6 @@ API_RUN_TIME_LOG=$CP_API_HOME/logs/runtime.log
 mkdir -p $(dirname $API_RUN_TIME_LOG)
 touch $API_RUN_TIME_LOG
 
-# Set MY_POD_NAME for the HA leader election
-export MY_POD_NAME=$(hostname)
-
 nohup java $CP_API_SRV_JAVA_OPTS -jar pipeline.jar &> $API_RUN_TIME_LOG &
 APP_PID="$!"
 
