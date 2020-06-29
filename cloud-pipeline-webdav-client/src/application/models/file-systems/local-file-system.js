@@ -46,6 +46,13 @@ class LocalFileSystem extends FileSystem {
         .catch(utilities.rejectError(reject));
     });
   }
+  parsePath(directory, relativeToRoot = false) {
+    if (!relativeToRoot) {
+      return super.parsePath(directory, relativeToRoot);
+    }
+    return super.parsePath(path.relative(this.root, directory || this.root), false);
+  }
+
   joinPath(...parts) {
     return path.join(...parts);
   }

@@ -25,7 +25,7 @@ class RemoveOperation extends Operation {
                 })
                 .catch(reject);
             })
-            .catch(reject);
+            .catch(message => reject({message}));
         })
         .catch(reject);
     });

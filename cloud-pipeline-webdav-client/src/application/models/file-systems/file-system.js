@@ -15,7 +15,7 @@ class FileSystem {
   getDirectoryContents (directory) {
     return new Promise((resolve) => resolve([]));
   }
-  parsePath (directory) {
+  parsePath (directory, relativeToRoot = false) {
     return (directory || '').split(this.separator);
   }
   joinPath (...parts) {

@@ -48,6 +48,7 @@ class WebdavFileSystem extends FileSystem {
       if (!this.webdavClient) {
         reject('WebDav client was not initialized');
       }
+      const parentDirectory = this.joinPath(...this.parsePath(directoryCorrected).slice(0, -1));
       this.webdavClient.getDirectoryContents(directoryCorrected)
         .then(contents => {
           resolve(
@@ -56,7 +57,7 @@ class WebdavFileSystem extends FileSystem {
                 ? []
                 : [{
                   name: '..',
-                  path: undefined,
+                  path: parentDirectory,
                   isDirectory: true,
                   isFile: false,
                   isSymbolicLink: false,
@@ -80,8 +81,22 @@ class WebdavFileSystem extends FileSystem {
         .catch(utilities.rejectError(reject));
     });
   }
-  parsePath (directory) {
-    return (directory || '').split('/').filter(Boolean);
+  parsePath (directory, relativeToRoot = false) {
+    const parts = (directory || '').split('/').filter(Boolean);
+    if (relativeToRoot) {
+      const rootParts = (this.root || '').split('/').filter(Boolean);
+      let idx = -1;
+      for (let i = 0; i < Math.min(rootParts.length, parts.length); i++) {
+        if (rootParts[i] !== parts[i]) {
+          break;
+        }
+        idx = i;
+      }
+      if (idx >= 0) {
+        return parts.slice(idx + 1);
+      }
+    }
+    return parts;
   }
   joinPath (...parts) {
     return (parts || []).join('/');
@@ -137,12 +152,13 @@ class WebdavFileSystem extends FileSystem {
     return new Promise((resolve, reject) => {
       if (!this.webdavClient) {
         reject('WebDav client was not initialized');
+      } else {
+        // const parentDirectory = path.dirname(destinationPath);// todo:
+        // todo: make directory
+        const writeStream = stream.pipe(this.webdavClient.createWriteStream(destinationPath));
+        writeStream.on('finish', resolve);
+        writeStream.on('error', ({message}) => reject(message));
       }
-      // const parentDirectory = path.dirname(destinationPath);// todo:
-      // todo: make directory
-      const writeStream = stream.pipe(this.webdavClient.createWriteStream(destinationPath));
-      writeStream.on('finish', resolve);
-      writeStream.on('error', ({message}) => reject(message));
     });
   }
   remove(path) {

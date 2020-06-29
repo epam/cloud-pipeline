@@ -53,7 +53,7 @@ function PathNavigation ({path, onNavigate, fileSystem}) {
     }
   ]
     .concat(
-      fileSystem.parsePath(path)
+      fileSystem.parsePath(path, true)
         .filter(Boolean)
         .map((name, index, array) => ({
           name,
