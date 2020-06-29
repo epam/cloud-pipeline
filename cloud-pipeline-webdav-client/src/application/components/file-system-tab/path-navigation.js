@@ -65,7 +65,11 @@ function PathNavigation ({path, onNavigate, fileSystem}) {
       isCurrent: array.length - 1 === index
     }));
   return (
-    <Breadcrumb className="path-navigation" onClick={() => onClick(parts[parts.length - 1])}>
+    <Breadcrumb
+      className="path-navigation"
+      onClick={() => onClick(parts[parts.length - 1])}
+      separator={fileSystem.separator}
+    >
       {
         parts.map(part => (
           <Breadcrumb.Item
@@ -78,7 +82,6 @@ function PathNavigation ({path, onNavigate, fileSystem}) {
                 })
             }
             onClick={(e) => onClick(part, e)}
-            separator={fileSystem.separator}
           >
             {part.name}
           </Breadcrumb.Item>
