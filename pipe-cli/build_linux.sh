@@ -65,7 +65,7 @@ cd $PIPE_MOUNT_SOURCES_DIR && \
 python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                 --hidden-import=UserList \
                                 --hidden-import=UserString \
-                                --additional-hooks-dir="{$PIPE_MOUNT_SOURCES_DIR}/hooks" \
+                                --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks" \
                                 -y \
                                 --clean \
                                 --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
