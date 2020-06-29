@@ -17,6 +17,8 @@ export default function createDirectoryNameDialog () {
     },
   })
   directoryNameDialog.loadURL(DIRECTORY_NAME_DIALOG_WEBPACK_ENTRY);
+  directoryNameDialog.setMenuBarVisibility(false);
+  directoryNameDialog.removeMenu();
   directoryNameDialog.on('ready-to-show', () => {
     directoryNameDialog.show();
   });

@@ -81,7 +81,7 @@ class WebdavFileSystem extends FileSystem {
     });
   }
   parsePath (directory) {
-    return (directory || '').split('/');
+    return (directory || '').split('/').filter(Boolean);
   }
   joinPath (...parts) {
     return (parts || []).join('/');

@@ -18,6 +18,8 @@ export default function showConfirmationDialog (title) {
     },
   })
   confirmationDialog.loadURL(CONFIRMATION_DIALOG_WEBPACK_ENTRY);
+  confirmationDialog.setMenuBarVisibility(false);
+  confirmationDialog.removeMenu();
   confirmationDialog.on('ready-to-show', () => {
     confirmationDialog.webContents.send('show-confirmation', title);
     confirmationDialog.show();

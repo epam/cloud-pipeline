@@ -57,6 +57,8 @@ const createOperationsWindow = (parent) => {
     },
   })
   operationsWindow.loadURL(OPERATIONS_WINDOW_WEBPACK_ENTRY);
+  operationsWindow.setMenuBarVisibility(false);
+  operationsWindow.removeMenu();
   operationsWindow.on('closed', () => {
     operationsWindowId = undefined;
   });
