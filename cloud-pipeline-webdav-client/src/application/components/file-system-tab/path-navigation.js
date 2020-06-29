@@ -39,7 +39,7 @@ function PathNavigation ({path, onNavigate, fileSystem}) {
       <Input
         autoFocus
         className="path-navigation-input"
-        value={editPath || fileSystem.separator}
+        value={editPath}
         onChange={e => setEditPath(e.target.value)}
         onPressEnter={() => navigate(editPath)}
         onBlur={becomeInactive}
@@ -78,6 +78,7 @@ function PathNavigation ({path, onNavigate, fileSystem}) {
                 })
             }
             onClick={(e) => onClick(part, e)}
+            separator={fileSystem.separator}
           >
             {part.name}
           </Breadcrumb.Item>
