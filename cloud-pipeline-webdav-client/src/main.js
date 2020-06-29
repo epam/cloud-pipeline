@@ -72,7 +72,7 @@ const resizeOperationsWindow = () => {
       width: OPERATION_WIDTH,
       height: Math.min(
         600,
-        Math.max(1, (global.operations || []).filter(o => !o.finished).length) * OPERATION_HEIGHT + 20
+        Math.max(1, (global.operations || []).filter(o => !o.finished).length) * OPERATION_HEIGHT + 30
       )
     });
   }

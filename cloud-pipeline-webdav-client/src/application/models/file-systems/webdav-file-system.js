@@ -35,6 +35,7 @@ class WebdavFileSystem extends FileSystem {
         password: this.password
       };
       try {
+        require('https').globalAgent.options.ca = require('ssl-root-cas').create();
         this.webdavClient = createClient(this.root, options);
       } catch (e) {
         utilities.rejectError(reject)(e);
