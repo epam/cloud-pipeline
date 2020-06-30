@@ -60,6 +60,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.settingsButton
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.Objects.isNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertTrue;
 
 public class Configuration implements AccessObject<Configuration> {
 
@@ -328,12 +329,7 @@ public class Configuration implements AccessObject<Configuration> {
     }
 
     public Configuration assertPageTitleIs(final String expectedTitle) {
-        sleep(3, SECONDS);
-        if (!$(title()).toString().contains(expectedTitle)) {
-            screenshot("page-title");
-            throw new RuntimeException("Page title is not the same as expected");
-        }
+        assertTrue($(title()).toString().contains(expectedTitle));
         return this;
     }
-
 }

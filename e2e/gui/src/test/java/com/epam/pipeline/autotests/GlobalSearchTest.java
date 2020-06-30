@@ -163,7 +163,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test
     @TestCase(value = {"EPMCMBIBPC-2658"})
     public void searchForPipeline() {
-        library().cd(folder)
+        library()
+                .cd(folder)
                 .clickOnDraftVersion(pipeline)
                 .configurationTab()
                 .editConfiguration(defaultProfile, profile ->
