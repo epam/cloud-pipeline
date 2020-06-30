@@ -49,6 +49,10 @@ spec:
               value: http://127.0.0.1:4040/
             - name: CP_HA_DEPLOY_ENABLED
               value: "true"
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           envFrom:
           - configMapRef:
               name: cp-config-global
