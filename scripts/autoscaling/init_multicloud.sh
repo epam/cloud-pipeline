@@ -120,9 +120,31 @@ done
 
 # Stop docker if it is running
 systemctl stop docker
-# Move any existing docker configuration to the mounted directory (if we have any existing docker images)
-if [ -d "/var/lib/docker" ] && [ ! -d "/ebs/docker" ]; then
-  mv /var/lib/docker /ebs/
+
+# If /ebs/docker is missing - consider this is a first run (not a resume)
+_KUBE_SYSTEM_PODS_NEEDS_LOAD=1
+if [ ! -d "/ebs/docker" ]; then
+  # Grab system docker images from the public storage
+  _KUBE_SYSTEM_PODS_DISTR_PREFIX="@SYSTEM_PODS_DISTR_PREFIX@"
+  if [ ! "$_KUBE_SYSTEM_PODS_DISTR_PREFIX" ] || [[ "$_KUBE_SYSTEM_PODS_DISTR_PREFIX" == "@"*"@" ]]; then
+    _KUBE_SYSTEM_PODS_DISTR_PREFIX="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker"
+  fi
+  mkdir -p /tmp/system-dockers
+  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/calico-node-v3.14.1.tar" -O /tmp/system-dockers/calico-node-v3.14.1.tar && \
+  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/calico-pod2daemon-flexvol-v3.14.1.tar" -O /tmp/system-dockers/calico-pod2daemon-flexvol-v3.14.1.tar && 
+  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/calico-cni-v3.14.1.tar" -O /tmp/system-dockers/calico-cni-v3.14.1.tar && \
+  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O /tmp/system-dockers/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
+  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/quay.io-coreos-flannel-v0.11.0.tar" -O /tmp/system-dockers/quay.io-coreos-flannel-v0.11.0.tar && \
+  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/k8s.gcr.io-pause-3.1.tar" -O /tmp/system-dockers/k8s.gcr.io-pause-3.1.tar
+  # This flag is used further to load the images
+  _KUBE_SYSTEM_PODS_NEEDS_LOAD=$?
+  # If can't pull from the public repo - try to get the "baked-in" images
+  if [ $_KUBE_SYSTEM_PODS_NEEDS_LOAD -ne 0 ]; then
+    # Move any existing docker configuration to the mounted directory (if we have any existing docker images)
+    if [ -d "/var/lib/docker" ] && [ ! -d "/ebs/docker" ]; then
+      mv /var/lib/docker /ebs/
+    fi
+  fi
 fi
 
 mkdir -p /etc/docker
@@ -307,7 +329,7 @@ _KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_RESERVED_MB < $_KUBE_RESERVED_MIN
 ### Setup the  calculated values into the kubelet args
 _KUBE_RESERVED_ARGS="--kube-reserved cpu=350m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,ephemeral-storage=1Gi"
 _KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=350m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,ephemeral-storage=1Gi"
-_KUBE_EVICTION_ARGS="--eviction-hard= --eviction-soft= --eviction-soft-grace-period="
+_KUBE_EVICTION_ARGS="--eviction-hard= --eviction-soft= --eviction-soft-grace-period= --pod-max-pids=-1"
 _KUBE_FAIL_ON_SWAP_ARGS="--fail-swap-on=false"
 
 ## Append extra kube-config to the systemd config
@@ -318,6 +340,14 @@ chmod +x $_KUBELET_INITD_DROPIN_PATH
 systemctl enable docker
 systemctl enable kubelet
 systemctl start docker
+
+if [ $_KUBE_SYSTEM_PODS_NEEDS_LOAD -eq 0 ]; then
+  for _KUBE_SYSTEM_POD_FILE in /tmp/system-dockers/*.tar; do 
+    docker load -i $_KUBE_SYSTEM_POD_FILE
+    rm -f $_KUBE_SYSTEM_POD_FILE
+  done
+fi
+
 kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-verification --node-name $_KUBE_NODE_NAME --ignore-preflight-errors all
 systemctl start kubelet
 
