@@ -1,6 +1,6 @@
 #!/bin/bash
 user_data_log="/var/log/user_data.log"
-exec > $user_data_log 2>&1
+exec > "$user_data_log" 2>&1
 
 function check_installed {
     command -v "$1" >/dev/null 2>&1
@@ -286,7 +286,7 @@ _KUBE_NODE_NAME="${_KUBE_NODE_NAME:-$(hostname)}"
 _KUBE_NODE_NAME_ARGS="--hostname-override $_KUBE_NODE_NAME"
 
 # FIXME: use the .NodeRegistration.KubeletExtraArgs object in the configuration files
-_KUBELET_INITD_DROPIN_PATH="/etc/systemd/system/kubelet.service.d/20-kubelet-labels.conf"
+_KUBELET_INITD_DROPIN_PATH="/etc/sysconfig/kubelet"
 rm -f $_KUBELET_INITD_DROPIN_PATH
 
 ## Configure kubelet reservations
@@ -305,22 +305,22 @@ _KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_TOTAL_MB * $_KUBE_RESERVED_RATIO 
 _KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_RESERVED_MB > $_KUBE_RESERVED_MAX_MB ? $_KUBE_RESERVED_MAX_MB : $_KUBE_NODE_MEM_RESERVED_MB ))
 _KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_RESERVED_MB < $_KUBE_RESERVED_MIN_MB ? $_KUBE_RESERVED_MIN_MB : $_KUBE_NODE_MEM_RESERVED_MB ))
 ### Setup the  calculated values into the kubelet args
-_KUBE_RESERVED_ARGS="--kube-reserved cpu=500m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,storage=1Gi"
-_KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=500m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,storage=1Gi"
+#_KUBE_RESERVED_ARGS="--kube-reserved cpu=500m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,storage=1Gi"
+_KUBE_RESERVED_ARGS="--kube-reserved cpu=500m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi"
+#_KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=500m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,storage=1Gi"
+_KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=500m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi"
 _KUBE_EVICTION_ARGS="--eviction-hard= --eviction-soft= --eviction-soft-grace-period="
+_KUBE_FAIL_ON_SWAP_ARGS="--fail-swap-on=false"
 
 ## Append extra kube-config to the systemd config
-cat > $_KUBELET_INITD_DROPIN_PATH <<EOF
-[Service]
-Environment="KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS $_KUBE_EVICTION_ARGS"
-EOF
+echo "KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS $_KUBE_EVICTION_ARGS $_KUBE_FAIL_ON_SWAP_ARGS" >> $_KUBELET_INITD_DROPIN_PATH
 chmod +x $_KUBELET_INITD_DROPIN_PATH
 
 # Start docker and kubelet
 systemctl enable docker
 systemctl enable kubelet
 systemctl start docker
-kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-verification --node-name $_KUBE_NODE_NAME
+kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-verification --node-name $_KUBE_NODE_NAME --ignore-preflight-errors all
 systemctl start kubelet
 
 update_nameserver "$nameserver_post_val" "infinity"
@@ -363,7 +363,7 @@ fi
 #   2. All other nodes: add support for joining node to kube cluster after starting the "paused" job
 cat >> /etc/rc.local << EOF
 systemctl start docker
-kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks --node-name $_KUBE_NODE_NAME
+kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-verification --node-name $_KUBE_NODE_NAME --ignore-preflight-errors all
 systemctl start kubelet
 EOF
 
