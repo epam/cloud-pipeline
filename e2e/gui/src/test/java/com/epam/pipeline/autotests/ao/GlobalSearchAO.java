@@ -229,10 +229,10 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
         }
 
         public SearchResultItemPreviewAO checkTags(String ... list) {
-            String tags = String.format("%s %s %s %s", get(TAGS).find(By.xpath("./span[2]/span")).text(),
-                    get(TAGS).find(By.xpath("./span[3]")).text(),
-                    get(TAGS).find(By.xpath("./span[4]")).text(),
-                    get(TAGS).find(By.xpath("./span[5]")).text());
+            String tags = String.format("%s %s %s %s", get(TAGS).find(By.xpath(".//span[2]/span")).text(),
+                    get(TAGS).find(By.xpath(".//span[3]")).text(),
+                    get(TAGS).find(By.xpath(".//span[4]")).text(),
+                    get(TAGS).find(By.xpath(".//span[5]")).text());
             Arrays.stream(list).forEach(tags::contains);
             return this;
         }

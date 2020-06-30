@@ -327,4 +327,13 @@ public class Configuration implements AccessObject<Configuration> {
         return () -> new ConfirmationPopupAO<>(new Object()).ensureTitleIs("Are you sure you want to change configuration?").ok();
     }
 
+    public Configuration assertPageTitleIs(final String expectedTitle) {
+        sleep(3, SECONDS);
+        if (!$(title()).toString().contains(expectedTitle)) {
+            screenshot("page-title");
+            throw new RuntimeException("Page title is not the same as expected");
+        }
+        return this;
+    }
+
 }
