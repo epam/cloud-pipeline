@@ -71,7 +71,7 @@ public class MetadataFilePreviewAO extends PopupAO<MetadataFilePreviewAO, Metada
     }
 
     public StorageContentAO editFileWithText(String text) {
-        click(EDIT);
+        ensure(EDIT, enabled).click(EDIT);
         sleep(3, SECONDS);
         Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), text);
         ensure(SAVE, enabled).click(SAVE);
