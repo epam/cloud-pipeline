@@ -35,10 +35,11 @@ import java.io.IOException;
 @ConditionalOnProperty(name = "ha.deploy.enabled", havingValue = "true")
 public class ScheduledTasksSynchronizationAspect {
 
-    private static final String POD_NAME_ENV_VAR = "MY_POD_NAME";
-
     @Value("${kube.master.pod.check.url}")
     private String baseUrl;
+
+    @Value("${kube.pod.name.env.var:HOSTNAME}")
+    private String podNameEnvVar;
 
     @Around("@annotation(net.javacrumbs.shedlock.core.SchedulerLock)")
     public void skipScheduledMethodInvocation(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -57,7 +58,7 @@ public class ScheduledTasksSynchronizationAspect {
     private boolean isMasterHost() {
         final String masterName = receiveMasterName();
         return masterName == null
-               || masterName.equals(System.getenv(POD_NAME_ENV_VAR));
+               || masterName.equals(System.getenv(podNameEnvVar));
     }
 
     /**
