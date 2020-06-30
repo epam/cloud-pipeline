@@ -681,7 +681,7 @@ spec:
             privileged: true
           resources:
             requests:
-              cpu: 250m
+              cpu: 200m
           livenessProbe:
             exec:
               command:
@@ -854,4 +854,3 @@ kind: ServiceAccount
 metadata:
   name: calico-kube-controllers
   namespace: kube-system
-
