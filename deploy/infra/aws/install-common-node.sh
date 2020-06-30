@@ -27,14 +27,13 @@ EOF
 
 fi
 
-
-
 # Install common
 yum install -y  nc \
                 python \
                 curl \
-                btrfs-progs \
-                iproute-tc && \
+                btrfs-progs
+
+yum install -y iproute-tc
 curl https://bootstrap.pypa.io/get-pip.py | python -
 
 # Install jq
