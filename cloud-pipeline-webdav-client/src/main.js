@@ -2,6 +2,9 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const readWebdavConfiguration = require('./read-webdav-configuration');
 const {submit} = require('./application/models/commands');
 
+import axios from 'axios';
+axios.defaults.adapter = require('axios/lib/adapters/http');
+
 const OPERATION_WIDTH = 400;
 const OPERATION_HEIGHT = 45;
 
