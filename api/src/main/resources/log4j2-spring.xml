@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -18,12 +18,13 @@
 <Configuration monitorInterval="60">
     <Properties>
         <Property name="log-path">logs</Property>
+        <Property name="cp-api-logger-hostname">$${env:MY_POD_NAME:-cp-api-srv}</Property>
     </Properties>
     <Appenders>
         <Console name="Console-Appender" target="SYSTEM_OUT">
             <PatternLayout>
                 <pattern>
-                    [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>>
             </PatternLayout>
         </Console>
@@ -43,7 +44,7 @@
             </Policies>
             <PatternLayout>
                 <pattern>
-                    [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>
             </PatternLayout>
         </RollingFile >
@@ -83,7 +84,7 @@
             </Policies>
             <PatternLayout>
                 <pattern>
-                    [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>
             </PatternLayout>
         </RollingFile >
@@ -106,7 +107,7 @@
             </Policies>
             <PatternLayout>
                 <pattern>
-                    [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>
             </PatternLayout>
         </RollingFile >
@@ -126,7 +127,7 @@
             </Policies>
             <PatternLayout>
                 <pattern>
-                    [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>
             </PatternLayout>
         </RollingFile >
