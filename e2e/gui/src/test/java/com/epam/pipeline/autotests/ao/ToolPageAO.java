@@ -19,7 +19,6 @@ import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 

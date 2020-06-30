@@ -388,7 +388,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .sleep(2, SECONDS)
                 .hover(SEARCH_RESULT)
-                .openSearchResultItemWithText(runID)
+                .openSearchResultItemWithText(String.format("%s-%s", pipeline, runID))
                 .ensure(TITLE, Status.SUCCESS.reached, text(testRunID), text(pipeline), text(draftVersionName))
                 .checkTags(configurationDisk, configurationNodeType)
                 .ensure(HIGHLIGHTS, text("Found in logs"),
@@ -716,7 +716,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .search(customConfigurationProfile)
                 .enter()
                 .sleep(2, SECONDS)
-                .validateSearchResults(1, configuration)
+                .validateSearchResults(1, customConfigurationProfile)
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(customConfigurationProfile)
                 .ensure(TITLE, text(customConfigurationProfile))
