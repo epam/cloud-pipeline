@@ -1,8 +1,18 @@
 import {createClient} from 'webdav';
 import electron from 'electron';
 import https from 'https';
+import URL from 'url';
 import FileSystem from './file-system';
 import * as utilities from './utilities';
+
+function buildAgentOptions (server) {
+  const urlParsed = new URL.URL(server);
+  return {
+    port: +urlParsed.port,
+    host: urlParsed.hostname,
+    path: urlParsed.pathname,
+  };
+}
 
 class WebdavFileSystem extends FileSystem {
   constructor() {
@@ -18,11 +28,13 @@ class WebdavFileSystem extends FileSystem {
       username,
       password,
       certificates,
+      ignoreCertificateErrors,
     } = webdavClientConfig || {};
     super(server);
     this.username = username;
     this.password = password;
     this.certificates = certificates;
+    this.ignoreCertificateErrors = ignoreCertificateErrors;
     this.rootName = 'Root';
     this.separator = '/';
   }
@@ -35,10 +47,22 @@ class WebdavFileSystem extends FileSystem {
         username: this.username,
         password: this.password,
       };
+      let agentOptions;
       if (this.certificates && this.certificates.length > 0) {
-        const cas = https.globalAgent.options.ca || [];
-        cas.push(...this.certificates);
-        https.globalAgent.options.ca = cas;
+        if (!agentOptions) {
+          agentOptions = buildAgentOptions(this.root);
+        }
+        agentOptions.ca = this.certificates.map(data => Buffer.from(data));
+      }
+      if (this.ignoreCertificateErrors) {
+        if (!agentOptions) {
+          agentOptions = buildAgentOptions(this.root);
+        }
+        agentOptions.rejectUnauthorized = false;
+      }
+      if (agentOptions) {
+        options.httpsAgent = new https.Agent(agentOptions);
+        console.log('agent', agentOptions);
       }
       try {
         this.webdavClient = createClient(this.root, options);
