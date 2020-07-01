@@ -1,10 +1,9 @@
-const fs = require('fs');
 import Operation from './operation';
-import {buildSources, initializeFileSystemAdapter} from './utilities';
+import {buildSources} from './utilities';
 
 class CopyOperation extends Operation {
-  constructor(mainWindow, sourceFS, sources, destinationFS, destinationPath) {
-    super(mainWindow);
+  constructor(sourceFS, sources, destinationFS, destinationPath, progressCallback) {
+    super(progressCallback);
     this.sourceFS = sourceFS;
     this.sources = sources;
     this.destinationFS = destinationFS;
@@ -14,15 +13,21 @@ class CopyOperation extends Operation {
     return new Promise(async (resolve, reject) => {
       try {
         await super.preprocess();
-        const sfs = await initializeFileSystemAdapter(this.sourceFS);
-        const dfs = await initializeFileSystemAdapter(this.destinationFS);
+        if (!this.sourceFS) {
+          throw new Error('Internal error: source file system is not initialized');
+        }
+        if (!this.destinationFS) {
+          throw new Error('Internal error: destination file system is not initialized');
+        }
+        const sfs = this.sourceFS;
+        const dfs = this.destinationFS;
         const sources = await buildSources(sfs, this.sources);
         const destination = await dfs.buildDestination(this.destinationPath);
         const transfers = sources.map(({path, name}) => ({
           from: path,
           to: dfs.joinPath(destination, ...sfs.parsePath(name)),
           name,
-        }))
+        }));
         resolve({
           sourceFileSystem: sfs,
           destinationFileSystem: dfs,

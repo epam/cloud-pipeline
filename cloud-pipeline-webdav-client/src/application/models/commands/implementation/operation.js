@@ -1,10 +1,10 @@
 let identifier = 0;
 
 class Operation {
-  constructor(mainWindow) {
-    this.mainWindow = mainWindow;
+  constructor(progressCallback) {
     identifier += 1;
     this.identifier = identifier;
+    this.progressCallback = progressCallback;
     this.finished = false;
     this.progress = 0;
     this.info = undefined;
@@ -24,13 +24,21 @@ class Operation {
   reportProgress(progress, info) {
     this.progress = progress;
     this.info = info;
+    if (this.progressCallback) {
+      this.progressCallback(this);
+    }
   }
   reportError(error) {
     this.error = error;
+    if (this.progressCallback) {
+      this.progressCallback(this);
+    }
   }
   clear() {
     this.finished = true;
-
+    if (this.progressCallback) {
+      this.progressCallback(this);
+    }
   }
   run() {
     return new Promise((resolve) => {

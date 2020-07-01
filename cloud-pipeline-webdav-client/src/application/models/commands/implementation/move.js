@@ -1,4 +1,3 @@
-const fs = require('fs');
 import CopyOperation from './copy';
 
 class MoveOperation extends CopyOperation {

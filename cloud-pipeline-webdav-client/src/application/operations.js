@@ -1,28 +1,10 @@
-import React, {useEffect, useState} from 'react';
-import {remote} from 'electron';
+import React from 'react';
+import PropTypes from 'prop-types';
 import Operation from './components/operation';
 
-const UPDATE_INTERVAL = 100;
-
-function Operations() {
-  const [refreshIdx, setRefreshIdx] = useState(0);
-  const [operations, setOperations] = useState([]);
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setRefreshIdx(refreshIdx + 1);
-    }, UPDATE_INTERVAL);
-    return () => {
-      clearTimeout(t);
-    }
-  }, [refreshIdx]);
-  useEffect(() => {
-    setOperations(
-      (remote.getGlobal('operations') || [])
-        .filter(o => !o.finished)
-    );
-  }, [refreshIdx]);
+function Operations({className, operations}) {
   return (
-    <div>
+    <div className={className}>
       {
         operations.map((operation) => (
           <Operation key={operation.identifier} operation={operation} />
@@ -31,5 +13,10 @@ function Operations() {
     </div>
   );
 }
+
+Operations.propTypes = {
+  className: PropTypes.string,
+  operations: PropTypes.array,
+};
 
 export default Operations;

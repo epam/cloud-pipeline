@@ -32,4 +32,6 @@ import Application from './application';
 import 'antd/dist/antd.css'
 import './index.css';
 
+require('axios').defaults.adapter = require('axios/lib/adapters/http');
+
 ReactDOM.render(<Application />, document.getElementById('root'));

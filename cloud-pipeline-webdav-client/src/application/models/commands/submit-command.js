@@ -1,11 +1,12 @@
 import Commands from './commands';
 import * as implementation from './implementation';
 
-function submit (mainWindow, ...args) {
+function submit (...args) {
   const [
     command,
     source,
     destination,
+    progressCallback
   ] = args;
   const {fs: sourceFS, path: sourcePath, elements} = source;
   const {fs: destinationFS, path: destinationPath} = destination;
@@ -13,45 +14,43 @@ function submit (mainWindow, ...args) {
   switch (command) {
     case Commands.copy:
       operation = new implementation.CopyOperation(
-        mainWindow,
         sourceFS,
         elements,
         destinationFS,
         destinationPath,
+        progressCallback,
       );
       break;
     case Commands.move:
       operation = new implementation.MoveOperation(
-        mainWindow,
         sourceFS,
         elements,
         destinationFS,
         destinationPath,
+        progressCallback,
       );
       break;
     case Commands.createDirectory:
       operation = new implementation.CreateDirectoryOperation(
-        mainWindow,
         sourceFS,
         sourcePath,
+        progressCallback,
       );
       break;
     case Commands.delete:
       operation = new implementation.RemoveOperation(
-        mainWindow,
         sourceFS,
         elements,
+        progressCallback,
       );
       break;
     default:
       break;
   }
-  let promise;
   if (operation) {
     operation.command = command;
-    promise = operation.run();
   }
-  return {operation, promise};
+  return operation;
 }
 
 export default submit;

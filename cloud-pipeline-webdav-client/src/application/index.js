@@ -1,94 +1,91 @@
-import React, {useCallback, useState} from 'react';
-import {ipcRenderer} from 'electron';
+import React from 'react';
 import {Layout} from 'antd';
-import {FileSystems} from './models/file-systems';
 import FileSystemTab from './components/file-system-tab';
+import Operations from './operations';
+import useFileSystem from './components/file-system-tab/use-file-system';
+import useFileSystemTabActions from './use-file-system-tab-actions';
+import Tabs from './file-system-tabs';
 import './application.css';
 
-const LEFT_TAB_ID = 0;
-const RIGHT_TAB_ID = 1;
-
-const Tabs = {
-  left: FileSystems.local,
-  right: FileSystems.webdav,
-}
-
 function Application() {
-  const [leftTabReady, setLeftTabReady] = useState(false);
-  const [rightTabReady, setRightTabReady] = useState(false);
-  const [leftPath, setLeftPath] = useState(undefined);
-  const [rightPath, setRightPath] = useState(undefined);
-  const [activeTab, setActiveTab] = useState(LEFT_TAB_ID);
-  const setLeftTabActive = useCallback(() => {
-    setActiveTab(LEFT_TAB_ID);
-  }, [setActiveTab]);
-  const setRightTabActive = useCallback(() => {
-    setActiveTab(RIGHT_TAB_ID);
-  }, [setActiveTab]);
-  const onCommand = useCallback((
-    sourceFS,
-    destinationFS,
-    destinationPath,
-    command,
-    sourcePath,
-    sources,
-  ) => {
-    ipcRenderer.send(
-      'operation-start',
-      command,
-      {
-        fs: sourceFS,
-        path: sourcePath,
-        elements: sources,
-      },
-      {
-        fs: destinationFS,
-        path: destinationPath,
-      },
-    );
-  }, []);
-  const onLeftFSCommand = useCallback((...args) => {
-    onCommand(
-      Tabs.left,
-      Tabs.right,
-      rightPath,
-      ...args
-    );
-  }, [onCommand, rightPath]);
-  const onRightFSCommand = useCallback((...args) => {
-    onCommand(
-      Tabs.right,
-      Tabs.left,
-      leftPath,
-      ...args
-    );
-  }, [onCommand, leftPath]);
+  const leftTab = useFileSystem(Tabs.left);
+  const rightTab = useFileSystem(Tabs.right);
+  const {
+    operations,
+    leftTabActive,
+    rightTabActive,
+    leftTabReady,
+    rightTabReady,
+    setLeftPath,
+    setRightPath,
+    setLeftTabActive,
+    setRightTabActive,
+    onLeftFSCommand,
+    onRightFSCommand,
+  } = useFileSystemTabActions(leftTab, rightTab);
+  const activeOperations = operations.filter(o => !o.finished);
   return (
     <Layout className="layout">
       <Layout.Content className="content">
         <FileSystemTab
-          fileSystem={Tabs.left}
-          className="file-system-tab"
-          oppositeFileSystemReady={rightTabReady}
-          onFileSystemStatusChanged={setLeftTabReady}
-          active={activeTab === LEFT_TAB_ID}
+          active={leftTabActive}
+          error={leftTab.error}
           becomeActive={setLeftTabActive}
-          onPathChanged={setLeftPath}
+          contents={leftTab.contents}
+          pending={leftTab.pending}
+          path={leftTab.path}
+          setPath={setLeftPath}
+          selection={leftTab.selection}
+          setSelection={leftTab.setSelection}
+          lastSelectionIndex={leftTab.lastSelectionIndex}
+          setLastSelectionIndex={leftTab.setLastSelectionIndex}
+          onRefresh={leftTab.onRefresh}
+          className="file-system-tab"
+          fileSystem={leftTab.fileSystem}
+          oppositeFileSystemReady={leftTabReady}
           onCommand={onLeftFSCommand}
         />
         <FileSystemTab
-          fileSystem={Tabs.right}
-          className="file-system-tab"
-          oppositeFileSystemReady={leftTabReady}
-          onFileSystemStatusChanged={setRightTabReady}
-          active={activeTab === RIGHT_TAB_ID}
+          active={rightTabActive}
+          error={rightTab.error}
           becomeActive={setRightTabActive}
-          onPathChanged={setRightPath}
+          contents={rightTab.contents}
+          pending={rightTab.pending}
+          path={rightTab.path}
+          setPath={setRightPath}
+          selection={rightTab.selection}
+          setSelection={rightTab.setSelection}
+          lastSelectionIndex={rightTab.lastSelectionIndex}
+          setLastSelectionIndex={rightTab.setLastSelectionIndex}
+          onRefresh={rightTab.onRefresh}
+          className="file-system-tab"
+          fileSystem={rightTab.fileSystem}
+          oppositeFileSystemReady={rightTabReady}
           onCommand={onRightFSCommand}
         />
+        {
+          activeOperations.length > 0
+            ? (
+              <div className="operations-overlay">
+                <Operations
+                  className="operations"
+                  operations={activeOperations}
+                />
+              </div>
+            )
+            : undefined
+        }
       </Layout.Content>
       <Layout.Footer className="footer">
-        Background operations will be listed here
+        {
+          activeOperations.length > 0
+            ? (
+              <span>
+                {activeOperations.length} active operations
+              </span>
+            )
+            : undefined
+        }
       </Layout.Footer>
     </Layout>
   );

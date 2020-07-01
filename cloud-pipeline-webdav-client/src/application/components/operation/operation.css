@@ -3,6 +3,7 @@
   flex-direction: column;
   padding: 5px 10px;
   font-size: 9pt;
+  background-color: white;
 }
 
 .operation .error {

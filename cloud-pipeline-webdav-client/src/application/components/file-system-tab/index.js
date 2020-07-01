@@ -1,6 +1,5 @@
-import React, {useCallback, useState, useEffect} from 'react';
+import React, {useCallback, useState} from 'react';
 import PropTypes from 'prop-types';
-import {ipcRenderer} from 'electron';
 import {
   Alert,
   Button,
@@ -11,101 +10,33 @@ import {
 import classNames from 'classnames';
 import FileSystemElement from './file-system-element';
 import PathNavigation from './path-navigation';
-import {FileSystems, initializeFileSystem} from '../../models/file-systems';
+import CreateDirectoryDialog from './create-directory-dialog';
+import showConfirmationDialog from './show-confirmation-dialog';
 import {Commands} from '../../models/commands';
 import './file-system-tab.css';
 
 function FileSystemTab (
   {
+    fileSystem,
     active,
     becomeActive,
+    error,
+    contents,
+    pending,
+    path,
+    setPath,
+    selection,
+    setSelection,
+    lastSelectionIndex,
+    setLastSelectionIndex,
+    onRefresh,
     className,
-    fileSystem,
     oppositeFileSystemReady,
-    onFileSystemStatusChanged,
     onCommand,
-    onPathChanged,
   }
 ) {
-  const [fileSystemImpl, setFileSystem] = useState(undefined);
-  const [path, setNewPath] = useState(undefined);
-  const [pending, setPending] = useState(true);
-  const [error, setError] = useState(undefined);
-  const [contents, setContents] = useState([]);
   const [hovered, setHovered] = useState(undefined);
-  const [selection, setSelection] = useState([]);
-  const [lastSelectionIndex, setLastSelectionIndex] = useState(-1);
-  const [refreshRequest, setRefreshRequest] = useState(0);
-  const onRefresh = () => setRefreshRequest(refreshRequest + 1);
-  const setPath = useCallback((arg) => {
-    setNewPath(arg);
-    onPathChanged && onPathChanged(arg);
-  }, [onPathChanged, setNewPath]);
-  useEffect(() => {
-    ipcRenderer.on('operation-end', onRefresh);
-    return () => ipcRenderer.removeListener('operation-end', onRefresh);
-  }, [onRefresh]);
-  useEffect(() => {
-    const impl = initializeFileSystem(fileSystem);
-    setPath(undefined);
-    setSelection([]);
-    setLastSelectionIndex(-1);
-    if (impl) {
-      impl.initialize()
-        .then(() => {
-          setFileSystem(impl);
-          setError(undefined);
-          setPending(false);
-          setPath(undefined);
-          setSelection([]);
-          setLastSelectionIndex(-1);
-          onFileSystemStatusChanged(true);
-        })
-        .catch(e => {
-          setError(e);
-          setPending(false);
-          onFileSystemStatusChanged(false);
-        })
-      return () => impl.close();
-    }
-    return undefined;
-  }, [
-    fileSystem,
-    setFileSystem,
-    setPending,
-    setPath,
-    setSelection,
-    setLastSelectionIndex,
-    onFileSystemStatusChanged,
-  ]);
-  useEffect(() => {
-    if (fileSystemImpl) {
-      setPending(true);
-      fileSystemImpl
-        .getDirectoryContents(path)
-        .then(contents => {
-          setContents(contents);
-          setPending(false);
-          setSelection([]);
-          setLastSelectionIndex(-1);
-          onFileSystemStatusChanged(true);
-        })
-        .catch(e => {
-          setError(e)
-          setPending(false);
-          onFileSystemStatusChanged(false);
-        });
-    }
-  }, [
-    fileSystemImpl,
-    path,
-    setPending,
-    setContents,
-    setSelection,
-    setLastSelectionIndex,
-    onFileSystemStatusChanged,
-    refreshRequest,
-  ]);
+  const [createDirectoryDialogVisible, setCreateDirectoryDialogVisible] = useState(false);
   const onHover = useCallback((e) => {
     const {path} = e;
     setHovered(path);
@@ -114,11 +45,8 @@ function FileSystemTab (
     setHovered(undefined);
   }, [setHovered]);
   const onNavigate = useCallback((newPath) => {
-    setSelection([]);
-    setLastSelectionIndex(-1);
     setHovered(undefined);
     setPath(newPath);
-    setError(undefined);
     becomeActive();
   }, [becomeActive, setHovered, setPath]);
   const onSelect = useCallback((element, ctrlKey, shiftKey) => {
@@ -161,10 +89,17 @@ function FileSystemTab (
     }
     becomeActive();
   }, [becomeActive, selection, setSelection, lastSelectionIndex, setLastSelectionIndex]);
-  const onCreateDirectory = useCallback(() => {
-    onCommand && onCommand(Commands.createDirectory, path);
+  const onCreateDirectoryRequest = useCallback(() => {
+    setCreateDirectoryDialogVisible(true);
+  }, [setCreateDirectoryDialogVisible]);
+  const onCancelCreateDirectory = useCallback(() => {
+    setCreateDirectoryDialogVisible(false);
+  }, [setCreateDirectoryDialogVisible]);
+  const onCreateDirectory = useCallback((directoryName) => {
+    onCommand && onCommand(Commands.createDirectory, fileSystem.joinPath(path, directoryName));
     setSelection([]);
-  }, [onCommand, path, setSelection]);
+    setCreateDirectoryDialogVisible(false);
+  }, [onCommand, path, setSelection, setCreateDirectoryDialogVisible]);
   const onCopy = useCallback(() => {
     onCommand && onCommand(Commands.copy, path, selection);
     setSelection([]);
@@ -174,9 +109,23 @@ function FileSystemTab (
     setSelection([]);
   }, [onCommand, path, selection, setSelection]);
   const onDelete = useCallback(() => {
-    onCommand && onCommand(Commands.delete, path, selection);
-    setSelection([]);
-  }, [onCommand, path, selection, setSelection]);
+    const description = selection.length > 1 ? `${selection.length} items` : selection[0];
+    showConfirmationDialog(`Are you sure you want to delete ${description}?`)
+      .then(confirmed => {
+        if (confirmed) {
+          onCommand && onCommand(Commands.delete, path, selection);
+          setSelection([]);
+          setCreateDirectoryDialogVisible(false);
+        }
+      });
+  }, [
+    onCommand,
+    path,
+    selection,
+    setSelection,
+    showConfirmationDialog,
+    setCreateDirectoryDialogVisible,
+  ]);
   let content;
   if (pending) {
     content = (
@@ -218,7 +167,7 @@ function FileSystemTab (
             <Button
               disabled={!!error}
               type="primary"
-              onClick={onCreateDirectory}
+              onClick={onCreateDirectoryRequest}
             >
               Create directory
             </Button>
@@ -251,23 +200,36 @@ function FileSystemTab (
         <PathNavigation
           onNavigate={onNavigate}
           path={path}
-          fileSystem={fileSystemImpl}
+          fileSystem={fileSystem}
         />
         {content}
+        <CreateDirectoryDialog
+          visible={createDirectoryDialogVisible}
+          onClose={onCancelCreateDirectory}
+          onCreate={onCreateDirectory}
+        />
       </div>
     </div>
   );
 }
 
 FileSystemTab.propTypes = {
+  fileSystem: PropTypes.object,
   active: PropTypes.bool,
   becomeActive: PropTypes.func,
+  error: PropTypes.string,
+  contents: PropTypes.array,
+  pending: PropTypes.bool,
+  path: PropTypes.string,
+  setPath: PropTypes.func,
+  selection: PropTypes.array,
+  setSelection: PropTypes.func,
+  lastSelectionIndex: PropTypes.number,
+  setLastSelectionIndex: PropTypes.func,
+  onRefresh: PropTypes.func,
   className: PropTypes.string,
-  fileSystem: PropTypes.oneOf(Object.values(FileSystems)),
-  onFileSystemStatusChanged: PropTypes.func,
   oppositeFileSystemReady: PropTypes.bool,
   onCommand: PropTypes.func,
-  onPathChanged: PropTypes.func,
 };
 
 export default FileSystemTab;

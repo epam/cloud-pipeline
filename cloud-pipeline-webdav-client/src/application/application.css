@@ -29,3 +29,24 @@
 .file-system-tab:last-child {
   border-right: none;
 }
+
+.content .operations-overlay {
+  z-index: 1;
+  background-color: rgba(0, 0, 0, 0.05);
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.content .operations-overlay .operations {
+  border: 1px solid #ccc;
+  min-width: 400px;
+  box-shadow: 0 0 2px 0 #eee;
+}
