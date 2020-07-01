@@ -351,6 +351,7 @@ class S3Mounter(StorageMounter):
         permissions = 'rw'
         stat_cache = os.getenv('CP_S3_FUSE_STAT_CACHE', '1m0s')
         type_cache = os.getenv('CP_S3_FUSE_TYPE_CACHE', '1m0s')
+        mount_timeout = os.getenv('CP_PIPE_FUSE_TIMEOUT', 500)
         aws_key_id, aws_secret, region_name, session_token = self._get_credentials(self.storage)
         path_chunks = self.storage.path.split('/')
         bucket = path_chunks[0]
@@ -372,12 +373,13 @@ class S3Mounter(StorageMounter):
                 'aws_token': session_token,
                 'tmp_dir': self.fuse_tmp,
                 'bucket': bucket,
-                'relative_path': relative_path
+                'relative_path': relative_path,
+                'mount_timeout': mount_timeout
                 }
 
     def build_mount_command(self, params):
         if params['aws_token'] is not None or params['fuse_type'] == FUSE_PIPE_ID:
-            return 'pipe storage mount {mount} -b {path} -t --mode 775'.format(**params)
+            return 'pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout}'.format(**params)
         elif params['fuse_type'] == FUSE_GOOFYS_ID:
             params['path'] = '{bucket}:{relative_path}'.format(**params) if params['relative_path'] else params['path']
             return 'AWS_ACCESS_KEY_ID={aws_key_id} AWS_SECRET_ACCESS_KEY={aws_secret} nohup goofys ' \

@@ -433,10 +433,16 @@ function symlink_common_locations {
 
       # Create symlinks to /cloud-data with mounted buckets into account's home dir
       mkdir -p /cloud-data/
+      if [ -L $_OWNER_HOME/cloud-data ]; then
+        unlink $_OWNER_HOME/cloud-data
+      fi
       [ -d /cloud-data/ ] && ln -s -f /cloud-data/ $_OWNER_HOME/cloud-data || echo "/cloud-data/ not found, no buckets will be available"
       
       # Create symlinks to /common with cluster share fs into account's home dir
       mkdir -p "$SHARED_WORK_FOLDER"
+      if [ -L $_OWNER_HOME/workdir ]; then
+        unlink $_OWNER_HOME/workdir
+      fi
       [ -d $SHARED_WORK_FOLDER ] && ln -s -f $SHARED_WORK_FOLDER $_OWNER_HOME/workdir || echo "$SHARED_WORK_FOLDER not found, no shared fs will be available in $_OWNER_HOME"
       
       # Create symlinks to /code-repository with gitfs repository into account's home dir
