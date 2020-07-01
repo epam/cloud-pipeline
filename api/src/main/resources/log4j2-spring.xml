@@ -18,7 +18,7 @@
 <Configuration monitorInterval="60">
     <Properties>
         <Property name="log-path">logs</Property>
-        <Property name="cp-api-logger-hostname">$${env:MY_POD_NAME:-cp-api-srv}</Property>
+        <Property name="cp-api-logger-hostname">$${env:CP_API_CURRENT_POD_NAME:-cp-api-srv}</Property>
     </Properties>
     <Appenders>
         <Console name="Console-Appender" target="SYSTEM_OUT">
