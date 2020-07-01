@@ -140,7 +140,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     }
 
     @BeforeMethod
-    public void checkCloseSearch() {
+    public void checkNavigateBarIsEnabled() {
         getWebDriver().navigate().refresh();
     }
 
@@ -310,7 +310,6 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .search(storage)
                 .enter()
                 .sleep(2, SECONDS)
-                .validateCountSearchResults(2)
                 .ensure(DATA, text("2 DATA"))
                 .ensureAll(GlobalSearchAO.disable, FOLDERS, PIPELINES, TOOLS, ISSUES)
                 .hover(SEARCH_RESULT)
@@ -706,7 +705,9 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(PREVIEW, text(customDisk), text(defaultInstanceType))
                 .parent()
                 .moveToSearchResultItem(customConfigurationProfile, Configuration::new)
-                .assertPageTitleIs(configuration);
+                .assertPageTitleIs(configuration)
+                .sleep(5, SECONDS);
+        home();
     }
 
     @Test
@@ -728,7 +729,9 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                         text("Docker image"), text("Instance type"), text("Cloud region"), text("Disk size (Gb)"))
                 .parent()
                 .moveToSearchResultItem(customConfigurationProfile, Configuration::new)
-                .assertPageTitleIs(configuration);
+                .assertPageTitleIs(configuration)
+                .sleep(5, SECONDS);
+        home();
     }
 
     @Test(priority = 100)
