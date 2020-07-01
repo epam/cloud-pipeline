@@ -277,10 +277,31 @@ function cp_cap_init {
       fi
 }
 
+# Verifies that a command is installed (binary exists and is exposed to $PATH)
 function check_installed {
       local _COMMAND_TO_CHECK=$1
       command -v "$_COMMAND_TO_CHECK" >/dev/null 2>&1
       return $?
+}
+
+# Verifies that a package is installed into the package manager's db (might not be an executable and exposed to $PATH)
+function check_package_installed {
+      local _PACKAGE_TO_CHECK="$1"
+      
+      if [ "${CP_IGNORE_INSTALLED_PACKAGES,,}" == 'true' ] || [ "${CP_IGNORE_INSTALLED_PACKAGES,,}" == 'yes' ]; then
+            return 1
+      fi
+
+      if check_installed "dpkg"; then
+            dpkg -q "$_PACKAGE_TO_CHECK" &> /dev/null
+            return $?
+      elif check_installed "rpm"; then
+            rpm -q "$_PACKAGE_TO_CHECK"  &> /dev/null
+            return $?
+      else 
+            # For the "unknown" managers - report that a package is not installed
+            return 1
+      fi
 }
 
 function check_python_module_installed {
@@ -382,9 +403,23 @@ function get_install_command_by_current_distr {
             _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
       fi
 
-      check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated install $_TOOLS_TO_INSTALL";  };
-      check_installed "yum" && { _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL";  };
-      check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL";  };
+      local _TOOL_TO_CHECK=
+      local _TOOLS_TO_INSTALL_VERIFIED=
+      for _TOOL_TO_CHECK in $_TOOLS_TO_INSTALL; do
+            check_package_installed "$_TOOL_TO_CHECK"
+            if [ $? -ne 0 ]; then
+                  _TOOLS_TO_INSTALL_VERIFIED="$_TOOLS_TO_INSTALL_VERIFIED $_TOOL_TO_CHECK"
+            fi
+      done
+
+      if [ -z "$_TOOLS_TO_INSTALL_VERIFIED" ]; then
+            _INSTALL_COMMAND_TEXT=
+      else
+            check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated install $_TOOLS_TO_INSTALL_VERIFIED";  };
+            check_installed "yum" && { _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL_VERIFIED";  };
+            check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL_VERIFIED";  };
+      fi
+
       eval $_RESULT_VAR=\$_INSTALL_COMMAND_TEXT
 }
 
