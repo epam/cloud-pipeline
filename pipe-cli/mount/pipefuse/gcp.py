@@ -144,25 +144,28 @@ class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
         bucket_object = self._gcp.bucket(self.bucket)
         blobs_iterator = bucket_object.list_blobs(prefix=prefix, delimiter=self._delimiter if not recursive else None)
         absolute_files = [self._get_file_object(blob, prefix, recursive) for blob in blobs_iterator]
-        absolute_folders = [self._get_folder_object(name) for name in blobs_iterator.prefixes]
+        absolute_folders = [self._get_folder_object(name, prefix, recursive) for name in blobs_iterator.prefixes]
         absolute_items = absolute_folders + absolute_files
         return absolute_items
 
     def _get_file_object(self, blob, prefix, recursive):
-        return File(name=blob.name if recursive else fuseutils.get_item_name(blob.name, prefix=prefix),
+        return File(name=self._get_object_name(blob.name, prefix, recursive),
                     size=blob.size,
                     mtime=time.mktime(blob.updated.astimezone(pytz.utc).timetuple()),
                     ctime=None,
                     contenttype='',
                     is_dir=False)
 
-    def _get_folder_object(self, name):
-        return File(name=name,
+    def _get_folder_object(self, name, prefix, recursive):
+        return File(name=self._get_object_name(name, prefix, recursive),
                     size=0,
                     mtime=time.mktime(datetime.now(tz=pytz.utc).timetuple()),
                     ctime=None,
                     contenttype='',
                     is_dir=True)
+
+    def _get_object_name(self, name, prefix, recursive):
+        return name if recursive else fuseutils.get_item_name(name, prefix=prefix)
 
     def upload(self, buf, path):
         bucket_object = self._gcp.bucket(self.bucket)
