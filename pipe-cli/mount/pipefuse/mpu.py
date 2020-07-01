@@ -560,13 +560,13 @@ class CompositeMultipartUpload(MultipartUpload):
         return self._part_path(self._mpu_number(part_number), part_number)
 
     def _mpu_path(self, mpu_number):
-        return '%s_%s_%d.tmp' % (self._path, self._hashed_path(), mpu_number)
+        return '%s_%s.tmp/%d' % (self._path, self._hashed_path(), mpu_number)
 
     def _part_path(self, mpu_number, part_number):
-        return '%s_%s_%d.%d.tmp' % (self._path, self._hashed_path(), mpu_number, part_number)
+        return '%s_%s.tmp/%d.%d' % (self._path, self._hashed_path(), mpu_number, part_number)
 
     def _merged_mpu_path(self, left_mpu_number, right_mpu_number):
-        return '%s_%s_%d:%d.tmp' % (self._path, self._hashed_path(), left_mpu_number, right_mpu_number)
+        return '%s_%s.tmp/%d:%d' % (self._path, self._hashed_path(), left_mpu_number, right_mpu_number)
 
     def _hashed_path(self):
         return str(abs(hash(self._path)))
