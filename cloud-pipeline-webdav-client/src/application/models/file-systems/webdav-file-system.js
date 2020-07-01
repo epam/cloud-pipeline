@@ -52,7 +52,7 @@ class WebdavFileSystem extends FileSystem {
         if (!agentOptions) {
           agentOptions = buildAgentOptions(this.root);
         }
-        agentOptions.ca = this.certificates.map(data => Buffer.from(data));
+        agentOptions.ca = this.certificates.map(data => Buffer.from(data, 'base64'));
       }
       if (this.ignoreCertificateErrors) {
         if (!agentOptions) {

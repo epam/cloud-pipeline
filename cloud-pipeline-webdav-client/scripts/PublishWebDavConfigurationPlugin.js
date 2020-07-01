@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const pemEncode = require('./pem-encode');
 
 const DEFAULT_CONFIG = 'webdav.config';
 const DEVELOPMENT_CONFIG = 'webdav.dev.config';
@@ -27,7 +26,7 @@ class PublishWebDavConfigurationPlugin {
         const contents = fs.readdirSync(certificatesDirectory);
         for (let i = 0; i < contents.length; i++) {
           const certificate = contents[i];
-          const certificateData = pemEncode(fs.readFileSync(path.resolve(certificatesDirectory, certificate)));
+          const certificateData = fs.readFileSync(path.resolve(certificatesDirectory, certificate)).toString('base64');
           certificates.push(certificateData);
         }
       }
