@@ -13,12 +13,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Disable automatic packages upgrade, if cloud-init is configured
+if [ -d "/etc/cloud/cloud.cfg.d" ]; then
+
+cat <<EOF >/etc/cloud/cloud.cfg.d/99_no_upgrades.cfg
+repo_upgrade: none
+repo_upgrade_exclude:
+ - kernel
+ - nvidia*
+ - cuda*
+ - kubernetes*
+EOF
+
+fi
 
 # Install common
 yum install -y  nc \
                 python \
                 curl \
-                btrfs-progs && \
+                btrfs-progs
+
+yum install -y iproute-tc
 curl https://bootstrap.pypa.io/get-pip.py | python -
 
 # Install jq
@@ -60,12 +75,19 @@ fi
 # Get the kube docker images, required by the kubelet
 # This is needed, as we don't want to rely on the external repos
 systemctl start docker && \
-wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.7.5/docker/kube-proxy-amd64-v1.7.5.tar" -O /tmp/kube-proxy-amd64-v1.7.5.tar  && \
-docker load -i /tmp/kube-proxy-amd64-v1.7.5.tar && \
-wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.7.5/docker/pause-amd64-3.0.tar" -O /tmp/pause-amd64-3.0.tar && \
-docker load -i /tmp/pause-amd64-3.0.tar && \
-wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.7.5/docker/flannel-v0.9.0-amd64.tar" -O /tmp/flannel-v0.9.0-amd64.tar && \
-docker load -i /tmp/flannel-v0.9.0-amd64.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/calico-node-v3.14.1.tar" -O /tmp/calico-node-v3.14.1.tar && \
+docker load -i /tmp/calico-node-v3.14.1.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/calico-pod2daemon-flexvol-v3.14.1.tar" -O /tmp/calico-pod2daemon-flexvol-v3.14.1.tar && \
+docker load -i /tmp/calico-pod2daemon-flexvol-v3.14.1.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/calico-cni-v3.14.1.tar" -O /tmp/calico-cni-v3.14.1.tar && \
+docker load -i /tmp/calico-cni-v3.14.1.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O /tmp/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
+docker load -i /tmp/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/quay.io-coreos-flannel-v0.11.0.tar" -O /tmp/quay.io-coreos-flannel-v0.11.0.tar && \
+docker load -i /tmp/quay.io-coreos-flannel-v0.11.0.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/k8s.gcr.io-pause-3.1.tar" -O /tmp/k8s.gcr.io-pause-3.1.tar && \
+docker load -i /tmp/k8s.gcr.io-pause-3.1.tar
+
 systemctl stop docker && \
 rm -rf /tmp/*
 
@@ -96,18 +118,14 @@ setenforce 0
 sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
 yum install -y \
-            kubeadm-1.7.5-0.x86_64 \
-            kubectl-1.7.5-0.x86_64 \
-            kubelet-1.7.5-0.x86_64 \
-            kubernetes-cni-0.5.1-0.x86_64
-
-# Setup default cgroups and cadvisor port
-sed -i 's/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=0"/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=4194"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-sed -i 's/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=systemd"/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=cgroupfs"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+            kubeadm-1.15.4-0.x86_64 \
+            kubectl-1.15.4-0.x86_64 \
+            kubelet-1.15.4-0.x86_64
 
 # Install nvidia driver
 wget http://us.download.nvidia.com/tesla/384.145/NVIDIA-Linux-x86_64-384.145.run && \
-sh NVIDIA-Linux-x86_64-384.145.run --silent
+sh NVIDIA-Linux-x86_64-384.145.run --silent && \
+rm -f NVIDIA-Linux-x86_64-384.145.run
 
 # Install nvidia docker
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID) 
