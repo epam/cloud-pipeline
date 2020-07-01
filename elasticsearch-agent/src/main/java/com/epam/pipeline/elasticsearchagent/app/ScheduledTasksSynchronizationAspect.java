@@ -38,8 +38,8 @@ public class ScheduledTasksSynchronizationAspect {
     @Value("${kube.master.pod.check.url}")
     private String baseUrl;
 
-    @Value("${kube.pod.name.env.var:HOSTNAME}")
-    private String podNameEnvVar;
+    @Value("${kube.current.pod.name}")
+    private String currentPodName;
 
     @Around("@annotation(net.javacrumbs.shedlock.core.SchedulerLock)")
     public void skipScheduledMethodInvocation(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -58,7 +58,7 @@ public class ScheduledTasksSynchronizationAspect {
     private boolean isMasterHost() {
         final String masterName = receiveMasterName();
         return masterName == null
-               || masterName.equals(System.getenv(podNameEnvVar));
+               || masterName.equals(currentPodName);
     }
 
     /**

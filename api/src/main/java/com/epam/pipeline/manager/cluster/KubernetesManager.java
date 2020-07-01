@@ -104,8 +104,8 @@ public class KubernetesManager {
     @Value("${kube.master.pod.check.url}")
     private String kubePodLeaderElectionUrl;
 
-    @Value("${kube.pod.name.env.var:HOSTNAME}")
-    private String kubePodNameEnvVar;
+    @Value("${kube.current.pod.name}")
+    private String kubePodName;
 
     public ServiceDescription getServiceByLabel(String label) {
         try (KubernetesClient client = getKubernetesClient()) {
@@ -326,7 +326,7 @@ public class KubernetesManager {
      * @return name of pod or <code>null</code> if no such name specified.
      */
     public String getCurrentPodName() {
-        return System.getenv(kubePodNameEnvVar);
+        return kubePodName;
     }
 
     private PodMasterStatusApi buildMasterStatusClient() {
