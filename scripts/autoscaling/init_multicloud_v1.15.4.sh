@@ -1,6 +1,6 @@
 #!/bin/bash
 user_data_log="/var/log/user_data.log"
-exec > $user_data_log 2>&1
+exec > "$user_data_log" 2>&1
 
 function check_installed {
     command -v "$1" >/dev/null 2>&1
@@ -17,7 +17,7 @@ function update_nameserver {
       if [ "$ping_times" == "infinity" ]; then
         ping_times=86400
       fi
-      for i in $(seq 1 $ping_times); do 
+      for i in $(seq 1 $ping_times); do
         echo "Pinging nameserver $nameserver on port 53"
         if nc -z -w 1 $nameserver 53 ; then
           echo "nameserver $nameserver can be reached on port 53"
@@ -114,15 +114,37 @@ do
   echo "UUID=$DRIVE_UUID $MOUNT_POINT btrfs defaults,nofail 0 2" >> /etc/fstab
   mkdir -p $MOUNT_POINT/runs
   mkdir -p $MOUNT_POINT/reference
-  rm -rf $MOUNT_POINT/lost+found/   
- 
+  rm -rf $MOUNT_POINT/lost+found/
+
 done
 
 # Stop docker if it is running
 systemctl stop docker
-# Move any existing docker configuration to the mounted directory (if we have any existing docker images)
-if [ -d "/var/lib/docker" ] && [ ! -d "/ebs/docker" ]; then
-  mv /var/lib/docker /ebs/
+
+# If /ebs/docker is missing - consider this is a first run (not a resume)
+_KUBE_SYSTEM_PODS_NEEDS_LOAD=1
+if [ ! -d "/ebs/docker" ]; then
+  # Grab system docker images from the public storage
+  _KUBE_SYSTEM_PODS_DISTR_PREFIX="@SYSTEM_PODS_DISTR_PREFIX@"
+  if [ ! "$_KUBE_SYSTEM_PODS_DISTR_PREFIX" ] || [[ "$_KUBE_SYSTEM_PODS_DISTR_PREFIX" == "@"*"@" ]]; then
+    _KUBE_SYSTEM_PODS_DISTR_PREFIX="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker"
+  fi
+  mkdir -p /tmp/system-dockers
+  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/calico-node-v3.14.1.tar" -O /tmp/system-dockers/calico-node-v3.14.1.tar && \
+  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/calico-pod2daemon-flexvol-v3.14.1.tar" -O /tmp/system-dockers/calico-pod2daemon-flexvol-v3.14.1.tar &&
+  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/calico-cni-v3.14.1.tar" -O /tmp/system-dockers/calico-cni-v3.14.1.tar && \
+  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O /tmp/system-dockers/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
+  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/quay.io-coreos-flannel-v0.11.0.tar" -O /tmp/system-dockers/quay.io-coreos-flannel-v0.11.0.tar && \
+  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/k8s.gcr.io-pause-3.1.tar" -O /tmp/system-dockers/k8s.gcr.io-pause-3.1.tar
+  # This flag is used further to load the images
+  _KUBE_SYSTEM_PODS_NEEDS_LOAD=$?
+  # If can't pull from the public repo - try to get the "baked-in" images
+  if [ $_KUBE_SYSTEM_PODS_NEEDS_LOAD -ne 0 ]; then
+    # Move any existing docker configuration to the mounted directory (if we have any existing docker images)
+    if [ -d "/var/lib/docker" ] && [ ! -d "/ebs/docker" ]; then
+      mv /var/lib/docker /ebs/
+    fi
+  fi
 fi
 
 mkdir -p /etc/docker
@@ -135,6 +157,7 @@ if check_installed "nvidia-smi"; then
 # If btrfs is used as a storage driver - this confuses cadvisor and kubelet (filesystem can't be enumerated within a container)
 cat <<EOT > /etc/docker/daemon.json
 {
+  "exec-opts": ["native.cgroupdriver=systemd"],
   "data-root": "/ebs/docker",
   "storage-driver": "overlay2",
   "max-concurrent-uploads": 1,
@@ -151,6 +174,7 @@ else
   # Setup docker config for non-gpu
 cat <<EOT > /etc/docker/daemon.json
 {
+  "exec-opts": ["native.cgroupdriver=systemd"],
   "data-root": "/ebs/docker",
   "storage-driver": "overlay2",
   "max-concurrent-uploads": 1
@@ -283,7 +307,8 @@ _KUBE_LOG_ARGS="--logtostderr=false --log-dir=$_KUBELET_LOG_PATH"
 _KUBE_NODE_NAME="${_KUBE_NODE_NAME:-$(hostname)}"
 _KUBE_NODE_NAME_ARGS="--hostname-override $_KUBE_NODE_NAME"
 
-_KUBELET_INITD_DROPIN_PATH="/etc/systemd/system/kubelet.service.d/20-kubelet-labels.conf"
+# FIXME: use the .NodeRegistration.KubeletExtraArgs object in the configuration files
+_KUBELET_INITD_DROPIN_PATH="/etc/sysconfig/kubelet"
 rm -f $_KUBELET_INITD_DROPIN_PATH
 
 ## Configure kubelet reservations
@@ -302,22 +327,28 @@ _KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_TOTAL_MB * $_KUBE_RESERVED_RATIO 
 _KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_RESERVED_MB > $_KUBE_RESERVED_MAX_MB ? $_KUBE_RESERVED_MAX_MB : $_KUBE_NODE_MEM_RESERVED_MB ))
 _KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_RESERVED_MB < $_KUBE_RESERVED_MIN_MB ? $_KUBE_RESERVED_MIN_MB : $_KUBE_NODE_MEM_RESERVED_MB ))
 ### Setup the  calculated values into the kubelet args
-_KUBE_RESERVED_ARGS="--kube-reserved cpu=500m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,storage=1Gi"
-_KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=500m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,storage=1Gi"
-_KUBE_EVICTION_ARGS="--eviction-hard= --eviction-soft= --eviction-soft-grace-period="
+_KUBE_RESERVED_ARGS="--kube-reserved cpu=350m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,ephemeral-storage=1Gi"
+_KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=350m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,ephemeral-storage=1Gi"
+_KUBE_EVICTION_ARGS="--eviction-hard= --eviction-soft= --eviction-soft-grace-period= --pod-max-pids=-1"
+_KUBE_FAIL_ON_SWAP_ARGS="--fail-swap-on=false"
 
 ## Append extra kube-config to the systemd config
-cat > $_KUBELET_INITD_DROPIN_PATH <<EOF
-[Service]
-Environment="KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS $_KUBE_EVICTION_ARGS"
-EOF
+echo "KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS $_KUBE_EVICTION_ARGS $_KUBE_FAIL_ON_SWAP_ARGS" >> $_KUBELET_INITD_DROPIN_PATH
 chmod +x $_KUBELET_INITD_DROPIN_PATH
 
 # Start docker and kubelet
 systemctl enable docker
 systemctl enable kubelet
 systemctl start docker
-kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks --node-name $_KUBE_NODE_NAME
+
+if [ $_KUBE_SYSTEM_PODS_NEEDS_LOAD -eq 0 ]; then
+  for _KUBE_SYSTEM_POD_FILE in /tmp/system-dockers/*.tar; do
+    docker load -i $_KUBE_SYSTEM_POD_FILE
+    rm -f $_KUBE_SYSTEM_POD_FILE
+  done
+fi
+
+kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-verification --node-name $_KUBE_NODE_NAME --ignore-preflight-errors all
 systemctl start kubelet
 
 update_nameserver "$nameserver_post_val" "infinity"
@@ -360,7 +391,7 @@ fi
 #   2. All other nodes: add support for joining node to kube cluster after starting the "paused" job
 cat >> /etc/rc.local << EOF
 systemctl start docker
-kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks --node-name $_KUBE_NODE_NAME
+kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-verification --node-name $_KUBE_NODE_NAME --ignore-preflight-errors all
 systemctl start kubelet
 EOF
 
