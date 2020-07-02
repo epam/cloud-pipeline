@@ -25,14 +25,17 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.PipelineAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.ParsedSingleValueNumericMetricsAggregation;
 import org.elasticsearch.search.aggregations.metrics.avg.AvgAggregationBuilder;
+import org.elasticsearch.search.aggregations.pipeline.bucketscript.BucketScriptPipelineAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
@@ -44,6 +47,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -72,10 +76,13 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String USAGE_RATE = "usage_rate";
     protected static final String NODE_UTILIZATION = "node_utilization";
     protected static final String NODE_CAPACITY = "node_capacity";
+    protected static final String NODE_ALLOCATABLE = "node_allocatable";
+    protected static final String WORKING_SET = "working_set";
     protected static final String CPU_CAPACITY = "cpu_capacity";
     protected static final String CPU_UTILIZATION = "cpu_utilization";
     protected static final String MEMORY_UTILIZATION = "memory_utilization";
     protected static final String MEMORY_CAPACITY = "memory_capacity";
+    protected static final String MEMORY_ALLOCATABLE = "memory_allocatable";
     protected static final String LIMIT = "limit";
     protected static final String VALUE = "value";
     protected static final String DEFAULT = "default";
@@ -93,6 +100,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String POD_CONTAINER = "pod_container";
 
     protected static final String AVG_AGGREGATION = "avg_";
+    protected static final String DIVISION_AGGREGATION = "division_";
     protected static final String AGGREGATION_POD_NAME = "pod_name";
     protected static final String FIELD_POD_NAME_RAW = "pod_name.raw";
     protected static final String AGGREGATION_NODE_NAME = "nodename";
@@ -238,6 +246,14 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected AvgAggregationBuilder average(final String name, final String field) {
         return AggregationBuilders.avg(name)
                 .field(field(field));
+    }
+
+    protected PipelineAggregationBuilder division(final String name, final String divider, final String divisor) {
+        final Map<String, String> variables = new HashMap<>(2);
+        variables.put("divider", divider);
+        variables.put("divisor", divisor);
+        final Script script = new Script("params.divider / params.divisor");
+        return new BucketScriptPipelineAggregationBuilder(name, variables, script);
     }
 
     private String field(final String name) {

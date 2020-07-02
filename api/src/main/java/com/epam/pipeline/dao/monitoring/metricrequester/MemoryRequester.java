@@ -65,12 +65,16 @@ public class MemoryRequester extends AbstractMetricRequester {
                         .aggregation(AggregationBuilders.terms(AGGREGATION_NODE_NAME)
                                 .field(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW))
                                 .size(resourceIds.size())
-                                .subAggregation(average(AVG_AGGREGATION + NODE_UTILIZATION, NODE_UTILIZATION))));
+                                .subAggregation(average(AVG_AGGREGATION + MEMORY_ALLOCATABLE, NODE_ALLOCATABLE))
+                                .subAggregation(average(AVG_AGGREGATION + MEMORY_UTILIZATION, WORKING_SET))
+                                .subAggregation(division(DIVISION_AGGREGATION + NODE_UTILIZATION,
+                                        AVG_AGGREGATION + MEMORY_UTILIZATION,
+                                        AVG_AGGREGATION + MEMORY_ALLOCATABLE))));
     }
 
     @Override
     public Map<String, Double> parseResponse(final SearchResponse response) {
-        return collectAggregation(response, AGGREGATION_NODE_NAME, AVG_AGGREGATION + NODE_UTILIZATION);
+        return collectAggregation(response, AGGREGATION_NODE_NAME, DIVISION_AGGREGATION + NODE_UTILIZATION);
     }
 
     @Override
@@ -80,7 +84,7 @@ public class MemoryRequester extends AbstractMetricRequester {
                 statsQuery(nodeName, NODE, from, to)
                         .size(0)
                         .aggregation(dateHistogram(MEMORY_HISTOGRAM, interval)
-                                .subAggregation(average(AVG_AGGREGATION + MEMORY_UTILIZATION, USAGE))
+                                .subAggregation(average(AVG_AGGREGATION + MEMORY_UTILIZATION, WORKING_SET))
                                 .subAggregation(average(AVG_AGGREGATION + MEMORY_CAPACITY, NODE_CAPACITY))));
     }
 
