@@ -49,6 +49,7 @@ CP_PREF_TEMPLATES_DIRECTORY_EXT=/opt/api/ext/templates/pipe-templates
 CP_PREF_TEMPLATES_FOLDER_DIRECTORY_EXT=/opt/api/ext/templates/folder-templates
 CP_PREF_TEMPLATES_ERROR_PAGES_DIRECTORY_EXT=/opt/api/ext/templates/error-templates
 CP_PREF_API_STATIC_DIRECTORY_EXT=/opt/api/ext/templates/static
+CP_PREF_API_ETC_DIRECTORY=/opt/api/etc
 
 # cp-git config
 GITLAB_DATABASE_ADAPTER=postgresql
