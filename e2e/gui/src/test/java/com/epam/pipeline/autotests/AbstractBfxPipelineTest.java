@@ -39,7 +39,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public abstract class AbstractBfxPipelineTest implements ITest {
 
-    private String methodName;
+    private ThreadLocal<String> methodName = new ThreadLocal<>();
 
     @BeforeClass
     public void setUp() {
@@ -79,7 +79,7 @@ public abstract class AbstractBfxPipelineTest implements ITest {
 
     @Override
     public String getTestName() {
-        return methodName;
+        return methodName.get();
     }
 
     @BeforeMethod
@@ -87,10 +87,10 @@ public abstract class AbstractBfxPipelineTest implements ITest {
         if (method.isAnnotationPresent(TestCase.class)) {
             final TestCase testCaseAnnotation = method.getAnnotation(TestCase.class);
             for (final String testCase : testCaseAnnotation.value()) {
-                methodName = String.format("%s - %s", method.getName(), testCase);
+                methodName.set(String.format("%s - %s", method.getName(), testCase));
             }
         } else {
-            methodName = method.getName();
+            methodName.set(method.getName());
         }
     }
 
