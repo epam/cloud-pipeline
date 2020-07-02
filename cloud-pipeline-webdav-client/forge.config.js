@@ -31,7 +31,7 @@ module.exports = {
     {
       "name": "@electron-forge/maker-dmg",
       "config": {
-        "name": "Cloud Pipeline Webdav Client",
+        "name": "Webdav Client",
         "icon": iconPath
       }
     },

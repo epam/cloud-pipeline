@@ -1,6 +1,8 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow } = require('electron');
 const readWebdavConfiguration = require('./read-webdav-configuration');
 
+// IMPORTANT!!!
+// You should remove "browser": ... config from package.json of axios module MANUALLY!
 require('axios').defaults.adapter = require('axios/lib/adapters/http');
 
 const webdavClientConfig = readWebdavConfiguration();

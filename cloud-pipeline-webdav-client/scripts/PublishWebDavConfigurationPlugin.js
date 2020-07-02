@@ -26,8 +26,8 @@ class PublishWebDavConfigurationPlugin {
         const contents = fs.readdirSync(certificatesDirectory);
         for (let i = 0; i < contents.length; i++) {
           const certificate = contents[i];
-          const certificateData = fs.readFileSync(path.resolve(certificatesDirectory, certificate)).toString('base64');
-          certificates.push(certificateData);
+          const certificateData = fs.readFileSync(path.resolve(certificatesDirectory, certificate));
+          certificates.push({data: certificateData, name: certificate});
         }
       }
       let config;
@@ -41,11 +41,19 @@ class PublishWebDavConfigurationPlugin {
         config = Buffer.from('{}');
       }
       if (config) {
-        const data = JSON.stringify(Object.assign({certificates}, JSON.parse(config)));
         compilation.assets[PUBLISH_FILE_NAME] = {
-          source: () => data,
-          size: () => data.length
+          source: () => config,
+          size: () => config.length
         };
+      }
+      if (certificates && certificates.length) {
+        certificates.forEach(({data, name}) => {
+          const certPath = path.join('certs', name);
+          compilation.assets[certPath] = {
+            source: () => data,
+            size: () => data.length
+          };
+        })
       }
     });
   }

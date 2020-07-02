@@ -62,7 +62,6 @@ class WebdavFileSystem extends FileSystem {
       }
       if (agentOptions) {
         options.httpsAgent = new https.Agent(agentOptions);
-        console.log('agent', agentOptions);
       }
       try {
         this.webdavClient = createClient(this.root, options);
