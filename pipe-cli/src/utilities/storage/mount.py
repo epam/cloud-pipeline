@@ -28,6 +28,8 @@ import click
 from src.api.preferenceapi import PreferenceAPI
 from src.config import Config, is_frozen
 
+MS_IN_SEC = 1000
+
 
 class AbstractMount(object):
     __metaclass__ = ABCMeta
@@ -125,7 +127,7 @@ class SourceMount(AbstractMount):
 class Mount(object):
 
     def mount_storages(self, mountpoint, file=False, bucket=None, options=None, custom_options=None, quiet=False,
-                       log_file=None, log_level=None, threading=False, mode=700):
+                       log_file=None, log_level=None, threading=False, mode=700, timeout=1000):
         config = Config.instance()
         username = self.normalize_username(config.get_current_user())
         mount = FrozenMount() if is_frozen() else SourceMount()
@@ -133,10 +135,10 @@ class Mount(object):
             web_dav_url = PreferenceAPI.get_preference('base.dav.auth.url').value
             web_dav_url = web_dav_url.replace('auth-sso/', username + '/')
             self.mount_dav(mount, config, mountpoint, options, custom_options, web_dav_url, mode,
-                           log_file=log_file, log_level=log_level, threading=threading)
+                           log_file=log_file, log_level=log_level, threading=threading, timeout=timeout)
         else:
             self.mount_storage(mount, config, mountpoint, options, custom_options, bucket, mode,
-                               log_file=log_file, log_level=log_level, threading=threading)
+                               log_file=log_file, log_level=log_level, threading=threading, timeout=timeout)
 
     # Split username by @ to get only first part of the user name,
     # because webdav trail user name as well to get get user folder name
@@ -144,18 +146,18 @@ class Mount(object):
         return username.split('@')[0]
 
     def mount_dav(self, mount, config, mountpoint, options, custom_options, web_dav_url, mode,
-                  log_file=None, log_level=None, threading=False):
+                  log_file=None, log_level=None, threading=False, timeout=1000):
         mount_cmd = mount.get_mount_webdav_cmd(config, mountpoint, options, custom_options, web_dav_url, mode,
                                                log_level=log_level, threading=threading)
-        self.run(config, mount_cmd, log_file=log_file)
+        self.run(config, mount_cmd, log_file=log_file, mount_timeout=timeout)
 
     def mount_storage(self, mount, config, mountpoint, options, custom_options, bucket, mode,
-                      log_file=None, log_level=None, threading=False):
+                      log_file=None, log_level=None, threading=False, timeout=1000):
         mount_cmd = mount.get_mount_storage_cmd(config, mountpoint, options, custom_options, bucket, mode,
                                                 log_level=log_level, threading=threading)
-        self.run(config, mount_cmd, log_file=log_file)
+        self.run(config, mount_cmd, log_file=log_file, mount_timeout=timeout)
 
-    def run(self, config, mount_cmd, mount_timeout=5, log_file=None):
+    def run(self, config, mount_cmd, mount_timeout=5*MS_IN_SEC, log_file=None):
         output_file = log_file if log_file else os.devnull
         with open(output_file, 'w') as output:
             mount_environment = os.environ.copy()
@@ -169,7 +171,7 @@ class Mount(object):
                                               stdout=output,
                                               stderr=subprocess.STDOUT,
                                               env=mount_environment)
-            time.sleep(mount_timeout)
+            time.sleep(mount_timeout / MS_IN_SEC)
             if mount_aps_proc.poll() is not None:
                 click.echo('Failed to mount storages. Mount command exited with return code: %d'
                            % mount_aps_proc.returncode, err=True)

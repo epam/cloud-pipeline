@@ -88,6 +88,7 @@ mkdir -p /etc/docker
 cat <<EOT > /etc/docker/daemon.json
 {
   $DOCKER_DATA_ROOT_ENTRY
+  "exec-opts": ["native.cgroupdriver=systemd"],
   "storage-driver": "overlay2",
   "storage-opts": [
     "overlay2.override_kernel_check=true"
@@ -103,16 +104,41 @@ cat > /etc/systemd/system/docker.service.d/http-proxy.conf << EOF
 EOF
 fi
 
+# Enable forwarding and make sure iptables are used
+# See https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl
+modprobe br_netfilter
+cat <<EOF >/etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+EOF
+sysctl --system
+
+# Disable SELinux as required by the Kube
+# See https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl
+# Ignore exit code as setenforce will return 1 if selinux is already disabled
+# which will faile the whole script as -e is set
+setenforce 0 || true
+sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+
+# Add Kubernetes repository to yum
+cat <<EOF >/etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=http://yum.kubernetes.io/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+       https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+EOF
+yum -q makecache -y --enablerepo kubernetes --nogpg
+
 #6.2 - Kube
 yum install -y \
-            kubeadm-1.7.5-0.x86_64 \
-            kubectl-1.7.5-0.x86_64 \
-            kubelet-1.7.5-0.x86_64 \
-            kubernetes-cni-0.5.1-0.x86_64
-
-#7
-sed -i 's/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=0"/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=4194"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-sed -i 's/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=systemd"/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=cgroupfs"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+            kubeadm-1.15.4-0.x86_64 \
+            kubectl-1.15.4-0.x86_64 \
+            kubelet-1.15.4-0.x86_64
 
 #8
 systemctl daemon-reload
@@ -149,43 +175,60 @@ if [ "$CP_KUBE_KEEP_KUBEADM_PROXIES" != "1" ]; then
   unset http_proxy https_proxy no_proxy
 fi
 
-FLANNEL_CIDR=${FLANNEL_CIDR:-"10.244.0.0/16"}
-kubeadm init --pod-network-cidr="10.244.0.0/16" --kubernetes-version v1.7.5 --skip-preflight-checks > $HOME/kubeadm_init.log
-
+# Initialize the kubeadm config and start the master
+export CP_KUBE_FLANNEL_CIDR=${CP_KUBE_FLANNEL_CIDR:-"10.244.0.0/16"}
+export CP_KUBE_KUBELET_PORT="${CP_KUBE_KUBELET_PORT:-10250}"
+CP_KUBEADM_INIT_CONFIG_YAML="$K8S_SPECS_HOME/kube-system/kubeadm-init-config.yaml"
+if [ ! -f "$CP_KUBEADM_INIT_CONFIG_YAML" ]; then
+  echo "Unable to find kubeadm init spec file at ${CP_KUBEADM_INIT_CONFIG_YAML}, exiting"
+  exit 1
+fi
+CP_KUBEADM_INIT_CONFIG_YAML_TMP="/tmp/$(basename $CP_KUBEADM_INIT_CONFIG_YAML)"
+envsubst '${CP_KUBE_FLANNEL_CIDR} ${CP_KUBE_KUBELET_PORT}' < "$CP_KUBEADM_INIT_CONFIG_YAML" > "$CP_KUBEADM_INIT_CONFIG_YAML_TMP"
+kubeadm init --config "$CP_KUBEADM_INIT_CONFIG_YAML_TMP" --token-ttl 0
 sleep 30
 
+# Copy the admin's config file to the default location to "enable" kubectl
+mkdir -p $HOME/.kube
+\cp /etc/kubernetes/admin.conf $HOME/.kube/config
+
+# Restore http proxy proxy values, if they were dropped previously
 export http_proxy="$bkp_http_proxy"
 export https_proxy="$bkp_https_proxy"
 export no_proxy="$bkp_no_proxy"
 unset bkp_http_proxy bkp_https_proxy bkp_no_proxy
 
 #10
-wget -q "https://raw.githubusercontent.com/coreos/flannel/a154d2f68edd511498c948e33c8cbde20a5901ee/Documentation/kube-flannel.yml" -O /opt/kube-flannel.yml
+CP_KUBE_NETWORK_YAML="$K8S_SPECS_HOME/kube-system/canal.yaml"
+if [ ! -f "$CP_KUBE_NETWORK_YAML" ]; then
+  echo "Unable to find flannel spec file at ${CP_KUBE_NETWORK_YAML}, exiting"
+  exit 1
+fi
+envsubst '${CP_KUBE_FLANNEL_CIDR}' < "$CP_KUBE_NETWORK_YAML" | kubectl apply -f -
+sleep 10
 
 #11
-sed -i "s|10.244.0.0/16|$FLANNEL_CIDR|g" /opt/kube-flannel.yml
-sed -i 's|"isDefaultGateway": true|"isDefaultGateway": true, "hairpinMode": true|g' /opt/kube-flannel.yml
-sed -i 's@command: \[ "/opt/bin/flanneld", "--ip-masq", "--kube-subnet-mgr" \]@command: \[ "/bin/sh", "-c", "for i in $(seq 1 10); do printf ping | nc -w 1 $KUBERNETES_SERVICE_HOST $KUBERNETES_SERVICE_PORT_HTTPS \&\& break; done \&\& /opt/bin/flanneld --ip-masq --kube-subnet-mgr" \]@g' /opt/kube-flannel.yml
-#12
-mkdir -p $HOME/.kube
-cp /etc/kubernetes/admin.conf $HOME/.kube/config
-kubectl apply -f /opt/kube-flannel.yml
+CP_KUBE_NETWORK_POLICY_PATH=${CP_KUBE_NETWORK_POLICY_PATH:-"$K8S_SPECS_HOME/kube-system/network-policy"}
+if [ ! -d "$CP_KUBE_NETWORK_POLICY_PATH" ] || [ ! -d "$CP_KUBE_NETWORK_POLICY_PATH" ]; then
+  print_warn "Network policies are not provided in the directory $CP_KUBE_NETWORK_POLICY_PATH"
+else
+  for entry in $(find $CP_KUBE_NETWORK_POLICY_PATH -type f -name "*.yaml"); do
+    print_info "Appling network policy from $entry"
+    kubectl apply -f "$entry"
+  done
+fi
 
+#12
+kubectl create clusterrolebinding owner-cluster-admin-binding \
+    --clusterrole cluster-admin \
+    --user system:serviceaccount:default:default
 sleep 10
 
 #13
-kubectl create clusterrolebinding owner-cluster-admin-binding \
-    --clusterrole cluster-admin \
-    --user system:serviceaccount:default:default 
-
-sleep 10
-
-#14
 # Allow services to bind to 80+ ports, as the default range is 30000-32767
 # --service-node-port-range option is added as a next line after init command "- kube-apiserver"
 # kubelet monitors /etc/kubernetes/manifests folder, so kube-api pod will be recreated automatically
 sed -i '/- kube-apiserver/a \    \- --service-node-port-range=80-32767' /etc/kubernetes/manifests/kube-apiserver.yaml
-
 sleep 30
 
 set +e

@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.AbstractHierarchicalEntity;
 import com.epam.pipeline.entity.SecuredEntityDelegate;
 import com.epam.pipeline.entity.filter.AclSecuredFilter;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -78,6 +79,13 @@ public class AclAspect {
     @Transactional(propagation = Propagation.REQUIRED)
     public void createAclIdentity(JoinPoint joinPoint, Tool tool) {
         createEntity(tool);
+    }
+
+    @AfterReturning(pointcut = WITHIN_ACL_SYNC + " && execution(* *.copyPipeline(..))",
+            returning = "pipeline")
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void createAclIdentity(JoinPoint joinPoint, Pipeline pipeline) {
+        createEntity(pipeline);
     }
 
     @AfterReturning(pointcut = WITHIN_ACL_SYNC + " && execution(* *.update(..))", returning = RETURN_OBJECT)

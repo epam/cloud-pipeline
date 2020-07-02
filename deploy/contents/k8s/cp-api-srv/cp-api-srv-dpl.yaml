@@ -17,6 +17,25 @@ spec:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
       containers:
+        - name: cp-api-srv-leader-elector
+          image: lifescience/cloud-pipeline:leader-elector-$CP_VERSION
+          imagePullPolicy: "Always"
+          securityContext:
+            privileged: true
+          command: [ "/elector/init" ]
+          ports:
+            - containerPort: 4040
+          env:
+            - name: HA_ELECTION_SERVICE_NAME
+              value: "cp-api-srv"
+            - name: HA_ELECTION_PERIOD_SEC
+              value: "5"
+            - name: HA_VOTE_EXPIRATION_PERIOD_SEC
+              value: "7"
+          envFrom:
+            - configMapRef:
+                name: cp-config-global
+          
         - name: cp-api-srv
           image: lifescience/cloud-pipeline:api-srv-$CP_VERSION
           imagePullPolicy: "Always"
@@ -25,6 +44,15 @@ spec:
           command: ["/init-api"]
           ports:
             - containerPort: 8080
+          env:
+            - name: CP_KUBE_MASTER_CHECK_URL
+              value: http://127.0.0.1:4040/
+            - name: CP_HA_DEPLOY_ENABLED
+              value: "true"
+            - name: CP_API_CURRENT_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           envFrom:
           - configMapRef:
               name: cp-config-global
@@ -43,6 +71,8 @@ spec:
               name: api-error-templates
             - mountPath: ${CP_PREF_API_STATIC_DIRECTORY_EXT}
               name: api-static-assets
+            - mountPath: ${CP_PREF_API_ETC_DIRECTORY}
+              name: api-etc-assets
             - mountPath: /opt/idp/pki
               name: idp-pki
             - mountPath: /opt/common/pki
@@ -100,6 +130,9 @@ spec:
         - name: api-static-assets
           hostPath:
             path: /opt/api/templates/static
+        - name: api-etc-assets
+          hostPath:
+            path: /opt/api/etc
         - name: idp-pki
           hostPath:
             path: /opt/idp/pki

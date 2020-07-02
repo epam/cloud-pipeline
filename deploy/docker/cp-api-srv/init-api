@@ -259,7 +259,7 @@ APP_PID="$!"
 
 sleep 5
 
-#Run Filebeat
+# Run Filebeat
 envsubst < /etc/filebeat/filebeat-template.yml > /etc/filebeat/filebeat.yml
 nohup filebeat &
 

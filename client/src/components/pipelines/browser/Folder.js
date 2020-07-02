@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ import EditFolderForm from './forms/EditFolderForm';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
 import {DataStorageEditDialog, ServiceTypes} from './forms/DataStorageEditDialog';
 import {extractFileShareMountList} from './forms/DataStoragePathInput';
-import CloneFolderForm from './forms/CloneFolderForm';
+import CloneForm from './forms/CloneForm';
 import EditDetachedConfigurationForm from '../configuration/forms/EditDetachedConfigurationForm';
 import dataStorages from '../../../models/dataStorage/DataStorages';
 import {FolderLock, FolderUnLock} from '../../../models/folders/FolderLock';
@@ -1697,13 +1697,6 @@ export default class Folder extends localization.LocalizedReactComponent {
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
         <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
           <Col className={styles.itemHeader}>
-            <Icon type={isProject ? 'solution' : 'folder'} className={`${styles.editableControl} ${folderTitleClassName}`} />
-            {
-              this.props.folder.value.locked &&
-              <Icon
-                className={`${styles.editableControl} ${folderTitleClassName}`}
-                type="lock" />
-            }
             <Breadcrumbs
               id={parseInt(this.props.folderId)}
               type={ItemTypes.folder}
@@ -1713,9 +1706,15 @@ export default class Folder extends localization.LocalizedReactComponent {
                 !roleModel.writeAllowed(this.props.folder.value) ||
                 this.props.readOnly
               }
+              onNavigate={this.props.onSelectItem}
               classNameEditableField={folderTitleClassName}
               onSaveEditableField={this.renameCurrentFolder}
               editStyleEditableField={{flex: 1}}
+              icon={isProject ? 'solution' : 'folder'}
+              iconClassName={`${styles.editableControl} ${folderTitleClassName}`}
+              lock={this.props.folder.value.locked}
+              lockClassName={`${styles.editableControl} ${folderTitleClassName}`}
+              subject={this.props.folder.value}
             />
           </Col>
           <Col className={styles.currentFolderActions}>
@@ -1780,7 +1779,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           pending={this.state.operationInProgress}
           onCancel={this.closeCreateConfigurationDialog}
           visible={this.state.createConfigurationDialog} />
-        <CloneFolderForm
+        <CloneForm
           parentId={this.props.folder.value.parentId}
           visible={this.state.cloneFolderDialogVisible}
           pending={this.state.operationInProgress}

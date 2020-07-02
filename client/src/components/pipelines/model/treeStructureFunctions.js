@@ -550,13 +550,19 @@ export function findPath (key, items, parentPath) {
     const item = items[i];
     const prefix = parentPath || [];
     if (item.key === key) {
-      return [...prefix, {name: item.name, id: item.id, url: generateUrl(item)}];
+      return [
+        ...prefix,
+        {name: item.name, id: item.id, type: item.type, key: item.key, url: generateUrl(item)}
+      ];
     } else if (item.children && item.children.length > 0) {
       const result =
         findPath(
           key,
           item.children,
-          [...prefix, {name: item.name, id: item.id, url: generateUrl(item)}]
+          [
+            ...prefix,
+            {name: item.name, id: item.id, type: item.type, key: item.key, url: generateUrl(item)}
+          ]
         );
       if (result) {
         return result;

@@ -106,6 +106,9 @@ public class PipelineExecutor {
             Map<String, String> labels = new HashMap<>();
             labels.put("spawned_by", "pipeline-api");
             labels.put("pipeline_id", pipelineId);
+            if (Boolean.TRUE.equals(run.getSensitive())) {
+                labels.put("sensitive", "true");
+            }
             addWorkerLabel(clusterId, labels, run);
             LOGGER.debug("Root pipeline task ID: {}", run.getPodId());
             Map<String, String> nodeSelector = new HashMap<>();

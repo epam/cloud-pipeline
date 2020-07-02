@@ -27,6 +27,7 @@ import {
   Card
 } from 'antd';
 import LoadingView from '../../special/LoadingView';
+import Owner from '../../special/owner';
 import roleModel from '../../../utils/roleModel';
 import ToolLink from '../elements/ToolLink';
 import styles from './ToolVersion.css';
@@ -96,6 +97,7 @@ export default class ToolVersion extends React.Component {
             </Button>
             <ToolLink link={this.props.tool.value.link} style={{marginLeft: 5}} />
             <span style={{marginLeft: 5}}>{this.props.tool.value.image}:{this.props.version}</span>
+            <Owner subject={this.props.tool.value} style={{marginLeft: 5}} />
           </Row>
         </Row>
         <Tabs

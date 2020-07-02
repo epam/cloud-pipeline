@@ -59,6 +59,7 @@ import {
   ISSUES_PANEL_KEY,
   SplitPanel
 } from '../special/splitPanel/SplitPanel';
+import Owner from '../special/owner';
 import styles from './Tools.css';
 import Remarkable from 'remarkable';
 import hljs from 'highlight.js';
@@ -1819,6 +1820,7 @@ export default class Tool extends localization.LocalizedReactComponent {
                 </Button>
                 <ToolLink link={this.link} style={{marginLeft: 5}} />
                 <span style={{marginLeft: 5}}>{this.props.tool.value.image}</span>
+                <Owner subject={this.props.tool.value} style={{marginLeft: 5}} />
               </td>
               <td style={{width: '33%', verticalAlign: 'bottom'}}>
                 {this.renderMenu()}

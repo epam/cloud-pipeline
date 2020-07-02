@@ -277,10 +277,31 @@ function cp_cap_init {
       fi
 }
 
+# Verifies that a command is installed (binary exists and is exposed to $PATH)
 function check_installed {
       local _COMMAND_TO_CHECK=$1
       command -v "$_COMMAND_TO_CHECK" >/dev/null 2>&1
       return $?
+}
+
+# Verifies that a package is installed into the package manager's db (might not be an executable and exposed to $PATH)
+function check_package_installed {
+      local _PACKAGE_TO_CHECK="$1"
+      
+      if [ "${CP_IGNORE_INSTALLED_PACKAGES,,}" == 'true' ] || [ "${CP_IGNORE_INSTALLED_PACKAGES,,}" == 'yes' ]; then
+            return 1
+      fi
+
+      if check_installed "dpkg"; then
+            dpkg -q "$_PACKAGE_TO_CHECK" &> /dev/null
+            return $?
+      elif check_installed "rpm"; then
+            rpm -q "$_PACKAGE_TO_CHECK"  &> /dev/null
+            return $?
+      else 
+            # For the "unknown" managers - report that a package is not installed
+            return 1
+      fi
 }
 
 function check_python_module_installed {
@@ -341,28 +362,29 @@ function configure_package_manager {
       fi
 
       # Add a Cloud Pipeline repo, which contains the required runtime packages
-      local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos}"
-      local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
-      if [ "$CP_OS" == "centos" ]; then
-            yum install curl yum-priorities -y -q && \
-            curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo
-            yum --disablerepo=* --enablerepo=cloud-pipeline list available > /dev/null 2>&1
-            
-            if [ $? -ne 0 ]; then
-                  echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the yum, removing the repo"
-                  rm -f /etc/yum.repos.d/cloud-pipeline.repo
-            fi
-      elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
-            apt-get update -qq -y --allow-insecure-repositories && \
-            apt-get install curl apt-transport-https gnupg -y -qq && \
-            sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
-            curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
-            sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
-            apt-get update -qq -y --allow-insecure-repositories
-            
-            if [ $? -ne 0 ]; then
-                  echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
-                  sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+      if [ "${CP_REPO_ENABLED,,}" == 'true' ]; then
+            local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos}"
+            local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
+            if [ "$CP_OS" == "centos" ]; then
+                  curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
+                  yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q > /dev/null 2>&1
+                  
+                  if [ $? -ne 0 ]; then
+                        echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the yum, removing the repo"
+                        rm -f /etc/yum.repos.d/cloud-pipeline.repo
+                  fi
+            elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
+                  apt-get update -qq -y --allow-insecure-repositories && \
+                  apt-get install curl apt-transport-https gnupg -y -qq && \
+                  sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
+                  curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
+                  sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
+                  apt-get update -qq -y --allow-insecure-repositories
+                  
+                  if [ $? -ne 0 ]; then
+                        echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
+                        sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+                  fi
             fi
       fi
 }
@@ -382,9 +404,29 @@ function get_install_command_by_current_distr {
             _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
       fi
 
-      check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated install $_TOOLS_TO_INSTALL";  };
-      check_installed "yum" && { _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL";  };
-      check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL";  };
+      local _TOOL_TO_CHECK=
+      local _TOOLS_TO_INSTALL_VERIFIED=
+      for _TOOL_TO_CHECK in $_TOOLS_TO_INSTALL; do
+            check_package_installed "$_TOOL_TO_CHECK"
+            if [ $? -ne 0 ]; then
+                  _TOOLS_TO_INSTALL_VERIFIED="$_TOOLS_TO_INSTALL_VERIFIED $_TOOL_TO_CHECK"
+            fi
+      done
+
+      if [ -z "$_TOOLS_TO_INSTALL_VERIFIED" ]; then
+            _INSTALL_COMMAND_TEXT=
+      else
+            check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated install $_TOOLS_TO_INSTALL_VERIFIED";  };
+            if check_installed "yum"; then
+                  check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL_VERIFIED";  };
+                  if [ "$CP_REPO_ENABLED" == "true" ] && [ -f /etc/yum.repos.d/cloud-pipeline.repo ]; then
+                        _INSTALL_COMMAND_TEXT="yum clean all -q && yum --disablerepo=* --enablerepo=cloud-pipeline -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
+                  else
+                        _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
+                  fi
+            fi
+      fi
+
       eval $_RESULT_VAR=\$_INSTALL_COMMAND_TEXT
 }
 
@@ -398,10 +440,16 @@ function symlink_common_locations {
 
       # Create symlinks to /cloud-data with mounted buckets into account's home dir
       mkdir -p /cloud-data/
+      if [ -L $_OWNER_HOME/cloud-data ]; then
+        unlink $_OWNER_HOME/cloud-data
+      fi
       [ -d /cloud-data/ ] && ln -s -f /cloud-data/ $_OWNER_HOME/cloud-data || echo "/cloud-data/ not found, no buckets will be available"
       
       # Create symlinks to /common with cluster share fs into account's home dir
       mkdir -p "$SHARED_WORK_FOLDER"
+      if [ -L $_OWNER_HOME/workdir ]; then
+        unlink $_OWNER_HOME/workdir
+      fi
       [ -d $SHARED_WORK_FOLDER ] && ln -s -f $SHARED_WORK_FOLDER $_OWNER_HOME/workdir || echo "$SHARED_WORK_FOLDER not found, no shared fs will be available in $_OWNER_HOME"
       
       # Create symlinks to /code-repository with gitfs repository into account's home dir
@@ -831,7 +879,7 @@ SSH_SERVER_EXEC_PATH='/usr/sbin/sshd'
 if ! [ -f $SSH_SERVER_EXEC_PATH ] ;
 then
     # Check which package manager to use for SSH Server installation
-    SSH_INSTALL_COMMAND=
+    e=
     get_install_command_by_current_distr SSH_INSTALL_COMMAND "openssh-server"
 
     if [ -z "$SSH_INSTALL_COMMAND" ] ;
@@ -901,6 +949,8 @@ then
     exit 1
 else
     cd $COMMON_REPO_DIR
+    # Fixed setuptools version to be comaptible with the pipe-common package
+    pip install -I -q setuptools==44.1.1
     download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
     _DOWNLOAD_RESULT=$?
     if [ "$_DOWNLOAD_RESULT" -ne 0 ];

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cluster;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.entity.cluster.MasterPodInfo;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
 import com.epam.pipeline.entity.cluster.ServiceDescription;
 import com.epam.pipeline.entity.docker.DockerRegistrySecret;
@@ -38,6 +39,8 @@ import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -49,7 +52,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import retrofit2.Retrofit;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -61,6 +67,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Component
 public class KubernetesManager {
 
@@ -93,6 +100,12 @@ public class KubernetesManager {
 
     @Value("${kube.edge.scheme.label:cloud-pipeline/external-scheme}")
     private String kubeEdgeSchemeLabel;
+
+    @Value("${kube.master.pod.check.url}")
+    private String kubePodLeaderElectionUrl;
+
+    @Value("${kube.current.pod.name}")
+    private String kubePodName;
 
     public ServiceDescription getServiceByLabel(String label) {
         try (KubernetesClient client = getKubernetesClient()) {
@@ -285,6 +298,44 @@ public class KubernetesManager {
             LOGGER.error(e.getMessage(), e);
             return Optional.empty();
         }
+    }
+
+    /**
+     * Obtains a master pod name.
+     *
+     * @return master name or <code>null</code> if no such found
+     */
+    public String getMasterPodName() {
+        final PodMasterStatusApi client = buildMasterStatusClient();
+        try {
+            final MasterPodInfo info = client.getMasterName()
+                .execute()
+                .body();
+            if (info != null) {
+                return info.getName();
+            }
+        } catch (IOException e) {
+            log.warn("No leader pod for cluster found!");
+        }
+        return null;
+    }
+
+    /**
+     * Obtains a name of pod, containing service instance.
+     *
+     * @return name of pod or <code>null</code> if no such name specified.
+     */
+    public String getCurrentPodName() {
+        return kubePodName;
+    }
+
+    private PodMasterStatusApi buildMasterStatusClient() {
+        return new Retrofit.Builder()
+            .baseUrl(kubePodLeaderElectionUrl)
+            .addConverterFactory(JacksonConverterFactory.create())
+            .client(new OkHttpClient())
+            .build()
+            .create(PodMasterStatusApi.class);
     }
 
     public Optional<Node> findNodeByName(final String nodeName) {

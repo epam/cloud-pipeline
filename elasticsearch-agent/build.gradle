@@ -32,6 +32,7 @@ dependencies {
     configurations {
         all*.exclude module : 'spring-boot-starter-logging'
     }
+    compile("org.aspectj:aspectjweaver:1.8.8")
 
     //SpringBoot
     implementation group: "org.springframework.boot", name: "spring-boot-starter", version: springBootVersion
@@ -95,6 +96,10 @@ dependencies {
 
     testImplementation group: "org.mockito", name: "mockito-core", version: mockitoVersion
     testImplementation group: "org.mockito", name: "mockito-junit-jupiter", version: mockitoVersion
+
+    //ShedLock
+    compile group: 'net.javacrumbs.shedlock', name: 'shedlock-spring', version: shedlockVersion
+    compile group: 'net.javacrumbs.shedlock', name: 'shedlock-provider-jdbc-template', version: shedlockVersion
 }
 
 test {

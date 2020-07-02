@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import {
   CONTENT_PANEL_KEY,
   METADATA_PANEL_KEY,
   ISSUES_PANEL_KEY
-} from '../../special/splitPanel/SplitPanel';
+} from '../../special/splitPanel';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import GitRepositoryControl from '../../special/git-repository-control';
 import {Alert, Button, Col, Dropdown, Icon, Menu, message, Row, Select, Table} from 'antd';
@@ -40,12 +40,14 @@ import DeletePipeline from '../../../models/pipelines/DeletePipeline';
 import UpdatePipeline from '../../../models/pipelines/UpdatePipeline';
 import UpdatePipelineToken from '../../../models/pipelines/UpdatePipelineToken';
 import RegisterVersion from '../../../models/pipelines/RegisterVersion';
+import PipelineClone from '../../../models/pipelines/PipelineClone';
 import displayDate from '../../../utils/displayDate';
 import roleModel from '../../../utils/roleModel';
 import localization from '../../../utils/localization';
 import {generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
 import RegisterVersionFormDialog from './forms/RegisterVersionFormDialog';
 import UserName from '../../special/UserName';
+import CloneForm from './forms/CloneForm';
 import styles from './Browser.css';
 
 @connect({
@@ -70,7 +72,6 @@ import styles from './Browser.css';
 })
 @observer
 export default class Pipeline extends localization.LocalizedReactComponent {
-
   _versions = null;
 
   static propTypes = {
@@ -91,7 +92,9 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     editPipeline: false,
     releaseCandidate: null,
     configurations: undefined,
-    showIssuesPanel: false
+    showIssuesPanel: false,
+    operationInProgress: false,
+    clonePipelineVisible: false
   };
 
   @computed
@@ -201,6 +204,17 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       render: (item) => this.renderTreeItemActions(item)
     }
   ];
+
+  operationWrapper = (operation) => (...props) => {
+    this.setState({
+      operationInProgress: true
+    }, async () => {
+      await operation(...props);
+      this.setState({
+        operationInProgress: false
+      });
+    });
+  };
 
   renderTreeItemType = (item) => {
     const style = {};
@@ -359,6 +373,14 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     this.setState({editPipeline: false});
   };
 
+  openClonePipelineDialog = () => {
+    this.setState({clonePipelineVisible: true});
+  };
+
+  closeClonePipelineDialog = () => {
+    this.setState({clonePipelineVisible: false});
+  };
+
   updatePipelineRequest = new UpdatePipeline();
   updatePipelineTokenRequest = new UpdatePipelineToken();
 
@@ -498,6 +520,33 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     });
   };
 
+  clonePipeline = async (parentId, name) => {
+    const hide = message.loading('Cloning pipeline...', -1);
+    const request = new PipelineClone(this.props.pipelineId, parentId, name);
+    await request.send({});
+    hide();
+    if (request.error) {
+      message.error(request.error);
+    } else {
+      this.closeClonePipelineDialog();
+      if (parentId) {
+        this.props.folders.invalidateFolder(parentId);
+        await this.props.folders.load(parentId).fetchIfNeededOrWait();
+      }
+      this.props.pipelinesLibrary.invalidateCache();
+      await this.props.pipelinesLibrary.fetchIfNeededOrWait();
+      if (this.props.onReloadTree) {
+        await this.props.onReloadTree(true);
+      }
+      const pipelineId = request.value.id;
+      if (pipelineId) {
+        this.props.router.push(`/${pipelineId}`);
+      } else {
+        this.props.router.push('/library');
+      }
+    }
+  };
+
   renderActions = () => {
     const onSelectDisplayOption = ({key}) => {
       switch (key) {
@@ -556,6 +605,53 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     return undefined;
   };
 
+  renderConfigAction = () => {
+    const actions = [];
+    const onClick = ({key}) => {
+      switch (key) {
+        case 'edit': this.openEditPipelineDialog(); break;
+        case 'clone': this.openClonePipelineDialog(); break;
+      }
+    };
+    if (!this.props.readOnly) {
+      actions.push(
+        <Menu.Item id="edit-pipeline-button" key="edit">
+          <Icon type="edit" /> Edit
+        </Menu.Item>
+      );
+    }
+    if (!this.props.readOnly && roleModel.isOwner(this.props.pipeline.value)) {
+      actions.push(
+        <Menu.Item
+          key="clone"
+          id="clone-pipeline-button">
+          <Icon type="copy" /> Clone
+        </Menu.Item>
+      );
+    }
+    return (
+      <Dropdown
+        placement="bottomRight"
+        overlay={
+          <Menu
+            selectedKeys={[]}
+            onClick={onClick}
+            style={{width: 100}}>
+            {actions}
+          </Menu>
+        }
+        key="edit">
+        <Button
+          key="edit"
+          id="edit-pipeline-menu-button"
+          style={{lineHeight: 1}}
+          size="small">
+          <Icon type="setting" />
+        </Button>
+      </Dropdown>
+    );
+  };
+
   render () {
     let versionsContent;
     if (this.props.versions.loaded) {
@@ -606,44 +702,36 @@ export default class Pipeline extends localization.LocalizedReactComponent {
         <div>
           <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
             <Col className={styles.itemHeader}>
-                    <Icon type="fork" className={`${styles.editableControl} ${pipelineTitleClassName}`} />
-                    {
-                      this.props.pipeline.value.locked &&
-                      <Icon
-                        className={`${styles.editableControl} ${pipelineTitleClassName}`}
-                        type="lock" />
-                    }
-                    <Breadcrumbs
-                      id={parseInt(this.props.pipelineId)}
-                      type={ItemTypes.pipeline}
-                      readOnlyEditableField={!roleModel.writeAllowed(this.props.pipeline.value) || this.props.readOnly}
-                      textEditableField={this.props.pipeline.value.name}
-                      onSaveEditableField={this.renamePipeline}
-                      editStyleEditableField={{flex: 1}} />
+              <Breadcrumbs
+                id={parseInt(this.props.pipelineId)}
+                type={ItemTypes.pipeline}
+                readOnlyEditableField={!roleModel.writeAllowed(this.props.pipeline.value) || this.props.readOnly}
+                textEditableField={this.props.pipeline.value.name}
+                onSaveEditableField={this.renamePipeline}
+                editStyleEditableField={{flex: 1}}
+                icon="fork"
+                iconClassName={`${styles.editableControl} ${pipelineTitleClassName}`}
+                lock={this.props.pipeline.value.locked}
+                lockClassName={`${styles.editableControl} ${pipelineTitleClassName}`}
+                subject={this.props.pipeline.value}
+              />
             </Col>
             <Col className={styles.currentFolderActions}>
-                  {
-                    this.renderActions()
-                  }
-                  {
-                    !this.props.readOnly &&
-                    <Button
-                      id="edit-pipeline-button"
-                      onClick={this.openEditPipelineDialog}
-                      style={{lineHeight: 1}}
-                      size="small">
-                      <Icon type="setting" />
-                    </Button>
-                  }
-                  {
-                    !this.props.listingMode
-                      ? (
-                        <GitRepositoryControl
-                          overlayClassName={styles.gitRepositoryPopover}
-                          https={this.props.pipeline.value.repository}
-                          ssh={this.props.pipeline.value.repositorySsh} />
-                        ) : undefined
-                  }
+              {
+                this.renderActions()
+              }
+              {
+                this.renderConfigAction()
+              }
+              {
+                !this.props.listingMode
+                  ? (
+                    <GitRepositoryControl
+                      overlayClassName={styles.gitRepositoryPopover}
+                      https={this.props.pipeline.value.repository}
+                      ssh={this.props.pipeline.value.repositorySsh} />
+                  ) : undefined
+              }
             </Col>
           </Row>
           <Row type="flex">
@@ -672,6 +760,12 @@ export default class Pipeline extends localization.LocalizedReactComponent {
               entityId={this.props.pipelineId} entityClass="PIPELINE" />
           }
         </ContentIssuesMetadataPanel>
+        <CloneForm
+          parentId={this.props.pipeline.value.parentFolderId}
+          visible={this.state.clonePipelineVisible}
+          pending={this.state.operationInProgress}
+          onCancel={this.closeClonePipelineDialog}
+          onSubmit={this.operationWrapper(this.clonePipeline)} />
         <EditPipelineForm
           onSubmit={this.editPipeline}
           onCancel={this.closeEditPipelineDialog}

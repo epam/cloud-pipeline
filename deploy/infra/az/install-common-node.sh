@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,8 @@ yum install -y  nc \
                 python \
                 curl \
                 coreutils \
-                btrfs-progs
+                btrfs-progs \
+                iproute-tc
 
 # Install jq
 wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
@@ -88,10 +89,9 @@ setenforce 0
 sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
 yum install -y \
-            kubeadm-1.7.5-0.x86_64 \
-            kubectl-1.7.5-0.x86_64 \
-            kubelet-1.7.5-0.x86_64 \
-            kubernetes-cni-0.5.1-0.x86_64
+            kubeadm-1.15.4-0.x86_64 \
+            kubectl-1.15.4-0.x86_64 \
+            kubelet-1.15.4-0.x86_64
 
 # Setup default cgroups and cadvisor port
 sed -i 's/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=0"/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=4194"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf

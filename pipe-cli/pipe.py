@@ -1020,9 +1020,11 @@ def storage_delete_object_tags(path, tags, version):
 @click.option('-q', '--quiet', help='Enables quiet mode', is_flag=True)
 @click.option('-t', '--threads', help='Enables multithreading', is_flag=True)
 @click.option('-m', '--mode', required=False, help='Default file permissions',  default=700, type=int)
+@click.option('-w', '--timeout', required=False, help='Waiting time in ms to check whether mount was successful',
+              default=1000, type=int)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
-def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, log_level, quiet, threads, mode):
+def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, log_level, quiet, threads, mode, timeout):
     """ Mounts either all available file systems or a single bucket into a local folder.
         Either -f\\--file flag or -b\\--bucket argument should be specified.
         Command is supported for Linux distributions and MacOS and requires
@@ -1030,7 +1032,7 @@ def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, l
     """
     DataStorageOperations.mount_storage(mountpoint, file=file, log_file=log_file, log_level=log_level,
                                         bucket=bucket, options=options, custom_options=custom_options,
-                                        quiet=quiet, threading=threads, mode=mode)
+                                        quiet=quiet, threading=threads, mode=mode, timeout=timeout)
 
 
 @storage.command('umount')
