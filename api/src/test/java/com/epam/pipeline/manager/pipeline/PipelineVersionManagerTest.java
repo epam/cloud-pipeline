@@ -63,6 +63,9 @@ public class PipelineVersionManagerTest extends AbstractManagerTest {
     private ToolManager toolManager;
 
     @Mock
+    private PipelineConfigurationPostProcessor postProcessor;
+
+    @Mock
     private MessageHelper messageHelper;
 
     @Mock

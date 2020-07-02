@@ -49,7 +49,7 @@ spec:
               value: http://127.0.0.1:4040/
             - name: CP_HA_DEPLOY_ENABLED
               value: "true"
-            - name: MY_POD_NAME
+            - name: CP_API_CURRENT_POD_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
@@ -71,6 +71,8 @@ spec:
               name: api-error-templates
             - mountPath: ${CP_PREF_API_STATIC_DIRECTORY_EXT}
               name: api-static-assets
+            - mountPath: ${CP_PREF_API_ETC_DIRECTORY}
+              name: api-etc-assets
             - mountPath: /opt/idp/pki
               name: idp-pki
             - mountPath: /opt/common/pki
@@ -128,6 +130,9 @@ spec:
         - name: api-static-assets
           hostPath:
             path: /opt/api/templates/static
+        - name: api-etc-assets
+          hostPath:
+            path: /opt/api/etc
         - name: idp-pki
           hostPath:
             path: /opt/idp/pki

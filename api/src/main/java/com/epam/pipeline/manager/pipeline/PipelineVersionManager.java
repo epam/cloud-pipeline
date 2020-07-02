@@ -72,6 +72,9 @@ public class PipelineVersionManager {
     @Autowired
     private PreferenceManager preferenceManager;
 
+    @Autowired
+    private PipelineConfigurationPostProcessor postProcessor;
+
     private JsonMapper mapper = new JsonMapper();
 
     @Value("${luigi.graph.script}")
@@ -209,6 +212,7 @@ public class PipelineVersionManager {
                 new PipelineConfigReader().readConfigurations(config, mapper);
         pipelineConfiguration.forEach(entry -> {
             if (entry.getConfiguration() != null) {
+                postProcessor.postProcessPipelineConfig(entry.getConfiguration());
                 setDockerImageFromPropertiesIfAbsent(entry.getConfiguration());
                 setCmdTemplateFromPropertiesIfAbsent(entry.getConfiguration());
                 entry.getConfiguration().buildEnvVariables();

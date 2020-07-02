@@ -75,7 +75,6 @@ public class KubernetesManager {
     private static final String DUMMY_EMAIL = "test@email.com";
     private static final String DOCKER_PREFIX = "docker://";
     private static final String EMPTY = "";
-    private static final String POD_NAME_ENV_VAR = "MY_POD_NAME";
     private static final int NODE_READY_TIMEOUT = 5000;
     private static final int CONNECTION_TIMEOUT_MS = 2 * 1000;
     private static final int ATTEMPTS_STATUS_NODE = 60;
@@ -104,6 +103,9 @@ public class KubernetesManager {
 
     @Value("${kube.master.pod.check.url}")
     private String kubePodLeaderElectionUrl;
+
+    @Value("${kube.current.pod.name}")
+    private String kubePodName;
 
     public ServiceDescription getServiceByLabel(String label) {
         try (KubernetesClient client = getKubernetesClient()) {
@@ -324,7 +326,7 @@ public class KubernetesManager {
      * @return name of pod or <code>null</code> if no such name specified.
      */
     public String getCurrentPodName() {
-        return System.getenv(POD_NAME_ENV_VAR);
+        return kubePodName;
     }
 
     private PodMasterStatusApi buildMasterStatusClient() {

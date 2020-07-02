@@ -70,6 +70,7 @@ repositories {
 
 ext {
     versionSpringBoot = "1.5.2.RELEASE"
+    versionSpringSession = "1.3.1.RELEASE"
     versionElasticsearch = "5.6.10"
 }
 
@@ -85,6 +86,7 @@ dependencies {
     }
     compile("org.springframework.boot:spring-boot-starter-actuator")
     compile group: "org.springframework.boot", name: "spring-boot-starter-web", version: project.ext.versionSpringBoot
+    compile group: "org.springframework.session", name: "spring-session-jdbc", version: project.ext.versionSpringSession
     compile("org.springframework.boot:spring-boot-starter-tomcat")
     compile("org.aspectj:aspectjweaver:1.8.8")
     compile "com.squareup.retrofit2:converter-gson:2.0.0-beta3"

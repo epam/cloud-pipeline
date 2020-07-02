@@ -27,6 +27,7 @@ RUN yum install -y wget \
                    unzip \
                    git \
                    curl \
+                   cairo \
                    epel-release && \
     yum clean all && \
     curl https://bootstrap.pypa.io/get-pip.py | python - 
