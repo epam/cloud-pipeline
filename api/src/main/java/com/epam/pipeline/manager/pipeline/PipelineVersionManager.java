@@ -212,9 +212,9 @@ public class PipelineVersionManager {
                 new PipelineConfigReader().readConfigurations(config, mapper);
         pipelineConfiguration.forEach(entry -> {
             if (entry.getConfiguration() != null) {
+                postProcessor.postProcessPipelineConfig(entry.getConfiguration());
                 setDockerImageFromPropertiesIfAbsent(entry.getConfiguration());
                 setCmdTemplateFromPropertiesIfAbsent(entry.getConfiguration());
-                postProcessor.postProcessPipelineConfig(entry.getConfiguration());
                 entry.getConfiguration().buildEnvVariables();
             }
         });
