@@ -53,7 +53,8 @@ public class PipelineConfigurationPostProcessor {
             storageAliases = MapUtils.emptyIfNull(data)
                     .getOrDefault("storage", Collections.emptyMap());
         }
-
+        log.debug("PipelineConfigurationPostProcessor initialized with {} docker registries and {} storages.",
+                dockerRegistryAliases.size(), storageAliases.size());
     }
 
     public void postProcessPipelineConfig(final PipelineConfiguration configuration) {
@@ -83,7 +84,10 @@ public class PipelineConfigurationPostProcessor {
                         initialValue.startsWith(ProviderUtils.withTrailingDelimiter(entry.getKey())))
                 .findFirst()
                 .map(entry -> initialValue.replace(entry.getKey(), entry.getValue()))
-                .ifPresent(value::setValue);
+                .ifPresent(newValue -> {
+                    value.setValue(newValue);
+                    log.debug("Replacing value '{}' with '{}'", initialValue, newValue);
+                });
     }
 
     private void processDockerImage(final PipelineConfiguration configuration) {
@@ -96,7 +100,10 @@ public class PipelineConfigurationPostProcessor {
                 .filter(entry -> dockerImage.startsWith(entry.getKey()))
                 .findFirst()
                 .map(entry -> dockerImage.replace(entry.getKey(), entry.getValue()))
-                .ifPresent(configuration::setDockerImage);
+                .ifPresent(newImage -> {
+                    configuration.setDockerImage(newImage);
+                    log.debug("Replacing image '{}' with '{}'.", dockerImage, newImage);
+                });
     }
 
     private Map<String, Map<String, String>> readFile(final String aliasFile) {
