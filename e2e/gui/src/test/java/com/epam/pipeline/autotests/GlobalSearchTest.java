@@ -371,7 +371,6 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test(dependsOnMethods = {"searchForStorageWithChangedName"})
     @TestCase(value = {"EPMCMBIBPC-2664"})
     public void searchForPipelineRunOverStoragePath() {
-        String runID = "";
         home();
         library()
                 .cd(folder)
@@ -379,7 +378,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .firstVersion()
                 .runPipeline()
                 .launch(this)
-                .showLog(runID=getLastRunId())
+                .showLog(getLastRunId())
                 .waitForCompletion();
         home();
         search()
@@ -388,7 +387,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .sleep(2, SECONDS)
                 .hover(SEARCH_RESULT)
-                .openSearchResultItemWithText(String.format("%s-%s", pipeline.toLowerCase(), runID))
+                .openSearchResultItemWithText(String.format("%s-%s", pipeline.toLowerCase(), getLastRunId()))
                 .ensure(TITLE, Status.SUCCESS.reached, text(testRunID), text(pipeline), text(draftVersionName))
                 .checkTags(configurationDisk, configurationNodeType)
                 .ensure(HIGHLIGHTS, text("Found in logs"),
@@ -489,7 +488,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(PREVIEW, text("Owner"), text("Scheduled"),
                         text("Started"), text("Running for"), text("Estimated price"))
                 .checkEndpointsLink(endpointLink)
-                .ensure(PREVIEW_TAB, text("InitializeNode"), text("InputData"), text("InstallNFSClient"),
+                .ensure(PREVIEW_TAB, text("InitializeNode"), text("InputData"),
                         text("MountDataStorages"), text("InitializeEnvironment"), text("Console"))
                 .parent()
                 .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
