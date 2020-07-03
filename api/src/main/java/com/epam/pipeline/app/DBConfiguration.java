@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
+import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
@@ -52,6 +53,9 @@ public class DBConfiguration {
     @Value("${database.initial.pool.size}")
     private int initialPoolSize;
 
+    @Value("${database.disable.cache:false}")
+    private boolean disableCache;
+
     @Bean(destroyMethod = "close")
     public DataSource dataSource() throws PropertyVetoException {
         ComboPooledDataSource dataSource = new ComboPooledDataSource();
@@ -66,6 +70,9 @@ public class DBConfiguration {
 
     @Bean
     public CacheManager cacheManager() {
+        if (disableCache) {
+            return new NoOpCacheManager();
+        }
         return new ConcurrentMapCacheManager("preferences");
     }
 }
