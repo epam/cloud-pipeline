@@ -67,8 +67,14 @@ import java.util.Map;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyMap;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+@SuppressWarnings("PMD.TooManyStaticImports")
 public class ResourceMonitoringManagerTest {
     private static final long TEST_OK_RUN_ID = 1;
     private static final double TEST_OK_RUN_CPU_LOAD = 800.0;
@@ -166,6 +172,9 @@ public class ResourceMonitoringManagerTest {
                 .thenReturn(TEST_HIGH_CONSUMING_RUN_LOAD);
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
                 .thenReturn(IdleRunAction.NOTIFY.name());
+        when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_STOP_TIMEOUT))
+                .thenReturn(TEST_MAX_IDLE_MONITORING_TIMEOUT);
+        when(pipelineRunManager.loadExpiredServerlessRuns(any())).thenReturn(Collections.emptyList());
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         UserContext userContext = new UserContext(1L, "admin");

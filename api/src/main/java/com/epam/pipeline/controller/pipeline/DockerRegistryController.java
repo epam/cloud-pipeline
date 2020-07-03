@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,11 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.exception.docker.DockerAuthorizationException;
 import com.epam.pipeline.manager.docker.DockerRegistryApiService;
+import com.epam.pipeline.utils.AuthorizationUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -45,10 +45,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Controller
@@ -57,7 +56,7 @@ public class DockerRegistryController extends AbstractRestController {
 
     public static final String CERTIFICATE_NAME = "ca.crt";
     public static final String DOCKER_LOGIN_SCRIPT = "docker-login.sh";
-    private static final String BASIC_AUTH = "Basic";
+
     @Autowired
     private DockerRegistryApiService dockerRegistryApiService;
 
@@ -113,19 +112,11 @@ public class DockerRegistryController extends AbstractRestController {
     public JwtRawToken oauthEndpoint(@RequestParam String service,
             @RequestParam(required = false) String scope, HttpServletRequest request) {
         final String authorization = request.getHeader("Authorization");
-        if (authorization != null && authorization.startsWith(BASIC_AUTH)) {
-            // Authorization: Basic base64credentials
-            String base64Credentials = authorization.substring(BASIC_AUTH.length()).trim();
-            String credentials = new String(Base64.getDecoder().decode(base64Credentials),
-                    Charset.forName("UTF-8"));
-            // credentials = username:password
-            final String[] values = credentials.split(":", 2);
-            if (values.length < 2 || StringUtils.isBlank(values[0]) || StringUtils.isBlank(values[1])) {
-                throw new DockerAuthorizationException(service);
-            }
-            return dockerRegistryApiService.issueTokenForDockerRegistry(values[0], values[1], service, scope);
+        final String[] credentials = AuthorizationUtils.parseBasicAuth(authorization);
+        if (Objects.isNull(credentials)) {
+            throw new DockerAuthorizationException(service);
         }
-        throw new DockerAuthorizationException(service);
+        return dockerRegistryApiService.issueTokenForDockerRegistry(credentials[0], credentials[1], service, scope);
     }
 
     @RequestMapping(value = "/dockerRegistry/loadTree", method= RequestMethod.GET)

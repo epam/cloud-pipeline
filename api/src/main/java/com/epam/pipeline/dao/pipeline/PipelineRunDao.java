@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -122,6 +122,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String loadAllRunsPossiblyActiveInPeriodQuery;
     private String loadAllRunsByStatusQuery;
     private String loadRunByPodIPQuery;
+    private String loadServerlessRunsToStopQuery;
 
     // We put Propagation.REQUIRED here because this method can be called from non-transaction context
     // (see PipelineRunManager, it performs internal call for launchPipeline)
@@ -446,6 +447,13 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 .query(loadRunByPodIPQuery, params, PipelineRunParameters.getRowMapper()))
                 .stream()
                 .findFirst();
+    }
+
+    public List<PipelineRun> loadServerlessRunsToStop(final LocalDateTime maxLastUpdate) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("MAX_LAST_UPDATE", maxLastUpdate);
+        return ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
+                .query(loadServerlessRunsToStopQuery, params, PipelineRunParameters.getRowMapper()));
     }
 
     private MapSqlParameterSource getPagingParameters(PagingRunFilterVO filter) {
@@ -1195,5 +1203,10 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setDeleteRunSidsByPipelineIdQuery(final String deleteRunSidsByPipelineIdQuery) {
         this.deleteRunSidsByPipelineIdQuery = deleteRunSidsByPipelineIdQuery;
+    }
+
+    @Required
+    public void setLoadServerlessRunsToStopQuery(final String loadServerlessRunsToStopQuery) {
+        this.loadServerlessRunsToStopQuery = loadServerlessRunsToStopQuery;
     }
 }

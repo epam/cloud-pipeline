@@ -384,6 +384,10 @@ public class SystemPreferences {
             LAUNCH_GROUP, isValidEnum(ContainerMemoryResourcePolicy.class));
     public static final IntPreference LAUNCH_CONTAINER_MEMORY_RESOURCE_REQUEST = new IntPreference(
             "launch.container.memory.resource.request", 1, LAUNCH_GROUP, isGreaterThan(0));
+    public static final IntPreference LAUNCH_SERVERLESS_WAIT_COUNT = new IntPreference(
+            "launch.serverless.wait.count", 20, LAUNCH_GROUP, isGreaterThan(0));
+    public static final IntPreference LAUNCH_SERVERLESS_STOP_TIMEOUT = new IntPreference(
+            "launch.serverless.stop.timeout", 60, LAUNCH_GROUP, isGreaterThan(0));
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",
