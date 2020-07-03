@@ -18,10 +18,12 @@ package com.epam.pipeline.app;
 
 
 import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.security.acl.DisabledAclCache;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import com.epam.pipeline.security.acl.LookupStrategyImpl;
 import com.epam.pipeline.security.acl.PermissionGrantingStrategyImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.ehcache.EhCacheFactoryBean;
 import org.springframework.cache.ehcache.EhCacheManagerFactoryBean;
 import org.springframework.context.ApplicationContext;
@@ -63,6 +65,9 @@ public class AclSecurityConfiguration extends GlobalMethodSecurityConfiguration 
 
     @Autowired
     private PermissionFactory permissionFactory;
+
+    @Value("${acl.disable.cache:false}")
+    private boolean disableCache;
 
     @Override
     protected MethodSecurityExpressionHandler createExpressionHandler() {
@@ -118,6 +123,9 @@ public class AclSecurityConfiguration extends GlobalMethodSecurityConfiguration 
 
     @Bean
     public AclCache aclCache() {
+        if (disableCache) {
+            return new DisabledAclCache();
+        }
         return new EhCacheBasedAclCache(ehCacheFactoryBean().getObject(),
                 permissionGrantingStrategy(), aclAuthorizationStrategy());
     }
