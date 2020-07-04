@@ -24,9 +24,10 @@
 - [List the users/groups/objects permissions globally via `pipe` CLI](#list-the-usersgroupsobjects-permissions-globally-via-pipe-cli)
 - [Storage usage statistics retrieval via `pipe`](#storage-usage-statistics-retrieval-via-pipe)
 - [GE Autoscaler respects CPU requirements of the job in the queue](#ge-autoscaler-respects-cpu-requirements-of-the-job-in-the-queue)
+- [Restrictions of "other" users permissions for the mounted storage](#restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command)
 - [Search the tool by its version/package name](#the-ability-to-find-the-tool-by-its-versionpackage-name)
 - [The ability to restrict which run statuses trigger the email notification](#the-ability-to-restrict-which-run-statuses-trigger-the-email-notification)
-- [Restrictions of "other" users permissions for the mounted storage](#restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command)
+- [The ability to force the specific Cloud Provider for an image](#the-ability-to-force-the-usage-of-the-specific-cloud-providerregion-for-a-given-image)
 
 ***
 
@@ -507,6 +508,23 @@ Also now, if no matching instance is present for the job (no matter - in `hybrid
 
 For more details about **GE Autoscaler** see [here](../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md).
 
+## Restrictions of "other" users permissions for the storages mounted via the `pipe storage mount` command
+
+As was introduced in [Release Notes v.0.15](../v.0.15/v.0.15_-_Release_notes.md#mounting-data-storages-to-linux-and-mac-workstations), the ability to mount Cloud data storages (both - File Storages and Object Storages) to Linux and Mac workstations (requires **`FUSE`** installed) was added.  
+For that, the `pipe storage mount` command was implemented.
+
+Previously, Cloud Pipeline allowed read access to the mounted cloud storages for the other users, by default. This might introduce a security issue when dealing with the sensitive data.
+
+In the current version, for the `pipe storage mount` command the new option is added: `-m` (`--mode`), that allows to set the permissions on the mountpoint at a mount time.  
+Permissions are being configured by the numerical mask - similarly to `chmod` Linux command.  
+
+E.g. to mount the storage with `RW` access to the **OWNER**, `R` access to the **GROUP** and no access to the **OTHERS**:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_MountingMode.png)
+
+If the option `-m` isn't specified - the default permission mask will be set - `700` (full access to the **OWNER** (`RWX`), no access to the **GROUP** and **OTHERS**).
+
+For more details about mounting data storages via the `pipe` see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#mounting-of-storages).
+
 ## The ability to find the tool by its version/package name
 
 Cloud Pipeline allows searching for the tools in the registry by its name or description. But in some cases, it is more convenient and useful to find which tool contains a specific software package and then use it.
@@ -531,22 +549,29 @@ The email notifications will be sent only if the run enters one of the selected 
 
 For more information how to configure the email notifications see [here](../../manual/12_Manage_Settings/12.9._Change_email_notification.md).
 
-## Restrictions of "other" users permissions for the storages mounted via the `pipe storage mount` command
+## The ability to force the usage of the specific Cloud Provider/Region for a given image
 
-As was introduced in [Release Notes v.0.15](../v.0.15/v.0.15_-_Release_notes.md#mounting-data-storages-to-linux-and-mac-workstations), the ability to mount Cloud data storages (both - File Storages and Object Storages) to Linux and Mac workstations (requires **`FUSE`** installed) was added.  
-For that, the `pipe storage mount` command was implemented.
+Previously, the platform allowed to select a **Cloud Provider** (and **Cloud Region**) for a particular job execution via the **Launch** Form, but a tool/version itself didn't not have any link with a region.
 
-Previously, Cloud Pipeline allowed read access to the mounted cloud storages for the other users, by default. This might introduce a security issue when dealing with the sensitive data.
+In certain cases, it's necessary to enforce users to run some tools in a specific **Cloud Provider**/**Region**.
 
-In the current version, for the `pipe storage mount` command the new option is added: `-m` (`--mode`), that allows to set the permissions on the mountpoint at a mount time.  
-Permissions are being configured by the numerical mask - similarly to `chmod` Linux command.  
+In the current version, such ability was implemented. The **Tool**/**Version Settings** forms contain the field for specifying a **Cloud Region**, e.g.:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ForcedToolRegion_1.png)
 
-E.g. to mount the storage with `RW` access to the **OWNER**, `R` access to the **GROUP** and no access to the **OTHERS**:  
-    ![CP_v.0.16_ReleaseNotes](attachments/RN016_MountingMode.png)
+By default, this parameter has **`Not configured`** value. This means, that a tool will be launched in a _Default region_ (configured by the Administrator in the global settings). Or a user can set any allowed **Cloud Region**/**Provider** manually. This behavior will be the same as previously.
 
-If the option `-m` isn't specified - the default permission mask will be set - `700` (full access to the **OWNER** (`RWX`), no access to the **GROUP** and **OTHERS**).
+- Admin or a tool owner can forcibly set a specific **Cloud Region**/**Provider** where the run shall be launched, e.g.:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ForcedToolRegion_2.png)
+- Then, if a specific **Cloud Region**/**Provider** is configured - users will have to use it, when launching a tool (regardless of how the launch was started - with default or custom settings):  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ForcedToolRegion_3.png)
+- And if a user does not have access to that **Cloud Region**/**Provider** - tool won't launch:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ForcedToolRegion_4.png)  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ForcedToolRegion_5.png)
 
-For more details about mounting data storages via the `pipe` see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#mounting-of-storages).
+**_Note_**: if a specific **Cloud Region**/**Provider** is being specified for the Tool, in general - this action enforce the **Region**/**Provider** only for the latest version of that tool. For other versions the settings will remain previous.
+
+See for more details about tool execution settings [here](../../manual/10_Manage_Tools/10._Manage_Tools.md#settings-tab).
+See for more details about tool version execution settings [here](../../manual/10_Manage_Tools/10.7._Tool_version_menu.md#version-settings).
 
 ***
 
