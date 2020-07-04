@@ -63,7 +63,7 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
 
         try {
             if (isIndexExists(indexName)) {
-                log.debug("Index with name {} is already exist", indexName);
+                log.debug("Index with name {} already exists", indexName);
                 return;
             }
             CreateIndexResponse createIndexResponse = client.indices().create(request, RequestOptions.DEFAULT);
