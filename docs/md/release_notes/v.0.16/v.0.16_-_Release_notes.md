@@ -28,6 +28,7 @@
 - [Search the tool by its version/package name](#the-ability-to-find-the-tool-by-its-versionpackage-name)
 - [The ability to restrict which run statuses trigger the email notification](#the-ability-to-restrict-which-run-statuses-trigger-the-email-notification)
 - [The ability to force the specific Cloud Provider for an image](#the-ability-to-force-the-usage-of-the-specific-cloud-providerregion-for-a-given-image)
+- [Restrict mounting of data storages for a given Cloud Provider](#restrict-mounting-of-data-storages-for-a-given-cloud-provider)
 
 ***
 
@@ -572,6 +573,21 @@ By default, this parameter has **`Not configured`** value. This means, that a to
 
 See for more details about tool execution settings [here](../../manual/10_Manage_Tools/10._Manage_Tools.md#settings-tab).
 See for more details about tool version execution settings [here](../../manual/10_Manage_Tools/10.7._Tool_version_menu.md#version-settings).
+
+## Restrict mounting of data storages for a given Cloud Provider
+
+Previously, `Cloud Pipeline` attempted to mount all data storages available for the user despite the **Cloud Providers**/**Regions** of these storages. E.g. if a job was launched in the `GCP`, but the user has access to `AWS` S3 buckets - they were also mounted to the `GCP` instance.
+
+In the current version, the ability to restrict storage mount availability for a run, based on its **Cloud Provider**/**Region**, was implemented.
+
+**Cloud Regions** system configuration now has a separate parameter "**_Mount storages across other regions_**":  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_RestrictCrossMount_1.png)
+
+This parameter has 3 possible values:
+
+- **`None`** - if set, storages from this region will be unavailable for a mount to any jobs. Such storages will not be available even to the same regions (e.g. storage from _`AWS us-east-1`_ will be unavailable for a mount to instances launched in _`AWS eu-central-1`_ or any _`GCP`_ region and even in _`AWS us-east-1`_)
+- **`Same Cloud`** - if set, storages from this region will be available only to different **Cloud Regions** of the same **Cloud Provider** (e.g. storage from _`AWS us-east-1`_ will be available to instances launched in _`AWS eu-central-1`_ too, but not in any _`GCP`_ region)
+- **`All`** - if set, storages from this region will be available to all other **Cloud Regions**/**Providers**
 
 ***
 
