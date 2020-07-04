@@ -57,13 +57,16 @@ public final class KubernetesConstants {
     protected static final String DISK_PRESSURE = "DiskPressure";
     protected static final String NETWORK_UNAVAILABLE = "NetworkUnavailable";
     protected static final String CONFIG_OK = "ConfigOK";
+    protected static final String PID_PRESSURE = "PIDPressure";
+
     // node condition statuses
     protected static final String TRUE = "True";
     protected static final String FALSE = "False";
     protected static final String UNKNOWN = "Unknown";
 
     protected static final Set<String> NODE_CONDITION_TYPES =
-            Stream.of(OUT_OF_DISK, READY, MEMORY_PRESSURE, DISK_PRESSURE, NETWORK_UNAVAILABLE, CONFIG_OK)
+            Stream.of(OUT_OF_DISK, READY, MEMORY_PRESSURE, DISK_PRESSURE,
+                    NETWORK_UNAVAILABLE, CONFIG_OK, PID_PRESSURE)
                     .collect(Collectors.toSet());
 
     protected static final Set<String> NODE_OUT_OF_ORDER_REASONS = new HashSet<>();
