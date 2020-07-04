@@ -29,6 +29,7 @@
 - [The ability to restrict which run statuses trigger the email notification](#the-ability-to-restrict-which-run-statuses-trigger-the-email-notification)
 - [The ability to force the specific Cloud Provider for an image](#the-ability-to-force-the-usage-of-the-specific-cloud-providerregion-for-a-given-image)
 - [Restrict mounting of data storages for a given Cloud Provider](#restrict-mounting-of-data-storages-for-a-given-cloud-provider)
+- [Ability to "symlink" the tools between the tools groups](#ability-to-symlink-the-tools-between-the-tools-groups)
 
 ***
 
@@ -588,6 +589,28 @@ This parameter has 3 possible values:
 - **`None`** - if set, storages from this region will be unavailable for a mount to any jobs. Such storages will not be available even to the same regions (e.g. storage from _`AWS us-east-1`_ will be unavailable for a mount to instances launched in _`AWS eu-central-1`_ or any _`GCP`_ region and even in _`AWS us-east-1`_)
 - **`Same Cloud`** - if set, storages from this region will be available only to different **Cloud Regions** of the same **Cloud Provider** (e.g. storage from _`AWS us-east-1`_ will be available to instances launched in _`AWS eu-central-1`_ too, but not in any _`GCP`_ region)
 - **`All`** - if set, storages from this region will be available to all other **Cloud Regions**/**Providers**
+
+## Ability to "symlink" the tools between the tools groups
+
+The majority of the tools are managed by the administrators and are available via the **_library_** tool group.  
+But for some of the users it would be convenient to have separate tool groups, which are going to contain a mix of the custom tools (managed by the users themselves) and the **_library_** tools (managed by the admins).
+
+For the latter ones the ability to create "`symlinks`" into the other tool groups was implemented.
+
+"Symlinked" tools are displayed in that users' tool groups as the original tools but can't be edited/updated. When a run is started with "symlinked" tool as docker image it is being replaced with original image for `Kubernetes` pod spec.
+
+Example of the "symlinked" `ubuntu` tool:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_SymlinkedTools.png)
+
+The following behavior is implemented:
+
+- to create a "symlink" to the tool, the user shall have **_READ_** access to the source tool and **_WRITE_** access to the destination tool group
+- for the "symlinked" tool all the same description, icon, settings as in the source image are displayed. It isn't possible to make any changes to the "symlink" data (description, icon, settings. attributes, issues, etc.), even for the admins
+- admins and image OWNERs are able to manage the permissions for the "symlinks". Permissions on the "symlinked" tools are configured separately from the original tool
+- two levels of "symlinks" is not possible ("symlink" to the "symlinked" tool can't be created)
+- it isn't possible to "push" into the "symlinked" tool
+
+For more details see [here](../../manual/10_Manage_Tools/10.8._Symlinks_between_tools.md).
 
 ***
 

@@ -43,6 +43,7 @@
     - [10.5. Launch a Tool](10_Manage_Tools/10.5._Launch_a_Tool.md)
     - [10.6. Tool security check](10_Manage_Tools/10.6._Tool_security_check.md)
     - [10.7. Tool version menu](10_Manage_Tools/10.7._Tool_version_menu.md)
+    - [10.8. "Symlinked" tools](10_Manage_Tools/10.8._Symlinks_between_tools.md)
 - [11. Manage Runs](11_Manage_Runs/11._Manage_Runs.md)
     - [11.1. Manage runs lifecycles](11_Manage_Runs/11.1._Manage_runs_lifecycles.md)
     - [11.2. Auto-commit Docker image](11_Manage_Runs/11.2._Auto-commit_Docker_image.md)
