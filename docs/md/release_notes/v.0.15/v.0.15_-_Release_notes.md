@@ -38,6 +38,7 @@
 - [Run a single command or an interactive session over the SSH protocol via `pipe`](#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol-via-pipe)
 - [Perform objects restore in a batch mode via `pipe`](#perform-objects-restore-in-a-batch-mode-via-pipe)
 - [Mounting data storages to Linux and Mac workstations](#mounting-data-storages-to-linux-and-mac-workstations)
+- [Allow to run `pipe` commands on behalf of the other user](#allow-to-run-pipe-commands-on-behalf-of-the-other-user)
 - [Ability to restrict the visibility of the jobs](#ability-to-restrict-the-visibility-of-the-jobs)
 - [Ability to perform scheduled runs from detached configurations](#ability-to-perform-scheduled-runs-from-detached-configurations)
 - [Using custom domain names as a "friendly URL" for the interactive services](#the-ability-to-use-custom-domain-names-as-a-friendly-url-for-the-interactive-services)
@@ -740,6 +741,29 @@ Users can:
 To unmount a mountpoint the `pipe storage umount` command was implemented.
 
 For more details about mounting data storages via the `pipe` see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#mounting-of-storages).
+
+## Allow to run `pipe` commands on behalf of the other user
+
+In the current version, the ability to run `pipe` commands on behalf of the other user was implemented.  
+It could be convenient when administrators need to perform some operations on behalf of the other user (e.g. check permissions/act as a service account/etc.).
+
+This feature is implemented via the common option that was added to **all** `pipe` commands: **`--user|-u <USER_ID>`** (where **`<USER_ID>`** is the name of the user account).  
+**_Note_**: the option isn't available for the following `pipe` commands: `configure`, `--version`, `--help`.
+
+If this option is specified - operation (command execution) will be performed using the corresponding user account, e.g.:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeBehalfOfOtherUser_1.png)  
+In the example above, active runs were outputted from the admin account (firstly) and then on behalf of the user without _ROLE\_ADMIN_ role.
+
+Additionally, a new command **`pipe token <USER_ID>`** was implemented. It prints the `JWT` token for a specified user.  
+This command also can be used with non-required option **`-d`** (**`--duration`**), that specified the number of days the token will be valid. If it's not set - the default value will be used, same as in the GUI.  
+Example of using:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeBehalfOfOtherUser_2.png)
+
+Then, the generated `JWT` token could be used manually with the `pipe configure` command - to configure `pipe` CLI on behalf of the desired user.
+
+**_Note_**: both - the command (`pipe token`) and the option (`--user`) - are available only for admins.
+
+For more details see [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#allow-to-run-pipe-commands-on-behalf-of-the-other-user).
 
 ## Ability to restrict the visibility of the jobs
 
