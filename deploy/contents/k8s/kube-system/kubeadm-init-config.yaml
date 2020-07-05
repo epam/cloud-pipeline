@@ -11,8 +11,8 @@ networking:
   dnsDomain: cluster.local
   serviceSubnet: 10.96.0.0/12
   podSubnet: ${CP_KUBE_FLANNEL_CIDR}
+tokenTTL: "0s"
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 port: ${CP_KUBE_KUBELET_PORT}
-tokenTTL: "0s"
