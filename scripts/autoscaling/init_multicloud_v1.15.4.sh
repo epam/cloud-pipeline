@@ -122,12 +122,13 @@ if [ ! -d "/ebs/docker" ]; then
     _KUBE_SYSTEM_PODS_DISTR_PREFIX="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker"
   fi
   mkdir -p /tmp/system-dockers
-  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/calico-node-v3.14.1.tar" -O /tmp/system-dockers/calico-node-v3.14.1.tar && \
-  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/calico-pod2daemon-flexvol-v3.14.1.tar" -O /tmp/system-dockers/calico-pod2daemon-flexvol-v3.14.1.tar &&
-  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/calico-cni-v3.14.1.tar" -O /tmp/system-dockers/calico-cni-v3.14.1.tar && \
-  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O /tmp/system-dockers/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
-  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/quay.io-coreos-flannel-v0.11.0.tar" -O /tmp/system-dockers/quay.io-coreos-flannel-v0.11.0.tar && \
-  wget -q "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/k8s.gcr.io-pause-3.1.tar" -O /tmp/system-dockers/k8s.gcr.io-pause-3.1.tar
+  _WO="--timeout=3 --waitretry=0 --tries=3 -q"
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/calico-node-v3.14.1.tar" -O /tmp/system-dockers/calico-node-v3.14.1.tar && \
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/calico-pod2daemon-flexvol-v3.14.1.tar" -O /tmp/system-dockers/calico-pod2daemon-flexvol-v3.14.1.tar &&
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/calico-cni-v3.14.1.tar" -O /tmp/system-dockers/calico-cni-v3.14.1.tar && \
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O /tmp/system-dockers/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/quay.io-coreos-flannel-v0.11.0.tar" -O /tmp/system-dockers/quay.io-coreos-flannel-v0.11.0.tar && \
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/k8s.gcr.io-pause-3.1.tar" -O /tmp/system-dockers/k8s.gcr.io-pause-3.1.tar
   _KUBE_SYSTEM_PODS_NEEDS_LOAD=$?
   if [ $_KUBE_SYSTEM_PODS_NEEDS_LOAD -ne 0 ]; then
     if [ -d "/var/lib/docker" ] && [ ! -d "/ebs/docker" ]; then
