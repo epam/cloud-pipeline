@@ -5,14 +5,16 @@ etcd:
     dataDir: /var/lib/etcd
 dns:
   type: kube-dns
-
 kubernetesVersion: v1.15.4
 networking:
   dnsDomain: cluster.local
   serviceSubnet: 10.96.0.0/12
   podSubnet: ${CP_KUBE_FLANNEL_CIDR}
-tokenTTL: "0s"
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 port: ${CP_KUBE_KUBELET_PORT}
+---
+apiVersion: kubeadm.k8s.io/v1alpha1
+kind: MasterConfiguration
+tokenTTL: "0s"
