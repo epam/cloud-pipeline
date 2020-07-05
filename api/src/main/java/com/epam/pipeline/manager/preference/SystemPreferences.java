@@ -104,7 +104,7 @@ public class SystemPreferences {
     private static final String GCP_GROUP = "GCP";
     private static final String BILLING_GROUP = "Billing Reports";
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
-            "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc";
+            "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
 
     // COMMIT_GROUP
     public static final StringPreference COMMIT_DEPLOY_KEY = new StringPreference("commit.deploy.key", null,
