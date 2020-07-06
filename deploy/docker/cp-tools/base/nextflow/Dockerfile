@@ -20,6 +20,7 @@ RUN apt update && \
                    git \
                    curl \
                    openjdk-8-jdk \
+                    graphviz \
                    python && \
     curl https://bootstrap.pypa.io/get-pip.py | python -
 
