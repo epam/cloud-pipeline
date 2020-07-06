@@ -64,7 +64,6 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     private final String storageFileContent = "globalSearchStorageFileContent" + Utils.randomSuffix();
     private final String storageFile2 = "globalSearchStorageFile2" + Utils.randomSuffix();
     private final String storageAlias = "globalSearchStorageAlias" + Utils.randomSuffix();
-    private final String toolEndpoint = "e2e-endpoints";
     private final String toolVersion = "latest";
     private final String toolShortDescription = "Docker image used in E2E automated tests to verify HTTP endpoints and SSH access";
     private final String toolDescription = "HTTP endpoints work correctly (will perform JWT authentication and print user's name)";
@@ -74,11 +73,11 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     private final String defaultRegistry = C.DEFAULT_REGISTRY;
     private final String defaultGroup = C.DEFAULT_GROUP;
     private final String testingTool = C.TESTING_TOOL_NAME;
-    private final String toolWithGroup = String.format("%s/%s", C.DEFAULT_GROUP, toolEndpoint);
+    private final String toolEndpoint = testingTool.substring(testingTool.lastIndexOf("/") + 1);
     private final String defaultProfile = "default";
     private final String configurationName = "test_conf";
     private final String configurationNodeType = "c5.large (CPU: 2, RAM: 4)";
-    private final String configurationDisk = "23";
+    private final String configurationDisk = "24";
     private final String configVar = "config.json";
     private final String title = "testIssue" + Utils.randomSuffix();
     private final String description = "testIssueDescription";
@@ -171,8 +170,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                         profile
                                 .expandTab(EXEC_ENVIRONMENT)
                                 .expandTab(ADVANCED_PANEL)
-                                .clear(NAME).setValue(NAME,configurationName)
-                                .clear(DISK).setValue(DISK,configurationDisk)
+                                .clear(NAME).setValue(NAME, configurationName)
+                                .clear(DISK).setValue(DISK, configurationDisk)
                                 .selectValue(INSTANCE_TYPE, configurationNodeType)
                                 .sleep(2, SECONDS)
                                 .click(SAVE)
@@ -234,7 +233,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .firstVersion()
                 .runPipeline()
                 .launch(this)
-                .showLog(testRunID=getLastRunId())
+                .showLog(testRunID = getLastRunId())
                 .waitForCompletion();
         library()
                 .cd(folder)
@@ -443,7 +442,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .sleep(2, SECONDS)
                 .hover(SEARCH_RESULT)
-                .openSearchResultItem(toolWithGroup)
+                .openSearchResultItem(testingTool)
                 .ensure(TITLE, text(toolEndpoint))
                 .ensure(TITLE_FIELD, text("registry"), text(C.DEFAULT_GROUP))
                 .ensure(SHORT_DESCRIPTION, text(toolShortDescription))
@@ -451,15 +450,15 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(PREVIEW, text("latest"), text("test"))
                 .ensure(PREVIEW_TAB, text(toolDescription))
                 .parent()
-                .moveToSearchResultItem(toolWithGroup, () -> new ToolPageAO(toolEndpoint))
-                .ensure(TITLE, text(toolWithGroup));
+                .moveToSearchResultItem(testingTool, () -> new ToolPageAO(toolEndpoint))
+                .ensure(TITLE, text(testingTool));
     }
 
     @Test
     @TestCase(value = {"EPMCMBIBPC-2668"})
     public void searchForToolRun() {
         tools()
-                .perform(defaultRegistry, defaultGroup, toolWithGroup, ToolTab::runWithCustomSettings)
+                .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
                 .launchTool(this, toolEndpoint)
                 .showLog(testRunID_2668 = getLastRunId())
                 .waitForEndpointLink()
@@ -469,7 +468,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .closeTab();
         LogAO logAO = new LogAO();
         String endpointLink = logAO.getEndpointLink();
-        String [] instanceParam = new String [3];
+        String[] instanceParam = new String[3];
         instanceParam[0] = logAO.getParameterValue("Node type");
         instanceParam[1] = logAO.getParameterValue("Disk");
         instanceParam[2] = logAO.getParameterValue("Price type");
@@ -761,7 +760,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         return new NavigationMenuAO().search();
     }
 
-    private String pipelineWithRun(){
+    private String pipelineWithRun() {
         return String.format("%s-%s", pipeline.toLowerCase(), testRunID);
     }
 }

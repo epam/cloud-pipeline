@@ -69,7 +69,7 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
         return endpoint;
     }
 
-    public void closeTab(){
+    public void closeTab() {
         List<String> tabs = new ArrayList<String>(getWebDriver().getWindowHandles());
         getWebDriver().close();
         switchTo().window(tabs.get(0));
