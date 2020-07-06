@@ -714,6 +714,7 @@ public class RunToBillingRequestConverterImplTest {
 
     private PipelineRun run(final RunStatus... statuses) {
         final PipelineRun run = new PipelineRun();
+        run.setStatus(TaskStatus.RUNNING);
         run.setId(RUN_ID);
         run.setRunStatuses(Arrays.asList(statuses));
         return run;
@@ -721,6 +722,7 @@ public class RunToBillingRequestConverterImplTest {
 
     private PipelineRun run(final LocalDateTime start, final LocalDateTime end, final RunStatus... statuses) {
         final PipelineRun run = run(statuses);
+        run.setStatus(TaskStatus.STOPPED);
         run.setStartDate(toDate(start));
         run.setEndDate(toDate(end));
         return run;

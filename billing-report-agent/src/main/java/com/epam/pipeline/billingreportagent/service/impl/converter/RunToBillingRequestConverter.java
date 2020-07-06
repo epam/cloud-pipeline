@@ -88,8 +88,17 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         final EntityContainer<PipelineRunWithType> runContainer,
         final LocalDateTime previousSync,
         final LocalDateTime syncStart) {
+        final PipelineRun pipelineRun = runContainer.getEntity().getPipelineRun();
+        if (previousSync != null && pipelineRun.getStatus().isFinal() &&
+                pipelineRun.getEndDate() != null &&
+                getEnd(pipelineRun).isBefore(previousSync)) {
+            log.debug("Run {} [{} - {}] was not active in period {} - {}.",
+                    pipelineRun.getId(), pipelineRun.getStartDate(),
+                    pipelineRun.getEndDate(), previousSync, syncStart);
+            return Collections.emptyList();
+        }
         final RunPrice price = getPrice(runContainer);
-        final List<RunStatus> statuses = adjustStatuses(runContainer.getEntity().getPipelineRun(),
+        final List<RunStatus> statuses = adjustStatuses(pipelineRun,
                 previousSync, syncStart);
 
         return createBillingsForPeriod(runContainer.getEntity(), price, statuses).stream()
