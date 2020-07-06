@@ -77,8 +77,7 @@ public class VMNotificationServiceImpl implements VMNotificationService {
         final Map<String, Object> commonParams = new HashMap<>();
         commonParams.put("platformName", platformName);
         commonParams.put("deploymentName", deploymentName);
-        commonParams.put("fullPlatformName", StringUtils.isBlank(deploymentName) ?
-                platformName : platformName +  " " + deploymentName);
+        commonParams.put("fullPlatformName", StringUtils.defaultIfBlank(deploymentName, platformName));
 
         if (MapUtils.isEmpty(parameters)) {
             return commonParams;
