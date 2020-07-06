@@ -352,7 +352,10 @@ class EditRoleDialog extends React.Component {
       }
     };
     Modal.confirm({
-      title: `Are you sure you want to ${blockStatus ? 'block' : 'unblock'} ${this.splitRoleName(this.props.role.name)}?`,
+      title: [
+        `Are you sure you want to ${blockStatus ? 'block' : 'unblock'}`,
+        `${this.splitRoleName(this.props.role.name)}?`
+      ].join(' '),
       style: {
         wordWrap: 'break-word'
       },
@@ -487,7 +490,8 @@ class EditRoleDialog extends React.Component {
       roles: [],
       rolesInitial: [],
       rolesInitialized: false,
-      instanceTypesChanged: false
+      instanceTypesChanged: false,
+      usersInitialized: false
     }, () => this.revertChanges(this.updateValues));
   };
 
