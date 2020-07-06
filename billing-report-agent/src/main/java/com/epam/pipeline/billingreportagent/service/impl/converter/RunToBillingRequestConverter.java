@@ -62,7 +62,8 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
 
     private static final int PRICE_SCALE = 5;
     private static final int USER_PRICE_SCALE = 2;
-    
+    private static final int MAX_PERIOD = 700;
+
     private final AbstractEntityMapper<PipelineRunBillingInfo> mapper;
 
     /**
@@ -330,7 +331,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
     }
 
     private boolean isPeriodTooLong(final LocalDateTime start, final LocalDateTime end) {
-        return Period.between(start.toLocalDate(), end.toLocalDate()).getYears() > 100;
+        return Period.between(start.toLocalDate(), end.toLocalDate()).getYears() > MAX_PERIOD;
     }
 
     private Stream<LocalDateTime> periodTimePoints(final LocalDateTime start, final LocalDateTime end) {
