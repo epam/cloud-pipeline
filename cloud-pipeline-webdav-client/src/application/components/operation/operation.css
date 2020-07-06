@@ -1,9 +1,24 @@
-.operation {
+.operation-container {
   display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  line-height: initial;
+}
+
+.operation-container .close {
+  width: 30px;
+  text-align: center;
+}
+
+.operation {
+  flex-grow: 1;
+  display: inline-flex;
   flex-direction: column;
   padding: 5px 10px;
   font-size: 9pt;
   background-color: white;
+  min-width: 0;
 }
 
 .operation .error {
@@ -16,4 +31,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.progress .ant-progress-bg {
+  transition: none;
 }

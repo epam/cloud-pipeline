@@ -28,9 +28,27 @@ class FileSystem {
     return directory || this.root || '';
   }
   getContentsStream(path) {
-    return Promise.resolve(null);
+    return Promise.resolve({stream: null, size: 0});
   }
-  copy(stream, destinationPath, callback) {
+  watchCopyProgress(stream, callback, size) {
+    if (size > 0 && callback) {
+      let transferred = 0;
+      stream.on('data', (buffer) => {
+        transferred += buffer.length;
+        const percentage = Math.round(
+          Math.min(
+            100,
+            Math.max(
+              0,
+              transferred / size * 100.0
+            )
+          )
+        );
+        callback && callback(percentage);
+      });
+    }
+  }
+  copy(stream, destinationPath, callback, size) {
     return Promise.resolve();
   }
   remove(path) {

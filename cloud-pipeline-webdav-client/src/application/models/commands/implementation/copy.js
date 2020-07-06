@@ -13,6 +13,10 @@ class CopyOperation extends Operation {
     return new Promise(async (resolve, reject) => {
       try {
         await super.preprocess();
+        if (this.aborted) {
+          resolve();
+          return;
+        }
         if (!this.sourceFS) {
           throw new Error('Internal error: source file system is not initialized');
         }
@@ -22,7 +26,15 @@ class CopyOperation extends Operation {
         const sfs = this.sourceFS;
         const dfs = this.destinationFS;
         const sources = await buildSources(sfs, this.sources);
+        if (this.aborted) {
+          resolve();
+          return;
+        }
         const destination = await dfs.buildDestination(this.destinationPath);
+        if (this.aborted) {
+          resolve();
+          return;
+        }
         const transfers = sources.map(({path, name}) => ({
           from: path,
           to: dfs.joinPath(destination, ...sfs.parsePath(name)),
@@ -45,17 +57,26 @@ class CopyOperation extends Operation {
 
   processElement (sourceAdapter, destinationAdapter, element, progressCallback) {
     return new Promise((resolve, reject) => {
+      if (this.aborted) {
+        resolve();
+        return;
+      }
       progressCallback(0);
       sourceAdapter
         .getContentsStream(element.from)
-        .then((stream) => {
+        .then(({stream, size}) => {
           if (!stream) {
             reject(`Cannot read ${element.from}`);
           } else {
+            if (this.aborted) {
+              resolve();
+              return;
+            }
             destinationAdapter.copy(
               stream,
               element.to,
-              progressCallback
+              progressCallback,
+              size
             )
               .then(() => {
                 progressCallback(100);
@@ -78,6 +99,9 @@ class CopyOperation extends Operation {
       if (index >= array.length) {
         return Promise.resolve();
       }
+      if (this.aborted) {
+        return Promise.resolve();
+      }
       try {
         await this.processElement(
           sourceFileSystem,
@@ -91,7 +115,11 @@ class CopyOperation extends Operation {
       return invokeForElement(index + 1, array, callback);
     }
     return new Promise(async (resolve) => {
-      await invokeForElement(0, transfers, (idx, progress) => {
+      if (this.aborted) {
+        resolve();
+        return;
+      }
+      invokeForElement(0, transfers, (idx, progress) => {
         const element = transfers[idx];
         const prevProgress = 100.0 / transfers.length * idx;
         this.reportProgress(
@@ -99,7 +127,7 @@ class CopyOperation extends Operation {
           this.getInfoTitle(element.name),
         );
       })
-      resolve();
+        .then(() => resolve(transfers));
     });
   }
 }

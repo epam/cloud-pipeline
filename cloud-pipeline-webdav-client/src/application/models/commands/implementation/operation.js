@@ -6,24 +6,31 @@ class Operation {
     this.identifier = identifier;
     this.progressCallback = progressCallback;
     this.finished = false;
+    this.aborted = false;
     this.progress = 0;
     this.info = undefined;
     this.error = undefined;
   }
   preprocess() {
-    this.reportProgress(this.progress, 'Preparing...');
+    if (!this.aborted) {
+      this.reportProgress(this.progress, 'Preparing...');
+    }
     return Promise.resolve();
   }
   invoke(preprocessResult) {
     return Promise.resolve();
   }
   postprocess(preprocessResult, invokeResult) {
-    this.reportProgress(this.progress, 'Finishing...');
+    if (!this.aborted) {
+      this.reportProgress(this.progress, 'Finishing...');
+    }
     return Promise.resolve();
   }
   reportProgress(progress, info) {
-    this.progress = progress;
-    this.info = info;
+    if (!this.aborted) {
+      this.progress = progress;
+      this.info = info;
+    }
     if (this.progressCallback) {
       this.progressCallback(this);
     }
@@ -68,6 +75,13 @@ class Operation {
           resolve();
         })
     });
+  }
+  abort() {
+    this.reportProgress(0, 'Aborting...');
+    this.aborted = true;
+    if (this.progressCallback) {
+      this.progressCallback(this);
+    }
   }
 }
 

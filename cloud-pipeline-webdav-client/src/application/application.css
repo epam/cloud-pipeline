@@ -11,6 +11,11 @@
   padding: 0 2px;
 }
 
+.layout .footer {
+  max-height: 200px;
+  overflow: auto;
+}
+
 .layout .content {
   border: 1px solid #ddd;
   border-left: none;
@@ -45,8 +50,6 @@
   justify-content: space-around;
 }
 
-.content .operations-overlay .operations {
-  border: 1px solid #ccc;
-  min-width: 400px;
-  box-shadow: 0 0 2px 0 #eee;
+.footer .operations {
+  background-color: white;
 }

@@ -35,7 +35,7 @@ class WebdavFileSystem extends FileSystem {
     this.password = password;
     this.certificates = certificates;
     this.ignoreCertificateErrors = ignoreCertificateErrors;
-    this.rootName = 'Root';
+    this.rootName = 'WebDav Root';
     this.separator = '/';
   }
   initialize() {
@@ -129,7 +129,43 @@ class WebdavFileSystem extends FileSystem {
     return parts;
   }
   joinPath (...parts) {
-    return (parts || []).join('/');
+    const path = (parts || []).join('/');
+    if (path.toLowerCase().indexOf((this.root || '').toLowerCase()) === 0) {
+      return path.substr((this.root || '').length);
+    }
+    return path;
+  }
+  getItemType (path) {
+    if (!path) {
+      return Promise.reject('Path not specified');
+    }
+    if (!this.webdavClient) {
+      return Promise.reject('WebDav client was not initialized');
+    }
+    return new Promise((resolve, reject) => {
+      const pathCorrected = path.endsWith('/') ? path.substr(0, path.length - 1) : path;
+      const filePath = pathCorrected;
+      const dirPath = pathCorrected.concat('/');
+      const getTypeSafe = (o) => new Promise((r) => {
+        this.webdavClient.stat(o)
+          .then(({type}) => r(type))
+          .catch(() => r(undefined));
+      });
+      Promise.all([getTypeSafe(filePath), getTypeSafe(dirPath)])
+        .then((results) => {
+          const [fileType, dirType] = results;
+          const type = fileType || dirType;
+          resolve(type);
+        })
+        .catch(({message}) => reject(message));
+    });
+  }
+  isDirectory (path) {
+    return new Promise((resolve, reject) => {
+      this.getItemType(path)
+        .then(type => resolve(/^directory$/i.test(type)))
+        .catch(reject);
+    });
   }
   buildSources(item) {
     const parts = this.parsePath(item);
@@ -171,14 +207,15 @@ class WebdavFileSystem extends FileSystem {
         reject('WebDav client was not initialized');
       }
       const pathCorrected = path || '';
-      try {
-        resolve(this.webdavClient.createReadStream(pathCorrected));
-      } catch (e) {
-        reject({message: e.message});
-      }
+      this.webdavClient.stat(pathCorrected)
+        .then(({size}) => {
+          const stream = this.webdavClient.createReadStream(pathCorrected);
+          resolve({stream, size});
+        })
+        .catch(({message}) => reject(message));
     });
   }
-  copy(stream, destinationPath, callback) {
+  copy(stream, destinationPath, callback, size) {
     return new Promise((resolve, reject) => {
       if (!this.webdavClient) {
         reject('WebDav client was not initialized');
@@ -193,6 +230,7 @@ class WebdavFileSystem extends FileSystem {
         };
         createDirectorySafe()
           .then(() => {
+            this.watchCopyProgress(stream, callback, size);
             const writeStream = stream.pipe(this.webdavClient.createWriteStream(destinationPath));
             writeStream.on('finish', resolve);
             writeStream.on('error', ({message}) => reject(message));
@@ -206,9 +244,10 @@ class WebdavFileSystem extends FileSystem {
       if (!this.webdavClient) {
         reject('WebDav client was not initialized');
       }
-      this.webdavClient.deleteFile(path)
+      this.isDirectory(path)
+        .then((isDirectory) => this.webdavClient.deleteFile(isDirectory ? path.concat('/') : path))
         .then(resolve)
-        .catch(({message}) => reject(message))
+        .catch(({message}) => reject(message));
     });
   }
   createDirectory(name) {

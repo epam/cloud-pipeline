@@ -1,10 +1,11 @@
 import React from 'react';
 import {Progress} from 'antd';
+import {CloseCircleFilled} from '@ant-design/icons';
 import './operation.css';
 
 const OPERATION_HEIGHT = 45;
 
-function Operation ({operation}) {
+function Operation ({operation, style}) {
   if (!operation) {
     return null;
   }
@@ -26,6 +27,7 @@ function Operation ({operation}) {
     parts.push((
       <Progress
         key="progress"
+        className="progress"
         percent={operation.progress}
         size="small"
         format={o => `${Math.round(o)}%`}
@@ -33,15 +35,22 @@ function Operation ({operation}) {
     ));
   }
   return (
-    <div
-      className="operation"
-      style={{
-        height: OPERATION_HEIGHT,
-      }}
-    >
-      {parts}
+    <div className="operation-container">
+      <div
+        className="operation"
+        style={Object.assign({
+          height: OPERATION_HEIGHT,
+        }, style)}
+      >
+        {parts}
+      </div>
+      <CloseCircleFilled
+        className="close"
+        onClick={() => operation.abort()}
+      />
     </div>
   );
 }
 
 export default Operation;
+export {OPERATION_HEIGHT};

@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import Operation from './components/operation';
+import Operation, {OPERATION_HEIGHT} from './components/operation';
 
 function Operations({className, operations}) {
   return (
@@ -20,3 +20,4 @@ Operations.propTypes = {
 };
 
 export default Operations;
+export {OPERATION_HEIGHT};

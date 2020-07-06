@@ -1,10 +1,9 @@
 import Operation from './operation';
-import {initializeFileSystemAdapter} from "./utilities";
 
 class RemoveOperation extends Operation {
   constructor(sourceFS, sources, progressCallback) {
     super(progressCallback);
-    this.sources = sources;
+    this.sources = (sources || []).map(path => ({path}));
     this.fileSystem = sourceFS;
   }
   preprocess() {
@@ -14,6 +13,10 @@ class RemoveOperation extends Operation {
           if (!this.fileSystem) {
             throw new Error('Internal error: file system is not initialized');
           }
+          if (this.aborted) {
+            resolve();
+            return;
+          }
           resolve(this.fileSystem);
         })
         .catch(reject);
@@ -21,14 +24,21 @@ class RemoveOperation extends Operation {
   }
   invoke(preprocessResult) {
     return new Promise((resolve, reject) => {
+      if (this.aborted) {
+        resolve();
+        return;
+      }
       const fs = preprocessResult;
       const invokeForElement = async (index, array, callback) => {
         if (index >= array.length) {
           return Promise.resolve();
         }
+        if (this.aborted) {
+          return Promise.resolve();
+        }
         callback(index, 1);
         try {
-          await fs.remove(array[index])
+          await fs.remove(array[index].path)
           callback(index, 100);
         } catch (e) {
           array[index].error = e;
@@ -40,7 +50,7 @@ class RemoveOperation extends Operation {
         const prevProgress = 100.0 / this.sources.length * idx;
         this.reportProgress(
           prevProgress + progress / this.sources.length,
-          `Removing ${element}...`,
+          `Removing ${element.path}...`,
         );
       })
         .then(resolve)

@@ -1,7 +1,7 @@
 import React from 'react';
 import {Layout} from 'antd';
 import FileSystemTab from './components/file-system-tab';
-import Operations from './operations';
+import Operations, {OPERATION_HEIGHT} from './operations';
 import useFileSystem from './components/file-system-tab/use-file-system';
 import useFileSystemTabActions from './use-file-system-tab-actions';
 import Tabs from './file-system-tabs';
@@ -63,29 +63,19 @@ function Application() {
           oppositeFileSystemReady={rightTabReady}
           onCommand={onRightFSCommand}
         />
-        {
-          activeOperations.length > 0
-            ? (
-              <div className="operations-overlay">
-                <Operations
-                  className="operations"
-                  operations={activeOperations}
-                />
-              </div>
-            )
-            : undefined
-        }
       </Layout.Content>
-      <Layout.Footer className="footer">
-        {
-          activeOperations.length > 0
-            ? (
-              <span>
-                {activeOperations.length} active operations
-              </span>
-            )
+      <Layout.Footer
+        className="footer"
+        style={{
+          height: activeOperations.length > 0
+            ? activeOperations.length * OPERATION_HEIGHT + 4
             : undefined
-        }
+        }}
+      >
+        <Operations
+          className="operations"
+          operations={activeOperations}
+        />
       </Layout.Footer>
     </Layout>
   );

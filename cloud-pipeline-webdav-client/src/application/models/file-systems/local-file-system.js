@@ -65,14 +65,25 @@ class LocalFileSystem extends FileSystem {
     return Promise.resolve(utilities.getDirectoryFiles(item).map(mapper));
   }
   getContentsStream(path) {
-    return Promise.resolve(fs.createReadStream(path))
+    return new Promise((resolve, reject) => {
+      try {
+        const stat = fs.statSync(path);
+        resolve({
+          stream: fs.createReadStream(path),
+          size: +stat.size,
+        });
+      } catch (e) {
+        reject(e.message);
+      }
+    });
   }
-  copy(stream, destinationPath, callback) {
+  copy(stream, destinationPath, callback, size) {
     return new Promise((resolve, reject) => {
       const parentDirectory = path.dirname(destinationPath);
       if (!fs.existsSync(parentDirectory)) {
         fs.mkdirSync(parentDirectory, {recursive: true});
       }
+      this.watchCopyProgress(stream, callback, size);
       const writeStream = stream.pipe(fs.createWriteStream(destinationPath));
       writeStream.on('finish', resolve);
       writeStream.on('error', ({message}) => reject(message));
