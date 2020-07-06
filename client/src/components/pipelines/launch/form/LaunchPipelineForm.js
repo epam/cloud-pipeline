@@ -51,6 +51,7 @@ import {LIMIT_MOUNTS_PARAMETER, LimitMountsInput} from './LimitMountsInput';
 import PipelineRunEstimatedPrice from '../../../../models/pipelines/PipelineRunEstimatedPrice';
 import FolderProject from '../../../../models/folders/FolderProject';
 import MetadataEntityFields from '../../../../models/folderMetadata/MetadataEntityFields';
+import ToolDefaultCommand from '../../../../models/tools/ToolDefaultCommand';
 
 import roleModel from '../../../../utils/roleModel';
 import SystemParametersBrowser from '../dialogs/SystemParametersBrowser';
@@ -211,6 +212,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     execEnvSelectValue: null,
     dtsId: null,
     startIdle: false,
+    useDefaultCmd: false,
     pipelineBrowserVisible: false,
     dockerImageBrowserVisible: false,
     pipeline: null,
@@ -340,6 +342,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   @observable cmdTemplateValue;
   @observable launchCommandPayload;
   @observable _toolSettings;
+  @observable toolDefaultCmd;
   @observable regionDisabledByToolSettings = false;
   @observable toolCloudRegion = null;
   @observable toolAllowSensitive = true;
@@ -772,6 +775,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
         startIdle: this.props.parameters.cmd_template === 'sleep infinity',
+        useDefaultCmd: false,
         isDts: this.isDts(),
         execEnvSelectValue,
         dtsId,
@@ -818,6 +822,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
         startIdle: this.props.parameters.cmd_template === 'sleep infinity',
+        useDefaultCmd: false,
         isDts: this.isDts(),
         execEnvSelectValue,
         dtsId,
@@ -873,11 +878,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   generateConfigurationPayload = (values) => {
+    let cmd = values[ADVANCED].cmdTemplate;
+    if (this.state.useDefaultCmd && this.toolDefaultCmd) {
+      cmd = this.toolDefaultCmd;
+    } else if (this.state.startIdle) {
+      cmd = 'sleep infinity';
+    }
     let payload = {
       instance_size: values[EXEC_ENVIRONMENT].type,
       instance_disk: +values[EXEC_ENVIRONMENT].disk,
       timeout: +(values[ADVANCED].timeout || 0),
-      cmd_template: this.state.startIdle ? 'sleep infinity' : values[ADVANCED].cmdTemplate,
+      cmd_template: cmd,
       node_count: this.state.launchCluster ? this.state.nodesCount : undefined,
       docker_image: values[EXEC_ENVIRONMENT].dockerImage,
       parameters: {},
@@ -1040,11 +1051,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   generateLaunchPayload = (values) => {
+    let cmd = values[ADVANCED].cmdTemplate;
+    if (this.state.useDefaultCmd && this.toolDefaultCmd) {
+      cmd = this.toolDefaultCmd;
+    } else if (this.state.startIdle) {
+      cmd = 'sleep infinity';
+    }
     const payload = {
       instanceType: values[EXEC_ENVIRONMENT].type,
       hddSize: +values[EXEC_ENVIRONMENT].disk,
       timeout: +(values[ADVANCED].timeout || 0),
-      cmdTemplate: this.state.startIdle ? 'sleep infinity' : values[ADVANCED].cmdTemplate,
+      cmdTemplate: cmd,
       nodeCount: this.state.launchCluster ? this.state.nodesCount : undefined,
       dockerImage: values[EXEC_ENVIRONMENT].dockerImage,
       pipelineId: this.props.pipeline ? this.props.pipeline.id : undefined,
@@ -2913,6 +2930,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.regionDisabledByToolSettings = false;
     this.toolCloudRegion = null;
     this.toolAllowSensitive = true;
+    this.toolDefaultCmd = undefined;
+    this.setState({
+      useDefaultCmd: false
+    });
   };
 
   lastConfirmedImage;
@@ -2946,6 +2967,27 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             } else {
               this.regionDisabledByToolSettings = false;
               this.toolCloudRegion = null;
+            }
+
+            const defaultCmdRequest = new ToolDefaultCommand(im.id, version);
+            await defaultCmdRequest.fetch();
+            if (defaultCmdRequest.loaded) {
+              this.toolDefaultCmd = defaultCmdRequest.value;
+              const advancedValues = this.getSectionValue(ADVANCED);
+              const cmd = (advancedValues.cmdTemplate || this.getDefaultValue('cmd_template'));
+              const useDefaultCmd = cmd === this.toolDefaultCmd;
+              if (useDefaultCmd) {
+                this.setState({
+                  useDefaultCmd: true,
+                  startIdle: false
+                });
+              } else {
+                this.setState({
+                  useDefaultCmd: false
+                });
+              }
+            } else {
+              this.toolDefaultCmd = undefined;
             }
           } else {
             this.toolAllowSensitive = true;
@@ -3506,14 +3548,30 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 (this.props.readOnly && !this.props.canExecute) ||
                 (this.state.pipeline && this.props.detached)
               }
-              onChange={(e) => this.setState({startIdle: e.target.checked}, this.formFieldsChanged)}
+              onChange={(e) => this.setState({startIdle: e.target.checked, useDefaultCmd: false}, this.formFieldsChanged)}
               checked={this.state.startIdle}>
               Start idle
             </Checkbox>
             {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.startIdleHint)}
           </Row>
           {
-            !this.state.startIdle
+            !!this.toolDefaultCmd && (
+              <Row>
+                <Checkbox
+                  disabled={
+                    !!this.state.fireCloudMethodName ||
+                    (this.props.readOnly && !this.props.canExecute) ||
+                    (this.state.pipeline && this.props.detached)
+                  }
+                  onChange={(e) => this.setState({useDefaultCmd: e.target.checked, startIdle: false}, this.formFieldsChanged)}
+                  checked={this.state.useDefaultCmd}>
+                  Use default command
+                </Checkbox>
+              </Row>
+            )
+          }
+          {
+            !this.state.startIdle && !this.state.useDefaultCmd
               ? (
                 <Row>
                   <Col span={24}>
