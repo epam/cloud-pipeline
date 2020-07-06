@@ -104,7 +104,7 @@ public class ServerlessConfigurationManager {
         }
 
         waitForRunInitialized(pipelineRun);
-        final String endPointName = getEndpointUrl(configuration, configurationEntry, pipelineRun);
+        final String endPointName = getEndpointUrl(configurationEntry, pipelineRun);
 
         final String appPath = buildApplicationUrl(request, endPointName);
         log.debug("The request '{}' will be sent", appPath);
@@ -119,8 +119,8 @@ public class ServerlessConfigurationManager {
         return response;
     }
 
-    public String generateUrl(final Long configurationId, String configName) {
-        configName = getConfigurationName(configurationId, configName);
+    public String generateUrl(final Long configurationId, final String config) {
+        final String configName = getConfigurationName(configurationId, config);
         final String apiHost = preferenceManager.getPreference(SystemPreferences.BASE_API_HOST_EXTERNAL);
         Assert.state(StringUtils.isNotBlank(apiHost), "API host is not specified");
         return String.format("%s/serverless/%d/%s", StringUtils.stripEnd(apiHost, "/"),
@@ -170,8 +170,7 @@ public class ServerlessConfigurationManager {
                 .orElseThrow(() -> new IllegalArgumentException("Failed to find pipeline run for configuration"));
     }
 
-    private String getEndpointUrl(final RunConfiguration configuration,
-                                  final AbstractRunConfigurationEntry configurationEntry,
+    private String getEndpointUrl(final AbstractRunConfigurationEntry configurationEntry,
                                   final PipelineRun pipelineRun) {
         final String endpointName = configurationEntry.getEndpointName();
         final List<ServiceUrlVO> serviceUrls = ListUtils.emptyIfNull(JsonMapper.parseData(pipelineRun.getServiceUrl(),

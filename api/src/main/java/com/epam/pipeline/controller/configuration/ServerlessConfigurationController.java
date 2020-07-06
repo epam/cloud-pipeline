@@ -60,8 +60,7 @@ public class ServerlessConfigurationController extends AbstractRestController {
             RequestMethod.POST,
             RequestMethod.GET,
             RequestMethod.PUT,
-            RequestMethod.DELETE
-    })
+            RequestMethod.DELETE})
     @ResponseBody
     @ApiOperation(
             value = "Launches serverless configuration request",

@@ -40,18 +40,7 @@ public class JwtRawToken implements Serializable {
             throw new AuthenticationServiceException("Authorization header is blank");
         }
 
-        if (authorizationHeader.startsWith(BEARER_PREFIX)) {
-            return new JwtRawToken(authorizationHeader.substring(BEARER_PREFIX.length()));
-        }
-
-        if (authorizationHeader.startsWith(AuthorizationUtils.BASIC_AUTH)) {
-            final String[] credentials = AuthorizationUtils.parseBasicAuth(authorizationHeader);
-            if (Objects.nonNull(credentials)) {
-                return new JwtRawToken(credentials[1]);
-            }
-        }
-
-        throw new AuthenticationServiceException("Authorization type Bearer or Basic Auth is missed");
+        return getJwtRawToken(authorizationHeader);
     }
 
     public static JwtRawToken fromCookie(Cookie authCookie) throws UnsupportedEncodingException {
@@ -59,13 +48,24 @@ public class JwtRawToken implements Serializable {
             throw new AuthenticationServiceException("Authorization cookie is blank");
         }
 
-        String authCookieValue = URLDecoder.decode(authCookie.getValue(), "UTF-8");
+        final String authCookieValue = URLDecoder.decode(authCookie.getValue(), "UTF-8");
 
-        if (!authCookieValue.startsWith(BEARER_PREFIX)) {
-            throw new AuthenticationServiceException("Authorization type Bearer is missed");
+        return getJwtRawToken(authCookieValue);
+    }
+
+    private static JwtRawToken getJwtRawToken(final String authorizationValue) {
+        if (authorizationValue.startsWith(BEARER_PREFIX)) {
+            return new JwtRawToken(authorizationValue.substring(BEARER_PREFIX.length()));
         }
 
-        return new JwtRawToken(authCookieValue.substring(BEARER_PREFIX.length(), authCookieValue.length()));
+        if (authorizationValue.startsWith(AuthorizationUtils.BASIC_AUTH)) {
+            final String[] credentials = AuthorizationUtils.parseBasicAuth(authorizationValue);
+            if (Objects.nonNull(credentials)) {
+                return new JwtRawToken(credentials[1]);
+            }
+        }
+
+        throw new AuthenticationServiceException("Authorization type Bearer or Basic Auth is missed");
     }
 
     public String toHeader() {
