@@ -271,8 +271,9 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
             message.getTemplateParameters().put("idleCpuLevel", idleCpuLevel);
             message.getTemplateParameters().put("cpuRate", pair.getRight() * PERCENT);
-
-            message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
+            if (idleRunSettings.isKeepInformedOwner()) {
+                message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
+            }
             message.setCopyUserIds(ccUserIds);
             return message;
         })
@@ -322,8 +323,9 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             message.getTemplateParameters().put("diskThreshold", diskThreshold);
             message.getTemplateParameters().put("diskRate", pair.getRight()
                     .getOrDefault(ELKUsageMetric.FS, 0.0) * PERCENT);
-
-            message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
+            if (notificationSettings.isKeepInformedOwner()) {
+                message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
+            }
             message.setCopyUserIds(ccUserIds);
             return message;
         }).collect(Collectors.toList());
