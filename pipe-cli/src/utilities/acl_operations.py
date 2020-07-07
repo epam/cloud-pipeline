@@ -121,7 +121,8 @@ class ACLOperations(object):
         """
 
         try:
-            permissions_list = User.get_permissions(identifier, object_type)
+            permissions_list, owner = User.get_permissions(identifier, object_type)
+            click.echo("Owner: %s" % owner)
             if len(permissions_list) > 0:
                 permissions_table = prettytable.PrettyTable()
                 permissions_table.field_names = ["SID", "Principal", "Allow", "Deny"]
