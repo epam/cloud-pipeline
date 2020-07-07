@@ -95,6 +95,9 @@ public class ToolManager implements SecuredEntityManager {
     private static final String LATEST_TAG = "latest";
     private static final int KB_SIZE = 1000;
     private static final long SECONDS_IN_HOUR = 3600;
+    private static final String CMD_DOCKER_COMMAND = "CMD";
+    private static final String ENTRYPOINT_DOCKER_COMMAND = "ENTRYPOINT";
+    private static final String SHELL_FORM_PREFIX = "\"/bin/sh\" \"-c\"";
 
     @Autowired
     private ToolDao toolDao;
@@ -480,6 +483,57 @@ public class ToolManager implements SecuredEntityManager {
         final Tool tool = load(id);
         validateToolNotNull(tool, id);
         return tool.isSymlink() ? loadToolHistory(tool.getLink(), tag) : loadToolHistory(tool, tag);
+    }
+
+    public String loadToolDefaultCommand(final Long id, final String tag) {
+        final List<String> commands = loadToolHistory(id, tag)
+            .stream()
+            .map(ImageHistoryLayer::getCommand)
+            .collect(Collectors.toList());
+        final Pair<Integer, Integer> defaultsPositions = getDefaultsPositions(commands);
+        final int entrypointPos = defaultsPositions.getLeft();
+        final int cmdPos = defaultsPositions.getRight();
+
+        if (entrypointPos > -1) {
+            final String entrypointInstruction =
+                getTrimmedInstruction(commands.get(entrypointPos));
+            if (cmdPos > entrypointPos) {
+                final String cmdInstruction =
+                    getTrimmedInstruction(commands.get(cmdPos));
+                if (!(entrypointInstruction.startsWith(SHELL_FORM_PREFIX)
+                      && cmdInstruction.startsWith(SHELL_FORM_PREFIX))) {
+                    return String.join(" ", entrypointInstruction, cmdInstruction);
+                }
+            }
+            return entrypointInstruction;
+        } else if (cmdPos > -1) {
+            return getTrimmedInstruction(commands.get(cmdPos));
+        }
+        return "";
+    }
+
+    private String getTrimmedInstruction(final String command) {
+        return command.substring(command.indexOf('[') + 1, command.lastIndexOf(']')).trim();
+    }
+
+    /**
+     * Searches for ENTRYPOINT and CMD instructions in tool's image history.
+     *
+     * @param commands list, containing image's commands history
+     * @return 2 long values, describing last positions of ENTRYPOINT and CMD instruction (-1 if none found)
+     */
+    private Pair<Integer, Integer> getDefaultsPositions(final List<String> commands) {
+        int entrypointPos = -1;
+        int cmdPos = -1;
+        for (int i = 0; i < commands.size(); i++) {
+            final String command = commands.get(i);
+            if (command.toUpperCase().trim().startsWith(ENTRYPOINT_DOCKER_COMMAND)) {
+                entrypointPos = i;
+            } else if (command.toUpperCase().trim().startsWith(CMD_DOCKER_COMMAND)) {
+                cmdPos = i;
+            }
+        }
+        return Pair.of(entrypointPos, cmdPos);
     }
 
     private List<ImageHistoryLayer> loadToolHistory(final Tool tool, final String tag) {

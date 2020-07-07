@@ -127,6 +127,12 @@ public class ToolApiService {
         return toolManager.loadToolHistory(id, tag);
     }
 
+    @PreAuthorize(AclExpressions.ADMIN_ONLY +
+                  "OR hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')")
+    public String getImageDefaultCommand(final Long id, final String tag) {
+        return toolManager.loadToolDefaultCommand(id, tag);
+    }
+
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public void forceScanTool(String registry, String image, String version, final Boolean rescan) {
         toolScanScheduler.forceScheduleScanTool(registry, image, version, rescan);
