@@ -985,8 +985,21 @@ else
             echo "[ERROR] 'pipe' CLI download failed. Exiting"
             exit 1
       fi
-      mv pipe /usr/bin/
-      chmod +x /usr/bin/pipe
+
+      # Clean any known locations, where previous verssion of the pipe might reside (E.g. committed by the user)
+      rm -f /bin/pipe
+      rm -f /usr/bin/pipe
+      rm -f /usr/local/bin/pipe
+      rm -f /sbin/pipe
+      rm -f /usr/sbin/pipe
+      rm -f /usr/local/sbin/pipe
+      rm -f ${CP_USR_BIN}/pipe
+
+      # Install into the PATH locationse
+      cp pipe /usr/bin/
+      cp pipe ${CP_USR_BIN}/
+      chmod +x /usr/bin/pipe ${CP_USR_BIN}/pipe
+      rm -f pipe
 fi
 
 # Install FS Browser
