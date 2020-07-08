@@ -159,14 +159,15 @@ class ACLOperations(object):
                 click.echo("No accessible objects available for '%s'" % sid_name)
                 sys.exit(0)
             entities_table = prettytable.PrettyTable()
-            entities_table.field_names = ["Type", "Name"]
+            entities_table.field_names = ["Type", "Name", "Owner"]
             entities_table.align = "r"
             for entity_type, entities in iteritems(available_entities):
                 for entity in entities:
                     entity_name = cls.build_name_by_type(entity, entity_type)
                     if not entity_name:
                         continue
-                    entities_table.add_row([entity_type, entity_name])
+                    owner = entity['owner'] if 'owner' in entity else ''
+                    entities_table.add_row([entity_type, entity_name, owner])
             click.echo(entities_table)
             click.echo()
         except ConfigNotFoundError as config_not_found_error:
