@@ -356,7 +356,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         defaultCloudRegionId: this.defaultCloudRegionId,
         execEnvSelectValue: this.getExecEnvSelectValue().execEnvSelectValue,
         spotInitialValue: this.correctPriceTypeValue(this.getDefaultValue('is_spot')),
-        cmdTemplateValue: this.cmdTemplateValue
+        cmdTemplateValue: this.cmdTemplateValue,
+        toolDefaultCmd: this.toolDefaultCmd
       }
     );
     this.props.onModified && this.props.onModified(this.modified);
@@ -1529,7 +1530,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   cmdTemplateEditorValueChanged = (code) => {
-    const advancedValues = this.getSectionValue(ADVANCED);
+    const advancedValues = this.getSectionValue(ADVANCED) || {};
     advancedValues.cmdTemplate = code;
     this.cmdTemplateValue = code;
     this.props.form.setFieldsValue({[ADVANCED]: advancedValues});
@@ -2973,18 +2974,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             await defaultCmdRequest.fetch();
             if (defaultCmdRequest.loaded) {
               this.toolDefaultCmd = defaultCmdRequest.value;
-              const advancedValues = this.getSectionValue(ADVANCED);
+              const advancedValues = this.getSectionValue(ADVANCED) || {};
               const cmd = (advancedValues.cmdTemplate || this.getDefaultValue('cmd_template'));
               const useDefaultCmd = cmd === this.toolDefaultCmd;
               if (useDefaultCmd) {
                 this.setState({
                   useDefaultCmd: true,
                   startIdle: false
-                });
+                }, this.formFieldsChanged);
               } else {
                 this.setState({
                   useDefaultCmd: false
-                });
+                }, this.formFieldsChanged);
               }
             } else {
               this.toolDefaultCmd = undefined;
@@ -3608,6 +3609,22 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         defaultCode={this.getDefaultValue('cmd_template')}
                       />
                     </FormItem>
+                  </Col>
+                </Row>
+              ) : undefined
+          }
+          {
+            this.state.useDefaultCmd && this.toolDefaultCmd
+              ? (
+                <Row>
+                  <Col span={24} className={styles.formItemRow}>
+                    <CodeEditor
+                      readOnly
+                      className={styles.codeEditor}
+                      language="shell"
+                      lineWrapping
+                      defaultCode={this.toolDefaultCmd}
+                    />
                   </Col>
                 </Row>
               ) : undefined
