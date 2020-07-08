@@ -46,12 +46,14 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.SSLContext;
@@ -104,9 +106,9 @@ public class ServerlessConfigurationManager {
         }
 
         waitForRunInitialized(pipelineRun);
-        final String endPointName = getEndpointUrl(configurationEntry, pipelineRun);
+        final String endpointName = getEndpointUrl(configurationEntry, pipelineRun);
 
-        final String appPath = buildApplicationUrl(request, endPointName);
+        final String appPath = buildApplicationUrl(request, endpointName);
         log.debug("The request '{}' will be sent", appPath);
 
         final String response = sendRequest(request, appPath);
@@ -145,11 +147,8 @@ public class ServerlessConfigurationManager {
             if (StringUtils.isNotBlank(runManager.loadPipelineRun(pipelineRun.getId()).getServiceUrl())) {
                 return;
             }
-            try {
-                Thread.sleep(waitTime);
-            } catch (InterruptedException e) {
-                throw new IllegalArgumentException(e);
-            }
+            log.debug("Waiting for run initialization. Try: {}", i + 1);
+            waitTimeout(waitTime);
         }
         throw new IllegalArgumentException("Exceeded maximum waiting time for launching configuration");
     }
@@ -190,14 +189,30 @@ public class ServerlessConfigurationManager {
     }
 
     String sendRequest(final HttpServletRequest request, final String appPath) {
-        try {
-            final HttpEntity<String> requestEntity = buildHttpEntity(request);
-            final ResponseEntity<String> resp = buildRestTemplate()
-                    .exchange(appPath, HttpMethod.valueOf(request.getMethod()), requestEntity, String.class);
-            return resp.getBody();
-        } catch (IOException | NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
-            throw new IllegalArgumentException(e);
+        final Integer maxRetryCount = preferenceManager.getPreference(SystemPreferences
+                .LAUNCH_SERVERLESS_ENDPOINT_WAIT_COUNT);
+        final Integer waitTime = preferenceManager.getPreference(SystemPreferences
+                .LAUNCH_SERVERLESS_ENDPOINT_WAIT_TIME);
+
+        for (int i = 0; i < maxRetryCount; i++) {
+            try {
+                final HttpEntity<String> requestEntity = buildHttpEntity(request);
+                final ResponseEntity<String> resp = buildRestTemplate()
+                        .exchange(appPath, HttpMethod.valueOf(request.getMethod()), requestEntity, String.class);
+                return resp.getBody();
+            } catch (IOException | NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+                throw new IllegalArgumentException(e);
+            } catch (HttpServerErrorException e) {
+                if (HttpStatus.BAD_GATEWAY.equals(e.getStatusCode())) {
+                    log.debug("Waiting for service. Try: {}", i + 1);
+                    waitTimeout(waitTime);
+                    continue;
+                }
+                throw new IllegalArgumentException(e);
+            }
         }
+        throw new IllegalArgumentException(String.format("Failed to retrieve successful response from endpoint %s",
+                appPath));
     }
 
     private String buildApplicationUrl(final HttpServletRequest request, final String endpointName) {
@@ -245,5 +260,13 @@ public class ServerlessConfigurationManager {
         final String body = IOUtils.toString(request.getInputStream(),
                 Charset.forName(request.getCharacterEncoding()));
         return new HttpEntity<>(body, buildHttpHeaders(request));
+    }
+
+    private void waitTimeout(final Integer waitTime) {
+        try {
+            Thread.sleep(waitTime);
+        } catch (InterruptedException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 }

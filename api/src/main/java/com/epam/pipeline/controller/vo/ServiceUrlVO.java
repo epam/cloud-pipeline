@@ -23,4 +23,5 @@ public class ServiceUrlVO {
 
     private final String name;
     private final String url;
+    private final boolean isDefault;
 }

@@ -388,6 +388,10 @@ public class SystemPreferences {
             "launch.serverless.wait.count", 20, LAUNCH_GROUP, isGreaterThan(0));
     public static final IntPreference LAUNCH_SERVERLESS_STOP_TIMEOUT = new IntPreference(
             "launch.serverless.stop.timeout", 60, LAUNCH_GROUP, isGreaterThan(0));
+    public static final IntPreference LAUNCH_SERVERLESS_ENDPOINT_WAIT_COUNT = new IntPreference(
+            "launch.serverless.endpoint.wait.count", 40, LAUNCH_GROUP, isGreaterThan(0));
+    public static final IntPreference LAUNCH_SERVERLESS_ENDPOINT_WAIT_TIME = new IntPreference(
+            "launch.serverless.endpoint.wait.time", 20000, LAUNCH_GROUP, isGreaterThan(0));
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",

@@ -69,8 +69,8 @@ public class ServerlessConfigurationController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<String> run(@PathVariable("id") final Long id, @PathVariable("config") final String config,
-                              final HttpServletRequest request) {
-        return Result.success(serverlessConfigurationApiService.run(id, config, request));
+    public String run(@PathVariable("id") final Long id, @PathVariable("config") final String config,
+                      final HttpServletRequest request) {
+        return serverlessConfigurationApiService.run(id, config, request);
     }
 }
