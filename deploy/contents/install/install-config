@@ -183,5 +183,9 @@ CP_TP_MAX_SPARE_SERVERS=5
 CP_TP_START_SERVERS=2
 CP_TP_MAX_REQ_PER_CHILD=0
 
+# cp-redis
+CP_REDIS_INTERNAL_HOST=cp-redis.default.svc.cluster.local
+CP_REDIS_INTERNAL_PORT=30097
+
 # Other params, specified on command line
 #

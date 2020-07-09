@@ -18,6 +18,7 @@ package com.epam.pipeline;
 
 import com.epam.pipeline.app.AppConfiguration;
 import com.epam.pipeline.app.AppMVCConfiguration;
+import com.epam.pipeline.app.CacheConfiguration;
 import com.epam.pipeline.app.DBConfiguration;
 import com.epam.pipeline.app.ElasticsearchConfig;
 import com.epam.pipeline.app.MappersConfiguration;
@@ -25,17 +26,24 @@ import com.epam.pipeline.app.RestConfiguration;
 import com.epam.pipeline.app.SecurityConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
+import org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 
-@SpringBootApplication
+@SpringBootApplication(
+        exclude = {
+                RedisAutoConfiguration.class,
+                RedisRepositoriesAutoConfiguration.class
+        })
 @Import({AppMVCConfiguration.class,
         AppConfiguration.class,
         DBConfiguration.class,
         ElasticsearchConfig.class,
         SecurityConfig.class,
-        MappersConfiguration.class})
+        MappersConfiguration.class,
+        CacheConfiguration.class})
 @ComponentScan(basePackages = {"com.epam.pipeline.app"},
         excludeFilters = {@ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = RestConfiguration.class)})
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")

@@ -18,14 +18,11 @@ package com.epam.pipeline.app;
 
 
 import com.epam.pipeline.entity.user.DefaultRoles;
-import com.epam.pipeline.security.acl.DisabledAclCache;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import com.epam.pipeline.security.acl.LookupStrategyImpl;
 import com.epam.pipeline.security.acl.PermissionGrantingStrategyImpl;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.ehcache.EhCacheFactoryBean;
-import org.springframework.cache.ehcache.EhCacheManagerFactoryBean;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -40,9 +37,9 @@ import org.springframework.security.acls.domain.AclAuthorizationStrategy;
 import org.springframework.security.acls.domain.AclAuthorizationStrategyImpl;
 import org.springframework.security.acls.domain.AuditLogger;
 import org.springframework.security.acls.domain.ConsoleAuditLogger;
-import org.springframework.security.acls.domain.EhCacheBasedAclCache;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.domain.SidRetrievalStrategyImpl;
+import org.springframework.security.acls.domain.SpringCacheBasedAclCache;
 import org.springframework.security.acls.jdbc.JdbcMutableAclService;
 import org.springframework.security.acls.jdbc.LookupStrategy;
 import org.springframework.security.acls.model.AclCache;
@@ -66,8 +63,8 @@ public class AclSecurityConfiguration extends GlobalMethodSecurityConfiguration 
     @Autowired
     private PermissionFactory permissionFactory;
 
-    @Value("${acl.disable.cache:false}")
-    private boolean disableCache;
+    @Autowired
+    private CacheManager cacheManager;
 
     @Override
     protected MethodSecurityExpressionHandler createExpressionHandler() {
@@ -123,31 +120,14 @@ public class AclSecurityConfiguration extends GlobalMethodSecurityConfiguration 
 
     @Bean
     public AclCache aclCache() {
-        if (disableCache) {
-            return new DisabledAclCache();
-        }
-        return new EhCacheBasedAclCache(ehCacheFactoryBean().getObject(),
+        return new SpringCacheBasedAclCache(
+                cacheManager.getCache(CacheConfiguration.ACL_CACHE),
                 permissionGrantingStrategy(), aclAuthorizationStrategy());
     }
 
     @Bean
     public PermissionGrantingStrategy permissionGrantingStrategy() {
         return new PermissionGrantingStrategyImpl(auditLogger());
-    }
-
-    @Bean
-    public EhCacheFactoryBean ehCacheFactoryBean() {
-        EhCacheFactoryBean factoryBean = new EhCacheFactoryBean();
-        factoryBean.setCacheManager(ehCacheManagerFactoryBean().getObject());
-        factoryBean.setCacheName("aclCache");
-        return factoryBean;
-    }
-
-    @Bean
-    public EhCacheManagerFactoryBean ehCacheManagerFactoryBean() {
-        EhCacheManagerFactoryBean factoryBean = new EhCacheManagerFactoryBean();
-        factoryBean.setCacheManagerName("aclCacheManager");
-        return factoryBean;
     }
 }
 
