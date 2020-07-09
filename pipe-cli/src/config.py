@@ -127,6 +127,11 @@ class Config(object):
             return decorator(_func)
 
     def resolve_proxy(self, target_url=None):
+        proxy = self._resolve_proxy(target_url=target_url)
+        print((target_url, proxy))
+        return proxy
+
+    def _resolve_proxy(self, target_url=None):
         if not self.proxy:
             return None
         elif self.proxy == PROXY_TYPE_PAC:
