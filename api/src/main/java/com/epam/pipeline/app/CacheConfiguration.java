@@ -25,10 +25,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 
-import javax.swing.text.html.Option;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -38,22 +37,26 @@ public class CacheConfiguration {
     public static final String PREFERENCE_CACHE = "preferences";
     public static final String ACL_CACHE = "aclCache";
 
+    private static final String REDIS = "REDIS";
+    private static final String MEMORY = "MEMORY";
+    private static final String CACHE_TYPE = "cache.type";
+
     @Value("${cache.type:}")
     private String cacheType;
 
     @Value("${redis.host:}")
     private String redisHost;
 
-    @Value("${redis.port:0}")
-    private int redisPort;
+    @Value("${redis.port:}")
+    private Integer redisPort;
 
     @Bean
     @Primary
     public CacheManager cacheManager(final Optional<RedisCacheManager> redisCacheManager) {
         switch (cacheType) {
-            case "MEMORY":
+            case MEMORY:
                 return new ConcurrentMapCacheManager(PREFERENCE_CACHE, ACL_CACHE);
-            case "REDIS":
+            case REDIS:
                 return redisCacheManager
                         .orElseThrow(IllegalArgumentException::new);
             default:
@@ -62,19 +65,22 @@ public class CacheConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = "cache.type", havingValue = "REDIS")
+    @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
     public RedisCacheManager redisCacheManager(final RedisTemplate template) {
         return new RedisCacheManager(template, Arrays.asList(PREFERENCE_CACHE, ACL_CACHE));
     }
 
     @Bean
-    @ConditionalOnProperty(value = "cache.type", havingValue = "REDIS")
+    @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
     public RedisConnectionFactory redisConnectionFactory() {
-        return new LettuceConnectionFactory(redisHost, redisPort);
+        final JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory();
+        jedisConnectionFactory.setHostName(redisHost);
+        jedisConnectionFactory.setPort(redisPort);
+        return jedisConnectionFactory;
     }
 
     @Bean
-    @ConditionalOnProperty(value = "cache.type", havingValue = "REDIS")
+    @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
     public RedisTemplate<Object, Object> redisTemplate(final RedisConnectionFactory redisConnectionFactory) {
         final RedisTemplate<Object, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);

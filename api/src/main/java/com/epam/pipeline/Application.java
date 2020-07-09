@@ -26,11 +26,17 @@ import com.epam.pipeline.app.RestConfiguration;
 import com.epam.pipeline.app.SecurityConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
+import org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 
-@SpringBootApplication
+@SpringBootApplication(
+        exclude = {
+                RedisAutoConfiguration.class,
+                RedisRepositoriesAutoConfiguration.class
+        })
 @Import({AppMVCConfiguration.class,
         AppConfiguration.class,
         DBConfiguration.class,
