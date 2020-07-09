@@ -27,6 +27,7 @@ import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import redis.clients.jedis.JedisPoolConfig;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -49,6 +50,12 @@ public class CacheConfiguration {
 
     @Value("${redis.port:}")
     private Integer redisPort;
+
+    @Value("${redis.max.connections:20}")
+    private Integer redisPoolConnections;
+
+    @Value("${redis.pool.timeout:20000}")
+    private Integer poolTimeout;
 
     @Bean
     @Primary
@@ -76,6 +83,11 @@ public class CacheConfiguration {
         final JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory();
         jedisConnectionFactory.setHostName(redisHost);
         jedisConnectionFactory.setPort(redisPort);
+        jedisConnectionFactory.setTimeout(poolTimeout);
+        final JedisPoolConfig poolConfig = new JedisPoolConfig();
+        poolConfig.setMaxTotal(redisPoolConnections);
+        poolConfig.setMaxIdle(redisPoolConnections);
+        jedisConnectionFactory.setPoolConfig(poolConfig);
         return jedisConnectionFactory;
     }
 
