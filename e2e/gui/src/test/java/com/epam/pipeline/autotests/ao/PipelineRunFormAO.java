@@ -322,6 +322,27 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
+    public PipelineRunFormAO clusterEnableCheckboxSelect(String checkBox){
+        if (checkBox.equals("Enable GridEngine")
+                || checkBox.equals("Enable Apache Spark")
+                || checkBox.equals("Enable Slurm")) {
+            context()
+                .find(byXpath(
+                       String.format(".//span[.='%s']/preceding-sibling::span[@class='ant-checkbox']", checkBox)))
+                .click();
+        } else {
+            fail("Wrong checkbox name was selected");
+        }
+        return this;
+    }
+
+    public PipelineRunFormAO checkConfigureClusterLabel(String label) {
+        context()
+                .find(byXpath(".//div[@class='ant-row-flex ant-row-flex-end']/a"))
+                .shouldBe(visible).getText().equals(label);
+        return this;
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;

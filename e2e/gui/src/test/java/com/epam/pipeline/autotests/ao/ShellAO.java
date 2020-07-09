@@ -62,6 +62,16 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
+    public ShellAO executeWithSlash(String command) {
+        sleep(300, MILLISECONDS);
+        for (String s : command.split("")) {
+            actions().sendKeys(s).perform();
+        }
+        sleep(300, MILLISECONDS);
+        actions().sendKeys(Keys.ENTER).perform();
+        return this;
+    }
+
     public ShellAO assertOutputContains(String... messages) {
         Arrays.stream(messages)
                 .forEach(this::assertPageContains);

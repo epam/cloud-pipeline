@@ -25,11 +25,15 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.appears;
+import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.$;
+import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
+import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
+import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
-import static com.epam.pipeline.autotests.ao.Primitive.OK;
+import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -204,5 +208,86 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .validateStatus(getRunId(), LogAO.Status.WORKING)
                 .validateStatus(String.valueOf(Integer.parseInt(getRunId()) + 1), LogAO.Status.WORKING)
                 .validateStatus(String.valueOf(Integer.parseInt(getRunId()) + 2), LogAO.Status.STOPPED);
+    }
+
+    @Test
+    @TestCase({"EPMCMBIBPC-3150"})
+    public void validationOfGECluster() {
+        library()
+                .createPipeline(Template.SHELL, getPipelineName())
+                .clickOnPipeline(getPipelineName())
+                .firstVersion()
+                .runPipeline()
+                .setDefaultLaunchOptions()
+                .enableClusterLaunch()
+                .clusterSettingsForm("Cluster")
+                .clusterEnableCheckboxSelect("Enable GridEngine")
+                .click(button("OK"))
+                .checkConfigureClusterLabel("GridEngine Cluster (1 child node)")
+                .expandTab(ADVANCED_PANEL)
+                .click(START_IDLE)
+                .launch(this)
+                .shouldContainRun(getPipelineName(), getRunId())
+                .openClusterRuns(getRunId())
+                .shouldContainRunsWithParentRun(1, getRunId())
+                .showLog(getRunId())
+                .expandTab(PARAMETERS)
+                .ensure(configurationParameter("CP_CAP_SGE", "true"), exist)
+                .waitForSshLink()
+                .click(taskWithName("SGEMasterSetup"))
+                .ensure(log(), containsMessages("SGE master node was successfully configured"))
+                .click(taskWithName("SGEMasterSetupWorkers"))
+                .ensure(log(), containsMessages("All execution hosts are connected"))
+                .ssh(shell -> shell
+                        .assertPageContains(String.format("[root@%s-%s",
+                                getPipelineName().toLowerCase(), getRunId()))
+                        .execute("qhost")
+                        .assertOutputContains("HOSTNAME", "global", String.format("%s-%s lx-amd64",
+                                getPipelineName().toLowerCase(), getRunId()), String.format("%s-%s lx-amd64",
+                                getPipelineName().toLowerCase(), Integer.parseInt(getRunId()) + 1))
+                        .execute("qstat")
+                        .execute("qsub -b y -t 1:10 sleep 10m")
+                        .assertOutputContains("Your job-array 1.1-10:1 (\"sleep\") has been submitted")
+                        .execute("qstat")
+                        .assertOutputContains(String.format("main.q@%s", getPipelineName().toLowerCase()).substring(0, 30))
+                        .close());
+    }
+
+    @Test
+    @TestCase({"EPMCMBIBPC-3151"})
+    public void validationOfSlurmCluster() {
+        library()
+                .createPipeline(Template.SHELL, getPipelineName())
+                .clickOnPipeline(getPipelineName())
+                .firstVersion()
+                .runPipeline()
+                .setDefaultLaunchOptions()
+                .enableClusterLaunch()
+                .clusterSettingsForm("Cluster")
+                .clusterEnableCheckboxSelect("Enable Slurm")
+                .click(button("OK"))
+                .checkConfigureClusterLabel("Slurm Cluster (1 child node)")
+                .expandTab(ADVANCED_PANEL)
+                .click(START_IDLE)
+                .launch(this)
+                .shouldContainRun(getPipelineName(), getRunId())
+                .openClusterRuns(getRunId())
+                .shouldContainRunsWithParentRun(1, getRunId())
+                .showLog(getRunId())
+                .expandTab(PARAMETERS)
+                .ensure(configurationParameter("CP_CAP_SLURM", "true"), exist)
+                .waitForSshLink()
+                .click(taskWithName("SLURMMasterSetup"))
+                .ensure(log(), containsMessages("Master ENV is ready"))
+                .click(taskWithName("SLURMMasterSetupWorkers"))
+                .ensure(log(), containsMessages("All SLURM hosts are connected"))
+                .ssh(shell -> shell
+                        .execute("sinfo")
+                        .assertOutputContains("main.q*", "idle", String.format("%s-[%s-%s]",
+                                getPipelineName().toLowerCase(), getRunId(), Integer.parseInt(getRunId()) + 1))
+                        .executeWithSlash("srun -N2 -l /bin/hostname")
+                        .assertOutputContains(String.format("0: %s-%s", getPipelineName().toLowerCase(), getRunId()),
+                                String.format("1: %s-%s", getPipelineName().toLowerCase(), Integer.parseInt(getRunId()) + 1))
+                        .close());
     }
 }
