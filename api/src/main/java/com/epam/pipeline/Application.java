@@ -18,6 +18,7 @@ package com.epam.pipeline;
 
 import com.epam.pipeline.app.AppConfiguration;
 import com.epam.pipeline.app.AppMVCConfiguration;
+import com.epam.pipeline.app.CacheConfiguration;
 import com.epam.pipeline.app.DBConfiguration;
 import com.epam.pipeline.app.ElasticsearchConfig;
 import com.epam.pipeline.app.MappersConfiguration;
@@ -35,7 +36,8 @@ import org.springframework.context.annotation.Import;
         DBConfiguration.class,
         ElasticsearchConfig.class,
         SecurityConfig.class,
-        MappersConfiguration.class})
+        MappersConfiguration.class,
+        CacheConfiguration.class})
 @ComponentScan(basePackages = {"com.epam.pipeline.app"},
         excludeFilters = {@ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = RestConfiguration.class)})
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
