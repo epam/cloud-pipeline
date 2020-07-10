@@ -19,8 +19,10 @@ package com.epam.pipeline.manager.utils;
 import com.epam.pipeline.entity.cluster.ServiceDescription;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -41,6 +43,9 @@ public class UtilsManager {
     @Autowired
     private PreferenceManager preferenceManager;
 
+    @Autowired
+    private PipelineRunManager runManager;
+
     @Value("${kube.edge.label}")
     private String edgeLabel;
 
@@ -49,11 +54,15 @@ public class UtilsManager {
     }
 
     public String buildFSBrowserUrl(Long runId) {
-        if (isFSBrowserEnabled()) {
+        if (isFSBrowserEnabled() && runIsNotSensitive(runId)) {
             return buildUrl(FSBROWSER_URL_TEMPLATE, runId);
         } else {
             throw new IllegalArgumentException("Storage fsbrowser is not enabled.");
         }
+    }
+
+    private boolean runIsNotSensitive(final Long runId) {
+        return !BooleanUtils.toBoolean(runManager.loadPipelineRun(runId).getSensitive());
     }
 
     private Boolean isFSBrowserEnabled() {

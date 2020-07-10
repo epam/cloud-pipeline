@@ -53,8 +53,8 @@ public class ContextualPreferenceConfiguration {
             final ContextualPreferenceDao contextualPreferenceDao,
             final ToolContextualPreferenceHandler toolContextualPreferenceHandler,
             final DefaultContextualPreferenceReducer defaultContextualPreferenceReducer) {
-        return new RoleContextualPreferenceHandler(roleDao, contextualPreferenceDao, toolContextualPreferenceHandler,
-                defaultContextualPreferenceReducer);
+        return new RoleContextualPreferenceHandler(roleDao, contextualPreferenceDao,
+                toolContextualPreferenceHandler, defaultContextualPreferenceReducer);
     }
 
     @Bean

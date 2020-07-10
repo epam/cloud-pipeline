@@ -35,7 +35,7 @@ class TestStopPipelineBeforeLabeling(object):
 
     @classmethod
     def setup_class(cls):
-        logging.basicConfig(filename='tests.log', level=logging.INFO,
+        logging.basicConfig(filename=get_log_filename(), level=logging.INFO,
                             format='%(levelname)s %(asctime)s %(module)s:%(message)s')
         pipeline_name = "stop_pipe_before_labeling_test"
         cls.pipeline_name = pipeline_name
@@ -50,7 +50,7 @@ class TestStopPipelineBeforeLabeling(object):
             instance = wait_for_instance_creation(run_id, MAX_REP_COUNT)
             private_ip = get_private_ip(instance)
             logging.info("Started to find node {}.".format(private_ip))
-            node_state = wait_for_node_up_without_id(MAX_REP_COUNT, private_ip)
+            node_state = wait_for_node_up_without_id(MAX_REP_COUNT * 5, private_ip)
             cls.node_name = get_node_name_from_cluster_state(node_state)
             logging.info("Node {} in use.".format(private_ip))
             stop_pipe(run_id)

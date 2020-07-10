@@ -35,6 +35,7 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
     private static final String TYPE_FIELD = "type";
     private static final String REQUIRED_FIELD = "required";
     private static final String ENUM_FIELD = "enum";
+    private static final String DESCRIPTION_FIELD = "description";
     private static final  NullNode NULL_NODE = NullNode.getInstance();
 
 
@@ -69,6 +70,10 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
                     List<String> availableValues = new ArrayList<>();
                     availableValuesNode.forEach(arrayItem -> availableValues.add(arrayItem.asText()));
                     parameter.setAvailableValues(availableValues);
+                }
+                final JsonNode description = child.get(DESCRIPTION_FIELD);
+                if (hasValue(description)) {
+                    parameter.setDescription(description.asText());
                 }
             }
             parameters.put(name, parameter);

@@ -37,7 +37,7 @@ check_last_exit_code $? "[ERROR] There are some troubles while clean up pipeline
                         "[INFO] Clean up for pipeline's container was successfully performed." \
                         "python $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID FAILURE"
 
-pipe_exec "docker commit --change=\'ENV $ENVS_TO_UNSET API_TOKEN= PARENT= RUN_DATE= RUN_TIME= AWS_ACCESS_KEY_ID= AWS_SECRET_ACCESS_KEY= AWS_DEFAULT_REGION= \
+pipe_exec "docker commit --pause=false --change=\'ENV $ENVS_TO_UNSET API_TOKEN= PARENT= RUN_DATE= RUN_TIME= AWS_ACCESS_KEY_ID= AWS_SECRET_ACCESS_KEY= AWS_DEFAULT_REGION= \
            CLUSTER_NAME= BUCKETS= MOUNT_OPTIONS= MOUNT_POINTS= OWNER= SSH_PASS= GIT_USER= GIT_TOKEN= cluster_role= \
            RESUMED_RUN= SINGLE_RUN= \
            node_count= parent_id= \' ${tmp_container} ${FULL_NEW_IMAGE_NAME} > /dev/null" "$TASK_NAME"

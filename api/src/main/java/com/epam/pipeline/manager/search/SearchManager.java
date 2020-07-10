@@ -23,13 +23,11 @@ import com.epam.pipeline.entity.search.SearchResult;
 import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpHost;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -45,6 +43,7 @@ public class SearchManager {
     private static final String TYPE_AGGREGATION = "by_type";
     
     private final PreferenceManager preferenceManager;
+    private final GlobalSearchElasticHelper globalSearchElasticHelper;
     private final SearchResultConverter resultConverter;
     private final SearchRequestBuilder requestBuilder;
 
@@ -52,7 +51,7 @@ public class SearchManager {
         validateRequest(searchRequest);
         try {
             final String typeFieldName = getTypeFieldName();
-            final SearchResponse searchResult = buildClient().search(
+            final SearchResponse searchResult = globalSearchElasticHelper.buildClient().search(
                     requestBuilder.buildRequest(searchRequest, typeFieldName, TYPE_AGGREGATION));
             return resultConverter.buildResult(searchResult, TYPE_AGGREGATION, typeFieldName, getAclFilterFields());
         } catch (IOException e) {
@@ -63,7 +62,7 @@ public class SearchManager {
 
     public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path) {
         try {
-            final SearchResponse searchResponse = buildClient().search(requestBuilder
+            final SearchResponse searchResponse = globalSearchElasticHelper.buildClient().search(requestBuilder
                     .buildSumAggregationForStorage(dataStorage.getId(), dataStorage.getType(), path));
             return resultConverter.buildStorageUsageResponse(searchResponse, dataStorage, path);
         } catch (IOException e) {
@@ -89,18 +88,6 @@ public class SearchManager {
         Assert.isTrue(StringUtils.isNotBlank(request.getQuery()), "Search Query is required");
         Assert.notNull(request.getPageSize(), "Page Size is required");
         Assert.notNull(request.getOffset(), "Offset is required");
-    }
-
-    private RestHighLevelClient buildClient() {
-        return new RestHighLevelClient(buildLowLevelClient());
-    }
-
-    private RestClient buildLowLevelClient() {
-        return RestClient.builder(new HttpHost(
-                preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_HOST),
-                preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_PORT),
-                preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_SCHEME)))
-                .build();
     }
 
     private String getTypeFieldName() {

@@ -25,15 +25,12 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.manager.metadata.MetadataManager;
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpHost;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
@@ -99,10 +96,10 @@ public class BillingManager {
     private static final String ES_MONTHLY_DATE_REGEXP = "%d-%02d-*";
     private static final String ES_BILLABLE_RESOURCE_WILDCARD = "*";
 
-    private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
     private final MetadataManager metadataManager;
+    private final GlobalSearchElasticHelper elasticHelper;
     private final String billingIndicesMonthlyPattern;
     private final Map<DateHistogramInterval, TemporalAdjuster> periodAdjusters;
     private final List<DateHistogramInterval> validIntervals;
@@ -116,17 +113,17 @@ public class BillingManager {
 
     @Autowired
     public BillingManager(final AuthManager authManager,
-                          final PreferenceManager preferenceManager,
                           final MessageHelper messageHelper,
                           final MetadataManager metadataManager,
+                          final GlobalSearchElasticHelper globalSearchElasticHelper,
                           final @Value("${billing.index.common.prefix}") String commonPrefix,
                           final @Value("${billing.empty.report.value:unknown}") String emptyValue,
                           final @Value("${billing.center.key}") String billingCenterKey,
                           final List<EntityBillingDetailsLoader> billingDetailsLoaders) {
-        this.preferenceManager = preferenceManager;
         this.authManager = authManager;
         this.messageHelper = messageHelper;
         this.metadataManager = metadataManager;
+        this.elasticHelper = globalSearchElasticHelper;
         this.emptyValue = emptyValue;
         this.billingCenterKey = billingCenterKey;
         this.billingIndicesMonthlyPattern = String.join("-",
@@ -152,19 +149,23 @@ public class BillingManager {
 
     public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {
         verifyRequest(request);
-        final RestHighLevelClient elasticsearchClient = buildClient(preferenceManager);
-        final LocalDate from = request.getFrom();
-        final LocalDate to = request.getTo();
-        final BillingGrouping grouping = request.getGrouping();
-        final DateHistogramInterval interval = request.getInterval();
-        final Map<String, List<String>> filters = MapUtils.isEmpty(request.getFilters())
-                                                  ? new HashMap<>()
-                                                  : request.getFilters();
-        setAuthorizationFilters(filters);
-        if (interval != null) {
-            return getBillingStats(elasticsearchClient, from, to, filters, interval);
-        } else {
-            return getBillingStats(elasticsearchClient, from, to, filters, grouping, request.isLoadDetails());
+        try (RestClient client = elasticHelper.buildLowLevelClient()) {
+            final RestHighLevelClient elasticsearchClient = new RestHighLevelClient(client);
+            final LocalDate from = request.getFrom();
+            final LocalDate to = request.getTo();
+            final BillingGrouping grouping = request.getGrouping();
+            final DateHistogramInterval interval = request.getInterval();
+            final Map<String, List<String>> filters = MapUtils.isEmpty(request.getFilters())
+                                                      ? new HashMap<>()
+                                                      : request.getFilters();
+            setAuthorizationFilters(filters);
+            if (interval != null) {
+                return getBillingStats(elasticsearchClient, from, to, filters, interval);
+            } else {
+                return getBillingStats(elasticsearchClient, from, to, filters, grouping, request.isLoadDetails());
+            }
+        } catch (IOException e) {
+            throw new SearchException(e.getMessage(), e);
         }
     }
 
@@ -204,19 +205,6 @@ public class BillingManager {
             throw new IllegalArgumentException(messageHelper
                                                    .getMessage(MessageConstants.ERROR_BILLING_DETAILS_NOT_SUPPORTED));
         }
-    }
-
-    private RestHighLevelClient buildClient(final PreferenceManager preferenceManager) {
-        final String elasticHost = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_HOST);
-        final Integer elasticPort = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_PORT);
-        final String elasticScheme = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_SCHEME);
-        if (StringUtils.isBlank(elasticHost) || elasticPort == null ||  StringUtils.isBlank(elasticScheme)) {
-            throw new IllegalArgumentException("Missing search engine configuration. Billing info is not available.");
-        }
-        final RestClient lowLevelClient =
-                RestClient.builder(new HttpHost(elasticHost, elasticPort, elasticScheme))
-                        .build();
-        return new RestHighLevelClient(lowLevelClient);
     }
 
     private void setAuthorizationFilters(final Map<String, List<String>> filters) {

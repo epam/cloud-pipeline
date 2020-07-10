@@ -100,8 +100,8 @@ public class DataStorageApiService {
     @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject.storage, 'READ') OR "
             + "hasPermission(filterObject.storage, 'WRITE'))")
     @AclMaskDelegateList
-    public List<DataStorageWithShareMount> getAvailableStoragesWithShareMount() {
-        return dataStorageManager.getDataStoragesWithShareMountObject();
+    public List<DataStorageWithShareMount> getAvailableStoragesWithShareMount(final Long fromRegionId) {
+        return dataStorageManager.getDataStoragesWithShareMountObject(fromRegionId);
     }
 
     @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject, 'READ') OR "
@@ -121,6 +121,12 @@ public class DataStorageApiService {
     @AclMask
     public AbstractDataStorage loadByNameOrId(final String identifier) {
         return dataStorageManager.loadByNameOrId(identifier);
+    }
+
+    @PostAuthorize("hasRole('ADMIN') OR hasPermission(returnObject, 'READ')")
+    @AclMask
+    public AbstractDataStorage loadByPathOrId(final String identifier) {
+        return dataStorageManager.loadByPathOrId(identifier);
     }
 
     @PreAuthorize(STORAGE_ID_READ)
@@ -210,8 +216,10 @@ public class DataStorageApiService {
     @PreAuthorize("hasRole('ADMIN') OR "
             + "(#dataStorageVO.parentFolderId != null AND hasRole('STORAGE_MANAGER') AND "
             + "hasPermission(#dataStorageVO.parentFolderId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
-    public SecuredEntityWithAction<AbstractDataStorage> create(DataStorageVO dataStorageVO, Boolean proceedOnCloud) {
-        return dataStorageManager.create(dataStorageVO, proceedOnCloud, true, true);
+    public SecuredEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
+                                                               final boolean proceedOnCloud,
+                                                               final boolean skipPolicy) {
+        return dataStorageManager.create(dataStorageVO, proceedOnCloud, true, true, skipPolicy);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#dataStorageVO.id, 'WRITE')")

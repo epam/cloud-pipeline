@@ -41,7 +41,7 @@ const plugin = {
           x = timeScale.getPixelForOffset(time);
         }
       }
-      if (!x && !isNaN(index)) {
+      if (!x && !isNaN(index) && chart.data.datasets.length) {
         const meta = chart.getDatasetMeta(0);
         const {data, xAxisID} = meta;
         if (chart.scales.hasOwnProperty(xAxisID)) {

@@ -41,6 +41,7 @@ public class Tool extends AbstractSecuredEntity {
     private String registry;
     private Long toolGroupId;
     private String toolGroup;
+    private Long link;
 
     @JsonIgnore
     private String secretName;
@@ -51,6 +52,7 @@ public class Tool extends AbstractSecuredEntity {
     private String defaultCommand;
     private boolean hasIcon;
     private Long iconId;
+    private boolean allowSensitive = false;
 
     public void setIconId(Long iconId) {
         this.iconId = iconId;
@@ -69,5 +71,15 @@ public class Tool extends AbstractSecuredEntity {
             return parent;
         }
         return toolGroupId == null ? null : new ToolGroup(toolGroupId);
+    }
+
+    @JsonIgnore
+    public boolean isSymlink() {
+        return link != null;
+    }
+
+    @JsonIgnore
+    public boolean isNotSymlink() {
+        return !isSymlink();
     }
 }

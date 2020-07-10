@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.datastorage.leakagepolicy.SensitiveStorageOperation;
 import com.epam.pipeline.utils.CommonUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -52,6 +53,7 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
         this.dataStorageManager = dataStorageManager;
     }
 
+    @SensitiveStorageOperation
     @Override
     public TemporaryCredentials generate(final List<DataStorageAction> actions) {
         final AbstractDataStorage dataStorage = ListUtils.emptyIfNull(actions)
@@ -66,7 +68,8 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
         actions.forEach(action -> {
             AbstractDataStorage loadedDataStorage =
                     action.getId().equals(dataStorage.getId()) ? dataStorage : dataStorageManager.load(action.getId());
-            action.setBucketName(loadedDataStorage.getPath());
+            action.setBucketName(loadedDataStorage.getRoot());
+            action.setPath(loadedDataStorage.getPath());
             AbstractCloudRegion loadedRegion = credentialsGenerator.getRegion(loadedDataStorage);
             Assert.isTrue(Objects.equals(region.getId(), loadedRegion.getId()),
                     "Actions shall be requested for buckets from the same region");

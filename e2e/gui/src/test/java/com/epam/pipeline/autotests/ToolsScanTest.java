@@ -71,14 +71,12 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                             .switchToPreferences()
                             .switchToDockerSecurity()
                             .getGraceHours();
-            ok();
             policyDenyNotScanned =
                     navigationMenu()
                             .settings()
                             .switchToPreferences()
                             .switchToDockerSecurity()
                             .getPolicyDenyNotScanned();
-            ok();
         });
     }
 
@@ -90,23 +88,19 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                     .switchToPreferences()
                     .switchToDockerSecurity()
                     .setGraceHours(graceHours)
-                    .save()
-                    .sleep(1, SECONDS)
-                    .ok();
+                    .save();
             if (!policyDenyNotScanned) {
                 navigationMenu()
                         .settings()
                         .switchToPreferences()
                         .switchToDockerSecurity()
                         .clickPolicyDenyNotScanned()
-                        .save()
-                        .sleep(1, SECONDS)
-                        .ok();
+                        .save();
             }
         });
     }
 
-    @Test(priority = 0)
+    @Test
     @TestCase({"EPMCMBIBPC-1994"})
     public void runUnscannedToolValidation() {
         tools().perform(registry, group, group ->
@@ -167,6 +161,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                                 .validateReportTableColumns()
                                 .selectComponent("kernel-headers")
                                 .click(versionTab("PACKAGES"))
+                                .selectEcosystem("Python.Dist")
                                 .validatePackageList(Arrays.asList("pip", "py"), true)
                                 .validateEcosystem(Arrays.asList("Python.Dist", "System"))
                                 .selectEcosystem("System")
@@ -190,8 +185,6 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                         .enablePolicyDenyNotScanned()
                         .setGraceHours("0")
                         .save()
-                        .sleep(1, SECONDS)
-                        .ok()
         );
         tools().perform(registry, group, group ->
                 group.sleep(3, SECONDS)
@@ -228,7 +221,6 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                         .setGraceHours("1")
                         .save()
                         .sleep(1, SECONDS)
-                        .ok()
         );
         tools().perform(registry, group, group ->
                 group.sleep(3, SECONDS)
@@ -257,8 +249,6 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                         .disablePolicyDenyNotScanned()
                         .setGraceHours("0")
                         .save()
-                        .sleep(1, SECONDS)
-                        .ok()
         );
         tools().perform(registry, group, group ->
                 group.sleep(3, SECONDS)
@@ -293,8 +283,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                         .enablePolicyDenyNotScanned()
                         .setGraceHours("0")
                         .save()
-                        .sleep(3, SECONDS)
-                        .ok()
+                        .sleep(1, SECONDS)
         );
         tools().perform(registry, group, group ->
                 group.sleep(3, SECONDS)

@@ -26,7 +26,7 @@ def wait_for_server_availability(func, max_retry_count=MAX_RETRY_COUNT, *args):
         return func(*args)
     except requests.exceptions.RequestException as http_error:
         if max_retry_count < 1:
-            raise requests.exceptions.RequestException(http_error.message)
+            raise requests.exceptions.RequestException(str(http_error))
         sleep(WAITING_SERVER_TIME)
         return wait_for_server_availability(func, max_retry_count, *args)
 

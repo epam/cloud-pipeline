@@ -64,7 +64,7 @@ fi
 #####################################################
 # Copy SSH keys to worker node
 #####################################################
-COPY_KEYS_CMD="mkdir -p /root/.ssh/ && cat ${SHARED_PATH}/keys/id_rsa >> /root/.ssh/id_rsa && cat ${SHARED_PATH}/keys/id_rsa.pub >> /root/.ssh/id_rsa.pub && cat ${SHARED_PATH}/keys/id_rsa.pub >> /root/.ssh/authorized_keys && chmod 600 /root/.ssh/*"
+COPY_KEYS_CMD="mkdir -p /root/.ssh/ && cat ${SHARED_PATH}/keys/id_rsa >> /root/.ssh/id_rsa && cat ${SHARED_PATH}/keys/id_rsa.pub >> /root/.ssh/id_rsa.pub && cat ${SHARED_PATH}/keys/id_rsa.pub >> /root/.ssh/authorized_keys && ssh_fix_permissions /root/.ssh"
 eval "$COPY_KEYS_CMD"
 if [ $? -ne 0 ]
 then

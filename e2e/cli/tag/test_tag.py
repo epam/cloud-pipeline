@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ class TestMetadataOperations(object):
     @pytest.mark.parametrize("test_case,entity_class,by_id", test_case_for_permissions)
     def test_metadata_permissions(self, test_case, entity_class, by_id):
         manager = EntityManager.get_manager(entity_class)
-        object_name = "".join([test_case, get_test_prefix()])
+        object_name = "".join([get_test_prefix(), "-", test_case])
         object_id = manager.create(object_name)
         entity_identifier = str(object_id) if by_id else object_name
         try:

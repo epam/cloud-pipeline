@@ -17,6 +17,7 @@
 package com.epam.pipeline.client.pipeline;
 
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -212,4 +213,7 @@ public interface CloudPipelineAPI {
 
     @GET("cluster/instance/loadAll")
     Call<Result<List<InstanceType>>> loadAllInstanceTypesForRegion(@Query(REGION_ID) Long regionId);
+
+    @GET("cluster/node/{id}/disks")
+    Call<Result<List<NodeDisk>>> loadNodeDisks(@Path(ID) String nodeId);
 }

@@ -172,6 +172,22 @@ function cp_cap_publish {
       _MASTER_CAP_INIT_PATH="$CP_CAP_SCRIPTS_DIR/master"
       _WORKER_CAP_INIT_PATH="$CP_CAP_SCRIPTS_DIR/worker"
 
+      if check_cp_cap "CP_CAP_DIND_CONTAINER"
+      then
+            echo "set -e" >> $_MASTER_CAP_INIT_PATH
+            echo "set -e" >> $_WORKER_CAP_INIT_PATH
+
+            _DIND_CONTAINER_INIT="dind_setup && docker_setup_credentials"
+            echo "Requested DinD CONTAINER mode capability, setting init scripts:"
+            echo "--> Master/Worker: $_DIND_CONTAINER_INIT"
+
+            sed -i "/$_DIND_CONTAINER_INIT/d" $_MASTER_CAP_INIT_PATH
+            echo "$_DIND_CONTAINER_INIT" >> $_MASTER_CAP_INIT_PATH
+
+            sed -i "/$_DIND_CONTAINER_INIT/d" $_WORKER_CAP_INIT_PATH
+            echo "$_DIND_CONTAINER_INIT" >> $_WORKER_CAP_INIT_PATH
+      fi
+
       if check_cp_cap "CP_CAP_SGE"
       then
             echo "set -e" >> $_MASTER_CAP_INIT_PATH
@@ -206,22 +222,6 @@ function cp_cap_publish {
 
             sed -i "/$_SLURM_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_SLURM_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
-    fi
-
-      if check_cp_cap "CP_CAP_DIND_CONTAINER"
-      then
-            echo "set -e" >> $_MASTER_CAP_INIT_PATH
-            echo "set -e" >> $_WORKER_CAP_INIT_PATH
-
-            _DIND_CONTAINER_INIT="dind_setup && docker_setup_credentials"
-            echo "Requested DinD CONTAINER mode capability, setting init scripts:"
-            echo "--> Master/Worker: $_DIND_CONTAINER_INIT"
-
-            sed -i "/$_DIND_CONTAINER_INIT/d" $_MASTER_CAP_INIT_PATH
-            echo "$_DIND_CONTAINER_INIT" >> $_MASTER_CAP_INIT_PATH
-            
-            sed -i "/$_DIND_CONTAINER_INIT/d" $_WORKER_CAP_INIT_PATH
-            echo "$_DIND_CONTAINER_INIT" >> $_WORKER_CAP_INIT_PATH
       fi
 
       if check_cp_cap "CP_CAP_SPARK"
@@ -277,10 +277,31 @@ function cp_cap_init {
       fi
 }
 
+# Verifies that a command is installed (binary exists and is exposed to $PATH)
 function check_installed {
       local _COMMAND_TO_CHECK=$1
       command -v "$_COMMAND_TO_CHECK" >/dev/null 2>&1
       return $?
+}
+
+# Verifies that a package is installed into the package manager's db (might not be an executable and exposed to $PATH)
+function check_package_installed {
+      local _PACKAGE_TO_CHECK="$1"
+
+      if [ "${CP_IGNORE_INSTALLED_PACKAGES,,}" == 'true' ] || [ "${CP_IGNORE_INSTALLED_PACKAGES,,}" == 'yes' ]; then
+            return 1
+      fi
+
+      if check_installed "dpkg"; then
+            dpkg -q "$_PACKAGE_TO_CHECK" &> /dev/null
+            return $?
+      elif check_installed "rpm"; then
+            rpm -q "$_PACKAGE_TO_CHECK"  &> /dev/null
+            return $?
+      else
+            # For the "unknown" managers - report that a package is not installed
+            return 1
+      fi
 }
 
 function check_python_module_installed {
@@ -291,7 +312,7 @@ function check_python_module_installed {
 
 function upgrade_installed_packages {
       local _UPGRADE_COMMAND_TEXT=
-      check_installed "apt-get" && { _UPGRADE_COMMAND_TEXT="rm -rf /var/lib/apt/lists/ && apt-get update -y -qq --allow-insecure-repositories && apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" upgrade";  };
+      check_installed "apt-get" && { _UPGRADE_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" upgrade";  };
       check_installed "yum" && { _UPGRADE_COMMAND_TEXT="yum update -q -y";  };
       check_installed "apk" && { _UPGRADE_COMMAND_TEXT="apk update -q 1>/dev/null && apk upgrade -q 1>/dev/null";  };
       eval "$_UPGRADE_COMMAND_TEXT"
@@ -301,8 +322,8 @@ function upgrade_installed_packages {
 # This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
 function configure_package_manager {
       # Get the distro name and version
-      local CP_OS=
-      local CP_VER=
+      CP_OS=
+      CP_VER=
       if [ -f /etc/os-release ]; then
             # freedesktop.org and systemd
             . /etc/os-release
@@ -327,6 +348,9 @@ function configure_package_manager {
             CP_VER=$(uname -r)
       fi
 
+      export CP_OS
+      export CP_VER
+
       # Perform any specific cleanup/configuration
       if [ "$CP_OS" == "debian" ] && [ "$CP_VER" == "8" ]; then
             echo "deb [check-valid-until=no] http://cdn-fastly.deb.debian.org/debian jessie main" > /etc/apt/sources.list.d/jessie.list
@@ -338,28 +362,29 @@ function configure_package_manager {
       fi
 
       # Add a Cloud Pipeline repo, which contains the required runtime packages
-      local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos}"
-      local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
-      if [ "$CP_OS" == "centos" ]; then
-            yum install curl yum-priorities -y -q && \
-            curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo
-            yum --disablerepo=* --enablerepo=cloud-pipeline list available > /dev/null 2>&1
-            
-            if [ $? -ne 0 ]; then
-                  echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the yum, removing the repo"
-                  rm -f /etc/yum.repos.d/cloud-pipeline.repo
-            fi
-      elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
-            apt-get update -qq -y --allow-insecure-repositories && \
-            apt-get install curl apt-transport-https gnupg -y -qq && \
-            sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
-            curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
-            sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
-            apt-get update -qq -y --allow-insecure-repositories
-            
-            if [ $? -ne 0 ]; then
-                  echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
-                  sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+      if [ "${CP_REPO_ENABLED,,}" == 'true' ]; then
+            local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos}"
+            local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
+            if [ "$CP_OS" == "centos" ]; then
+                  curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
+                  yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q > /dev/null 2>&1
+
+                  if [ $? -ne 0 ]; then
+                        echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the yum, removing the repo"
+                        rm -f /etc/yum.repos.d/cloud-pipeline.repo
+                  fi
+            elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
+                  apt-get update -qq -y --allow-insecure-repositories && \
+                  apt-get install curl apt-transport-https gnupg -y -qq && \
+                  sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
+                  curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
+                  sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
+                  apt-get update -qq -y --allow-insecure-repositories
+
+                  if [ $? -ne 0 ]; then
+                        echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
+                        sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+                  fi
             fi
       fi
 }
@@ -379,9 +404,29 @@ function get_install_command_by_current_distr {
             _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
       fi
 
-      check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/ && apt-get update -y -qq --allow-insecure-repositories && DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated install $_TOOLS_TO_INSTALL";  };
-      check_installed "yum" && { _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL";  };
-      check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL";  };
+      local _TOOL_TO_CHECK=
+      local _TOOLS_TO_INSTALL_VERIFIED=
+      for _TOOL_TO_CHECK in $_TOOLS_TO_INSTALL; do
+            check_package_installed "$_TOOL_TO_CHECK"
+            if [ $? -ne 0 ]; then
+                  _TOOLS_TO_INSTALL_VERIFIED="$_TOOLS_TO_INSTALL_VERIFIED $_TOOL_TO_CHECK"
+            fi
+      done
+
+      if [ -z "$_TOOLS_TO_INSTALL_VERIFIED" ]; then
+            _INSTALL_COMMAND_TEXT=
+      else
+            check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated install $_TOOLS_TO_INSTALL_VERIFIED";  };
+            if check_installed "yum"; then
+                  check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL_VERIFIED";  };
+                  if [ "$CP_REPO_ENABLED" == "true" ] && [ -f /etc/yum.repos.d/cloud-pipeline.repo ]; then
+                        _INSTALL_COMMAND_TEXT="yum clean all -q && yum --disablerepo=* --enablerepo=cloud-pipeline -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
+                  else
+                        _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
+                  fi
+            fi
+      fi
+
       eval $_RESULT_VAR=\$_INSTALL_COMMAND_TEXT
 }
 
@@ -394,14 +439,20 @@ function symlink_common_locations {
       then
             echo "$_OWNER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
       fi
-      mkdir -p $_OWNER_HOME && chown $_OWNER $_OWNER_HOME
+      user_create_home "$_OWNER" "$_OWNER_HOME"
 
       # Create symlinks to /cloud-data with mounted buckets into account's home dir
       mkdir -p /cloud-data/
+      if [ -L $_OWNER_HOME/cloud-data ]; then
+        unlink $_OWNER_HOME/cloud-data
+      fi
       [ -d /cloud-data/ ] && ln -s -f /cloud-data/ $_OWNER_HOME/cloud-data || echo "/cloud-data/ not found, no buckets will be available"
       
       # Create symlinks to /common with cluster share fs into account's home dir
       mkdir -p "$SHARED_WORK_FOLDER"
+      if [ -L $_OWNER_HOME/workdir ]; then
+        unlink $_OWNER_HOME/workdir
+      fi
       [ -d $SHARED_WORK_FOLDER ] && ln -s -f $SHARED_WORK_FOLDER $_OWNER_HOME/workdir || echo "$SHARED_WORK_FOLDER not found, no shared fs will be available in $_OWNER_HOME"
       
       # Create symlinks to /code-repository with gitfs repository into account's home dir
@@ -430,6 +481,13 @@ function initialise_wrappers {
     local _WRAPPING_COMMANDS="$1"
     local _WRAPPER="$2"
     local _WRAPPERS_BIN="$3"
+
+    # Here we backup the current value of the $PATH and remove the $CP_USR_BIN (/usr/cpbin)
+    # from the current $PATH value. This is required as COMMAND_PATH=$(command -v "$COMMAND") will get the wrapper path
+    # instead of the real binary. This causes wrapper to call the wrapper in a recursion
+    local _WRAPPERS_PATH_BKP="$PATH"
+    export PATH=$(sed "s|$CP_USR_BIN||g" <<< "$PATH")
+
     IFS=',' read -r -a WRAPPING_COMMANDS_LIST <<< "$_WRAPPING_COMMANDS"
     for COMMAND in "${WRAPPING_COMMANDS_LIST[@]}"
     do
@@ -445,11 +503,39 @@ function initialise_wrappers {
             fi
         fi
     done
+
+    # Restore the original $PATH, which was previosly modified to remove the $CP_USR_BIN (/usr/cpbin)
+    export PATH="$_WRAPPERS_PATH_BKP"
+}
+
+# This function installs any prerequisite, which is not available in the public repos or it is not desired to use those
+function install_private_packages {
+      local _install_path="$1"
+      local _tmp_install_dir="/tmp/"
+      # Separate python distro setup
+      # ====
+      #    Delete an existing installation, if it's a paused run
+      #    We can probably keep it, but it will fail if we need to update a resumed run
+      rm -rf "${_install_path}/conda"
+      CP_CONDA_DISTRO_URL="${CP_CONDA_DISTRO_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz}"
+
+      # Download the distro from a public bucket
+      echo "Getting python distro from $CP_CONDA_DISTRO_URL"
+      wget -q "${CP_CONDA_DISTRO_URL}" -O "${_tmp_install_dir}/conda.tgz" &> /dev/null
+      if [ $? -ne 0 ]; then
+            echo "[ERROR] Can't download the python distro"
+            return 1
+      fi
+
+      # Unpack and remove tarball
+      tar -zxf "${_tmp_install_dir}/conda.tgz" -C "${_install_path}"
+      rm -f "${_tmp_install_dir}/conda.tgz"
+      echo "Python distro is installed into ${_install_path}/conda"
 }
 
 function list_storage_mounts() {
     local _MOUNT_ROOT="$1"
-    echo $(df -T | awk '$2 == "fuse"' | awk '{ print $7 }' | grep "^$_MOUNT_ROOT")
+    echo $(df -T | awk 'index($2, "fuse")' | awk '{ print $7 }' | grep "^$_MOUNT_ROOT")
 }
 
 function update_user_limits() {
@@ -523,18 +609,46 @@ then
 fi
 
 # Install dependencies
+### First install whatever we need from the public repos
 _DEPS_INSTALL_COMMAND=
-get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python git curl wget fuse python-docutils tzdata acl \
-                                                            coreutils"
+_CP_INIT_DEPS_LIST="git curl wget fuse tzdata acl coreutils"
+get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "$_CP_INIT_DEPS_LIST"
 eval "$_DEPS_INSTALL_COMMAND"
 
-# Check if python2 installed, if no - fail, as we'll not be able to run Pipe CLI commands
-export CP_PYTHON2_PATH=$(command -v python2)
-if [ -z "$CP_PYTHON2_PATH" ]
-then
-      echo "[ERROR] python2 environment not found, exiting."
-      exit 1
+### Then Setup directory for any CP-specific binaries/wrapper
+### and install any "private"/preferred packages
+if [ -z "$CP_USR_BIN" ]; then
+        export CP_USR_BIN="/usr/cpbin"
+        echo "CP_USR_BIN is not defined, setting to ${CP_USR_BIN}"
 fi
+create_sys_dir $CP_USR_BIN
+if [ "$CP_CAP_INSTALL_PRIVATE_DEPS" == "true" ]; then
+      install_private_packages $CP_USR_BIN
+fi
+
+# Check if python2 is installed:
+# If it was installed into a private location - use it
+# Otherwise - find the "global" version, if not found - try to install
+# If none found - fail, as we'll not be able to run Pipe CLI commands
+export CP_PYTHON2_PATH="/usr/cpbin/conda/bin/python2"
+if [ ! -f "$CP_PYTHON2_PATH" ]; then
+      echo "[WARN] Private python not found, trying to get the global one"
+      export CP_PYTHON2_PATH=$(command -v python2)
+      if [ -z "$CP_PYTHON2_PATH" ]
+      then
+            echo "[WARN] Global python not found as well, trying to install from a public repo"
+            _DEPS_INSTALL_COMMAND=
+            get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python python-docutils"
+            eval "$_DEPS_INSTALL_COMMAND"
+            export CP_PYTHON2_PATH=$(command -v python2)
+            if [ -z "$CP_PYTHON2_PATH" ]
+            then
+                  echo "[ERROR] python2 environment not found, exiting."
+                  exit 1
+            fi
+      fi
+fi
+echo "Local python interpreter found: $CP_PYTHON2_PATH"
 
 check_python_module_installed "pip --version" || { curl -s https://bootstrap.pypa.io/get-pip.py | $CP_PYTHON2_PATH; };
 
@@ -789,7 +903,7 @@ SSH_SERVER_EXEC_PATH='/usr/sbin/sshd'
 if ! [ -f $SSH_SERVER_EXEC_PATH ] ;
 then
     # Check which package manager to use for SSH Server installation
-    SSH_INSTALL_COMMAND=
+    e=
     get_install_command_by_current_distr SSH_INSTALL_COMMAND "openssh-server"
 
     if [ -z "$SSH_INSTALL_COMMAND" ] ;
@@ -813,8 +927,10 @@ else
 fi
 
 # Disable strict host checking
-mkdir -p /root/.ssh/
+mkdir -p /root/.ssh
 echo "StrictHostKeyChecking no" >> /root/.ssh/config
+chmod 700 /root/.ssh
+chmod 600 /root/.ssh/*
 
 # Check if installation is done and launch ssh server
 if [ -f $SSH_SERVER_EXEC_PATH ] ;
@@ -856,8 +972,9 @@ then
     echo "[ERROR] Distribution URL is not defined. Exiting"
     exit 1
 else
-    $CP_PYTHON2_PATH -m pip install --upgrade setuptools
     cd $COMMON_REPO_DIR
+    # Fixed setuptools version to be comaptible with the pipe-common package
+    pip install -I -q setuptools==44.1.1
     download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
     _DOWNLOAD_RESULT=$?
     if [ "$_DOWNLOAD_RESULT" -ne 0 ];
@@ -880,7 +997,7 @@ else
     cd ..
 fi
 
-#install pipe CLI
+# Install pipe CLI
 if [ "$CP_PIPELINE_CLI_FROM_DIST_TAR" ]; then
       install_pip_package PipelineCLI
 else
@@ -892,12 +1009,27 @@ else
             echo "[ERROR] 'pipe' CLI download failed. Exiting"
             exit 1
       fi
-      mv pipe /usr/bin/
-      chmod +x /usr/bin/pipe
+
+      # Clean any known locations, where previous verssion of the pipe might reside (E.g. committed by the user)
+      rm -f /bin/pipe
+      rm -f /usr/bin/pipe
+      rm -f /usr/local/bin/pipe
+      rm -f /sbin/pipe
+      rm -f /usr/sbin/pipe
+      rm -f /usr/local/sbin/pipe
+      rm -f ${CP_USR_BIN}/pipe
+
+      # Install into the PATH locationse
+      cp pipe /usr/bin/
+      cp pipe ${CP_USR_BIN}/
+      chmod +x /usr/bin/pipe ${CP_USR_BIN}/pipe
+      rm -f pipe
 fi
 
-#install FS Browser
-if [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
+# Install FS Browser
+if [ ! -z "$CP_SENSITIVE_RUN" ]; then
+      echo "Run is sensitive, FSBrowser will not be installed"
+elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
       echo "Setup FSBrowser"
       echo "-"
 
@@ -907,6 +1039,13 @@ if [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
             echo "[ERROR] Unable to install FSBrowser"
             exit 1
       fi
+      # If the "private" python distro was used - symlink fsbrowser to the path, which is exported via PATH
+      CP_FSBROWSER_BIN=$(dirname $CP_PYTHON2_PATH)/fsbrowser
+      if [ -f "$CP_FSBROWSER_BIN" ]; then
+            ln -sf $CP_FSBROWSER_BIN $CP_USR_BIN/fsbrowser
+            ln -sf $CP_FSBROWSER_BIN /usr/bin/fsbrowser
+      fi
+
       fsbrowser_setup
       echo "------"
       echo
@@ -944,6 +1083,16 @@ echo
 
 
 
+######################################################
+echo "Setting up general motd config"
+echo "-"
+######################################################
+motd_setup init
+
+echo "------"
+echo
+######################################################
+
 
 
 ######################################################
@@ -974,7 +1123,7 @@ echo "Checking if cluster configuration is needed"
 echo "-"
 ######################################################
 
-export CP_CAP_SCRIPTS_DIR=$COMMON_DIR/cap_scripts
+export CP_CAP_SCRIPTS_DIR="${SHARED_FOLDER}/cap_scripts"
 export CLOUD_PIPELINE_NODE_CORES=$(nproc)
 
 TOTAL_NODES=$(($node_count+1))
@@ -1021,11 +1170,13 @@ if [ "${OWNER}" ] && [ -d /root/.ssh ]; then
     mkdir -p /home/${OWNER}/.ssh && \
     cp /root/.ssh/* /home/${OWNER}/.ssh/ && \
     chown -R ${OWNER} /home/${OWNER}/.ssh
+    ssh_fix_permissions /home/${OWNER}/.ssh
     echo "Passworldess SSH for ${OWNER} is configured"
 else
     echo "[ERROR] Failed to configure passworldess SSH for \"${OWNER}\""
 fi
-
+# Double check that root's SSH permissions are correct
+ssh_fix_permissions /root/.ssh
 
 echo "------"
 echo
@@ -1198,10 +1349,6 @@ echo "Create restriction wrappers"
 echo "-"
 ######################################################
 
-CP_USR_BIN="/usr/cpbin"
-
-mkdir -p "$CP_USR_BIN"
-
 initialise_wrappers "$CP_RESTRICTING_PACKAGE_MANAGERS" "package_manager_restrictor" "$CP_USR_BIN"
 
 if [[ "$CP_ALLOWED_MOUNT_TRANSFER_SIZE" ]]
@@ -1227,6 +1374,8 @@ echo "-"
 if [ "$OWNER" ] && [ "$OWNER_HOME" ] && [ $_OWNER_CONFIGURED -ne 0 ]
 then
       symlink_common_locations "$OWNER" "$OWNER_HOME"
+      # Just double check the permissions for the OWNER on the OWNER_HOME
+      user_create_home "$OWNER" "$OWNER_HOME"
 else
       echo "Owner $OWNER account is not configured, no symlinks will be created"
 fi
@@ -1281,6 +1430,41 @@ fi
 ######################################################
 
 
+######################################################
+# Setup systemd if required
+######################################################
+
+echo "Setup Systemd"
+echo "-"
+
+if [ "$CP_CAP_SYSTEMD_CONTAINER" == "true" ] && check_installed "systemctl" && [ "$CP_OS" == "centos" ]; then
+      _CONTAINER_DOCKER_ENV_EXPORTING="export container=docker"
+      _IGNORING_CHROOT_ENV_EXPORTING="export SYSTEMD_IGNORE_CHROOT=1"
+      _REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND='(cd /lib/systemd/system/sysinit.target.wants/; \
+      for i in *; do \
+        [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; \
+      done); \
+      rm -f /lib/systemd/system/multi-user.target.wants/*;\
+      rm -f /etc/systemd/system/*.wants/*;\
+      rm -f /lib/systemd/system/local-fs.target.wants/*; \
+      rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
+      rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
+      rm -f /lib/systemd/system/basic.target.wants/*;\
+      rm -f /lib/systemd/system/anaconda.target.wants/*;'
+
+      echo $_CONTAINER_DOCKER_ENV_EXPORTING >> /etc/cp_env.sh
+      eval "$_CONTAINER_DOCKER_ENV_EXPORTING"
+      echo $_IGNORING_CHROOT_ENV_EXPORTING >> /etc/cp_env.sh
+      eval "$_IGNORING_CHROOT_ENV_EXPORTING"
+      eval "$_REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND"
+      /usr/lib/systemd/systemd --system &
+else
+    echo "Systemd is not requested, skipping installation"
+fi
+
+######################################################
+
+
 
 ######################################################
 # Setup "modules" support
@@ -1291,6 +1475,7 @@ echo "-"
 
 if [ "$CP_CAP_MODULES" == "true" ]; then
       modules_setup
+      source /etc/profile.d/modules.sh
 else
     echo "Environment Modules support is not requested"
 fi
@@ -1325,6 +1510,10 @@ fi
 cd $ANALYSIS_DIR
 echo "CWD is now at $ANALYSIS_DIR"
 
+# Apply the "custom fixes" script, which contains very specific modifications to fix the docker images
+# This is used, when we don't want to fix some issue on a docker-per-docker basis
+custom_fixes
+
 # Tell the environment that initilization phase is finished and a source script is going to be executed
 pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"
 
@@ -1356,11 +1545,21 @@ fi
 echo "Check if output vars exist and upload data to remote"
 FINALIZATION_TASK_NAME="OutputData"
 
+CP_OUTPUTS_RESULT=0
 if [[ -s $DATA_STORAGE_RULES_PATH ]] && [[ ! -z "$(ls -A ${ANALYSIS_DIR})" ]];
 then 
       download_outputs $DATA_STORAGE_RULES_PATH $FINALIZATION_TASK_NAME
+      CP_OUTPUTS_RESULT=$?
 else
       echo "No data storage rules defined, skipping ${FINALIZATION_TASK_NAME} step"
+fi
+
+if [ "$CP_CAP_KEEP_FAILED_RUN" ] && \
+   ([ $CP_EXEC_RESULT -ne 0 ] || \
+   [ $CP_OUTPUTS_RESULT -ne 0 ]); then
+      echo "Script execution has failed or the outputs were not tansferred. The job will keep running for $CP_CAP_KEEP_FAILED_RUN"
+      sleep $CP_CAP_KEEP_FAILED_RUN
+      echo "Failure waiting timeout has been reached, proceeding with the cleanup and termination"
 fi
 
 if [ "$SINGLE_RUN" = true ] ;

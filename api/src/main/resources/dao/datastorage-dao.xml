@@ -43,7 +43,8 @@
                         shared,
                         allowed_cidrs,
                         region_id,
-                        file_share_mount_id
+                        file_share_mount_id,
+                        sensitive
                     ) VALUES (
                         :DATASTORAGE_ID,
                         :DATASTORAGE_NAME,
@@ -64,7 +65,8 @@
                         :SHARED,
                         :ALLOWED_CIDRS,
                         :REGION_ID,
-                        :FILE_SHARE_MOUNT_ID
+                        :FILE_SHARE_MOUNT_ID,
+                        :SENSITIVE
                     )
                 ]]>
             </value>
@@ -83,7 +85,8 @@
                         enable_versioning = :ENABLE_VERSIONING,
                         backup_duration = :BACKUP_DURATION,
                         mount_point = :MOUNT_POINT,
-                        mount_options = :MOUNT_OPTIONS
+                        mount_options = :MOUNT_OPTIONS,
+                        sensitive = :SENSITIVE
                     WHERE
                         datastorage_id = :DATASTORAGE_ID
                 ]]>
@@ -119,9 +122,43 @@
                         shared,
                         allowed_cidrs,
                         region_id as region_id,
-                        file_share_mount_id
+                        file_share_mount_id,
+                        sensitive
                     FROM
                         pipeline.datastorage
+                    ORDER BY datastorage_id
+                ]]>
+            </value>
+        </property>
+        <property name="loadDataStoragesByIdsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        datastorage_id,
+                        datastorage_name,
+                        description,
+                        datastorage_type,
+                        path,
+                        sts_duration,
+                        lts_duration,
+                        incomplete_upload_cleanup_days,
+                        folder_id,
+                        created_date,
+                        owner,
+                        enable_versioning,
+                        backup_duration,
+                        locked as datastorage_locked,
+                        mount_point,
+                        mount_options,
+                        shared,
+                        allowed_cidrs,
+                        region_id as region_id,
+                        file_share_mount_id,
+                        sensitive
+                    FROM
+                        pipeline.datastorage
+                    WHERE
+                        datastorage_id IN (:DATASTORAGE_IDS)
                     ORDER BY datastorage_id
                 ]]>
             </value>
@@ -149,7 +186,8 @@
                         shared,
                         allowed_cidrs,
                         region_id as region_id,
-                        file_share_mount_id
+                        file_share_mount_id,
+                        sensitive
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -180,7 +218,8 @@
                         shared,
                         allowed_cidrs,
                         region_id as region_id,
-                        file_share_mount_id
+                        file_share_mount_id,
+                        sensitive
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -211,11 +250,44 @@
                         shared,
                         allowed_cidrs,
                         region_id as region_id,
-                        file_share_mount_id
+                        file_share_mount_id,
+                        sensitive
                     FROM
                         pipeline.datastorage
                     WHERE
                         lower(datastorage_name) = lower(:DATASTORAGE_NAME) or lower(path) = lower(:PATH)
+                ]]>
+            </value>
+        </property>
+        <property name="loadDataStorageByPrefixesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        datastorage_id,
+                        datastorage_name,
+                        description,
+                        datastorage_type,
+                        path,
+                        sts_duration,
+                        lts_duration,
+                        incomplete_upload_cleanup_days,
+                        folder_id,
+                        created_date,
+                        owner,
+                        enable_versioning,
+                        backup_duration,
+                        locked as datastorage_locked,
+                        mount_point,
+                        mount_options,
+                        shared,
+                        allowed_cidrs,
+                        region_id as region_id,
+                        file_share_mount_id,
+                        sensitive
+                    FROM
+                        pipeline.datastorage
+                    WHERE
+                        path IN (:PATH)
                 ]]>
             </value>
         </property>
@@ -242,7 +314,8 @@
                         shared,
                         allowed_cidrs,
                         region_id as region_id,
-                        file_share_mount_id
+                        file_share_mount_id,
+                        sensitive
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -274,7 +347,8 @@
                         shared,
                         allowed_cidrs,
                         region_id as region_id,
-                        file_share_mount_id
+                        file_share_mount_id,
+                        sensitive
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -323,6 +397,7 @@
                             d.allowed_cidrs,
                             d.region_id as region_id,
                             d.file_share_mount_id,
+                            d.sensitive,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -353,6 +428,7 @@
                             null as allowed_cidrs,
                             null as region_id,
                             null as file_share_mount_id,
+                            null as sensitive,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m
@@ -385,6 +461,7 @@
                             d.allowed_cidrs,
                             d.region_id as region_id,
                             d.file_share_mount_id,
+                            d.sensitive,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -411,6 +488,7 @@
                             null as allowed_cidrs,
                             null as region_id,
                             null as file_share_mount_id,
+                            null as sensitive,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m

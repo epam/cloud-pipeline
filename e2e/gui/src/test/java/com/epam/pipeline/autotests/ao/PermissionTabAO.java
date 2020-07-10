@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,8 +88,13 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
     }
 
     private static SelenideElement getElementByNameInUpperCase(String groupName) {
-        return getTabTable()
-                .find(withText(groupName));
+        for (int i = 0; i < 3; i++) {
+            if (getTabTable().find(withText(groupName)).exists()) {
+                return getTabTable().find(withText(groupName));
+            }
+            Utils.sleep(3, SECONDS);
+        }
+        return getTabTable().find(withText(groupName.toLowerCase()));
     }
 
     private static SelenideElement getTabTable() {

@@ -85,6 +85,16 @@ public final class MessageConstants {
     public static final String ERROR_TOOL_ICON_TOO_LARGE = "error.tool.icon.too.large";
     public static final String ERROR_TOOL_INVALID_IMAGE = "error.tool.invalid.image";
     public static final String ERROR_TOOL_VERSION_INVALID_SIZE = "error.tool.version.invalid.size";
+    public static final String ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED = "error.tool.cloud.region.not.allowed";
+
+    public static final String ERROR_TOOL_SYMLINK_SOURCE_TOOL_ID_MISSING = "error.tool.symlink.source.tool.id.missing";
+    public static final String ERROR_TOOL_SYMLINK_TARGET_GROUP_ID_MISSING = 
+            "error.tool.symlink.target.group.id.missing";
+    public static final String ERROR_TOOL_SYMLINK_SOURCE_TOOL_NOT_FOUND = "error.tool.symlink.source.tool.not.found";
+    public static final String ERROR_TOOL_SYMLINK_TARGET_GROUP_NOT_FOUND = "error.tool.symlink.target.group.not.found";
+    public static final String ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED = 
+            "error.tool.symlink.modification.not.supported";
+    public static final String ERROR_TOOL_SYMLINK_TARGET_SYMLINK = "error.tool.symlink.target.symlink";
 
     // Registry messages
     public static final String DEBUG_DOCKER_REGISTRY_AUTO_ENABLE = "debug.docker.registry.auto.enable";
@@ -95,6 +105,7 @@ public final class MessageConstants {
     // Registry access
     public static final String ERROR_REGISTRY_IS_NOT_ALLOWED = "error.registry.not.allowed";
     public static final String ERROR_REGISTRY_ACTION_IS_NOT_ALLOWED = "error.registry.action.not.allowed";
+    public static final String ERROR_REGISTRY_IMAGE_ACTION_IS_NOT_ALLOWED = "error.registry.image.action.not.allowed";
 
     // ToolGroup errors
     public static final String ERROR_TOOL_GROUP_ALREADY_EXIST = "error.tool.group.already.exists";
@@ -141,9 +152,11 @@ public final class MessageConstants {
     public static final String ERROR_RUN_TERMINATION_WRONG_STATUS = "error.run.termination.wrong.status";
     public static final String WARN_RESUME_RUN_FAILED = "warn.resume.run.failed";
     public static final String INFO_INSTANCE_STARTED = "info.instance.started";
-    public static final String ERROR_RUN_DISK_ATTACHING_WRONG_STATUS = "error.run.attaching.wrong.status";
+    public static final String ERROR_RUN_DISK_ATTACHING_WRONG_STATUS = "error.run.disk.attaching.wrong.status";
+    public static final String ERROR_RUN_DISK_ATTACHING_MISSING_NODE_ID = "error.run.disk.attaching.missing.node.id";
     public static final String ERROR_RUN_DISK_SIZE_NOT_FOUND = "error.run.disk.size.not.found";
     public static final String ERROR_BAD_STATS_FILE_ENCODING = "error.run.stats.file.bad.encoding";
+    public static final String ERROR_RUN_CLOUD_REGION_NOT_ALLOWED = "error.run.cloud.region.not.allowed";
 
     //Run schedule
     public static final String CRON_EXPRESSION_IS_NOT_PROVIDED = "cron.expression.is.not.provided";
@@ -215,7 +228,12 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_PATH_INVALID_SCHEMA = "error.datastorage.path.invalid.schema";
     public static final String ERROR_DATASTORAGE_PATH_PROCCESSING = "error.datastorage.path.processing.error";
     public static final String ERROR_AZURE_STORAGE_CREDENTIAL_INVALID = "error.azure.storage.credentials.invalid";
-
+    public static final String ERROR_SENSITIVE_DATASTORAGE_OPERATION =
+        "error.sensitive.datastorage.forbidden.operation";
+    public static final String ERROR_SENSITIVE_REQUEST_WRONG_CONTEXT =
+            "error.sensitive.request.wrong.context";
+    public static final String ERROR_SENSITIVE_WRITE_FORBIDDEN = "error.sensitive.datastorage.write.forbidden";
+    public static final String ERROR_SENSITIVE_RUN_NOT_ALLOWED_FOR_TOOL = "error.sensitive.tool.forbidden";
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
@@ -280,6 +298,15 @@ public final class MessageConstants {
     public static final String ERROR_MUTABLE_ACL_RETURN = "error.mutable.acl.return";
     public static final String ERROR_NO_GROUP_WAS_FOUND = "error.no.group.was.found";
     public static final String ERROR_GROUP_STATUS_EXISTS = "group.status.exists";
+    public static final String INFO_ASSIGN_ROLE = "info.assign.role";
+    public static final String INFO_UNASSIGN_ROLE = "info.unassign.role";
+    public static final String INFO_CREATE_USER = "info.create.user";
+    public static final String INFO_DELETE_USER = "info.delete.user";
+    public static final String INFO_UPDATE_USER_ROLES = "info.update.user.roles";
+    public static final String INFO_UPDATE_USER_DATASTORAGE = "info.update.user.datastorage";
+    public static final String INFO_UPDATE_USER_BLOCK_STATUS= "info.update.user.block.status";
+    public static final String INFO_UPDATE_USER_SAML_INFO = "info.update.user.saml.info";
+
 
     // Security
     public static final String ERROR_PERMISSION_PARAM_REQUIRED = "permission.param.is.required";
@@ -287,6 +314,8 @@ public final class MessageConstants {
     public static final String ERROR_PERMISSION_IS_NOT_GRANTED = "error.permission.is.not.granted";
     public static final String ERROR_ENTITY_IS_LOCKED = "error.entity.is.locked";
     public static final String ERROR_USER_NOT_AUTHORIZED = "error.user.not.authorized";
+    public static final String ERROR_USER_NOT_REGISTERED_EXPLICITLY = "user.not.registered.explicitly";
+    public static final String ERROR_USER_NOT_REGISTERED_GROUP_EXPLICITLY = "user.not.registered.group.explicitly";
 
     // Metadata
     public static final String ERROR_METADATA_NOT_FOUND = "error.metadata.not.found";
@@ -316,6 +345,7 @@ public final class MessageConstants {
     public static final String ERROR_PAGE_INDEX = "error.page.index";
     public static final String ERROR_PAGE_SIZE = "error.page.size";
     public static final String ERROR_INVALID_PAGE_INDEX_OR_SIZE = "error.invalid.page.index.size";
+    public static final String ERROR_PAGINATION_IS_NOT_PROVIDED = "error.pagination.is.not.provided";
 
     //Entities
     public static final String ERROR_CLASS_NOT_SUPPORTED = "error.class.not.supported";
@@ -331,7 +361,8 @@ public final class MessageConstants {
     //Pipeline notification
     public static final String ERROR_NOTIFICATION_SETTINGS_NOT_FOUND = "error.notification.settings.not.found";
     public static final String INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED = "info.notification.template.not.configured";
-    public static final String INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION = "info.run.status.not.configured.for.notification";
+    public static final String INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION = 
+            "info.run.status.not.configured.for.notification";
     public static final String ERROR_TEMPLATE_ID_SHOULD_BE_EQUAL_TO_TYPE = "error.template.id.should.be.equal.to.type";
     public static final String ERROR_NOTIFICATION_SUBJECT_NOT_SPECIFIED = "error.notification.subject.not.specified";
     public static final String ERROR_NOTIFICATION_BODY_NOT_SPECIFIED = "error.notification.body.not.specified";
@@ -412,6 +443,7 @@ public final class MessageConstants {
     public static final String ERROR_REGION_CREDENTIALS_NOT_FOUND = "error.region.credentials.not.found";
     public static final String ERROR_REGION_DEFAULT_UNDEFINED = "error.region.default.undefined";
     public static final String ERROR_REGION_NAME_MISSING = "error.region.name.missing";
+    public static final String ERROR_REGION_MOUNT_RULE_MISSING = "error.region.mount.rule.missing";
     public static final String ERROR_REGION_PROVIDER_MISMATCH = "error.region.provider.mismatch";
     public static final String ERROR_REGION_REGIONID_MISSING = "error.region.regionid.missing";
     public static final String ERROR_REGION_REGIONID_INVALID = "error.region.regionid.invalid";
@@ -481,6 +513,11 @@ public final class MessageConstants {
     public static final String ERROR_BILLING_INTERVAL_NOT_SUPPORTED = "error.billing.interval.not.supported";
     public static final String ERROR_ILLEGAL_PAGING_PARAMETERS = "error.billing.invalid.paging";
 
+    //Disks    
+    public static final String ERROR_DISK_NODE_MISSING = "error.disk.node.missing";
+    public static final String ERROR_DISK_DATE_MISSING = "error.disk.date.missing";
+    public static final String ERROR_DISK_SIZE_MISSING = "error.disk.size.missing";
+    public static final String ERROR_DISK_SIZE_INVALID = "error.disk.size.invalid";
 
     //Other
     public static final String ERROR_KEEP_ALIVE_POLICY_NOT_SUPPORTED = "error.keep.alive.policy.not.supported";

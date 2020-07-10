@@ -18,6 +18,7 @@ package com.epam.pipeline.security.saml;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
@@ -26,6 +27,7 @@ import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -50,6 +52,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
 
@@ -70,6 +73,9 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
 
     @Value("${saml.user.blocked.attribute.true.val: true}")
     private String blockedAttributeTrueValue;
+    
+    @Value("${saml.user.allow.anonymous: false}")
+    private boolean allowAnonymous;
 
     @Autowired
     private UserManager userManager;
@@ -93,24 +99,11 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
             .orElseGet(() -> processNewUser(userName, groups, attributes));
         validateGroupsBlockingStatus(userContext.getAuthorities(), userName);
         if (hasBlockedStatusAttribute(credential)) {
-            userManager.updateUserBlockingStatus(userContext.getUserId(), true);
+            Optional.ofNullable(userContext.getUserId())
+                    .ifPresent(id -> userManager.updateUserBlockingStatus(id, true));
             throwUserIsBlocked(userName);
         }
-        return userContext;
-    }
-
-    private UserContext processNewUser(final String userName, final List<String> groups,
-                                       final Map<String, String> attributes) {
-        checkAbilityToCreate(userName, groups);
-        LOGGER.debug(messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, userName));
-        final List<Long> roles = roleManager.getDefaultRolesIds();
-        final PipelineUser createdUser = userManager.createUser(userName,
-                                                                roles, groups, attributes, null);
-        userManager.updateUserFirstLoginDate(createdUser.getId(), DateUtils.nowUTC());
-        LOGGER.debug("Created user {} with groups {}", userName, groups);
-        final UserContext userContext = new UserContext(createdUser.getId(), userName);
-        userContext.setGroups(createdUser.getGroups());
-        userContext.setRoles(createdUser.getRoles());
+        LOGGER.info("Successfully authenticate user: " + userContext.getUsername());
         return userContext;
     }
 
@@ -135,6 +128,61 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
         }
     }
 
+    private UserContext processNewUser(final String userName, final List<String> groups,
+                                       final Map<String, String> attributes) {
+        LOGGER.debug(messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, userName));
+        switch (autoCreateUsers) {
+            case EXPLICIT:
+                return throwUserNotExplicitlyRegistered(userName);
+            case EXPLICIT_GROUP:
+                if (permissionManager.isGroupRegistered(groups)) {
+                    return createUser(userName, groups, attributes);
+                } else {
+                    if (allowAnonymous) {
+                        return createAnonymousUser(userName, groups);
+                    } else {
+                        return throwGroupNotExplicitlyRegistered(userName, groups);
+                    }
+                }
+            default:
+                return createUser(userName, groups, attributes);
+        }
+    }
+
+    private UserContext throwUserNotExplicitlyRegistered(final String userName) {
+        log.error(messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_EXPLICITLY, userName));
+        throw new UsernameNotFoundException(
+                messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_EXPLICITLY, userName));
+    }
+
+    private UserContext throwGroupNotExplicitlyRegistered(final String userName, final List<String> groups) {
+        log.error(messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_GROUP_EXPLICITLY, userName));
+        throw new UsernameNotFoundException(
+                messageHelper.getMessage(MessageConstants.ERROR_USER_NOT_REGISTERED_GROUP_EXPLICITLY,
+                        String.join(", ", groups), userName));
+    }
+
+    private UserContext createUser(final String userName, final List<String> groups,
+                                   final Map<String, String> attributes) {
+        final List<Long> roles = roleManager.getDefaultRolesIds();
+        final PipelineUser createdUser = userManager.createUser(userName,
+                roles, groups, attributes, null);
+        userManager.updateUserFirstLoginDate(createdUser.getId(), DateUtils.nowUTC());
+        LOGGER.debug("Created user {} with groups {}", userName, groups);
+        final UserContext userContext = new UserContext(createdUser.getId(), userName);
+        userContext.setGroups(createdUser.getGroups());
+        userContext.setRoles(createdUser.getRoles());
+        return userContext;
+    }
+
+    private UserContext createAnonymousUser(final String userName, final List<String> groups) {
+        LOGGER.debug("Created anonymous user {} with groups {}", userName, groups);
+        final UserContext userContext = new UserContext(null, userName);
+        userContext.setGroups(groups);
+        userContext.setRoles(Collections.singletonList(DefaultRoles.ROLE_ANONYMOUS_USER.getRole()));
+        return userContext;
+    }
+
     private void validateGroupsBlockingStatus(final List<GrantedAuthority> authorities, final String userName) {
         final List<String> groups = ListUtils.emptyIfNull(authorities)
                 .stream()
@@ -145,13 +193,13 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
                 .stream()
                 .noneMatch(GroupStatus::isBlocked);
         if (!isValidGroupList) {
-            LOGGER.debug("User {} is blocked due to one of his groups is blocked!", userName);
+            LOGGER.info("Authentication failed! User {} is blocked due to one of his groups is blocked!", userName);
             throw new LockedException("User is blocked!");
         }
     }
 
     private void throwUserIsBlocked(final String userName) {
-        LOGGER.debug("User {} is blocked!", userName);
+        LOGGER.info("Authentication failed! User {} is blocked!", userName);
         throw new LockedException("User is blocked!");
     }
 
@@ -205,19 +253,4 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
         return parsedAttributes;
     }
 
-    private void checkAbilityToCreate(final String userName, final List<String> groups) {
-        switch (autoCreateUsers) {
-            case EXPLICIT:
-                throw new UsernameNotFoundException(
-                        messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, userName));
-            case EXPLICIT_GROUP:
-                if (!permissionManager.isGroupRegistered(groups)) {
-                    throw new UsernameNotFoundException(
-                            messageHelper.getMessage(MessageConstants.ERROR_NO_GROUP_WAS_FOUND, userName));
-                }
-                break;
-            default:
-                break;
-        }
-    }
 }

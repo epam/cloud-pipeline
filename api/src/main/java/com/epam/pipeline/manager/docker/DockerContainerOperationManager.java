@@ -134,8 +134,8 @@ public class DockerContainerOperationManager {
 
     public PipelineRun commitContainer(PipelineRun run, DockerRegistry registry,
                                        String newImageName, boolean clearContainer, boolean stopPipeline) {
-        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(
-                run.getPodId(), run.getDockerImage());
+        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(), 
+                run.getActualDockerImage());
 
         final String apiToken = authManager.issueTokenForCurrentUser(null).getToken();
 
@@ -208,8 +208,8 @@ public class DockerContainerOperationManager {
     @Async("pauseRunExecutor")
     public void pauseRun(PipelineRun run) {
         try {
-            final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(
-                    run.getPodId(), run.getDockerImage());
+            final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(), 
+                    run.getActualDockerImage());
             final String apiToken = authManager.issueTokenForCurrentUser().getToken();
             Assert.notNull(containerId,
                     messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
@@ -223,7 +223,7 @@ public class DockerContainerOperationManager {
                     .runId(String.valueOf(run.getId()))
                     .containerId(containerId)
                     .timeout(String.valueOf(preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT)))
-                    .newImageName(run.getDockerImage())
+                    .newImageName(run.getActualDockerImage())
                     .defaultTaskName(run.getTaskName())
                     .preCommitCommand(preferenceManager.getPreference(SystemPreferences.PRE_COMMIT_COMMAND_PATH))
                     .postCommitCommand(preferenceManager.getPreference(SystemPreferences.POST_COMMIT_COMMAND_PATH))
@@ -244,7 +244,7 @@ public class DockerContainerOperationManager {
             //TODO: change SystemPreferences.COMMIT_TIMEOUT in according to
             // f_EPMCMBIBPC-2025_add_lastStatusUpdate_time branche
             boolean isFinished = sshConnection.waitFor(
-                    preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT), TimeUnit.SECONDS);
+                    preferenceManager.getPreference(SystemPreferences.PAUSE_TIMEOUT), TimeUnit.SECONDS);
 
             if (isFinished && sshConnection.exitValue() == COMMAND_CANNOT_EXECUTE_CODE) {
                 //TODO: change in according to f_EPMCMBIBPC-2025_add_lastStatusUpdate_time branche

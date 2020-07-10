@@ -28,6 +28,11 @@ const ExportFormat = {
   image: 'image'
 };
 
+const ExportFormatName = {
+  [ExportFormat.csv]: 'As CSV',
+  [ExportFormat.image]: 'As Image'
+};
+
 class ExportReports extends React.Component {
   static Provider = ({children}) => (
     <MobxProvider export={exportStore}>
@@ -53,20 +58,26 @@ class ExportReports extends React.Component {
     }
   };
 
-  renderExportMenu = () => {
+  renderExportMenu = (formats = [ExportFormat.csv, ExportFormat.image]) => {
+    if (!formats || formats.length === 0) {
+      return null;
+    }
     return (
       <Menu onClick={({key: format}) => this.onExport(format)}>
-        <Menu.Item key={ExportFormat.csv}>As CSV</Menu.Item>
-        <Menu.Item key={ExportFormat.image}>As Image</Menu.Item>
+        {
+          formats.map((format) => (
+            <Menu.Item key={format}>{ExportFormatName[format]}</Menu.Item>
+          ))
+        }
       </Menu>
     );
   };
 
   render () {
-    const {className} = this.props;
+    const {className, formats} = this.props;
     return (
       <Dropdown
-        overlay={this.renderExportMenu()}
+        overlay={this.renderExportMenu(formats)}
         trigger={['click']}
       >
         <Button
@@ -83,12 +94,14 @@ class ExportReports extends React.Component {
 
 ExportReports.propTypes = {
   className: PropTypes.string,
-  documentName: PropTypes.oneOfType([PropTypes.func, PropTypes.string])
+  documentName: PropTypes.oneOfType([PropTypes.func, PropTypes.string]),
+  formats: PropTypes.arrayOf(PropTypes.oneOf([ExportFormat.csv, ExportFormat.image]))
 };
 
 ExportReports.defaultProps = {
-  documentName: 'Billing report'
+  documentName: 'Billing report',
+  formats: [ExportFormat.csv, ExportFormat.image]
 };
 
 export default ExportReports;
-export {ExportComposers};
+export {ExportComposers, ExportFormat};

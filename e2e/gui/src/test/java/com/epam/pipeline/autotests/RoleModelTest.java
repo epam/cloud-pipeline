@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -695,8 +695,7 @@ public class RoleModelTest
                 .typeInField(userGroup)
                 .ok()
                 .validateGroupHasPermissions(userGroup)
-                .validateDeleteButtonIsDisplayedOppositeTo(userGroup)
-                .closeAll();
+                .validateDeleteButtonIsDisplayedOppositeTo(userGroup);
     }
 
     @Test(priority = 28)
@@ -781,8 +780,7 @@ public class RoleModelTest
                 .switchToGroups()
                 .pressCreateGroup()
                 .enterGroupName(group)
-                .create()
-                .ok();
+                .create();
 
         navigationMenu()
                 .settings()
@@ -792,7 +790,6 @@ public class RoleModelTest
                 .edit()
                 .searchRoleBySubstring(part)
                 .validateRoleAppearedInSearch(group)
-                .ok()
                 .ok();
 
         navigationMenu()
@@ -800,8 +797,7 @@ public class RoleModelTest
                 .switchToUserManagement()
                 .switchToGroups()
                 .searchGroupBySubstring(group)
-                .deleteGroup(group)
-                .ok();
+                .deleteGroup(group);
     }
 
     @Test(priority = 31)
@@ -814,17 +810,14 @@ public class RoleModelTest
                 .switchToUserManagement()
                 .switchToUsers()
                 .clickSearch()
-                .pressEnter()
-                .ok()
-                .ensurePopupIsClosed();
+                .pressEnter();
 
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
                 .switchToUsers()
                 .clickSearch()
-                .ensure(SEARCH, cssClass("ant-input-affix-wrapper"))
-                .ok();
+                .ensure(SEARCH, cssClass("ant-input-affix-wrapper"));
     }
 
     private PermissionTabAO.UserPermissionsTableAO getUserPipelinePermissions(final Account user,
@@ -951,8 +944,7 @@ public class RoleModelTest
                         .enterGroupName(userGroup)
                         .sleep(2, SECONDS)
                         .create()
-                        .sleep(3, SECONDS)
-                        .ok()
+                        .sleep(2, SECONDS)
         );
         refresh();
         tools()
@@ -981,7 +973,6 @@ public class RoleModelTest
                 .addRoleOrGroup(userGroup)
                 .sleep(2, SECONDS)
                 .ok()
-                .sleep(1, SECONDS)
-                .closeAll();
+                .sleep(1, SECONDS);
     }
 }

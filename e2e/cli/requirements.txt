@@ -1,6 +1,13 @@
-pytest
-boto3
+pytest==3.2.5
+pytest-html==1.15.2
+pytest-xdist==1.20.0
+pytest-forked==1.0.2
+pytest-cov==2.5.1
+pytest-metadata==1.8.0
 google-api-python-client==1.7.9
 azure-storage-blob==1.5.0
 google-cloud-storage==1.14.0
 tzlocal==1.5.1
+azure-mgmt-compute==5.0.0
+azure-mgmt-network==3.0.0
+azure-mgmt-resource==3.0.0

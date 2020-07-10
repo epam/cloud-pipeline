@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
 public class S3StorageProviderTest extends AbstractSpringTest {
 
     public static final long REGION_ID = 1L;
-    private final String bucketName = "bucketName";
+    private final String bucketName = "bucketname";
 
     @SpyBean
     private S3StorageProvider s3StorageProvider;
@@ -85,7 +85,7 @@ public class S3StorageProviderTest extends AbstractSpringTest {
                 "  }" +
                 "]");
         when(cloudRegionManager.getAwsRegion(any())).thenReturn(region);
-        doReturn(s3Helper).when(s3StorageProvider).getS3Helper(any());
+        doReturn(s3Helper).when(s3StorageProvider).getS3Helper(any(S3bucketDataStorage.class));
     }
 
     @Test

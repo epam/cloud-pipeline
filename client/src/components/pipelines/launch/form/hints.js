@@ -48,6 +48,12 @@ const awsRegionHint = (localizedStringFn) => (
   </Row>
 );
 
+const awsRegionRestrictedByToolSettingsHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    <b>Cloud region</b> selection is restricted to a specific region by the current <b>Docker image</b>'s settings.
+  </Row>
+);
+
 const instanceTypeHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
     Select <b>type</b> of a calculation <b>instance</b> that will execute current job. <br />
@@ -125,19 +131,27 @@ const prettyUrlHint = (localizedStringFn) => (
   </Row>
 );
 
+const executionEnvironmentSummaryHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    General amount of resources that will be allocated during the run execution. Notice that in some specific configurations such as <b>hybrid autoscaling clusters</b> amount of resources can vary beyond the shown interval.
+  </Row>
+);
+
 const hints = {
   renderHint,
   pipelineHint,
   dockerImageHint,
   instanceTypeHint,
   awsRegionHint,
+  awsRegionRestrictedByToolSettingsHint,
   diskHint,
   startIdleHint,
   priceTypeHint,
   autoPauseHint,
   timeOutHint,
   limitMountsHint,
-  prettyUrlHint
+  prettyUrlHint,
+  executionEnvironmentSummaryHint
 };
 
 export default hints;

@@ -36,18 +36,19 @@ class DataStorage(API):
     def load_from_uri(cls, path):
         url = urlparse(path)
         requested_scheme = url.scheme
+        full_path = path.replace(requested_scheme + "://", '')
         if requested_scheme not in WrapperType.cloud_schemes():
             raise RuntimeError('Supported schemes for datastorage are: {}. '
                                'Actual scheme is "{}".'
                                .format('"' + '", "'.join(WrapperType.cloud_schemes()) + '"', requested_scheme))
-        storage = DataStorage.get(url.netloc)
+        storage = DataStorage.get_by_path(full_path)
         expected_scheme = WrapperType.cloud_scheme(storage.type)
         if not WrapperType.is_dynamic_cloud_scheme(requested_scheme) and requested_scheme != expected_scheme:
             raise RuntimeError('Requested datastorage scheme differs with its type. '
                                'Expected scheme is "{}". '
                                'Actual scheme is "{}".'.format(expected_scheme, requested_scheme))
 
-        return storage, url.path[1:]
+        return storage, url.path[1:], full_path.replace(storage.path, '').lstrip(storage.delimiter)
 
     @classmethod
     def list(cls):
@@ -77,6 +78,16 @@ class DataStorage(API):
             return None
         api = cls.instance()
         response_data = api.call('datastorage/find?id={}'.format(name), None)
+        if 'payload' in response_data:
+            return DataStorageModel.load(response_data['payload'])
+        return None
+
+    @classmethod
+    def get_by_path(cls, path):
+        if path is None:
+            return None
+        api = cls.instance()
+        response_data = api.call('datastorage/findByPath?id={}'.format(path), None)
         if 'payload' in response_data:
             return DataStorageModel.load(response_data['payload'])
         return None

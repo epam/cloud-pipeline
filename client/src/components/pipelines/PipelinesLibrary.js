@@ -32,6 +32,7 @@ import {
   ItemTypes,
   search
 } from './model/treeStructureFunctions';
+import roleModel from '../../utils/roleModel';
 import styles from './PipelinesLibrary.css';
 import '../../staticStyles/PipelineLibrary.css';
 
@@ -56,7 +57,8 @@ const EXPANDED_KEYS_STORAGE_KEY = 'expandedKeys';
   configurations,
   dataStorages
 })
-@inject('displayInfo')
+@roleModel.authenticationInfo
+@inject('displayInfo', 'preferences')
 @inject(({pipelinesLibrary, pipelines, folders, configurations, dataStorages}, {location}) => {
   let path = location.pathname;
   if (path.startsWith('/')) {
@@ -80,6 +82,15 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     selectedKeys: [],
     currentPath: null
   };
+
+  get dragEnabled () {
+    const {authenticatedUserInfo, preferences} = this.props;
+    const dragEnabled = preferences.getPreferenceValue('ui.library.drag');
+    if (!authenticatedUserInfo.loaded || authenticatedUserInfo.value.admin) {
+      return true;
+    }
+    return `${dragEnabled}` !== 'false';
+  }
 
   onExpand = (expandedKeys, {expanded, node}) => {
     const item = getTreeItemByKey(node.props.eventKey, this.state.rootItems);
@@ -116,7 +127,11 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
 
   onDragStart = ({event, node}) => {
     const item = getTreeItemByKey(node.props.eventKey, this.state.rootItems || []);
-    if (item.type === ItemTypes.pipeline) {
+    if (!this.dragEnabled) {
+      const emptyImage = document.getElementById('drag-placeholder');
+      event.dataTransfer.setDragImage(emptyImage, 0, 0);
+      event.dataTransfer.clearData();
+    } else if (item.type === ItemTypes.pipeline) {
       event.dataTransfer.setData('dropDataKey', `${ItemTypes.pipeline}_${item.id}`);
     } else if (item.type === ItemTypes.version && item.parent) {
       event.dataTransfer.setData('dropDataKey', `${ItemTypes.pipeline}_${item.parent.id}_${item.name}`);
@@ -126,6 +141,9 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
   };
 
   onDrop = async ({node, dragNode}) => {
+    if (!this.dragEnabled) {
+      return;
+    }
     const dragItem = getTreeItemByKey(dragNode.props.eventKey, this.state.rootItems);
     const dropItem = getTreeItemByKey(node.props.eventKey, this.state.rootItems);
     if (dragItem.type === ItemTypes.version) {
@@ -418,6 +436,10 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
             onSearch={this.onSearch} />
         </Row>
         <Row id="pipelines-library-tree">
+          <canvas
+            id="drag-placeholder"
+            style={{backgroundColor: 'transparent', width: 1, height: 1, position: 'absolute'}}
+          />
           {this.generateTree()}
         </Row>
       </Card>

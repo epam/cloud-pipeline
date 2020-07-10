@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.security;
 
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 
@@ -28,7 +29,7 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 
 @Getter
 @AllArgsConstructor
-public class JwtRawToken {
+public class JwtRawToken implements Serializable {
     private static final String HEADER_PREFIX = "Bearer ";
     private String token;
 

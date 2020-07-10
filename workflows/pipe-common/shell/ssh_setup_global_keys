@@ -17,4 +17,5 @@
 mkdir -p /root/.ssh/ && \
 cp -f /etc/ssh/ssh_host_rsa_key /root/.ssh/id_rsa && \
 cp -f /etc/ssh/ssh_host_rsa_key.pub /root/.ssh/id_rsa.pub && \
-cp -f /etc/ssh/ssh_host_rsa_key.pub /root/.ssh/authorized_keys
+cp -f /etc/ssh/ssh_host_rsa_key.pub /root/.ssh/authorized_keys && \
+ssh_fix_permissions /root/.ssh

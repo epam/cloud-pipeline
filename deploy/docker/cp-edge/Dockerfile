@@ -59,6 +59,8 @@ RUN     cd /tmp && \
 RUN opm get cdbattags/lua-resty-jwt=0.2.0
 # Install LUA HTTP Client
 RUN opm get pintsized/lua-resty-http=0.12
+# Install URL parsing library
+RUN opm get 3scale/lua-resty-url=0.3.3
 
 # Configure cron and sync routes script
 ADD	crontab /etc/cron.d/sync-routes
@@ -113,3 +115,8 @@ ADD liveness.sh /liveness.sh
 RUN chmod +x /liveness.sh
 
 ADD ingress-config /etc/nginx/ingress
+
+RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/filebeat-6.8.3-x86_64.rpm \
+    && rpm -vi filebeat-6.8.3-x86_64.rpm && rm -rf filebeat-6.8.3-x86_64.rpm
+
+COPY filebeat-template.yml /etc/filebeat/

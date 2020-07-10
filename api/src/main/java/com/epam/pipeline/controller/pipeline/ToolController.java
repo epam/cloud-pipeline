@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,14 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.docker.ImageDescription;
+import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.scan.ToolScanPolicy;
-import com.epam.pipeline.entity.scan.ToolScanResult;
+import com.epam.pipeline.entity.scan.ToolScanResultView;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
+import com.epam.pipeline.entity.tool.ToolSymlinkRequest;
 import com.epam.pipeline.manager.pipeline.ToolApiService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import io.swagger.annotations.Api;
@@ -179,6 +181,34 @@ public class ToolController extends AbstractRestController {
         return Result.success(toolApiService.getImageDescription(id, tag));
     }
 
+    @RequestMapping(value = "/tool/{id}/history", method= RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+        value = "Returns a history of a tool, specified by ID and version.",
+        notes = "Returns a history of a tool, which contains list of commands by layers of the image.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        })
+    public Result<List<ImageHistoryLayer>> loadImageHistory(@PathVariable final Long id,
+                                                            @RequestParam(value = "version") final String version) {
+        return Result.success(toolApiService.getImageHistory(id, version));
+    }
+
+    @RequestMapping(value = "/tool/{id}/defaultCmd", method= RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+        value = "Returns a default command [ENTRYPOINT + CMD] of a tool, specified by ID and version.",
+        notes = "Returns a default command for a tool, extracted from image history.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        })
+    public Result<String> loadDefaultImageCmd(@PathVariable final Long id,
+                                              @RequestParam(value = "version") final String version) {
+        return Result.success(toolApiService.getImageDefaultCommand(id, version));
+    }
+
     @RequestMapping(value = "/tool/scan", method = RequestMethod.POST)
     @ResponseBody
     public Result<Boolean> scanTool(
@@ -201,8 +231,8 @@ public class ToolController extends AbstractRestController {
 
     @RequestMapping(value = "/tool/scan", method = RequestMethod.GET)
     @ResponseBody
-    public Result<ToolScanResult> loadVulnerabilities(@RequestParam(required = false) String registry,
-                                                      @RequestParam String tool) {
+    public Result<ToolScanResultView> loadVulnerabilities(@RequestParam(required = false) String registry,
+                                                          @RequestParam String tool) {
         return Result.success(toolApiService.loadToolScanResult(registry, tool));
     }
 
@@ -280,5 +310,18 @@ public class ToolController extends AbstractRestController {
     public Result<List<ToolVersion>> loadToolVersionSettings(@PathVariable final Long toolId,
                                                              @RequestParam(required = false) final String version) {
         return Result.success(toolApiService.loadToolVersionSettings(toolId, version));
+    }
+
+    @RequestMapping(value = "/tool/symlink", method= RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Symlinks an existing tool.",
+            notes = "Symlinks an existing tool.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<Tool> symlinkTool(@RequestBody final ToolSymlinkRequest request) {
+        return Result.success(toolApiService.symlink(request));
     }
 }

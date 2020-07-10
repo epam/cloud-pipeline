@@ -78,9 +78,10 @@ final class NFSHelper {
 
     static String getNFSMountOption(final AbstractCloudRegion cloudRegion,
                                     final AbstractCloudRegionCredentials credentials,
-                                    final String defaultOptions) {
+                                    final String defaultOptions, String protocol) {
         String result = defaultOptions;
-        if (cloudRegion != null && cloudRegion.getProvider() == CloudProvider.AZURE) {
+        if (cloudRegion != null && cloudRegion.getProvider() == CloudProvider.AZURE
+                && protocol.equalsIgnoreCase(MountType.SMB.getProtocol())) {
             final AzureRegion azureRegion = (AzureRegion) cloudRegion;
             final String account = azureRegion.getStorageAccount();
             final String accountKey = Optional.ofNullable(credentials)

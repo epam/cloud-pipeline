@@ -57,6 +57,29 @@ thead[class*="ant-table-thead"] .cluster-node-row-pipeline {
   word-break: break-word;
 }
 
+.cluster-node-cell-addresses {
+  display: flex;
+  flex-direction: column;
+  max-width: 200px;
+}
+
+.cluster-node-content-addresses {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.cluster-node-cell-created {
+  display: flex;
+  flex-direction: column;
+}
+
+.cluster-node-content-created {
+  white-space: nowrap;
+  width: 100%;
+}
+
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);

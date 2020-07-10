@@ -41,12 +41,12 @@ RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
     modules_static="$(echo $(cat ${APACHE_BUILD_DIR}/modules.static))" && \
     mkdir -p ${APACHE_BUILD_DIR} && \
     cd ${APACHE_BUILD_DIR} && \
-    wget -q http://www.apache.org/dist/httpd/httpd-${APACHE_VERSION}.tar.gz && \
+    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/httpd/httpd-${APACHE_VERSION}.tar.gz && \
     tar -zxf httpd-${APACHE_VERSION}.tar.gz && \
     rm -f httpd-${APACHE_VERSION}.tar.gz && \
     cd ${APACHE_BUILD_DIR} && \
-    wget -q -c http://mirror.cogentco.com/pub/apache/apr/apr-${APR_VERSION}.tar.gz && \
-    wget -q -c http://mirror.cogentco.com/pub/apache/apr/apr-util-${APR_UTIL_VERSION}.tar.gz && \
+    wget -q -c https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/apr/apr-${APR_VERSION}.tar.gz && \
+    wget -q -c https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/apr/apr-util-${APR_UTIL_VERSION}.tar.gz && \
     tar -zxf apr-${APR_VERSION}.tar.gz && \
     rm -f apr-${APR_VERSION}.tar.gz && \
     tar -zxf apr-util-${APR_UTIL_VERSION}.tar.gz && \
@@ -67,6 +67,7 @@ RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
 # Setup nfs sync
 RUN yum install -y cronie \
                    nfs-utils \
+                   cifs-utils \
                    python
 RUN curl -s https://bootstrap.pypa.io/get-pip.py | python && \
     pip install -I requests==2.21.0 && \

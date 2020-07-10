@@ -92,7 +92,7 @@ class DataStorageWrapper(object):
 
     @classmethod
     def get_cloud_wrapper(cls, uri, versioning=False):
-        root_bucket, original_path = DataStorage.load_from_uri(uri)
+        root_bucket, original_path, _ = DataStorage.load_from_uri(uri)
         relative_path = original_path if original_path != '/' else ''
         return cls.__get_storage_wrapper(root_bucket, relative_path, versioning=versioning)
 
@@ -148,11 +148,12 @@ class DataStorageWrapper(object):
         for bucket_model in buckets:
             if bucket_model.path is not None \
                     and bucket_model.type in WrapperType.cloud_types() \
-                    and bucket_model.path.lower() == url.netloc:
-                current_bucket = bucket_model
+                    and path.startswith(bucket_model.path.lower()):
+                if current_bucket is None or len(bucket_model.path) > len(current_bucket.path):
+                    current_bucket = bucket_model
                 break
         if current_bucket is None:
-            return 'Storage \'{}\' was not found'.format(url.netloc), None, None, None
+            return 'Storage \'{}\' was not found'.format(path), None, None, None
         delimiter = '/'
         if current_bucket.delimiter is not None:
             delimiter = current_bucket.delimiter
@@ -265,6 +266,8 @@ class S3BucketWrapper(CloudDataStorageWrapper):
 
     def __init__(self, bucket, path):
         super(S3BucketWrapper, self).__init__(bucket, path)
+        # parse root bucket from path
+        self.bucket.path = bucket.path.split(self.path_separator)[0]
         self.is_empty_flag = True
         self.session = None
 

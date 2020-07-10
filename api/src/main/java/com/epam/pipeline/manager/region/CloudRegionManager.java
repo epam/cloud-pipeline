@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -42,6 +43,7 @@ import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.utils.CommonUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Service;
@@ -57,8 +59,11 @@ import java.util.stream.Collectors;
 
 @AclSync
 @Service
+@Slf4j
 @SuppressWarnings("unchecked")
 public class CloudRegionManager implements SecuredEntityManager {
+
+    public static final String CP_REGION_CREDS_SECRET = "cp-region-creds-secret";
 
     private final CloudRegionDao cloudRegionDao;
     private final FileShareMountManager shareMountManager;
@@ -66,6 +71,7 @@ public class CloudRegionManager implements SecuredEntityManager {
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
+    private final KubernetesManager kubernetesManager;
     private final Map<CloudProvider, ? extends CloudRegionHelper> helpers;
 
     public CloudRegionManager(final CloudRegionDao cloudRegionDao,
@@ -74,13 +80,14 @@ public class CloudRegionManager implements SecuredEntityManager {
                               final MessageHelper messageHelper,
                               final PreferenceManager preferenceManager,
                               final AuthManager authManager,
-                              final List<CloudRegionHelper> helpers) {
+                              KubernetesManager kubernetesManager, final List<CloudRegionHelper> helpers) {
         this.cloudRegionDao = cloudRegionDao;
         this.cloudRegionMapper = cloudRegionMapper;
         this.shareMountManager = shareMountManager;
         this.messageHelper = messageHelper;
         this.preferenceManager = preferenceManager;
         this.authManager = authManager;
+        this.kubernetesManager = kubernetesManager;
         this.helpers = CommonUtils.groupByCloudProvider(helpers);
     }
 
@@ -223,6 +230,26 @@ public class CloudRegionManager implements SecuredEntityManager {
                 .orElseGet(this::loadDefaultRegion);
     }
 
+    public void refreshCloudRegionCredKubeSecret() {
+        log.debug("Create Kube secret with cloud region creds if it does not exist.");
+        if (!kubernetesManager.doesSecretExist(CP_REGION_CREDS_SECRET)) {
+            log.warn("Secret: " + CP_REGION_CREDS_SECRET + " doesn't exist!");
+            return;
+        }
+        kubernetesManager.refreshSecret(CP_REGION_CREDS_SECRET,
+                loadAll()
+                        .stream()
+                        .filter(region -> region.getProvider().equals(CloudProvider.AZURE))
+                        .map(region -> (AzureRegion) region)
+                        .collect(
+                            Collectors.toMap(azureRegion -> azureRegion.getId().toString(),
+                                azureRegion ->  ((AzureRegionHelper) helpers.get(CloudProvider.AZURE))
+                                        .serializeCredentials(azureRegion, loadCredentials(azureRegion))
+                            )
+                        )
+        );
+    }
+
     public List<CloudProvider> loadProviders() {
         return Arrays.stream(CloudProvider.values()).collect(Collectors.toList());
     }
@@ -297,6 +324,8 @@ public class CloudRegionManager implements SecuredEntityManager {
     private void validateRegion(final AbstractCloudRegion region, final AbstractCloudRegionCredentials credentials) {
         Assert.isTrue(StringUtils.isNotBlank(region.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_REGION_NAME_MISSING));
+        Assert.notNull(region.getMountStorageRule(),
+                messageHelper.getMessage(MessageConstants.ERROR_REGION_MOUNT_RULE_MISSING));
         getHelper(region.getProvider()).validateRegion(region, credentials);
     }
 

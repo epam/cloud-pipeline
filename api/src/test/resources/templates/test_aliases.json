@@ -1,0 +1,8 @@
+{
+  "dockerRegistry" : {
+    "old-registry:443" : "new-registry:443"
+  },
+  "storage" : {
+    "s3://old-bucket": "s3://new-bucket"
+  }
+}

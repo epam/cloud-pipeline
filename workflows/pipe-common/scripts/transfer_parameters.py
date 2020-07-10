@@ -71,24 +71,53 @@ class Cluster:
         self.slots_per_node = slots_per_node
 
     @classmethod
-    def build_cluster(cls):
+    def build_cluster(cls, api, task_name):
         if 'CP_PARALLEL_TRANSFER' not in os.environ:
+            Logger.info('Parallel transfer is not enabled.', task_name=task_name)
             return None
-
         slots_per_node = cls.get_slots_per_node()
+        local_cluster = cls.build_local_cluster(slots_per_node)
 
-        if 'DEFAULT_HOSTFILE' not in os.environ:
-            return cls.build_local_cluster(slots_per_node)
+        if cls.get_node_count() <= 0:
+            Logger.info('No child nodes requested. Using only master node for data transfer.', task_name=task_name)
+            return local_cluster
 
-        hostfile = os.environ['DEFAULT_HOSTFILE']
-        if not os.path.isfile(hostfile):
-            return cls.build_local_cluster(slots_per_node)
+        distributed_cluster = cls.build_distributed_cluster(slots_per_node, api, task_name)
+        if distributed_cluster is None or len(distributed_cluster.nodes) == 0:
+            Logger.info('Failed to find child nodes. Using only master node for data transfer.', task_name=task_name)
+            return local_cluster
+        return distributed_cluster
 
-        with open(hostfile) as f:
-            hosts = f.readlines()
-            master_host = socket.gethostname()
-            nodes = [Node('localhost' if x.strip() == master_host else x.strip()) for x in hosts]
-            return Cluster(nodes, slots_per_node)
+    @classmethod
+    def get_node_count(cls):
+        env_val = os.getenv('node_count', 0)
+        try:
+            return int(env_val)
+        except ValueError:
+            return 0
+
+    @classmethod
+    def build_distributed_cluster(cls, slots_per_node, api, task_name):
+        if not cls.is_distributed_cluster():
+            return None
+        Logger.info('Using distributed cluster for data transfer. Master node will be used.', task_name=task_name)
+        child_runs = api.load_child_pipelines(os.getenv('RUN_ID'))
+        nodes = [Node('localhost')]
+        static_runs = filter(lambda run: cls.is_static_run(run), child_runs)
+        if len(static_runs) > 0:
+            child_hosts = [static_run['podId'] for static_run in static_runs]
+            Logger.info('Found %d running child nodes for data transfer: %s.' % (len(static_runs), ','.join(child_hosts)),
+                        task_name=task_name)
+            nodes.extend([Node(host) for host in child_hosts])
+        return Cluster(nodes, slots_per_node)
+
+    @classmethod
+    def is_distributed_cluster(cls):
+        flag_values = ['yes', 'true']
+        sge_enabled = os.getenv('CP_CAP_SGE', None) in flag_values
+        autoscale_enabled = os.getenv('CP_CAP_AUTOSCALE', None) in flag_values
+        hostfile_configured = os.path.isfile(os.getenv('DEFAULT_HOSTFILE', None))
+        return (sge_enabled and autoscale_enabled) or hostfile_configured
 
     @classmethod
     def build_local_cluster(cls, slots_per_node):
@@ -105,6 +134,20 @@ class Cluster:
         if 32 <= cpu_number < 64:
             return 2
         return 3
+
+    @classmethod
+    def is_static_run(cls, run):
+        if run['status'] != 'RUNNING':
+            return False
+        if 'pipelineRunParameters' not in run:
+            return True
+        params = run['pipelineRunParameters']
+        if not params:
+            return True
+        for param in params:
+            if param['name'] == 'cluster_role_type' and param['value'] == 'additional':
+                return False
+        return True
 
 
 class PathType(object):
@@ -229,26 +272,31 @@ class InputDataTask:
                 param_type = os.environ[param_type_name]
                 if param_type in parameter_types:
                     value = os.environ[env].strip()
-                    Logger.info('Found remote parameter %s with type %s' % (value, param_type),
+                    resolved_value = replace_all_system_variables_in_path(value)
+                    Logger.info('Found remote parameter %s (%s) with type %s' % (resolved_value, value, param_type),
                                 task_name=self.task_name)
-                    original_paths = [value]
+                    original_paths = [resolved_value]
                     delimiter = ''
                     for supported_delimiter in VALUE_DELIMITERS:
-                        if value.find(supported_delimiter) != -1:
-                            original_paths = re.split(supported_delimiter, value)
+                        if resolved_value.find(supported_delimiter) != -1:
+                            original_paths = re.split(supported_delimiter, resolved_value)
                             delimiter = supported_delimiter
                             break
+                    # Strip spaces, which may arise if the parameter was splitted by comma
+                    # e.g. "s3://bucket1/f1, s3://bucket2/f2" will be splitted into
+                    # "s3://bucket1/f1"
+                    # " s3://bucket2/f2"
+                    original_paths = map(str.strip, original_paths)
                     paths = []
                     for path in original_paths:
-                        resolved_path = replace_all_system_variables_in_path(path).strip()
-                        if self.match_dts_path(resolved_path, dts_registry):
-                            paths.append(self.build_dts_path(resolved_path, dts_registry, param_type))
-                        elif self.match_cloud_path(resolved_path):
-                            paths.append(self.build_cloud_path(resolved_path, param_type))
-                        elif self.match_ftp_or_http_path(resolved_path):
-                            paths.append(self.build_ftp_or_http_path(resolved_path, param_type))
+                        if self.match_dts_path(path, dts_registry):
+                            paths.append(self.build_dts_path(path, dts_registry, param_type))
+                        elif self.match_cloud_path(path):
+                            paths.append(self.build_cloud_path(path, param_type))
+                        elif self.match_ftp_or_http_path(path):
+                            paths.append(self.build_ftp_or_http_path(path, param_type))
                     if len(paths) != 0:
-                        remote_locations.append(RemoteLocation(env, value, param_type, paths, delimiter))
+                        remote_locations.append(RemoteLocation(env, resolved_value, param_type, paths, delimiter))
 
         return remote_locations
 
@@ -333,7 +381,7 @@ class InputDataTask:
         return LocalToS3(path.path, path.cloud_path, rules) if upload else S3ToLocal(path.cloud_path, path.path, rules)
 
     def localize_data(self, remote_locations, upload, rules=None):
-        cluster = Cluster.build_cluster()
+        cluster = Cluster.build_cluster(self.api, self.task_name)
         for location in remote_locations:
             for path in location.paths:
                 source, destination = self.get_local_paths(path, upload)
@@ -457,4 +505,3 @@ if __name__ == '__main__':
     main()
     end = timer()
     print("Elapsed %d seconds" % (end - start))
-

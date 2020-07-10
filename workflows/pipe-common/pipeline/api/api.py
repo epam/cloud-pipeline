@@ -565,9 +565,12 @@ class PipelineAPI:
             raise RuntimeError("Failed to load storages with READ and WRITE permissions. "
                                "Error message: {}".format(str(e.message)))
 
-    def load_available_storages_with_share_mount(self):
+    def load_available_storages_with_share_mount(self, from_region_id=None):
         try:
-            result = self.execute_request(str(self.api_url) + self.LOAD_AVAILABLE_STORAGES_WITH_MOUNTS)
+            url = str(self.api_url) + self.LOAD_AVAILABLE_STORAGES_WITH_MOUNTS
+            if from_region_id is not None:
+                url += "?fromRegion={}".format(from_region_id)
+            result = self.execute_request(url)
             if result is None:
                 return []
             return [DataStorageWithShareMount.from_json(item) for item in result]

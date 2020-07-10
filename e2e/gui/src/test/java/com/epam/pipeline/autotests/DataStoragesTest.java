@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.epam.pipeline.autotests.utils.Utils;
 import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
 import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -44,6 +45,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 @Listeners(value = ConditionalTestAnalyzer.class)
 public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigation {
 
+    private static final String STORAGE_PREFIX = StringUtils.isBlank(C.STORAGE_NAME_PREFIX) ? "" : C.STORAGE_NAME_PREFIX;
     private String storage = "epmcmbi-test-storage-" + Utils.randomSuffix();
     private final String deletableStorage = "epmcmbi-test-deletable-storage-" + Utils.randomSuffix();
     private final String editableStorage = "epmcmbi-test-editable-storage-" + Utils.randomSuffix();
@@ -148,7 +150,8 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
         navigateToLibrary()
             .selectStorage(storage)
             .createFolder(folder)
-            .messageShouldAppear(String.format("Storage path '%s/' for bucket '%s' already exists.", folder, storage));
+            .messageShouldAppear(String.format("Storage path '%s/' for bucket '%s' already exists.", folder,
+                    String.format("%s%s", STORAGE_PREFIX, storage)));
 
         refresh();
     }
@@ -411,7 +414,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
     public void addExistingBucket() {
         navigateToLibrary()
             .clickOnCreateExistingStorageButton()
-            .setPath(deletableStorage)
+            .setPath(String.format("%s%s", STORAGE_PREFIX, deletableStorage))
             .setAlias(deletableStorage)
             .clickCreateButton()
             .validateStorage(deletableStorage);
@@ -430,11 +433,11 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
 
         navigateToLibrary()
             .clickOnCreateExistingStorageButton()
-            .setPath(deletableStorage)
+            .setPath(String.format("%s%s", STORAGE_PREFIX, deletableStorage))
             .setAlias(deletableStorage)
             .clickCreateAndCancel()
             .messageShouldAppear(String.format("Error: data storage with name: '%s' or path: '%s' was not found.",
-                    deletableStorage, deletableStorage))
+                    deletableStorage, String.format("%s%s", STORAGE_PREFIX, deletableStorage)))
             .validateStorageIsNotPresent(deletableStorage);
     }
 

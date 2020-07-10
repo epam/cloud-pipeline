@@ -253,14 +253,20 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
         client = self.session.client('s3', config=S3BucketOperations.get_proxy_config())
         bucket = self.bucket.bucket.path
 
-        if not recursive and version:
-            self.restore_file_version(version, bucket, client)
-        else:
-            item = self.load_delete_marker(bucket, self.bucket.path, client, quite=True)
-            if item:
-                self.restore_last_file_version(item, client, bucket)
-            else:
-                self.restore_folder(bucket, client, exclude, include, recursive)
+        if not recursive:
+            if version:
+                self.restore_file_version(version, bucket, client)
+                return
+            item = self.load_delete_marker(bucket, self.bucket.path, client)
+            if not item:
+                raise RuntimeError('Failed to receive deleted marker')
+            self.restore_last_file_version(item, client, bucket)
+            return
+        item = self.load_delete_marker(bucket, self.bucket.path, client, quite=True)
+        if item:
+            self.restore_last_file_version(item, client, bucket)
+            return
+        self.restore_folder(bucket, client, exclude, include, recursive)
 
     @staticmethod
     def restore_last_file_version(item, client, bucket):
@@ -271,26 +277,28 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
     def restore_file_version(self, version, bucket, client):
         current_item = self.load_item(bucket, client)
         if current_item['VersionId'] == version:
-            click.echo('Version "{}" is already the latest version'.format(version), err=True)
+            raise RuntimeError('Version "{}" is already the latest version'.format(version))
         try:
             client.copy_object(Bucket=bucket, Key=self.bucket.path,
                                CopySource=dict(Bucket=bucket, Key=self.bucket.path, VersionId=version))
         except ClientError as e:
-            if 'delete marker' in e.message:
+            error_message = str(e)
+            if 'delete marker' in error_message:
                 text = "Cannot restore a delete marker"
-            elif 'Invalid version' in e.message:
+            elif 'Invalid version' in error_message:
                 text = 'Version "{}" doesn\'t exist.'.format(version)
             else:
-                text = e.message
+                text = error_message
             raise RuntimeError(text)
 
     def load_item(self, bucket, client):
         try:
             item = client.head_object(Bucket=bucket, Key=self.bucket.path)
         except ClientError as e:
-            if 'Not Found' in e.message:
+            error_message = str(e)
+            if 'Not Found' in error_message:
                 return self.load_delete_marker(bucket, self.bucket.path, client)
-            raise RuntimeError('Requested file "{}" doesn\'t exist. {}.'.format(self.bucket.path, e.message))
+            raise RuntimeError('Requested file "{}" doesn\'t exist. {}.'.format(self.bucket.path, error_message))
         if item is None:
             raise RuntimeError('Path "{}" doesn\'t exist'.format(self.bucket.path))
         return item

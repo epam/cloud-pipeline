@@ -40,6 +40,7 @@
                         r.node_image,
                         r.node_cloud_region,
                         r.docker_image,
+                        r.actual_docker_image,
                         r.cmd_template,
                         r.actual_cmd,
                         r.timeout,
@@ -61,11 +62,14 @@
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,
+                        r.compute_price_per_hour,
+                        r.disk_price_per_hour,
                         r.state_reason,
                         r.non_pause,
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
+                        r.sensitive,
                         pipelines.pipeline_name
                     FROM
                         pipeline.pipeline_run r

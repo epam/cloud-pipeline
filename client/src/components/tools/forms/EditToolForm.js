@@ -20,11 +20,13 @@ import {computed, observable} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Button,
+  Checkbox,
   Col,
   Collapse,
   Form,
   Icon,
   Input,
+  Modal,
   Row,
   Select,
   Tag
@@ -41,18 +43,23 @@ import {
 } from '../../pipelines/launch/form/LimitMountsInput';
 import {
   autoScaledClusterEnabled,
+  hybridAutoScaledClusterEnabled,
   CP_CAP_SGE,
   CP_CAP_SPARK,
   CP_CAP_SLURM,
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
+  CP_CAP_AUTOSCALE_HYBRID,
+  CP_CAP_AUTOSCALE_PRICE_TYPE,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState,
   gridEngineEnabled,
   sparkEnabled,
-  slurmEnabled
+  slurmEnabled,
+  getAutoScaledPriceTypeValue
 } from '../../pipelines/launch/form/utilities/launch-cluster';
+import AWSRegionTag from '../../special/AWSRegionTag';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -61,8 +68,17 @@ const Panels = {
   parameters: 'parameters'
 };
 
+const regionNotConfiguredValue = 'not_configured';
+
 @Form.create()
-@inject('awsRegions', 'allowedInstanceTypes', 'spotToolInstanceTypes', 'onDemandToolInstanceTypes', 'runDefaultParameters')
+@inject(
+  'awsRegions',
+  'allowedInstanceTypes',
+  'dataStorageAvailable',
+  'spotToolInstanceTypes',
+  'onDemandToolInstanceTypes',
+  'runDefaultParameters'
+)
 @observer
 export default class EditToolForm extends React.Component {
   static propTypes = {
@@ -75,11 +91,18 @@ export default class EditToolForm extends React.Component {
       defaultCommand: PropTypes.string,
       endpoints: PropTypes.object
     }),
+    allowSensitive: PropTypes.bool,
+    mode: PropTypes.oneOf(['tool', 'version']),
     configuration: PropTypes.object,
     onSubmit: PropTypes.func,
     readOnly: PropTypes.bool,
     onInitialized: PropTypes.func,
     executionEnvironmentDisabled: PropTypes.bool
+  };
+
+  static defaultProps = {
+    allowSensitive: false,
+    mode: 'tool'
   };
 
   formItemLayout = {
@@ -105,6 +128,8 @@ export default class EditToolForm extends React.Component {
     nodesCount: 0,
     maxNodesCount: 0,
     autoScaledCluster: false,
+    autoScaledPriceType: undefined,
+    hybridAutoScaledClusterEnabled: false,
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
@@ -117,6 +142,14 @@ export default class EditToolForm extends React.Component {
   @observable defaultSystemProperties;
 
   endpointControl;
+
+  @computed
+  get awsRegions () {
+    if (this.props.awsRegions.loaded) {
+      return (this.props.awsRegions.value || []).map(r => r);
+    }
+    return [];
+  }
 
   showLabelInput = () => {
     this.setState({labelInputVisible: true}, () => this.input.focus());
@@ -177,6 +210,20 @@ export default class EditToolForm extends React.Component {
               type: 'int',
               value: +this.state.maxNodesCount
             });
+            if (this.state.autoScaledPriceType) {
+              params.push({
+                name: CP_CAP_AUTOSCALE_PRICE_TYPE,
+                type: 'string',
+                value: `${this.state.autoScaledPriceType}`
+              });
+            }
+            if (this.state.hybridAutoScaledClusterEnabled) {
+              params.push({
+                name: CP_CAP_AUTOSCALE_HYBRID,
+                type: 'boolean',
+                value: true
+              });
+            }
           }
           if (this.state.launchCluster && this.state.gridEngineEnabled) {
             params.push({
@@ -221,6 +268,9 @@ export default class EditToolForm extends React.Component {
         const configuration = {
           parameters,
           node_count: this.state.launchCluster ? this.state.nodesCount : undefined,
+          cloudRegionId: values.cloudRegionId === regionNotConfiguredValue
+            ? null
+            : +values.cloudRegionId,
           cmd_template: this.defaultCommand,
           instance_disk: values.disk,
           instance_size: values.instanceType,
@@ -232,7 +282,8 @@ export default class EditToolForm extends React.Component {
               endpoints: this.endpointControl ? values.endpoints : [],
               labels: this.state.labels,
               cpu: '1000mi',
-              ram: '1Gi'
+              ram: '1Gi',
+              allowSensitive: values.allowSensitive
             }, configuration);
           }
           this.setState({pending: false});
@@ -248,6 +299,7 @@ export default class EditToolForm extends React.Component {
       case 'is_spot': return this.getPriceTypeInitialValue();
       case 'instance_size': return this.getInstanceTypeInitialValue();
       case 'instance_disk': return this.getDiskInitialValue();
+      case 'allowSensitive': return this.getAllowSensitiveInitialValue();
       default: return this.props.configuration ? this.props.configuration[field] : undefined;
     }
   };
@@ -268,7 +320,7 @@ export default class EditToolForm extends React.Component {
   getCloudProvider = () => {
     const instanceType = this.getInstanceTypeValue();
     if (this.props.awsRegions.loaded) {
-      const [provider] = (this.props.awsRegions.value || [])
+      const [provider] = this.awsRegions
         .filter(a => (instanceType && a.id === instanceType.regionId) || !instanceType)
         .map(a => a.provider);
       return provider;
@@ -290,6 +342,31 @@ export default class EditToolForm extends React.Component {
       undefined;
   };
 
+  getCloudRegionInitialValue = () => {
+    return this.props.configuration && this.props.configuration.cloudRegionId
+      ? `${this.props.configuration.cloudRegionId}`
+      : regionNotConfiguredValue;
+  };
+
+  getAllowSensitiveInitialValue = () => {
+    if (this.props.mode === 'version') {
+      return this.props.allowSensitive;
+    }
+    return this.props.tool
+      ? `${this.props.tool.allowSensitive}`.toLowerCase() === 'true'
+      : true;
+  };
+
+  getInitialCloudRegionNotAvailable = () => {
+    const {getFieldValue} = this.props.form;
+    const initialValue = this.getCloudRegionInitialValue();
+    const currentValue = getFieldValue('cloudRegionId');
+    return initialValue !== regionNotConfiguredValue &&
+      currentValue === initialValue &&
+      initialValue &&
+      this.awsRegions.filter((region) => `${region.id}` === initialValue).length === 0;
+  };
+
   rebuildComponent (props) {
     const state = this.state;
     state.labels = props.tool && props.tool.labels ? props.tool.labels.map(l => l) : [];
@@ -306,9 +383,13 @@ export default class EditToolForm extends React.Component {
             : 0;
         state.nodesCount = props.configuration.node_count;
         state.autoScaledCluster = props.configuration && autoScaledClusterEnabled(props.configuration.parameters);
+        state.hybridAutoScaledClusterEnabled = props.configuration &&
+          hybridAutoScaledClusterEnabled(props.configuration.parameters);
         state.gridEngineEnabled = props.configuration && gridEngineEnabled(props.configuration.parameters);
         state.sparkEnabled = props.configuration && sparkEnabled(props.configuration.parameters);
         state.slurmEnabled = props.configuration && slurmEnabled(props.configuration.parameters);
+        state.autoScaledPriceType = props.configuration &&
+          getAutoScaledPriceTypeValue(props.configuration.parameters);
         state.launchCluster = state.nodesCount > 0 || state.autoScaledCluster;
         this.defaultCommand = props.configuration && props.configuration.cmd_template
           ? props.configuration.cmd_template
@@ -354,11 +435,35 @@ export default class EditToolForm extends React.Component {
     this.reset();
     if (this.props.allowedInstanceTypes) {
       const isSpot = this.getPriceTypeInitialValue();
-      this.props.allowedInstanceTypes.setIsSpot(`${isSpot}` === 'true');
-      this.props.allowedInstanceTypes.setToolId(this.props.toolId);
+      const cloudRegionId = this.props.configuration && this.props.configuration.cloudRegionId
+        ? this.props.configuration.cloudRegionId
+        : undefined;
+      this.props.allowedInstanceTypes.setParameters(
+        {
+          isSpot: `${isSpot}` === 'true',
+          regionId: cloudRegionId,
+          toolId: this.props.toolId
+        }
+      );
     }
-
     this.props.onInitialized && this.props.onInitialized(this);
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    const {getFieldsValue} = this.props.form;
+    if (prevProps.configuration !== this.props.configuration) {
+      const cloudRegionId = this.props.configuration && this.props.configuration.cloudRegionId
+        ? this.props.configuration.cloudRegionId
+        : undefined;
+      this.props.allowedInstanceTypes.setRegionId(cloudRegionId, true);
+    }
+    const fields = getFieldsValue();
+    if ('instanceType' in fields && this.props.allowedInstanceTypes &&
+      this.props.allowedInstanceTypes.loaded &&
+      this.props.allowedInstanceTypes.changed) {
+      this.correctAllowedInstanceValues();
+      this.props.allowedInstanceTypes.handleChanged();
+    }
   }
 
   componentWillReceiveProps (nextProps) {
@@ -367,9 +472,28 @@ export default class EditToolForm extends React.Component {
     }
   }
 
+  correctAllowedInstanceValues = () => {
+    const {getFieldValue} = this.props.form;
+    const instanceType = getFieldValue('instanceType') || this.getInstanceTypeInitialValue();
+    const priceType = getFieldValue('is_spot') || this.getPriceTypeInitialValue();
+    this.props.form.setFieldsValue({
+      instanceType: this.correctInstanceTypeValue(instanceType),
+      is_spot: this.correctPriceTypeValue(priceType)
+    });
+  };
+
   handleIsSpotChange = (isSpot) => {
     if (this.props.allowedInstanceTypes && isSpot !== undefined && isSpot !== null) {
       this.props.allowedInstanceTypes.setIsSpot(`${isSpot}` === 'true');
+    }
+  };
+
+  handleCloudRegionChange = (region) => {
+    if (this.props.allowedInstanceTypes) {
+      this.props.allowedInstanceTypes.setRegionId(
+        region === regionNotConfiguredValue ? undefined : region,
+        true
+      );
     }
   };
 
@@ -529,6 +653,9 @@ export default class EditToolForm extends React.Component {
     const limitMountsFieldChanged = () => {
       return this.defaultLimitMounts !== this.props.form.getFieldValue('limitMounts');
     };
+    const cloudRegionFieldChanged = () => {
+      return this.getCloudRegionInitialValue() !== this.props.form.getFieldValue('cloudRegionId');
+    };
     const toolEndpointArray = this.props.tool ? (this.props.tool.endpoints || []).map(e => e) : null;
     const toolEndpointArrayFormValue = (this.props.form.getFieldValue('endpoints') || []).map(e => e);
     const toolLabelsArray = this.props.tool ? (this.props.tool.labels || []).map(l => l) : null;
@@ -539,16 +666,21 @@ export default class EditToolForm extends React.Component {
         : 0;
     const autoScaledCluster = this.props.configuration &&
       autoScaledClusterEnabled(this.props.configuration.parameters);
+    const hybridAutoScaledCluster = this.props.configuration &&
+      hybridAutoScaledClusterEnabled(this.props.configuration.parameters);
     const gridEngineEnabledValue = this.props.configuration &&
       gridEngineEnabled(this.props.configuration.parameters);
     const sparkEnabledValue = this.props.configuration &&
       sparkEnabled(this.props.configuration.parameters);
     const slurmEnabledValue = this.props.configuration &&
       slurmEnabled(this.props.configuration.parameters);
+    const autoScaledPriceTypeValue = this.props.configuration &&
+      getAutoScaledPriceTypeValue(this.props.configuration.parameters);
     const launchCluster = nodesCount > 0 || autoScaledCluster;
     return configurationFormFieldChanged('is_spot') ||
       configurationFormFieldChanged('instance_size', 'instanceType') ||
       configurationFormFieldChanged('instance_disk', 'disk') ||
+      configurationFormFieldChanged('allowSensitive') ||
       commandChanged() ||
       !compareArrays(toolEndpointArray, toolEndpointArrayFormValue) ||
       !compareArrays(toolLabelsArray, this.state.labels) ||
@@ -556,12 +688,14 @@ export default class EditToolForm extends React.Component {
       (this.toolFormSystemParameters && this.toolFormSystemParameters.modified) ||
       !!launchCluster !== !!this.state.launchCluster ||
       !!autoScaledCluster !== !!this.state.autoScaledCluster ||
+      !!hybridAutoScaledCluster !== !!this.state.hybridAutoScaledClusterEnabled ||
       !!gridEngineEnabledValue !== !!this.state.gridEngineEnabled ||
       !!sparkEnabledValue !== !!this.state.sparkEnabled ||
       !!slurmEnabledValue !== !!this.state.slurmEnabled ||
+      autoScaledPriceTypeValue !== this.state.autoScaledPriceType ||
       (this.state.launchCluster && nodesCount !== this.state.nodesCount) ||
       (this.state.launchCluster && this.state.autoScaledCluster && maxNodesCount !== this.state.maxNodesCount) ||
-      limitMountsFieldChanged();
+      limitMountsFieldChanged() || cloudRegionFieldChanged();
   };
 
   initializeEndpointsControl = (control) => {
@@ -582,6 +716,9 @@ export default class EditToolForm extends React.Component {
   };
 
   openConfigureClusterDialog = () => {
+    if (this.props.readOnly) {
+      return;
+    }
     this.setState({
       configureClusterDialogVisible: true
     });
@@ -597,20 +734,24 @@ export default class EditToolForm extends React.Component {
     const {
       launchCluster,
       autoScaledCluster,
+      hybridAutoScaledClusterEnabled,
       nodesCount,
       maxNodesCount,
       gridEngineEnabled,
       sparkEnabled,
-      slurmEnabled
+      slurmEnabled,
+      autoScaledPriceType
     } = configuration;
     this.setState({
       launchCluster,
       nodesCount,
       autoScaledCluster,
+      hybridAutoScaledClusterEnabled,
       maxNodesCount,
       gridEngineEnabled,
       sparkEnabled,
-      slurmEnabled
+      slurmEnabled,
+      autoScaledPriceType
     }, this.closeConfigureClusterDialog);
   };
 
@@ -747,9 +888,43 @@ export default class EditToolForm extends React.Component {
     return value;
   };
 
+  correctSensitiveMounts = async (e) => {
+    const {dataStorageAvailable, form} = this.props;
+    const initialLimitMounts = (form.getFieldValue('limitMounts') || this.defaultLimitMounts || '');
+    const storages = initialLimitMounts
+      .split(',')
+      .map(id => +id);
+    await dataStorageAvailable.fetchIfNeededOrWait();
+    const hasSensitive = (dataStorageAvailable.value || [])
+      .filter(s => s.sensitive && storages.indexOf(+s.id) >= 0)
+      .length > 0;
+    if (!e.target.checked && hasSensitive) {
+      const cancel = () => {
+        form.setFieldsValue({allowSensitive: true, limitMounts: initialLimitMounts});
+      };
+      const submit = () => {
+        form.setFieldsValue({
+          limitMounts: (dataStorageAvailable.value || [])
+            .filter(s => !s.sensitive && storages.indexOf(+s.id) >= 0)
+            .map(s => s.id)
+            .join(',')
+        });
+      };
+      Modal.confirm({
+        title: 'Sensitive storages will be removed from Limit Mounts setting',
+        onOk: submit,
+        onCancel: cancel
+      });
+    }
+  };
+
   renderExecutionEnvironment = () => {
     const renderExecutionEnvironmentSection = () => {
-      const {getFieldDecorator} = this.props.form;
+      const {getFieldDecorator, getFieldValue} = this.props.form;
+      let allowSensitive = getFieldValue('allowSensitive');
+      if (allowSensitive === undefined) {
+        allowSensitive = this.getAllowSensitiveInitialValue();
+      }
       return (
         <div>
           {this.renderSeparator('Execution defaults')}
@@ -767,7 +942,13 @@ export default class EditToolForm extends React.Component {
                     initialValue: this.getInstanceTypeInitialValue()
                   })(
                   <Select
-                    disabled={this.state.pending || this.props.readOnly}
+                    disabled={this.state.pending || this.props.readOnly || (
+                      this.props.allowedInstanceTypes &&
+                      (
+                        this.props.allowedInstanceTypes.changed ||
+                        this.props.allowedInstanceTypes.pending
+                      )
+                    )}
                     showSearch
                     allowClear={false}
                     placeholder="Instance type"
@@ -851,7 +1032,22 @@ export default class EditToolForm extends React.Component {
                   {
                     initialValue: this.defaultLimitMounts
                   })(
-                  <LimitMountsInput disabled={this.state.pending || this.props.readOnly} />
+                  <LimitMountsInput
+                    allowSensitive={allowSensitive}
+                    disabled={this.state.pending || this.props.readOnly}
+                  />
+                )}
+              </Form.Item>
+              <Form.Item {...this.formItemLayout} label="Allow sensitive storages" style={{marginTop: 10, marginBottom: 10}}>
+                {getFieldDecorator('allowSensitive',
+                  {
+                    initialValue: this.getAllowSensitiveInitialValue(),
+                    valuePropName: 'checked'
+                  })(
+                  <Checkbox
+                    disabled={this.state.pending || this.props.readOnly || this.props.mode === 'version'}
+                    onChange={this.correctSensitiveMounts}
+                  />
                 )}
               </Form.Item>
               <Row type="flex" align="middle" style={{marginBottom: 10}}>
@@ -865,10 +1061,81 @@ export default class EditToolForm extends React.Component {
                   </Row>
                 </Col>
               </Row>
+              <Form.Item
+                {...this.formItemLayout}
+                label="Cloud Region"
+                style={{marginTop: 10, marginBottom: 10}}
+                required
+              >
+                {getFieldDecorator('cloudRegionId', {
+                  rules: [
+                    {
+                      required: true,
+                      message: 'Cloud region is required'
+                    }
+                  ],
+                  initialValue: this.getCloudRegionInitialValue()
+                })(
+                  <Select
+                    disabled={this.state.pending || this.props.readOnly}
+                    showSearch
+                    allowClear={false}
+                    placeholder="Cloud Region"
+                    optionFilterProp="children"
+                    onChange={this.handleCloudRegionChange}
+                    filterOption={
+                      (input, option) =>
+                        option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                  >
+                    <Select.Option
+                      key={regionNotConfiguredValue}
+                      name="Not configured"
+                      title="Not configured"
+                      value={regionNotConfiguredValue}
+                    >
+                      Not configured
+                    </Select.Option>
+                    {
+                      this.getInitialCloudRegionNotAvailable() && (
+                        <Select.Option
+                          key={this.getCloudRegionInitialValue()}
+                          name="Not available"
+                          title="Not available"
+                          value={this.getCloudRegionInitialValue()}
+                        >
+                          Not available
+                        </Select.Option>
+                      )
+                    }
+                    <Select.Option disabled key="divider" className={styles.selectOptionDivider} />
+                    {
+                      this.awsRegions
+                        .map(region => {
+                          return (
+                            <Select.Option
+                              key={`${region.id}`}
+                              name={region.name}
+                              title={region.name}
+                              value={`${region.id}`}>
+                              <AWSRegionTag
+                                provider={region.provider}
+                                regionUID={region.regionId}
+                                style={{fontSize: 'larger'}}
+                              /> {region.name}
+                            </Select.Option>
+                          );
+                        })
+                    }
+                  </Select>
+                )}
+              </Form.Item>
               <ConfigureClusterDialog
                 instanceName={this.props.form.getFieldValue('instanceType')}
                 launchCluster={this.state.launchCluster}
+                cloudRegionProvider={this.getCloudProvider()}
+                autoScaledPriceType={this.state.autoScaledPriceType}
                 autoScaledCluster={this.state.autoScaledCluster}
+                hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
                 gridEngineEnabled={this.state.gridEngineEnabled}
                 sparkEnabled={this.state.sparkEnabled}
                 slurmEnabled={this.state.slurmEnabled}
@@ -942,14 +1209,15 @@ export default class EditToolForm extends React.Component {
 
   render () {
     const {getFieldDecorator} = this.props.form;
+    const isTool = this.props.mode === 'tool';
 
     return (
       <Form>
         {
-          this.props.tool && this.renderSeparator('Tool endpoints')
+          isTool && this.renderSeparator('Tool endpoints')
         }
         {
-          this.props.tool &&
+          isTool &&
           <Row type="flex">
             <Col xs={24} sm={6} />
             <Col xs={24} sm={12}>
@@ -966,9 +1234,9 @@ export default class EditToolForm extends React.Component {
             </Col>
           </Row>
         }
-        {this.props.tool && this.renderSeparator('Tool attributes')}
+        {isTool && this.renderSeparator('Tool attributes')}
         {
-          this.props.tool &&
+          isTool &&
           <Row style={{marginBottom: 10, marginTop: 10}}>
             <Col xs={24} sm={6} className={styles.toolSettingsTitle}>Labels:</Col>
             <Col xs={24} sm={12}>

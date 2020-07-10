@@ -68,6 +68,8 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     private String loadStorageCountQuery;
     private String loadAllStoragesWithParentsQuery;
     private String loadStorageWithParentsQuery;
+    private String loadDataStorageByPrefixesQuery;
+    private String loadDataStoragesByIdsQuery;
 
     @Autowired
     private DaoHelper daoHelper;
@@ -106,6 +108,13 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 DataStorageParameters.getRowMapper());
     }
 
+    public List<AbstractDataStorage> loadDataStoragesByIds(final List<Long> ids) {
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(DataStorageParameters.DATASTORAGE_IDS.name(), ids);
+        return getNamedParameterJdbcTemplate().query(loadDataStoragesByIdsQuery, params,
+                DataStorageParameters.getRowMapper());
+    }
+
     public AbstractDataStorage loadDataStorage(Long id) {
         List<AbstractDataStorage> items = getJdbcTemplate().query(loadDataStorageByIdQuery,
                 DataStorageParameters.getRowMapper(), id);
@@ -131,6 +140,13 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 .query(loadDataStorageByNameAndParentIdQuery, params,
                         DataStorageParameters.getRowMapper());
         return !items.isEmpty() ? items.get(0) : null;
+    }
+
+    public List<AbstractDataStorage> loadDataStoragesByPrefixes(final Collection<String> prefixes) {
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(DataStorageParameters.PATH.name(), prefixes);
+        return getNamedParameterJdbcTemplate().query(loadDataStorageByPrefixesQuery, params,
+                DataStorageParameters.getRowMapper());
     }
 
     public List<AbstractDataStorage> loadRootDataStorages() {
@@ -240,6 +256,15 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         this.loadStorageWithParentsQuery = loadStorageWithParentsQuery;
     }
 
+    @Required
+    public void setLoadDataStorageByPrefixesQuery(String loadDataStorageByPrefixesQuery) {
+        this.loadDataStorageByPrefixesQuery = loadDataStorageByPrefixesQuery;
+    }
+
+    public void setLoadDataStoragesByIdsQuery(String loadDataStoragesByIdsQuery) {
+        this.loadDataStoragesByIdsQuery = loadDataStoragesByIdsQuery;
+    }
+
     public enum DataStorageParameters {
         DATASTORAGE_ID,
         DATASTORAGE_NAME,
@@ -267,7 +292,12 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         FILE_SHARE_MOUNT_ID,
 
         // cloud specific fields
-        REGION_ID;
+        REGION_ID,
+
+        SENSITIVE,
+
+        DATASTORAGE_IDS;
+
 
         static MapSqlParameterSource getParameters(AbstractDataStorage dataStorage) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -285,6 +315,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             params.addValue(SHARED.name(), dataStorage.isShared());
             params.addValue(MOUNT_OPTIONS.name(), dataStorage.getMountOptions());
             params.addValue(FILE_SHARE_MOUNT_ID.name(), dataStorage.getFileShareMountId());
+            params.addValue(SENSITIVE.name(), dataStorage.isSensitive());
 
             if (dataStorage instanceof S3bucketDataStorage) {
                 S3bucketDataStorage bucket = ((S3bucketDataStorage) dataStorage);
@@ -382,6 +413,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             }
             StoragePolicy policy = getStoragePolicy(rs);
             dataStorage.setStoragePolicy(policy);
+            dataStorage.setSensitive(rs.getBoolean(SENSITIVE.name()));
             return dataStorage;
         }
 

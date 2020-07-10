@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.preference;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.preference.PreferenceType;
 import com.epam.pipeline.entity.utils.DateUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
@@ -32,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Date;
 import java.util.List;
 
+@Slf4j
 public class PreferenceDao extends NamedParameterJdbcDaoSupport {
 
     private static final String PREFERENCES_CACHE = "preferences";
@@ -63,6 +65,7 @@ public class PreferenceDao extends NamedParameterJdbcDaoSupport {
 
     @Cacheable(value = PREFERENCES_CACHE, key="#name")
     public Preference loadPreferenceByName(String name) {
+        log.debug("Loading preference {} from DB.", name);
         List<Preference> items = getJdbcTemplate().query(
                 loadPreferenceByNameQuery,
                 PreferenceParameters.getRowMapper(),

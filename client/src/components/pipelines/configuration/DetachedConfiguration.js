@@ -75,6 +75,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
 
   navigationBlockedListener;
   navigationBlocker;
+  allowedNavigation;
 
   state = {
     configurationsListCollapsed: false,
@@ -396,7 +397,9 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
             overriddenConfiguration: null
           }, () => {
             if (this.selectedConfigurationName !== configuration.name) {
-              this.props.router.push(`/configuration/${this.props.configurationId}/${configuration.name}`);
+              this.allowedNavigation =
+                `/configuration/${this.props.configurationId}/${configuration.name}`;
+              this.props.router.push(this.allowedNavigation);
             }
           });
           return true;
@@ -956,13 +959,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
           align="middle"
           style={{marginBottom: 10, minHeight: 41}}>
           <Col className={browserStyles.itemHeader}>
-            <Icon type="setting" className={`${browserStyles.editableControl} ${configurationTitleClassName}`} />
-            {
-              this.props.configurations.value.locked &&
-              <Icon
-                className={`${browserStyles.editableControl} ${configurationTitleClassName}`}
-                type="lock" />
-            }
             <Breadcrumbs
               id={parseInt(this.props.configurationId)}
               type={ItemTypes.configuration}
@@ -970,6 +966,11 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
               onSaveEditableField={this.renameConfiguration}
               editStyleEditableField={{flex: 1}}
               readOnlyEditableField={!this.canModifySources}
+              icon="setting"
+              iconClassName={`${browserStyles.editableControl} ${configurationTitleClassName}`}
+              lock={this.props.configurations.value.locked}
+              lockClassName={`${browserStyles.editableControl} ${configurationTitleClassName}`}
+              subject={this.props.configurations.value}
             />
           </Col>
           <Col className={styles.actionButtons}>
@@ -1052,7 +1053,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
           this.navigationBlocker = null;
         }, 0);
       };
-      if (this.configurationModified && !this.navigationBlocker) {
+      if (this.configurationModified && !this.navigationBlocker &&
+        location.pathname !== this.allowedNavigation) {
         const cancel = () => {
           if (this.props.history.getCurrentLocation().pathname !== locationBefore) {
             this.props.history.replace(locationBefore);

@@ -259,6 +259,17 @@ APP_PID="$!"
 
 sleep 5
 
+# Run Filebeat
+envsubst < /etc/filebeat/filebeat-template.yml > /etc/filebeat/filebeat.yml
+nohup filebeat &
+
+# Providing AZURE Cli credentials for nodeup, nodedown scripts, if this type of authentication was configured
+if [ "$CP_CLOUD_PLATFORM" == "az" ] && [ -f /root/.cloud/azureProfile.json ] && [ -f /root/.cloud/accessTokens.json ]; then
+  mkdir -p /root/.azure
+  cp /root/.cloud/* /root/.azure/
+fi
+
+
 # Workaround the container hanging when being terminated
 function sig_handler {
     echo "Got SIGTERM, stopping PID $APP_PID and exiting"

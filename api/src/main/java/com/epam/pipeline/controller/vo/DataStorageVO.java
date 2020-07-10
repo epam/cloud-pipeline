@@ -51,4 +51,5 @@ public class DataStorageVO {
     private List<String> allowedCidrs;
     private Long regionId;
     private Long fileShareMountId;
+    private boolean sensitive;
 }

@@ -146,7 +146,8 @@ export default class DataStorage extends React.Component {
       description: storage.description,
       path: storage.path,
       mountPoint: storage.mountPoint,
-      mountOptions: storage.mountOptions
+      mountOptions: storage.mountOptions,
+      sensitive: storage.sensitive
     };
     const hide = message.loading('Updating data storage...');
     const request = new DataStorageUpdate();
@@ -294,31 +295,34 @@ export default class DataStorage extends React.Component {
 
   navigateFull = (path) => {
     if (path && !this.props.info.pending && !this.props.info.error) {
-      const parts = path.split('://');
-      if (parts.length === 2) {
-        const nameParts = parts[1].split('/');
-        const bucketName = nameParts[0];
-        let relativePath;
-        for (let i = 1; i < nameParts.length; i++) {
-          if (!relativePath) {
-            relativePath = nameParts[i];
-          } else {
-            relativePath += `/${nameParts[i]}`;
-          }
+      let {pathMask, path: bucketPath, delimiter = '/'} = this.props.info.value;
+      let bucketPathMask = `^[^:/]+://[^${delimiter}]+(|${delimiter}(.*))$`;
+      if (pathMask) {
+        if (pathMask.endsWith(delimiter)) {
+          pathMask = pathMask.substr(0, pathMask.length - 1);
         }
-        if (this.props.info.value.path.toLowerCase() !== bucketName.toLowerCase()) {
-          message.error('You cannot navigate to another storage.', 3);
+        bucketPathMask = `^${pathMask}(|${delimiter}(.*))$`;
+      } else if (bucketPath) {
+        if (bucketPath.endsWith(delimiter)) {
+          bucketPath = bucketPath.substr(0, bucketPath.length - 1);
+        }
+        bucketPathMask = `^[^:/]+://${bucketPath}(|${delimiter}(.*))$`;
+      }
+      const regExp = new RegExp(bucketPathMask, 'i');
+      const execResult = regExp.exec(path);
+      if (execResult && execResult.length === 3) {
+        let relativePath = execResult[2] || '';
+        if (relativePath && relativePath.endsWith(delimiter)) {
+          relativePath = relativePath.substr(0, relativePath.length - 1);
+        }
+        if (relativePath) {
+          this.props.router.push(`/storage/${this.props.storageId}?path=${relativePath}&versions=${this.showVersions}`);
         } else {
-          if (relativePath && relativePath.endsWith('/')) {
-            relativePath = path.substring(0, relativePath.length - 1);
-          }
-          if (relativePath) {
-            this.props.router.push(`/storage/${this.props.storageId}?path=${relativePath}&versions=${this.showVersions}`);
-          } else {
-            this.props.router.push(`/storage/${this.props.storageId}?versions=${this.showVersions}`);
-          }
-          this.setState({currentPage: 0, pageMarkers: [null], pagePerformed: false, selectedItems: [], selectedFile: null});
+          this.props.router.push(`/storage/${this.props.storageId}?versions=${this.showVersions}`);
         }
+        this.setState({currentPage: 0, pageMarkers: [null], pagePerformed: false, selectedItems: [], selectedFile: null});
+      } else {
+        message.error('You cannot navigate to another storage.', 3);
       }
     }
   };
@@ -787,7 +791,14 @@ export default class DataStorage extends React.Component {
   };
 
   openEditFileForm = (item) => {
-    this.setState({editFile: item});
+    const sensitive = this.props.info.loaded
+      ? this.props.info.value.sensitive
+      : false;
+    if (sensitive) {
+      message.info('This operation is forbidden for sensitive storages', 5);
+    } else {
+      this.setState({editFile: item});
+    }
   };
 
   closeEditFileForm = () => {
@@ -808,7 +819,7 @@ export default class DataStorage extends React.Component {
           selectable: false
         });
       }
-      const getChildList = (item, versions) => {
+      const getChildList = (item, versions, sensitive) => {
         if (!versions || !this.showVersions) {
           return undefined;
         }
@@ -818,12 +829,14 @@ export default class DataStorage extends React.Component {
             childList.push({
               key: `${item.type}_${item.path}_${version}`,
               ...versions[version],
-              downloadable: item.type.toLowerCase() === 'file' && !versions[version].deleteMarker &&
-              (
-                !item.labels ||
-                !item.labels['StorageClass'] ||
-                item.labels['StorageClass'].toLowerCase() !== 'glacier'
-              ),
+              downloadable: item.type.toLowerCase() === 'file' &&
+                !versions[version].deleteMarker &&
+                !sensitive &&
+                (
+                  !item.labels ||
+                  !item.labels['StorageClass'] ||
+                  item.labels['StorageClass'].toLowerCase() !== 'glacier'
+                ),
               editable: versions[version].version === item.version &&
               roleModel.writeAllowed(this.props.info.value) &&
               !versions[version].deleteMarker,
@@ -847,6 +860,9 @@ export default class DataStorage extends React.Component {
         return childList;
       };
       let results = [];
+      const sensitive = this.props.info.loaded
+        ? this.props.info.value.sensitive
+        : false;
       if (this.props.storage.loaded) {
         results = this.props.storage.value.results || [];
       }
@@ -854,15 +870,17 @@ export default class DataStorage extends React.Component {
         return {
           key: `${i.type}_${i.path}`,
           ...i,
-          downloadable: i.type.toLowerCase() === 'file' && !i.deleteMarker &&
-          (
-            !i.labels ||
-            !i.labels['StorageClass'] ||
-            i.labels['StorageClass'].toLowerCase() !== 'glacier'
-          ),
+          downloadable: i.type.toLowerCase() === 'file' &&
+            !i.deleteMarker &&
+            !sensitive &&
+            (
+              !i.labels ||
+              !i.labels['StorageClass'] ||
+              i.labels['StorageClass'].toLowerCase() !== 'glacier'
+            ),
           editable: roleModel.writeAllowed(this.props.info.value) && !i.deleteMarker,
           deletable: roleModel.writeAllowed(this.props.info.value),
-          children: getChildList(i, i.versions),
+          children: getChildList(i, i.versions, sensitive),
           selectable: !i.deleteMarker,
           miew: !i.deleteMarker &&
                 i.type.toLowerCase() === 'file' &&
@@ -1035,6 +1053,9 @@ export default class DataStorage extends React.Component {
   };
 
   get bulkDownloadEnabled () {
+    if (this.props.info.loaded && this.props.info.value.sensitive) {
+      return false;
+    }
     const selectedItemsLength = this.state.selectedItems.length;
     const downloadableSelectedItemsLength = this.state.selectedItems
       .filter(item => item.downloadable).length;
@@ -1262,17 +1283,19 @@ export default class DataStorage extends React.Component {
                 </Dropdown>
               }
               {
-                roleModel.writeAllowed(this.props.info.value) &&
-                <UploadButton
-                  multiple={true}
-                  onRefresh={this.refreshList}
-                  title={'Upload'}
-                  storageId={this.props.storageId}
-                  path={this.props.path}
-                  // synchronous
-                  uploadToS3={this.props.info.value.type === 'S3'}
-                  uploadToNFS={this.props.info.value.type === 'NFS'}
-                  action={DataStorageItemUpdate.uploadUrl(this.props.storageId, this.props.path)} />
+                roleModel.writeAllowed(this.props.info.value) && (
+                  <UploadButton
+                    multiple
+                    onRefresh={this.refreshList}
+                    title={'Upload'}
+                    storageId={this.props.storageId}
+                    path={this.props.path}
+                    // synchronous
+                    uploadToS3={this.props.info.value.type === 'S3'}
+                    uploadToNFS={this.props.info.value.type === 'NFS'}
+                    action={DataStorageItemUpdate.uploadUrl(this.props.storageId, this.props.path)}
+                  />
+                )
               }
             </div>
           </Row>
@@ -1346,47 +1369,39 @@ export default class DataStorage extends React.Component {
     return (
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
         <Row type="flex" justify="space-between" align="middle">
-          <Col>
-            <Row type="flex" className={styles.itemHeader} align="middle">
-              {
+          <Col className={styles.itemHeader}>
+            <Breadcrumbs
+              style={{height: '31px'}}
+              id={parseInt(this.props.storageId)}
+              type={ItemTypes.storage}
+              textEditableField={this.props.info.value.name}
+              onSaveEditableField={this.renameDataStorage}
+              readOnlyEditableField={!roleModel.writeAllowed(this.props.info.value)}
+              editStyleEditableField={{flex: 1}}
+              icon={
                 this.props.info.value && this.props.info.value.type.toLowerCase() !== 'nfs'
-                  ? <Icon
-                    type="inbox"
-                    className={`${styles.editableControl} ${storageTitleClassName}`} />
-                  : <Icon
-                    type="hdd"
-                    className={`${styles.editableControl} ${storageTitleClassName}`} />
+                  ? 'inbox'
+                  : 'hdd'
               }
-              {
-                this.props.info.value.locked &&
-                <Icon
-                  className={`${styles.editableControl} ${storageTitleClassName}`}
-                  type="lock" />
-              }
-              <Breadcrumbs
-                style={{height: '31px'}}
-                id={parseInt(this.props.storageId)}
-                type={ItemTypes.storage}
-                textEditableField={this.props.info.value.name}
-                onSaveEditableField={this.renameDataStorage}
-                readOnlyEditableField={!roleModel.writeAllowed(this.props.info.value)}
-                editStyleEditableField={{flex: 1}}
-                displayTextEditableField={
-                  <span>
+              iconClassName={`${styles.editableControl} ${storageTitleClassName}`}
+              lock={this.props.info.value.locked}
+              lockClassName={`${styles.editableControl} ${storageTitleClassName}`}
+              displayTextEditableField={
+                <span>
                     {this.props.info.value.name}
-                    <AWSRegionTag
-                      className={styles.storageRegion}
-                      darkMode
-                      displayName
-                      flagStyle={{fontSize: 'smaller'}}
-                      providerStyle={{fontSize: 'smaller'}}
-                      regionId={this.props.info.value.regionId}
-                      style={{marginLeft: 5, fontSize: 'medium'}}
-                    />
+                  <AWSRegionTag
+                    className={styles.storageRegion}
+                    darkMode
+                    displayName
+                    flagStyle={{fontSize: 'smaller'}}
+                    providerStyle={{fontSize: 'smaller'}}
+                    regionId={this.props.info.value.regionId}
+                    style={{marginLeft: 5, fontSize: 'medium'}}
+                  />
                   </span>
-                }
-              />
-            </Row>
+              }
+              subject={this.props.info.value}
+            />
           </Col>
           <Col>
             <Row type="flex" justify="end" className={styles.currentFolderActions}>
@@ -1470,6 +1485,8 @@ export default class DataStorage extends React.Component {
             <Metadata
               key={METADATA_PANEL_KEY}
               readOnly={!roleModel.isOwner(this.props.info.value)}
+              downloadable={!this.props.info.value.sensitive}
+              showContent={!this.props.info.value.sensitive}
               hideMetadataTags={this.props.info.value.type === 'NFS'}
               canNavigateBack={!!this.state.selectedFile}
               onNavigateBack={() => this.setState({selectedFile: null})}
@@ -1589,7 +1606,7 @@ export default class DataStorage extends React.Component {
         <EditItemForm
           pending={false}
           title="Create file"
-          includeFileContentField={true}
+          includeFileContentField
           visible={this.state.createFile}
           onCancel={this.closeCreateFileDialog}
           onSubmit={this.createFile} />
@@ -1652,6 +1669,7 @@ export default class DataStorage extends React.Component {
         </Modal>
         <DataStorageCodeForm
           file={this.state.editFile}
+          downloadable={!this.props.info.value.sensitive}
           storageId={this.props.storageId}
           cancel={this.closeEditFileForm}
           save={this.saveEditableFile} />

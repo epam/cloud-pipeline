@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    cloud-pipeline/cp-tinyproxy: "true"
+  name: cp-tinyproxy
+  namespace: default
+spec:
+  ports:
+  - protocol: TCP
+    port: ${CP_TP_INTERNAL_PORT}
+    targetPort: ${CP_TP_INTERNAL_PORT}
+    name: cp-tinyproxy-port
+  selector:
+    cloud-pipeline/cp-tinyproxy: "true"

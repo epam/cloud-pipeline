@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-import {observable} from 'mobx';
+import {observable, isObservableArray} from 'mobx';
 import {Period, getPeriod} from '../periods';
 import {RunnerType} from './runner-filter';
 import ReportsRouting from './reports-routing';
 
 class Filter {
+  static RUNNER_SEPARATOR = '|';
   @observable period;
   @observable range;
   @observable report;
@@ -36,12 +37,12 @@ class Filter {
     if (user) {
       this.runner = {
         type: RunnerType.user,
-        id: user
+        id: (user || '').split(Filter.RUNNER_SEPARATOR)
       };
     } else if (group) {
       this.runner = {
         type: RunnerType.group,
-        id: group
+        id: (group || '').split(Filter.RUNNER_SEPARATOR)
       };
     } else {
       this.runner = undefined;
@@ -65,9 +66,15 @@ class Filter {
     if (range === undefined && !strictRange) {
       range = this.range;
     }
+    const mapRunnerId = (id) => {
+      if (id && (Array.isArray(id) || isObservableArray(id))) {
+        return id.join(Filter.RUNNER_SEPARATOR);
+      }
+      return id;
+    };
     const params = [
-      runner && runner.type === RunnerType.user && `user=${runner.id}`,
-      runner && runner.type === RunnerType.group && `group=${runner.id}`,
+      runner && runner.type === RunnerType.user && `user=${mapRunnerId(runner.id)}`,
+      runner && runner.type === RunnerType.group && `group=${mapRunnerId(runner.id)}`,
       period && `period=${period}`,
       range && `range=${range}`
     ].filter(Boolean);
@@ -89,14 +96,17 @@ class Filter {
     }
     let runner;
     if (this.runner && this.runner.type === RunnerType.user && users && users.loaded) {
-      const [user] = (users.value || []).filter(({id}) => `${id}` === `${this.runner.id}`);
-      if (user) {
-        runner = user.userName;
+      const userList = (users.value || [])
+        .filter(({id}) => (this.runner.id || [])
+          .filter((rId) => `${id}` === `${rId}`).length > 0
+        );
+      if (userList.length > 0) {
+        runner = userList.map(u => u.userName).join(' ');
       } else {
-        runner = `user #${this.runner.id}`;
+        runner = `user ${this.runner.id.map(i => `#${i}`).join(' ')}`;
       }
     } else if (this.runner) {
-      runner = `${this.runner.type} ${this.runner.id}`;
+      runner = `${this.runner.type} ${this.runner.id.join(' ')}`;
     }
     return [
       title,

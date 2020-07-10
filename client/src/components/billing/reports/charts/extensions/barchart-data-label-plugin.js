@@ -135,12 +135,14 @@ const plugin = {
       } = dataset;
       const color = textColor || borderColor;
       const {position, text} = config;
-      ctx.save();
-      ctx.fillStyle = color;
-      ctx.font = `${textBold ? 'bold ' : ''}9pt sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(text, position.x + position.width / 2.0, position.y + position.height);
+      if (position) {
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.font = `${textBold ? 'bold ' : ''}9pt sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(text, position.x + position.width / 2.0, position.y + position.height);
+      }
     }
   },
   getInitialLabelConfig: function (dataset, element, index, meta, chart, valueFormatter) {

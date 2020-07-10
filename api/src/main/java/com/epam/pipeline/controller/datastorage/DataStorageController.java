@@ -82,6 +82,7 @@ import java.util.Set;
 public class DataStorageController extends AbstractRestController {
 
     private static final String ID = "id";
+    private static final String FROM_REGION = "fromRegion";
     private static final String PATH = "path";
     private static final String VERSION = "version";
     private static final String PIPELINE_ID = "pipelineId";
@@ -122,14 +123,19 @@ public class DataStorageController extends AbstractRestController {
     @RequestMapping(value = "/datastorage/availableWithMounts", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(
-            value = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object.",
-            notes = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object.",
+            value = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object." +
+                    "If fronRegion is specified this method will return only allowed for mount" +
+                    " storages for specified region.",
+            notes = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object." +
+                    "If fronRegion is specified this method will return only allowed for mount " +
+                    "storages for specified region.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<DataStorageWithShareMount>> getAvailableStoragesWithMountObjects() {
-        return Result.success(dataStorageApiService.getAvailableStoragesWithShareMount());
+    public Result<List<DataStorageWithShareMount>> getAvailableStoragesWithMountObjects(
+            @RequestParam(value = FROM_REGION, required = false) final Long regionId) {
+        return Result.success(dataStorageApiService.getAvailableStoragesWithShareMount(regionId));
     }
 
     @RequestMapping(value = "/datastorage/mount", method = RequestMethod.GET)
@@ -170,6 +176,19 @@ public class DataStorageController extends AbstractRestController {
             })
     public Result<AbstractDataStorage> findDataStorage(@RequestParam(value = ID) final String identifier) {
         return Result.success(dataStorageApiService.loadByNameOrId(identifier));
+    }
+
+    @RequestMapping(value = "/datastorage/findByPath", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns a datastorage, specified by ID, name or one of path prefixes.",
+            notes = "Returns a datastorage, specified by ID, name or one of path prefixes.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<AbstractDataStorage> findDataStorageByPath(@RequestParam(value = ID) final String identifier) {
+        return Result.success(dataStorageApiService.loadByPathOrId(identifier));
     }
 
     @RequestMapping(value = "/datastorage/{id}/list", method = RequestMethod.GET)
@@ -469,8 +488,9 @@ public class DataStorageController extends AbstractRestController {
             })
     public Result<SecuredEntityWithAction<AbstractDataStorage>> registerDataStorage(
             @RequestBody DataStorageVO dataStorageVO,
-            @RequestParam(value = CLOUD, defaultValue = FALSE) final Boolean proceedOnCloud) {
-        return Result.success(dataStorageApiService.create(dataStorageVO, proceedOnCloud));
+            @RequestParam(value = CLOUD, defaultValue = FALSE) final Boolean proceedOnCloud,
+            @RequestParam(value = "skipPolicy", defaultValue = FALSE) final boolean skipPolicy){
+        return Result.success(dataStorageApiService.create(dataStorageVO, proceedOnCloud, skipPolicy));
     }
 
     @RequestMapping(value = "/datastorage/update", method = RequestMethod.POST)

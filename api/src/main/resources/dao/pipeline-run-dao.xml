@@ -40,6 +40,7 @@
                         node_name,
                         node_cloud_region,
                         docker_image,
+                        actual_docker_image,
                         cmd_template,
                         actual_cmd,
                         timeout,
@@ -62,11 +63,14 @@
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
                         state_reason,
                         non_pause,
                         node_real_disk,
                         node_cloud_provider,
-                        tags)
+                        tags,
+                        sensitive)
                     VALUES (
                         :RUN_ID,
                         :PIPELINE_ID,
@@ -84,6 +88,7 @@
                         :NODE_NAME,
                         :NODE_CLOUD_REGION,
                         :DOCKER_IMAGE,
+                        :ACTUAL_DOCKER_IMAGE,
                         :CMD_TEMPLATE,
                         :ACTUAL_CMD,
                         :TIMEOUT,
@@ -106,11 +111,14 @@
                         :EXEC_PREFERENCES,
                         :PRETTY_URL,
                         :PRICE_PER_HOUR,
+                        :COMPUTE_PRICE_PER_HOUR,
+                        :DISK_PRICE_PER_HOUR,
                         :STATE_REASON,
                         :NON_PAUSE,
                         :NODE_REAL_DISK,
                         :NODE_CLOUD_PROVIDER,
-                        to_jsonb(:TAGS::jsonb))
+                        to_jsonb(:TAGS::jsonb),
+                        :SENSITIVE)
                 ]]>
             </value>
         </property>
@@ -135,6 +143,7 @@
                         r.node_image,
                         r.node_cloud_region,
                         r.docker_image,
+                        r.actual_docker_image,
                         r.cmd_template,
                         r.actual_cmd,
                         r.timeout,
@@ -156,11 +165,14 @@
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,
+                        r.compute_price_per_hour,
+                        r.disk_price_per_hour,
                         r.state_reason,
                         r.non_pause,
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
+                        r.sensitive,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -222,6 +234,7 @@
                         node_image,
                         node_cloud_region,
                         docker_image,
+                        actual_docker_image,
                         cmd_template,
                         actual_cmd,
                         timeout,
@@ -243,11 +256,14 @@
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
                         state_reason,
                         non_pause,
                         node_real_disk,
                         node_cloud_provider,
-                        tags
+                        tags,
+                        sensitive
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -278,6 +294,7 @@
                         node_image,
                         node_cloud_region,
                         docker_image,
+                        actual_docker_image,
                         cmd_template,
                         actual_cmd,
                         timeout,
@@ -299,11 +316,14 @@
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
                         state_reason,
                         non_pause,
                         node_real_disk,
                         node_cloud_provider,
-                        tags
+                        tags,
+                        sensitive
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -334,6 +354,7 @@
                         node_image,
                         node_cloud_region,
                         docker_image,
+                        actual_docker_image,
                         cmd_template,
                         actual_cmd,
                         timeout,
@@ -355,11 +376,14 @@
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
                         state_reason,
                         non_pause,
                         node_real_disk,
                         node_cloud_provider,
-                        tags
+                        tags,
+                        sensitive
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -428,13 +452,13 @@
                         node_name = :NODE_NAME,
                         node_cloud_region = :NODE_CLOUD_REGION,
                         docker_image = :DOCKER_IMAGE,
+                        actual_docker_image = :ACTUAL_DOCKER_IMAGE,
                         cmd_template = :CMD_TEMPLATE,
                         actual_cmd = :ACTUAL_CMD,
                         timeout = :TIMEOUT,
                         owner = :OWNER,
                         service_url = :SERVICE_URL,
                         pod_ip = :POD_IP,
-                        ssh_password = :SSH_PASSWORD,
                         commit_status = :COMMIT_STATUS,
                         last_change_commit_time = :LAST_CHANGE_COMMIT_TIME,
                         config_name = :CONFIG_NAME,
@@ -450,10 +474,13 @@
                         exec_preferences = :EXEC_PREFERENCES,
                         pretty_url = :PRETTY_URL,
                         price_per_hour = :PRICE_PER_HOUR,
+                        compute_price_per_hour = :COMPUTE_PRICE_PER_HOUR,
+                        disk_price_per_hour = :DISK_PRICE_PER_HOUR,
                         state_reason = :STATE_REASON,
                         non_pause = :NON_PAUSE,
                         node_real_disk =:NODE_REAL_DISK,
-                        tags = to_jsonb(:TAGS::jsonb)
+                        tags = to_jsonb(:TAGS::jsonb),
+                        sensitive = :SENSITIVE
                     WHERE
                         run_id = :RUN_ID
                 ]]>
@@ -532,6 +559,7 @@
                       r.node_image,
                       r.node_cloud_region,
                       r.docker_image,
+                      r.actual_docker_image,
                       r.cmd_template,
                       r.actual_cmd,
                       r.timeout,
@@ -553,12 +581,15 @@
                       r.exec_preferences,
                       r.pretty_url,
                       r.price_per_hour,
+                      r.compute_price_per_hour,
+                      r.disk_price_per_hour,
                       r.state_reason,
                       r.env_vars,
                       r.non_pause,
                       r.node_real_disk,
                       r.node_cloud_provider,
                       r.tags,
+                      r.sensitive,
                       TRUE as initialization_finished,
                       FALSE as queued,
                       p.pipeline_name
@@ -591,6 +622,7 @@
                       r.node_image,
                       r.node_cloud_region,
                       r.docker_image,
+                      r.actual_docker_image,
                       r.cmd_template,
                       r.actual_cmd,
                       r.timeout,
@@ -612,11 +644,14 @@
                       r.exec_preferences,
                       r.pretty_url,
                       r.price_per_hour,
+                      r.compute_price_per_hour,
+                      r.disk_price_per_hour,
                       r.state_reason,
                       r.non_pause,
                       r.node_real_disk,
                       r.node_cloud_provider,
                       r.tags,
+                      r.sensitive,
                       TRUE as initialization_finished,
                       FALSE as queued,
                       p.pipeline_name
@@ -649,6 +684,7 @@
                       r.node_image,
                       r.node_cloud_region,
                       r.docker_image,
+                      r.actual_docker_image,
                       r.cmd_template,
                       r.actual_cmd,
                       r.timeout,
@@ -670,11 +706,14 @@
                       r.exec_preferences,
                       r.pretty_url,
                       r.price_per_hour,
+                      r.compute_price_per_hour,
+                      r.disk_price_per_hour,
                       r.state_reason,
                       r.non_pause,
                       r.node_real_disk,
                       r.node_cloud_provider,
-                      r.tags
+                      r.tags,
+                      r.sensitive
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -698,6 +737,7 @@
                       active_run.node_image,
                       active_run.node_cloud_region,
                       active_run.docker_image,
+                      active_run.actual_docker_image,
                       active_run.cmd_template,
                       active_run.actual_cmd,
                       active_run.timeout,
@@ -719,11 +759,14 @@
                       active_run.exec_preferences,
                       active_run.pretty_url,
                       active_run.price_per_hour,
+                      active_run.compute_price_per_hour,
+                      active_run.disk_price_per_hour,
                       active_run.state_reason,
                       active_run.non_pause,
                       active_run.node_real_disk,
                       active_run.node_cloud_provider,
-                      active_run.tags
+                      active_run.tags,
+                      active_run.sensitive
                     FROM active_run
                     INNER JOIN
                         (SELECT DISTINCT run_id
@@ -760,6 +803,7 @@
                       r.node_image,
                       r.node_cloud_region,
                       r.docker_image,
+                      r.actual_docker_image,
                       r.cmd_template,
                       r.actual_cmd,
                       r.timeout,
@@ -781,11 +825,14 @@
                       r.exec_preferences,
                       r.pretty_url,
                       r.price_per_hour,
+                      r.compute_price_per_hour,
+                      r.disk_price_per_hour,
                       r.state_reason,
                       r.non_pause,
                       r.node_real_disk,
                       r.node_cloud_provider,
-                      r.tags
+                      r.tags,
+                      r.sensitive
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -808,6 +855,7 @@
                       active_run.node_image,
                       active_run.node_cloud_region,
                       active_run.docker_image,
+                      active_run.actual_docker_image,
                       active_run.cmd_template,
                       active_run.actual_cmd,
                       active_run.timeout,
@@ -829,11 +877,14 @@
                       active_run.exec_preferences,
                       active_run.pretty_url,
                       active_run.price_per_hour,
+                      active_run.compute_price_per_hour,
+                      active_run.disk_price_per_hour,
                       active_run.state_reason,
                       active_run.non_pause,
                       active_run.node_real_disk,
                       active_run.node_cloud_provider,
-                      active_run.tags
+                      active_run.tags,
+                      active_run.sensitive
                     FROM active_run
                     INNER JOIN
                         (SELECT DISTINCT run_id
@@ -867,6 +918,7 @@
                         r.node_image,
                         r.node_cloud_region,
                         r.docker_image,
+                        r.actual_docker_image,
                         r.cmd_template,
                         r.actual_cmd,
                         r.owner,
@@ -888,11 +940,14 @@
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,
+                        r.compute_price_per_hour,
+                        r.disk_price_per_hour,
                         r.state_reason,
                         r.non_pause,
                         r.node_real_disk,
                         r.node_cloud_provider,
-                        r.tags
+                        r.tags,
+                        r.sensitive
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -921,6 +976,7 @@
                         r.node_image,
                         r.node_cloud_region,
                         r.docker_image,
+                        r.actual_docker_image,
                         r.cmd_template,
                         r.actual_cmd,
                         r.owner,
@@ -942,11 +998,14 @@
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,
+                        r.compute_price_per_hour,
+                        r.disk_price_per_hour,
                         r.state_reason,
                         r.non_pause,
                         r.node_real_disk,
                         r.node_cloud_provider,
-                        r.tags
+                        r.tags,
+                        r.sensitive
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -975,6 +1034,7 @@
                         r.node_image,
                         r.node_cloud_region,
                         r.docker_image,
+                        r.actual_docker_image,
                         r.timeout,
                         r.cmd_template,
                         r.actual_cmd,
@@ -996,11 +1056,14 @@
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,
+                        r.compute_price_per_hour,
+                        r.disk_price_per_hour,
                         r.state_reason,
                         r.non_pause,
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
+                        r.sensitive,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1065,6 +1128,7 @@
                         runs.node_image,
                         runs.node_cloud_region,
                         runs.docker_image,
+                        runs.actual_docker_image,
                         runs.cmd_template,
                         runs.actual_cmd,
                         runs.timeout,
@@ -1086,11 +1150,14 @@
                         runs.exec_preferences,
                         runs.pretty_url,
                         runs.price_per_hour,
+                        runs.compute_price_per_hour,
+                        runs.disk_price_per_hour,
                         runs.state_reason,
                         runs.non_pause,
                         runs.node_real_disk,
                         runs.node_cloud_provider,
                         runs.tags,
+                        runs.sensitive,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1136,6 +1203,7 @@
                             p.node_image,
                             p.node_cloud_region,
                             p.docker_image,
+                            p.actual_docker_image,
                             p.cmd_template,
                             p.actual_cmd,
                             p.timeout,
@@ -1157,11 +1225,14 @@
                             p.exec_preferences,
                             p.pretty_url,
                             p.price_per_hour,
+                            p.compute_price_per_hour,
+                            p.disk_price_per_hour,
                             p.state_reason,
                             p.non_pause,
                             p.node_real_disk,
                             p.node_cloud_provider,
-                            p.tags
+                            p.tags,
+                            p.sensitive
                         FROM (SELECT *
                             FROM pipeline.pipeline_run r
                             WHERE parent_id ISNULL @WHERE@
@@ -1186,6 +1257,7 @@
                             c.node_image,
                             c.node_cloud_region,
                             c.docker_image,
+                            c.actual_docker_image,
                             c.cmd_template,
                             c.actual_cmd,
                             c.timeout,
@@ -1207,11 +1279,14 @@
                             c.exec_preferences,
                             c.pretty_url,
                             c.price_per_hour,
+                            c.compute_price_per_hour,
+                            c.disk_price_per_hour,
                             c.state_reason,
                             c.non_pause,
                             c.node_real_disk,
                             c.node_cloud_provider,
-                            c.tags
+                            c.tags,
+                            c.sensitive
                         FROM
                             pipeline.pipeline_run c
                         INNER JOIN runs ON runs.run_id = c.parent_id
@@ -1234,6 +1309,7 @@
                         runs.node_image,
                         runs.node_cloud_region,
                         runs.docker_image,
+                        runs.actual_docker_image,
                         runs.cmd_template,
                         runs.actual_cmd,
                         runs.timeout,
@@ -1255,11 +1331,14 @@
                         runs.exec_preferences,
                         runs.pretty_url,
                         runs.price_per_hour,
+                        runs.compute_price_per_hour,
+                        runs.disk_price_per_hour,
                         runs.state_reason,
                         runs.non_pause,
                         runs.node_real_disk,
                         runs.node_cloud_provider,
                         runs.tags,
+                        runs.sensitive,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1379,6 +1458,7 @@
                         node_image,
                         node_cloud_region,
                         docker_image,
+                        actual_docker_image,
                         cmd_template,
                         actual_cmd,
                         timeout,
@@ -1400,11 +1480,14 @@
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
                         state_reason,
                         non_pause,
                         node_real_disk,
                         node_cloud_provider,
-                        tags
+                        tags,
+                        sensitive
                     FROM
                         pipeline.pipeline_run r
                     INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
@@ -1425,6 +1508,135 @@
                         tags = to_jsonb(:TAGS::jsonb)
                     WHERE
                         run_id = :RUN_ID
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllRunsByStatusQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        pipeline_id,
+                        version,
+                        start_date,
+                        end_date,
+                        parameters,
+                        status,
+                        terminating,
+                        pod_id,
+                        node_type,
+                        node_disk,
+                        node_ip,
+                        node_id,
+                        node_name,
+                        node_image,
+                        node_cloud_region,
+                        docker_image,
+                        actual_docker_image,
+                        cmd_template,
+                        actual_cmd,
+                        timeout,
+                        owner,
+                        service_url,
+                        pod_ip,
+                        commit_status,
+                        last_change_commit_time,
+                        config_name,
+                        node_count,
+                        parent_id,
+                        entities_ids,
+                        is_spot,
+                        configuration_id,
+                        pod_status,
+                        prolonged_at_time,
+                        last_notification_time,
+                        last_idle_notification_time,
+                        exec_preferences,
+                        pretty_url,
+                        price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
+                        state_reason,
+                        non_pause,
+                        node_real_disk,
+                        node_cloud_provider,
+                        tags,
+                        sensitive
+                    FROM
+                        pipeline.pipeline_run
+                    WHERE
+                        status IN (:list)
+                    ORDER BY
+                        start_date
+                ]]>
+            </value>
+        </property>
+        <property name="loadRunByPodIPQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        pipeline_id,
+                        version,
+                        start_date,
+                        end_date,
+                        parameters,
+                        status,
+                        terminating,
+                        pod_id,
+                        node_type,
+                        node_disk,
+                        node_ip,
+                        node_id,
+                        node_name,
+                        node_image,
+                        node_cloud_region,
+                        docker_image,
+                        actual_docker_image,
+                        cmd_template,
+                        actual_cmd,
+                        timeout,
+                        owner,
+                        service_url,
+                        pod_ip,
+                        commit_status,
+                        last_change_commit_time,
+                        config_name,
+                        node_count,
+                        parent_id,
+                        entities_ids,
+                        is_spot,
+                        configuration_id,
+                        pod_status,
+                        prolonged_at_time,
+                        last_notification_time,
+                        last_idle_notification_time,
+                        exec_preferences,
+                        pretty_url,
+                        price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
+                        state_reason,
+                        non_pause,
+                        node_real_disk,
+                        node_cloud_provider,
+                        tags,
+                        sensitive
+                    FROM
+                        pipeline.pipeline_run
+                    WHERE
+                        status IN (:list) AND pod_ip = :POD_IP
+                    ORDER BY
+                        start_date
+                ]]>
+            </value>
+        </property>
+        <property name="deleteRunSidsByPipelineIdQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.run_user ru
+                    USING pipeline.pipeline_run pr, pipeline.pipeline p
+                    WHERE pr.run_id = ru.run_id AND p.pipeline_id = pr.pipeline_id AND p.pipeline_id = ?
                 ]]>
             </value>
         </property>

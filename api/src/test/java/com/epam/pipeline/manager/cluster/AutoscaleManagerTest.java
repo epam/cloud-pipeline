@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.mockito.internal.util.reflection.Whitebox;
 
 import java.util.Collections;
 
@@ -74,6 +75,9 @@ public class AutoscaleManagerTest {
     private NodesManager nodesManager;
 
     @Mock
+    private NodeDiskManager nodeDiskManager;
+
+    @Mock
     private KubernetesManager kubernetesManager;
 
     @Mock
@@ -85,14 +89,18 @@ public class AutoscaleManagerTest {
     @Mock
     private CloudFacade cloudFacade;
 
-    private AutoscaleManager autoscaleManager;
+    private AutoscaleManager.AutoscaleManagerCore autoscaleManagerCore;
 
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        autoscaleManager = new AutoscaleManager(pipelineRunManager, executorService, autoscalerService, nodesManager,
-                                                kubernetesManager, preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade);
+        autoscaleManagerCore = new AutoscaleManager.AutoscaleManagerCore(pipelineRunManager, executorService,
+                                                                         autoscalerService, nodesManager,
+                                                                         nodeDiskManager, kubernetesManager,
+                                                                         preferenceManager,
+                                                                         TEST_KUBE_NAMESPACE, cloudFacade);
+        Whitebox.setInternalState(autoscaleManagerCore, "preferenceManager", preferenceManager);
 
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());
 
@@ -167,11 +175,11 @@ public class AutoscaleManagerTest {
                                     argThat(Matchers.hasProperty("spot", Matchers.is(true)))))
             .thenThrow(new CmdExecutionException("", 5, ""));
 
-        autoscaleManager.runAutoscaling(); // this time spot scheduling should fail
+        autoscaleManagerCore.runAutoscaling(); // this time spot scheduling should fail
         verify(cloudFacade).scaleUpNode(Mockito.eq(TEST_RUN_ID),
                                        argThat(Matchers.hasProperty("spot", Matchers.is(true))));
 
-        autoscaleManager.runAutoscaling(); // this time it should be a on-demand request
+        autoscaleManagerCore.runAutoscaling(); // this time it should be a on-demand request
         verify(cloudFacade, times(2))
             .scaleUpNode(Mockito.eq(TEST_RUN_ID), argThat(
                 Matchers.hasProperty("spot", Matchers.is(false))));

@@ -17,6 +17,7 @@
 package com.epam.pipeline.event;
 
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
+import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -31,12 +32,14 @@ import java.util.Objects;
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class StartupApplicationListener {
     private final DockerRegistryManager dockerRegistryManager;
+    private final CloudRegionManager cloudRegionManager;
 
     @EventListener
-    public void onApplicationEvent(ContextRefreshedEvent event) {
+    public void onApplicationEvent(final ContextRefreshedEvent event) {
         try {
             if (Objects.isNull(event.getApplicationContext().getParent())) {
                 dockerRegistryManager.checkDockerSecrets();
+                cloudRegionManager.refreshCloudRegionCredKubeSecret();
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);

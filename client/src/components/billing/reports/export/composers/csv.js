@@ -19,24 +19,38 @@ function CSV () {
     rows: [],
     columns: [],
     data: [],
-    addRow: function (row) {
-      this.getRowIndex(row);
+    addRow: function (row, force = false) {
+      return this.getRowIndex(row, force);
     },
-    addColumn: function (column) {
-      this.getColumnIndex(column);
+    addColumn: function (column, force = false) {
+      return this.getColumnIndex(column, force);
     },
-    getRowIndex: function (row) {
+    addRows: function (...rows) {
+      const indecis = [];
+      for (let i = 0; i < rows.length; i++) {
+        indecis.push(this.addRow(rows[i], true));
+      }
+      return indecis;
+    },
+    addColumns: function (...columns) {
+      const indecis = [];
+      for (let i = 0; i < columns.length; i++) {
+        indecis.push(this.addColumn(columns[i], true));
+      }
+      return indecis;
+    },
+    getRowIndex: function (row, forceAdd = false) {
       let index = this.rows.indexOf(row);
-      if (index === -1) {
+      if (index === -1 || forceAdd) {
         this.data.push(this.columns.map(() => undefined));
         this.rows.push(row);
         index = this.rows.length - 1;
       }
       return index;
     },
-    getColumnIndex: function (column) {
+    getColumnIndex: function (column, forceAdd = false) {
       let index = this.columns.indexOf(column);
-      if (index === -1) {
+      if (index === -1 || forceAdd) {
         this.data.forEach(row => row.push(undefined));
         this.columns.push(column);
         index = this.columns.length - 1;
@@ -48,12 +62,15 @@ function CSV () {
       const c = this.getColumnIndex(column);
       this.data[r][c] = value;
     },
+    setCellValueByIndex: function (rowIndex, columnIndex, value) {
+      this.data[rowIndex][columnIndex] = value;
+    },
     getData: function () {
       return [
         ['', ...this.columns],
         ...this.rows.map((row, index) => ([
           row,
-          ...this.data[index].map(value => (value === undefined || value === null) ? '-' : value)
+          ...this.data[index].map(value => (value === undefined || value === null) ? '' : value)
         ]))
       ];
     }

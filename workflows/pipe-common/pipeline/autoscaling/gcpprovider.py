@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ from time import sleep
 from googleapiclient import discovery
 
 from pipeline.autoscaling import utils
+
+DISABLE_ACCESS = 'disable_external_access'
 
 OS_DISK_SIZE = 10
 INSTANCE_USER_NAME = "pipeline"
@@ -53,47 +55,27 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img,
                                                       kube_ip, kubeadm_token, swap_size)
 
-        allowed_networks = utils.get_networks_config(self.cloud_region)
-        subnet_id = 'default'
-        network_name = 'default'
-        if allowed_networks and len(allowed_networks) > 0:
-            network_num = randint(0, len(allowed_networks) - 1)
-            network_name = allowed_networks.items()[network_num][0]
-            subnet_id = allowed_networks.items()[network_num][1]
-            utils.pipe_log('- Networks list found, subnet {} in Network {} will be used'.format(subnet_id, network_name))
-        else:
-            utils.pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
         instance_type, gpu_type, gpu_count = self.parse_instance_type(ins_type)
         machine_type = 'zones/{}/machineTypes/{}'.format(self.cloud_region, instance_type)
         instance_name = "gcp-" + uuid.uuid4().hex[0:16]
-        region_name = self.cloud_region[:self.cloud_region.rfind('-')]
 
+        network_interfaces = self.__build_networks()
         if is_spot:
             utils.pipe_log('Preemptible instance with run id: ' + run_id + ' will be launched')
         body = {
             'name': instance_name,
             'machineType': machine_type,
             'scheduling': {
+                'onHostMaintenance': 'terminate',
                 'preemptible': is_spot
             },
             'canIpForward': True,
             'disks': self.__get_disk_devices(ins_img, OS_DISK_SIZE, ins_hdd, swap_size),
-            'networkInterfaces': [
-                {
-                    'accessConfigs': [
-                        {
-                            'name': 'External NAT',
-                            'type': 'ONE_TO_ONE_NAT'
-                        }
-                    ],
-                    'network': 'projects/{project}/global/networks/{network}'.format(project=self.project_id,
-                                                                                     network=network_name),
-                    'subnetwork': 'projects/{project}/regions/{region}/subnetworks/{subnet}'.format(
-                        project=self.project_id, subnet=subnet_id, region=region_name)
-                }
-            ],
-
-            'labels': GCPInstanceProvider.get_tags(run_id),
+            'networkInterfaces': network_interfaces,
+            'labels': GCPInstanceProvider.get_tags(run_id, self.cloud_region),
+            'tags': {
+                'items': utils.get_network_tags(self.cloud_region)
+            },
             "metadata": {
                 "items": [
                     {
@@ -255,13 +237,20 @@ class GCPInstanceProvider(AbstractInstanceProvider):
     def __get_boot_device(self, disk_size, image_family):
         project_and_family = image_family.split("/")
         if len(project_and_family) != 2:
+            # TODO: missing exception?
             print("node_image parameter doesn't match to Google image name convention: <project>/<imageFamily>")
+        image = self.client.images().get(project=project_and_family[0], image=project_and_family[1]).execute()
+        if image is None or 'diskSizeGb' not in image:
+            utils.pipe_log('Failed to get image disk size info. Falling back to default size %d ' % disk_size)
+            image_disk_size = disk_size
+        else:
+            image_disk_size = image['diskSizeGb']
         return {
             'boot': True,
             'autoDelete': True,
             'deviceName': 'sda1',
             'initializeParams': {
-                'diskSizeGb': disk_size,
+                'diskSizeGb': image_disk_size,
                 'diskType': 'projects/{}/zones/{}/diskTypes/pd-ssd'.format(self.project_id, self.cloud_region),
                 'sourceImage': 'projects/{}/global/images/{}'.format(project_and_family[0], project_and_family[1])
             },
@@ -303,6 +292,40 @@ class GCPInstanceProvider(AbstractInstanceProvider):
 
             time.sleep(1)
 
+    def __build_networks(self):
+        region_name = self.cloud_region[:self.cloud_region.rfind('-')]
+        allowed_networks = utils.get_networks_config(self.cloud_region)
+        subnet_id = 'default'
+        network_name = 'default'
+        if allowed_networks and len(allowed_networks) > 0:
+            network_num = randint(0, len(allowed_networks) - 1)
+            network_name = allowed_networks.items()[network_num][0]
+            subnet_id = allowed_networks.items()[network_num][1]
+            utils.pipe_log(
+                '- Networks list found, subnet {} in Network {} will be used'.format(subnet_id, network_name))
+        else:
+            utils.pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
+
+        access_config = utils.get_access_config(self.cloud_region)
+        disable_external_access = False
+        if access_config is not None:
+            disable_external_access = DISABLE_ACCESS in access_config and access_config[DISABLE_ACCESS]
+
+        network = {
+            'network': 'projects/{project}/global/networks/{network}'.format(project=self.project_id,
+                                                                             network=network_name),
+            'subnetwork': 'projects/{project}/regions/{region}/subnetworks/{subnet}'.format(
+                project=self.project_id, subnet=subnet_id, region=region_name)
+        }
+        if not disable_external_access:
+            network['accessConfigs'] = [
+                {
+                    'name': 'External NAT',
+                    'type': 'ONE_TO_ONE_NAT'
+                }
+            ]
+        return [network]
+
     @staticmethod
     def resource_tags():
         tags = {}
@@ -320,9 +343,15 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         }
 
     @staticmethod
-    def get_tags(run_id):
+    def get_tags(run_id, cloud_region):
         tags = GCPInstanceProvider.run_id_tag(run_id)
-        res_tags = GCPInstanceProvider.resource_tags()
-        for key in res_tags:
-            tags[key.lower()] = res_tags[key].lower()
+        GCPInstanceProvider.append_tags(tags, GCPInstanceProvider.resource_tags())
+        GCPInstanceProvider.append_tags(tags, utils.get_region_tags(cloud_region))
         return tags
+
+    @staticmethod
+    def append_tags(tags, tags_to_add):
+        if tags_to_add is None:
+            return
+        for key in tags_to_add:
+            tags[key.lower()] = tags_to_add[key].lower()

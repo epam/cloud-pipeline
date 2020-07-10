@@ -18,4 +18,5 @@ export {default as BarChart} from './bar-chart';
 export {default as BillingTable} from './billing-table';
 export {colors} from './colors';
 export {default as GroupedBarChart} from './grouped-bar-chart';
+export {default as PieChart} from './pie-chart';
 export {default as Summary} from './summaryHOC';

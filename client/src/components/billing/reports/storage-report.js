@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {
+  Pagination,
   Table
 } from 'antd';
 import moment from 'moment-timezone';
@@ -25,9 +26,11 @@ import {
   BillingTable,
   Summary
 } from './charts';
-import Filters from './filters';
+import {DisplayUser, ResizableContainer} from './utilities';
+import Filters, {RUNNER_SEPARATOR} from './filters';
 import {Period, getPeriod} from './periods';
 import Export, {ExportComposers} from './export';
+import Discounts, {discounts} from './discounts';
 import {
   GetBillingData,
   GetGroupedStorages,
@@ -37,6 +40,7 @@ import {
   GetGroupedObjectStorages,
   GetGroupedObjectStoragesWithPrevious
 } from '../../../models/billing';
+import {StorageReportLayout, Layout} from './layout';
 import styles from './reports.css';
 
 const tablePageSize = 10;
@@ -45,12 +49,14 @@ function injection (stores, props) {
   const {location, params} = props;
   const {type} = params || {};
   const {
-    user,
-    group,
+    user: userQ,
+    group: groupQ,
     period = Period.month,
     range
   } = location.query;
   const periodInfo = getPeriod(period, range);
+  const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
+  const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
   const filters = {
     group,
     user,
@@ -90,17 +96,7 @@ function injection (stores, props) {
   };
 }
 
-function StoragesDataBlock ({children}) {
-  return (
-    <div className={styles.storagesChartsContainer}>
-      <div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function renderTable ({storages}) {
+function renderTable ({storages, discounts: discountsFn, height}) {
   if (!storages || !storages.loaded) {
     return null;
   }
@@ -115,7 +111,8 @@ function renderTable ({storages}) {
     {
       key: 'owner',
       title: 'Owner',
-      dataIndex: 'owner'
+      dataIndex: 'owner',
+      render: owner => (<DisplayUser userName={owner} />)
     },
     {
       key: 'cost',
@@ -140,25 +137,56 @@ function renderTable ({storages}) {
       render: (value) => moment.utc(value).format('DD MMM YYYY')
     }
   ];
-  const dataSource = Object.values(storages.value || {});
+  const dataSource = Object.values(
+    discounts.applyGroupedDataDiscounts(storages.value || {}, discountsFn)
+  );
+  const paginationEnabled = storages && storages.loaded
+    ? storages.totalPages > 1
+    : false;
   return (
-    <Table
-      rowKey={({info, name}) => {
-        return info && info.id ? `storage_${info.id}` : `storage_${name}`;
-      }}
-      loading={storages.pending}
-      dataSource={dataSource}
-      columns={columns}
-      pagination={{
-        current: storages.pageNum + 1,
-        pageSize: storages.pageSize,
-        total: storages.totalPages * storages.pageSize,
-        onChange: async (page) => {
-          await storages.fetchPage(page - 1);
-        }
-      }}
-      size="small"
-    />
+    <div>
+      <div
+        style={{
+          position: 'relative',
+          overflow: 'auto',
+          maxHeight: height - (paginationEnabled ? 30 : 0),
+          padding: 5
+        }}
+      >
+        <Table
+          rowKey={({info, name}) => {
+            return info && info.id ? `storage_${info.id}` : `storage_${name}`;
+          }}
+          loading={storages.pending}
+          dataSource={dataSource}
+          columns={columns}
+          pagination={false}
+          size="small"
+        />
+      </div>
+      {
+        paginationEnabled && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              height: 30
+            }}
+          >
+            <Pagination
+              current={storages.pageNum + 1}
+              pageSize={storages.pageSize}
+              total={storages.totalPages * storages.pageSize}
+              onChange={async (page) => {
+                await storages.fetchPage(page - 1);
+              }}
+              size="small"
+            />
+          </div>
+        )
+      }
+    </div>
   );
 }
 
@@ -202,29 +230,74 @@ function StorageReports ({storages, storagesTable, summary, type}) {
     }
   ];
   return (
-    <Export.Consumer
-      className={styles.chartsContainer}
-      composers={composers}
-    >
-      <StoragesDataBlock>
-        <BillingTable summary={summary} showQuota={false} />
-        <Summary
-          summary={summary}
-          quota={false}
-          title={getSummaryTitle()}
-          style={{flex: 1, height: 500}}
-        />
-      </StoragesDataBlock>
-      <StoragesDataBlock className={styles.chartsColumnContainer}>
-        <BarChart
-          request={storages}
-          title={getTitle()}
-          top={tablePageSize}
-          style={{height: 300}}
-        />
-        <RenderTable storages={storagesTable} />
-      </StoragesDataBlock>
-    </Export.Consumer>
+    <Discounts.Consumer>
+      {
+        (o, storageDiscounts) => (
+          <Export.Consumer
+            className={styles.chartsContainer}
+            composers={composers}
+          >
+            <Layout
+              layout={StorageReportLayout.Layout}
+              gridStyles={StorageReportLayout.GridStyles}
+            >
+              <div key={StorageReportLayout.Panels.summary}>
+                <Layout.Panel
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: 0
+                  }}
+                >
+                  <BillingTable
+                    storages={summary}
+                    storagesDiscounts={storageDiscounts}
+                    showQuota={false}
+                  />
+                  <ResizableContainer style={{flex: 1}}>
+                    {
+                      ({width, height}) => (
+                        <Summary
+                          storages={summary}
+                          storagesDiscounts={storageDiscounts}
+                          quota={false}
+                          title={getSummaryTitle()}
+                          style={{width, height}}
+                        />
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+              <div key={StorageReportLayout.Panels.storages}>
+                <Layout.Panel>
+                  <ResizableContainer style={{width: '100%', height: '100%'}}>
+                    {
+                      ({height}) => (
+                        <div>
+                          <BarChart
+                            request={storages}
+                            discounts={storageDiscounts}
+                            title={getTitle()}
+                            top={tablePageSize}
+                            style={{height: height / 2.0}}
+                          />
+                          <RenderTable
+                            storages={storagesTable}
+                            discounts={storageDiscounts}
+                            height={height / 2.0}
+                          />
+                        </div>
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+            </Layout>
+          </Export.Consumer>
+        )
+      }
+    </Discounts.Consumer>
   );
 }
 

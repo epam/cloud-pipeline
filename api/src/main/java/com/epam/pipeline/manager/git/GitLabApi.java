@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitFile;
+import com.epam.pipeline.entity.git.GitGroup;
+import com.epam.pipeline.entity.git.GitGroupRequest;
 import com.epam.pipeline.entity.git.GitHookRequest;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitProjectMember;
@@ -253,4 +255,29 @@ public interface GitLabApi {
     @PUT("api/v3/projects/{project}")
     Call<GitProject> updateProject(@Path(PROJECT) String project,
                                    @Body GitProjectRequest projectInfo);
+
+    /**
+     * Creates a new group
+     *
+     * @param groupInfo The new group info
+     */
+    @POST("api/v3/groups")
+    Call<GitGroup> createGroup(@Body GitGroupRequest groupInfo);
+
+    /**
+     * Deletes a group
+     *
+     * @param groupId The ID or URL-encoded path of the group
+     */
+    @DELETE("api/v3/groups/{groupId}")
+    Call<GitGroup> deleteGroup(@Path("groupId") String groupId);
+
+    /**
+     * Forks a project
+     *
+     * @param project The ID or URL-encoded path of the project
+     * @param namespace The ID or path of the namespace that the project will be forked to
+     */
+    @POST("api/v3/projects/{project}/fork")
+    Call<GitProject> forkProject(@Path(PROJECT) String project, @Query("namespace") String namespace);
 }

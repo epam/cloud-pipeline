@@ -178,8 +178,9 @@ class RangeFilter extends React.Component {
           trigger={['click']}
         >
           <PickerButton
-            className={pickerStyles.button}
+            className={pickerStyles.buttonContainer}
             valueIsSet={!!start && !!end}
+            navigationEnabled={false}
           >
             {getRangePeriodString()}
           </PickerButton>

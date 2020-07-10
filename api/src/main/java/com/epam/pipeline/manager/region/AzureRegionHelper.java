@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,9 @@ import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.datastorage.providers.azure.AzureHelper;
+import com.epam.pipeline.utils.Base64Utils;
 import com.epam.pipeline.utils.NetworkUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.aad.adal4j.AuthenticationException;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.resources.fluentcore.arm.Region;
@@ -41,6 +43,7 @@ import org.springframework.util.Assert;
 
 import java.net.URL;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -57,6 +60,8 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
     private static final Integer MAX_TRIES_COUNT = 1;
     private static final Integer TRY_TIMEOUT = 2;
 
+    private static final String STORAGE_ACCOUNT = "storage_account";
+    private static final String STORAGE_KEY = "storage_key";
 
     @Override
     public CloudProvider getProvider() {
@@ -84,7 +89,11 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
     public AzureRegion mergeRegions(final AzureRegion originalRegion, final AzureRegion updatedRegion) {
         originalRegion.setName(updatedRegion.getName());
         originalRegion.setDefault(updatedRegion.isDefault());
-        originalRegion.setAzurePolicy(updatedRegion.getAzurePolicy());
+        if (azurePolicyExist(updatedRegion.getAzurePolicy())) {
+            originalRegion.setAzurePolicy(updatedRegion.getAzurePolicy());
+        } else {
+            originalRegion.setAzurePolicy(null);
+        }
         originalRegion.setCorsRules(updatedRegion.getCorsRules());
         originalRegion.setAuthFile(updatedRegion.getAuthFile());
         originalRegion.setPriceOfferId(updatedRegion.getPriceOfferId());
@@ -92,7 +101,13 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
         originalRegion.setMeterRegionName(updatedRegion.getMeterRegionName());
         originalRegion.setSshPublicKeyPath(updatedRegion.getSshPublicKeyPath());
         originalRegion.setFileShareMounts(updatedRegion.getFileShareMounts());
+        originalRegion.setMountStorageRule(updatedRegion.getMountStorageRule());
         return originalRegion;
+    }
+
+    private boolean azurePolicyExist(AzurePolicy policy) {
+        return !Objects.isNull(policy) &&
+                (StringUtils.isNotBlank(policy.getIpMax()) && StringUtils.isNotBlank(policy.getIpMin()));
     }
 
     @Override
@@ -102,6 +117,18 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
             oldCredentials.setStorageAccountKey(updatedCredentials.getStorageAccountKey());
         }
         return oldCredentials;
+    }
+
+    public String serializeCredentials(AzureRegion region, AzureRegionCredentials credentials) {
+        final HashMap<String, String> creds = new HashMap<>();
+        creds.put(STORAGE_ACCOUNT, region.getStorageAccount());
+        creds.put(STORAGE_KEY, credentials.getStorageAccountKey());
+        try {
+            return Base64Utils.encodeBase64Map(creds);
+        } catch (JsonProcessingException e) {
+            log.error(e.getMessage());
+            return Base64Utils.EMPTY_ENCODED_MAP;
+        }
     }
 
     private void validateStorageAccount(final String storageAccountName, final String storageAccountKey) {
@@ -129,11 +156,12 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
     }
 
     void validateStoragePolicy(final AzurePolicy policy) {
-        if (Objects.isNull(policy)) {
+        if (Objects.isNull(policy) ||
+                (StringUtils.isBlank(policy.getIpMax()) && StringUtils.isBlank(policy.getIpMin()))) {
             return;
         }
 
-        Assert.isTrue(StringUtils.isNotBlank(policy.getIpMax()) || StringUtils.isNotBlank(policy.getIpMin()),
+        Assert.isTrue(StringUtils.isNotBlank(policy.getIpMax()) && StringUtils.isNotBlank(policy.getIpMin()),
                 messageHelper.getMessage(MessageConstants.ERROR_AZURE_IP_RANGE_IS_INVALID, policy.getIpMax(),
                         policy.getIpMin()));
         Assert.isTrue(NetworkUtils.isValidIpAddress(policy.getIpMax()),

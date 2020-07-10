@@ -222,11 +222,11 @@ public class InstanceOfferManager {
                         isToolInstanceAllowed(instanceType, null, actualRegionId, isSpot),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED,
                         instanceType));
-        double pricePerHourForInstance =
-                getPricePerHourForInstance(instanceType, isSpot, actualRegionId);
-        double pricePerDisk = getPriceForDisk(instanceDisk, actualRegionId, instanceType, isSpot);
-        double pricePerHour = pricePerDisk + pricePerHourForInstance;
-        return new InstancePrice(instanceType, instanceDisk, pricePerHour);
+        double computePricePerHour = getPricePerHourForInstance(instanceType, isSpot, actualRegionId);
+        double initialDiskPricePerHour = getPriceForDisk(instanceDisk, actualRegionId, instanceType, isSpot);
+        double diskPricePerHour = initialDiskPricePerHour / instanceDisk;
+        double pricePerHour = initialDiskPricePerHour + computePricePerHour;
+        return new InstancePrice(instanceType, instanceDisk, pricePerHour, computePricePerHour, diskPricePerHour);
     }
 
     public PipelineRunPrice getPipelineRunEstimatedPrice(Long runId, Long regionId) {
@@ -234,10 +234,10 @@ public class InstanceOfferManager {
         PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId);
         RunInstance runInstance = pipelineRun.getInstance();
         boolean spot = isSpotRequest(runInstance.getSpot());
-        double pricePerHourForInstance = getPricePerHourForInstance(runInstance.getNodeType(), spot, actualRegionId);
-        double pricePerDisk = getPriceForDisk(runInstance.getNodeDisk(), actualRegionId,
+        double computePricePerHour = getPricePerHourForInstance(runInstance.getNodeType(), spot, actualRegionId);
+        double initialDiskPricePerHour = getPriceForDisk(runInstance.getNodeDisk(), actualRegionId, 
                 runInstance.getNodeType(), spot);
-        double pricePerHour = pricePerDisk + pricePerHourForInstance;
+        double pricePerHour = initialDiskPricePerHour + computePricePerHour;
 
         PipelineRunPrice price = new PipelineRunPrice();
         price.setInstanceDisk(runInstance.getNodeDisk());

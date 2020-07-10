@@ -45,6 +45,7 @@ import com.epam.pipeline.manager.filter.FilterExpressionType;
 import com.epam.pipeline.manager.filter.FilterOperandType;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.util.TestUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
@@ -72,8 +73,8 @@ import java.util.stream.Stream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @Transactional
 public class PipelineRunDaoTest extends AbstractSpringTest {
@@ -105,6 +106,8 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     private static final String TEST_SERVICE_URL = "service_url";
     private static final String GROUP_NAME = "group_1";
     private static final BigDecimal PRICE_PER_HOUR = new BigDecimal("0.08");
+    private static final BigDecimal COMPUTE_PRICE_PER_HOUR = new BigDecimal("0.04000");
+    private static final BigDecimal DISK_PRICE_PER_HOUR = new BigDecimal("0.00012");
     private static final String TEST_REPO = "///";
     private static final String TEST_REPO_SSH = "git@test";
 
@@ -113,6 +116,8 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     private static final String TAG_VALUE_1 = "value1";
     private static final String TAG_VALUE_2 = "value2";
     private static final ZoneId ZONE_ID = ZoneId.systemDefault();
+    private static final String DOCKER_IMAGE = "dockerImage";
+    private static final String ACTUAL_DOCKER_IMAGE = "actualDockerImage";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -291,7 +296,6 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         String actualCmd = "ActualCmd";
         run.setCmdTemplate(cmdTemplate);
         run.setActualCmd(actualCmd);
-        run.setDockerImage("dockerImage");
 
         pipelineRunDao.createPipelineRun(run);
 
@@ -299,6 +303,20 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         assertEquals(loadedRun.getCmdTemplate(), cmdTemplate);
         assertEquals(loadedRun.getActualCmd(), actualCmd);
 
+    }
+
+    @Test
+    @Transactional
+    public void pipelineRunShouldHaveDockerImageAndActualDockerImage() {
+        PipelineRun run = buildPipelineRun(testPipeline.getId(), TEST_SERVICE_URL);
+        run.setDockerImage(DOCKER_IMAGE);
+        run.setActualDockerImage(ACTUAL_DOCKER_IMAGE);
+
+        pipelineRunDao.createPipelineRun(run);
+        
+        PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertEquals(loadedRun.getDockerImage(), DOCKER_IMAGE);
+        assertEquals(loadedRun.getActualDockerImage(), ACTUAL_DOCKER_IMAGE);
     }
 
     @Test
@@ -749,10 +767,14 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     public void testLoadRunWithPricePerHour() {
         PipelineRun run = createTestPipelineRun(testPipeline.getId());
         run.setPricePerHour(PRICE_PER_HOUR);
+        run.setComputePricePerHour(COMPUTE_PRICE_PER_HOUR);
+        run.setDiskPricePerHour(DISK_PRICE_PER_HOUR);
         pipelineRunDao.updateRun(run);
         PipelineRun loaded = pipelineRunDao.loadPipelineRun(run.getId());
         assertEquals(run.getId(), loaded.getId());
         assertEquals(PRICE_PER_HOUR, loaded.getPricePerHour());
+        assertEquals(COMPUTE_PRICE_PER_HOUR, loaded.getComputePricePerHour());
+        assertEquals(DISK_PRICE_PER_HOUR, loaded.getDiskPricePerHour());
     }
 
     @Test
@@ -777,6 +799,39 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
 
         createLog(run, TaskStatus.RUNNING, nodeUpTaskName);
         validateLoadRunBooleanFieldValue(false, run, PipelineRun::getQueued);
+    }
+
+    @Test
+    public void shouldLoadRunsByStatuses() {
+        final PipelineRun running = buildPipelineRun(null, null);
+        running.setStatus(TaskStatus.RUNNING);
+        pipelineRunDao.createPipelineRun(running);
+
+        final PipelineRun pausing = buildPipelineRun(null, null);
+        pausing.setStatus(TaskStatus.PAUSING);
+        pipelineRunDao.createPipelineRun(pausing);
+
+        final PipelineRun resuming = buildPipelineRun(null, null);
+        resuming.setStatus(TaskStatus.RESUMING);
+        pipelineRunDao.createPipelineRun(resuming);
+
+        final List<PipelineRun> runs = pipelineRunDao.loadRunsByStatuses(
+                Arrays.asList(TaskStatus.PAUSING, TaskStatus.RESUMING));
+        assertEquals(2, runs.size());
+    }
+
+    @Test
+    public void shouldDeleteSidsFromRunByPipelineId() {
+        final RunSid runSid = new RunSid();
+        runSid.setName(GROUP_NAME);
+        runSid.setIsPrincipal(false);
+        final Pipeline pipeline = getPipeline();
+        final PipelineRun run = createRunWithRunSids(pipeline.getId(), null, Collections.singletonList(runSid));
+
+        pipelineRunDao.deleteRunSidsByPipelineId(pipeline.getId());
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertTrue(CollectionUtils.isEmpty(loadedRun.getRunSids()));
     }
 
     private PipelineRun createTestPipelineRun() {

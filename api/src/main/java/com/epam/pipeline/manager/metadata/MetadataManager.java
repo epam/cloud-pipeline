@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.metadata.parser.MetadataLineProcessor;
@@ -54,6 +55,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @SuppressWarnings("unchecked")
@@ -87,7 +89,7 @@ public class MetadataManager {
     public MetadataEntry updateMetadataItemKey(MetadataVO metadataVO) {
         validateMetadata(metadataVO);
         EntityVO entity = metadataVO.getEntity();
-        checkEntityExistence(entity.getEntityId(), entity.getEntityClass());
+        checkEntityExistsAndCanBeModified(entity.getEntityId(), entity.getEntityClass());
 
         MetadataEntry metadataToSave = metadataEntryMapper.toMetadataEntry(metadataVO);
         MetadataEntry existingMetadata = listMetadataItem(metadataToSave.getEntity(), false);
@@ -106,7 +108,7 @@ public class MetadataManager {
     public MetadataEntry updateMetadataItemKeys(MetadataVO metadataVO) {
         validateMetadata(metadataVO);
         EntityVO entity = metadataVO.getEntity();
-        checkEntityExistence(entity.getEntityId(), entity.getEntityClass());
+        checkEntityExistsAndCanBeModified(entity.getEntityId(), entity.getEntityClass());
 
         MetadataEntry metadataToSave = metadataEntryMapper.toMetadataEntry(metadataVO);
         MetadataEntry existingMetadata = listMetadataItem(metadataToSave.getEntity(), false);
@@ -124,7 +126,7 @@ public class MetadataManager {
     public MetadataEntry updateMetadataItem(MetadataVO metadataVO) {
         validateMetadata(metadataVO);
         EntityVO entity = metadataVO.getEntity();
-        checkEntityExistence(entity.getEntityId(), entity.getEntityClass());
+        checkEntityExistsAndCanBeModified(entity.getEntityId(), entity.getEntityClass());
 
         MetadataEntry metadataToUpdate = metadataEntryMapper.toMetadataEntry(metadataVO);
         MetadataEntry existingMetadata = listMetadataItem(metadataToUpdate.getEntity(), false);
@@ -149,7 +151,7 @@ public class MetadataManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public MetadataEntry deleteMetadataItemKey(EntityVO entityVO, String key) {
-        checkEntityExistence(entityVO.getEntityId(), entityVO.getEntityClass());
+        checkEntityExistsAndCanBeModified(entityVO.getEntityId(), entityVO.getEntityClass());
 
         MetadataEntry metadataEntry = listMetadataItem(entityVO, true);
         if (!metadataEntry.getData().keySet().contains(key)) {
@@ -164,7 +166,7 @@ public class MetadataManager {
     public MetadataEntry deleteMetadataItemKeys(MetadataVO metadataWithKeysToDelete) {
         validateMetadata(metadataWithKeysToDelete);
         EntityVO entity = metadataWithKeysToDelete.getEntity();
-        checkEntityExistence(entity.getEntityId(), entity.getEntityClass());
+        checkEntityExistsAndCanBeModified(entity.getEntityId(), entity.getEntityClass());
 
         MetadataEntry metadataEntry = listMetadataItem(entity, true);
         Set<String> existingKeys = metadataEntry.getData().keySet();
@@ -182,7 +184,7 @@ public class MetadataManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public MetadataEntry deleteMetadataItem(EntityVO entityVO) {
-        checkEntityExistence(entityVO.getEntityId(), entityVO.getEntityClass());
+        checkEntityExistsAndCanBeModified(entityVO.getEntityId(), entityVO.getEntityClass());
 
         MetadataEntry metadataEntry = listMetadataItem(entityVO, true);
         metadataDao.deleteMetadataItem(entityVO);
@@ -211,7 +213,7 @@ public class MetadataManager {
     public MetadataEntry uploadMetadataFromFile(final EntityVO entityVO,
                                                 final MultipartFile file,
                                                 final boolean mergeWithExistingMetadata) {
-        checkEntityExistence(entityVO.getEntityId(), entityVO.getEntityClass());
+        checkEntityExistsAndCanBeModified(entityVO.getEntityId(), entityVO.getEntityClass());
 
         final MetadataVO metadataVO = new MetadataVO();
         metadataVO.setEntity(entityVO);
@@ -303,8 +305,13 @@ public class MetadataManager {
                 MessageConstants.ERROR_INVALID_METADATA, metadataVO.getData()));
     }
 
-    private void checkEntityExistence(final Long entityId, final AclClass entityClass) {
-        //just need to check that object is not null
+    private void checkEntityExistsAndCanBeModified(final Long entityId, final AclClass entityClass) {
+        final Object entity = loadEntity(entityId, entityClass);
+        checkEntityExists(entity, entityId, entityClass);
+        checkEntityCanBeModified(entity);
+    }
+
+    private Object loadEntity(final Long entityId, final AclClass entityClass) {
         Object entity;
         if (entityClass.equals(AclClass.ROLE)) {
             entity = roleManager.loadRole(entityId);
@@ -313,8 +320,19 @@ public class MetadataManager {
         } else {
             entity = entityManager.load(entityClass, entityId);
         }
-        Assert.notNull(entity,
-                messageHelper.getMessage(MessageConstants.ERROR_ENTITY_FOR_METADATA_NOT_FOUND, entityId, entityClass));
+        return entity;
+    }
 
+    private void checkEntityExists(final Object entity, final Long entityId, final AclClass entityClass) {
+        Assert.notNull(entity, messageHelper.getMessage(
+                MessageConstants.ERROR_ENTITY_FOR_METADATA_NOT_FOUND, entityId, entityClass));
+    }
+
+    private void checkEntityCanBeModified(final Object entity) {
+        Optional.of(entity)
+                .filter(Tool.class::isInstance)
+                .map(Tool.class::cast)
+                .ifPresent(tool -> Assert.isTrue(tool.isNotSymlink(), messageHelper.getMessage(
+                        MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED)));
     }
 }

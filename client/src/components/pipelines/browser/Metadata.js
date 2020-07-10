@@ -999,12 +999,14 @@ export default class Metadata extends React.Component {
           style={{minHeight: 41, marginBottom: 6}}>
           <Col>
             <span className={styles.itemHeader}>
-              <Icon type="appstore-o" className={styles.editableControl} />
               <Breadcrumbs
                 id={parseInt(this.props.folderId)}
                 type={ItemTypes.metadata}
                 textEditableField={this.props.metadataClass}
                 readOnlyEditableField={true}
+                icon="appstore-o"
+                iconClassName={styles.editableControl}
+                subject={this.props.folder.value}
               />
             </span>
             <span className={styles.searchControl}>

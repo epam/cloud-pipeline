@@ -16,18 +16,10 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {DatePicker} from 'antd';
-import moment from 'moment-timezone';
-import {QuarterPicker, RangePicker, YearPicker} from './components';
-import {Period, Range} from '../periods';
-
-const {MonthPicker} = DatePicker;
+import {QuarterPicker, Quarters, RangePicker, YearPicker, MonthPicker} from './components';
+import {Period, Range, getPeriod} from '../periods';
 
 function rangeFilter ({period, range, onChange}) {
-  const disabledDate = (date) => {
-    return date > moment();
-  };
-
   const onChangeDate = (date) => {
     if (onChange) {
       const {start, end} = Range.buildRangeByDate(date, period);
@@ -50,10 +42,17 @@ function rangeFilter ({period, range, onChange}) {
   };
 
   const {start} = Range.parse(range, period);
+  const {start: defaultStart} = getPeriod(period, range);
   if (period === Period.quarter) {
     return (
       <QuarterPicker
-        title="Calendar"
+        title={
+          `${
+            Quarters && Quarters[defaultStart.format('Q')]
+              ? Quarters[defaultStart.format('Q')]
+              : defaultStart.format('Q')
+          } quarter, ${defaultStart.format('YYYY')}`
+        }
         value={start}
         onChange={onChangeDate}
       />
@@ -62,7 +61,7 @@ function rangeFilter ({period, range, onChange}) {
   if (period === Period.year) {
     return (
       <YearPicker
-        title="Calendar"
+        title={`${defaultStart.format('YYYY')} year`}
         value={start}
         onChange={onChangeDate}
       />
@@ -71,12 +70,9 @@ function rangeFilter ({period, range, onChange}) {
   if (period === Period.month) {
     return (
       <MonthPicker
-        disabledDate={disabledDate}
-        format="MMM YYYY"
+        title={defaultStart.format('MMM YYYY')}
         value={start}
-        placeholder="Calendar"
         onChange={onChangeDate}
-        style={{width: 175}}
       />
     );
   }

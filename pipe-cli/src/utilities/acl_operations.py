@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,13 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import sys
 
 import click
+import future
 import requests
 import prettytable
-from src.api.folder import Folder
-from src.api.pipeline import Pipeline
-from src.api.data_storage import DataStorage
+from future.utils import iteritems
+
+from src.api.entity import Entity
 from src.api.user import User
 from src.config import ConfigNotFoundError
 
@@ -25,28 +27,22 @@ from src.config import ConfigNotFoundError
 class ACLOperations(object):
 
     @classmethod
+    def get_classes(cls):
+        return ['pipeline', 'folder', 'data_storage', 'configuration', 'docker_registry', 'tool', 'tool_group']
+
+    @classmethod
     def set_acl(cls, identifier, object_type, sid, group, allow, deny, inherit):
         """ Set object permissions
         """
 
         try:
-            if object_type == 'pipeline':
-                model = Pipeline.get(identifier, load_storage_rules=False, load_run_parameters=False,
-                                     load_versions=False)
-                identifier = model.identifier
-            elif object_type == 'folder':
-                model = Folder.load(identifier)
-                identifier = model.id
-            elif object_type == 'data_storage':
-                model = DataStorage.get(identifier)
-                identifier = model.identifier
-
-            all_permissions = User.get_permissions(identifier, object_type)
-            user_permissions = filter(lambda permission:
-                                      permission.name.lower() == sid.lower() and permission.principal != group,
-                                      all_permissions)
+            entity = Entity.load_by_id_or_name(identifier, object_type)
+            identifier = entity['id']
+            all_permissions = User.permissions(identifier, entity['aclClass'])
+            user_permissions = future.utils.lfilter(
+                lambda permission: permission.name.lower() == sid.lower() and permission.principal != group,
+                all_permissions)
             user_mask = 0
-            # TODO 25.02.19: It fails using python 3 with the following error: "object of type 'filter' has no len()"
             if len(user_permissions) == 1:
                 user_mask = user_permissions[0].mask
 
@@ -108,12 +104,16 @@ class ACLOperations(object):
 
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
+            sys.exit(1)
         except requests.exceptions.RequestException as http_error:
             click.echo('Http error: {}'.format(str(http_error)), err=True)
+            sys.exit(1)
         except RuntimeError as runtime_error:
             click.echo('Error: {}'.format(str(runtime_error)), err=True)
+            sys.exit(1)
         except ValueError as value_error:
             click.echo('Error: {}'.format(str(value_error)), err=True)
+            sys.exit(1)
 
     @classmethod
     def view_acl(cls, identifier, object_type):
@@ -121,17 +121,6 @@ class ACLOperations(object):
         """
 
         try:
-            if object_type == 'pipeline':
-                model = Pipeline.get(identifier, load_storage_rules=False, load_run_parameters=False,
-                                     load_versions=False)
-                identifier = model.identifier
-            elif object_type == 'folder':
-                model = Folder.load(identifier)
-                identifier = model.id
-            elif object_type == 'data_storage':
-                model = DataStorage.get(identifier)
-                identifier = model.identifier
-
             permissions_list = User.get_permissions(identifier, object_type)
             if len(permissions_list) > 0:
                 permissions_table = prettytable.PrettyTable()
@@ -149,9 +138,64 @@ class ACLOperations(object):
 
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
+            sys.exit(1)
         except requests.exceptions.RequestException as http_error:
             click.echo('Http error: {}'.format(str(http_error)), err=True)
+            sys.exit(1)
         except RuntimeError as runtime_error:
             click.echo('Error: {}'.format(str(runtime_error)), err=True)
+            sys.exit(1)
         except ValueError as value_error:
             click.echo('Error: {}'.format(str(value_error)), err=True)
+            sys.exit(1)
+
+    @classmethod
+    def print_sid_objects(cls, sid_name, principal, acl_class=None):
+        try:
+            available_entities = Entity.load_available_entities(cls.normalize_sid_name(sid_name, principal),
+                                                                principal, acl_class)
+            if len(available_entities) == 0:
+                click.echo("No accessible objects available for '%s'" % sid_name)
+                sys.exit(0)
+            entities_table = prettytable.PrettyTable()
+            entities_table.field_names = ["Type", "Name"]
+            entities_table.align = "r"
+            for entity_type, entities in iteritems(available_entities):
+                for entity in entities:
+                    entity_name = cls.build_name_by_type(entity, entity_type)
+                    if not entity_name:
+                        continue
+                    entities_table.add_row([entity_type, entity_name])
+            click.echo(entities_table)
+            click.echo()
+        except ConfigNotFoundError as config_not_found_error:
+            click.echo(str(config_not_found_error), err=True)
+            sys.exit(1)
+        except requests.exceptions.RequestException as http_error:
+            click.echo('Http error: {}'.format(str(http_error)), err=True)
+            sys.exit(1)
+        except RuntimeError as runtime_error:
+            click.echo('Error: {}'.format(str(runtime_error)), err=True)
+            sys.exit(1)
+        except ValueError as value_error:
+            click.echo('Error: {}'.format(str(value_error)), err=True)
+            sys.exit(1)
+
+    @staticmethod
+    def build_name_by_type(entity, entity_type):
+        if str(entity_type).lower() == 'tool':
+            registry = entity['registry'] if 'registry' in entity else None
+            if 'image' in entity:
+                return "/".join([registry, entity['image']]) if registry else entity['image']
+            return None
+        if str(entity_type).lower() == 'docker_registry':
+            return entity['path'] if 'path' in entity else None
+        return entity['name'] if 'name' in entity else None
+
+    @staticmethod
+    def normalize_sid_name(sid_name, principal):
+        role_prefix = "ROLE_"
+        sid_name = str(sid_name).upper()
+        if principal or sid_name.startswith(role_prefix):
+            return sid_name
+        return role_prefix + sid_name

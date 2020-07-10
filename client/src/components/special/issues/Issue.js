@@ -49,6 +49,7 @@ import localization from '../../../utils/localization';
 export default class Issue extends localization.LocalizedReactComponent {
 
   static propTypes = {
+    readOnly: PropTypes.bool,
     onNavigateBack: PropTypes.func,
     issue: PropTypes.object
   };
@@ -100,11 +101,14 @@ export default class Issue extends localization.LocalizedReactComponent {
   };
 
   canRemoveComment = (comment) => {
-    return !comment.rootComment && (this.isMineComment(comment) || this.isAdmin);
+    return !this.props.readOnly &&
+      !comment.rootComment &&
+      (this.isMineComment(comment) || this.isAdmin);
   };
 
   canEditComment = (comment) => {
-    return this.isMineComment(comment) || this.isAdmin;
+    return !this.props.readOnly &&
+      (this.isMineComment(comment) || this.isAdmin);
   };
   onRenameIssue = async (name) => {
     const text = this.props.issueInfo.loaded ? this.props.issueInfo.value.text : undefined;
@@ -391,17 +395,17 @@ export default class Issue extends localization.LocalizedReactComponent {
 
   @computed
   get canAddComment () {
-    return true;
+    return !this.props.readOnly;
   }
 
   @computed
   get canEditIssue () {
-    return this.isMineIssue || this.isAdmin;
+    return !this.props.readOnly && (this.isMineIssue || this.isAdmin);
   }
 
   @computed
   get canRemoveIssue () {
-    return this.isMineIssue || this.isAdmin;
+    return !this.props.readOnly && (this.isMineIssue || this.isAdmin);
   }
 
   @computed

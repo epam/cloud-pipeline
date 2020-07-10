@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.scan.ToolOSVersion;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.Vulnerability;
 import com.epam.pipeline.entity.scan.VulnerabilitySeverity;
@@ -108,6 +109,15 @@ public final class TestUtils {
         versionScanResult.setScanDate(new Date());
         versionScanResult.setSuccessScanDate(new Date());
         versionScanResult.setStatus(ToolScanStatus.COMPLETED);
+        versionScanResult.setToolOSVersion(null);
+    }
+
+    public static void generateScanResult(int criticalVulnerabilitiesCount, int highVulnerabilitiesCount,
+                                          int mediumVulnerabilitiesCount, ToolVersionScanResult versionScanResult,
+                                          ToolOSVersion osVersion) {
+        generateScanResult(criticalVulnerabilitiesCount, highVulnerabilitiesCount, mediumVulnerabilitiesCount,
+                versionScanResult);
+        versionScanResult.setToolOSVersion(osVersion);
     }
 
     public static ToolVersionScanResult generateScanResult(int criticalVulnerabilitiesCount,

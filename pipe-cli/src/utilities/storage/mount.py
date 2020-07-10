@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,31 +28,46 @@ import click
 from src.api.preferenceapi import PreferenceAPI
 from src.config import Config, is_frozen
 
+MS_IN_SEC = 1000
+
 
 class AbstractMount(object):
     __metaclass__ = ABCMeta
 
-    @abstractmethod
-    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url, mode, threading=False):
-        pass
+    def get_mount_webdav_cmd(self, config, mountpoint, options, custom_options, web_dav_url, mode, threading=False,
+                             log_level=None):
+        additional_args = self._append_arguments(['--webdav', web_dav_url], threading, log_level, custom_options)
+        return self._get_mount_cmd(config, mountpoint, options, additional_args, mode)
+
+    def get_mount_storage_cmd(self, config, mountpoint, options, custom_options, bucket, mode, threading=False,
+                              log_level=None):
+        additional_args = self._append_arguments(['--bucket', bucket], threading, log_level, custom_options)
+        return self._get_mount_cmd(config, mountpoint, options, additional_args, mode)
+
+    def _append_arguments(self, args, threading, log_level, custom_options):
+        if threading:
+            args.append('--threads')
+        if log_level:
+            args.extend(['--logging-level', log_level])
+        if custom_options:
+            args.extend(self._build_custom_option_arguments(custom_options))
+        return args
+
+    def _build_custom_option_arguments(self, custom_options):
+        arguments = []
+        for option_string in custom_options.split(','):
+            chunks = option_string.split('=')
+            arguments.append('--' + chunks[0])
+            if len(chunks) > 1:
+                arguments.append(chunks[1])
+        return arguments
 
     @abstractmethod
-    def get_mount_storage_cmd(self, config, mountpoint, options, bucket, mode, threading=False):
+    def _get_mount_cmd(self, config, mountpoint, options, additional_arguments, mode):
         pass
 
 
 class FrozenMount(AbstractMount):
-
-    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url, mode, threading=False):
-        additional_args = self._append_threading('--webdav ' + web_dav_url, threading)
-        return self._get_mount_cmd(config, mountpoint, options, additional_args, mode)
-
-    def get_mount_storage_cmd(self, config, mountpoint, options, bucket, mode, threading=False):
-        additional_args = self._append_threading('--bucket ' + bucket, threading)
-        return self._get_mount_cmd(config, mountpoint, options, additional_args, mode)
-
-    def _append_threading(self, args, threading):
-        return args + ' --threads' if threading else args
 
     def _get_mount_cmd(self, config, mountpoint, options, additional_arguments, mode):
         mount_bin = self.get_mount_executable(config)
@@ -61,7 +76,7 @@ class FrozenMount(AbstractMount):
         return ['bash', mount_script]
 
     def create_mount_script(self, config_folder, mount_bin, mountpoint, options, additional_arguments, mode):
-        mount_cmd = '%s --mountpoint %s %s --mode %d' % (mount_bin, mountpoint, additional_arguments, mode)
+        mount_cmd = '%s --mountpoint %s %s --mode %d' % (mount_bin, mountpoint, ' '.join(additional_arguments), mode)
         if options:
             mount_cmd += ' -o ' + options
         mount_script = os.path.join(config_folder, 'pipe-fuse-script' + str(uuid.uuid4()))
@@ -98,24 +113,11 @@ class FrozenMount(AbstractMount):
 
 class SourceMount(AbstractMount):
 
-    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url, mode, threading=False):
-        additional_args = self._append_threading(['--webdav', web_dav_url], threading)
-        return self._get_mount_cmd(config, mountpoint, options, additional_args, mode)
-
-    def get_mount_storage_cmd(self, config, mountpoint, options, bucket, mode, threading=False):
-        additional_args = self._append_threading(['--bucket', bucket], threading)
-        return self._get_mount_cmd(config, mountpoint, options, additional_args, mode)
-
-    def _append_threading(self, args, threading):
-        if threading:
-            args.append('--threads')
-        return args
-
     def _get_mount_cmd(self, config, mountpoint, options, additional_arguments, mode):
         python_exec = sys.executable
         script_folder = dirname(Config.get_base_source_dir())
         script_path = os.path.join(script_folder, 'mount/pipe-fuse.py')
-        mount_cmd = [python_exec, script_path, '--mountpoint', mountpoint, '--mode', mode]
+        mount_cmd = [python_exec, script_path, '--mountpoint', mountpoint, '--mode', str(mode)]
         mount_cmd.extend(additional_arguments)
         if options:
             mount_cmd.extend(['-o', options])
@@ -124,34 +126,43 @@ class SourceMount(AbstractMount):
 
 class Mount(object):
 
-    def mount_storages(self, mountpoint, file=False, bucket=None, options=None, quiet=False, log_file=None,
-                       threading=False, mode=700):
+    def mount_storages(self, mountpoint, file=False, bucket=None, options=None, custom_options=None, quiet=False,
+                       log_file=None, log_level=None, threading=False, mode=700, timeout=1000):
         config = Config.instance()
-        username = config.get_current_user()
+        username = self.normalize_username(config.get_current_user())
         mount = FrozenMount() if is_frozen() else SourceMount()
         if file:
             web_dav_url = PreferenceAPI.get_preference('base.dav.auth.url').value
             web_dav_url = web_dav_url.replace('auth-sso/', username + '/')
-            self.mount_dav(mount, config, mountpoint, options, web_dav_url, mode, log_file=log_file,
-                           threading=threading)
+            self.mount_dav(mount, config, mountpoint, options, custom_options, web_dav_url, mode,
+                           log_file=log_file, log_level=log_level, threading=threading, timeout=timeout)
         else:
-            self.mount_storage(mount, config, mountpoint, options, bucket, mode, log_file=log_file,
-                               threading=threading)
+            self.mount_storage(mount, config, mountpoint, options, custom_options, bucket, mode,
+                               log_file=log_file, log_level=log_level, threading=threading, timeout=timeout)
 
-    def mount_dav(self, mount, config, mountpoint, options, web_dav_url, mode, log_file=None, threading=False):
-        mount_cmd = mount.get_mount_webdav_cmd(config, mountpoint, options, web_dav_url, mode, threading=threading)
-        self.run(config, mount_cmd, log_file=log_file)
+    # Split username by @ to get only first part of the user name,
+    # because webdav trail user name as well to get get user folder name
+    def normalize_username(self, username):
+        return username.split('@')[0]
 
-    def mount_storage(self, mount, config, mountpoint, options, bucket, mode, log_file=None, threading=False):
-        mount_cmd = mount.get_mount_storage_cmd(config, mountpoint, options, bucket, mode, threading=threading)
-        self.run(config, mount_cmd, log_file=log_file)
+    def mount_dav(self, mount, config, mountpoint, options, custom_options, web_dav_url, mode,
+                  log_file=None, log_level=None, threading=False, timeout=1000):
+        mount_cmd = mount.get_mount_webdav_cmd(config, mountpoint, options, custom_options, web_dav_url, mode,
+                                               log_level=log_level, threading=threading)
+        self.run(config, mount_cmd, log_file=log_file, mount_timeout=timeout)
 
-    def run(self, config, mount_cmd, mount_timeout=5, log_file=None):
+    def mount_storage(self, mount, config, mountpoint, options, custom_options, bucket, mode,
+                      log_file=None, log_level=None, threading=False, timeout=1000):
+        mount_cmd = mount.get_mount_storage_cmd(config, mountpoint, options, custom_options, bucket, mode,
+                                                log_level=log_level, threading=threading)
+        self.run(config, mount_cmd, log_file=log_file, mount_timeout=timeout)
+
+    def run(self, config, mount_cmd, mount_timeout=5*MS_IN_SEC, log_file=None):
         output_file = log_file if log_file else os.devnull
         with open(output_file, 'w') as output:
             mount_environment = os.environ.copy()
             mount_environment['API'] = config.api
-            mount_environment['API_TOKEN'] = config.access_key
+            mount_environment['API_TOKEN'] = config.get_token()
             if config.proxy:
                 mount_environment['http_proxy'] = config.proxy
                 mount_environment['https_proxy'] = config.proxy
@@ -160,7 +171,7 @@ class Mount(object):
                                               stdout=output,
                                               stderr=subprocess.STDOUT,
                                               env=mount_environment)
-            time.sleep(mount_timeout)
+            time.sleep(mount_timeout / MS_IN_SEC)
             if mount_aps_proc.poll() is not None:
                 click.echo('Failed to mount storages. Mount command exited with return code: %d'
                            % mount_aps_proc.returncode, err=True)

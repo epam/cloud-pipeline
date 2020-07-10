@@ -1,4 +1,4 @@
--- Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+-- Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ local function arr_has_value (tab, val)
     return false
 end
 
-function arr_intersect(a, b)
+local function arr_intersect(a, b)
 	for index, value in ipairs(a) do
         if arr_has_value(b, value) then
             return true
@@ -34,17 +34,17 @@ function arr_intersect(a, b)
     return false
 end
 
-function arr_length(T)
+local function arr_length(T)
     local count = 0
     for _ in pairs(T) do count = count + 1 end
     return count
 end
 
-function split_str(inputstr, sep)
+local function split_str(inputstr, sep)
     if sep == nil then
         sep = "%s"
     end
-    local t={} ; i=1
+    local t={} ; local i=1
     for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
         t[i] = str
         i = i + 1
@@ -71,14 +71,19 @@ if token then
 
     local jwt_obj = jwt:verify(cert, token, claim_spec)
 
+    local username = "NotAuthorized"
+    if jwt_obj["payload"] ~= nil and jwt_obj["payload"]["sub"] ~= nil then
+        username = jwt_obj["payload"]["sub"]
+    end
+
     -- If "bearer" token is not valid - return 401 and clear cookie
     if not jwt_obj["verified"] then
         ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
         ngx.status = ngx.HTTP_UNAUTHORIZED
-        ngx.log(ngx.WARN, jwt_obj.reason)
+        ngx.log(ngx.WARN, "[SECURITY] Application: " .. ngx.var.route_location_root ..
+                "; User: " .. username .. "; Status: Authentication failed; Message: " .. jwt_obj.reason)
         ngx.exit(ngx.HTTP_UNAUTHORIZED)
     end
-    local username = jwt_obj["payload"]["sub"]
     local user_roles = jwt_obj["payload"]["roles"]
     local shared_with_users = split_str(ngx.var.shared_with_users, ',')
     local shared_with_groups = split_str(ngx.var.shared_with_groups, ',')
@@ -90,12 +95,27 @@ if token then
     if username ~= ngx.var.username and not arr_has_value(shared_with_users, username) and not arr_intersect(user_roles, shared_with_groups) then
         ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
         ngx.status = ngx.HTTP_UNAUTHORIZED
-        ngx.log(ngx.WARN, jwt_obj.reason)
+        ngx.log(ngx.WARN, "[SECURITY] Application: " .. ngx.var.route_location_root ..
+                "; User: " .. username .. "; Status:  Authentication failed; Message: Not an owner and access isn't shared.")
+        ngx.exit(ngx.HTTP_UNAUTHORIZED)
+    end
+    
+    -- 401 if:
+    -- user is anonymous and such access is not enabled
+    if os.getenv("CP_API_SRV_SAML_ALLOW_ANONYMOUS_USER") ~= "true" and arr_has_value(user_roles, "ROLE_ANONYMOUS_USER") then
+        ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+        ngx.status = ngx.HTTP_UNAUTHORIZED
+        ngx.log(ngx.WARN, "[SECURITY] Application: " .. ngx.var.route_location_root ..
+                "; User: " .. username .. "; Status:  Authentication failed; Message: Anonymous access is disabled.")
         ngx.exit(ngx.HTTP_UNAUTHORIZED)
     end
 
     -- If "bearer" is fine - allow nginx to proceed
     -- Pass authenticated user to the proxied resource as a header
+    if ngx.var.route_location_root == ngx.var.request_uri then
+        ngx.log(ngx.WARN,"[SECURITY] Application: " .. ngx.var.route_location_root ..
+                "; User: " .. username .. "; Status: Successfully authenticated.")
+    end
     ngx.req.set_header('X-Auth-User', username)
     return
 end
@@ -147,7 +167,3 @@ else
         ngx.say('<html><body><script>window.location.href = "' .. req_uri .. '"</script></body></html>')
         return
 end
-
--- No cookie, no POST param - 401
-ngx.status = ngx.HTTP_UNAUTHORIZED
-ngx.exit(ngx.HTTP_UNAUTHORIZED)

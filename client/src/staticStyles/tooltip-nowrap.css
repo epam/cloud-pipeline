@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
-.limit-mounts-warning .ant-tooltip-inner {
+.limit-mounts-warning .ant-tooltip-inner,
+.job-estimated-price-info .ant-tooltip-inner {
   max-width: unset;
 }

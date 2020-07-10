@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ public class ToolVersionScanResult {
 
     private Long toolId;
     private String version;
+    private ToolOSVersion toolOSVersion;
     private ToolScanStatus status;
     private Date scanDate;
     private Date successScanDate;
@@ -50,14 +51,20 @@ public class ToolVersionScanResult {
     private String digest;
 
     public ToolVersionScanResult(ToolScanStatus status, Date scanDate, List<Vulnerability> vulnerabilities,
-                                 List<ToolDependency> dependencies) {
+                                 List<ToolDependency> dependencies, ToolOSVersion toolOSVersion) {
         this.status = status;
         this.scanDate = new Date(scanDate.getTime());
         this.vulnerabilities = new ArrayList<>(vulnerabilities);
         this.dependencies = new ArrayList<>(dependencies);
+        this.toolOSVersion = toolOSVersion;
         if (status == ToolScanStatus.COMPLETED) {
             this.successScanDate = new Date(scanDate.getTime());
         }
+    }
+
+    public ToolVersionScanResult(ToolScanStatus status, Date scanDate, List<Vulnerability> vulnerabilities,
+                                 List<ToolDependency> dependencies) {
+        this(status, scanDate, vulnerabilities, dependencies, null);
     }
 
     public ToolVersionScanResult(String version) {
@@ -67,8 +74,9 @@ public class ToolVersionScanResult {
         this.dependencies = Collections.emptyList();
     }
 
-    public ToolVersionScanResult(String version, List<Vulnerability> vulnerabilities, List<ToolDependency> dependencies,
-                                 ToolScanStatus status, String lastLayerRef, String digest) {
+    public ToolVersionScanResult(String version,  ToolOSVersion toolOSVersion, List<Vulnerability> vulnerabilities,
+                                 List<ToolDependency> dependencies, ToolScanStatus status,
+                                 String lastLayerRef, String digest) {
         this.version = version;
         this.vulnerabilities = new ArrayList<>(vulnerabilities);
         this.lastLayerRef = lastLayerRef;
@@ -76,6 +84,7 @@ public class ToolVersionScanResult {
         this.status = status;
         this.dependencies = new ArrayList<>(dependencies);
         this.scanDate = new Date();
+        this.toolOSVersion = toolOSVersion;
         if (status == ToolScanStatus.COMPLETED) {
             this.successScanDate = scanDate;
         }

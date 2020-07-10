@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -179,9 +179,12 @@ class TestLsFolder(object):
 
     @pytest.mark.run()
     def test_list_not_existing_bucket(self):
+        bucket_name = "does-not-exist"
+        file_name = "file.txt"
         try:
-            error = pipe_storage_ls("cp://{}/{}".format("does-not-exist", "file.txt"), expected_status=1)[1]
-            assert_error_message_is_present(error, "Error: data storage with id: 'does-not-exist' was not found.")
+            error = pipe_storage_ls("cp://{}/{}".format(bucket_name, file_name), expected_status=1)[1]
+            assert_error_message_is_present(error, "Error: data storage with id: '{}/{}' was not found."
+                                            .format(bucket_name, file_name))
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format(self.epam_test_case_ls_non_existing_bucket, e.message))
 

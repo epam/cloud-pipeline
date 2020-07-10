@@ -22,6 +22,7 @@ import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -45,6 +46,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.mockito.Matchers.any;
@@ -88,7 +91,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
     @Before
     public void setUp() {
-        doReturn(new MockS3Helper()).when(storageProviderManager).getS3Helper(any());
+        doReturn(new MockS3Helper()).when(storageProviderManager).getS3Helper(any(S3bucketDataStorage.class));
         doReturn(new AwsRegion()).when(regionManager).loadOrDefault(any());
         doReturn(new AwsRegion()).when(regionManager).getAwsRegion(any());
         Preference systemIndependentBlackList = SystemPreferences.DATA_STORAGE_NFS_MOUNT_BLACK_LIST.toPreference();
@@ -109,6 +112,29 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         AbstractDataStorage loaded = storageManager.load(saved.getId());
         compareDataStorage(saved, loaded);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void loadByIdsDataStorageTest() throws Exception {
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+        storageVO.setName(storageVO.getName() + UUID.randomUUID());
+        storageVO.setPath(storageVO.getPath() + UUID.randomUUID());
+        AbstractDataStorage saved2 = storageManager.create(storageVO, false, false, false).getEntity();
+        storageVO.setName(storageVO.getName() + UUID.randomUUID());
+        storageVO.setPath(storageVO.getPath() + UUID.randomUUID());
+        storageManager.create(storageVO, false, false, false).getEntity();
+
+        List<AbstractDataStorage> loaded = storageManager.getDatastoragesByIds(
+                Arrays.asList(saved.getId(), saved2.getId())
+        );
+        Assert.assertTrue(
+                loaded.stream().anyMatch(ds -> ds.getId().equals(saved.getId()) || ds.getId().equals(saved2.getId()))
+        );
+        Assert.assertEquals(2, loaded.size());
     }
 
     @Test

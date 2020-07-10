@@ -42,7 +42,7 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
 
                 # Cloud Provider credentials
                 ## Common
-                -env CP_CLOUD_CREDENTIALS_FILE= \                   # Cloud credentials can be specified as a file for any cloud provider (the only available option for Azure and GCP)
+                -env CP_CLOUD_CREDENTIALS_FILE= \                   # Cloud credentials can be specified as a file for any cloud provider (the only available option for GCP)
                 ## AWS
                 -env CP_AWS_ACCESS_KEY_ID= \                        # For AWS key id can be specified via environment variables
                 -env CP_AWS_SECRET_ACCESS_KEY= \                    # For AWS key secret can be specified via environment variables
@@ -50,6 +50,8 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE= \
                 -env CP_DOCKER_STORAGE_ROOT_DIR= \                  # Root directory within a $CP_DOCKER_STORAGE_CONTAINER, used to store images blobs. If not set - "cloud-pipeline-${CP_DEPLOYMENT_ID}" will be used
                 ## Azure
+                -env CP_AZURE_PROFILE_FILE= \                       # Azure profile file from cli autentication
+                -env CP_AZURE_ACCESS_TOKEN_FILE= \                  # Azure access token file from cli autentication
                 -env CP_AZURE_STORAGE_ACCOUNT= \                    # Default storage account name, that will be used to manage BLOB/FS storages and persist docker images (if CP_DOCKER_STORAGE_TYPE=obj)
                 -env CP_AZURE_STORAGE_KEY= \                        # Key for the default storage account (CP_AZURE_STORAGE_ACCOUNT)
                 -env CP_AZURE_DEFAULT_RESOURCE_GROUP= \             # Which Azure resource group will be used by default
@@ -59,8 +61,10 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 # Core API
                 -env CP_API_SRV_SAML_ID_TRAIL= \                    # SAML partner ID will be constructed as {CP_API_SRV_EXTERNAL_HOST}:{CP_API_SRV_EXTERNAL_PORT} and this parameter added in the end (default: /pipeline/)
                 -env CP_API_SRV_SAML_AUTO_USER_CREATE= \            # Whether to register all users that have passed SAML authentication. Such users will be granted basic "ROLE_USER" permissions. The following value are available: AUTO (creates a new user if not exists), EXPLICIT (requires users pre-registration (performed by any admin), EXPLICIT_GROUP (requires specific groups pre-registration. If user's SAML groups have no intersections with registered groups the authentication will fail)
+                -env CP_API_SRV_SAML_ALLOW_ANONYMOUS_USER= \        # Allows anonymous user access. Works in conjunction with EXPLICIT_GROUP strategy set via CP_API_SRV_SAML_AUTO_USER_CREATE.
                 -env CP_API_SRV_SAML_USER_ATTRIBUTES= \             # Sets a list of the attributes, that will be parsed from the IdP SAML Response object and added to the user's profile. The value shall be comma-delimited list of "User_Attribute=IdP_Attribute" pairs (default: Email=email,FirstName=firstName,LastName=lastName,Name=firstName)
                 -env CP_API_SRV_IDP_CERT_PATH= \                    # Allows to set the path to the directory containing IdP's signing certificate (idp-public-cert.pem). If not set - $CP_IDP_CERT_DIR will be used. This is useful if the IdP provides different signing certificate for different services
+                -env CP_API_SRV_ANONYMOUS_URLS= \                   # Sets a list of urls that can be accessed by anonymous users if anonymous user access is enabled via CP_API_SRV_SAML_ALLOW_ANONYMOUS_USER.
                 -env CP_PREF_CLUSTER_CADVISOR_DISABLE_PROXY= \      # Disables the proxy settings when API communicates to the cAdvisor service within worker nodes (Default: true)
 
                 # GitLab

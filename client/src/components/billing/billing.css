@@ -2,7 +2,6 @@
   background-color: white;
   height: 100%;
   display: flex;
-  flex-direction: column;
 }
 
 .menu-container {
@@ -18,5 +17,6 @@
 
 .children {
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  display: flex;
 }

@@ -40,6 +40,7 @@ import LoadTool from '../../models/tools/LoadTool';
 import ToolImage from '../../models/tools/ToolImage';
 import ToolUpdate from '../../models/tools/ToolUpdate';
 import ToolDelete from '../../models/tools/ToolDelete';
+import ToolSymlink from '../../models/tools/ToolSymlink';
 import LoadToolVersionSettings from '../../models/tools/LoadToolVersionSettings';
 import UpdateToolVersionSettings from '../../models/tools/UpdateToolVersionSettings';
 import preferences from '../../models/preferences/PreferencesLoad';
@@ -58,6 +59,7 @@ import {
   ISSUES_PANEL_KEY,
   SplitPanel
 } from '../special/splitPanel/SplitPanel';
+import Owner from '../special/owner';
 import styles from './Tools.css';
 import Remarkable from 'remarkable';
 import hljs from 'highlight.js';
@@ -74,8 +76,10 @@ import ToolScan from '../../models/tools/ToolScan';
 import VersionScanResult from './elements/VersionScanResult';
 import {submitsRun, modifyPayloadForAllowedInstanceTypes, run, runPipelineActions} from '../runs/actions';
 import InstanceTypesManagementForm
-  from '../main/navigation/instance-types-management/InstanceTypesManagementForm';
+  from '../settings/forms/InstanceTypesManagementForm';
 import deleteToolConfirmModal from './tool-deletion-warning';
+import ToolLink from './elements/ToolLink';
+import CreateLinkForm from './forms/CreateLinkForm';
 
 const MarkdownRenderer = new Remarkable('full', {
   html: true,
@@ -138,7 +142,9 @@ export default class Tool extends localization.LocalizedReactComponent {
     permissionsFormVisible: false,
     isShowUnscannedVersion: false,
     showIssuesPanel: false,
-    instanceTypesManagementPanel: false
+    instanceTypesManagementPanel: false,
+    createLinkInProgress: false,
+    createLinkFormVisible: false
   };
 
   @observable defaultVersionSettings;
@@ -185,6 +191,29 @@ export default class Tool extends localization.LocalizedReactComponent {
     return null;
   }
 
+  @computed
+  get link () {
+    if (this.props.tool.loaded) {
+      return !!this.props.tool.value.link;
+    }
+    return false;
+  }
+
+  @computed
+  get hasWritableToolGroups () {
+    if (this.props.docker.loaded && this.props.tool.loaded) {
+      const toolGroupId = +(this.props.tool.value.toolGroupId);
+      const registries = this.props.docker.value.registries || [];
+      for (let r = 0; r < registries.length; r++) {
+        const groups = registries[r].groups || [];
+        if (groups.filter(g => +g.id !== toolGroupId && roleModel.writeAllowed(g)).length > 0) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   fetchVersions = async () => {
     await this.props.versions.fetch();
   };
@@ -224,7 +253,7 @@ export default class Tool extends localization.LocalizedReactComponent {
 
   deleteToolConfirm = () => {
     const deleteToolVersion = this.deleteToolVersion;
-    deleteToolConfirmModal({tool: this.props.toolId}, this.props.router)
+    deleteToolConfirmModal({tool: this.props.toolId, link: this.link}, this.props.router)
       .then((confirm) => {
         if (confirm) {
           return deleteToolVersion();
@@ -475,7 +504,7 @@ export default class Tool extends localization.LocalizedReactComponent {
     };
 
     const renderActions = (isShortDescription) => {
-      if (!roleModel.writeAllowed(this.props.tool.value)) {
+      if (!roleModel.writeAllowed(this.props.tool.value) || this.link) {
         return undefined;
       }
       const buttons = [];
@@ -748,6 +777,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           status: scanResult.status,
           successScanDate: scanResult.successScanDate || '',
           allowedToExecute: scanResult.allowedToExecute,
+          toolOSVersion: scanResult.toolOSVersion,
           vulnerabilitiesStatistics: scanResult.status === ScanStatuses.notScanned ? null : {
             critical: countCriticalVulnerabilities,
             high: countHighVulnerabilities,
@@ -855,6 +885,25 @@ export default class Tool extends localization.LocalizedReactComponent {
         );
       }
     }, {
+      dataIndex: 'toolOSVersion',
+      key: 'tool os version',
+      title: 'OS',
+      className: styles.osColumn,
+      render: (toolOSVersion) => {
+        if (toolOSVersion) {
+          const {distribution, version} = toolOSVersion;
+          if (distribution) {
+            return (
+              <div>
+                <span>{distribution}</span>
+                {version && (<span style={{marginLeft: 5}}>{version}</span>)}
+              </div>
+            );
+          }
+        }
+        return null;
+      }
+    }, {
       dataIndex: 'digest',
       key: 'digest',
       title: 'Digest',
@@ -890,6 +939,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           <Row type="flex" justify="end" className={styles.toolVersionActions}>
             {
               this.isAdmin() &&
+              !this.link &&
               this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
               (
                 <Button
@@ -901,6 +951,7 @@ export default class Tool extends localization.LocalizedReactComponent {
             }
             {
               this.isAdmin() &&
+              !this.link &&
               this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
               (
                 <Button
@@ -921,7 +972,7 @@ export default class Tool extends localization.LocalizedReactComponent {
               )
             }
             {
-              roleModel.writeAllowed(this.props.tool.value) &&
+              roleModel.writeAllowed(this.props.tool.value) && !this.link &&
               (
                 <Button
                   size="small"
@@ -1048,7 +1099,7 @@ export default class Tool extends localization.LocalizedReactComponent {
         }
         <EditToolForm
           onInitialized={this.onToolSettingsFormInitialized}
-          readOnly={!roleModel.writeAllowed(this.props.tool.value)}
+          readOnly={!roleModel.writeAllowed(this.props.tool.value) || this.link}
           configuration={this.defaultVersionSettingsConfiguration}
           tool={this.props.tool.value}
           toolId={this.props.toolId}
@@ -1173,6 +1224,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           this.state.showIssuesPanel &&
           <Issues
             key={ISSUES_PANEL_KEY}
+            readOnly={!!this.link}
             canNavigateBack={false}
             onCloseIssuePanel={this.closeIssuesPanel}
             entityId={this.props.toolId}
@@ -1183,7 +1235,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           this.state.metadata &&
           <Metadata
             key={METADATA_PANEL_KEY}
-            readOnly={!roleModel.isOwner(this.props.tool.value)}
+            readOnly={!roleModel.isOwner(this.props.tool.value) || !!this.link}
             entityId={this.props.toolId}
             entityClass="TOOL" />
         }
@@ -1192,7 +1244,9 @@ export default class Tool extends localization.LocalizedReactComponent {
           <InstanceTypesManagementForm
             key={INSTANCE_MANAGEMENT_PANEL_KEY}
             level="TOOL"
-            resourceId={this.props.toolId} />
+            resourceId={this.props.toolId}
+            disabled={!!this.link}
+          />
         }
       </SplitPanel>
     );
@@ -1443,7 +1497,9 @@ export default class Tool extends localization.LocalizedReactComponent {
       nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))
         ? +versionSettingValue('node_count')
         : undefined,
-      cloudRegionId: this.defaultCloudRegionId
+      cloudRegionId: parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
+        ? versionSettingValue('cloudRegionId')
+        : this.defaultCloudRegionId
     }, this.props.allowedInstanceTypes);
     const {allowedToExecute, tooltip, notLoaded} = this.getVersionRunningInformation(version);
     if (!allowedToExecute) {
@@ -1624,6 +1680,76 @@ export default class Tool extends localization.LocalizedReactComponent {
     );
   };
 
+  openCreateLinkForm = () => {
+    this.setState({
+      createLinkFormVisible: true
+    });
+  }
+
+  closeCreateLinkForm = () => {
+    this.setState({
+      createLinkFormVisible: false
+    });
+  }
+
+  onCreateLink = ({groupId} = {}) => {
+    const wrap = (fn) => {
+      this.setState({
+        createLinkInProgress: true
+      }, async () => {
+        const {error, id} = await fn();
+        if (error) {
+          this.setState({
+            createLinkInProgress: false
+          }, () => {
+            message.error(error, 5);
+          });
+        } else {
+          this.setState({
+            createLinkInProgress: false,
+            createLinkFormVisible: false
+          }, () => {
+            this.props.router.push(`tool/${id}`);
+          });
+        }
+      });
+    };
+    wrap(async () => {
+      const hide = message.loading('Creating tool link...', 0);
+      const request = new ToolSymlink();
+      await request.send({
+        groupId,
+        toolId: this.props.toolId
+      });
+      hide();
+      if (request.error) {
+        return {error: request.error};
+      } else {
+        return request.value;
+      }
+    });
+  };
+
+  renderCreateLinkButton = () => {
+    if (
+      !this.link &&
+      this.hasWritableToolGroups &&
+      this.props.tool.loaded &&
+      roleModel.executeAllowed(this.props.tool.value)
+    ) {
+      return (
+        <Button
+          disabled={!this.props.tool.loaded}
+          size="small"
+          onClick={this.openCreateLinkForm}
+        >
+          <Icon type="link" />
+        </Button>
+      );
+    }
+    return null;
+  };
+
   renderActionsMenu = () => {
     const permissionsKey = 'permissions';
     const deleteKey = 'delete';
@@ -1640,7 +1766,7 @@ export default class Tool extends localization.LocalizedReactComponent {
         </Menu.Item>
         <Menu.Divider />
         <Menu.Item key={deleteKey} style={{color: 'red'}}>
-          <Icon type="delete" /> Delete tool
+          <Icon type="delete" /> Delete tool {this.link ? 'link' : false}
         </Menu.Item>
       </Menu>
     );
@@ -1691,7 +1817,10 @@ export default class Tool extends localization.LocalizedReactComponent {
                   size="small"
                   style={{marginBottom: 3, verticalAlign: 'middle', lineHeight: 'inherit'}}>
                   <Icon type="arrow-left" />
-                </Button> {this.props.tool.value.image}
+                </Button>
+                <ToolLink link={this.link} style={{marginLeft: 5}} />
+                <span style={{marginLeft: 5}}>{this.props.tool.value.image}</span>
+                <Owner subject={this.props.tool.value} style={{marginLeft: 5}} />
               </td>
               <td style={{width: '33%', verticalAlign: 'bottom'}}>
                 {this.renderMenu()}
@@ -1699,6 +1828,9 @@ export default class Tool extends localization.LocalizedReactComponent {
               <td className={styles.toolActions} style={{textAlign: 'right', width: '33%'}}>
                 {
                   this.renderDisplayOptionsMenu()
+                }
+                {
+                  this.renderCreateLinkButton()
                 }
                 {
                   roleModel.isOwner(this.props.tool.value) && this.renderActionsMenu()
@@ -1713,6 +1845,13 @@ export default class Tool extends localization.LocalizedReactComponent {
         {
           this.renderContent()
         }
+        <CreateLinkForm
+          disabled={this.state.createLinkInProgress}
+          visible={this.state.createLinkFormVisible}
+          onSubmit={this.onCreateLink}
+          onClose={this.closeCreateLinkForm}
+          source={this.props.tool.loaded ? this.props.tool.value : null}
+        />
         <Modal
           title="Permissions"
           footer={false}

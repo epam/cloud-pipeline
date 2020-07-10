@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,8 +59,6 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         .setScaleDownTimeout("30")
                         .setScaleUpTimeout("30")
                         .save()
-                        .sleep(2, SECONDS)
-                        .click(OK)
         );
     }
 

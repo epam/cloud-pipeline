@@ -29,6 +29,9 @@ spec:
           volumeMounts:
             - mountPath: /var/log/dav
               name: dav-logs
+            - name: cp-region-creds
+              mountPath: "/root/.cloud/regioncreds"
+              readOnly: true
           readinessProbe:
             httpGet:
               path: /${CP_DAV_URL_PATH}
@@ -40,5 +43,8 @@ spec:
         - name: dav-logs
           hostPath:
             path: /opt/dav/logs
+        - name: cp-region-creds
+          secret:
+            secretName: cp-region-creds-secret
       imagePullSecrets:
-        - name: cp-distr-docker-registry-secret
+        - name: cp-region-creds-secret

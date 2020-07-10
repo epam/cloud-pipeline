@@ -16,19 +16,22 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Checkbox, InputNumber, Icon, Modal, Radio, Row} from 'antd';
+import {Checkbox, InputNumber, Icon, Modal, Radio, Row, Select} from 'antd';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {
   LaunchClusterTooltip,
   renderTooltip
 } from './launch-cluster-tooltips';
+import {getSpotTypeName} from '../../../../special/spot-instance-names';
 
 export const CP_CAP_SGE = 'CP_CAP_SGE';
 export const CP_CAP_SPARK = 'CP_CAP_SPARK';
 export const CP_CAP_SLURM = 'CP_CAP_SLURM';
 export const CP_CAP_AUTOSCALE = 'CP_CAP_AUTOSCALE';
 export const CP_CAP_AUTOSCALE_WORKERS = 'CP_CAP_AUTOSCALE_WORKERS';
+export const CP_CAP_AUTOSCALE_HYBRID = 'CP_CAP_AUTOSCALE_HYBRID';
+export const CP_CAP_AUTOSCALE_PRICE_TYPE = 'CP_CAP_AUTOSCALE_PRICE_TYPE';
 
 const PARAMETER_TITLE_WIDTH = 110;
 const PARAMETER_TITLE_RIGHT_MARGIN = 5;
@@ -49,6 +52,11 @@ export function autoScaledClusterEnabled (parameters) {
     booleanParameterIsSetToValue(parameters, CP_CAP_AUTOSCALE);
 }
 
+export function hybridAutoScaledClusterEnabled (parameters) {
+  return autoScaledClusterEnabled(parameters) &&
+    booleanParameterIsSetToValue(parameters, CP_CAP_AUTOSCALE_HYBRID);
+}
+
 export function gridEngineEnabled (parameters) {
   return booleanParameterIsSetToValue(parameters, CP_CAP_SGE);
 }
@@ -59,6 +67,21 @@ export function sparkEnabled (parameters) {
 
 export function slurmEnabled (parameters) {
   return booleanParameterIsSetToValue(parameters, CP_CAP_SLURM);
+}
+
+export const AUTO_SCALE_PRICE_TYPES = {
+  master: 'master',
+  spot: 'spot',
+  onDemand: 'on-demand'
+};
+
+export function getAutoScaledPriceTypeValue (parameters) {
+  if (!parameters || !parameters.hasOwnProperty(CP_CAP_AUTOSCALE_PRICE_TYPE)) {
+    return undefined;
+  }
+  return [AUTO_SCALE_PRICE_TYPES.spot, AUTO_SCALE_PRICE_TYPES.onDemand]
+    .includes(`${parameters[CP_CAP_AUTOSCALE_PRICE_TYPE].value}`)
+    ? `${parameters[CP_CAP_AUTOSCALE_PRICE_TYPE].value}` : undefined;
 }
 
 export const CLUSTER_TYPE = {
@@ -73,9 +96,18 @@ export function getSkippedSystemParametersList (controller) {
       controller.state.autoScaledCluster ||
       controller.state.gridEngineEnabled ||
       controller.state.sparkEnabled ||
-      controller.state.slurmEnabled
+      controller.state.slurmEnabled ||
+      controller.state.hybridAutoScaledClusterEnabled
     )) {
-    return [CP_CAP_SGE, CP_CAP_SPARK, CP_CAP_SLURM, CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS];
+    return [
+      CP_CAP_SGE,
+      CP_CAP_SPARK,
+      CP_CAP_SLURM,
+      CP_CAP_AUTOSCALE,
+      CP_CAP_AUTOSCALE_WORKERS,
+      CP_CAP_AUTOSCALE_HYBRID,
+      CP_CAP_AUTOSCALE_PRICE_TYPE
+    ];
   }
   return [CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS];
 }
@@ -91,7 +123,9 @@ export function setClusterParameterValue (form, sectionName, configuration) {
   const {
     gridEngineEnabled,
     sparkEnabled,
-    slurmEnabled
+    slurmEnabled,
+    hybridAutoScaledClusterEnabled,
+    autoScaledPriceType
   } = configuration;
   const formValue = form.getFieldValue(sectionName);
   if (!formValue || !formValue.hasOwnProperty('params')) {
@@ -118,6 +152,14 @@ export function setClusterParameterValue (form, sectionName, configuration) {
       value.value = `${slurmEnabled}`;
       modified = true;
     }
+    if (value.name === CP_CAP_AUTOSCALE_PRICE_TYPE && autoScaledPriceType) {
+      value.value = `${autoScaledPriceType}`;
+      modified = true;
+    }
+    if (value.name === CP_CAP_AUTOSCALE_HYBRID) {
+      value.value = `${hybridAutoScaledClusterEnabled}`;
+      modified = true;
+    }
   }
   if (modified) {
     form.setFieldsValue(
@@ -135,7 +177,9 @@ export function setSingleNodeMode (controller, callback) {
     setDefaultNodesCount: false,
     gridEngineEnabled: false,
     sparkEnabled: false,
-    slurmEnabled: false
+    slurmEnabled: false,
+    autoScaledPriceType: undefined,
+    hybridAutoScaledClusterEnabled: false
   }, callback);
 }
 
@@ -147,6 +191,8 @@ export function setFixedClusterMode (controller, callback) {
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
+    autoScaledPriceType: undefined,
+    hybridAutoScaledClusterEnabled: false,
     nodesCount: Math.max(1,
       !isNaN(controller.state.maxNodesCount)
         ? controller.state.maxNodesCount
@@ -164,6 +210,8 @@ export function setAutoScaledMode (controller, callback) {
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
+    autoScaledPriceType: undefined,
+    hybridAutoScaledClusterEnabled: false,
     maxNodesCount: Math.max(1,
       !isNaN(controller.state.nodesCount)
         ? controller.state.nodesCount
@@ -195,7 +243,10 @@ const lowerCasedString = (string, lowercased) => {
 class ConfigureClusterDialog extends React.Component {
   static getClusterName = (ctrl, lowerCased) => {
     if (ctrl.state.launchCluster && ctrl.state.autoScaledCluster) {
-      const name = lowerCasedString('Auto-scaled cluster', lowerCased);
+      const name = lowerCasedString(
+        `Auto-scaled ${ctrl.state.hybridAutoScaledClusterEnabled ? 'hybrid ' : ''}cluster`,
+        lowerCased
+      );
       if (!isNaN(ctrl.state.nodesCount) && !isNaN(ctrl.state.maxNodesCount)) {
         return `${name} (${range(ctrl.state)} child nodes)`;
       }
@@ -232,11 +283,14 @@ class ConfigureClusterDialog extends React.Component {
   static propTypes = {
     visible: PropTypes.bool,
     disabled: PropTypes.bool,
+    cloudRegionProvider: PropTypes.string,
     launchCluster: PropTypes.bool,
     autoScaledCluster: PropTypes.bool,
     gridEngineEnabled: PropTypes.bool,
     sparkEnabled: PropTypes.bool,
     slurmEnabled: PropTypes.bool,
+    autoScaledPriceType: PropTypes.string,
+    hybridAutoScaledClusterEnabled: PropTypes.bool,
     nodesCount: PropTypes.number,
     maxNodesCount: PropTypes.number,
     onChange: PropTypes.func,
@@ -251,6 +305,8 @@ class ConfigureClusterDialog extends React.Component {
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
+    hybridAutoScaledClusterEnabled: false,
+    autoScaledPriceType: undefined,
     nodesCount: 0,
     maxNodesCount: 0,
     validation: {
@@ -329,7 +385,8 @@ class ConfigureClusterDialog extends React.Component {
     this.setState({
       gridEngineEnabled: e.target.checked,
       sparkEnabled: false,
-      slurmEnabled: false
+      slurmEnabled: false,
+      hybridAutoScaledClusterEnabled: false
     });
   };
 
@@ -337,7 +394,8 @@ class ConfigureClusterDialog extends React.Component {
     this.setState({
       gridEngineEnabled: false,
       sparkEnabled: e.target.checked,
-      slurmEnabled: false
+      slurmEnabled: false,
+      hybridAutoScaledClusterEnabled: false
     });
   };
 
@@ -345,7 +403,17 @@ class ConfigureClusterDialog extends React.Component {
     this.setState({
       gridEngineEnabled: false,
       sparkEnabled: false,
-      slurmEnabled: e.target.checked
+      slurmEnabled: e.target.checked,
+      hybridAutoScaledClusterEnabled: false
+    });
+  };
+
+  onChangeEnableHybridAutoScaledCluster = (e) => {
+    this.setState({
+      gridEngineEnabled: false,
+      sparkEnabled: false,
+      slurmEnabled: false,
+      hybridAutoScaledClusterEnabled: e.target.checked
     });
   };
 
@@ -454,6 +522,38 @@ class ConfigureClusterDialog extends React.Component {
         ];
       }
     };
+    const renderAutoScaledPriceTypeSelect = () => (
+      <Row key="autoScalePriceType" type="flex" align="middle" style={{marginTop: 5}}>
+        <span style={PARAMETER_TITLE_STYLE}>Workers price type:</span>
+        <Select
+          style={{flex: 1}}
+          value={
+            this.state.autoScaledPriceType
+              ? this.state.autoScaledPriceType
+              : AUTO_SCALE_PRICE_TYPES.master
+          }
+          onSelect={(autoScaledPriceType) => {
+            if (autoScaledPriceType === AUTO_SCALE_PRICE_TYPES.master) {
+              this.setState({autoScaledPriceType: undefined});
+            } else {
+              this.setState({autoScaledPriceType});
+            }
+          }}
+        >
+          <Select.Option key={AUTO_SCALE_PRICE_TYPES.master}>Master's config</Select.Option>
+          <Select.Option key={AUTO_SCALE_PRICE_TYPES.spot}>
+            {getSpotTypeName(true, this.props.cloudRegionProvider)}
+          </Select.Option>
+          <Select.Option key={AUTO_SCALE_PRICE_TYPES.onDemand}>
+            {getSpotTypeName(false, this.props.cloudRegionProvider)}
+          </Select.Option>
+        </Select>
+        {renderTooltip(
+          LaunchClusterTooltip.autoScaledCluster.autoScalePriceType,
+          {marginLeft: 5}
+        )}
+      </Row>
+    );
     return [
       <Row key="max nodes count" type="flex" align="middle" style={{marginTop: 5}}>
         <span style={PARAMETER_TITLE_STYLE}>Auto-scaled up to:</span>
@@ -467,8 +567,18 @@ class ConfigureClusterDialog extends React.Component {
         {renderTooltip(LaunchClusterTooltip.autoScaledCluster.autoScaledUpTo, {marginLeft: 5})}
       </Row>,
       this.getValidationRow('maxNodesCount'),
+      <Row key="enable hybrid" type="flex" align="middle" style={{marginTop: 5}}>
+        <Checkbox
+          style={{marginLeft: LEFT_MARGIN}}
+          checked={this.state.hybridAutoScaledClusterEnabled}
+          onChange={this.onChangeEnableHybridAutoScaledCluster}>
+          Enable Hybrid cluster
+        </Checkbox>
+        {renderTooltip(LaunchClusterTooltip.autoScaledCluster.hybridAutoScaledCluster)}
+      </Row>,
       ...renderSetDefaultNodesCount(),
-      this.getValidationRow('nodesCount')
+      this.getValidationRow('nodesCount'),
+      renderAutoScaledPriceTypeSelect()
     ].filter(r => !!r);
   };
 
@@ -488,8 +598,10 @@ class ConfigureClusterDialog extends React.Component {
         launchCluster: this.state.launchCluster,
         autoScaledCluster: this.state.autoScaledCluster,
         gridEngineEnabled: this.state.gridEngineEnabled,
+        hybridAutoScaledClusterEnabled: this.state.hybridAutoScaledClusterEnabled,
         sparkEnabled: this.state.sparkEnabled,
-        slurmEnabled: this.state.slurmEnabled
+        slurmEnabled: this.state.slurmEnabled,
+        autoScaledPriceType: this.state.autoScaledPriceType
       });
     }
   };
@@ -623,6 +735,8 @@ class ConfigureClusterDialog extends React.Component {
         gridEngineEnabled: nextProps.gridEngineEnabled,
         sparkEnabled: nextProps.sparkEnabled,
         slurmEnabled: nextProps.slurmEnabled,
+        autoScaledPriceType: nextProps.autoScaledPriceType,
+        hybridAutoScaledClusterEnabled: nextProps.hybridAutoScaledClusterEnabled,
         setDefaultNodesCount: nextProps.nodesCount > 0,
         nodesCount: nextProps.nodesCount && !isNaN(nextProps.nodesCount) ? nextProps.nodesCount : 0,
         maxNodesCount: nextProps.maxNodesCount,

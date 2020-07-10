@@ -45,6 +45,8 @@ public class PipeConfValueVO {
     @JsonProperty(value = "enum")
     private List<String> availableValues;
 
+    private String description;
+
     PipeConfValueVO() {
         this(DEFAULT_VALUE, DEFAULT_TYPE, DEFAULT_REQUIRED, DEFAULT_AVAIL_VALUES);
     }

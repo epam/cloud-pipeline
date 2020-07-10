@@ -44,7 +44,7 @@ public class CheckPermissionHelper {
     private final SidRetrievalStrategy sidRetrievalStrategy;
 
     public boolean isAllowed(final String permissionName, final AbstractSecuredEntity entity) {
-        if (isOwner(entity)) {
+        if (isOwnerOrAdmin(entity.getOwner())) {
             return true;
         }
         return permissionEvaluator

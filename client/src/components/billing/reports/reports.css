@@ -16,6 +16,8 @@
 
 .container {
   margin-top: 5px;
+  flex: 1;
+  min-height: 0;
   display: flex;
 }
 
@@ -23,15 +25,18 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  flex: 1;
+}
+
+.charts-layout {
+  flex: 1;
+  overflow: auto;
   width: 100%;
 }
 
 .charts-container {
-  display: flex;
-  flex-flow: row wrap;
-  padding: 2px;
-  align-content: flex-start;
   width: 100%;
+  height: 100%;
 }
 
 .charts-column-container {
@@ -44,56 +49,40 @@
 
 .period-filters {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  justify-content: flex-start;
   width: 100%;
-  height: 30px;
+  min-height: 30px;
   margin: 0;
+  padding: 0 6px;
   position: relative;
 }
 
 .report-filter {}
 
-.export-reports-button {
+.actions-block {
   position: absolute;
   right: 10px;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  height: 30px;
 }
+
+.discounts-button {
+  margin-right: 5px;
+}
+
+.restore-layout-button {
+  margin-right: 5px;
+}
+
+.export-reports-button {}
 
 .chart {
   padding-bottom: 15px;
   min-height: 50px;
-  position: relative;
-}
-
-.charts-sub-container {
-  min-height: 500px;
-  flex: 1 0 50%;
-  min-width: 550px;
-  position: relative;
-}
-
-.general-charts-container,
-.storages-charts-container,
-.resources-charts-container {
-  min-height: 500px;
-  flex: 1 0 50%;
-  min-width: 550px;
-  padding: 5px;
-  position: relative;
-}
-
-.general-charts-container {
-  min-height: unset;
-}
-
-.general-charts-container > div,
-.storages-charts-container > div,
-.resources-charts-container > div {
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 0 4px 0 #ddd;
-  padding: 5px;
-  height: 100%;
   position: relative;
 }
 
@@ -102,7 +91,7 @@
 }
 
 .resources-table {
-  min-height: 300px;
+
 }
 
 .resources-table-row {
@@ -111,4 +100,7 @@
 
 .users-table-row {
   cursor: pointer;
+}
+
+.table-cell {
 }

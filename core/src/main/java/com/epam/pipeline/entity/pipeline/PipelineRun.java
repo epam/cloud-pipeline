@@ -65,11 +65,13 @@ public class PipelineRun extends AbstractSecuredEntity {
     private String params;
 
     private String dockerImage;
+    private String actualDockerImage;
     private String cmdTemplate;
     private String actualCmd;
     private String serviceUrl;
 
     private Boolean terminating = false;
+    private Boolean sensitive;
     private String podId;
     private String pipelineName;
     private List<PipelineRunParameter> pipelineRunParameters;
@@ -101,7 +103,18 @@ public class PipelineRun extends AbstractSecuredEntity {
     private LocalDateTime prolongedAtTime;
     private ExecutionPreferences executionPreferences = ExecutionPreferences.getDefault();
     private String prettyUrl;
+    /**
+     * Pipeline run overall instance price per hour. 
+     */
     private BigDecimal pricePerHour;
+    /**
+     * Pipeline instance virtual machine price per hour.
+     */
+    private BigDecimal computePricePerHour;
+    /**
+     * Pipeline run instance disk gigabyte price per hour. 
+     */
+    private BigDecimal diskPricePerHour;
     private String stateReasonMessage;
     private List<RestartRun> restartedRuns;
     private List<RunStatus> runStatuses;

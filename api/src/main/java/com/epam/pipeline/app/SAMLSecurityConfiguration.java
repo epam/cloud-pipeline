@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.app;
 
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.security.saml.OptionalSAMLLogoutFilter;
 import com.epam.pipeline.security.saml.SAMLContexProviderCustomSingKey;
 import com.epam.pipeline.utils.URLUtils;
@@ -135,6 +136,9 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("${saml.authn.max.authentication.age:93600}")
     private Long maxAuthentificationAge;
 
+    @Value("${api.security.anonymous.urls:/restapi/route}")
+    private String[] anonymousResources;
+
     @Autowired
     private SAMLUserDetailsService samlUserDetailsService;
 
@@ -154,7 +158,11 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .addFilterAfter(samlFilter(), BasicAuthenticationFilter.class);
         http.authorizeRequests()
                 .antMatchers(getUnsecuredResources()).permitAll()
-                .antMatchers(getSecuredResourcesRoot()).authenticated();
+                .antMatchers(getAnonymousResources())
+                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName(), 
+                            DefaultRoles.ROLE_ANONYMOUS_USER.getName())
+                .antMatchers(getSecuredResourcesRoot())
+                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName());
         http.logout().logoutSuccessUrl("/");
     }
 
@@ -169,6 +177,10 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     public String[] getSecuredResourcesRoot() {
         return new String[] {"/**"};
+    }
+
+    public String[] getAnonymousResources() {
+        return anonymousResources;
     }
 
     protected RequestMatcher getFullRequestMatcher() {

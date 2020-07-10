@@ -17,13 +17,15 @@
 import React from 'react';
 import {observable} from 'mobx';
 import {inject, observer, Provider} from 'mobx-react';
+import Discounts from '../discounts';
 import FilterStore from './filter-store';
 import PeriodFilter from './period-filter';
 import ReportFilter from './report-filter';
 import RunnerFilter, {RunnerType} from './runner-filter';
 import reportsRouting from './reports-routing';
 import Divider from './divider';
-import ExportReports from '../export';
+import {RestoreButton} from '../layout';
+import ExportReports, {ExportFormat} from '../export';
 import styles from '../reports.css';
 
 class Filters extends React.Component {
@@ -32,7 +34,6 @@ class Filters extends React.Component {
   static runnerTypes = RunnerType;
 
   @observable filterStore = new FilterStore();
-
   componentWillReceiveProps (nextProps, nextContext) {
     this.filterStore.rebuild(this.props);
   }
@@ -41,11 +42,26 @@ class Filters extends React.Component {
     this.filterStore.rebuild(this.props);
   }
 
+  componentDidUpdate (prevProps) {
+    const {location} = this.props;
+    if (location) {
+      const {pathname, search} = location;
+      const {pathname: prevPathname, search: prevSearch} = prevProps.location;
+      if (prevSearch !== search || prevPathname !== pathname) {
+        this.filterStore.rebuild(this.props);
+      }
+    }
+  }
+
   render () {
     if (!this.filterStore) {
       return null;
     }
-    const {children, users} = this.props;
+    const {children, users, location} = this.props;
+    const {pathname} = location;
+    const formats = /billing\/reports$/.test(pathname)
+      ? [ExportFormat.csv, ExportFormat.image]
+      : [ExportFormat.image];
     return (
       <div className={styles.container}>
         <div className={styles.reportFilter}>
@@ -66,10 +82,15 @@ class Filters extends React.Component {
               filter={this.filterStore.runner}
               onChange={this.filterStore.buildNavigationFn('runner')}
             />
-            <ExportReports
-              className={styles.exportReportsButton}
-              documentName={() => this.filterStore.getDescription({users})}
-            />
+            <div className={styles.actionsBlock}>
+              <Discounts.Button className={styles.discountsButton} />
+              <RestoreButton className={styles.restoreLayoutButton} />
+              <ExportReports
+                className={styles.exportReportsButton}
+                documentName={() => this.filterStore.getDescription({users})}
+                formats={formats}
+              />
+            </div>
           </div>
           <Provider filters={this.filterStore}>
             <ExportReports.Provider>
@@ -82,4 +103,7 @@ class Filters extends React.Component {
   }
 }
 
+const RUNNER_SEPARATOR = FilterStore.RUNNER_SEPARATOR;
+
+export {RUNNER_SEPARATOR};
 export default inject('users')(observer(Filters));

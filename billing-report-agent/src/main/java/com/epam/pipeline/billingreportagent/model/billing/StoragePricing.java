@@ -16,8 +16,9 @@
 
 package com.epam.pipeline.billingreportagent.model.billing;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
-import lombok.Value;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -32,7 +33,8 @@ public class StoragePricing {
         prices.add(entity);
     }
 
-    @Value
+    @Data
+    @AllArgsConstructor
     public static class StoragePricingEntity {
 
         private Long beginRangeBytes;

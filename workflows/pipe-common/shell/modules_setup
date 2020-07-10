@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@
 
 # Use the following environment variables to control the installation behavior"
 # CP_CAP_DISTR_MODULES_SOURCES - http location of the "modules" sources ditribution tarball
-# CP_CAP_MODULES_INSTALL_DIR - where to install "modules" (default: /usr/local/modules)
-# CP_CAP_MODULES_FILES_DIR - where are the modules files located (default: /usr/local/modules/modulesfiles)
+# CP_CAP_MODULES_INSTALL_DIR - where to install "modules" (default: /usr/local/modules for modules and /usr/local/ for lmod)
+# CP_CAP_MODULES_FILES_DIR - where are the modules files located (default: /usr/local/modules/modulesfiles for modules package
+#                            and /usr/local/lmod/lmod/modulefiles for lmod)
+# CP_CAP_MODULES_TYPE - type of the module system tcl/lmod (default: tcl)
 
 MODULES_INSTALL_TASK="InstallEnvironmentModules"
 
@@ -32,35 +34,27 @@ IS_RPM_BASED=$?
 # https://modules.readthedocs.io/en/latest/module.html
 ######################################################
 
-# Dependencies first
-pipe_log_info "--> Installing Environment Modules" "$MODULES_INSTALL_TASK"
-
-_MODULES_INSTALL_RESULT=1
-if [[ "$IS_RPM_BASED" = 0 ]]; then
-    yum -y -q install tcl-devel less
-    _MODULES_INSTALL_RESULT=$?
-else
-    apt-get install tcl-dev less -y -qq
-    _MODULES_INSTALL_RESULT=$?
-fi
-
-if [ $_MODULES_INSTALL_RESULT -ne 0 ]; then
-    pipe_log_fail "Failed to install Environment Modules dependencies" "$MODULES_INSTALL_TASK"
-    exit 1
-fi
-
-# Grab the sources of modules
-MODULES_SOURCES_URL_S3="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/modules/sources/modules-4.2.4.tar.gz"
-MODULES_SOURCES_URL_GH="https://github.com/cea-hpc/modules/releases/download/v4.2.4/modules-4.2.4.tar.gz"
-MODULES_SOURCES_URL="${CP_CAP_DISTR_MODULES_SOURCES:-$MODULES_SOURCES_URL_S3}"
+CP_CAP_MODULES_TYPE="${CP_CAP_MODULES_TYPE:-tcl}"
+pipe_log_info "--> Installing Environment Modules: $CP_CAP_MODULES_TYPE" "$MODULES_INSTALL_TASK"
 
 mkdir -p /tmp/modules-tmp
 cd /tmp/modules-tmp
 
+# Grab the sources of modules
+if [ "$CP_CAP_MODULES_TYPE" == "tcl" ]; then
+    MODULES_SOURCES_URL_S3="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/modules/sources/modules-4.2.4.tar.gz"
+    MODULES_SOURCES_URL_ALT="https://github.com/cea-hpc/modules/releases/download/v4.2.4/modules-4.2.4.tar.gz"
+    MODULES_SOURCES_URL="${CP_CAP_DISTR_MODULES_SOURCES:-$MODULES_SOURCES_URL_S3}"
+elif [ "$CP_CAP_MODULES_TYPE" == "lmod" ]; then
+    MODULES_SOURCES_URL_S3="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lmod/sources/Lmod-8.3.tar.gz"
+    MODULES_SOURCES_URL_ALT="https://github.com/TACC/Lmod/archive/8.3.tar.gz"
+    MODULES_SOURCES_URL="${CP_CAP_DISTR_MODULES_SOURCES:-$MODULES_SOURCES_URL_S3}"
+fi
+
 wget -q "$MODULES_SOURCES_URL" -O modules.tar.gz
 if [ $? -ne 0 ]; then
-    pipe_log_info "Unable to get the modules sources from ${MODULES_SOURCES_URL}, trying GitHub" "$MODULES_INSTALL_TASK"
-    MODULES_SOURCES_URL="$MODULES_SOURCES_URL_GH"
+    pipe_log_info "Unable to get the modules sources from ${MODULES_SOURCES_URL}, trying alternative source" "$MODULES_INSTALL_TASK"
+    MODULES_SOURCES_URL="$MODULES_SOURCES_URL_ALT"
 
     wget -q "$MODULES_SOURCES_URL" -O modules.tar.gz
     if [ $? -ne 0 ]; then
@@ -70,26 +64,94 @@ if [ $? -ne 0 ]; then
 fi
 
 tar -zxf modules.tar.gz
-rm -f modules.tar.gz
-cd modules*
 
-# Install modules
-MODULES_INSTALL_DIR="${CP_CAP_MODULES_INSTALL_DIR:-/usr/local/modules}"
-MODULES_FILES_DIR="${CP_CAP_MODULES_FILES_DIR:-$MODULES_INSTALL_DIR/modulesfiles}"
+_MODULES_INSTALL_RESULT=1
+if [ "$CP_CAP_MODULES_TYPE" == "tcl" ]; then
+    if [[ "$IS_RPM_BASED" = 0 ]]; then
+        yum -y -q install tcl-devel less
+        _MODULES_INSTALL_RESULT=$?
+    else
+        apt-get install tcl-dev less -y -qq
+        _MODULES_INSTALL_RESULT=$?
+    fi
 
-MODULES_BUILD_LOG=/var/log/modules_build.log
-./configure --prefix=$MODULES_INSTALL_DIR \
-            --modulefilesdir=$MODULES_FILES_DIR \
-            --enable-example-modulefiles=no > $MODULES_BUILD_LOG 2>&1 && \
-make -j $(nproc) >> $MODULES_BUILD_LOG 2>&1 && \
-make install >> $MODULES_BUILD_LOG 2>&1
-if [ $? -ne 0 ]; then
-    pipe_log_fail "Unable to install modules from sources, exiting. Build logs are available in $MODULES_BUILD_LOG" "$MODULES_INSTALL_TASK"
-    exit 1
+    if [ $_MODULES_INSTALL_RESULT -ne 0 ]; then
+        pipe_log_fail "Failed to install Environment Modules dependencies" "$MODULES_INSTALL_TASK"
+        exit 1
+    fi
+
+    cd modules*
+
+    # Install modules
+    MODULES_INSTALL_DIR="${CP_CAP_MODULES_INSTALL_DIR:-/usr/local/modules}"
+    MODULES_FILES_DIR="${CP_CAP_MODULES_FILES_DIR:-$MODULES_INSTALL_DIR/modulesfiles}"
+
+    MODULES_BUILD_LOG=/var/log/modules_build.log
+    ./configure --prefix=$MODULES_INSTALL_DIR \
+                --modulefilesdir=$MODULES_FILES_DIR \
+                --enable-example-modulefiles=no > $MODULES_BUILD_LOG 2>&1 && \
+    make -j $(nproc) >> $MODULES_BUILD_LOG 2>&1 && \
+    make install >> $MODULES_BUILD_LOG 2>&1
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "Unable to install modules from sources, exiting. Build logs are available in $MODULES_BUILD_LOG" "$MODULES_INSTALL_TASK"
+        exit 1
+    fi
+
+    # Configure the modules setup
+    if [ -f $MODULES_INSTALL_DIR/init/profile.sh ]; then
+        rm -f /etc/profile.d/modules.sh
+    fi
+    ln -s $MODULES_INSTALL_DIR/init/profile.sh /etc/profile.d/modules.sh
+
+elif [ "$CP_CAP_MODULES_TYPE" == "lmod" ]; then
+    if [[ "$IS_RPM_BASED" = 0 ]]; then
+        yum install -y -q lua lua-bitop lua-devel lua-filesystem \
+        lua-json lua-lpeg lua-posix lua-term tcl4 tcl-devel less gcc
+        _MODULES_INSTALL_RESULT=$?
+    else
+        apt install make tcl-dev rsync lua5.2 lua-bitop lua-filesystem lua-json lua-lpeg lua-posix lua-term less gcc  -y
+        wget -q https://sourceforge.net/projects/lmod/files/lua-5.1.4.9.tar.bz2 -O lua-5.1.4.9.tar.bz2 && \
+        tar xf lua-5.1.4.9.tar.bz2 && rm -f lua-5.1.4.9.tar.bz2 && \
+        cd lua-5.1.4.9 && \
+        ./configure --prefix=/opt/apps/lua/5.1.4.9 && \
+        make; make install && \
+        ln -s /opt/apps/lua/5.1.4.9 /opt/apps/lua/lua && \
+        ln -s /opt/apps/lua/lua/bin/lua /usr/local/bin && \
+        cd ..
+        _MODULES_INSTALL_RESULT=$?
+    fi
+
+    if [ $_MODULES_INSTALL_RESULT -ne 0 ]; then
+        pipe_log_fail "Failed to install Environment Modules dependencies" "$MODULES_INSTALL_TASK"
+        exit 1
+    fi
+
+    cd Lmod*
+
+    # Install modules
+    MODULES_INSTALL_DIR="${CP_CAP_MODULES_INSTALL_DIR:-/usr/local}"
+
+    MODULES_BUILD_LOG=/var/log/modules_build.log
+    ./configure --prefix=$MODULES_INSTALL_DIR > $MODULES_BUILD_LOG 2>&1 && \
+    make -j $(nproc) >> $MODULES_BUILD_LOG 2>&1 && \
+    make install >> $MODULES_BUILD_LOG 2>&1
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "Unable to install lmod from sources, exiting. Build logs are available in $MODULES_BUILD_LOG" "$MODULES_INSTALL_TASK"
+        exit 1
+    fi
+
+    # Configure the modules setup
+    if [ -f $MODULES_INSTALL_DIR/lmod/lmod/init/profile ]; then
+        rm -f /etc/profile.d/lmod.sh
+        rm -f /etc/profile.d/modules.sh
+    fi
+    ln -s $MODULES_INSTALL_DIR/lmod/lmod/init/profile /etc/profile.d/lmod.sh
+    # modules.sh will be source by the launch.sh to make the "module" command available for the init process (e.g. "pipelines" scripts)
+    ln -s /etc/profile.d/lmod.sh /etc/profile.d/modules.sh
+    MODULES_FILES_DIR="${CP_CAP_MODULES_FILES_DIR:-$MODULES_INSTALL_DIR/lmod/lmod/modulesfiles/Core}"
+    echo "export MODULES_FILES_DIR="$MODULES_FILES_DIR"" >> /etc/cp_env.sh
+    echo "export MODULEPATH="\$MODULEPATH:\$MODULES_FILES_DIR"" >> /etc/cp_env.sh
 fi
-
-# Configure the modules setup
-ln -s $MODULES_INSTALL_DIR/init/profile.sh /etc/profile.d/modules.sh
 
 # Cleanup
 cd /

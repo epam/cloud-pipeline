@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.reflection.Whitebox;
@@ -97,6 +98,7 @@ public class ResourceMonitoringManagerTest {
     private static final Map<String, String> PRESSURE_TAGS =
         Collections.singletonMap(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING);
 
+    @InjectMocks
     private ResourceMonitoringManager resourceMonitoringManager;
 
     @Mock
@@ -137,12 +139,16 @@ public class ResourceMonitoringManagerTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-
-        resourceMonitoringManager = new ResourceMonitoringManager(pipelineRunManager, preferenceManager,
-                                                                  notificationManager, instanceOfferManager,
-                                                                  monitoringESDao, taskScheduler, messageHelper);
+        ResourceMonitoringManager.ResourceMonitoringManagerCore core =
+            new ResourceMonitoringManager.ResourceMonitoringManagerCore(pipelineRunManager,
+                                                                        notificationManager,
+                                                                        monitoringESDao,
+                                                                        messageHelper,
+                                                                        preferenceManager);
+        resourceMonitoringManager = new ResourceMonitoringManager(instanceOfferManager, core);
         Whitebox.setInternalState(resourceMonitoringManager, "authManager", authManager);
-
+        Whitebox.setInternalState(resourceMonitoringManager, "preferenceManager", preferenceManager);
+        Whitebox.setInternalState(resourceMonitoringManager, "scheduler", taskScheduler);
         when(preferenceManager.getObservablePreference(SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD))
             .thenReturn(Observable.empty());
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD))
@@ -205,12 +211,14 @@ public class ResourceMonitoringManagerTest {
                 null, null, "autoscaleMasterRun", false, null, null));
         autoscaleMasterRun.setPodId("autoscaleMasterRun");
         autoscaleMasterRun.setId(TEST_AUTOSCALE_RUN_ID);
-        autoscaleMasterRun.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1, ChronoUnit.MINUTES)
-                .toEpochMilli()));
+        autoscaleMasterRun
+            .setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1, ChronoUnit.MINUTES)
+                                       .toEpochMilli()));
         autoscaleMasterRun.setProlongedAtTime(DateUtils.nowUTC().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
                 ChronoUnit.MINUTES));
         autoscaleMasterRun.setTags(stubTagMap);
-        autoscaleMasterRun.setPipelineRunParameters(Collections.singletonList(new PipelineRunParameter("CP_CAP_AUTOSCALE", "true")));
+        autoscaleMasterRun
+            .setPipelineRunParameters(Collections.singletonList(new PipelineRunParameter("CP_CAP_AUTOSCALE", "true")));
 
         idleOnDemandRun = new PipelineRun();
         idleOnDemandRun.setInstance(
@@ -262,7 +270,7 @@ public class ResourceMonitoringManagerTest {
         resourceMonitoringManager.init();
 
         verify(taskScheduler).scheduleWithFixedDelay(any(), eq(TEST_RESOURCE_MONITORING_DELAY.longValue()));
-        Assert.assertNotNull(Whitebox.getInternalState(resourceMonitoringManager, "instanceTypeMap"));
+        Assert.assertNotNull(Whitebox.getInternalState(core, "instanceTypeMap"));
     }
 
     @Test

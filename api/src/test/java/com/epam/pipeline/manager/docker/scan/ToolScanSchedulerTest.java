@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,6 @@ import io.reactivex.subjects.Subject;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -74,9 +73,11 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     private static final String TEST_LAYER_REF = "testRef";
     private static final String TEST_LAYER_DIGEST = "testDigest";
     public static final long DOCKER_SIZE = 123456L;
+    public static final String PREFERENCE_MANAGER = "preferenceManager";
 
-    @InjectMocks
-    private ToolScanScheduler toolScanScheduler = new ToolScanScheduler();
+    private ToolScanScheduler toolScanScheduler;
+
+    private ToolScanSchedulerCore core;
 
     @Autowired
     private DockerRegistryDao dockerRegistryDao;
@@ -119,12 +120,17 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        Whitebox.setInternalState(toolScanScheduler, "dockerRegistryDao", dockerRegistryDao);
-        Whitebox.setInternalState(toolScanScheduler, "toolManager", toolManager);
-        Whitebox.setInternalState(toolScanScheduler, "messageHelper", messageHelper);
+        core = new ToolScanSchedulerCore(dockerRegistryDao,
+                                                     toolScanManager,
+                                                     toolManager,
+                                                     messageHelper,
+                                                     toolVersionManager,
+                                                     dockerClientFactory,
+                                                     dockerRegistryManager, null);
+        toolScanScheduler = new ToolScanScheduler(core);
         Whitebox.setInternalState(toolScanScheduler, "authManager", authManager);
         Whitebox.setInternalState(toolScanScheduler, "scheduler", taskScheduler);
-
+        Whitebox.setInternalState(toolScanScheduler, "core", core);
         when(dockerClientFactory.getDockerClient(Mockito.any(DockerRegistry.class), Mockito.anyString()))
             .thenReturn(mockClient);
         when(mockClient.getImageTags(Mockito.anyString(), Mockito.anyString()))
@@ -147,7 +153,8 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
                 ToolDependency.Ecosystem.SYSTEM, null);
 
         when(toolScanManager.scanTool(Mockito.any(Tool.class), Mockito.anyString(), Mockito.anyBoolean()))
-            .thenReturn(new ToolVersionScanResult(LATEST_VERSION, Collections.singletonList(vulnerability),
+            .thenReturn(new ToolVersionScanResult(LATEST_VERSION, new ToolOSVersion("test", "0.1"),
+                    Collections.singletonList(vulnerability),
                     Collections.singletonList(dependency),
                     ToolScanStatus.COMPLETED, TEST_LAYER_REF, TEST_LAYER_DIGEST));
 
@@ -161,7 +168,8 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testScheduledToolScan() {
         PreferenceManager preferenceManager = mock(PreferenceManager.class);
-        Whitebox.setInternalState(toolScanScheduler, "preferenceManager", preferenceManager);
+        Whitebox.setInternalState(toolScanScheduler, PREFERENCE_MANAGER, preferenceManager);
+        Whitebox.setInternalState(core, PREFERENCE_MANAGER, preferenceManager);
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED)).thenReturn(true);
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ALL_REGISTRIES))
             .thenReturn(false);
@@ -201,7 +209,8 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     @Transactional(propagation = Propagation.NEVER, rollbackFor = Throwable.class)
     public void testForceScheduleToolScan() throws ExecutionException, InterruptedException {
         PreferenceManager preferenceManager = mock(PreferenceManager.class);
-        Whitebox.setInternalState(toolScanScheduler, "preferenceManager", preferenceManager);
+        Whitebox.setInternalState(toolScanScheduler, PREFERENCE_MANAGER, preferenceManager);
+        Whitebox.setInternalState(core, PREFERENCE_MANAGER, preferenceManager);
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED)).thenReturn(true);
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_SCHEDULE_CRON)).thenReturn(
                 SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_SCHEDULE_CRON.getDefaultValue());
@@ -214,7 +223,8 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
         try {
 
             ToolManagerMock toolManagerMock = new ToolManagerMock(tool);
-            Whitebox.setInternalState(toolScanScheduler, "toolManager", toolManagerMock);
+
+            Whitebox.setInternalState(core, "toolManager", toolManagerMock);
 
             Future<ToolVersionScanResult> result = toolScanScheduler.forceScheduleScanTool(
                     null, tool.getImage(), LATEST_VERSION, false);
@@ -268,8 +278,8 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
         }
 
         @Override
-        public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate,
-                                                String version, String layerRef, String digest) {
+        public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate, String version,
+                                                ToolOSVersion toolOSVersion, String layerRef, String digest) {
             Assert.assertNotNull(version);
 
             ToolVersionScanResult versionScan = new ToolVersionScanResult();
@@ -288,6 +298,12 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
                     .computeIfAbsent(toolId, key -> new HashMap<>());
             versionScanMap.put(version, versionScan); // Rewrite it
             imageRefByToolId.put(toolId, layerRef);
+        }
+
+        @Override
+        public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate, String version,
+                                                String layerRef, String digest) {
+            updateToolVersionScanStatus(toolId, newStatus, scanDate, version, null, layerRef, digest);
         }
 
         @Override

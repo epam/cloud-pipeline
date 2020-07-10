@@ -57,6 +57,7 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
 
     private String createToolQuery;
     private String updateToolQuery;
+    private String updateOwnerQuery;
     private String loadToolQuery;
     private String loadAllToolsQuery;
     private String loadToolsByGroupQuery;
@@ -95,6 +96,11 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void updateTool(Tool tool) {
         getNamedParameterJdbcTemplate().update(updateToolQuery, getParameters(tool, getConnection()));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void updateOwner(Tool tool) {
+        getNamedParameterJdbcTemplate().update(updateOwnerQuery, getParameters(tool, getConnection()));
     }
 
     public List<Tool> loadAllTools(Long registryId) {
@@ -231,7 +237,9 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         OWNER,
         DISK,
         INSTANCE_TYPE,
-        ICON_ID
+        LINK,
+        ICON_ID,
+        ALLOW_SENSITIVE
     }
 
     enum ToolIconParameters {
@@ -266,6 +274,8 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         params.addValue(ToolParameters.OWNER.name(), tool.getOwner());
         params.addValue(ToolParameters.DISK.name(), tool.getDisk());
         params.addValue(ToolParameters.INSTANCE_TYPE.name(), tool.getInstanceType());
+        params.addValue(ToolParameters.LINK.name(), tool.getLink());
+        params.addValue(ToolParameters.ALLOW_SENSITIVE.name(), tool.isAllowSensitive());
         Array labelsSqlArray = DaoHelper.mapListToSqlArray(tool.getLabels(), connection);
         params.addValue(ToolParameters.LABELS.name(), labelsSqlArray);
 
@@ -306,6 +316,11 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         tool.setOwner(rs.getString(ToolParameters.OWNER.name()));
         tool.setDisk(rs.getInt(ToolParameters.DISK.name()));
         tool.setInstanceType(rs.getString(ToolParameters.INSTANCE_TYPE.name()));
+        tool.setAllowSensitive(rs.getBoolean(ToolParameters.ALLOW_SENSITIVE.name()));
+        long link = rs.getLong(ToolParameters.LINK.name());
+        if (!rs.wasNull()) {
+            tool.setLink(link);
+        }
 
         long longVal = rs.getLong(ToolParameters.ICON_ID.name());
         tool.setHasIcon(!rs.wasNull());
@@ -365,6 +380,11 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setUpdateToolQuery(String updateToolQuery) {
         this.updateToolQuery = updateToolQuery;
+    }
+
+    @Required
+    public void setUpdateOwnerQuery(String updateOwnerQuery) {
+        this.updateOwnerQuery = updateOwnerQuery;
     }
 
     @Required

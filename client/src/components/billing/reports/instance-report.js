@@ -16,15 +16,16 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {Table, Tooltip} from 'antd';
+import {Pagination, Table, Tooltip} from 'antd';
 import {
   BarChart,
   BillingTable,
   Summary
 } from './charts';
-import Filters from './filters';
+import Filters, {RUNNER_SEPARATOR} from './filters';
 import {Period, getPeriod} from './periods';
 import InstanceFilter, {InstanceFilters} from './filters/instance-filter';
+import Discounts, {discounts} from './discounts';
 import Export, {ExportComposers} from './export';
 import {
   GetBillingData,
@@ -37,8 +38,11 @@ import {
 } from '../../../models/billing';
 import {
   numberFormatter,
-  costTickFormatter
+  costTickFormatter,
+  DisplayUser,
+  ResizableContainer
 } from './utilities';
+import {InstanceReportLayout, Layout} from './layout';
 import styles from './reports.css';
 
 const tablePageSize = 6;
@@ -47,12 +51,14 @@ function injection (stores, props) {
   const {location, params} = props;
   const {type} = params || {};
   const {
-    user,
-    group,
+    user: userQ,
+    group: groupQ,
     period = Period.month,
     range
   } = location.query;
   const periodInfo = getPeriod(period, range);
+  const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
+  const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
   const filters = {
     group,
     user,
@@ -97,26 +103,20 @@ function injection (stores, props) {
   };
 }
 
-function ResourcesDataBlock ({children}) {
-  return (
-    <div className={styles.resourcesChartsContainer}>
-      <div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
 function renderResourcesSubData (
   {
     request,
+    discounts: discountsFn,
     tableDataRequest,
     dataSample = InstanceFilters.value.dataSample,
     previousDataSample = InstanceFilters.value.previousDataSample,
     owner = true,
     title,
     singleTitle,
-    extra
+    extra,
+    extraHeight,
+    width,
+    height
   }
 ) {
   const columns = [
@@ -124,6 +124,7 @@ function renderResourcesSubData (
       key: 'name',
       dataIndex: 'name',
       title: singleTitle,
+      className: styles.tableCell,
       render: (value, {fullName = null}) => {
         if (fullName) {
           return (
@@ -142,66 +143,100 @@ function renderResourcesSubData (
     owner && {
       key: 'owner',
       dataIndex: 'owner',
-      title: 'Owner'
+      title: 'Owner',
+      className: styles.tableCell,
+      render: owner => (<DisplayUser userName={owner} />)
     },
     {
       key: 'usage',
       dataIndex: 'usage',
-      title: 'Usage (hours)'
+      title: 'Usage (hours)',
+      className: styles.tableCell
     },
     {
       key: 'runs',
       dataIndex: 'runsCount',
       title: 'Runs count',
+      className: styles.tableCell,
       render: value => value ? `${Math.round(value)}` : null
     },
     {
       key: 'cost',
       dataIndex: 'value',
       title: 'Cost',
+      className: styles.tableCell,
       render: value => value ? `$${Math.round(value * 100.0) / 100.0}` : null
     }
   ].filter(Boolean);
+  const tableData = tableDataRequest && tableDataRequest.loaded
+    ? discounts.applyGroupedDataDiscounts(tableDataRequest.value, discountsFn)
+    : {};
+  const heightCorrected = extra && extraHeight ? (height - extraHeight) / 2.0 : height / 2.0;
+  const dataSource = Object.values(tableData);
+  const paginationEnabled = tableDataRequest && tableDataRequest.loaded
+    ? tableDataRequest.totalPages > 1
+    : false;
   return (
-    <ResourcesDataBlock>
+    <div style={{width, height}}>
       {extra}
-      <div className={styles.resourcesChart}>
-        <BarChart
-          request={request}
-          dataSample={dataSample}
-          previousDataSample={previousDataSample}
-          title={title}
-          style={{height: 250}}
-          top={tablePageSize}
-          valueFormatter={
-            dataSample === InstanceFilters.value.dataSample
-              ? costTickFormatter
-              : numberFormatter
-          }
+      <BarChart
+        request={request}
+        discounts={discountsFn}
+        dataSample={dataSample}
+        previousDataSample={previousDataSample}
+        title={title}
+        style={{height: heightCorrected}}
+        top={tablePageSize}
+        valueFormatter={
+          dataSample === InstanceFilters.value.dataSample
+            ? costTickFormatter
+            : numberFormatter
+        }
+      />
+      <div
+        style={{
+          position: 'relative',
+          overflow: 'auto',
+          maxHeight: heightCorrected - (paginationEnabled ? 30 : 0),
+          padding: 5
+        }}
+      >
+        <Table
+          className={styles.resourcesTable}
+          dataSource={dataSource}
+          loading={tableDataRequest.pending}
+          rowKey={({name, value, usage}) => {
+            return `${name}_${value}_${usage}`;
+          }}
+          columns={columns}
+          pagination={false}
+          rowClassName={() => styles.resourcesTableRow}
+          size="small"
         />
       </div>
-      <Table
-        className={styles.resourcesTable}
-        dataSource={
-          Object.values(tableDataRequest && tableDataRequest.loaded ? tableDataRequest.value : {})
-        }
-        loading={tableDataRequest.pending}
-        rowKey={({name, value, usage}) => {
-          return `${name}_${value}_${usage}`;
-        }}
-        columns={columns}
-        pagination={{
-          current: tableDataRequest.pageNum + 1,
-          pageSize: tableDataRequest.pageSize,
-          total: tableDataRequest.totalPages * tableDataRequest.pageSize,
-          onChange: async (page) => {
-            await tableDataRequest.fetchPage(page - 1);
-          }
-        }}
-        rowClassName={() => styles.resourcesTableRow}
-        size="small"
-      />
-    </ResourcesDataBlock>
+      {
+        paginationEnabled && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              height: 30
+            }}
+          >
+            <Pagination
+              current={tableDataRequest.pageNum + 1}
+              pageSize={tableDataRequest.pageSize}
+              total={tableDataRequest.totalPages * tableDataRequest.pageSize}
+              onChange={async (page) => {
+                await tableDataRequest.fetchPage(page - 1);
+              }}
+              size="small"
+            />
+          </div>
+        )
+      }
+    </div>
   );
 }
 
@@ -232,6 +267,14 @@ class InstanceReport extends React.Component {
     }
     return 'Compute instances runs';
   };
+  getClarificationTitle = () => {
+    const {dataSample} = this.state;
+    if (InstanceFilters && InstanceFilters[dataSample]) {
+      const {title} = InstanceFilters[dataSample];
+      return title ? `- ${title}` : '';
+    }
+    return '';
+  }
   handleDataSampleChange = (dataSample, previousDataSample) => {
     this.setState({dataSample, previousDataSample});
   };
@@ -286,56 +329,134 @@ class InstanceReport extends React.Component {
       }
     ];
     return (
-      <Export.Consumer
-        className={styles.chartsContainer}
-        composers={composers}
-      >
-        <ResourcesDataBlock>
-          <BillingTable summary={summary} showQuota={false} />
-          <Summary
-            summary={summary}
-            quota={false}
-            title={this.getSummaryTitle()}
-            style={{flex: 1, height: 500}}
-          />
-        </ResourcesDataBlock>
-        <ResourcesSubData
-          extra={(
-            <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'center'}}>
-              <InstanceFilter
-                onChange={this.handleDataSampleChange}
-                value={dataSample}
-                previous={previousDataSample}
-              />
-            </div>
-          )}
-          request={instances}
-          tableDataRequest={instancesTable}
-          dataSample={dataSample}
-          previousDataSample={previousDataSample}
-          owner={false}
-          title={this.getInstanceTitle()}
-          singleTitle="Instance"
-        />
-        <ResourcesSubData
-          request={pipelines}
-          tableDataRequest={pipelinesTable}
-          dataSample={dataSample}
-          previousDataSample={previousDataSample}
-          owner
-          title="Pipelines"
-          singleTitle="Pipeline"
-        />
-        <ResourcesSubData
-          request={tools}
-          tableDataRequest={toolsTable}
-          dataSample={dataSample}
-          previousDataSample={previousDataSample}
-          owner
-          title="Tools"
-          singleTitle="Tool"
-        />
-      </Export.Consumer>
+      <Discounts.Consumer>
+        {
+          (computeDiscounts) => (
+            <Export.Consumer
+              className={styles.chartsContainer}
+              composers={composers}
+            >
+              <Layout
+                layout={InstanceReportLayout.Layout}
+                gridStyles={InstanceReportLayout.GridStyles}
+              >
+                <div key={InstanceReportLayout.Panels.summary}>
+                  <Layout.Panel
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      minHeight: 0
+                    }}
+                  >
+                    <BillingTable
+                      compute={summary}
+                      computeDiscounts={computeDiscounts}
+                      showQuota={false}
+                    />
+                    <ResizableContainer style={{flex: 1}}>
+                      {
+                        ({width, height}) => (
+                          <Summary
+                            compute={summary}
+                            computeDiscounts={computeDiscounts}
+                            quota={false}
+                            title={this.getSummaryTitle()}
+                            style={{width, height}}
+                          />
+                        )
+                      }
+                    </ResizableContainer>
+                  </Layout.Panel>
+                </div>
+                <div key={InstanceReportLayout.Panels.instances}>
+                  <Layout.Panel>
+                    <ResizableContainer style={{width: '100%', height: '100%'}}>
+                      {
+                        ({width, height}) => (
+                          <ResourcesSubData
+                            extra={(
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  flexDirection: 'row',
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                  height: 30
+                                }}
+                              >
+                                <InstanceFilter
+                                  onChange={this.handleDataSampleChange}
+                                  value={dataSample}
+                                  previous={previousDataSample}
+                                />
+                              </div>
+                            )}
+                            extraHeight={30}
+                            request={instances}
+                            discounts={computeDiscounts}
+                            tableDataRequest={instancesTable}
+                            dataSample={dataSample}
+                            previousDataSample={previousDataSample}
+                            owner={false}
+                            title={`${this.getInstanceTitle()} ${this.getClarificationTitle()}`}
+                            singleTitle="Instance"
+                            width={width}
+                            height={height}
+                          />
+                        )
+                      }
+                    </ResizableContainer>
+                  </Layout.Panel>
+                </div>
+                <div key={InstanceReportLayout.Panels.pipelines}>
+                  <Layout.Panel>
+                    <ResizableContainer style={{width: '100%', height: '100%'}}>
+                      {
+                        ({width, height}) => (
+                          <ResourcesSubData
+                            request={pipelines}
+                            discounts={computeDiscounts}
+                            tableDataRequest={pipelinesTable}
+                            dataSample={dataSample}
+                            previousDataSample={previousDataSample}
+                            owner
+                            title={`Pipelines ${this.getClarificationTitle()}`}
+                            singleTitle="Pipeline"
+                            width={width}
+                            height={height}
+                          />
+                        )
+                      }
+                    </ResizableContainer>
+                  </Layout.Panel>
+                </div>
+                <div key={InstanceReportLayout.Panels.tools}>
+                  <Layout.Panel>
+                    <ResizableContainer style={{width: '100%', height: '100%'}}>
+                      {
+                        ({width, height}) => (
+                          <ResourcesSubData
+                            request={tools}
+                            discounts={computeDiscounts}
+                            tableDataRequest={toolsTable}
+                            dataSample={dataSample}
+                            previousDataSample={previousDataSample}
+                            owner
+                            title={`Tools ${this.getClarificationTitle()}`}
+                            singleTitle="Tool"
+                            width={width}
+                            height={height}
+                          />
+                        )
+                      }
+                    </ResizableContainer>
+                  </Layout.Panel>
+                </div>
+              </Layout>
+            </Export.Consumer>
+          )
+        }
+      </Discounts.Consumer>
     );
   }
 }

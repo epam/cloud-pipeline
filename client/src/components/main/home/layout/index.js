@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,29 @@
  * limitations under the License.
  */
 
-export {GridStyles} from './gridStyle';
-export {Panels, PanelIcons, PanelInfos, PanelTitles} from './model';
+import {buildLayout} from '../../../special/grid-layout';
+import gridStyle from './grid-style';
+import defaultState from './default-panels-state';
+import defaultSizes from './default-panels-sizes';
+import neighbors from './panel-neighbors';
+import Panels from './panels';
+import PanelIcons from './panel-icons';
+import PanelTitles from './panel-titles';
+import PanelInfos from './panel-informations';
+
+const layout = buildLayout({
+  defaultState,
+  storage: 'panelsLayout',
+  defaultSizes,
+  panelNeighbors: neighbors,
+  gridStyle
+});
+
 export {
-  getPanelsLayout,
-  setPanelsLayout,
-  addPanels,
-  removePanel,
-  restoreDefaultLayout
-} from './layout';
+  layout as Layout,
+  gridStyle as GridStyles,
+  Panels,
+  PanelIcons,
+  PanelInfos,
+  PanelTitles
+};

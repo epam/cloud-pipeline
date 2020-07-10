@@ -154,22 +154,22 @@ class DataStorageOperations(object):
     @classmethod
     def save_data_storage(cls, name, description, sts_duration, lts_duration, versioning,
                           backup_duration, type, parent_folder, on_cloud, path, region_id):
-        directory = None
-        if parent_folder:
-            directory = Folder.load(parent_folder)
-            if directory is None:
-                click.echo("Error: Directory with name '{}' not found! "
-                           "Check if it exists and you have permission to read it".format(parent_folder), err=True)
-                sys.exit(1)
-        if region_id == 'default':
-            region_id = None
-        else:
-            try:
-                region_id = int(region_id)
-            except ValueError:
-                click.echo("Error: Given region id '{}' is not a number.".format(region_id))
-                sys.exit(1)
         try:
+            directory = None
+            if parent_folder:
+                directory = Folder.load(parent_folder)
+                if directory is None:
+                    click.echo("Error: Directory with name '{}' not found! "
+                               "Check if it exists and you have permission to read it".format(parent_folder), err=True)
+                    sys.exit(1)
+            if region_id == 'default':
+                region_id = None
+            else:
+                try:
+                    region_id = int(region_id)
+                except ValueError:
+                    click.echo("Error: Given region id '{}' is not a number.".format(region_id))
+                    sys.exit(1)
             DataStorage.save(name, path, description, sts_duration, lts_duration, versioning, backup_duration, type,
                              directory.id if directory else None, on_cloud, region_id)
         except ALL_ERRORS as error:
@@ -236,6 +236,9 @@ class DataStorageOperations(object):
             if version and recursive:
                 click.echo('"version" argument should\'t be combined with "recursive" option', err=True)
                 sys.exit(1)
+            if not recursive and not source_wrapper.is_file():
+                click.echo('Flag --recursive (-r) is required to restore folders.', err=True)
+                sys.exit(1)
             manager = source_wrapper.get_restore_manager()
             manager.restore_version(version, exclude, include, recursive=recursive)
         except ALL_ERRORS as error:
@@ -250,7 +253,7 @@ class DataStorageOperations(object):
             root_bucket = None
             original_path = ''
             try:
-                root_bucket, original_path = DataStorage.load_from_uri(path)
+                root_bucket, original_path, _ = DataStorage.load_from_uri(path)
             except ALL_ERRORS as error:
                 click.echo('Error: %s' % str(error), err=True)
                 sys.exit(1)
@@ -272,28 +275,15 @@ class DataStorageOperations(object):
     def storage_mk_dir(cls, folders):
         """ Creates a directory
         """
-        buckets = []
-        try:
-            buckets = list(DataStorage.list())
-        except ALL_ERRORS as error:
-            click.echo('Error: %s' % str(error), err=True)
-            sys.exit(1)
         for original_path in folders:
-            folder = original_path
-            info = DataStorageWrapper.get_data_storage_item_path_info(folder, buckets)
-            error = info[0]
-            current_bucket_identifier = info[1]
-            relative_path = info[2]
-            if error is not None:
-                click.echo(error, err=True)
-                continue
+            bucket, full_path, relative_path = DataStorage.load_from_uri(original_path)
             if len(relative_path) == 0:
                 click.echo('Cannot create folder \'{}\': already exists'.format(original_path), err=True)
                 continue
             click.echo('Creating folder {}...'.format(original_path), nl=False)
             result = None
             try:
-                result = DataStorage.create_folder(current_bucket_identifier, relative_path)
+                result = DataStorage.create_folder(bucket.identifier, relative_path)
             except ALL_ERRORS as error:
                 click.echo('Error: %s' % str(error), err=True)
                 sys.exit(1)
@@ -306,26 +296,26 @@ class DataStorageOperations(object):
     @classmethod
     def set_object_tags(cls, path, tags, version):
         try:
-            root_bucket, relative_path = DataStorage.load_from_uri(path)
+            root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
             updated_tags = DataStorage.set_object_tags(root_bucket.identifier, relative_path,
                                                        cls.convert_input_pairs_to_json(tags), version)
             if not updated_tags:
                 raise RuntimeError("Failed to set tags for path '{}'.".format(path))
         except BaseException as e:
-            click.echo(str(e.message), err=True)
+            click.echo(str(e), err=True)
             sys.exit(1)
 
     @classmethod
     def get_object_tags(cls, path, version):
         try:
-            root_bucket, relative_path = DataStorage.load_from_uri(path)
+            root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
             tags = DataStorage.get_object_tags(root_bucket.identifier, relative_path, version)
             if not tags:
                 click.echo("No tags available for path '{}'.".format(path))
             else:
                 click.echo(cls.create_table(tags))
         except BaseException as e:
-            click.echo(str(e.message), err=True)
+            click.echo(str(e), err=True)
             sys.exit(1)
 
     @classmethod
@@ -334,10 +324,10 @@ class DataStorageOperations(object):
             click.echo("Error: Missing argument \"tags\"", err=True)
             sys.exit(1)
         try:
-            root_bucket, relative_path = DataStorage.load_from_uri(path)
+            root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
             DataStorage.delete_object_tags(root_bucket.identifier, relative_path, tags, version)
         except BaseException as e:
-            click.echo(str(e.message), err=True)
+            click.echo(str(e), err=True)
             sys.exit(1)
 
     @classmethod
@@ -493,16 +483,17 @@ class DataStorageOperations(object):
                 yield ('File', os.path.join(source_path, path), path, size)
 
     @classmethod
-    def mount_storage(cls, mountpoint, file=False, bucket=None, log_file=None, options=None, quiet=False,
-                      threading=False, mode=700):
+    def mount_storage(cls, mountpoint, file=False, bucket=None, log_file=None, log_level=None, options=None,
+                      custom_options=None, quiet=False, threading=False, mode=700, timeout=1000):
         try:
             if not file and not bucket:
                 click.echo('Either file system mode should be enabled (-f/--file) '
                            'or bucket name should be specified (-b/--bucket BUCKET).', err=True)
                 sys.exit(1)
             cls.check_platform("mount")
-            Mount().mount_storages(mountpoint, file, bucket, options, quiet=quiet, log_file=log_file,
-                                   threading=threading, mode=mode)
+            Mount().mount_storages(mountpoint, file, bucket, options, custom_options=custom_options, quiet=quiet,
+                                   log_file=log_file, log_level=log_level,  threading=threading,
+                                   mode=mode, timeout=timeout)
         except ALL_ERRORS as error:
             click.echo('Error: %s' % str(error), err=True)
             sys.exit(1)

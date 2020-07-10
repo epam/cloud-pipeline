@@ -21,19 +21,27 @@
         "name": "CP_CAP_SGE_QUEUE_NAME",
         "type": "string",
         "description": "Overrides the default name of the Grid Engine queue",
-        "defaultValue": "main.q"
+        "defaultValue": "main.q",
+        "passToWorkers": true
     },
     {
         "name": "CP_CAP_SGE_PE_NAME",
         "type": "string",
         "description": "Overrides the default name of the Grid Engine PE",
-        "defaultValue": "local"
+        "defaultValue": "local",
+        "passToWorkers": true
     },
     {
         "name": "CP_CAP_MODULES",
         "type": "boolean",
         "description": "Enables Environment Modules for a current run",
         "defaultValue": "true"
+    },
+    {
+        "name": "CP_CAP_MODULES_TYPE",
+        "type": "string",
+        "description": "Declares specific environment module system to use (tcl/lmod)",
+        "defaultValue": "tcl"
     },
     {
         "name": "CP_CAP_SPARK",
@@ -51,19 +59,29 @@
         "name": "CP_S3_FUSE_TYPE",
         "type": "string",
         "description": "Allows to select which FUSE implementation to use for S3 buckets mounting. Allowed values are: goofys and s3fs",
-        "defaultValue": "goofys"
+        "defaultValue": "goofys",
+        "passToWorkers": true
     },
     {
         "name": "CP_S3_FUSE_STAT_CACHE",
         "type": "string",
         "description": "Applied to goofys FUSE. How long to cache StatObject results and inode attributes. Set this to 0 if you are experiencing issues with files consistency",
-        "defaultValue": "1m0s"
+        "defaultValue": "1m0s",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_S3_FUSE_ENSURE_DISKFREE",
+        "type": "int",
+        "description": "Applied to s3fs FUSE. Sets MB to ensure disk free space. This option means the threshold of free space size on disk which is used for the cache file by s3fs. s3fs makes file for downloading, uploading and caching files. If the disk free space is smaller than this value, s3fs do not use disk space as possible in exchange for the performance.",
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "CP_S3_FUSE_TYPE_CACHE",
         "type": "string",
         "description": "Applied to goofys FUSE. How long to cache name -> file/dir mappings in directory. Set this to 0 if you are experiencing issues with files consistency",
-        "defaultValue": "1m0s"
+        "defaultValue": "1m0s",
+        "passToWorkers": true
     },
     {
         "name": "CP_CAP_SGE_MASTER_CORES",
@@ -75,7 +93,8 @@
         "name": "CP_CAP_SGE_WORKER_FREE_CORES",
         "type": "string",
         "description": "Allow to keep the specified number of CPUs unused by the GE worker",
-        "defaultValue": "1"
+        "defaultValue": "1",
+        "passToWorkers": true
     },
     {
         "name": "CP_CAP_NFS",
@@ -99,37 +118,43 @@
         "name": "RUN_DIR",
         "type": "string",
         "description": "Defines a folder within a compute node, that holds all run-specific folders (ANALYSIS_DIR, INPUT_DIR, CONFIG_DIR, SCRIPTS_DIR)",
-        "defaultValue": ""
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "COMMON_DIR",
         "type": "string",
         "description": "Defines a folder within a compute node, that is typically used within custer runs and is mounted as a NFS across cluster nodes",
-        "defaultValue": ""
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "ANALYSIS_DIR",
         "type": "string",
         "description": "Defines a folder within a compute node, which is typically used as a Current Working Directory. When a batch run is finished - files from this directory are uploaded to the Output locations",
-        "defaultValue": ""
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "INPUT_DIR",
         "type": "string",
         "description": "Defines a folder within a compute node, which is typically used for storing data, that is downloaded from the datastorage automatically",
-        "defaultValue": ""
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "CONFIG_DIR",
         "type": "string",
         "description": "Defines a folder within a compute node, which is typically used for storing configuration files",
-        "defaultValue": ""
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "SHARED_FOLDER",
         "type": "string",
         "description": "Defines a folder within a compute node, which is typically used for storing any data that can be shared across nodes within a cluster, that shall be separated from the COMMON_DIR",
-        "defaultValue": ""
+        "defaultValue": "",
+        "passToWorkers": true
     },
     {
         "name": "CP_TRANSFER_BUCKET",
@@ -141,7 +166,7 @@
         "name": "CP_CAP_AUTOSCALE",
         "type": "boolean",
         "description": "Enables cluster autoscaling",
-        "defaultValue": "false"
+        "defaultValue": "true"
     },
     {
         "name": "CP_CAP_AUTOSCALE_WORKERS",
@@ -150,9 +175,52 @@
         "defaultValue": "3"
     },
     {
+        "name": "CP_CAP_AUTOSCALE_VERBOSE",
+        "type": "boolean",
+        "description": "Enables cluster autoscaling verbose logging",
+        "defaultValue": "true"
+    },
+    {
+        "name": "CP_CAP_AUTOSCALE_PRICE_TYPE",
+        "type": "boolean",
+        "description": "Instance price type that will be used for cluster additional workers",
+        "defaultValue": ""
+    },
+    {
+        "name": "CP_CAP_AUTOSCALE_HYBRID",
+        "type": "boolean",
+        "description": "Enables hybrid cluster autoscaling",
+        "defaultValue": "true"
+    },
+    {
+        "name": "CP_CAP_AUTOSCALE_HYBRID_FAMILY",
+        "type": "string",
+        "description": "Instance type family that will be used for hybrid autoscaling cluster workers",
+        "defaultValue": ""
+    },
+    {
+        "name": "CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE",
+        "type": "int",
+        "description": "Maximum number of cores that hybrid autoscaling cluster worker instances can have",
+        "defaultValue": "2"
+    },
+    {
         "name": "CP_CAP_DIND_CONTAINER",
         "type": "boolean",
         "description": "Enable docker engine for a current run using a containerized approach",
         "defaultValue": "true"
+    },
+    {
+        "name": "CP_CAP_SYSTEMD_CONTAINER",
+        "type": "boolean",
+        "description": "Enable systemd for a current run if it meets requirements",
+        "defaultValue": "true",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_KEEP_FAILED_RUN",
+        "type": "string",
+        "description": "Any job, that is failed due to the \"command\" or output upload errors, will be kept for this amount of time before terminated. \"sleep\" format is accepted",
+        "defaultValue": "36000s"
     }
 ]

@@ -335,12 +335,14 @@ export default class MetadataFolder extends React.Component {
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
         <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
           <Col className={styles.itemHeader}>
-            <Icon type="appstore-o" className={styles.editableControl} />
             <Breadcrumbs
               id={parseInt(this.props.folderId)}
               type={ItemTypes.metadataFolder}
               textEditableField={'Metadata'}
               readOnlyEditableField={true}
+              icon="appstore-o"
+              iconClassName={styles.editableControl}
+              subject={this.props.folder.value}
             />
           </Col>
           <Col className={styles.currentFolderActions}>

@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.entity.docker;
 
-import com.epam.pipeline.entity.scan.ToolVersionScanResult;
+import com.epam.pipeline.entity.scan.ToolVersionScanResultView;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,5 +29,5 @@ import lombok.NoArgsConstructor;
 public class ToolVersionAttributes {
     private String version;
     private ToolVersion attributes;
-    private ToolVersionScanResult scanResult;
+    private ToolVersionScanResultView scanResult;
 }

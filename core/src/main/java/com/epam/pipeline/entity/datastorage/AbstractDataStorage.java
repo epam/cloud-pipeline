@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,11 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
      */
     private boolean shared;
 
+    /**
+     * Defines if 'data-leak' rules applied
+     */
+    private boolean sensitive;
+
     public AbstractDataStorage(final Long id, final String name,
             final String path, final DataStorageType type) {
         this(id, name, path, type, DEFAULT_POLICY, "");
@@ -109,4 +114,8 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
      * @return
      */
     public abstract boolean isPolicySupported();
+
+    public String getRoot() {
+        return getPath().split(getDelimiter())[0];
+    }
 }

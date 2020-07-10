@@ -68,7 +68,8 @@ import javax.sql.DataSource;
  * defined in this class.
  */
 @SpringBootConfiguration
-@Import({AclSecurityConfiguration.class, DBConfiguration.class, MappersConfiguration.class})
+@Import({AclSecurityConfiguration.class, DBConfiguration.class,
+        MappersConfiguration.class, CacheConfiguration.class})
 @ComponentScan(basePackages = {"com.epam.pipeline.manager.security"})
 @TestPropertySource(value={"classpath:test-application.properties"})
 @EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)

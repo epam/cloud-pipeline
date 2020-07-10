@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ from buckets.utils.utilities_for_test import delete_buckets, create_buckets, cre
 from common_utils.cmd_utils import get_test_prefix
 from common_utils.entity_managers import UtilsManager
 from common_utils.pipe_cli import pipe_storage_policy
+from time import sleep
 
 ERROR_MESSAGE = "An error occurred in case "
 
@@ -49,6 +50,7 @@ class TestPolicy(object):
             sts = 40
             lts = 50
             backup_duration = 30
+            sleep(30)
             pipe_storage_policy(bucket_name, sts=str(sts), lts=str(lts), backup_duration=str(backup_duration))
             assert_policy(bucket_name, sts, lts, backup_duration)
             pipe_storage_policy(bucket_name, sts=str(sts), lts=str(lts))
@@ -71,8 +73,10 @@ class TestPolicy(object):
         bucket_name = "{}-{}".format(self.bucket_name, test_case)
         create_buckets(bucket_name)
         try:
+            sleep(15)
             pipe_storage_policy(bucket_name, sts=str(sts), lts=str(lts))
             assert_policy(bucket_name, sts, lts, self.default_backup_duration)
+            sleep(15)
             pipe_storage_policy(bucket_name, sts=str(sts), lts=str(lts), backup_duration=str(backup_duration))
             assert_policy(bucket_name, sts, lts, backup_duration)
         except AssertionError as e:

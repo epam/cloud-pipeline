@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * {@link DockerRegistryList} represents a pseudo root entity for returning list of
@@ -71,5 +72,13 @@ public class DockerRegistryList extends AbstractHierarchicalEntity {
     @Override
     public AclClass getAclClass() {
         return AclClass.DOCKER_REGISTRY;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public DockerRegistryList copyView() {
+        return new DockerRegistryList(
+            this.getRegistries().stream().map(DockerRegistry::copyView).collect(Collectors.toList())
+        );
     }
 }

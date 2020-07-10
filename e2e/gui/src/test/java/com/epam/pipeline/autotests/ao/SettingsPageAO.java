@@ -41,14 +41,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
     @Override
     public SelenideElement context() {
-        return $(byClassName("ant-modal-content"));
+        return $(byId("root-content"));
     }
 
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
-            entry(CLI_TAB, $(byXpath("//*[contains(@class, 'ant-tabs-tab') and contains(., 'CLI')]"))),
-            entry(SYSTEM_EVENTS_TAB, $(byXpath("//*[contains(@class, 'ant-tabs-tab') and contains(., 'System events')]"))),
-            entry(USER_MANAGEMENT_TAB, context().find(byXpath("//*[contains(@class, 'ant-tabs-tab') and contains(., 'User management')]"))),
-            entry(PREFERENCES_TAB, context().find(byXpath("//*[contains(@class, 'ant-tabs-tab') and contains(., 'Preferences')]"))),
+            entry(CLI_TAB, $(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'CLI')]"))),
+            entry(SYSTEM_EVENTS_TAB, $(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'System events')]"))),
+            entry(USER_MANAGEMENT_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'User management')]"))),
+            entry(PREFERENCES_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Preferences')]"))),
             entry(OK, context().find(byId("settings-form-ok-button")))
     );
 
@@ -101,8 +101,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 super.elements(),
                 entry(REFRESH, context().find(byId("refresh-notifications-button"))),
                 entry(ADD, context().find(byId("add-notification-button"))),
-                entry(TABLE, context().find(byClassName("ant-tabs-tabpane-active"))
-                                .find(byClassName("ant-table-content")))
+                entry(TABLE, context().find(byClassName("ant-table-content")))
         );
 
         public SystemEventsAO(PipelinesLibraryAO pipelinesLibraryAO) {
@@ -147,7 +146,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         private List<SelenideElement> getAllEntries() {
-            return new ArrayList<>(context().find(byClassName("ant-tabs-tabpane-active"))
+            return new ArrayList<>(context().find(byClassName("ant-table-content"))
                     .findAll(byXpath(".//tr[contains(@class, 'ant-table-row-level-0')]")));
         }
 
@@ -325,7 +324,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public SystemEventsEntry ensureSeverityIconIs(String severity) {
-                ensure(SEVERITY_ICON, cssClass(String.format("settings-form__%s", severity.toLowerCase())));
+                ensure(SEVERITY_ICON, cssClass(String.format("tyles__%s", severity.toLowerCase())));
                 return this;
             }
 

@@ -18,7 +18,7 @@
 # Preflight setup
 ##########
 INSTALL_SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
-K8S_SPECS_HOME=${K8S_SPECS_HOME:-"$INSTALL_SCRIPT_PATH/../../k8s"}
+export K8S_SPECS_HOME=${K8S_SPECS_HOME:-"$INSTALL_SCRIPT_PATH/../../k8s"}
 
 source format-utils.sh
 source install-utils.sh
@@ -218,6 +218,11 @@ CP_SEARCH_KUBE_NODE_NAME=${CP_SEARCH_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-search-srv to $CP_SEARCH_KUBE_NODE_NAME"
 kubectl label nodes "$CP_SEARCH_KUBE_NODE_NAME" cloud-pipeline/cp-search-srv="true" --overwrite
 
+# Allow to schedule Kibana service to the master
+CP_SEARCH_KUBE_NODE_NAME=${CP_SEARCH_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-search-kibana to $CP_SEARCH_KUBE_NODE_NAME"
+kubectl label nodes "$CP_SEARCH_KUBE_NODE_NAME" cloud-pipeline/cp-search-kibana="true" --overwrite
+
 # Allow to schedule Heapster ELK to the master
 CP_HEAPSTER_ELK_KUBE_NODE_NAME=${CP_HEAPSTER_ELK_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-heapster-elk to $CP_HEAPSTER_ELK_KUBE_NODE_NAME"
@@ -247,6 +252,12 @@ kubectl label nodes "$CP_SHARE_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-share-srv="
 CP_BILLING_SRV_KUBE_NODE_NAME=${CP_BILLING_SRV_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-billing-srv to $CP_SHARE_SRV_KUBE_NODE_NAME"
 kubectl label nodes "$CP_BILLING_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-billing-srv="true" --overwrite
+
+# Allow to schedule Share service to the master
+CP_TP_KUBE_NODE_NAME=${CP_TP_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-tinyproxy to $CP_TP_KUBE_NODE_NAME"
+kubectl label nodes "$CP_TP_KUBE_NODE_NAME" cloud-pipeline/cp-tinyproxy="true" --overwrite
+
 
 echo
 
@@ -474,13 +485,13 @@ if is_service_requested cp-api-srv; then
         wait_for_deployment "cp-api-srv"
 
         print_info "-> Generating admin JWT token for admin user \"$CP_DEFAULT_ADMIN_NAME\""
-        CP_API_JWT_ADMIN=$(execute_deployment_command cp-api-srv "java  -jar /opt/api/jwt-generator.jar \
-                                                                        --private $CP_API_SRV_CERT_DIR/jwt.key.private \
-                                                                        --expires 94608000 \
-                                                                        --claim user_id=1 \
-                                                                        --claim user_name=$CP_DEFAULT_ADMIN_NAME \
-                                                                        --claim role=ROLE_ADMIN \
-                                                                        --claim group=ADMIN")
+        CP_API_JWT_ADMIN=$(execute_deployment_command cp-api-srv cp-api-srv "java  -jar /opt/api/jwt-generator.jar \
+                                                                            --private $CP_API_SRV_CERT_DIR/jwt.key.private \
+                                                                            --expires 94608000 \
+                                                                            --claim user_id=1 \
+                                                                            --claim user_name=$CP_DEFAULT_ADMIN_NAME \
+                                                                            --claim role=ROLE_ADMIN \
+                                                                            --claim group=ADMIN")
         if [ $? -ne 0 ]; then
             print_err "Error ocurred while generating admin JWT token, docker registry and edge services cannot be configured to integrate with the API Services"
         else
@@ -802,7 +813,7 @@ if is_service_requested cp-git; then
                 init_kube_config_map
 
                 print_info "-> Setting trust for GitLab SSL certificate in API Services"
-                execute_deployment_command cp-api-srv "/update-trust $CP_GITLAB_CERT_DIR/ssl-public-cert.pem cp-git"
+                execute_deployment_command cp-api-srv cp-api-srv "/update-trust $CP_GITLAB_CERT_DIR/ssl-public-cert.pem cp-git"
 
                 print_info "-> Register GitLab in API Services"
                 print_info "Waiting $CP_GITLAB_INIT_TIMEOUT seconds, before registration (while health endpoint reported OK - gitlab may still fail with 502)"
@@ -959,7 +970,11 @@ if is_service_requested cp-search; then
 
     print_info "-> Deleting existing instance of Search ELK service"
     delete_deployment_and_service   "cp-search-elk" \
-                                    "/opt/search-elk"    
+                                    "/opt/search-elk"
+
+     print_info "-> Deleting existing instance of Search KIBANA service"
+    delete_deployment_and_service   "cp-search-kibana" \
+                                    "/opt/search-kibana"
 
     if is_install_requested; then
         print_info "-> Deploying Search ELK service"
@@ -969,9 +984,16 @@ if is_service_requested cp-search; then
         print_info "-> Waiting for Search ELK service to initialize"
         wait_for_deployment "cp-search-elk"
 
+        print_info "-> Deploying Search KIBANA service"
+        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-kibana-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-kibana-svc.yaml
+
+        print_info "-> Waiting for Search KIBANA service to initialize"
+        wait_for_deployment "cp-search-kibana"
+
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-search-elk:"
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nElastic:   http://$CP_SEARCH_ELK_INTERNAL_HOST:$CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT"
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nKibana:    http://$CP_SEARCH_ELK_INTERNAL_HOST:$CP_SEARCH_ELK_KIBANA_INTERNAL_PORT"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nKibana:    http://$CP_SEARCH_KIBANA_INTERNAL_HOST:$CP_SEARCH_KIBANA_INTERNAL_PORT"
 
         print_info "-> Deploying Search service"
         create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-srv-dpl.yaml
@@ -1092,6 +1114,26 @@ if is_service_requested cp-share-srv; then
     echo
 fi
 
+# Tinyproxy
+if is_service_requested cp-tinyproxy; then
+    print_ok "[Starting Tinyproxy deployment]"
+
+    print_info "-> Deleting existing instance of Tinyproxy"
+    delete_deployment_and_service   "cp-tinyproxy" \
+                                    "/opt/tinyproxy"
+
+    if is_install_requested; then
+        print_info "-> Deploying Tinyproxy"
+        create_kube_resource $K8S_SPECS_HOME/cp-tinyproxy/cp-tinyproxy-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-tinyproxy/cp-tinyproxy-svc.yaml
+
+        print_info "-> Waiting for Tinyproxy to initialize"
+        wait_for_deployment "cp-tinyproxy"
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-tinyproxy: Use http://${CP_TP_INTERNAL_HOST}:${CP_TP_INTERNAL_PORT} as an egress proxy"
+    fi
+    echo
+fi
 
 #Billing Service
 if is_service_requested cp-billing-srv; then

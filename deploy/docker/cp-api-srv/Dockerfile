@@ -66,10 +66,10 @@ RUN pip install -I awscli==1.16.139 \
 # Azure - specific packages
 RUN pip install -I  azure-common==1.1.18 \
                     azure==4.0.0 \
-                    azure-mgmt-resource==2.1.0 \
+                    azure-mgmt-resource==2.0.0 \
                     azure-mgmt-compute==4.5.1 \
                     azure-mgmt-containerinstance==1.4.1 \
-                    azure-cli-core==2.0.61
+                    azure-cli-core==2.0.52
 
 # GCP - specific packages
 RUN pip install -I google-api-python-client
@@ -109,6 +109,11 @@ ADD update-trust /update-trust
 
 RUN chmod +x /init* && \
     chmod +x /update-trust
+
+RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/filebeat-6.8.3-x86_64.rpm \
+    && rpm -vi filebeat-6.8.3-x86_64.rpm && rm -rf filebeat-6.8.3-x86_64.rpm
+
+COPY filebeat-template.yml /etc/filebeat/
 
 WORKDIR /opt/api
 

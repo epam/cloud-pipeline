@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import json
+import logging
 
 import requests
 
@@ -71,12 +72,14 @@ class CloudPipelineClient:
                             'Authorization': 'Bearer {}'.format(self._token)}
 
     def get_storage(self, name):
-        response_data = self._get('datastorage/find?id={}'.format(name))
+        logging.info('Getting data storage %s' % name)
+        response_data = self._get('datastorage/findByPath?id={}'.format(name))
         if 'payload' in response_data:
             return DataStorage.load(response_data['payload'])
         return None
 
     def get_temporary_credentials(self, bucket):
+        logging.info('Getting temporary credentials for data storage #%s' % bucket.id)
         operation = {
             'id': bucket.id,
             'read': bucket.is_read_allowed(),

@@ -286,7 +286,7 @@ check_last_exit_code() {
 LINUX_DISTRIBUTION=$( get_linux_dist )
 
 #Remove pipe qsub, if exists
-python2 -m pip uninstall -y -q PipelineQSUB
+$CP_PYTHON2_PATH -m pip uninstall -y -q PipelineQSUB
 
 pipe_log_info "Installing SGE master" "$SGE_MASTER_SETUP_TASK"
 
@@ -296,13 +296,15 @@ export SGE_CLUSTER_NAME="CLOUD_PIPELINE"
 export CP_CAP_SGE_QUEUE_NAME="${CP_CAP_SGE_QUEUE_NAME:-main.q}"
 export CP_CAP_SGE_PE_NAME="${CP_CAP_SGE_PE_NAME:-local}"
 export CP_CAP_SGE_PE_MPI_NAME="${CP_CAP_SGE_PE_MPI_NAME:-mpi}"
+export CP_CAP_SGE_WORKER_FREE_CORES="${CP_CAP_SGE_WORKER_FREE_CORES:-0}"
 
 if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
     export SGE_ROOT="/var/lib/gridengine"
 elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
     export SGE_ROOT="/opt/sge"
 fi
-CP_CAP_SCRIPTS_DIR="${CP_CAP_SCRIPTS_DIR:-/common/cap_scripts}"
+export SHARED_FOLDER=${SHARED_FOLDER:-"/common"}
+CP_CAP_SCRIPTS_DIR="${CP_CAP_SCRIPTS_DIR:-$SHARED_FOLDER/cap_scripts}"
 CP_CAP_SGE_MASTER_ENV_FILE="${CP_CAP_SCRIPTS_DIR}/sge_master_env.sh"
 mkdir -p "$CP_CAP_SCRIPTS_DIR"
 echo "export SGE_ROOT=$SGE_ROOT" > $CP_CAP_SGE_MASTER_ENV_FILE

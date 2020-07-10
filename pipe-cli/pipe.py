@@ -27,6 +27,7 @@ from src.config import Config, ConfigNotFoundError, silent_print_config_info, is
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
 from src.utilities.du_format_type import DuFormatType
+from src.utilities.pipeline_run_share_manager import PipelineRunShareManager
 from src.utilities.tool_operations import ToolOperations
 from src.utilities import date_utilities, time_zone_param_type, state_utilities
 from src.utilities.acl_operations import ACLOperations
@@ -36,10 +37,12 @@ from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.pipeline_run_operations import PipelineRunOperations
 from src.utilities.ssh_operations import run_ssh
 from src.utilities.update_cli_version import UpdateCLIVersionManager
+from src.utilities.user_token_operations import UserTokenOperations
 from src.version import __version__
 
 MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000
+USER_OPTION_DESCRIPTION = 'The user name to perform operation from specified user. Available for admins only'
 
 
 def silent_print_api_version():
@@ -60,6 +63,11 @@ def print_version(ctx, param, value):
     click.echo('Cloud Pipeline CLI, version {}'.format(__version__))
     silent_print_config_info()
     ctx.exit()
+
+
+def set_user_token(ctx, param, value):
+    if value:
+        UserTokenOperations().set_user_token(value)
 
 
 @click.group()
@@ -141,6 +149,7 @@ def echo_title(title, line=True):
 @click.option('-p', '--parameters', help='List parameters of a pipeline', is_flag=True)
 @click.option('-s', '--storage-rules', help='List storage rules of a pipeline', is_flag=True)
 @click.option('-r', '--permissions', help='List user permissions for a pipeline', is_flag=True)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def view_pipes(pipeline, versions, parameters, storage_rules, permissions):
     """Lists pipelines definitions
@@ -159,7 +168,7 @@ def view_all_pipes():
     pipes_table.field_names = ["ID", "Name", "Latest version", "Created", "Source repo"]
     pipes_table.align = "r"
     try:
-        pipelines = list(Pipeline.list())
+        pipelines = Pipeline.list()
         if len(pipelines) > 0:
             for pipeline_model in pipelines:
                 pipes_table.add_row([pipeline_model.identifier,
@@ -275,6 +284,7 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
 @click.option('-nd', '--node-details', help='Display node details of a specific run', is_flag=True)
 @click.option('-pd', '--parameters-details', help='Display parameters of a specific run', is_flag=True)
 @click.option('-td', '--tasks-details', help='Display tasks of a specific run', is_flag=True)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def view_runs(run_id,
               status,
@@ -466,6 +476,7 @@ def view_run(run_id, node_details, parameters_details, tasks_details):
 
 @cli.command(name='view-cluster')
 @click.argument('node-name', required=False)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def view_cluster(node_name):
     """Lists cluster nodes
@@ -483,7 +494,7 @@ def view_all_cluster():
     nodes_table.field_names = ["Name", "Pipeline", "Run", "Addresses", "Created"]
     nodes_table.align = "l"
     try:
-        nodes = list(Cluster.list())
+        nodes = Cluster.list()
         if len(nodes) > 0:
             for node_model in nodes:
                 info_lines = []
@@ -637,6 +648,9 @@ def view_cluster_for_node(node_name):
 @click.option('-pn', '--parent-node', help='Parent instance Run ID. That allows to run a pipeline as a child job on the existing running instance', type=int, required=False)
 @click.option('-np', '--non-pause', help='Allow to switch off auto-pause option. Supported for on-demand runs only',
               is_flag=True)
+@click.option('-fu', '--friendly-url', help='A friendly URL. The URL should have the following formats: '
+                                            '<domain>/<path> or <path>', type=str, required=False)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def run(pipeline,
         config,
@@ -655,17 +669,19 @@ def run(pipeline,
         price_type,
         region_id,
         parent_node,
-        non_pause):
+        non_pause,
+        friendly_url):
     """Schedules a pipeline execution
     """
     PipelineRunOperations.run(pipeline, config, parameters, yes, run_params, instance_disk, instance_type,
                               docker_image, cmd_template, timeout, quiet, instance_count, cores, sync, price_type,
-                              region_id, parent_node, non_pause)
+                              region_id, parent_node, non_pause, friendly_url)
 
 
 @cli.command(name='stop')
 @click.argument('run-id', required=True, type=int)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def stop(run_id, yes):
     """Stops a running pipeline
@@ -676,6 +692,7 @@ def stop(run_id, yes):
 @cli.command(name='terminate-node')
 @click.argument('node-name', required=True, type=str)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def terminate_node(node_name, yes):
     """Terminates a calculation node
@@ -740,6 +757,8 @@ def storage():
               prompt='Datastorage path')
 @click.option('-r', '--region_id', default='default', help='Cloud Region ID where the datastorage shall be created',
               prompt='Cloud Region ID where the datastorage shall be created')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False,
+              help=USER_OPTION_DESCRIPTION, prompt=USER_OPTION_DESCRIPTION, default='')
 @Config.validate_access_token
 def create(name, description, short_term_storage, long_term_storage, versioning, backup_duration, type,
            parent_folder, on_cloud, path, region_id):
@@ -753,6 +772,7 @@ def create(name, description, short_term_storage, long_term_storage, versioning,
 @click.option('-n', '--name', required=True, help='Name of the storage to delete')
 @click.option('-c', '--on_cloud', help='Delete a datastorage from the Cloud', is_flag=True)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def delete(name, on_cloud, yes):
     """Deletes an object storage
@@ -772,6 +792,7 @@ def delete(name, on_cloud, yes):
               prompt='Do you want to enable versioning for this datastorage?',
               help='Enable versioning for this datastorage')
 @click.option('-b', '--backup_duration', default='', help='Number of days for storing backups of the datastorage')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def update_policy(name, short_term_storage, long_term_storage, versioning, backup_duration):
     """Updates the policy of the datastorage
@@ -786,6 +807,7 @@ def update_policy(name, short_term_storage, long_term_storage, versioning, backu
 @storage.command(name='mvtodir')
 @click.argument('name', required=True)
 @click.argument('directory', required=True)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 def mvtodir(name, directory):
     """Moves an object storage to a new parent folder
     """
@@ -799,6 +821,7 @@ def mvtodir(name, directory):
 @click.option('-r', '--recursive', is_flag=True, help='Recursive listing')
 @click.option('-p', '--page', type=int, help='Maximum number of records to show')
 @click.option('-a', '--all', is_flag=True, help='Show all results at once ignoring page settings')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def storage_list(path, show_details, show_versions, recursive, page, all):
     """Lists storage contents
@@ -808,6 +831,7 @@ def storage_list(path, show_details, show_versions, recursive, page, all):
 
 @storage.command(name='mkdir')
 @click.argument('folders', required=True, nargs=-1)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def storage_mk_dir(folders):
     """ Creates a directory in a storage
@@ -825,6 +849,7 @@ def storage_mk_dir(folders):
               help='Exclude all files matching this pattern from processing')
 @click.option('-i', '--include', required=False, multiple=True,
               help='Include only files matching this pattern into processing')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, include):
     """ Removes file or folder from a datastorage
@@ -857,6 +882,7 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
               "follow - follow symlinks (default); "
               "skip - do not follow symlinks; "
               "filter - follow symlinks but check for cyclic links")
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
                       symlinks):
@@ -892,6 +918,7 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
               "follow - follow symlinks (default); "
               "skip - do not follow symlinks; "
               "filter - follow symlinks but check for cyclic links")
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
                       symlinks):
@@ -908,6 +935,8 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 @click.option('-f', '--format', help='Format for size [G/M/K]',
               type=click.Choice(DuFormatType.possible_types()), required=False, default='M')
 @click.option('-d', '--depth', help='Depth level', type=int, required=False)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False,
+              help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def du(name, relative_path, format, depth):
     DataStorageOperations.du(name, relative_path, format, depth)
@@ -921,6 +950,7 @@ def du(name, relative_path, format, depth):
               help='Exclude all files matching this pattern from processing')
 @click.option('-i', '--include', required=False, multiple=True,
               help='Include only files matching this pattern into processing')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def storage_restore_item(path, version, recursive, exclude, include):
     """ Restores file version in a datastorage.\n
@@ -934,6 +964,7 @@ def storage_restore_item(path, version, recursive, exclude, include):
 @click.argument('path', required=True)
 @click.argument('tags', required=True, nargs=-1)
 @click.option('-v', '--version', required=False, help='Set tags for a specified version')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def storage_set_object_tags(path, tags, version):
     """ Sets tags for a specified object.\n
@@ -950,6 +981,7 @@ def storage_set_object_tags(path, tags, version):
 @storage.command('get-object-tags')
 @click.argument('path', required=True)
 @click.option('-v', '--version', required=False, help='Get tags for a specified version')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def storage_get_object_tags(path, version):
     """ Gets tags for a specified object.\n
@@ -964,6 +996,7 @@ def storage_get_object_tags(path, version):
 @click.argument('path', required=True)
 @click.argument('tags', required=True, nargs=-1)
 @click.option('-v', '--version', required=False, help='Delete tags for a specified version')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def storage_delete_object_tags(path, tags, version):
     """ Deletes tags for a specified object.\n
@@ -977,30 +1010,29 @@ def storage_delete_object_tags(path, tags, version):
 
 @storage.command('mount')
 @click.argument('mountpoint', required=True)
-@click.option('-f', '--file', required=False, help='File system mode', is_flag=True)
-@click.option('-b', '--bucket', required=False, help='Bucket name')
-@click.option('-o', '--options', required=False, help='Specify mount options')
-@click.option('-l', '--log-file', required=False, help='Specify log file for mount operation')
-@click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
+@click.option('-f', '--file', required=False, help='Enables file system mode', is_flag=True)
+@click.option('-b', '--bucket', required=False, help='Mounting bucket name')
+@click.option('-o', '--options', required=False, help='Any mount options supported by underlying FUSE implementation')
+@click.option('-c', '--custom-options', required=False, help='Mount options supported only by pipe fuse')
+@click.option('-l', '--log-file', required=False, help='Log file for mount')
+@click.option('-v', '--log-level', required=False, help='Log level for mount: '
+                                                        'CRITICAL, ERROR, WARNING, INFO or DEBUG')
+@click.option('-q', '--quiet', help='Enables quiet mode', is_flag=True)
 @click.option('-t', '--threads', help='Enables multithreading', is_flag=True)
 @click.option('-m', '--mode', required=False, help='Default file permissions',  default=700, type=int)
+@click.option('-w', '--timeout', required=False, help='Waiting time in ms to check whether mount was successful',
+              default=1000, type=int)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
-def mount_storage(mountpoint, file, bucket, options, log_file, quiet, threads, mode):
+def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, log_level, quiet, threads, mode, timeout):
     """ Mounts either all available file systems or a single bucket into a local folder.
         Either -f\\--file flag or -b\\--bucket argument should be specified.
         Command is supported for Linux distributions and MacOS and requires
         FUSE installed.
-        - mountpoint - destination for mount.
-        - file - enables file system mount mode.
-        - bucket - name of the bucket to mount.
-        - options - any mount options supported by underlying FUSE implementation.
-        - log-file - path to FUSE log file.
-        - threads - start FUSE in a multithreaded mode.
-        - mode - file permissions mask
     """
-    DataStorageOperations.mount_storage(mountpoint, file=file, log_file=log_file,
-                                        bucket=bucket, options=options, quiet=quiet,
-                                        threading=threads, mode=mode)
+    DataStorageOperations.mount_storage(mountpoint, file=file, log_file=log_file, log_level=log_level,
+                                        bucket=bucket, options=options, custom_options=custom_options,
+                                        quiet=quiet, threading=threads, mode=mode, timeout=timeout)
 
 
 @storage.command('umount')
@@ -1022,8 +1054,9 @@ def umount_storage(mountpoint, quiet):
     '-t', '--object-type',
     help='Object type',
     required=True,
-    type=click.Choice(['pipeline', 'folder', 'data_storage'])
+    type=click.Choice(ACLOperations.get_classes())
 )
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def view_acl(identifier, object_type):
     """ View object permissions.\n
@@ -1038,19 +1071,48 @@ def view_acl(identifier, object_type):
     '-t', '--object-type',
     help='Object type',
     required=True,
-    type=click.Choice(['pipeline', 'folder', 'data_storage'])
+    type=click.Choice(ACLOperations.get_classes())
 )
 @click.option('-s', '--sid', help='User or group name', required=True)
 @click.option('-g', '--group', help='Group flag', is_flag=True)
 @click.option('-a', '--allow', help='Allow permissions')
 @click.option('-d', '--deny', help='Deny permissions')
 @click.option('-i', '--inherit', help='Inherit permissions')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def set_acl(identifier, object_type, sid, group, allow, deny, inherit):
     """ Set object permissions.\n
     - IDENTIFIER: defines name or id of an object
     """
     ACLOperations.set_acl(identifier, object_type, sid, group, allow, deny, inherit)
+
+
+@cli.command(name='view-user-objects')
+@click.argument('username')
+@click.option(
+    '-t', '--object-type',
+    help='Object type',
+    required=False,
+    type=click.Choice(ACLOperations.get_classes())
+)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@Config.validate_access_token
+def view_user_objects(username, object_type):
+    ACLOperations.print_sid_objects(username, True, object_type)
+
+
+@cli.command(name='view-group-objects')
+@click.argument('group_name')
+@click.option(
+    '-t', '--object-type',
+    help='Object type',
+    required=False,
+    type=click.Choice(ACLOperations.get_classes())
+)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@Config.validate_access_token
+def view_group_objects(group_name, object_type):
+    ACLOperations.print_sid_objects(group_name, False, object_type)
 
 
 @cli.group()
@@ -1064,6 +1126,7 @@ def tag():
 @click.argument('entity_class', required=True)
 @click.argument('entity_id', required=True)
 @click.argument('data', required=True, nargs=-1)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def set_tag(entity_class, entity_id, data):
     """ Sets tags for a specified object.\n
@@ -1081,6 +1144,7 @@ def set_tag(entity_class, entity_id, data):
 @tag.command(name='get')
 @click.argument('entity_class', required=True)
 @click.argument('entity_id', required=True)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def get_tag(entity_class, entity_id):
     """ Lists all tags for a specific object or list of objects.\n
@@ -1096,6 +1160,7 @@ def get_tag(entity_class, entity_id):
 @click.argument('entity_class', required=True)
 @click.argument('entity_id', required=True)
 @click.argument('keys', required=False, nargs=-1)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def delete_tag(entity_class, entity_id, keys):
     """ Deletes specified tags for a specified object.\n
@@ -1112,6 +1177,7 @@ def delete_tag(entity_class, entity_id, keys):
 @click.argument('user_name', required=True)
 @click.argument('entity_class', required=True)
 @click.argument('entity_name', required=True)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def chown(user_name, entity_class, entity_name):
     """ Changes current owner to specified.\n
@@ -1123,10 +1189,12 @@ def chown(user_name, entity_class, entity_name):
     """
     PermissionsOperations.chown(user_name, entity_class, entity_name)
 
+
 @cli.command(name='ssh', context_settings=dict(
     ignore_unknown_options=True,
     allow_extra_args=True))
 @click.argument('run-id', required=True, type=int)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @click.pass_context
 @Config.validate_access_token
 def ssh(ctx, run_id):
@@ -1144,6 +1212,7 @@ def ssh(ctx, run_id):
 
 @cli.command(name='update')
 @click.argument('path', required=False)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def update_cli_version(path):
     """
@@ -1165,6 +1234,7 @@ def update_cli_version(path):
 @click.option('-g', '--group', help='List group tools.')
 @click.option('-t', '--tool', help='List tool details.')
 @click.option('-v', '--version', help='List tool version details.')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def view_tools(tool_path,
                registry,
@@ -1250,6 +1320,67 @@ def split_tool_path(tool_path, registry, group, tool, version, strict=False):
                    'registry/group/tool:version', err=True)
         sys.exit(1)
     return registry, group, tool, version
+
+
+@cli.command(name='token')
+@click.argument('user-id', required=True)
+@click.option('-d', '--duration', type=int, required=False, help='The number of days this token will be valid.')
+@Config.validate_access_token
+def token(user_id, duration):
+    """
+    Prints a JWT token for specified user
+    """
+    UserTokenOperations().print_user_token(user_id, duration)
+
+
+@cli.group()
+def share():
+    """ Pipeline run share commands
+    """
+    pass
+
+
+@share.command(name='get')
+@click.argument('run-id', required=True)
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@Config.validate_access_token
+def get_share_run(run_id):
+    """
+    Returns users and groups this run shared
+    """
+    PipelineRunShareManager().get(run_id)
+
+
+@share.command(name='add')
+@click.argument('run-id', required=True)
+@click.option('-su', '--shared-user', required=False, multiple=True,
+              help='The user to enable run sharing. Multiple options supported.')
+@click.option('-sg', '--shared-group', required=False, multiple=True,
+              help='The group to enable run sharing. Multiple options supported.')
+@click.option('-ssh', '--share-ssh', required=False, is_flag=True, default=False, help='Indicates ssh share')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@Config.validate_access_token
+def add_share_run(run_id, shared_user, shared_group, share_ssh):
+    """
+    Shares specified pipeline run with users or groups
+    """
+    PipelineRunShareManager().add(run_id, shared_user, shared_group, share_ssh)
+
+
+@share.command(name='remove')
+@click.argument('run-id', required=True)
+@click.option('-su', '--shared-user', required=False, multiple=True,
+              help='The user to disable run sharing. Multiple options supported.')
+@click.option('-sg', '--shared-group', required=False, multiple=True,
+              help='The group to disable run sharing. Multiple options supported.')
+@click.option('-ssh', '--share-ssh', required=False, is_flag=True, default=False, help='Indicates ssh unshare')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@Config.validate_access_token
+def remove_share_run(run_id, shared_user, shared_group, share_ssh):
+    """
+    Disables shared pipeline run for specified users or groups
+    """
+    PipelineRunShareManager().remove(run_id, shared_user, shared_group, share_ssh)
 
 
 # Used to run a PyInstaller "freezed" version

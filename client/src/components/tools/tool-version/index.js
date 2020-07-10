@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react/index';
+import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import LoadTool from '../../../models/tools/LoadTool';
 import {
@@ -24,10 +24,12 @@ import {
   Icon,
   Row,
   Tabs,
-  Card,
+  Card
 } from 'antd';
 import LoadingView from '../../special/LoadingView';
+import Owner from '../../special/owner';
 import roleModel from '../../../utils/roleModel';
+import ToolLink from '../elements/ToolLink';
 import styles from './ToolVersion.css';
 
 @inject('preferences', 'dockerRegistries')
@@ -92,7 +94,10 @@ export default class ToolVersion extends React.Component {
               size="small"
               style={{marginBottom: 3, verticalAlign: 'middle', lineHeight: 'inherit'}}>
               <Icon type="arrow-left" />
-            </Button> {this.props.tool.value.image}:{this.props.version}
+            </Button>
+            <ToolLink link={this.props.tool.value.link} style={{marginLeft: 5}} />
+            <span style={{marginLeft: 5}}>{this.props.tool.value.image}:{this.props.version}</span>
+            <Owner subject={this.props.tool.value} style={{marginLeft: 5}} />
           </Row>
         </Row>
         <Tabs
@@ -105,6 +110,7 @@ export default class ToolVersion extends React.Component {
           }
           <Tabs.TabPane key="settings" tab="SETTINGS" />
           <Tabs.TabPane key="packages" tab="PACKAGES" />
+          <Tabs.TabPane key="history" tab="IMAGE HISTORY" />
         </Tabs>
         <div style={{flex: 1, overflow: 'auto'}}>
           {this.props.children}

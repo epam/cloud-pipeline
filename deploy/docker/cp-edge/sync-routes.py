@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -514,6 +514,7 @@ for added_route in routes_to_add:
                 .replace('{edge_route_location}', service_location)\
                 .replace('{edge_route_target}', service_spec["edge_target"])\
                 .replace('{edge_route_owner}', service_spec["pod_owner"]) \
+                 .replace('{run_id}', service_spec["run_id"]) \
                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
                 .replace('{additional}', service_spec["additional"])

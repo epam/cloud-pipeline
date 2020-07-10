@@ -226,7 +226,11 @@ public class GrantPermissionManager {
         Permission permission = permissionFactory.buildFromMask(grantVO.getMask());
         String sidName = grantVO.getUserName().toUpperCase();
         Sid sid = aclService.createOrGetSid(sidName, grantVO.getPrincipal());
-        LOGGER.debug("Granting permissions for sid {}", sid);
+        LOGGER.info("Granting permissions. Entity: class={} id={}, name={}, permission: {}" +
+                        " (mask: {}). Sid: name={} isPrincipal={}",
+                entity.getAclClass(), entity.getId(), entity.getName(),
+                AclPermission.getReadableView(permission.getMask()),
+                permission.getMask(), sidName, grantVO.getPrincipal());
         int sidEntryIndex = findSidEntry(acl, sid);
         if (sidEntryIndex != -1) {
             acl.deleteAce(sidEntryIndex);
@@ -275,6 +279,8 @@ public class GrantPermissionManager {
             acl = aclService.updateAcl(acl);
         }
         AclSecuredEntry aclSecuredEntry = convertAclToEntryForUser(entity, acl, sid);
+        LOGGER.info("Deleting permissions for sid: name={} isPrincipal={}. Entity: class={} id={}",
+                user, isPrincipal, aclClass, id);
         updateEventsWithChildrenAndIssues(entity);
         return aclSecuredEntry;
     }
@@ -286,6 +292,7 @@ public class GrantPermissionManager {
                 messageHelper.getMessage(MessageConstants.ERROR_ENTITY_IS_LOCKED,
                         entity.getAclClass(), entity.getId()));
         MutableAcl acl = aclService.getOrCreateObjectIdentity(entity);
+        LOGGER.info("Deleting all permissions. Entity: class={} id={}", aclClass, id);
         acl = deleteAllAces(acl);
         return convertAclToEntry(entity, acl);
     }
@@ -311,6 +318,8 @@ public class GrantPermissionManager {
                 break;
             }
         }
+        LOGGER.info("Locking (set NO_READ NO_WRITE permission). Entity: class={} id={}",
+                entity.getAclClass(), entity.getId());
         clearAces(acl);
         acl.insertAce(0, mergedPermission, userRoleSid, true);
         acl = aclService.updateAcl(acl);
@@ -333,6 +342,8 @@ public class GrantPermissionManager {
         Permission newPermission = permissionFactory
                 .buildFromMask(permissionsService.unsetBits(ace.getPermission().getMask(),
                         AclPermission.NO_WRITE.getMask(), AclPermission.NO_EXECUTE.getMask()));
+        LOGGER.info("Unlocking (delete NO_READ NO_WRITE permission). Entity: class={} id={}",
+                entity.getAclClass(), entity.getId());
         acl.deleteAce(entryIndex);
         acl.insertAce(Math.max(entryIndex, 0), newPermission, userRoleSid, true);
         aclService.updateAcl(acl);
@@ -361,12 +372,21 @@ public class GrantPermissionManager {
         final AbstractSecuredEntity entity = entityManager.load(aclClass, id);
         final UserContext userContext = userManager.loadUserContext(userName);
         Assert.notNull(userContext, String.format("The user with name %s doesn't exist.", userName));
+        LOGGER.info("Change owner to: {}. Entity={} id={}", userName, entity.getAclClass(), entity.getId());
         aclService.changeOwner(entity, userName);
         return new AclSecuredEntry(entityManager.changeOwner(aclClass, id, userName));
     }
 
     public void filterTree(AbstractHierarchicalEntity entity, Permission permission) {
         filterTree(getSids(), entity, permission);
+    }
+
+    public void filterTree(AclSid aclSid, AbstractHierarchicalEntity entity, Permission permission) {
+        if (aclSid.isPrincipal()) {
+            filterTree(aclSid.getName(), entity, permission);
+        } else {
+            filterTree(Collections.singletonList(new GrantedAuthoritySid(aclSid.getName())), entity, permission);
+        }
     }
 
     public void filterTree(String userName, AbstractHierarchicalEntity entity, Permission permission) {

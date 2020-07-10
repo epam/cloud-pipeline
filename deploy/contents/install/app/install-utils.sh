@@ -114,7 +114,7 @@ function run_preflight {
         return 1
     fi
     if ! grep -q centos /etc/os-release; then
-        print_err "Unsopported Linux distribution. Centos 7 and above shall be used"
+        print_err "Unsupported Linux distribution. Centos 7 and above shall be used"
         return 1
     fi
     fix_http_proxies
@@ -293,6 +293,12 @@ EOF
     elif [ "$CP_CLOUD_PLATFORM" == "$CP_AZURE" ]; then
         if [ -f "$CP_CLOUD_CREDENTIALS_FILE" ]; then
             print_info "Azure access keys are defined via CP_CLOUD_CREDENTIALS_FILE"
+        elif [ ! -z $CP_AZURE_PROFILE_FILE ] && [ ! -z $CP_AZURE_ACCESS_TOKEN_FILE ]; then
+            print_info "Azure access keys are defined via CP_AZURE_PROFILE_FILE and CP_AZURE_ACCESS_TOKEN_FILE env vars"
+        elif [ -f /root/.azure/azureProfile.json ] && [ -f /root/.azure/accessTokens.json ]; then
+            print_info "Azure access keys are defined via CLI auth files"
+            export CP_AZURE_PROFILE_FILE="/root/.azure/azureProfile.json"
+            export CP_AZURE_ACCESS_TOKEN_FILE="/root/.azure/accessTokens.json"
         else
             print_err "Azure access keys are not defined, please use -env option to define CP_CLOUD_CREDENTIALS_FILE path to the azure credentials"
             return 1
@@ -376,10 +382,12 @@ EOF
         print_warn "File storage hosts parameter is not set. File storage mounts WILL NOT be available. Please specify it using \"-env CP_CLOUD_REGION_FILE_STORAGE_HOSTS=\" option (comma separated list is accepted)"
     fi
 
-    mkdir -p $(dirname $CP_CLOUD_CREDENTIALS_LOCATION)
 
-    # \ in the beginning of cp - bypasses any alias (e.g. cp -i) that may introduce interactive prompt for overwiting the destination
-    \cp "$CP_CLOUD_CREDENTIALS_FILE" "$CP_CLOUD_CREDENTIALS_LOCATION" &>/dev/null
+    if [ -f $CP_CLOUD_CREDENTIALS_FILE ]; then
+        mkdir -p $(dirname $CP_CLOUD_CREDENTIALS_LOCATION)
+        # \ in the beginning of cp - bypasses any alias (e.g. cp -i) that may introduce interactive prompt for overwiting the destination
+        \cp "$CP_CLOUD_CREDENTIALS_FILE" "$CP_CLOUD_CREDENTIALS_LOCATION" &>/dev/null
+    fi
 
     return 0
 }
@@ -399,10 +407,17 @@ function init_kube_secrets {
     kubectl delete secret cp-cloud-credentials
 
     print_info "Creating a new cloud secret"
-    kubectl create secret generic cp-cloud-credentials \
+    if [ "$CP_CLOUD_PLATFORM" == "$CP_AZURE" ] && [ ! -z $CP_AZURE_PROFILE_FILE ] && [ ! -z $CP_AZURE_ACCESS_TOKEN_FILE ]; then
+        # Create credentials secret for azure from user auth files if it is specified instead of service-principal
+        kubectl create secret generic cp-cloud-credentials \
+                                --from-file=$CP_AZURE_PROFILE_FILE --from-file=$CP_AZURE_ACCESS_TOKEN_FILE
+        export CP_CLOUD_CREDENTIALS_LOCATION=""
+    else
+        kubectl create secret generic cp-cloud-credentials \
                                 --from-file=$CP_CLOUD_CREDENTIALS_LOCATION
+        rm -f $CP_CLOUD_CREDENTIALS_LOCATION
+    fi
 
-    rm -f $CP_CLOUD_CREDENTIALS_LOCATION
 
     # SSH creds
     print_info "Trying to delete existing cluster SSH secret, if it exists"
@@ -427,6 +442,10 @@ function init_kube_secrets {
 
     rm -f $_ssh_key_name
     rm -f $_ssh_pub_name
+
+    # create empty kube secret to store region credentials for WebDav service
+    kubectl delete secret cp-region-creds-secret
+    kubectl create secret generic cp-region-creds-secret
 }
 
 function update_config_value {
@@ -1018,8 +1037,7 @@ EOF
     # Trigger dns update (rollout)
     kubectl patch deployment kube-dns \
         -n kube-system \
-        --type='json' \
-        -p="[{\"op\": \"replace\", \"path\": \"/spec/template/metadata/annotations/cp-updated\", \"value\": \"$(date)\" }]"
+        --patch "{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\"cp-updated\": \"$(date)\"}}}}}"
 
     if [ $? -ne 0 ]; then
         print_err "Unable to trigger kube-dns redeployment map after adding $custom_name for ${custom_target_value}"
@@ -1119,11 +1137,18 @@ function wait_for_service {
 
 function execute_deployment_command {
     local DEPLOYMENT_NAME=$1
-    local CMD="$2"
+    local CONTAINER_NAME=$2
+    local CMD="$3"
+
+    if [ "$CONTAINER_NAME" != "default" ]; then
+        CONTAINER_NAME="--container $CONTAINER_NAME"
+    else
+        CONTAINER_NAME=
+    fi
 
     pods=$(kubectl get po | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
     for p in $pods; do
-        bash -c "kubectl exec -i $p -- $CMD"
+        bash -c "kubectl exec -i $CONTAINER_NAME $p -- $CMD"
     done
 }
 
@@ -1144,22 +1169,22 @@ function create_user_and_db {
 
     if [ "$CP_FORCE_DATA_ERASE" ]; then
         print_info "Dropping user \"$USERNAME\" and database \"$DBNAME\""
-        execute_deployment_command $DEPLOYMENT_NAME "psql -U postgres -c \"DROP DATABASE $DBNAME;\""
-        execute_deployment_command $DEPLOYMENT_NAME "psql -U postgres -c \"DROP OWNED BY $USERNAME;\""
-        execute_deployment_command $DEPLOYMENT_NAME "psql -U postgres -c \"DROP USER $USERNAME;\""
+        execute_deployment_command $DEPLOYMENT_NAME default "psql -U postgres -c \"DROP DATABASE $DBNAME;\""
+        execute_deployment_command $DEPLOYMENT_NAME default "psql -U postgres -c \"DROP OWNED BY $USERNAME;\""
+        execute_deployment_command $DEPLOYMENT_NAME default "psql -U postgres -c \"DROP USER $USERNAME;\""
     fi
 
-    execute_deployment_command $DEPLOYMENT_NAME "psql -U postgres -c \"CREATE EXTENSION IF NOT EXISTS pg_trgm;\""
+    execute_deployment_command $DEPLOYMENT_NAME default "psql -U postgres -c \"CREATE EXTENSION IF NOT EXISTS pg_trgm;\""
     
     print_info "Creating user $USERNAME"
-    execute_deployment_command $DEPLOYMENT_NAME "psql -U postgres -c \"CREATE USER $USERNAME CREATEDB;\""
-    execute_deployment_command $DEPLOYMENT_NAME "psql -U postgres -c \"ALTER USER $USERNAME WITH SUPERUSER;\""
+    execute_deployment_command $DEPLOYMENT_NAME default "psql -U postgres -c \"CREATE USER $USERNAME CREATEDB;\""
+    execute_deployment_command $DEPLOYMENT_NAME default "psql -U postgres -c \"ALTER USER $USERNAME WITH SUPERUSER;\""
 
     print_info "Setting password for user $USERNAME"
-    execute_deployment_command $DEPLOYMENT_NAME "psql -U postgres -c \"ALTER USER $USERNAME WITH PASSWORD '$PASSWORD';\""
+    execute_deployment_command $DEPLOYMENT_NAME default "psql -U postgres -c \"ALTER USER $USERNAME WITH PASSWORD '$PASSWORD';\""
 
     print_info "Creating database $DBNAME"
-    execute_deployment_command $DEPLOYMENT_NAME "psql -U postgres -c \"CREATE DATABASE $DBNAME OWNER $USERNAME;\""
+    execute_deployment_command $DEPLOYMENT_NAME default "psql -U postgres -c \"CREATE DATABASE $DBNAME OWNER $USERNAME;\""
 }
 
 function delete_deployment_and_service {
@@ -1198,7 +1223,7 @@ function get_service_cluster_ip {
     local search_namespace="$2"
     [ ! "$search_namespace" ] && search_namespace="default"
 
-    cluster_ip=$(kubectl get svc --namespace=$search_namespace $service_name 2>/dev/null | tail -n +2 | awk '$1=$1' | cut -f2 -d' ')
+    cluster_ip=$(kubectl get svc --namespace=$search_namespace $service_name -o jsonpath='{.spec.clusterIP}' 2>/dev/null)
     echo "$cluster_ip"
 }
 

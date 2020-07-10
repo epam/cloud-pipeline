@@ -63,6 +63,9 @@ public class PipelineVersionManagerTest extends AbstractManagerTest {
     private ToolManager toolManager;
 
     @Mock
+    protected PipelineConfigurationPostProcessor postProcessor;
+
+    @Mock
     private MessageHelper messageHelper;
 
     @Mock
@@ -76,7 +79,6 @@ public class PipelineVersionManagerTest extends AbstractManagerTest {
         MockitoAnnotations.initMocks(this.getClass());
         mockToolManager();
         Mockito.when(messageHelper.getMessage(Mockito.anyString(), Mockito.anyObject())).thenReturn("");
-
         Whitebox.setInternalState(pipelineVersionManager, "preferenceManager", preferenceManager);
         Mockito.when(preferenceManager.getPreference(SystemPreferences.LAUNCH_DOCKER_IMAGE)).thenReturn(DOCKER_IMAGE);
     }

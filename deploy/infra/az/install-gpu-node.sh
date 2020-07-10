@@ -17,8 +17,13 @@
 yum install -y  nc \
                 python \
                 curl \
-                coreutils
+                coreutils \
+                btrfs-progs \
+                iproute-tc
 
+# Install jq
+wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
+chmod +x /usr/bin/jq
 
 # Install nvidia driver deps
 yum install -y  gcc \
@@ -52,6 +57,18 @@ if [ $? -ne 0 ]; then
   fi
 fi
 
+# Get the kube docker images, required by the kubelet
+# This is needed, as we don't want to rely on the external repos
+systemctl start docker && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.7.5/docker/kube-proxy-amd64-v1.7.5.tar" -O /tmp/kube-proxy-amd64-v1.7.5.tar  && \
+docker load -i /tmp/kube-proxy-amd64-v1.7.5.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.7.5/docker/pause-amd64-3.0.tar" -O /tmp/pause-amd64-3.0.tar && \
+docker load -i /tmp/pause-amd64-3.0.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.7.5/docker/flannel-v0.9.0-amd64.tar" -O /tmp/flannel-v0.9.0-amd64.tar && \
+docker load -i /tmp/flannel-v0.9.0-amd64.tar && \
+systemctl stop docker && \
+rm -rf /tmp/*
+
 # Install kubelet
 cat <<EOF >/etc/yum.repos.d/kubernetes.repo
 [kubernetes]
@@ -79,10 +96,9 @@ setenforce 0
 sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
 yum install -y \
-            kubeadm-1.7.5-0.x86_64 \
-            kubectl-1.7.5-0.x86_64 \
-            kubelet-1.7.5-0.x86_64 \
-            kubernetes-cni-0.5.1-0.x86_64
+            kubeadm-1.15.4-0.x86_64 \
+            kubectl-1.15.4-0.x86_64 \
+            kubelet-1.15.4-0.x86_64
 
 # Setup default cgroups and cadvisor port
 sed -i 's/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=0"/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=4194"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
@@ -96,7 +112,7 @@ sh NVIDIA-Linux-x86_64-384.145.run --silent
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID) 
 curl -s -L https://nvidia.github.io/nvidia-container-runtime/$distribution/nvidia-container-runtime.repo | \
   sudo tee /etc/yum.repos.d/nvidia-container-runtime.repo
-curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | \
+curl -s -L https://nvidia.github.io/libnvidia-container/$DIST/libnvidia-container.repo | \
   sudo tee /etc/yum.repos.d/libnvidia-container.repo
 curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.repo | \
   sudo tee /etc/yum.repos.d/nvidia-docker.repo
@@ -105,49 +121,13 @@ yum install nvidia-docker2-2.0.3-1.docker18.03* \
     nvidia-container-runtime-2.0.0-1.docker18.03* -y
 
 
-# create a script that will parse and run user data every start up time
-CUSTOM_USER_ACTIONS_SCRIPT="/usr/local/user-data-execute"
-cat <<'EOF' >$CUSTOM_USER_ACTIONS_SCRIPT
-#!/bin/bash
+sed -i 's|Provisioning.DecodeCustomData=n|Provisioning.DecodeCustomData=y|g' /etc/waagent.conf
+sed -i 's|Provisioning.ExecuteCustomData=n|Provisioning.ExecuteCustomData=y|g' /etc/waagent.conf
 
-exec > /var/log/user_data_rc.log 2>&1
+# Upgrade to the latest mainline kernel (4.17+)
+rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org && \
+rpm -Uvh http://www.elrepo.org/elrepo-release-7.0-4.el7.elrepo.noarch.rpm && \
+yum --enablerepo=elrepo-kernel install kernel-ml -y && \
+sed -i '/GRUB_DEFAULT=/c\GRUB_DEFAULT=0' /etc/default/grub && \
+grub2-mkconfig -o /boot/grub2/grub.cfg
 
-rdom () { local IFS=\> ; read -d \< E C ;}
-
-custom_data_file=/var/lib/waagent/CustomData
-waagent_file=/var/lib/waagent/ovf-env.xml
-
-wait_attempts=120
-while [ "$wait_attempts" -ne 0 ]; do
-  if [ -f "$custom_data_file" ]; then
-    echo "Custom data file found at $custom_data_file"
-    cat /var/lib/waagent/CustomData | base64 --decode | /bin/bash
-    echo "$custom_data_file executed"
-    exit 0
-  fi
-  if [ -f "$waagent_file" ]; then
-    echo "Custom data file found at $waagent_file"
-    while rdom; do
-      if [[ $E = *CustomData* ]]; then
-          echo $C | base64 --decode | /bin/bash
-          echo "$waagent_file executed"
-          exit 0
-      fi
-    done < $waagent_file
-
-    echo "$waagent_file WAS NOT executed, as <CustomData> tag was not found. Will proceed with waiting"
-  fi
-  wait_attempts=$((wait_attempts-1))
-  sleep 1
-done
-
-echo "None of the Custom Data files was found: $custom_data_file , $waagent_file in the $wait_attempts seconds"
-EOF
-
-chmod +x $CUSTOM_USER_ACTIONS_SCRIPT
-
-echo "bash $CUSTOM_USER_ACTIONS_SCRIPT" >> /etc/rc.d/rc.local
-chmod +x /etc/rc.d/rc.local
-
-# delete CustomData from the image
-rm -f /var/lib/waagent/CustomData

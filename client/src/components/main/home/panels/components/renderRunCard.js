@@ -22,6 +22,7 @@ import parseRunServiceUrl from '../../../../../utils/parseRunServiceUrl';
 import evaluateRunDuration from '../../../../../utils/evaluateRunDuration';
 import {getRunSpotTypeName} from '../../../../special/spot-instance-names';
 import AWSRegionTag from '../../../../special/AWSRegionTag';
+import JobEstimatedPriceInfo from '../../../../special/job-estimated-price-info';
 import styles from './CardsPanel.css';
 import RunTags from '../../../../runs/run-tags';
 
@@ -121,9 +122,9 @@ function renderEstimatedPrice (run) {
   const diff = evaluateRunDuration(run) * run.pricePerHour;
   const price = (Math.ceil(diff * 100.0) / 100.0) * (run.nodeCount ? (run.nodeCount + 1) : 1);
   return (
-    <span>
+    <JobEstimatedPriceInfo>
       , estimated price: <b>{price.toFixed(2)}$</b>
-    </span>
+    </JobEstimatedPriceInfo>
   );
 }
 

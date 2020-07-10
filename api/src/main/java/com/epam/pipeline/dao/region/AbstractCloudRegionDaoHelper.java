@@ -18,6 +18,7 @@ package com.epam.pipeline.dao.region;
 
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
+import com.epam.pipeline.entity.region.MountStorageRule;
 import lombok.SneakyThrows;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 
@@ -40,6 +41,7 @@ abstract class AbstractCloudRegionDaoHelper<R extends AbstractCloudRegion, C ext
         params.addValue(CloudRegionParameters.OWNER.name(), region.getOwner());
         params.addValue(CloudRegionParameters.CREATED_DATE.name(), region.getCreatedDate());
         params.addValue(CloudRegionParameters.CLOUD_PROVIDER.name(), region.getProvider().name());
+        params.addValue(CloudRegionParameters.MOUNT_STORAGE_RULE.name(), region.getMountStorageRule().name());
         params.addValues(getProviderParameters(region, credentials).getValues());
         return withFilledMissingValues(params);
     }
@@ -55,12 +57,14 @@ abstract class AbstractCloudRegionDaoHelper<R extends AbstractCloudRegion, C ext
     }
 
     @SneakyThrows
-    void fillCommonCloudRegionFields(final R azureRegion, final ResultSet rs) {
-        azureRegion.setId(rs.getLong(CloudRegionParameters.REGION_ID.name()));
-        azureRegion.setRegionCode(rs.getString(CloudRegionParameters.REGION_NAME.name()));
-        azureRegion.setName(rs.getString(CloudRegionParameters.NAME.name()));
-        azureRegion.setDefault(rs.getBoolean(CloudRegionParameters.IS_DEFAULT.name()));
-        azureRegion.setOwner(rs.getString(CloudRegionParameters.OWNER.name()));
-        azureRegion.setCreatedDate(new Date(rs.getTimestamp(CloudRegionParameters.CREATED_DATE.name()).getTime()));
+    void fillCommonCloudRegionFields(final R region, final ResultSet rs) {
+        region.setId(rs.getLong(CloudRegionParameters.REGION_ID.name()));
+        region.setRegionCode(rs.getString(CloudRegionParameters.REGION_NAME.name()));
+        region.setName(rs.getString(CloudRegionParameters.NAME.name()));
+        region.setDefault(rs.getBoolean(CloudRegionParameters.IS_DEFAULT.name()));
+        region.setOwner(rs.getString(CloudRegionParameters.OWNER.name()));
+        region.setCreatedDate(new Date(rs.getTimestamp(CloudRegionParameters.CREATED_DATE.name()).getTime()));
+        region.setMountStorageRule(MountStorageRule.valueOf(
+                rs.getString(CloudRegionParameters.MOUNT_STORAGE_RULE.name())));
     }
 }

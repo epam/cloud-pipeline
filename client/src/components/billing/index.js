@@ -15,12 +15,16 @@
  */
 
 import React from 'react';
+import {inject, observer} from 'mobx-react';
 // import {Menu} from 'antd';
 // import Quotas from './quotas';
 import * as Reports from './reports';
 import styles from './billing.css';
 
-function billing ({children, location, router}) {
+function billing ({children, location, router, preferences}) {
+  if (!preferences || !preferences.loaded || !preferences.billingEnabled) {
+    return null;
+  }
   // const {pathname = ''} = location;
   // const [, active] = pathname.toLowerCase().split('/').filter(Boolean);
   // const onClick = ({key}) => {
@@ -58,4 +62,4 @@ export {
   // Quotas as BillingQuotas,
   Reports as BillingReports
 };
-export default billing;
+export default inject('preferences')(observer(billing));

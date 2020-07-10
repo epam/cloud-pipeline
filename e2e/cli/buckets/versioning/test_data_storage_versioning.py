@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -183,7 +183,7 @@ class TestDataStorageVersioning(object):
         destination_1 = 'cp://{}/{}/{}'.format(self.bucket, self.test_folder_1, self.test_file_1)
         try:
             pipe_storage_cp(os.path.abspath(self.test_file_1), destination_1)
-            pipe_storage_rm(destination_1, recursive=True)
+            pipe_storage_rm('cp://{}/{}'.format(self.bucket, self.test_folder_1), recursive=True)
             actual_output = get_pipe_listing(self.path_to_bucket)
             assert len(actual_output) == 0
             actual_output = get_pipe_listing(self.path_to_bucket, versioning=True)
@@ -195,7 +195,8 @@ class TestDataStorageVersioning(object):
                 f('{}/{}'.format(self.test_folder_1, self.test_file_1), 10, added=True)
             ]
             compare_listing(actual_output, expected_output, 2)
-            pipe_storage_restore('cp://{}/{}'.format(self.bucket, self.test_folder_1), expected_status=0)
+            pipe_storage_restore('cp://{}/{}'.format(self.bucket, self.test_folder_1), expected_status=0,
+                                 recursive=True)
             actual_output = get_pipe_listing(self.path_to_bucket)
             assert len(actual_output) == 1 and self.test_folder_1 in actual_output[0].name
             actual_output = assert_and_filter_first_versioned_listing_line(

@@ -15,16 +15,18 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {Table} from 'antd';
+import {Pagination, Radio, Table} from 'antd';
 import {
   BarChart,
   GroupedBarChart,
   BillingTable,
+  PieChart,
   Summary
 } from './charts';
 import {Period, getPeriod} from './periods';
-import Filters from './filters';
+import Filters, {RUNNER_SEPARATOR} from './filters';
 import {
   GetBillingData,
   GetGroupedBillingCenters,
@@ -32,42 +34,122 @@ import {
   GetGroupedResourcesWithPrevious
 } from '../../../models/billing';
 import * as navigation from './navigation';
+import Discounts, {discounts} from './discounts';
 import Export, {ExportComposers} from './export';
-import {costTickFormatter} from './utilities';
+import {
+  costTickFormatter,
+  getUserDisplayInfo,
+  DisplayUser,
+  ResizableContainer
+} from './utilities';
+import {GeneralReportLayout, Layout} from './layout';
 import styles from './reports.css';
 
 function injection (stores, props) {
   const {location} = props;
   const {
-    user,
-    group,
+    user: userQ,
+    group: groupQ,
     period = Period.month,
     range
   } = location.query;
+  const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
+  const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
   const periodInfo = getPeriod(period, range);
+  const prevPeriodInfo = getPeriod(period, periodInfo.before);
+  const prevPrevPeriodInfo = getPeriod(period, prevPeriodInfo.before);
   const filters = {
     group,
     user,
     ...periodInfo
   };
-  const billingCentersRequest = new GetGroupedBillingCentersWithPrevious(filters, true);
-  billingCentersRequest.fetch();
-  let billingCentersTableRequest;
+  const billingCentersStorageRequest = new GetGroupedBillingCentersWithPrevious(
+    {...filters, resourceType: 'STORAGE'}
+  );
+  billingCentersStorageRequest.fetch();
+  const billingCentersComputeRequest = new GetGroupedBillingCentersWithPrevious(
+    {...filters, resourceType: 'COMPUTE'}
+  );
+  billingCentersComputeRequest.fetch();
+  let billingCentersComputeTableRequest;
+  let billingCentersStorageTableRequest;
   if (group) {
-    billingCentersTableRequest = new GetGroupedBillingCenters(filters, true);
-    billingCentersTableRequest.fetch();
+    billingCentersComputeTableRequest = new GetGroupedBillingCenters(
+      {...filters, resourceType: 'COMPUTE'}
+    );
+    billingCentersComputeTableRequest.fetch();
+    billingCentersStorageTableRequest = new GetGroupedBillingCenters(
+      {...filters, resourceType: 'STORAGE'}
+    );
+    billingCentersStorageTableRequest.fetch();
   }
+  const export1ComputeCsvRequest = new GetGroupedBillingCenters(
+    {...periodInfo, resourceType: 'COMPUTE'},
+    false
+  );
+  const export2ComputeCsvRequest = new GetGroupedBillingCenters(
+    {...prevPeriodInfo, resourceType: 'COMPUTE'},
+    false
+  );
+  const export3ComputeCsvRequest = new GetGroupedBillingCenters(
+    {...prevPrevPeriodInfo, resourceType: 'COMPUTE'},
+    false
+  );
+  const export1StorageCsvRequest = new GetGroupedBillingCenters(
+    {...periodInfo, resourceType: 'STORAGE'},
+    false
+  );
+  const export2StorageCsvRequest = new GetGroupedBillingCenters(
+    {...prevPeriodInfo, resourceType: 'STORAGE'},
+    false
+  );
+  const export3StorageCsvRequest = new GetGroupedBillingCenters(
+    {...prevPrevPeriodInfo, resourceType: 'STORAGE'},
+    false
+  );
+  export1ComputeCsvRequest.fetch();
+  export2ComputeCsvRequest.fetch();
+  export3ComputeCsvRequest.fetch();
+  export1StorageCsvRequest.fetch();
+  export2StorageCsvRequest.fetch();
+  export3StorageCsvRequest.fetch();
   const resources = new GetGroupedResourcesWithPrevious(filters);
   resources.fetch();
-  const summary = new GetBillingData(filters);
-  summary.fetch();
+  const summaryCompute = new GetBillingData(
+    {
+      ...filters,
+      filterBy: GetBillingData.FILTER_BY.compute
+    }
+  );
+  summaryCompute.fetch();
+  const summaryStorages = new GetBillingData(
+    {
+      ...filters,
+      filterBy: GetBillingData.FILTER_BY.storages
+    }
+  );
+  summaryStorages.fetch();
   return {
     user,
     group,
-    summary,
-    billingCentersRequest,
-    billingCentersTableRequest,
-    resources
+    summaryCompute,
+    summaryStorages,
+    billingCentersComputeRequest,
+    billingCentersStorageRequest,
+    billingCentersComputeTableRequest,
+    billingCentersStorageTableRequest,
+    resources,
+    export1ComputeCsvRequest,
+    export1StorageCsvRequest,
+    exportCsvRequest: [
+      period === Period.custom
+        ? undefined
+        : [export3ComputeCsvRequest, export3StorageCsvRequest],
+      period === Period.custom
+        ? undefined
+        : [export2ComputeCsvRequest, export2StorageCsvRequest],
+      [export1ComputeCsvRequest, export1StorageCsvRequest]
+    ].filter(Boolean)
   };
 }
 
@@ -78,98 +160,355 @@ function toValue (value) {
   return null;
 }
 
-function GeneralDataBlock ({children, style}) {
-  return (
-    <div className={styles.generalChartsContainer}>
-      <div style={style}>
-        {children}
+const BillingCentersDisplayModes = {
+  bar: 'bar',
+  pie: 'chart'
+};
+
+class BillingCenters extends React.Component {
+  state = {
+    mode: BillingCentersDisplayModes.bar
+  };
+
+  onChangeMode = (e) => {
+    this.setState({mode: e.target.value});
+  };
+
+  render () {
+    const {
+      request,
+      discounts: discountsFn,
+      onSelect,
+      height,
+      title
+    } = this.props;
+    const {mode} = this.state;
+    return (
+      <div>
+        <Radio.Group
+          value={mode}
+          onChange={this.onChangeMode}
+          style={{display: 'flex', justifyContent: 'center', marginTop: 5}}
+          size="small"
+        >
+          <Radio.Button
+            key={BillingCentersDisplayModes.bar}
+            value={BillingCentersDisplayModes.bar}
+          >
+            Bar chart
+          </Radio.Button>
+          <Radio.Button
+            key={BillingCentersDisplayModes.pie}
+            value={BillingCentersDisplayModes.pie}
+          >
+            Pie chart
+          </Radio.Button>
+        </Radio.Group>
+        {
+          mode === BillingCentersDisplayModes.bar && (
+            <BarChart
+              request={request}
+              discounts={discountsFn}
+              title={title}
+              onSelect={onSelect}
+              style={height ? {height: height - 27} : {}}
+            />
+          )
+        }
+        {
+          mode === BillingCentersDisplayModes.pie && (
+            <PieChart
+              request={request}
+              discounts={discountsFn}
+              title={title}
+              onSelect={onSelect}
+              style={height ? {height: height - 27} : {}}
+            />
+          )
+        }
       </div>
-    </div>
-  );
+    );
+  }
 }
+
+BillingCenters.propTypes = {
+  request: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  discounts: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  onSelect: PropTypes.func,
+  title: PropTypes.node,
+  height: PropTypes.number
+};
 
 function UserReport ({
   resources,
-  summary,
-  filters
+  summaryCompute,
+  summaryStorages,
+  filters,
+  exportCsvRequest
 }) {
   const onResourcesSelect = navigation.wrapNavigation(
     navigation.resourcesNavigation,
     filters
   );
-  const composers = [
+  const composers = (discounts) => [
     {
-      composer: ExportComposers.summaryComposer,
-      options: [summary]
-    },
-    {
-      composer: ExportComposers.resourcesComposer,
-      options: [resources]
+      composer: ExportComposers.billingCentersComposer,
+      options: [exportCsvRequest, discounts]
     }
+    // {
+    //   composer: ExportComposers.summaryComposer,
+    //   options: [summary]
+    // },
+    // {
+    //   composer: ExportComposers.resourcesComposer,
+    //   options: [resources]
+    // }
   ];
   return (
-    <Export.Consumer
-      className={styles.chartsContainer}
-      composers={composers}
-    >
-      <GeneralDataBlock>
-        <BillingTable summary={summary} />
-        <Summary
-          summary={summary}
-          title="Summary"
-          style={{flex: 1, height: 500}}
-        />
-      </GeneralDataBlock>
-      <GeneralDataBlock>
-        <GroupedBarChart
-          request={resources}
-          title="Resources"
-          onSelect={onResourcesSelect}
-          height={400}
-        />
-      </GeneralDataBlock>
-    </Export.Consumer>
+    <Discounts.Consumer>
+      {
+        (computeDiscounts, storageDiscounts, computeDiscountValue, storageDiscountValue) => (
+          <Export.Consumer
+            className={styles.chartsContainer}
+            composers={
+              composers({
+                compute: computeDiscounts,
+                storage: storageDiscounts,
+                computeValue: computeDiscountValue,
+                storageValue: storageDiscountValue
+              })
+            }
+          >
+            <Layout
+              layout={GeneralReportLayout.Layout}
+              gridStyles={GeneralReportLayout.GridStyles}
+              staticPanels={[GeneralReportLayout.Panels.runners]}
+            >
+              <div key={GeneralReportLayout.Panels.summary}>
+                <Layout.Panel
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: 0
+                  }}
+                >
+                  <BillingTable
+                    compute={summaryCompute}
+                    storages={summaryStorages}
+                    computeDiscounts={computeDiscounts}
+                    storagesDiscounts={storageDiscounts}
+                  />
+                  <ResizableContainer style={{flex: 1}}>
+                    {
+                      ({width, height}) => (
+                        <Summary
+                          compute={summaryCompute}
+                          storages={summaryStorages}
+                          computeDiscounts={computeDiscounts}
+                          storagesDiscounts={storageDiscounts}
+                          title="Summary"
+                          style={{width, height}}
+                        />
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+              <div key={GeneralReportLayout.Panels.resources}>
+                <Layout.Panel>
+                  <ResizableContainer style={{width: '100%', height: '100%'}}>
+                    {
+                      ({height}) => (
+                        <GroupedBarChart
+                          request={resources}
+                          discountsMapper={{
+                            'Storage': storageDiscounts,
+                            'Compute instances': computeDiscounts
+                          }}
+                          title="Resources"
+                          onSelect={onResourcesSelect}
+                          height={height}
+                        />
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+              <div key={GeneralReportLayout.Panels.runners}>
+                {'\u00A0'}
+              </div>
+            </Layout>
+          </Export.Consumer>
+        )
+      }
+    </Discounts.Consumer>
   );
 }
 
+@observer
+class BillingCentersTable extends React.Component {
+  state = {
+    current: 1
+  };
+
+  onChangePage = (page) => {
+    this.setState({current: page});
+  }
+
+  render () {
+    const {
+      columns: tableColumns,
+      requests,
+      discounts: discountsFn,
+      onUserSelect,
+      height
+    } = this.props;
+    const {current} = this.state;
+    const pageSize = 6;
+    const pending = requests.filter(r => r.pending).length > 0;
+    const loaded = requests.filter(r => !r.loaded).length === 0;
+    const rawData = loaded ? requests.map(r => r.value || {}) : {};
+    const data = discounts.applyGroupedDataDiscounts(rawData, discountsFn);
+    const tableData = loaded ? Object.values(data) : [];
+    tableData.sort((a, b) => (b.spendings || 0) - (a.spendings || 0));
+    const slicedData = tableData.slice((current - 1) * pageSize, current * pageSize);
+    const paginationEnabled = tableData.length > pageSize;
+    return (
+      <div>
+        <div
+          style={{
+            position: 'relative',
+            overflow: 'auto',
+            maxHeight: height - (paginationEnabled ? 30 : 0),
+            padding: 5
+          }}
+        >
+          <Table
+            rowKey={(record) => `user-item_${record.name}`}
+            rowClassName={() => styles.usersTableRow}
+            dataSource={slicedData}
+            columns={tableColumns}
+            loading={pending}
+            pagination={false}
+            onRowClick={record => onUserSelect({key: record.name})}
+            size="small"
+          />
+        </div>
+        {
+          paginationEnabled && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                height: 30
+              }}
+            >
+              <Pagination
+                current={current}
+                pageSize={pageSize}
+                total={tableData.length}
+                onChange={this.onChangePage}
+                size="small"
+              />
+            </div>
+          )
+        }
+      </div>
+    );
+  }
+}
+
+BillingCentersTable.propTypes = {
+  requests: PropTypes.array,
+  discounts: PropTypes.array,
+  onUserSelect: PropTypes.func,
+  columns: PropTypes.array,
+  height: PropTypes.number
+};
+
+class UsersChartComponent extends React.Component {
+  componentDidMount () {
+    const {users, preferences} = this.props;
+    (async () => {
+      await users.fetchIfNeededOrWait();
+      await preferences.fetchIfNeededOrWait();
+    })();
+  }
+
+  render () {
+    const {
+      request,
+      discounts,
+      title,
+      onSelect,
+      style,
+      users,
+      preferences
+    } = this.props;
+    return (
+      <BarChart
+        request={request}
+        discounts={discounts}
+        title={title}
+        onSelect={onSelect}
+        style={style}
+        itemNameFn={name => getUserDisplayInfo(name, users, preferences)}
+      />
+    );
+  }
+}
+
+const UsersChart = inject('users', 'preferences')(observer(UsersChartComponent));
+
 function GroupReport ({
   group,
-  billingCentersRequest,
-  billingCentersTableRequest,
+  billingCentersComputeRequest,
+  billingCentersStorageRequest,
+  billingCentersComputeTableRequest,
+  billingCentersStorageTableRequest,
   resources,
-  summary,
+  summaryCompute,
+  summaryStorages,
   filters,
-  users
+  exportCsvRequest
 }) {
-  const billingCenterName = group;
+  const billingCenterName = (group || []).join(' ');
   const title = `${billingCenterName} user's spendings`;
   const tableColumns = [{
     key: 'user',
     dataIndex: 'name',
-    title: 'User'
+    title: 'User',
+    render: user => (<DisplayUser userName={user} />),
+    className: styles.tableCell
   }, {
     key: 'runs-duration',
     dataIndex: 'runsDuration',
     title: 'Runs duration (hours)',
-    render: toValue
+    render: toValue,
+    className: styles.tableCell
   }, {
     key: 'runs-count',
     dataIndex: 'runsCount',
-    title: 'Runs count'
+    title: 'Runs count',
+    className: styles.tableCell
   }, {
     key: 'storage-usage',
     dataIndex: 'storageUsage',
     title: 'Storages usage (Gb)',
-    render: toValue
+    render: toValue,
+    className: styles.tableCell
   }, {
     key: 'spendings',
     dataIndex: 'spendings',
     title: 'Spendings',
-    render: costTickFormatter
+    render: costTickFormatter,
+    className: styles.tableCell
   }, {
     key: 'billingCenter',
     title: 'Billing center',
-    render: () => billingCenterName
+    render: () => billingCenterName,
+    className: styles.tableCell
   }];
   const onResourcesSelect = navigation.wrapNavigation(
     navigation.resourcesNavigation,
@@ -177,91 +516,147 @@ function GroupReport ({
   );
   const onUserSelect = navigation.wrapNavigation(
     navigation.usersNavigation,
-    filters,
-    users
+    filters
   );
-  const composers = [
+  const composers = (discounts) => [
     {
-      composer: ExportComposers.summaryComposer,
-      options: [summary]
-    },
-    {
-      composer: ExportComposers.resourcesComposer,
-      options: [resources]
-    },
-    {
-      composer: ExportComposers.defaultComposer,
-      options: [
-        billingCentersRequest,
-        {
-          runs_duration: 'runsDuration',
-          runs_count: 'runsCount',
-          billing_center: () => group
-        }
-      ]
+      composer: ExportComposers.billingCentersComposer,
+      options: [exportCsvRequest, discounts]
     }
+    // {
+    //   composer: ExportComposers.summaryComposer,
+    //   options: [summary]
+    // },
+    // {
+    //   composer: ExportComposers.resourcesComposer,
+    //   options: [resources]
+    // },
+    // {
+    //   composer: ExportComposers.defaultComposer,
+    //   options: [
+    //     billingCentersRequest,
+    //     {
+    //       runs_duration: 'runsDuration',
+    //       runs_count: 'runsCount',
+    //       billing_center: () => group
+    //     }
+    //   ]
+    // }
   ];
   return (
-    <Export.Consumer
-      className={styles.chartsContainer}
-      composers={composers}
-    >
-      <GeneralDataBlock>
-        <BillingTable summary={summary} />
-        <Summary
-          summary={summary}
-          title="Summary"
-          style={{flex: 1, height: 500}}
-        />
-      </GeneralDataBlock>
-      <div className={styles.chartsSubContainer}>
-        <GeneralDataBlock>
-          <GroupedBarChart
-            request={resources}
-            title="Resources"
-            onSelect={onResourcesSelect}
-            height={400}
-          />
-        </GeneralDataBlock>
-        <GeneralDataBlock>
-          <BarChart
-            request={billingCentersRequest}
-            title={title}
-            onSelect={onUserSelect}
-            style={{height: 250}}
-          />
-          <Table
-            rowKey={(record) => `user-item_${record.name}`}
-            rowClassName={() => styles.usersTableRow}
-            dataSource={
-              billingCentersTableRequest && billingCentersTableRequest.loaded
-                ? Object.values(billingCentersTableRequest.value)
-                : []
+    <Discounts.Consumer>
+      {
+        (computeDiscounts, storageDiscounts, computeDiscountValue, storageDiscountValue) => (
+          <Export.Consumer
+            className={styles.chartsContainer}
+            composers={
+              composers({
+                compute: computeDiscounts,
+                storage: storageDiscounts,
+                computeValue: computeDiscountValue,
+                storageValue: storageDiscountValue
+              })
             }
-            columns={tableColumns}
-            loading={billingCentersTableRequest.pending}
-            pagination={{
-              current: billingCentersTableRequest.pageNum + 1,
-              pageSize: billingCentersTableRequest.pageSize,
-              total: billingCentersTableRequest.totalPages * billingCentersTableRequest.pageSize,
-              onChange: async (page) => {
-                await billingCentersTableRequest.fetchPage(page - 1);
-              }
-            }}
-            onRowClick={record => onUserSelect({key: record.name})}
-            size="small"
-          />
-        </GeneralDataBlock>
-      </div>
-    </Export.Consumer>
+          >
+            <Layout
+              layout={GeneralReportLayout.Layout}
+              gridStyles={GeneralReportLayout.GridStyles}
+            >
+              <div key={GeneralReportLayout.Panels.summary}>
+                <Layout.Panel
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: 0
+                  }}
+                >
+                  <BillingTable
+                    compute={summaryCompute}
+                    storages={summaryStorages}
+                    computeDiscounts={computeDiscounts}
+                    storagesDiscounts={storageDiscounts}
+                  />
+                  <ResizableContainer style={{flex: 1}}>
+                    {
+                      ({width, height}) => (
+                        <Summary
+                          compute={summaryCompute}
+                          storages={summaryStorages}
+                          computeDiscounts={computeDiscounts}
+                          storagesDiscounts={storageDiscounts}
+                          title="Summary"
+                          style={{width, height}}
+                        />
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+              <div key={GeneralReportLayout.Panels.resources}>
+                <Layout.Panel>
+                  <ResizableContainer style={{width: '100%', height: '100%'}}>
+                    {
+                      ({height}) => (
+                        <GroupedBarChart
+                          request={resources}
+                          discountsMapper={{
+                            'Storage': storageDiscounts,
+                            'Compute instances': computeDiscounts
+                          }}
+                          title="Resources"
+                          onSelect={onResourcesSelect}
+                          height={height}
+                        />
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+              <div key={GeneralReportLayout.Panels.runners}>
+                <Layout.Panel>
+                  <ResizableContainer style={{width: '100%', height: '100%'}}>
+                    {
+                      ({height}) => (
+                        <div>
+                          <UsersChart
+                            request={[billingCentersComputeRequest, billingCentersStorageRequest]}
+                            discounts={[computeDiscounts, storageDiscounts]}
+                            title={title}
+                            onSelect={onUserSelect}
+                            style={{height: height / 2.0}}
+                          />
+                          <BillingCentersTable
+                            requests={[
+                              billingCentersComputeTableRequest,
+                              billingCentersStorageTableRequest
+                            ]}
+                            discounts={[computeDiscounts, storageDiscounts]}
+                            columns={tableColumns}
+                            onUserSelect={onUserSelect}
+                            height={height / 2.0}
+                          />
+                        </div>
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+            </Layout>
+          </Export.Consumer>
+        )
+      }
+    </Discounts.Consumer>
   );
 }
 
 function GeneralReport ({
-  billingCentersRequest,
+  billingCentersComputeRequest,
+  billingCentersStorageRequest,
   resources,
-  summary,
-  filters
+  summaryCompute,
+  summaryStorages,
+  filters,
+  exportCsvRequest
 }) {
   const onResourcesSelect = navigation.wrapNavigation(
     navigation.resourcesNavigation,
@@ -271,55 +666,121 @@ function GeneralReport ({
     navigation.billingCentersNavigation,
     filters
   );
-  const composers = [
+  const composers = (discounts) => [
     {
-      composer: ExportComposers.summaryComposer,
-      options: [summary]
-    },
-    {
-      composer: ExportComposers.resourcesComposer,
-      options: [resources]
-    },
-    {
-      composer: ExportComposers.defaultComposer,
-      options: [billingCentersRequest]
+      composer: ExportComposers.billingCentersComposer,
+      options: [exportCsvRequest, discounts]
     }
+    // {
+    //   composer: ExportComposers.summaryComposer,
+    //   options: [summary]
+    // },
+    // {
+    //   composer: ExportComposers.resourcesComposer,
+    //   options: [resources]
+    // },
+    // {
+    //   composer: ExportComposers.defaultComposer,
+    //   options: [billingCentersRequest]
+    // }
   ];
   return (
-    <Export.Consumer
-      className={styles.chartsContainer}
-      composers={composers}
-    >
-      <GeneralDataBlock>
-        <BillingTable summary={summary} />
-        <Summary
-          summary={summary}
-          title="Summary"
-          style={{flex: 1, height: 500}}
-        />
-      </GeneralDataBlock>
-      <div className={styles.chartsSubContainer}>
-        <GeneralDataBlock style={{
-          position: 'relative',
-          flex: 'unset'
-        }}>
-          <GroupedBarChart
-            request={resources}
-            onSelect={onResourcesSelect}
-            title="Resources"
-            height={400}
-          />
-        </GeneralDataBlock>
-        <GeneralDataBlock style={{flex: 'unset'}}>
-          <BarChart
-            request={billingCentersRequest}
-            title="Billing centers"
-            onSelect={onBillingCenterSelect}
-            style={{height: 400}}
-          />
-        </GeneralDataBlock>
-      </div>
-    </Export.Consumer>
+    <Discounts.Consumer>
+      {
+        (computeDiscounts, storageDiscounts, computeDiscountValue, storageDiscountValue) => (
+          <Export.Consumer
+            className={styles.chartsContainer}
+            composers={
+              composers({
+                compute: computeDiscounts,
+                storage: storageDiscounts,
+                computeValue: computeDiscountValue,
+                storageValue: storageDiscountValue
+              })
+            }
+          >
+            <Layout
+              layout={GeneralReportLayout.Layout}
+              gridStyles={GeneralReportLayout.GridStyles}
+            >
+              <div
+                key={GeneralReportLayout.Panels.summary}
+              >
+                <Layout.Panel
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: 0
+                  }}
+                >
+                  <BillingTable
+                    compute={summaryCompute}
+                    storages={summaryStorages}
+                    computeDiscounts={computeDiscounts}
+                    storagesDiscounts={storageDiscounts}
+                  />
+                  <ResizableContainer style={{flex: 1}}>
+                    {
+                      ({width, height}) => (
+                        <Summary
+                          compute={summaryCompute}
+                          storages={summaryStorages}
+                          computeDiscounts={computeDiscounts}
+                          storagesDiscounts={storageDiscounts}
+                          title="Summary"
+                          style={{width, height}}
+                        />
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+              <div
+                key={GeneralReportLayout.Panels.resources}
+              >
+                <Layout.Panel>
+                  <ResizableContainer style={{width: '100%', height: '100%'}}>
+                    {
+                      ({height}) => (
+                        <GroupedBarChart
+                          request={resources}
+                          discountsMapper={{
+                            'Storage': storageDiscounts,
+                            'Compute instances': computeDiscounts
+                          }}
+                          onSelect={onResourcesSelect}
+                          title="Resources"
+                          height={height}
+                        />
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+              <div
+                key={GeneralReportLayout.Panels.runners}
+              >
+                <Layout.Panel>
+                  <ResizableContainer style={{width: '100%', height: '100%'}}>
+                    {
+                      ({height}) => (
+                        <BillingCenters
+                          request={[billingCentersComputeRequest, billingCentersStorageRequest]}
+                          discounts={[computeDiscounts, storageDiscounts]}
+                          onSelect={onBillingCenterSelect}
+                          title="Billing centers"
+                          height={height}
+                        />
+                      )
+                    }
+                  </ResizableContainer>
+                </Layout.Panel>
+              </div>
+            </Layout>
+          </Export.Consumer>
+        )
+      }
+    </Discounts.Consumer>
   );
 }
 
@@ -328,13 +789,13 @@ function DefaultReport (props) {
   if (user) {
     return UserReport(props);
   }
-  if (group) {
+  if (group && group.length === 1) {
     return GroupReport(props);
   }
   return GeneralReport(props);
 }
 
-export default inject('billingCenters', 'users')(
+export default inject('billingCenters')(
   inject(injection)(
     Filters.attach(
       observer(DefaultReport)

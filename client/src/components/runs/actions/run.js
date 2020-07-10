@@ -36,6 +36,7 @@ import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/la
 import {LIMIT_MOUNTS_PARAMETER} from '../../pipelines/launch/form/LimitMountsInput';
 import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
+import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import awsRegions from '../../../models/cloudRegions/CloudRegions';
 import {
@@ -46,6 +47,7 @@ import {
   PermissionErrorsTitle
 } from './execution-allowed-check';
 import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
+import SensitiveBucketsWarning from './sensitive-buckets-warning';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => inject('spotInstanceTypes', 'onDemandInstanceTypes')(...opts);
@@ -331,6 +333,13 @@ export class RunConfirmation extends React.Component {
   static defaultProps = {
     onDemandSelectionAvailable: true
   };
+
+  @computed
+  get currentRegion () {
+    const [currentRegion] = (this.props.cloudRegions || [])
+      .filter(p => +p.id === +this.props.cloudRegionId);
+    return currentRegion;
+  }
 
   @computed
   get currentCloudProvider () {
@@ -728,11 +737,29 @@ export class RunConfirmation extends React.Component {
             )
             : undefined
         }
+        {
+          !this.currentRegion && (
+            <Alert
+              type="error"
+              style={{margin: 2}}
+              showIcon
+              message={
+                <div>
+                  <b>Cloud region not available.</b>
+                </div>
+              }
+            />
+          )
+        }
         <EstimatedDiskSizeWarning
           nodeCount={this.props.nodeCount}
           parameters={this.props.parameters}
           hddSize={this.props.hddSize}
           onDiskSizeChanged={this.props.onChangeHddSize}
+        />
+        <SensitiveBucketsWarning
+          parameters={this.props.parameters}
+          style={{margin: 2}}
         />
       </div>
     );
@@ -872,10 +899,10 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             message={
               this._estimatedPriceType.pending
                 ? <Row>Estimated price: <Icon type="loading" /></Row>
-                : <Row>Estimated price: <b>{
+                : <Row><JobEstimatedPriceInfo>Estimated price: <b>{
                 (Math.ceil(this._estimatedPriceType.value.pricePerHour * 100.0) / 100.0 * (this.props.nodeCount + 1))
                   .toFixed(2)
-                }$</b> per hour.</Row>
+                }$</b> per hour.</JobEstimatedPriceInfo></Row>
             } />
         }
       </div>

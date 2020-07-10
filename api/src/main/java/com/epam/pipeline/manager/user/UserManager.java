@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.GroupStatus;
@@ -35,6 +36,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.UserContext;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -56,6 +58,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class UserManager {
 
@@ -99,6 +102,7 @@ public class UserManager {
         user.setAttributes(attributes);
         user.setDefaultStorageId(defaultStorageId);
         storageValidator.validate(user);
+        log.info(messageHelper.getMessage(MessageConstants.INFO_CREATE_USER, userName));
         return userDao.createUser(user, userRoles);
     }
 
@@ -119,6 +123,17 @@ public class UserManager {
         PipelineUser pipelineUser = userDao.loadUserByName(name);
         Assert.notNull(pipelineUser, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, name));
         return new UserContext(pipelineUser);
+    }
+
+    /**
+     * Generates a JWT token for specified user
+     * @param userName the name of the user
+     * @param expiration token expiration time (seconds)
+     * @return generated token
+     */
+    public JwtRawToken issueToken(final String userName, final Long expiration) {
+        final UserContext userContext = loadUserContext(userName);
+        return authManager.issueToken(userContext, expiration);
     }
 
     public PipelineUser loadUserByName(String name) {
@@ -153,6 +168,7 @@ public class UserManager {
         PipelineUser userContext = loadUserById(id);
         userDao.deleteUserRoles(id);
         userDao.deleteUser(id);
+        log.info(messageHelper.getMessage(MessageConstants.INFO_DELETE_USER, userContext.getUserName(), id));
         return userContext;
     }
 
@@ -160,6 +176,8 @@ public class UserManager {
     public PipelineUser updateUser(Long id, List<Long> roles) {
         loadUserById(id);
         updateUserRoles(id, roles);
+        log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_ROLES,
+                id, roles.stream().map(Object::toString).collect(Collectors.joining(", "))));
         return loadUserById(id);
     }
 
@@ -175,6 +193,8 @@ public class UserManager {
         PipelineUser user = loadUserById(id);
         user.setDefaultStorageId(userVO.getDefaultStorageId());
         storageValidator.validate(user);
+        log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_DATASTORAGE,
+                id, userVO.getDefaultStorageId()));
         return userDao.updateUser(user);
     }
 
@@ -182,6 +202,7 @@ public class UserManager {
     public PipelineUser updateUserBlockingStatus(final Long id, final boolean blockStatus) {
         final PipelineUser user = loadUserById(id);
         user.setBlocked(blockStatus);
+        log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_BLOCK_STATUS, id, blockStatus));
         return userDao.updateUser(user);
     }
 
@@ -223,8 +244,10 @@ public class UserManager {
             userDao.updateUser(user);
         }
         updateUserRoles(id, roles);
+        log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_SAML_INFO, user.getUserName(), id));
         return loadUserById(id);
     }
+
 
     public PipelineUser loadUserByNameOrId(String identifier) {
         PipelineUser user;

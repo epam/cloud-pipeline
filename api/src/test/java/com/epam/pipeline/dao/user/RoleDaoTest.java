@@ -41,7 +41,7 @@ import static org.junit.Assert.*;
 @Transactional
 public class RoleDaoTest extends AbstractSpringTest {
 
-    private static final int EXPECTED_DEFAULT_ROLES_NUMBER = 8;
+    private static final int EXPECTED_DEFAULT_ROLES_NUMBER = 9;
     private static final String TEST_USER1 = "test_user1";
     private static final String TEST_ROLE = "ROLE_TEST";
     private static final String TEST_ROLE_UPDATED = "NEW_ROLE";

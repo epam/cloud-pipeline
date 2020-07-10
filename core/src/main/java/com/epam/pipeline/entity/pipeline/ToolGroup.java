@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,5 +88,16 @@ public class ToolGroup extends AbstractHierarchicalEntity {
             return parent;
         }
         return registryId == null ? null : new DockerRegistry(registryId);
+    }
+
+    @Override
+    public AbstractHierarchicalEntity copyView() {
+        final ToolGroup result = new ToolGroup(this.getId());
+        result.setRegistryId(this.getRegistryId());
+        result.setName(this.getName());
+        result.setDescription(this.getDescription());
+        result.setPrivateGroup(this.isPrivateGroup());
+        result.setParent(this.getParent());
+        return result;
     }
 }

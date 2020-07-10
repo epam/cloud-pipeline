@@ -16,6 +16,7 @@
 
 _MASTER_RUN_ID="$1"
 _CHUNK_DIR="${2:-/mnt/chunks}"
+_METADATA_DIR="${3:-/var/lib/mfs}"
 FS_SETUP_TASK="InitializeSharedFS"
 
 pipe_log_info "Started cluster LFS chunk server setup" "$FS_SETUP_TASK"
@@ -27,6 +28,11 @@ pipe_log_info "Started cluster LFS chunk server setup" "$FS_SETUP_TASK"
 if [ -z "$_CHUNK_DIR" ]
 then
     pipe_log_fail "Chunk data directory is not defined, exiting" "$FS_SETUP_TASK"
+    exit 1
+fi
+if [ -z "$_METADATA_DIR" ]
+then
+    pipe_log_fail "Chunk metadata directory is not defined, exiting" "$FS_SETUP_TASK"
     exit 1
 fi
 if [ -z "$_MASTER_RUN_ID" ]
@@ -106,6 +112,9 @@ echo "$_CHUNK_DIR" >> /etc/mfs/mfshdd.cfg
 echo 'PERFORM_FSYNC = 0' >> /etc/mfs/mfschunkserver.cfg
 sed -i '/# LABEL = _/c\LABEL = CLOUD_PIPELINE' /etc/mfs/mfschunkserver.cfg
 
+mkdir -p $_METADATA_DIR
+chown -R mfs. $_METADATA_DIR
+
 if ! grep "lizardfs-master" /etc/hosts -q; then
     echo "$MASTER_IP" lizardfs-master >> /etc/hosts
 fi
@@ -114,12 +123,7 @@ fi
 # Start LFS Chunk server
 ######################################################
 
-if [[ "$IS_RPM_BASED" = 0 ]]; then
-    nohup mfschunkserver -d start > /var/log/mfschunkserver.out 2>&1 &
-else
-    sed -i "s/fals/tru/g" /etc/default/lizardfs-chunkserver
-    service lizardfs-chunkserver start
-fi
+nohup mfschunkserver -d start > /var/log/mfschunkserver.out 2>&1 &
 
 if [ $? -ne 0 ]
 then

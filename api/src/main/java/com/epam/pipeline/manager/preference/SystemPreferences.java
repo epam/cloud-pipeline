@@ -102,8 +102,9 @@ public class SystemPreferences {
     private static final String SEARCH_GROUP = "Search";
     private static final String GRID_ENGINE_AUTOSCALING_GROUP = "Grid engine autoscaling";
     private static final String GCP_GROUP = "GCP";
+    private static final String BILLING_GROUP = "Billing Reports";
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
-            "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc";
+            "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
 
     // COMMIT_GROUP
     public static final StringPreference COMMIT_DEPLOY_KEY = new StringPreference("commit.deploy.key", null,
@@ -116,6 +117,8 @@ public class SystemPreferences {
             "/root/pre_commit.sh", COMMIT_GROUP, PreferenceValidators.isNotBlank);
     public static final StringPreference POST_COMMIT_COMMAND_PATH = new StringPreference("commit.post.command.path",
             "/root/post_commit.sh", COMMIT_GROUP, PreferenceValidators.isNotBlank);
+    public static final IntPreference PAUSE_TIMEOUT = new IntPreference("pause.timeout", 24 * 60 * 60,
+            COMMIT_GROUP, isGreaterThan(0));
 
     // DATA_STORAGE_GROUP
     public static final IntPreference DATA_STORAGE_MAX_DOWNLOAD_SIZE = new IntPreference(
@@ -189,6 +192,9 @@ public class SystemPreferences {
     public static final StringPreference DOCKER_SECURITY_TOOL_SCAN_CLAIR_ROOT_URL = new StringPreference(
             "security.tools.scan.clair.root.url", null, DOCKER_SECURITY_GROUP,
             PreferenceValidators.isValidUrlOrBlank);
+    public static final StringPreference DOCKER_SECURITY_TOOL_OS = new StringPreference(
+            "security.tools.os", "", DOCKER_SECURITY_GROUP,
+            PreferenceValidators.isEmptyOrValidBatchOfOSes);
     public static final StringPreference DOCKER_COMP_SCAN_ROOT_URL = new StringPreference(
             "security.tools.docker.comp.scan.root.url", null, DOCKER_SECURITY_GROUP,
             PreferenceValidators.isValidUrlOrBlank);
@@ -283,6 +289,23 @@ public class SystemPreferences {
                                                                                            false, CLUSTER_GROUP, pass);
     public static final IntPreference CLUSTER_INSTANCE_HDD = new IntPreference("cluster.instance.hdd", 10,
                                                                                CLUSTER_GROUP, isGreaterThan(0));
+    public static final BooleanPreference CLUSTER_INSTANCE_HDD_SCALE_ENABLED = new BooleanPreference(
+            "cluster.instance.hdd.scale.enabled", false, CLUSTER_GROUP, pass);
+    public static final IntPreference CLUSTER_INSTANCE_HDD_SCALE_MONITORING_DELAY = new IntPreference(
+            "cluster.instance.hdd.scale.monitoring.delay", 10, CLUSTER_GROUP, isGreaterThan(0));
+    public static final DoublePreference CLUSTER_INSTANCE_HDD_SCALE_THRESHOLD_RATIO = new DoublePreference(
+            "cluster.instance.hdd.scale.threshold.ratio", 0.75, CLUSTER_GROUP,
+            isGreaterThan(0.0f).and(isLessThan(1.0f)));
+    public static final DoublePreference CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO = new DoublePreference(
+            "cluster.instance.hdd.scale.delta.ratio", 0.5, CLUSTER_GROUP, isGreaterThan(0.0f));
+    public static final IntPreference CLUSTER_INSTANCE_HDD_SCALE_MAX_DEVICES = new IntPreference(
+            "cluster.instance.hdd.scale.max.devices", 40, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_INSTANCE_HDD_SCALE_MAX_SIZE = new IntPreference(
+            "cluster.instance.hdd.scale.max.size", 16384, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_INSTANCE_HDD_SCALE_DISK_MIN_SIZE = new IntPreference(
+            "cluster.instance.hdd.scale.disk.min.size", 10, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_INSTANCE_HDD_SCALE_DISK_MAX_SIZE = new IntPreference(
+            "cluster.instance.hdd.scale.disk.max.size", 16384, CLUSTER_GROUP, isGreaterThan(0));
     public static final StringPreference CLUSTER_INSTANCE_DEVICE_PREFIX = new StringPreference(
             "cluster.instance.device.prefix", "/dev/sd", CLUSTER_GROUP, PreferenceValidators.isNotBlank);
     public static final StringPreference CLUSTER_INSTANCE_DEVICE_SUFFIXES = new StringPreference(
@@ -414,6 +437,10 @@ public class SystemPreferences {
             "ui.pipe.drive.mapping", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
     public static final StringPreference UI_SUPPORT_TEMPLATE = new StringPreference("ui.support.template",
+            "", UI_GROUP, pass);
+    public static final BooleanPreference UI_LIBRARY_DRAG = new BooleanPreference("ui.library.drag",
+            true, UI_GROUP, pass);
+    public static final StringPreference UI_LAUNCH_TEMPLATE = new StringPreference("ui.launch.command.template",
             "", UI_GROUP, pass);
 
     // BASE_URLS_GROUP
@@ -590,6 +617,12 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, GCPResourceMapping>> GCP_SKU_MAPPING = new ObjectPreference<>(
             "gcp.sku.mapping", null, new TypeReference<Map<String, GCPResourceMapping>>() {}, GCP_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, GCPResourceMapping>>() {}));
+
+    // Billing Reports
+    public static final StringPreference BILLING_USER_NAME_ATTRIBUTE = new StringPreference(
+            "billing.reports.user.name.attribute", null, BILLING_GROUP, pass);
+    public static final BooleanPreference BILLING_REPORTS_ENABLED = new BooleanPreference(
+            "billing.reports.enabled", true, BILLING_GROUP, pass);
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

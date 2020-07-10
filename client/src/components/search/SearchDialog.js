@@ -161,8 +161,8 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
           this.closeDialog();
           break;
         case SearchItemTypes.configuration:
-          const [id, configName] = item.id.split('-');
-          this.props.router.push(`/configuration/${id}/${configName}`);
+          const [id, ...configName] = item.id.split('-');
+          this.props.router.push(`/configuration/${id}/${configName.join('-')}`);
           this.closeDialog();
           break;
         case SearchItemTypes.metadataEntity:
@@ -465,7 +465,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             }
             return `${resultItem.name} - ${resultItem.description}`;
           }
-          return resultItem.name;
+          return resultItem.name || `Run ${resultItem.elasticId}`;
         }
         default: return resultItem.name;
       }

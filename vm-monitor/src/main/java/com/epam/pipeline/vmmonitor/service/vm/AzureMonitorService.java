@@ -22,15 +22,18 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.vmmonitor.model.vm.VMTag;
 import com.epam.pipeline.vmmonitor.model.vm.VirtualMachine;
 import com.microsoft.azure.PagedList;
+import com.microsoft.azure.credentials.AzureCliCredentials;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.compute.PowerState;
 import com.microsoft.azure.management.resources.GenericResource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -41,6 +44,7 @@ public class AzureMonitorService implements VMMonitorService<AzureRegion> {
 
     private static final String VIRTUAL_MACHINES = "virtualMachines";
     private static final String SUCCEEDED_STATE = "Succeeded";
+    private static final String CP_CLOUD_CREDENTIALS_LOCATION = "/root/.cloud";
 
     private final VMTag instanceTag;
 
@@ -80,13 +84,29 @@ public class AzureMonitorService implements VMMonitorService<AzureRegion> {
 
     private Azure buildClient(final String authFile) {
         try {
-            final File credFile = new File(authFile);
-            return Azure.configure()
-                    .authenticate(credFile)
-                    .withDefaultSubscription();
+            if (!StringUtils.isEmpty(authFile)) {
+                final File credFile = new File(authFile);
+                return Azure.configure()
+                        .authenticate(credFile)
+                        .withDefaultSubscription();
+            } else {
+                return Azure.configure()
+                        .authenticate(getAzureCliCredentials())
+                        .withDefaultSubscription();
+            }
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new IllegalArgumentException(e);
         }
     }
+
+    private static AzureCliCredentials getAzureCliCredentials() throws IOException {
+        File customAzureProfile = Paths.get(CP_CLOUD_CREDENTIALS_LOCATION, "azureProfile.json").toFile();
+        File customAccessToken = Paths.get(CP_CLOUD_CREDENTIALS_LOCATION, "accessTokens.json").toFile();
+        if (customAzureProfile.exists() && customAccessToken.exists()) {
+            return AzureCliCredentials.create(customAzureProfile, customAccessToken);
+        }
+        return AzureCliCredentials.create();
+    }
+
 }

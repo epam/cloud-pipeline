@@ -14,13 +14,14 @@
 
 # CP_S3_FUSE_STAT_CACHE (default: 1m0s)
 # CP_S3_FUSE_TYPE_CACHE (default: 1m0s)
+# CP_S3_FUSE_ENSURE_DISKFREE (default: None)
 # CP_S3_FUSE_TYPE: goofys/s3fs (default: goofys)
 
 import argparse
 import os
 from abc import ABCMeta, abstractmethod
 
-from pipeline import PipelineAPI, Logger, common
+from pipeline import PipelineAPI, Logger, common, DataStorageWithShareMount
 
 READ_MASK = 1
 WRITE_MASK = 1 << 1
@@ -60,6 +61,11 @@ class PermissionHelper:
     def is_permission_set(cls, storage, mask):
         return storage.mask & mask == mask
 
+    @classmethod
+    def is_run_sensitive(cls):
+        sensitive_run = os.getenv('CP_SENSITIVE_RUN', "false")
+        return sensitive_run.lower() == 'true'
+
 
 class MountStorageTask:
 
@@ -76,10 +82,11 @@ class MountStorageTask:
             # use -1 as default in order to don't mount any NFS if CLOUD_REGION_ID is not provided
             cloud_region_id = int(os.getenv('CLOUD_REGION_ID', -1))
             if cloud_region_id == -1:
-                Logger.warn('CLOUD_REGION_ID env variable is not provided, no NFS will be mounted', task_name=self.task_name)
+                Logger.warn('CLOUD_REGION_ID env variable is not provided, no NFS will be mounted, \
+                 and no storage will be filtered by mount storage rule of a region', task_name=self.task_name)
 
             Logger.info('Fetching list of allowed storages...', task_name=self.task_name)
-            available_storages_with_mounts = self.api.load_available_storages_with_share_mount()
+            available_storages_with_mounts = self.api.load_available_storages_with_share_mount(cloud_region_id if cloud_region_id != -1 else None)
             # filtering nfs storages in order to fetch only nfs from the same region
             available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.storage_type != NFS_TYPE
                                               or x.file_share_mount.region_id == cloud_region_id]
@@ -93,6 +100,11 @@ class MountStorageTask:
                 try:
                     limited_storages_list = [int(x.strip()) for x in limited_storages.split(',')]
                     available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.id in limited_storages_list]
+                    # append sensitive storages since they are not returned in common mounts
+                    for storage_id in limited_storages_list:
+                        storage = self.api.find_datastorage(str(storage_id))
+                        if storage.sensitive:
+                            available_storages_with_mounts.append(DataStorageWithShareMount(storage, None))
                     Logger.info('Run is launched with mount limits ({}) Only {} storages will be mounted'.format(limited_storages, len(available_storages_with_mounts)), task_name=self.task_name)
                 except Exception as limited_storages_ex:
                     Logger.warn('Unable to parse CP_CAP_LIMIT_MOUNTS value({}) with error: {}.'.format(limited_storages, str(limited_storages_ex.message)), task_name=self.task_name)
@@ -259,7 +271,7 @@ class AzureMounter(StorageMounter):
             'tmp_dir': os.path.join(self.fuse_tmp, str(self.storage.id)),
             'account_name': account_id,
             'account_key': account_key,
-            'permissions': 'rw' if PermissionHelper.is_storage_writable(self.storage) else 'ro',
+            'permissions': 'rw' if PermissionHelper.is_storage_writable(self.storage) and not PermissionHelper.is_run_sensitive() else 'ro',
             'mount_options': self.storage.mount_options if self.storage.mount_options else ''
         }
 
@@ -339,8 +351,12 @@ class S3Mounter(StorageMounter):
         permissions = 'rw'
         stat_cache = os.getenv('CP_S3_FUSE_STAT_CACHE', '1m0s')
         type_cache = os.getenv('CP_S3_FUSE_TYPE_CACHE', '1m0s')
+        mount_timeout = os.getenv('CP_PIPE_FUSE_TIMEOUT', 500)
         aws_key_id, aws_secret, region_name, session_token = self._get_credentials(self.storage)
-        if not PermissionHelper.is_storage_writable(self.storage):
+        path_chunks = self.storage.path.split('/')
+        bucket = path_chunks[0]
+        relative_path = '/'.join(path_chunks[1:]) if len(path_chunks) > 1 else ''
+        if not PermissionHelper.is_storage_writable(self.storage) or PermissionHelper.is_run_sensitive():
             mask = '0554'
             permissions = 'ro'
         return {'mount': mount_point,
@@ -355,21 +371,29 @@ class S3Mounter(StorageMounter):
                 'aws_key_id': aws_key_id,
                 'aws_secret': aws_secret,
                 'aws_token': session_token,
-                'tmp_dir': self.fuse_tmp
+                'tmp_dir': self.fuse_tmp,
+                'bucket': bucket,
+                'relative_path': relative_path,
+                'mount_timeout': mount_timeout
                 }
 
     def build_mount_command(self, params):
         if params['aws_token'] is not None or params['fuse_type'] == FUSE_PIPE_ID:
-            return 'pipe storage mount {mount} -b {path} -t --mode 775'.format(**params)
+            return 'pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} -o allow_other'.format(**params)
         elif params['fuse_type'] == FUSE_GOOFYS_ID:
+            params['path'] = '{bucket}:{relative_path}'.format(**params) if params['relative_path'] else params['path']
             return 'AWS_ACCESS_KEY_ID={aws_key_id} AWS_SECRET_ACCESS_KEY={aws_secret} nohup goofys ' \
                    '--dir-mode {mask} --file-mode {mask} -o {permissions} -o allow_other ' \
                     '--stat-cache-ttl {stat_cache} --type-cache-ttl {type_cache} ' \
                     '-f --gid 0 --region "{region_name}" {path} {mount} > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
         elif params['fuse_type'] == FUSE_S3FS_ID:
+            params['path'] = '{bucket}:/{relative_path}'.format(**params) if params['relative_path'] else params['path']
+            ensure_diskfree_size = os.getenv('CP_S3_FUSE_ENSURE_DISKFREE')
+            params["ensure_diskfree_option"] = "" if ensure_diskfree_size is None else "-o ensure_diskfree=" + ensure_diskfree_size
             return 'AWSACCESSKEYID={aws_key_id} AWSSECRETACCESSKEY={aws_secret} s3fs {path} {mount} -o use_cache={tmp_dir} ' \
                     '-o umask=0000 -o {permissions} -o allow_other -o enable_noobj_cache ' \
-                    '-o endpoint="{region_name}" -o url="https://s3.{region_name}.amazonaws.com"'.format(**params)
+                    '-o endpoint="{region_name}" -o url="https://s3.{region_name}.amazonaws.com" {ensure_diskfree_option} ' \
+                    '-o dbglevel="info" -f > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
         else:
             return 'exit 1'
 
@@ -414,10 +438,11 @@ class GCPMounter(StorageMounter):
         creds_named_pipe_path = "<(echo \'{gcp_creds_content}\')".format(gcp_creds_content=gcp_creds_content)
         mask = '0774'
         permissions = 'rw'
-        if not PermissionHelper.is_storage_writable(self.storage):
+        if not PermissionHelper.is_storage_writable(self.storage) or PermissionHelper.is_run_sensitive():
             mask = '0554'
             permissions = 'ro'
         return {'mount': mount_point,
+                'storage_id': str(self.storage.id),
                 'path': self.get_path(),
                 'mask': mask,
                 'permissions': permissions,
@@ -428,8 +453,8 @@ class GCPMounter(StorageMounter):
     def build_mount_command(self, params):
         if not params:
             return ""
-        return 'gcsfuse -o {permissions} -o allow_other --key-file {credentials} --temp-dir {tmp_dir} ' \
-               '--dir-mode {mask} --file-mode {mask} --implicit-dirs {path} {mount}'.format(**params)
+        return 'nohup gcsfuse --foreground -o {permissions} -o allow_other --key-file {credentials} --temp-dir {tmp_dir} ' \
+               '--dir-mode {mask} --file-mode {mask} --implicit-dirs {path} {mount} > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
 
     def _get_credentials(self, storage):
         account_region = os.getenv('CP_ACCOUNT_REGION_{}'.format(storage.region_id))
@@ -480,7 +505,7 @@ class NFSMounter(StorageMounter):
         mount_options = self.storage.mount_options if self.storage.mount_options else self.share_mount.mount_options
 
         region_id = str(self.share_mount.region_id) if self.share_mount.region_id is not None else ""
-        if os.getenv("CP_CLOUD_PROVIDER_" + region_id) == "AZURE":
+        if os.getenv("CP_CLOUD_PROVIDER_" + region_id) == "AZURE" and self.share_mount.mount_type == "SMB":
             az_acc_id, az_acc_key, _, _ = self._get_credentials_by_region_id(region_id)
             creds_options = ",".join(["username=" + az_acc_id, "password=" + az_acc_key])
 
@@ -498,7 +523,7 @@ class NFSMounter(StorageMounter):
 
         permission = 'g+rwx'
         mask = '0774'
-        if not PermissionHelper.is_storage_writable(self.storage):
+        if not PermissionHelper.is_storage_writable(self.storage) or PermissionHelper.is_run_sensitive():
             permission = 'g+rx'
             mask = '0554'
             if not mount_options:

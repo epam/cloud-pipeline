@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ class PipelineRunOperations(object):
     @classmethod
     def run(cls, pipeline, config, parameters, yes, run_params, instance_disk, instance_type, docker_image,
             cmd_template, timeout, quiet, instance_count, cores, sync, price_type=None, region_id=None,
-            parent_node=None, non_pause=None):
+            parent_node=None, non_pause=None, friendly_url=None):
         # All pipeline run parameters can be specified as options, e.g. --read1 /path/to/reads.fastq
         # In this case - runs_params_dict will contain keys-values for each option, e.g. {'--read1': '/path/to/reads.fastq'}
         # So they can be addressed with run_params_dict['--read1']
@@ -88,6 +88,9 @@ class PipelineRunOperations(object):
             else:
                 instance_count = None
             instance_type = nodes_spec["name"]
+
+        if friendly_url:
+            friendly_url = cls._build_pretty_url(friendly_url)
 
         try:
             if not pipeline and docker_image and cls.required_args_missing(parent_node, instance_type, instance_disk,
@@ -190,7 +193,8 @@ class PipelineRunOperations(object):
                                                                       price_type=price_type,
                                                                       region_id=region_id,
                                                                       parent_node=parent_node,
-                                                                      non_pause=non_pause)
+                                                                      non_pause=non_pause,
+                                                                      friendly_url=friendly_url)
                         pipeline_run_id = pipeline_run_model.identifier
                         if not quiet:
                             click.echo('"{}@{}" pipeline run scheduled with RunId: {}'
@@ -242,7 +246,8 @@ class PipelineRunOperations(object):
                                                              price_type=price_type,
                                                              region_id=region_id,
                                                              parent_node=parent_node,
-                                                             non_pause=non_pause)
+                                                             non_pause=non_pause,
+                                                             friendly_url=friendly_url)
                 pipeline_run_id = pipeline_run_model.identifier
                 if not quiet:
                     click.echo('Pipeline run scheduled with RunId: {}'.format(pipeline_run_id))
@@ -353,3 +358,15 @@ class PipelineRunOperations(object):
     @staticmethod
     def required_args_missing(parent_node, instance_type, instance_disk, cmd_template):
         return parent_node is None and (instance_type is None or instance_disk is None or cmd_template is None)
+
+    @classmethod
+    def _build_pretty_url(cls, pretty_url):
+        path = str(pretty_url).strip('/')
+        parts = path.split('/')
+        if len(parts) > 2:
+            click.echo("Pretty URL has an incorrect format. Expected formats: <domain>/<path> or <path>.", err=True)
+            exit(1)
+        if len(parts) == 1:
+            return '{"path":"%s"}' % parts[0]
+        return '{"domain":"%s","path":"%s"}' % (parts[0], parts[1])
+

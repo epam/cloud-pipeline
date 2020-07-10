@@ -54,6 +54,7 @@ import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.util.TestUtils;
 import io.reactivex.subjects.BehaviorSubject;
 import org.apache.commons.collections.CollectionUtils;
@@ -69,7 +70,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -105,6 +105,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     private static final String ENV_VAR_NAME = "TEST_ENV";
     private static final String ENV_VAR_VALUE = "value";
     private static final float PRICE_PER_HOUR = 12F;
+    private static final float COMPUTE_PRICE_PER_HOUR = 11F;
+    private static final float DISK_PRICE_PER_HOUR = 1F;
     private static final String INSTANCE_TYPE = "m5.large";
     private static final String SPOT = PriceType.SPOT.getLiteral();
     private static final String ON_DEMAND = PriceType.ON_DEMAND.getLiteral();
@@ -112,6 +114,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     private static final long NOT_ALLOWED_REGION_ID = 2L;
     private static final long NON_DEFAULT_REGION_ID = 3L;
     private static final String NOT_ALLOWED_MESSAGE = "not allowed";
+    private static final String NO_PERMISSIONS_MESSAGE = "doesn't have sufficient permissions";
     private static final long PARENT_RUN_ID = 5L;
     private static final String INSTANCE_DISK = "1";
     private static final String PARENT_RUN_ID_PARAMETER = "parent-id";
@@ -158,6 +161,9 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     @MockBean
     private ToolVersionManager toolVersionManager;
 
+    @MockBean
+    private CheckPermissionHelper permissionHelper;
+
     @Autowired
     private PipelineRunDao pipelineRunDao;
 
@@ -191,9 +197,11 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         configuration.setCloudRegionId(defaultAwsRegion.getId());
 
         price = new InstancePrice(
-                configuration.getInstanceType(), Integer.valueOf(configuration.getInstanceDisk()), PRICE_PER_HOUR);
+                configuration.getInstanceType(), Integer.valueOf(configuration.getInstanceDisk()), PRICE_PER_HOUR, 
+                COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR);
 
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(notScannedTool);
+        when(toolManager.resolveSymlinks(TEST_IMAGE)).thenReturn(notScannedTool);
         when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID), eq(true))).thenReturn(true);
         when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID), eq(false))).thenReturn(true);
         when(instanceOfferManager.isToolInstanceAllowed(anyString(), any(), eq(REGION_ID), eq(true))).thenReturn(true);
@@ -216,6 +224,9 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
                 .thenReturn(ToolVersion.builder().size(1L).build());
         doReturn(configuration).when(pipelineConfigurationManager).getPipelineConfiguration(any());
         doReturn(configuration).when(pipelineConfigurationManager).getPipelineConfiguration(any(), any());
+        doReturn(new PipelineConfiguration()).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());
+
+        doReturn(true).when(permissionHelper).isAllowed(any(), any());
 
         AwsRegion region = new AwsRegion();
         region.setRegionCode("us-east-1");
@@ -373,7 +384,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     @Test
     @WithMockUser
     public void testLaunchPipelineDoesNotValidateToolInstanceTypeIfItIsNotSpecified() {
-        launchTool(null);
+        launchTool((String) null);
 
         verify(instanceOfferManager, times(0)).isInstanceAllowed(any(), eq(REGION_ID), eq(true));
         verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(REGION_ID), eq(true));
@@ -421,7 +432,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     @Test
     @WithMockUser
     public void testLaunchPipelineDoesNotValidatePipelineInstanceTypeIfItIsNotSpecified() {
-        launchPipeline(null);
+        launchPipeline((String) null);
 
         verify(instanceOfferManager, times(0)).isInstanceAllowed(any(), eq(REGION_ID), eq(true));
         verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(REGION_ID), eq(true));
@@ -453,6 +464,38 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
             () -> launchPipeline(INSTANCE_TYPE));
         verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), any());
+    }
+
+    @Test
+    @WithMockUser
+    public void testLaunchPipelineFailsIfToolCloudRegionIsConfiguredAndItDiffersFromRunConfigurationOne() {
+        final PipelineConfiguration toolConfiguration = new PipelineConfiguration();
+        toolConfiguration.setCloudRegionId(NON_DEFAULT_REGION_ID);
+        doReturn(toolConfiguration).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());
+
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE), this::launchPipeline);
+        assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE), this::launchTool);
+        verify(pipelineConfigurationManager, times(2)).getConfigurationForTool(any(), any());
+    }
+
+    @Test
+    @WithMockUser
+    public void testLaunchPipelineDoesNotFailIfToolCloudRegionIsConfiguredAndItDiffersFromDefaultOne() {
+        final PipelineConfiguration toolConfiguration = new PipelineConfiguration();
+        toolConfiguration.setCloudRegionId(NON_DEFAULT_REGION_ID);
+        doReturn(toolConfiguration).when(pipelineConfigurationManager).getConfigurationForTool(any(), any());
+
+        launchPipeline(configurationWithoutRegion());
+        launchTool(configurationWithoutRegion());
+        verify(pipelineConfigurationManager, times(2)).getConfigurationForTool(any(), any());
+    }
+
+    @Test
+    @WithMockUser
+    public void testLaunchPipelineFailsIfCloudRegionIsNotAllowed() {
+        doReturn(false).when(permissionHelper).isAllowed(any(), any());
+
+        assertThrows(e -> e.getMessage().contains(NO_PERMISSIONS_MESSAGE), this::launchPipeline);
     }
 
     @Test
@@ -546,84 +589,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         Assert.assertEquals(2, stats.get(run2.getId()).getRunStatuses().size());
         Assert.assertEquals(2, stats.get(run3.getId()).getRunStatuses().size());
         Assert.assertEquals(1, stats.get(run4.getId()).getRunStatuses().size());
-        Assert.assertEquals(1, stats.get(run5.getId()).getRunStatuses().size());
-    }
-
-    @Test
-    public void testAdjustStatuses() {
-        final List<RunStatus> statuses = new ArrayList<>();
-        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.RUNNING, null, SYNC_PERIOD_START.minusHours(HOURS_24)));
-        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.PAUSED, null, SYNC_PERIOD_START.minusHours(HOURS_18)));
-        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.RUNNING, null, SYNC_PERIOD_START.minusHours(HOURS_12)));
-        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.PAUSED, null, SYNC_PERIOD_START.plusHours(HOURS_12)));
-        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.RUNNING, null, SYNC_PERIOD_START.plusHours(HOURS_18)));
-        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.PAUSED, null, SYNC_PERIOD_END.plusHours(HOURS_12)));
-
-        final List<RunStatus> adjustedStatuses =
-            pipelineRunManager.adjustStatuses(statuses, SYNC_PERIOD_START, SYNC_PERIOD_END);
-
-        Assert.assertEquals(3, adjustedStatuses.size());
-
-        Assert.assertEquals(TaskStatus.RUNNING, adjustedStatuses.get(0).getStatus());
-        Assert.assertEquals(SYNC_PERIOD_START, adjustedStatuses.get(0).getTimestamp());
-
-        Assert.assertEquals(TaskStatus.PAUSED, adjustedStatuses.get(1).getStatus());
-        Assert.assertEquals(SYNC_PERIOD_START.plusHours(HOURS_12), adjustedStatuses.get(1).getTimestamp());
-
-        Assert.assertEquals(TaskStatus.RUNNING, adjustedStatuses.get(2).getStatus());
-        Assert.assertEquals(SYNC_PERIOD_START.plusHours(HOURS_18), adjustedStatuses.get(2).getTimestamp());
-    }
-
-    @Test
-    public void testCreateRunStatuses() {
-        final LocalDateTime syncStartMinus24 = SYNC_PERIOD_START.minusHours(HOURS_24);
-        final LocalDateTime syncStartMinus12 = SYNC_PERIOD_START.minusHours(HOURS_12);
-        final LocalDateTime syncStartPlus12 = SYNC_PERIOD_START.plusHours(HOURS_12);
-        final LocalDateTime syncStartPlus18 = SYNC_PERIOD_START.plusHours(HOURS_18);
-        final LocalDateTime syncEndPlus12 = SYNC_PERIOD_END.plusHours(HOURS_12);
-        final LocalDateTime syncEndPlus18 = SYNC_PERIOD_END.plusHours(HOURS_18);
-
-        final PipelineRun run1 = launchPipeline(configuration, INSTANCE_TYPE, null);
-        run1.setStartDate(Timestamp.valueOf(syncStartMinus12));
-        pipelineRunManager.createRunStatusesForRun(run1, SYNC_PERIOD_START, SYNC_PERIOD_END);
-        assertCreatedRunStatuses(run1, SYNC_PERIOD_START, SYNC_PERIOD_END);
-
-        final PipelineRun run2 = launchRunWithStartEndDate(syncStartMinus24, syncStartMinus12);
-        pipelineRunManager.createRunStatusesForRun(run2, SYNC_PERIOD_START, SYNC_PERIOD_END);
-        final List<RunStatus> runStatuses2 = run2.getRunStatuses();
-        Assert.assertNull(runStatuses2);
-
-        final PipelineRun run3 = launchRunWithStartEndDate(syncStartMinus24, syncStartPlus12);
-        pipelineRunManager.createRunStatusesForRun(run3, SYNC_PERIOD_START, SYNC_PERIOD_END);
-        assertCreatedRunStatuses(run3, SYNC_PERIOD_START, syncStartPlus12);
-
-        final PipelineRun run4 = launchRunWithStartEndDate(syncStartPlus12, syncStartPlus18);
-        pipelineRunManager.createRunStatusesForRun(run4, SYNC_PERIOD_START, SYNC_PERIOD_END);
-        assertCreatedRunStatuses(run4, syncStartPlus12, syncStartPlus18);
-
-        final PipelineRun run5 = launchRunWithStartEndDate(syncStartPlus12, syncEndPlus18);
-        pipelineRunManager.createRunStatusesForRun(run5, SYNC_PERIOD_START, SYNC_PERIOD_END);
-        assertCreatedRunStatuses(run5, syncStartPlus12, SYNC_PERIOD_END);
-
-        final PipelineRun run6 = launchRunWithStartEndDate(syncEndPlus12, syncEndPlus18);
-        pipelineRunManager.createRunStatusesForRun(run6, SYNC_PERIOD_START, SYNC_PERIOD_END);
-        Assert.assertNull(run6.getRunStatuses());
-    }
-
-    private PipelineRun launchRunWithStartEndDate(final LocalDateTime startDate, final LocalDateTime endDate) {
-        final PipelineRun run = launchPipeline(configuration, INSTANCE_TYPE, null);
-        run.setStartDate(Timestamp.valueOf(startDate));
-        run.setEndDate(Timestamp.valueOf(endDate));
-        return run;
-    }
-
-    private void assertCreatedRunStatuses(final PipelineRun run,
-                                          final LocalDateTime firstStatusTimestamp,
-                                          final LocalDateTime secondStatusTimestamp) {
-        final List<RunStatus> runStatuses = run.getRunStatuses();
-        Assert.assertEquals(2, runStatuses.size());
-        Assert.assertEquals(firstStatusTimestamp, runStatuses.get(0).getTimestamp());
-        Assert.assertEquals(secondStatusTimestamp, runStatuses.get(1).getTimestamp());
+        Assert.assertEquals(3, stats.get(run5.getId()).getRunStatuses().size());
+        Assert.assertEquals(2, stats.get(run6.getId()).getRunStatuses().size());
     }
 
     private PipelineRun launchPipelineRun(final LocalDateTime startDate, final LocalDateTime stopDate) {
@@ -665,8 +632,24 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         Assert.assertEquals(paramValue, actualParameters.get(0).getValue());
     }
 
+    private void launchTool() {
+        launchPipeline(configuration, null, null, null);
+    }
+
+    private void launchTool(final PipelineConfiguration configuration) {
+        launchPipeline(configuration, null, null, null);
+    }
+
     private void launchTool(final String instanceType) {
         launchPipeline(configuration, null, instanceType, null);
+    }
+
+    private void launchPipeline() {
+        launchPipeline(configuration, new Pipeline(), null, null);
+    }
+
+    private void launchPipeline(final PipelineConfiguration configuration) {
+        launchPipeline(configuration, new Pipeline(), null, null);
     }
 
     private void launchPipeline(final String instanceType) {

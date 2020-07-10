@@ -24,7 +24,9 @@ import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.AbstractHierarchicalEntity;
 import com.epam.pipeline.entity.SecuredEntityDelegate;
 import com.epam.pipeline.entity.filter.AclSecuredFilter;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
@@ -50,6 +52,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AclAspect {
 
     private static final String RETURN_OBJECT = "entity";
+    private static final String WITHIN_ACL_SYNC = "@within(com.epam.pipeline.manager.security.acl.AclSync)";
     private static final Logger LOGGER = LoggerFactory.getLogger(AclAspect.class);
 
     private final JdbcMutableAclServiceImpl aclService;
@@ -57,8 +60,8 @@ public class AclAspect {
     private final RunPermissionManager runPermissionManager;
 
 
-    @AfterReturning(pointcut = "@within(com.epam.pipeline.manager.security.acl.AclSync) && "
-            + "execution(* *.create(..))", returning = RETURN_OBJECT)
+    @AfterReturning(pointcut = WITHIN_ACL_SYNC + " && execution(* *.create(..))",
+            returning = RETURN_OBJECT)
     @Transactional(propagation = Propagation.REQUIRED)
     public void createAclIdentity(JoinPoint joinPoint, Object entity) {
         if (entity instanceof AbstractSecuredEntity) {
@@ -71,8 +74,21 @@ public class AclAspect {
         }
     }
 
-    @AfterReturning(pointcut = "@within(com.epam.pipeline.manager.security.acl.AclSync) && "
-            + "execution(* *.update(..))", returning = RETURN_OBJECT)
+    @AfterReturning(pointcut = WITHIN_ACL_SYNC + " && execution(* *.symlink(..))",
+            returning = "tool")
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void createAclIdentity(JoinPoint joinPoint, Tool tool) {
+        createEntity(tool);
+    }
+
+    @AfterReturning(pointcut = WITHIN_ACL_SYNC + " && execution(* *.copyPipeline(..))",
+            returning = "pipeline")
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void createAclIdentity(JoinPoint joinPoint, Pipeline pipeline) {
+        createEntity(pipeline);
+    }
+
+    @AfterReturning(pointcut = WITHIN_ACL_SYNC + " && execution(* *.update(..))", returning = RETURN_OBJECT)
     @Transactional(propagation = Propagation.REQUIRED)
     public void updateAclIdentity(JoinPoint joinPoint, AbstractSecuredEntity entity) {
         if (entity.getOwner().equals(AuthManager.UNAUTHORIZED_USER)) {
@@ -94,8 +110,7 @@ public class AclAspect {
         setMask(joinPoint, entity);
     }
 
-    @AfterReturning(pointcut = "@within(com.epam.pipeline.manager.security.acl.AclSync) && "
-            + "execution(* *.delete(..))", returning = RETURN_OBJECT)
+    @AfterReturning(pointcut = WITHIN_ACL_SYNC + " && execution(* *.delete(..))", returning = RETURN_OBJECT)
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteAclIdentity(JoinPoint joinPoint, AbstractSecuredEntity entity) {
         LOGGER.debug("Deleting ACL object for Object {} {}", entity.getName(), entity.getClass());

@@ -59,6 +59,9 @@ spec:
             - name: cp-cloud-credentials
               mountPath: "/root/.cloud"
               readOnly: true
+            - mountPath: /root/.kube
+              name: kube-config
+              readOnly: true
       volumes:
         - name: vm-monitor-logs
           hostPath:
@@ -93,5 +96,8 @@ spec:
         - name: cp-cloud-credentials
           secret:
             secretName: cp-cloud-credentials
+        - name: kube-config
+          hostPath:
+            path: /root/.kube
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
