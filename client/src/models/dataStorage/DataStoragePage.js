@@ -16,6 +16,10 @@
 
 import Remote from '../basic/Remote';
 
+function isEncodedString (str) {
+  return decodeURIComponent(str) !== str;
+}
+
 class DataStoragePage extends Remote {
   url;
 
@@ -42,10 +46,12 @@ class DataStoragePage extends Remote {
 
   buildUrl () {
     const query = [
-      !!this.path && `path=${encodeURIComponent(this.path)}`,
+      !!this.path &&
+        `path=${isEncodedString(this.path) ? this.path : encodeURIComponent(this.path)}`,
       `showVersion=${!!this.showVersion}`,
       `pageSize=${this.pageSize}`,
-      !!this.marker && `marker=${encodeURIComponent(this.marker)}`
+      !!this.marker &&
+        `marker=${isEncodedString(this.marker) ? this.marker : encodeURIComponent(this.marker)}`
     ]
       .filter(Boolean)
       .join('&');
