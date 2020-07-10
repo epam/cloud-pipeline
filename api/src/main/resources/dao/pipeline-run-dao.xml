@@ -1631,5 +1631,14 @@
                 ]]>
             </value>
         </property>
+        <property name="deleteRunSidsByPipelineIdQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.run_user ru
+                    USING pipeline.pipeline_run pr, pipeline.pipeline p
+                    WHERE pr.run_id = ru.run_id AND p.pipeline_id = pr.pipeline_id AND p.pipeline_id = ?
+                ]]>
+            </value>
+        </property>
     </bean>
 </beans>

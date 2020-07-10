@@ -243,6 +243,7 @@ public class PipelineManager implements SecuredEntityManager {
         restartRunManager.deleteRestartedRunsForPipeline(id);
         runStatusManager.deleteRunStatusForPipeline(id);
         runScheduleManager.deleteSchedulesForRunByPipeline(id);
+        pipelineRunDao.deleteRunSidsByPipelineId(id);
         pipelineRunDao.deleteRunsByPipeline(id);
         dataStorageRuleDao.deleteRulesByPipeline(id);
         pipelineDao.deletePipeline(id);
