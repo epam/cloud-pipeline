@@ -14,6 +14,8 @@
 
 config_path=${1:-/config/config.yaml}
 
+export CP_CLAIR_DATABASE_POOL_SIZE=${CP_CLAIR_DATABASE_POOL_SIZE:-5}
+
 ln -s /usr/local/share/ca-certificates/cp-docker-registry/docker-public-cert.pem  /usr/local/share/ca-certificates/docker-public-cert.pem
 update-ca-certificates
 
@@ -31,6 +33,10 @@ clair:
       # Number of elements kept in the cache
       # Values unlikely to change (e.g. namespaces) are cached in order to save prevent needless roundtrips to the database.
       cachesize: 16384
+
+      # Maximum number of open connections allowed to database
+      # If unspecified or <= 0 then no limit is enforced in Clair
+      maxopenconnections: $CP_CLAIR_DATABASE_POOL_SIZE
 
       # 32-bit URL-safe base64 key used to encrypt pagination tokens
       # If one is not provided, it will be generated.
