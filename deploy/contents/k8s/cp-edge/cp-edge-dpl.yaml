@@ -63,8 +63,8 @@ spec:
           hostPath:
             path: /opt/gitlab/pki
         - name: docker-pki
-            hostPath:
-              path: /opt/docker-registry/pki/
+          hostPath:
+            path: /opt/docker-registry/pki/
         - name: edge-pki
           hostPath:
             path: /opt/edge/pki
