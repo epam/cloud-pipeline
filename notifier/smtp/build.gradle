@@ -37,6 +37,7 @@ dependencies {
     compile group: 'org.postgresql', name: 'postgresql', version: '42.1.4'
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.8.7'
     compile('org.springframework.boot:spring-boot-starter-data-jpa')
+    compile group: 'com.zaxxer', name: 'HikariCP', version: '3.2.0'
 
     //Email notifications
     compile group: 'org.apache.commons', name: 'commons-email', version: '1.5'
