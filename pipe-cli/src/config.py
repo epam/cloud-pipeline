@@ -167,7 +167,7 @@ class Config(object):
         return os.path.join(pipe_path, module)
 
     def build_ntlm_module_path(self):
-        self.build_inner_module_path("ntlmaps/ntlmaps")
+        return self.build_inner_module_path("ntlmaps/ntlmaps")
 
     @classmethod
     def store(cls, access_key, api, timezone, proxy,
