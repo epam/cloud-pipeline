@@ -132,6 +132,8 @@ class Config(object):
         return proxy
 
     def _resolve_proxy(self, target_url=None):
+        if not target_url:
+            return None
         if not self.proxy:
             return None
         elif self.proxy == PROXY_TYPE_PAC:
