@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {Layout} from 'antd';
 import FileSystemTab from './components/file-system-tab';
 import Operations, {OPERATION_HEIGHT} from './operations';
@@ -22,7 +22,9 @@ function Application() {
     setRightTabActive,
     onLeftFSCommand,
     onRightFSCommand,
+    onDropCommand,
   } = useFileSystemTabActions(leftTab, rightTab);
+  const [dragging, setDragging] = useState(undefined);
   const activeOperations = operations.filter(o => !o.finished);
   return (
     <Layout className="layout">
@@ -44,6 +46,9 @@ function Application() {
           fileSystem={leftTab.fileSystem}
           oppositeFileSystemReady={leftTabReady}
           onCommand={onLeftFSCommand}
+          dragging={leftTab.fileSystem && dragging === leftTab.fileSystem.identifier}
+          setDragging={setDragging}
+          onDropCommand={onDropCommand}
         />
         <FileSystemTab
           active={rightTabActive}
@@ -62,6 +67,9 @@ function Application() {
           fileSystem={rightTab.fileSystem}
           oppositeFileSystemReady={rightTabReady}
           onCommand={onRightFSCommand}
+          dragging={rightTab.fileSystem && dragging === rightTab.fileSystem.identifier}
+          setDragging={setDragging}
+          onDropCommand={onDropCommand}
         />
       </Layout.Content>
       <Layout.Footer

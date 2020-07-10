@@ -12,6 +12,11 @@
   box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.8);
 }
 
+.file-system-tab-container.drop-target {
+  outline: 0;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 1);
+}
+
 .spin-container {
   height: 100%;
   display: flex;

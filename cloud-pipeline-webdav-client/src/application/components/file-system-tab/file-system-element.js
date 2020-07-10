@@ -11,8 +11,12 @@ function FileSystemElement (
     onUnHover,
     hovered,
     selected,
+    dropTargetHovered,
     onSelect,
     onNavigate,
+    onDragStart,
+    onDragOver,
+    onDrop,
   },
 ) {
   const [elementIsHovered, setElementIsHovered] = useState(false);
@@ -45,6 +49,18 @@ function FileSystemElement (
       onSelect && onSelect(element, e ? (e.ctrlKey || e.metaKey) : false, e ? e.shiftKey : false);
     }
   };
+  const onDragStartEvent = (e) => {
+    onDragStart && onDragStart(e, element);
+  };
+  const onDragOverEvent = (e) => {
+    onDragOver && onDragOver(e, element);
+  };
+  const onDragLeaveEvent = (e) => {
+    onDragOver && onDragOver(e);
+  };
+  const onDropEvent = (e) => {
+    onDrop && onDrop(e, element);
+  };
   if (!element) {
     return null;
   }
@@ -60,13 +76,20 @@ function FileSystemElement (
             'link': element.isSymbolicLink,
             'selected': selected,
             'hovered': elementIsHovered,
+            'drop-target': dropTargetHovered,
           }
         )
       }
       onMouseOver={onElementHover}
       onMouseLeave={onElementUnHover}
-      onMouseDown={onMouseDown}
+      onClick={onMouseDown}
       onDoubleClick={navigate}
+      draggable={!element.isBackLink}
+      onDragStart={onDragStartEvent}
+      onDragEnter={onDragOverEvent}
+      onDragOver={onDragOverEvent}
+      onDragLeave={onDragLeaveEvent}
+      onDrop={onDropEvent}
     >
       <Icon className="icon" />
       <div className="element-name-container">
@@ -82,8 +105,12 @@ FileSystemElement.propTypes = {
   onUnHover: PropTypes.func,
   onSelect: PropTypes.func,
   onNavigate: PropTypes.func,
+  onDragStart: PropTypes.func,
+  onDragOver: PropTypes.func,
+  onDrop: PropTypes.func,
   hovered: PropTypes.bool,
   selected: PropTypes.bool,
+  dropTargetHovered: PropTypes.bool,
 }
 
 export default React.memo(FileSystemElement);

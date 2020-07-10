@@ -1,5 +1,6 @@
 import {useCallback, useReducer} from 'react';
 import submit from './models/commands/submit-command';
+import commands from './models/commands/commands';
 
 const LEFT_TAB_ID = 0;
 const RIGHT_TAB_ID = 1;
@@ -99,6 +100,18 @@ function useFileSystemTabActions (leftTab, rightTab) {
       ...args
     );
   }, [onCommand, rightTab, leftTab]);
+  const onDropCommand = useCallback((dropFS, dropTarget, sourceFSIdentifier, ...sources) => {
+    const [sourceFS] = [leftTab.fileSystem, rightTab.fileSystem]
+      .filter(fs => fs.identifier === sourceFSIdentifier);
+    onCommand(
+      sourceFS,
+      dropFS,
+      dropTarget,
+      commands.copy,
+      undefined,
+      sources
+    );
+  }, [onCommand, rightTab, leftTab]);
   return {
     operations,
     leftTabActive: active === LEFT_TAB_ID,
@@ -113,6 +126,7 @@ function useFileSystemTabActions (leftTab, rightTab) {
     setRightTabActive,
     onLeftFSCommand,
     onRightFSCommand,
+    onDropCommand,
   };
 }
 

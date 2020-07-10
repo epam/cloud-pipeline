@@ -33,10 +33,24 @@ function FileSystemTab (
     className,
     oppositeFileSystemReady,
     onCommand,
+    dragging,
+    setDragging,
+    onDropCommand,
   }
 ) {
   const [hovered, setHovered] = useState(undefined);
+  const [dropTarget, setDropTarget] = useState(undefined);
   const [createDirectoryDialogVisible, setCreateDirectoryDialogVisible] = useState(false);
+  const becomeActiveCallback = useCallback(() => {
+    if (!active) {
+      becomeActive();
+    }
+  }, [active, becomeActive]);
+  const setDraggingCallback = useCallback(() => {
+    if (!dragging && fileSystem) {
+      setDragging(fileSystem.identifier);
+    }
+  }, [dragging, setDragging, fileSystem]);
   const onHover = useCallback((e) => {
     const {path} = e;
     setHovered(path);
@@ -47,8 +61,8 @@ function FileSystemTab (
   const onNavigate = useCallback((newPath) => {
     setHovered(undefined);
     setPath(newPath);
-    becomeActive();
-  }, [becomeActive, setHovered, setPath]);
+    becomeActiveCallback();
+  }, [becomeActiveCallback, setHovered, setPath]);
   const onSelect = useCallback((element, ctrlKey, shiftKey) => {
     const {path: selectedPath} = element;
     const currentSelectionIndex = contents.indexOf(element);
@@ -87,8 +101,101 @@ function FileSystemTab (
       }
       setLastSelectionIndex(currentSelectionIndex);
     }
-    becomeActive();
-  }, [becomeActive, selection, setSelection, lastSelectionIndex, setLastSelectionIndex]);
+    becomeActiveCallback();
+  }, [becomeActiveCallback, selection, setSelection, lastSelectionIndex, setLastSelectionIndex]);
+  const onDragStart = useCallback((event, element) => {
+    if (element && !element.isBackLink && fileSystem) {
+      const {path: elementPath} = element;
+      const selected = (selection || []).indexOf(elementPath) >= 0;
+      let itemsToDrag = [];
+      if (selected) {
+        itemsToDrag = selection.slice();
+      } else {
+        setSelection([elementPath]);
+        itemsToDrag = [elementPath];
+      }
+      const data = [fileSystem.identifier, ...itemsToDrag].join('|');
+      event.dataTransfer.setData('text/plain', data);
+      event.dataTransfer.effectAllowed = 'copy';
+      setDraggingCallback();
+      becomeActiveCallback();
+    } else {
+      event.preventDefault();
+    }
+  }, [becomeActiveCallback, fileSystem, selection, setSelection, setDraggingCallback]);
+  const onDragOver = useCallback((event, element) => {
+    const data = event.dataTransfer.getData('text/plain');
+    const [identifier, ...sources] = (data || '').split('|');
+    setDraggingCallback();
+    becomeActiveCallback();
+    event.preventDefault();
+    event.stopPropagation();
+    if (
+      element &&
+      element.isDirectory &&
+      !element.isBackLink &&
+      identifier !== undefined &&
+      fileSystem &&
+      +identifier !== fileSystem.identifier &&
+      sources.indexOf(element.path) === -1
+    ) {
+      if (dropTarget !== element.path) {
+        setDropTarget(element.path);
+      }
+    } else {
+      setDropTarget(undefined);
+    }
+  }, [fileSystem, becomeActiveCallback, dropTarget, setDropTarget, setDraggingCallback]);
+  const onDragOverParent = useCallback((event) => {
+    const data = event.dataTransfer.getData('text/plain');
+    const [identifier] = (data || '').split('|');
+    setDraggingCallback();
+    becomeActiveCallback();
+    if (
+      identifier !== undefined &&
+      fileSystem &&
+      +identifier !== fileSystem.identifier
+    ) {
+      event.preventDefault();
+      if (dropTarget !== path) {
+        setDropTarget(path);
+      }
+    } else {
+      setDropTarget(undefined);
+    }
+  }, [fileSystem, becomeActiveCallback, path, dropTarget, setDropTarget, setDraggingCallback]);
+  const onDragLeaveParent = useCallback(() => {
+    setDropTarget(undefined);
+    setDragging(undefined);
+  }, [setDropTarget, setDragging]);
+  const onDropEvent = useCallback((event, target) => {
+    const data = event.dataTransfer.getData('text/plain');
+    const [identifier, ...sources] = (data || '').split('|');
+    setDragging(false);
+    setDropTarget(undefined);
+    becomeActiveCallback();
+    event.preventDefault();
+    event.stopPropagation();
+    if (
+      identifier !== undefined &&
+      fileSystem &&
+      +identifier !== fileSystem.identifier &&
+      sources.indexOf(target) === -1 &&
+      onDropCommand
+    ) {
+      onDropCommand(fileSystem, target, +identifier, ...sources);
+    }
+  }, [setDragging, setDropTarget, onDropCommand]);
+  const onDrop = useCallback((event, element) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (element) {
+      onDropEvent(event, element.path);
+    }
+  }, [onDropEvent]);
+  const onDropParent = useCallback((event) => {
+    onDropEvent(event, path);
+  }, [onDropEvent]);
   const onCreateDirectoryRequest = useCallback(() => {
     setCreateDirectoryDialogVisible(true);
   }, [setCreateDirectoryDialogVisible]);
@@ -139,7 +246,13 @@ function FileSystemTab (
     );
   } else {
     content = (
-      <div className="directory-contents">
+      <div
+        className="directory-contents"
+        onDragEnter={onDragOverParent}
+        onDragOver={onDragOverParent}
+        onDragLeave={onDragLeaveParent}
+        onDrop={onDropParent}
+      >
         {
           contents.map((item, index) => (
             <FileSystemElement
@@ -149,8 +262,12 @@ function FileSystemTab (
               onUnHover={onUnHover}
               onSelect={onSelect}
               onNavigate={onNavigate}
+              onDragStart={onDragStart}
+              onDragOver={onDragOver}
+              onDrop={onDrop}
               hovered={hovered === item.path}
               selected={selection.indexOf(item.path) >= 0}
+              dropTargetHovered={dragging && dropTarget === item.path}
             />
           ))
         }
@@ -161,7 +278,17 @@ function FileSystemTab (
     <div
       className={className}
     >
-      <div className={classNames('file-system-tab-container', {active})}>
+      <div
+        className={
+          classNames(
+            'file-system-tab-container',
+            {
+              active,
+              'drop-target': dragging && dropTarget === path
+            }
+          )
+        }
+      >
         <div className="file-system-tab-header">
           <ConfigProvider componentSize="small">
             <Button
@@ -230,6 +357,9 @@ FileSystemTab.propTypes = {
   className: PropTypes.string,
   oppositeFileSystemReady: PropTypes.bool,
   onCommand: PropTypes.func,
+  dragging: PropTypes.bool,
+  setDragging: PropTypes.func,
+  onDropCommand: PropTypes.func,
 };
 
 export default FileSystemTab;

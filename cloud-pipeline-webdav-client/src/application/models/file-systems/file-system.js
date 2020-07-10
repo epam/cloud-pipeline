@@ -1,7 +1,11 @@
 import path from 'path';
 
+let identifier = 0;
+
 class FileSystem {
   constructor(root) {
+    identifier += 1;
+    this.identifier = identifier;
     this.root = root;
     this.separator = path.sep;
     this.rootName = root === this.separator ? 'Root' : root;
