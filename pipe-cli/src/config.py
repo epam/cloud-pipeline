@@ -132,8 +132,6 @@ class Config(object):
         return proxy
 
     def _resolve_proxy(self, target_url=None):
-        if not target_url:
-            return None
         if not self.proxy:
             return None
         elif self.proxy == PROXY_TYPE_PAC:
@@ -174,7 +172,7 @@ class Config(object):
         return os.path.join(pipe_path, module)
 
     def build_ntlm_module_path(self):
-        self.build_inner_module_path("ntlmaps/ntlmaps")
+        return self.build_inner_module_path("ntlmaps/ntlmaps")
 
     @classmethod
     def store(cls, access_key, api, timezone, proxy,

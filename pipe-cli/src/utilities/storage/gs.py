@@ -659,9 +659,6 @@ class _ProxySession(AuthorizedSession):
         parsed_url = urlparse(url)
         request_url = '%s://%s' % (parsed_url.scheme, parsed_url.netloc)
         self.proxies = StorageOperations.get_proxy_config(request_url)
-        print(self.proxies)
-        self.proxies = StorageOperations.get_proxy_config('https://storage.googleapis.com')
-        print(self.proxies)
         return super(_ProxySession, self).request(method, url, data, headers, **kwargs)
 
 
