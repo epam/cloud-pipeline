@@ -42,9 +42,6 @@ const DTS_ENVIRONMENT = 'DTS';
   const [configId, entryName] = `${params.item.id}`.split('-');
   const configuration = configurations.getConfiguration(configId);
 
-  configuration.fetch();
-  runDefaultParameters.fetch();
-
   return {
     cloudProviders,
     configuration,
