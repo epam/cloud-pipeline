@@ -33,6 +33,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.tagName;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
@@ -337,9 +338,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkConfigureClusterLabel(String label) {
-        context()
-                .find(byXpath(".//div[@class='ant-row-flex ant-row-flex-end']/a"))
-                .shouldBe(visible).getText().equals(label);
+        assertEquals(context().find(byXpath(".//div[@class='ant-row-flex ant-row-flex-end']/a"))
+                .shouldBe(visible).getText(), label);
         return this;
     }
 

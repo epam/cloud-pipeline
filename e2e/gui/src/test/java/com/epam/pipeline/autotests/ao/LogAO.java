@@ -33,6 +33,7 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
+import static com.codeborne.selenide.Selenide.switchTo;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -182,6 +183,29 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO waitForEndpointLink() {
         get(ENDPOINT).waitUntil(appears, SSH_LINK_APPEARING_TIMEOUT);
         return this;
+    }
+
+    public ToolPageAO clickOnEndpointLink() {
+        String endpoint = getEndpointLink();
+        get(ENDPOINT).click();
+        switchTo().window(1);
+        return new ToolPageAO(endpoint);
+    }
+
+    public ToolPageAO clickOnEndpointLink(String link) {
+        String endpoint = getEndpointLink(link);
+        $(byXpath(String.format(".//a[.='%s']", link))).click();
+        switchTo().window(1);
+        return new ToolPageAO(endpoint);
+    }
+
+    public String getEndpointLink() {
+        return get(ENDPOINT).shouldBe(visible).attr("href");
+    }
+
+    public String getEndpointLink(String link){
+        return $(withText("Endpoint")).closest("tr").$(byXpath(String.format(".//a[.='%s']", link)))
+                .shouldBe(visible).attr("href");
     }
 
     public LogAO validateException(final String exception) {

@@ -18,17 +18,28 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.switchTo;
 import static com.codeborne.selenide.Selenide.title;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
+import static com.epam.pipeline.autotests.ao.Primitive.TITLE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ToolPageAO implements AccessObject<ToolPageAO> {
+
+    private final Map<Primitive, SelenideElement> elements = initialiseElements(
+            entry(TITLE, context().find(byClassName("tools__tools-header")))
+    );
 
     protected String endpoint;
 
@@ -46,17 +57,33 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
         return this;
     }
 
+    public ToolPageAO assertPageContains(String text) {
+        $(withText(text)).shouldBe(visible);
+        return this;
+    }
+
     public ToolPageAO validateEndpointPage() {
         $(byId("owner")).should(appear).shouldHave(text(C.LOGIN));
         return this;
     }
 
+    public ToolPageAO validateAliveWorkersSparkPage(String num) {
+        $(withText("Alive Workers:")).closest("li").should(appear).shouldHave(text(num));
+        return this;
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
-        return Collections.emptyMap();
+        return elements;
     }
 
     public String getEndpoint() {
         return endpoint;
+    }
+
+    public void closeTab() {
+        List<String> tabs = new ArrayList<String>(getWebDriver().getWindowHandles());
+        getWebDriver().close();
+        switchTo().window(tabs.get(0));
     }
 }

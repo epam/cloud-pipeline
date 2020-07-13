@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.Template;
+import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -28,6 +29,8 @@ import static com.codeborne.selenide.Condition.appears;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
+import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
@@ -40,6 +43,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest implements Authorization {
 
     private final String autoScaledSettingForm = "Auto-scaled cluster";
+    private final String defaultRegistry = C.DEFAULT_REGISTRY;
+    private final String defaultGroup = "library";
+    private final String testingTool = "rstudio";
+    private final String testingNode = "m5.2xlarge";
+
 
     @AfterMethod(alwaysRun = true)
     @Override
@@ -285,9 +293,43 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         .execute("sinfo")
                         .assertOutputContains("main.q*", "idle", String.format("%s-[%s-%s]",
                                 getPipelineName().toLowerCase(), getRunId(), Integer.parseInt(getRunId()) + 1))
-                        .executeWithSlash("srun -N2 -l /bin/hostname")
+                        .execute("srun -N2 -l /bin/hostname")
                         .assertOutputContains(String.format("0: %s-%s", getPipelineName().toLowerCase(), getRunId()),
                                 String.format("1: %s-%s", getPipelineName().toLowerCase(), Integer.parseInt(getRunId()) + 1))
                         .close());
+    }
+
+    @Test
+    @TestCase({"EPMCMBIBPC-3152"})
+    public void validationOfApacheSparkCluster() {
+        tools()
+                .perform(defaultRegistry, defaultGroup, String.format("%s/%s", defaultGroup, testingTool), ToolTab::runWithCustomSettings)
+                .selectValue(INSTANCE_TYPE, testingNode)
+                .enableClusterLaunch()
+                .clusterSettingsForm("Cluster")
+                .clusterEnableCheckboxSelect("Enable Apache Spark")
+                .click(button("OK"))
+                .checkConfigureClusterLabel("Apache Spark Cluster (1 child node)")
+                .click(START_IDLE)
+                .launch(this)
+                .shouldContainRun("pipeline", getRunId())
+                .openClusterRuns(getRunId())
+                .shouldContainRunsWithParentRun(1, getRunId())
+                .showLog(getRunId())
+                .expandTab(PARAMETERS)
+                .ensure(configurationParameter("CP_CAP_SPARK", "true"), exist)
+                .waitForEndpointLink()
+                .click(taskWithName("SparkMasterSetup"))
+                .ensure(log(), containsMessages("Spark master is started"))
+                .click(taskWithName("SparkWorkerSetup"))
+                .ensure(log(), containsMessages("Spark worker is started and connected to the master"))
+                .click(taskWithName("SparkMasterSetupWorkers"))
+                .ensure(log(), containsMessages("All workers are connected"))
+                .clickOnEndpointLink("SparkUI")
+                .sleep(3, SECONDS)
+                .assertPageContains(String.format("Spark Master at spark://pipeline-%s", getRunId()))
+                .validateAliveWorkersSparkPage(" 2")
+                .assertPageContains("Workers (2)")
+                .closeTab();
     }
 }
