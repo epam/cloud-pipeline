@@ -67,7 +67,6 @@ class ServerlessAPIButton extends React.Component {
         }
       })
       .catch(e => this.setState({url: undefined, error: e.message}));
-    // todo: fetch serverless api url
   };
 
   getServerlessAPIPopoverContent = () => {
