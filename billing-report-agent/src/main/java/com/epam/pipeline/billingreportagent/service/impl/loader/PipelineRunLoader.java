@@ -27,12 +27,15 @@ import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.user.PipelineUser;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -41,10 +44,17 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
+@Slf4j
 public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
 
-    @Autowired
-    private CloudPipelineAPIClient apiClient;
+    private final CloudPipelineAPIClient apiClient;
+    private final int loadStep;
+
+    public PipelineRunLoader(final CloudPipelineAPIClient apiClient,
+                             final @Value("${sync.run.load.step:30}") int loadStep) {
+        this.apiClient = apiClient;
+        this.loadStep = loadStep;
+    }
 
     @Override
     public List<EntityContainer<PipelineRunWithType>> loadAllEntities() {
@@ -56,16 +66,14 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
                                                                                     final LocalDateTime to) {
         final Map<String, EntityWithMetadata<PipelineUser>> usersWithMetadata = prepareUsers(apiClient);
 
-        final List<PipelineRun> runs =
-                apiClient.loadAllPipelineRunsActiveInPeriod(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(from),
-                        DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(to));
+        final List<PipelineRun> runs = getRuns(from, to);
 
         final Map<Long, List<InstanceType>> regionOffers = runs.stream()
                 .map(PipelineRun::getInstance)
                 .map(RunInstance::getCloudRegionId)
                 .distinct()
                 .collect(Collectors
-                        .toMap(Function.identity(), regionId -> apiClient.loadAllInstanceTypesForRegion(regionId)));
+                        .toMap(Function.identity(), apiClient::loadAllInstanceTypesForRegion));
 
         return runs
                 .stream()
@@ -74,6 +82,22 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
                         .owner(usersWithMetadata.get(run.getOwner()))
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    private List<PipelineRun> getRuns(final LocalDateTime from, final LocalDateTime to) {
+        LocalDateTime start = from;
+        final List<PipelineRun> runs = new ArrayList<>();
+        while (start.isBefore(to)) {
+            final LocalDateTime next = start.plusDays(loadStep).isAfter(to) ? to : start.plusDays(loadStep);
+            log.debug("Loading runs from {} to {}", start, next);
+            runs.addAll(
+                    ListUtils.emptyIfNull(
+                            apiClient.loadAllPipelineRunsActiveInPeriod(
+                                    DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(start),
+                                    DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(next))));
+            start = next;
+        }
+        return runs;
     }
 
     private List<NodeDisk> loadDisks(final PipelineRun run) {

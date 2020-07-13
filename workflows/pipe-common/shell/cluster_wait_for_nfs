@@ -123,6 +123,9 @@ elif [ "$CP_CAP_SHARE_FS_TYPE" == "lfs" ]; then
     else
         pipe_log_info "Successfully mounted LFS folder to worker node" "$FS_SETUP_TASK"
     fi
+
+    setfacl -d -m user::rwx -m group:root:rwx -m other::rx ${SHARED_PATH}
+    setfacl -m user::rwx -m group:root:rwx -m other::rx ${SHARED_PATH}
 else
     pipe_log_fail "Shared FS type '${CP_CAP_SHARE_FS_TYPE}' is not supported, exiting" "$FS_SETUP_TASK"
 fi

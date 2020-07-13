@@ -27,8 +27,10 @@ import com.epam.pipeline.elasticsearchagent.service.impl.converter.pipeline.Pipe
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.pipeline.PipelineLoader;
 import com.epam.pipeline.elasticsearchagent.utils.EventProcessorUtils;
 import com.epam.pipeline.elasticsearchagent.utils.Utils;
+import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.exception.PipelineResponseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
@@ -155,11 +157,7 @@ public class PipelineCodeHandler {
                 .map(path -> {
                     log.debug("Fetching path {} for revisionName {}", path, revisionName);
                     if (path.endsWith(FOLDER_INDICATOR)) {
-                        return ListUtils.emptyIfNull(
-                                cloudPipelineAPIClient.loadRepositoryContents(
-                                        pipeline.getId(),
-                                        revisionName,
-                                        path.replace(FOLDER_INDICATOR, StringUtils.EMPTY)))
+                        return getGitRepositoryEntries(pipeline, revisionName, path)
                                 .stream()
                                 .filter(content -> (content.getType().equals(GIT_ENTRY_TYPE)))
                                 .map(content ->
@@ -173,6 +171,20 @@ public class PipelineCodeHandler {
                 .flatMap(Collection::stream)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    private List<GitRepositoryEntry> getGitRepositoryEntries(Pipeline pipeline, String revisionName, String path) {
+        try {
+            return ListUtils.emptyIfNull(
+                    cloudPipelineAPIClient.loadRepositoryContents(
+                            pipeline.getId(),
+                            revisionName,
+                            path.replace(FOLDER_INDICATOR, StringUtils.EMPTY)));
+        } catch (PipelineResponseException e) {
+            log.error("An error while getting list of files for pipeline {} revision {} path {}: {}",
+                    pipeline.getId(), revisionName, path, e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
 
@@ -248,18 +260,24 @@ public class PipelineCodeHandler {
                                             final String repoEntryPath,
                                             final PermissionsContainer permissionsContainer) {
         log.debug("Indexing entry {}", repoEntryPath);
-        final byte[] fileContent =
-                cloudPipelineAPIClient.getTruncatedPipelineFile(pipeline.getId(), revisionName, repoEntryPath,
-                                                                codeLimitBytes);
-        if (ArrayUtils.isEmpty(fileContent)) {
-            log.debug("Missing file content for path {} revision {}", repoEntryPath, revisionName);
+        try {
+            final byte[] fileContent =
+                    cloudPipelineAPIClient.getTruncatedPipelineFile(pipeline.getId(), revisionName, repoEntryPath,
+                            codeLimitBytes);
+            if (ArrayUtils.isEmpty(fileContent)) {
+                log.debug("Missing file content for path {} revision {}", repoEntryPath, revisionName);
+                return null;
+            }
+            final String versionName = getVersionNameForIndex(revisionName);
+            return new IndexRequest(indexName, DOC_MAPPING_TYPE, buildFileId(repoEntryPath, versionName))
+                    .source(codeMapper
+                            .pipelineCodeToDocument(
+                                    pipeline, versionName, repoEntryPath, fileContent, permissionsContainer));
+        } catch (PipelineResponseException e) {
+            log.debug("An error during getting file content for path {} revision {}: {}",
+                    repoEntryPath, revisionName, e.getMessage());
             return null;
         }
-        final String versionName = getVersionNameForIndex(revisionName);
-        return new IndexRequest(indexName, DOC_MAPPING_TYPE, buildFileId(repoEntryPath, versionName))
-                .source(codeMapper
-                        .pipelineCodeToDocument(
-                                pipeline, versionName, repoEntryPath, fileContent, permissionsContainer));
     }
 
     private String getVersionNameForIndex(final String revisionName) {

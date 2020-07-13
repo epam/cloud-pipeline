@@ -379,7 +379,7 @@ class S3Mounter(StorageMounter):
 
     def build_mount_command(self, params):
         if params['aws_token'] is not None or params['fuse_type'] == FUSE_PIPE_ID:
-            return 'pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout}'.format(**params)
+            return 'pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} -o allow_other'.format(**params)
         elif params['fuse_type'] == FUSE_GOOFYS_ID:
             params['path'] = '{bucket}:{relative_path}'.format(**params) if params['relative_path'] else params['path']
             return 'AWS_ACCESS_KEY_ID={aws_key_id} AWS_SECRET_ACCESS_KEY={aws_secret} nohup goofys ' \
@@ -453,7 +453,7 @@ class GCPMounter(StorageMounter):
     def build_mount_command(self, params):
         if not params:
             return ""
-        return 'nohup gcsfuse --foreground -o {permissions} --key-file {credentials} --temp-dir {tmp_dir} ' \
+        return 'nohup gcsfuse --foreground -o {permissions} -o allow_other --key-file {credentials} --temp-dir {tmp_dir} ' \
                '--dir-mode {mask} --file-mode {mask} --implicit-dirs {path} {mount} > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
 
     def _get_credentials(self, storage):
@@ -522,15 +522,22 @@ class NFSMounter(StorageMounter):
             command = command.format(protocol="nfs")
 
         permission = 'g+rwx'
+        mask = '0774'
         if not PermissionHelper.is_storage_writable(self.storage) or PermissionHelper.is_run_sensitive():
             permission = 'g+rx'
+            mask = '0554'
             if not mount_options:
                 mount_options = 'ro'
             else:
                 options = mount_options.split(',')
                 if 'ro' not in options:
                     mount_options += ',ro'
-
+        if self.share_mount.mount_type == "SMB":
+            file_mode_options = 'file_mode={mode},dir_mode={mode}'.format(mode=mask)
+            if not mount_options:
+                mount_options = file_mode_options
+            else:
+                mount_options += ',' + file_mode_options
         if mount_options:
             command += ' -o {}'.format(mount_options)
         command += ' {path} {mount}'.format(**params)

@@ -51,6 +51,7 @@ import {LIMIT_MOUNTS_PARAMETER, LimitMountsInput} from './LimitMountsInput';
 import PipelineRunEstimatedPrice from '../../../../models/pipelines/PipelineRunEstimatedPrice';
 import FolderProject from '../../../../models/folders/FolderProject';
 import MetadataEntityFields from '../../../../models/folderMetadata/MetadataEntityFields';
+import ToolDefaultCommand from '../../../../models/tools/ToolDefaultCommand';
 
 import roleModel from '../../../../utils/roleModel';
 import SystemParametersBrowser from '../dialogs/SystemParametersBrowser';
@@ -211,6 +212,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     execEnvSelectValue: null,
     dtsId: null,
     startIdle: false,
+    useDefaultCmd: false,
     pipelineBrowserVisible: false,
     dockerImageBrowserVisible: false,
     pipeline: null,
@@ -237,6 +239,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     activeAutoCompleteParameterKey: null,
     currentProjectMetadata: null,
     estimatedPrice: {
+      evaluated: false,
       pending: false,
       pricePerHour: 0,
       maximumPrice: 0,
@@ -340,6 +343,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   @observable cmdTemplateValue;
   @observable launchCommandPayload;
   @observable _toolSettings;
+  @observable toolDefaultCmd;
   @observable regionDisabledByToolSettings = false;
   @observable toolCloudRegion = null;
   @observable toolAllowSensitive = true;
@@ -353,7 +357,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         defaultCloudRegionId: this.defaultCloudRegionId,
         execEnvSelectValue: this.getExecEnvSelectValue().execEnvSelectValue,
         spotInitialValue: this.correctPriceTypeValue(this.getDefaultValue('is_spot')),
-        cmdTemplateValue: this.cmdTemplateValue
+        cmdTemplateValue: this.cmdTemplateValue,
+        toolDefaultCmd: this.toolDefaultCmd
       }
     );
     this.props.onModified && this.props.onModified(this.modified);
@@ -772,6 +777,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
         startIdle: this.props.parameters.cmd_template === 'sleep infinity',
+        useDefaultCmd: false,
         isDts: this.isDts(),
         execEnvSelectValue,
         dtsId,
@@ -795,6 +801,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         bucketPathParameterKey: null,
         bucketPathParameterSection: null,
         estimatedPrice: {
+          evaluated: false,
           pending: false,
           pricePerHour: 0,
           maximumPrice: 0,
@@ -818,6 +825,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
         startIdle: this.props.parameters.cmd_template === 'sleep infinity',
+        useDefaultCmd: false,
         isDts: this.isDts(),
         execEnvSelectValue,
         dtsId,
@@ -844,6 +852,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         bucketPathParameterKey: null,
         bucketPathParameterSection: null,
         estimatedPrice: {
+          evaluated: false,
           pending: false,
           pricePerHour: 0,
           maximumPrice: 0,
@@ -873,11 +882,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   generateConfigurationPayload = (values) => {
+    let cmd = values[ADVANCED].cmdTemplate;
+    if (this.state.useDefaultCmd && this.toolDefaultCmd) {
+      cmd = this.toolDefaultCmd;
+    } else if (this.state.startIdle) {
+      cmd = 'sleep infinity';
+    }
     let payload = {
       instance_size: values[EXEC_ENVIRONMENT].type,
       instance_disk: +values[EXEC_ENVIRONMENT].disk,
       timeout: +(values[ADVANCED].timeout || 0),
-      cmd_template: this.state.startIdle ? 'sleep infinity' : values[ADVANCED].cmdTemplate,
+      cmd_template: cmd,
       node_count: this.state.launchCluster ? this.state.nodesCount : undefined,
       docker_image: values[EXEC_ENVIRONMENT].dockerImage,
       parameters: {},
@@ -1040,11 +1055,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   generateLaunchPayload = (values) => {
+    let cmd = values[ADVANCED].cmdTemplate;
+    if (this.state.useDefaultCmd && this.toolDefaultCmd) {
+      cmd = this.toolDefaultCmd;
+    } else if (this.state.startIdle) {
+      cmd = 'sleep infinity';
+    }
     const payload = {
       instanceType: values[EXEC_ENVIRONMENT].type,
       hddSize: +values[EXEC_ENVIRONMENT].disk,
       timeout: +(values[ADVANCED].timeout || 0),
-      cmdTemplate: this.state.startIdle ? 'sleep infinity' : values[ADVANCED].cmdTemplate,
+      cmdTemplate: cmd,
       nodeCount: this.state.launchCluster ? this.state.nodesCount : undefined,
       dockerImage: values[EXEC_ENVIRONMENT].dockerImage,
       pipelineId: this.props.pipeline ? this.props.pipeline.id : undefined,
@@ -1054,7 +1075,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
         ? +values[EXEC_ENVIRONMENT].cloudRegionId
         : undefined,
-      prettyUrl: this.prettyUrlEnabled ? prettyUrlGenerator.build(values[ADVANCED].prettyUrl) : undefined
+      prettyUrl: this.prettyUrlEnabled
+        ? prettyUrlGenerator.build(values[ADVANCED].prettyUrl)
+        : undefined
     };
     if ((values[ADVANCED].is_spot ||
       `${this.getDefaultValue('is_spot')}`) !== 'true' &&
@@ -1369,7 +1392,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         this.getDefaultValue('cloudRegionId') || this.defaultCloudRegionId;
     }
     isSpot = `${isSpot}` === 'true';
-    if (!isNaN(disk) && type) {
+    if (!isNaN(disk) && type && !this.state.estimatedPrice.pending) {
       const request = this.props.pipeline
         ? new PipelineRunEstimatedPrice(
           this.props.pipeline.id,
@@ -1395,6 +1418,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             }
             return cents / 100;
           };
+          estimatedPriceState.evaluated = true;
           estimatedPriceState.averagePrice = adjustPrice(request.value.averageTimePrice);
           estimatedPriceState.maximumPrice = adjustPrice(request.value.maximumTimePrice);
           estimatedPriceState.minimumPrice = adjustPrice(request.value.minimumTimePrice);
@@ -1512,7 +1536,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   cmdTemplateEditorValueChanged = (code) => {
-    const advancedValues = this.getSectionValue(ADVANCED);
+    const advancedValues = this.getSectionValue(ADVANCED) || {};
     advancedValues.cmdTemplate = code;
     this.cmdTemplateValue = code;
     this.props.form.setFieldsValue({[ADVANCED]: advancedValues});
@@ -2676,8 +2700,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         onClick={() => this.removeParameter(sectionName, key)}
                         style={{marginLeft: 15, width: 15}}
                       />
+                    ) : (
+                      <div
+                        style={{
+                          marginLeft: 15,
+                          width: 15,
+                          display: 'inline-block'
+                        }}>{'\u00A0'}</div>
                     )
-                    : <div style={{marginLeft: 15, width: 15, display: 'inline-block'}}>{'\u00A0'}</div>
                 }
                 {
                   parameterHintFn &&
@@ -2913,6 +2943,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.regionDisabledByToolSettings = false;
     this.toolCloudRegion = null;
     this.toolAllowSensitive = true;
+    this.toolDefaultCmd = undefined;
+    this.setState({
+      useDefaultCmd: false
+    });
   };
 
   lastConfirmedImage;
@@ -2946,6 +2980,27 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             } else {
               this.regionDisabledByToolSettings = false;
               this.toolCloudRegion = null;
+            }
+
+            const defaultCmdRequest = new ToolDefaultCommand(im.id, version);
+            await defaultCmdRequest.fetch();
+            if (defaultCmdRequest.loaded) {
+              this.toolDefaultCmd = defaultCmdRequest.value;
+              const advancedValues = this.getSectionValue(ADVANCED) || {};
+              const cmd = (advancedValues.cmdTemplate || this.getDefaultValue('cmd_template'));
+              const useDefaultCmd = cmd === this.toolDefaultCmd;
+              if (useDefaultCmd) {
+                this.setState({
+                  useDefaultCmd: true,
+                  startIdle: false
+                }, this.formFieldsChanged);
+              } else {
+                this.setState({
+                  useDefaultCmd: false
+                }, this.formFieldsChanged);
+              }
+            } else {
+              this.toolDefaultCmd = undefined;
             }
           } else {
             this.toolAllowSensitive = true;
@@ -3506,14 +3561,30 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 (this.props.readOnly && !this.props.canExecute) ||
                 (this.state.pipeline && this.props.detached)
               }
-              onChange={(e) => this.setState({startIdle: e.target.checked}, this.formFieldsChanged)}
+              onChange={(e) => this.setState({startIdle: e.target.checked, useDefaultCmd: false}, this.formFieldsChanged)}
               checked={this.state.startIdle}>
               Start idle
             </Checkbox>
             {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.startIdleHint)}
           </Row>
           {
-            !this.state.startIdle
+            !!this.toolDefaultCmd && (
+              <Row>
+                <Checkbox
+                  disabled={
+                    !!this.state.fireCloudMethodName ||
+                    (this.props.readOnly && !this.props.canExecute) ||
+                    (this.state.pipeline && this.props.detached)
+                  }
+                  onChange={(e) => this.setState({useDefaultCmd: e.target.checked, startIdle: false}, this.formFieldsChanged)}
+                  checked={this.state.useDefaultCmd}>
+                  Use default command
+                </Checkbox>
+              </Row>
+            )
+          }
+          {
+            !this.state.startIdle && !this.state.useDefaultCmd
               ? (
                 <Row>
                   <Col span={24}>
@@ -3550,6 +3621,22 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         defaultCode={this.getDefaultValue('cmd_template')}
                       />
                     </FormItem>
+                  </Col>
+                </Row>
+              ) : undefined
+          }
+          {
+            this.state.useDefaultCmd && this.toolDefaultCmd
+              ? (
+                <Row>
+                  <Col span={24} className={styles.formItemRow}>
+                    <CodeEditor
+                      readOnly
+                      className={styles.codeEditor}
+                      language="shell"
+                      lineWrapping
+                      defaultCode={this.toolDefaultCmd}
+                    />
                   </Col>
                 </Row>
               ) : undefined
@@ -3979,8 +4066,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       onClick={
                         () => this.props.onRemoveConfiguration && this.props.onRemoveConfiguration()
                       }
-                      style={{verticalAlign: 'middle'}}>
-                    Remove
+                      style={{verticalAlign: 'middle'}}
+                    >
+                      Remove
                     </Button>
                   ) : undefined
               }
@@ -4433,6 +4521,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       } else {
         this.resetToolSettings();
       }
+    }
+    if (prevProps.allowedInstanceTypes.loaded &&
+      !this.state.estimatedPrice.evaluated &&
+      !this.state.estimatedPrice.pending) {
+      this.evaluateEstimatedPrice({});
     }
   }
 

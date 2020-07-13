@@ -172,7 +172,7 @@ public class SMTPNotificationManager implements NotificationManager {
         for (PipelineUser user : keepInformedUsers) {
             String address = user.getEmail();
             if (address != null) {
-                email.addCc(address);
+                email.addBcc(address);
             }
         }
 

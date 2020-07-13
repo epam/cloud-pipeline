@@ -362,7 +362,12 @@ export default class UserManagementForm extends React.Component {
       const tagRenderer = (tag, index) =>
         <span
           key={index}
-          className={`${tagClassName} tag-${tag.displayName.replace(new RegExp(' ', 'g'), '-')} ${tag.isADGroup ? styles.ad : ''}`}>
+          className={[
+            `${tagClassName}`,
+            `tag-${tag.displayName.replace(new RegExp(' ', 'g'), '-')}`,
+            `${tag.isADGroup ? styles.ad : ''}`
+          ].join(' ')}
+        >
           {tag.displayName}
         </span>;
       if (tags.length - 1 > maxTagItems) {
@@ -513,7 +518,10 @@ export default class UserManagementForm extends React.Component {
       return name;
     };
     Modal.confirm({
-      title: `Are you sure you want to delete ${role.predefined ? 'role' : 'group'} '${role.predefined ? role.name : splitRoleName(role.name)}'?`,
+      title: [
+        `Are you sure you want to delete ${role.predefined ? 'role' : 'group'}`,
+        `'${role.predefined ? role.name : splitRoleName(role.name)}'?`
+      ].join(' '),
       content: 'This operation cannot be undone.',
       style: {
         wordWrap: 'break-word'

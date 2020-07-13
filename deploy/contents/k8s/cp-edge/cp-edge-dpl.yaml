@@ -40,6 +40,12 @@ spec:
             - mountPath: /opt/api/pki
               name: api-pki
               readOnly: true
+            - mountPath: /opt/gitlab/pki
+              name: gitlab-pki
+              readOnly: true
+            - mountPath: /opt/docker-registry/pki
+              name: docker-pki
+              readOnly: true
             - mountPath: /opt/edge/pki
               name: edge-pki
               readOnly: true
@@ -53,6 +59,12 @@ spec:
         - name: api-pki
           hostPath:
             path: /opt/api/pki
+        - name: gitlab-pki
+          hostPath:
+            path: /opt/gitlab/pki
+        - name: docker-pki
+          hostPath:
+            path: /opt/docker-registry/pki/
         - name: edge-pki
           hostPath:
             path: /opt/edge/pki

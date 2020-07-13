@@ -141,10 +141,12 @@ function limitMountsCheck (form, parameters) {
   const initial = getDefaultValue();
   return form.getFieldValue(`${ADVANCED}.limitMounts`) !== initial;
 }
-function cmdTemplateCheck (state, parameters, {cmdTemplateValue}) {
+function cmdTemplateCheck (state, parameters, {cmdTemplateValue, toolDefaultCmd}) {
   let code = cmdTemplateValue;
   if (state.startIdle) {
     code = 'sleep infinity';
+  } else if (state.useDefaultCmd && toolDefaultCmd) {
+    code = toolDefaultCmd;
   }
   if (code === undefined) {
     return false;

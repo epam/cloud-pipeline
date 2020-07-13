@@ -21,6 +21,8 @@ spec:
         - name: cp-search-srv
           image: lifescience/cloud-pipeline:search-$CP_VERSION
           imagePullPolicy: "Always"
+          securityContext:
+            privileged: true
           command: ["/init"]
           ports:
             - containerPort: 8080

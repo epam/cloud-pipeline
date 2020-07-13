@@ -161,8 +161,8 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
           this.closeDialog();
           break;
         case SearchItemTypes.configuration:
-          const [id, configName] = item.id.split('-');
-          this.props.router.push(`/configuration/${id}/${configName}`);
+          const [id, ...configName] = item.id.split('-');
+          this.props.router.push(`/configuration/${id}/${configName.join('-')}`);
           this.closeDialog();
           break;
         case SearchItemTypes.metadataEntity:
