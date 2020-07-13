@@ -24,7 +24,7 @@ class User(API):
     @classmethod
     def get_permissions(cls, identifier, acl_class):
         entity = Entity.load_by_id_or_name(identifier, acl_class)
-        return cls.permissions(entity['id'], entity['aclClass'])
+        return cls.permissions(entity['id'], entity['aclClass']), entity['owner']
 
     @classmethod
     def permissions(cls, id, acl_class):
