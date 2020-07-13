@@ -256,7 +256,7 @@ function cp_cap_publish {
 
             sed -i "/$_KUBE_MASTER_INIT/d" $_MASTER_CAP_INIT_PATH
             echo "$_KUBE_MASTER_INIT" >> $_MASTER_CAP_INIT_PATH
-            
+
             sed -i "/$_KUBE_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_KUBE_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
       fi
@@ -390,7 +390,7 @@ function configure_package_manager {
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
                         curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
                         yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q > /dev/null 2>&1
-                        
+
                         if [ $? -ne 0 ]; then
                               echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the yum, removing the repo"
                               rm -f /etc/yum.repos.d/cloud-pipeline.repo
@@ -416,7 +416,7 @@ function configure_package_manager {
                         curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
                         sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
                         apt-get update -qq -y --allow-insecure-repositories
-                        
+
                         if [ $? -ne 0 ]; then
                               echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
                               sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
@@ -480,7 +480,10 @@ function symlink_common_locations {
       local _OWNER_HOME="$2"
 
       # Grant OWNER passwordless sudo
-      echo "$_OWNER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+      if check_cp_cap CP_CAP_SUDO_ENABLE || [[ "$_OWNER" == "root" ]]
+      then
+            echo "$_OWNER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+      fi
       user_create_home "$_OWNER" "$_OWNER_HOME"
 
       # Create symlinks to /cloud-data with mounted buckets into account's home dir
@@ -581,6 +584,22 @@ function install_private_packages {
 function list_storage_mounts() {
     local _MOUNT_ROOT="$1"
     echo $(df -T | awk 'index($2, "fuse")' | awk '{ print $7 }' | grep "^$_MOUNT_ROOT")
+}
+
+function update_user_limits() {
+    local _MAX_NOPEN_LIMIT=$1
+    local _MAX_PROCS_LIMIT=$2
+    ulimit -n "$_MAX_NOPEN_LIMIT" -u "$_MAX_PROCS_LIMIT"
+cat <<EOT >> /etc/security/limits.conf
+* soft nofile $_MAX_NOPEN_LIMIT
+* hard nofile $_MAX_NOPEN_LIMIT
+* soft nproc $_MAX_PROCS_LIMIT
+* hard nproc $_MAX_PROCS_LIMIT
+root soft nofile $_MAX_NOPEN_LIMIT
+root hard nofile $_MAX_NOPEN_LIMIT
+root soft nproc $_MAX_PROCS_LIMIT
+root hard nproc $_MAX_PROCS_LIMIT
+EOT
 }
 
 function add_self_to_no_proxy() {
@@ -744,7 +763,7 @@ fi
 ######################################################
 # Configure the dependencies if needed
 ######################################################
-# Disable wget's robots.txt default parsing, as it breaks 
+# Disable wget's robots.txt default parsing, as it breaks
 # the recursive download for certain sites
 _CP_WGET_CONFIGS="/etc/wgetrc /usr/local/etc/wgetrc /root/.wgetrc /home/$OWNER/.wgetrc"
 for _CP_WGET_CONF in $_CP_WGET_CONFIGS; do
@@ -925,10 +944,14 @@ if [ -z "$CP_CAP_ENV_UMASK" ] ;
         echo "CP_CAP_ENV_UMASK is not defined, setting to ${CP_CAP_ENV_UMASK}"
 fi
 
-# Setup max open files and max processes limits for a current session, as default limit is 1024
-# Further this command is also pushed to the "profile" and "bashrc scripts" for SSH sessions
-_CP_ENV_ULIMIT="ulimit -n $MAX_NOPEN_LIMIT -u $MAX_PROCS_LIMIT"
-eval "$_CP_ENV_ULIMIT"
+if [ -z "$CP_CAP_SUDO_ENABLE" ] ;
+    then
+        export CP_CAP_SUDO_ENABLE="true"
+        echo "CP_CAP_SUDO_ENABLE is not defined, setting to ${CP_CAP_SUDO_ENABLE}"
+fi
+
+# Setup max open files and max processes limits for a current session and all ssh sessions, as default limit is 1024
+update_user_limits $MAX_NOPEN_LIMIT $MAX_PROCS_LIMIT
 
 # default 0002 - will result into 775 (dir) and 664 (file) permissions
 _CP_ENV_UMASK="umask ${CP_CAP_ENV_UMASK:-0002}"
@@ -1636,7 +1659,7 @@ if ( check_cp_cap "CP_CAP_SYSTEMD_CONTAINER" || check_cp_cap "CP_CAP_KUBE" ) \
       eval "$_IGNORING_CHROOT_ENV_EXPORTING"
       eval "$_REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND"
       /usr/lib/systemd/systemd --system &
-      
+
       # This directory does not exist by default
       # If it is missing - systemctl will throw "Failed to get D-Bus connection: Operation not permitted"
       # See: https://serverfault.com/a/925694
