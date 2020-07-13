@@ -117,6 +117,13 @@ function FileSystemTab (
       const data = [fileSystem.identifier, ...itemsToDrag].join('|');
       event.dataTransfer.setData('text/plain', data);
       event.dataTransfer.effectAllowed = 'copy';
+      const image = document.getElementById('drag-and-drop');
+      if (itemsToDrag.length > 1) {
+        image.innerText = `Copy ${itemsToDrag.length} elements`;
+      } else {
+        image.innerText = `Copy ${itemsToDrag[0]}`;
+      }
+      event.dataTransfer.setDragImage(image, 0, 0);
       setDraggingCallback();
       becomeActiveCallback();
     } else {

@@ -53,3 +53,13 @@
 .footer .operations {
   background-color: white;
 }
+
+.drag-and-drop {
+  position: absolute;
+  top: -100px;
+  display: block;
+  padding: 5px 10px;
+  background-color: white;
+  border: 1px solid #ccc;
+  box-shadow: 0 0 2px 0 #aaa;
+}

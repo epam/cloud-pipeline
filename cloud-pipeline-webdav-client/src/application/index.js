@@ -71,6 +71,7 @@ function Application() {
           setDragging={setDragging}
           onDropCommand={onDropCommand}
         />
+        <div id="drag-and-drop" className="drag-and-drop">{'\u00A0'}</div>
       </Layout.Content>
       <Layout.Footer
         className="footer"
