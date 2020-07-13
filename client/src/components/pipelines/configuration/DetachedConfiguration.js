@@ -998,8 +998,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
                 this.props.configurations.value.entries.length > 1
               }
               onRemoveConfiguration={this.onRemoveConfigurationClicked(this.selectedConfiguration)}
-              detached={true}
-              editConfigurationMode={true}
+              detached
+              editConfigurationMode
               currentConfigurationName={this.selectedConfigurationName}
               currentConfigurationIsDefault={this.selectedConfigurationIsDefault}
               onSetConfigurationAsDefault={this.onSetAsDefault}
@@ -1014,7 +1014,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
               configurations={this.getConfigurations()}
               onLaunch={this.onSaveConfiguration}
               onSelectPipeline={this.onConfigurationSelectPipeline}
-              isDetachedConfiguration={true}
+              isDetachedConfiguration
               configurationId={this.props.configurationId}
               selectedPipelineParametersIsLoading={this.state.selectedPipelineParametersIsLoading}
               fireCloudMethod={this.selectedFireCloudMethod}
