@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
+import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
@@ -142,7 +143,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
     public GlobalSearchAO validateCountSearchResults(final int count) {
         get(SEARCH_RESULT)
                 .findAll(".earch__search-result-item")
-                .shouldHaveSize(count);
+                .shouldHave(sizeGreaterThanOrEqual(count));
         return this;
     }
 

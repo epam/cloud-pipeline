@@ -310,6 +310,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .sleep(2, SECONDS)
                 .ensure(DATA, text("2 DATA"))
+                .validateCountSearchResults(2)
                 .ensureAll(GlobalSearchAO.disable, FOLDERS, PIPELINES, TOOLS, ISSUES)
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(storage)
