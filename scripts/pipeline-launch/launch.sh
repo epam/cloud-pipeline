@@ -662,6 +662,20 @@ if ! jq --version > /dev/null 2>&1; then
     chmod +x /usr/bin/jq
 fi
 
+######################################################
+# Configure the dependencies if needed
+######################################################
+# Disable wget's robots.txt default parsing, as it breaks 
+# the recursive download for certain sites
+_CP_WGET_CONFIGS="/etc/wgetrc /usr/local/etc/wgetrc /root/.wgetrc /home/$OWNER/.wgetrc"
+for _CP_WGET_CONF in $_CP_WGET_CONFIGS; do
+      [ ! -f "$_CP_WGET_CONF" ] && continue
+      sed -i '/robots/d' $_CP_WGET_CONF
+      echo "robots = off" >> $_CP_WGET_CONF
+done
+
+
+
 echo "------"
 echo
 
