@@ -380,7 +380,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .launch(this)
                 .showLog(getLastRunId())
                 .waitForCompletion();
-        home().sleep(2, MINUTES);
+        home().sleep(1, MINUTES);
         search()
                 .click(RUNS)
                 .search(storage)
@@ -389,7 +389,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .hover(SEARCH_RESULT)
                 .openSearchResultItemWithText(String.format("%s-%s", pipeline.toLowerCase(), getLastRunId()))
                 .ensure(TITLE, Status.SUCCESS.reached, text(getLastRunId()), text(pipeline), text(draftVersionName))
-                .checkTags(configurationDisk, configurationNodeType)
+                .checkTags(configurationDisk, configurationNodeType.substring(0, configurationNodeType.indexOf(" ")))
                 .ensure(HIGHLIGHTS, text("Found in logs"),
                         text(storage.toLowerCase() + " mounted to"));
     }
