@@ -275,7 +275,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .hover(SEARCH_RESULT)
                 .openSearchResultItemWithText(pipelineWithRun())
                 .ensure(TITLE, Status.SUCCESS.reached, text(testRunID), text(pipeline), text(draftVersionName))
-                .checkTags(configurationDisk, configurationNodeType)
+                .checkTags(configurationDisk, configurationNodeType.substring(0, configurationNodeType.indexOf(" ")))
                 .ensure(HIGHLIGHTS, text("Found in pipelineName"), text("Found in description"),
                         text("Found in podId"))
                 .ensure(PREVIEW, text("Owner"), text(LOGIN), text("Scheduled"), text("Started"),
@@ -388,7 +388,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .sleep(2, SECONDS)
                 .hover(SEARCH_RESULT)
                 .openSearchResultItemWithText(String.format("%s-%s", pipeline.toLowerCase(), getLastRunId()))
-                .ensure(TITLE, Status.SUCCESS.reached, text(testRunID), text(pipeline), text(draftVersionName))
+                .ensure(TITLE, Status.SUCCESS.reached, text(getLastRunId()), text(pipeline), text(draftVersionName))
                 .checkTags(configurationDisk, configurationNodeType)
                 .ensure(HIGHLIGHTS, text("Found in logs"),
                         text(storage.toLowerCase() + " mounted to"));
@@ -471,7 +471,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         String endpointLink = logAO.getEndpointLink();
         String[] instanceParam = new String[] {
             logAO.getParameterValue("Node type"),
-            logAO.getParameterValue("Disk"),
+            logAO.getParameterValue("Disk").replace(" ", ""),
             logAO.getParameterValue("Price type")};
         home();
         search()
@@ -488,8 +488,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(PREVIEW, text("Owner"), text("Scheduled"),
                         text("Started"), text("Running for"), text("Estimated price"))
                 .checkEndpointsLink(endpointLink)
-                .ensure(PREVIEW_TAB, text("InitializeNode"), text("InputData"),
-                        text("MountDataStorages"), text("InitializeEnvironment"), text("Console"))
+                .ensure(PREVIEW_TAB, text("InputData"), text("MountDataStorages"),
+                        text("InitializeEnvironment"), text("Console"))
                 .parent()
                 .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
                 .ensure(STATUS, text(testRunID_2668));
