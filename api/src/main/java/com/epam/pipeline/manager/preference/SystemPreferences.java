@@ -525,7 +525,7 @@ public class SystemPreferences {
      * Specifies if interactive run ssh sessions should use root as a default user.
      */
     public static final BooleanPreference SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED = new BooleanPreference(
-            "system.ssh.default.root.user.enabled", false, SYSTEM_GROUP, pass);
+            "system.ssh.default.root.user.enabled", true, SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
