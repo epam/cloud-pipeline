@@ -47,4 +47,4 @@ spec:
           secret:
             secretName: cp-region-creds-secret
       imagePullSecrets:
-        - name: cp-region-creds-secret
+        - name: cp-distr-docker-registry-secret
