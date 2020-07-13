@@ -48,6 +48,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners.confine;
 import static java.util.stream.Collectors.toList;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
 
@@ -232,7 +233,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
                     get(TAGS).find(By.xpath(".//span[3]")).text(),
                     get(TAGS).find(By.xpath(".//span[4]")).text(),
                     get(TAGS).find(By.xpath(".//span[5]")).text());
-            Arrays.stream(list).forEach(tags::contains);
+            Arrays.stream(list).forEach(s -> assertTrue(tags.contains(s), String.format("Tag %s isn't found", s)));
             return this;
         }
 

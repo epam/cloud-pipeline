@@ -380,7 +380,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .launch(this)
                 .showLog(getLastRunId())
                 .waitForCompletion();
-        home();
+        home().sleep(2, MINUTES);
         search()
                 .click(RUNS)
                 .search(storage)
@@ -469,10 +469,10 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .closeTab();
         LogAO logAO = new LogAO();
         String endpointLink = logAO.getEndpointLink();
-        String[] instanceParam = new String[3];
-        instanceParam[0] = logAO.getParameterValue("Node type");
-        instanceParam[1] = logAO.getParameterValue("Disk");
-        instanceParam[2] = logAO.getParameterValue("Price type");
+        String[] instanceParam = new String[] {
+            logAO.getParameterValue("Node type"),
+            logAO.getParameterValue("Disk"),
+            logAO.getParameterValue("Price type")};
         home();
         search()
                 .click(RUNS)
