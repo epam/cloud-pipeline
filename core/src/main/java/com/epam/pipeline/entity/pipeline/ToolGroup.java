@@ -98,6 +98,7 @@ public class ToolGroup extends AbstractHierarchicalEntity {
         result.setDescription(this.getDescription());
         result.setPrivateGroup(this.isPrivateGroup());
         result.setParent(this.getParent());
+        result.setOwner(this.getOwner());
         return result;
     }
 }
