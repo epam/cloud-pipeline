@@ -3580,6 +3580,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   checked={this.state.useDefaultCmd}>
                   Use default command
                 </Checkbox>
+                {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.useDefaultCommandHint)}
               </Row>
             )
           }

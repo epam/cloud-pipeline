@@ -91,6 +91,14 @@ const startIdleHint = (localizedStringFn) => (
   </Row>
 );
 
+const useDefaultCommandHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    To use the <b>CMD from the docker image</b> - select <b>Default Command</b> option.
+    <br />
+    This will read a command from the Dockefile's CMD instruction and use it to start the container.
+  </Row>
+);
+
 const priceTypeHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
     <b>{localizedStringFn('Spot')}</b> type will provide ~3 times lower prices, but may introduce longer startup time and accidental node failure.<br />
@@ -146,6 +154,7 @@ const hints = {
   awsRegionRestrictedByToolSettingsHint,
   diskHint,
   startIdleHint,
+  useDefaultCommandHint,
   priceTypeHint,
   autoPauseHint,
   timeOutHint,
