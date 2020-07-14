@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.settingsButton
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.Objects.isNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertTrue;
 
 public class Configuration implements AccessObject<Configuration> {
 
@@ -327,4 +328,8 @@ public class Configuration implements AccessObject<Configuration> {
         return () -> new ConfirmationPopupAO<>(new Object()).ensureTitleIs("Are you sure you want to change configuration?").ok();
     }
 
+    public Configuration assertPageTitleIs(final String expectedTitle) {
+        assertTrue($(title()).getText().contains(expectedTitle));
+        return this;
+    }
 }

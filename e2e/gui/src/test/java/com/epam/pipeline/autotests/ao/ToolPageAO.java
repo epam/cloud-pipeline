@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,26 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.switchTo;
 import static com.codeborne.selenide.Selenide.title;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
+import static com.epam.pipeline.autotests.ao.Primitive.TITLE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ToolPageAO implements AccessObject<ToolPageAO> {
+
+    private final Map<Primitive, SelenideElement> elements = initialiseElements(
+            entry(TITLE, context().find(byClassName("tools__tools-header")))
+    );
 
     protected String endpoint;
 
@@ -53,10 +62,16 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
 
     @Override
     public Map<Primitive, SelenideElement> elements() {
-        return Collections.emptyMap();
+        return elements;
     }
 
     public String getEndpoint() {
         return endpoint;
+    }
+
+    public void closeTab() {
+        List<String> tabs = new ArrayList<>(getWebDriver().getWindowHandles());
+        getWebDriver().close();
+        switchTo().window(tabs.get(0));
     }
 }
