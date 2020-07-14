@@ -905,6 +905,25 @@ echo
 ######################################################
 
 
+######################################################
+echo Configure sudo
+echo "-"
+######################################################
+
+if check_cp_cap CP_CAP_SUDO_ENABLE
+then
+  SUDO_INSTALL_COMMAND=
+  get_install_command_by_current_distr SUDO_INSTALL_COMMAND "sudo"
+  if [ -z "$SUDO_INSTALL_COMMAND" ] ;
+    then
+        echo "Unable to setup sudo, package manager not found (apt-get/yum/apk)"
+    else
+        # Install sudo
+        eval "$SUDO_INSTALL_COMMAND"
+  fi
+fi
+
+######################################################
 
 ######################################################
 echo Setting up SSH server
