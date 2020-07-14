@@ -38,6 +38,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import net.javacrumbs.shedlock.core.SchedulerLock;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
@@ -145,6 +146,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             processIdleRuns(runs);
             processOverloadedRuns(runs);
             processPausingResumingRuns();
+            processServerlessRuns();
         }
 
         private void processPausingResumingRuns() {
@@ -403,6 +405,14 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
         private void setInstanceTypeMap(final Map<String, InstanceType> instanceTypeMap) {
             this.instanceTypeMap = instanceTypeMap;
+        }
+
+        private void processServerlessRuns() {
+            final Integer timeout = preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_STOP_TIMEOUT);
+            final LocalDateTime maxLastUpdate = LocalDateTime.now().minusMinutes(timeout);
+            final List<PipelineRun> runs = ListUtils.emptyIfNull(
+                    pipelineRunManager.loadExpiredServerlessRuns(maxLastUpdate));
+            runs.forEach(run -> pipelineRunManager.stopServerlessRun(run.getId()));
         }
     }
 }
