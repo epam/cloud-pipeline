@@ -78,6 +78,8 @@ import java.util.regex.Pattern;
 public class ServerlessConfigurationManager {
 
     private static final int REQUEST_TIMEOUT = 30 * 1000;
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_PAGE_SIZE = 20;
 
     private final RunConfigurationManager runConfigurationManager;
     private final ConfigurationRunner configurationRunner;
@@ -154,12 +156,7 @@ public class ServerlessConfigurationManager {
     }
 
     private PipelineRun receivePipelineRun(final Long configurationId, final RunConfiguration configuration) {
-        final PagingRunFilterVO filter = new PagingRunFilterVO();
-        filter.setConfigurationIds(Collections.singletonList(configurationId));
-        filter.setStatuses(Collections.singletonList(TaskStatus.RUNNING));
-        List<PipelineRun> activeRunsForConfiguration = ListUtils.emptyIfNull(runManager
-                .searchPipelineRuns(filter, false)
-                .getElements());
+        List<PipelineRun> activeRunsForConfiguration = loadActiveRuns(configurationId);
         if (CollectionUtils.isEmpty(activeRunsForConfiguration)) {
             activeRunsForConfiguration = configurationRunner.runConfiguration(null,
                     runConfigurationMapper.toRunConfigurationWithEntitiesVO(configuration), null);
@@ -167,6 +164,17 @@ public class ServerlessConfigurationManager {
         return activeRunsForConfiguration.stream()
                 .max(Comparator.comparing(PipelineRun::getStartDate))
                 .orElseThrow(() -> new IllegalArgumentException("Failed to find pipeline run for configuration"));
+    }
+
+    private List<PipelineRun> loadActiveRuns(final Long configurationId) {
+        final PagingRunFilterVO filter = new PagingRunFilterVO();
+        filter.setConfigurationIds(Collections.singletonList(configurationId));
+        filter.setStatuses(Collections.singletonList(TaskStatus.RUNNING));
+        filter.setPage(DEFAULT_PAGE);
+        filter.setPageSize(DEFAULT_PAGE_SIZE);
+        return ListUtils.emptyIfNull(runManager
+                .searchPipelineRuns(filter, false)
+                .getElements());
     }
 
     private String getEndpointUrl(final AbstractRunConfigurationEntry configurationEntry,
