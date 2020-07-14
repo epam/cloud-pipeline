@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.MountCommand;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.manager.datastorage.leakagepolicy.SensitiveStorageOperation;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
@@ -185,5 +186,9 @@ public class StorageProviderManager {
     public PathDescription getDataSize(final AbstractDataStorage dataStorage, final String path,
                                        final PathDescription pathDescription) {
         return getStorageProvider(dataStorage).getDataSize(dataStorage, path, pathDescription);
+    }
+
+    public MountCommand buildMontCommand(final AbstractDataStorage dataStorage, final String rootMountPoint) {
+        return getStorageProvider(dataStorage).buildMountCommand(dataStorage, rootMountPoint);
     }
 }

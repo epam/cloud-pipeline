@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.MountCommand;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.region.AzureRegion;
@@ -199,6 +200,11 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     public PathDescription getDataSize(final AzureBlobStorage dataStorage, final String path,
                                        final PathDescription pathDescription) {
         return getAzureStorageHelper(dataStorage).getDataSize(dataStorage, path, pathDescription);
+    }
+
+    @Override
+    public MountCommand buildMountCommand(final AzureBlobStorage dataStorage, final String rootMountPoint) {
+        throw new UnsupportedOperationException("Mount command is supported for NFS provider only");
     }
 
     private AzureStorageHelper getAzureStorageHelper(final AzureBlobStorage storage) {

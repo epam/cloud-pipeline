@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.entity.datastorage.MountCommand;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
@@ -136,6 +137,19 @@ public class DataStorageController extends AbstractRestController {
     public Result<List<DataStorageWithShareMount>> getAvailableStoragesWithMountObjects(
             @RequestParam(value = FROM_REGION, required = false) final Long regionId) {
         return Result.success(dataStorageApiService.getAvailableStoragesWithShareMount(regionId));
+    }
+
+    @GetMapping("/datastorage/allWithMounts")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object.",
+            notes = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<DataStorageWithShareMount>> getAllStoragesWithMountObjects() {
+        return Result.success(dataStorageApiService.getAllStoragesWithShareMount());
     }
 
     @RequestMapping(value = "/datastorage/mount", method = RequestMethod.GET)
@@ -714,5 +728,19 @@ public class DataStorageController extends AbstractRestController {
     public Result<StorageUsage> getStorageUsage(@RequestParam final String id,
                                                 @RequestParam(required = false) final String path) {
         return Result.success(dataStorageApiService.getStorageUsage(id, path));
+    }
+
+    @GetMapping(value = "/datastorage/{id}/mountCmd")
+    @ResponseBody
+    @ApiOperation(
+            value = "Builds mount command for NST storage.",
+            notes = "Builds mount command for NST storage.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<MountCommand> buildMontCommand(@PathVariable(value = ID) final Long id,
+                                                 @RequestParam final String root) {
+        return Result.success(dataStorageApiService.buildMontCommand(id, root));
     }
 }

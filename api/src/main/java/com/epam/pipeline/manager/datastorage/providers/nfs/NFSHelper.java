@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,14 @@
 
 package com.epam.pipeline.manager.datastorage.providers.nfs;
 
+import com.epam.pipeline.entity.datastorage.MountCommand;
 import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.util.StringUtils;
 
 import java.util.Optional;
@@ -56,6 +58,8 @@ final class NFSHelper {
     private static final String SMB_SCHEME = "//";
     private static final String PATH_SEPARATOR = "/";
 
+    private static final String NFS_MOUNT_CMD_PATTERN = "sudo mount -t %s %s %s %s";
+
     private NFSHelper() {
 
     }
@@ -76,23 +80,35 @@ final class NFSHelper {
         }
     }
 
-    static String getNFSMountOption(final AbstractCloudRegion cloudRegion,
-                                    final AbstractCloudRegionCredentials credentials,
-                                    final String defaultOptions, String protocol) {
-        String result = defaultOptions;
+    static Pair<String, MountCommand> getNFSMountOption(final AbstractCloudRegion cloudRegion,
+                                                        final AbstractCloudRegionCredentials credentials,
+                                                        final String defaultOptions, final String protocol) {
         if (cloudRegion != null && cloudRegion.getProvider() == CloudProvider.AZURE
                 && protocol.equalsIgnoreCase(MountType.SMB.getProtocol())) {
             final AzureRegion azureRegion = (AzureRegion) cloudRegion;
-            final String account = azureRegion.getStorageAccount();
-            final String accountKey = Optional.ofNullable(credentials)
-                    .map(c -> ((AzureRegionCredentials)c).getStorageAccountKey())
-                    .orElse(null);
-            String[] options = defaultOptions != null
-                    ? new String[]{defaultOptions, "username=" + account, "password=" + accountKey}
-                    : new String[]{"username=" + account, "password=" + accountKey};
-            result = accountKey != null && account != null ? String.join(",", options) : defaultOptions;
+            return buildAzureSmbMountOptions(azureRegion, credentials, defaultOptions);
         }
-        return StringUtils.isEmpty(result) ? "" : "-o " + result;
+        final String result = StringUtils.isEmpty(defaultOptions) ? "" : "-o " + defaultOptions;
+        return Pair.of(result,
+                MountCommand.builder()
+                        .credentialsRequired(false)
+                        .commandFormat(result)
+                        .build());
+    }
+
+    static Pair<String, MountCommand> getNFSMountCommand(final AbstractCloudRegion cloudRegion,
+                                                         final AbstractCloudRegionCredentials credentials,
+                                                         final String defaultOptions, final String protocol,
+                                                         final String rootNfsPath, final String mntDir) {
+        final Pair<String, MountCommand> mountOptions = getNFSMountOption(cloudRegion, credentials,
+                defaultOptions, protocol);
+
+        return Pair.of(formatMountCommand(protocol, rootNfsPath, mntDir, mountOptions.getKey()),
+                MountCommand.builder()
+                        .credentialsRequired(mountOptions.getValue().isCredentialsRequired())
+                        .commandFormat(formatMountCommand(protocol, rootNfsPath, mntDir,
+                                mountOptions.getValue().getCommandFormat()))
+                        .build());
     }
 
     static String formatNfsPath(String path, String protocol){
@@ -100,5 +116,38 @@ final class NFSHelper {
             path = SMB_SCHEME + path;
         }
         return path;
+    }
+
+    private static Pair<String, MountCommand> buildAzureSmbMountOptions(
+            final AzureRegion azureRegion, final AbstractCloudRegionCredentials credentials,
+            final String defaultOptions) {
+        final String account = azureRegion.getStorageAccount();
+        final String accountKey = Optional.ofNullable(credentials)
+                .map(c -> ((AzureRegionCredentials)c).getStorageAccountKey())
+                .orElse(null);
+        final boolean credentialsFound = accountKey != null && account != null;
+
+        final String optionsFormat = buildAzureSmbMountOptionsFormat(credentialsFound, defaultOptions);
+        final String result = StringUtils.isEmpty(optionsFormat) ? "" : "-o " + optionsFormat;
+        return Pair.of(credentialsFound ? String.format(result, account, accountKey) : result,
+                MountCommand.builder()
+                        .credentialsRequired(credentialsFound)
+                        .commandFormat(result)
+                        .build());
+    }
+
+    private static String buildAzureSmbMountOptionsFormat(final boolean credentialsFound, final String defaultOptions) {
+        final String azureCredentialsFormat = "username=%s,password=%s";
+        if (credentialsFound) {
+            return defaultOptions != null
+                    ? String.format("%s,%s", defaultOptions, azureCredentialsFormat)
+                    : azureCredentialsFormat;
+        }
+        return defaultOptions;
+    }
+
+    private static String formatMountCommand(final String protocol, final String rootNfsPath,
+                                             final String mntDir, final String mountOptions) {
+        return String.format(NFS_MOUNT_CMD_PATTERN, protocol, mountOptions, rootNfsPath, mntDir);
     }
 }
