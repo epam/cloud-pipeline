@@ -245,6 +245,10 @@ export default function (props, state, options) {
     modified(form, parameters, `${ADVANCED}.prettyUrl`, 'prettyUrl') ||
     // timeout check
     modified(form, parameters, `${ADVANCED}.timeout`, 'timeout') ||
+    // stopAfter check
+    modified(form, parameters, `${ADVANCED}.stopAfter`, 'stopAfter') ||
+    // endpointName check
+    modified(form, parameters, `${ADVANCED}.endpointName`, 'endpointName') ||
     // limit mounts check
     limitMountsCheck(form, parameters) ||
     // cmd template check

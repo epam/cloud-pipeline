@@ -89,7 +89,9 @@ class ServerlessAPIButton extends React.Component {
       <Row className={this.props.overlayClassName}>
         <Input
           readOnly
-          value={url} />
+          value={url}
+          style={{width: 200}}
+        />
       </Row>
     );
   };
