@@ -57,8 +57,8 @@ final class NFSHelper {
 
     private static final String SMB_SCHEME = "//";
     private static final String PATH_SEPARATOR = "/";
-
     private static final String NFS_MOUNT_CMD_PATTERN = "sudo mount -t %s %s %s %s";
+    private static final String AZURE_CREDS_FOMAT = "username=%s,password=%s";
 
     private NFSHelper() {
 
@@ -137,11 +137,10 @@ final class NFSHelper {
     }
 
     private static String buildAzureSmbMountOptionsFormat(final boolean credentialsFound, final String defaultOptions) {
-        final String azureCredentialsFormat = "username=%s,password=%s";
         if (credentialsFound) {
             return defaultOptions != null
-                    ? String.format("%s,%s", defaultOptions, azureCredentialsFormat)
-                    : azureCredentialsFormat;
+                    ? String.format("%s,%s", defaultOptions, AZURE_CREDS_FOMAT)
+                    : AZURE_CREDS_FOMAT;
         }
         return defaultOptions;
     }
