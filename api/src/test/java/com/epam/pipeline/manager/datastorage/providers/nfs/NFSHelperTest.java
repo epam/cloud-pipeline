@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,13 @@
 
 package com.epam.pipeline.manager.datastorage.providers.nfs;
 
+import com.epam.pipeline.entity.datastorage.MountCommand;
 import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -29,26 +31,36 @@ public class NFSHelperTest {
     private static final String TEST_PATH = "localhost";
     private static final String EMPTY_STRING = "";
     private static final String RESOURCE_GROUP = "rg";
+    private static final String TEST_STORAGE_ACC = "account";
+    private static final String TEST_STORAGE_KEY = "key";
+    private static final String TEST_OPTIONS = "options";
 
     @Test
     public void getNFSMountOption() {
         String protocol = MountType.NFS.getProtocol();
-        String result = NFSHelper.getNFSMountOption(new AwsRegion(), null, EMPTY_STRING, protocol);
-        Assert.assertEquals(EMPTY_STRING, result);
+        Pair<String, MountCommand> result = NFSHelper.getNFSMountOption(new AwsRegion(), null, EMPTY_STRING, protocol);
+        Assert.assertEquals(EMPTY_STRING, result.getKey());
+        Assert.assertEquals(EMPTY_STRING, result.getValue().getCommandFormat());
+        Assert.assertFalse(result.getValue().isCredentialsRequired());
 
         protocol = MountType.SMB.getProtocol();
-        AzureRegion azureRegion = ObjectCreatorUtils.getDefaultAzureRegion(RESOURCE_GROUP, "account");
-        AzureRegionCredentials credentials = ObjectCreatorUtils.getAzureCredentials("key");
+        AzureRegion azureRegion = ObjectCreatorUtils.getDefaultAzureRegion(RESOURCE_GROUP, TEST_STORAGE_ACC);
+        AzureRegionCredentials credentials = ObjectCreatorUtils.getAzureCredentials(TEST_STORAGE_KEY);
         result = NFSHelper.getNFSMountOption(azureRegion, credentials, EMPTY_STRING, protocol);
-        Assert.assertEquals("-o ,username=account,password=key", result);
+        Assert.assertEquals("-o ,username=account,password=key", result.getKey());
+        Assert.assertEquals("-o ,username=%s,password=%s", result.getValue().getCommandFormat());
+        Assert.assertTrue(result.getValue().isCredentialsRequired());
 
-        result = NFSHelper.getNFSMountOption(azureRegion, credentials, "options", protocol);
-        Assert.assertEquals("-o options,username=account,password=key", result);
+        result = NFSHelper.getNFSMountOption(azureRegion, credentials, TEST_OPTIONS, protocol);
+        Assert.assertEquals("-o options,username=account,password=key", result.getKey());
+        Assert.assertEquals("-o options,username=%s,password=%s", result.getValue().getCommandFormat());
+        Assert.assertTrue(result.getValue().isCredentialsRequired());
 
         azureRegion = ObjectCreatorUtils.getDefaultAzureRegion(RESOURCE_GROUP, null);
         result = NFSHelper.getNFSMountOption(azureRegion, null, EMPTY_STRING, protocol);
-        Assert.assertEquals(EMPTY_STRING, result);
-
+        Assert.assertEquals(EMPTY_STRING, result.getKey());
+        Assert.assertEquals(EMPTY_STRING, result.getValue().getCommandFormat());
+        Assert.assertFalse(result.getValue().isCredentialsRequired());
     }
 
     @Test
@@ -86,5 +98,21 @@ public class NFSHelperTest {
     @Test(expected = IllegalArgumentException.class)
     public void getNfsRootPathShouldFailIfPathInvalid() {
         NFSHelper.getNfsRootPath(TEST_PATH + ":");
+    }
+
+    @Test
+    public void shouldBuildCommandWithCredentialsForAzureSmb() {
+        String protocol = MountType.SMB.getProtocol();
+        AzureRegion azureRegion = ObjectCreatorUtils.getDefaultAzureRegion(RESOURCE_GROUP, TEST_STORAGE_ACC);
+        AzureRegionCredentials credentials = ObjectCreatorUtils.getAzureCredentials(TEST_STORAGE_KEY);
+
+        Pair<String, MountCommand> result = NFSHelper.getNFSMountCommand(azureRegion, credentials, TEST_OPTIONS,
+                protocol, "/root", "/mnt");
+
+        Assert.assertEquals("sudo mount -t cifs -o options,username=account,password=key /root /mnt",
+                result.getKey());
+        Assert.assertEquals("sudo mount -t cifs -o options,username=%s,password=%s /root /mnt",
+                result.getValue().getCommandFormat());
+        Assert.assertTrue(result.getValue().isCredentialsRequired());
     }
 }
