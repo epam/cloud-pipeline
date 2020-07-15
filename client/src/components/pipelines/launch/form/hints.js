@@ -131,6 +131,18 @@ const prettyUrlHint = (localizedStringFn) => (
   </Row>
 );
 
+const endpointNameHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    This value specifies which <b>tool endpoint</b> will be used to process <b>serverless API</b> calls
+  </Row>
+);
+
+const stopAfterHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    This value specifies whether to stop job after <b>serverless API</b> call
+  </Row>
+);
+
 const executionEnvironmentSummaryHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
     General amount of resources that will be allocated during the run execution. Notice that in some specific configurations such as <b>hybrid autoscaling clusters</b> amount of resources can vary beyond the shown interval.
@@ -151,7 +163,9 @@ const hints = {
   timeOutHint,
   limitMountsHint,
   prettyUrlHint,
-  executionEnvironmentSummaryHint
+  executionEnvironmentSummaryHint,
+  endpointNameHint,
+  stopAfterHint
 };
 
 export default hints;

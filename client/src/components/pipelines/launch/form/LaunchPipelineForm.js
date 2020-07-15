@@ -893,7 +893,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       instance_size: values[EXEC_ENVIRONMENT].type,
       instance_disk: +values[EXEC_ENVIRONMENT].disk,
       timeout: +(values[ADVANCED].timeout || 0),
-      stopAfter: +(values[ADVANCED].stopAfter || 0),
+      stopAfter: `${values[ADVANCED].stopAfter}` === 'true' ,
       endpointName: values[ADVANCED].endpointName,
       cmd_template: cmd,
       node_count: this.state.launchCluster ? this.state.nodesCount : undefined,
@@ -2892,6 +2892,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               )}
             </FormItem>
           </Col>
+          <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
+            {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.endpointNameHint)}
+          </Col>
         </FormItem>
       );
     }
@@ -3536,29 +3539,28 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'stopAfter')}
         {...this.leftFormItemLayout}
-        label="Stop after (sec)"
-        hasFeedback>
+        label="Stop after API call"
+      >
         <Col span={10}>
           <FormItem
             className={styles.formItemRow}
-            hasFeedback>
+          >
             {this.getSectionFieldDecorator(ADVANCED)('stopAfter',
               {
-                rules: [
-                  {
-                    pattern: /^\d+(\.\d+)?$/,
-                    message: 'Please enter a valid positive number'
-                  }
-                ],
-                initialValue: this.getDefaultValue('stopAfter')
+                initialValue: `${this.getDefaultValue('stopAfter')}` === 'true',
+                valuePropName: 'checked'
               }
             )(
-              <Input
+              <Checkbox
                 disabled={
                   (this.props.readOnly && !this.props.canExecute)
-                } />
+                }
+              />
             )}
           </FormItem>
+        </Col>
+        <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
+          {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.stopAfterHint)}
         </Col>
       </FormItem>
     );
