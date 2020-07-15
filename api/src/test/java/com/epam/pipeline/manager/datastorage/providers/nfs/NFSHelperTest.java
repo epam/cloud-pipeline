@@ -40,7 +40,7 @@ public class NFSHelperTest {
         String protocol = MountType.NFS.getProtocol();
         Pair<String, MountCommand> result = NFSHelper.getNFSMountOption(new AwsRegion(), null, EMPTY_STRING, protocol);
         Assert.assertEquals(EMPTY_STRING, result.getKey());
-        Assert.assertEquals(EMPTY_STRING, result.getValue().getCommandFormat());
+        Assert.assertEquals(EMPTY_STRING, result.getValue().getCommandPattern());
         Assert.assertFalse(result.getValue().isCredentialsRequired());
 
         protocol = MountType.SMB.getProtocol();
@@ -48,18 +48,18 @@ public class NFSHelperTest {
         AzureRegionCredentials credentials = ObjectCreatorUtils.getAzureCredentials(TEST_STORAGE_KEY);
         result = NFSHelper.getNFSMountOption(azureRegion, credentials, EMPTY_STRING, protocol);
         Assert.assertEquals("-o ,username=account,password=key", result.getKey());
-        Assert.assertEquals("-o ,username=%s,password=%s", result.getValue().getCommandFormat());
+        Assert.assertEquals("-o ,username=%s,password=%s", result.getValue().getCommandPattern());
         Assert.assertTrue(result.getValue().isCredentialsRequired());
 
         result = NFSHelper.getNFSMountOption(azureRegion, credentials, TEST_OPTIONS, protocol);
         Assert.assertEquals("-o options,username=account,password=key", result.getKey());
-        Assert.assertEquals("-o options,username=%s,password=%s", result.getValue().getCommandFormat());
+        Assert.assertEquals("-o options,username=%s,password=%s", result.getValue().getCommandPattern());
         Assert.assertTrue(result.getValue().isCredentialsRequired());
 
         azureRegion = ObjectCreatorUtils.getDefaultAzureRegion(RESOURCE_GROUP, null);
         result = NFSHelper.getNFSMountOption(azureRegion, null, EMPTY_STRING, protocol);
         Assert.assertEquals(EMPTY_STRING, result.getKey());
-        Assert.assertEquals(EMPTY_STRING, result.getValue().getCommandFormat());
+        Assert.assertEquals(EMPTY_STRING, result.getValue().getCommandPattern());
         Assert.assertFalse(result.getValue().isCredentialsRequired());
     }
 
@@ -112,7 +112,7 @@ public class NFSHelperTest {
         Assert.assertEquals("sudo mount -t cifs -o options,username=account,password=key /root /mnt",
                 result.getKey());
         Assert.assertEquals("sudo mount -t cifs -o options,username=%s,password=%s /root /mnt",
-                result.getValue().getCommandFormat());
+                result.getValue().getCommandPattern());
         Assert.assertTrue(result.getValue().isCredentialsRequired());
     }
 }

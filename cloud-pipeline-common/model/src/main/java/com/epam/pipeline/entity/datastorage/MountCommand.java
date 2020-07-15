@@ -26,6 +26,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class MountCommand {
-    private String commandFormat;
+    private String commandPattern;
     private boolean credentialsRequired;
 }

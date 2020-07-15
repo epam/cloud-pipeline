@@ -92,7 +92,7 @@ final class NFSHelper {
         return Pair.of(result,
                 MountCommand.builder()
                         .credentialsRequired(false)
-                        .commandFormat(result)
+                        .commandPattern(result)
                         .build());
     }
 
@@ -106,8 +106,8 @@ final class NFSHelper {
         return Pair.of(formatMountCommand(protocol, rootNfsPath, mntDir, mountOptions.getKey()),
                 MountCommand.builder()
                         .credentialsRequired(mountOptions.getValue().isCredentialsRequired())
-                        .commandFormat(formatMountCommand(protocol, rootNfsPath, mntDir,
-                                mountOptions.getValue().getCommandFormat()))
+                        .commandPattern(formatMountCommand(protocol, rootNfsPath, mntDir,
+                                mountOptions.getValue().getCommandPattern()))
                         .build());
     }
 
@@ -132,7 +132,7 @@ final class NFSHelper {
         return Pair.of(credentialsFound ? String.format(result, account, accountKey) : result,
                 MountCommand.builder()
                         .credentialsRequired(credentialsFound)
-                        .commandFormat(result)
+                        .commandPattern(result)
                         .build());
     }
 

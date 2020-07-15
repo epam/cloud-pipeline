@@ -156,9 +156,8 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         final MountCommand mountCommand = cloudPipelineAPIClient
                 .buildMontCommand(dataStorage.getId(), rootMountPoint);
         final String commandToExecute = mountCommand.isCredentialsRequired()
-                ? getMountCommandWithCredentials(mountCommand.getCommandFormat(), fileShareMount)
-                : mountCommand.getCommandFormat();
-        log.debug(commandToExecute);
+                ? getMountCommandWithCredentials(mountCommand.getCommandPattern(), fileShareMount)
+                : mountCommand.getCommandPattern();
         try {
             cmdExecutor.executeCommand(commandToExecute);
         } catch (CmdExecutionException e) {
