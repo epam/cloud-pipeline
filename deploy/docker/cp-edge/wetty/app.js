@@ -174,8 +174,10 @@ io.on('connection', function(socket) {
                 sshpass = pipe_details.pass;
                 sshuser = 'root';
             } else {
-                sshpass = pipe_details.owner;
-                sshuser = pipe_details.owner;
+                // split owner by @ in case it represented by email address
+                var owner_user_name = pipe_details.owner.split("@")[0];
+                sshpass = owner_user_name;
+                sshuser = owner_user_name;
             }
             term = pty.spawn('sshpass', ['-p', sshpass, 'ssh', sshuser + '@' + sshhost, '-p', sshport, '-o', 'StrictHostKeyChecking=no', '-o', 'GlobalKnownHostsFile=/dev/null', '-o', 'UserKnownHostsFile=/dev/null', '-q'], {
                     name: 'xterm-256color',
