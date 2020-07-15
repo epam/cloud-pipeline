@@ -26,12 +26,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @Transactional
 public class StopServerlessRunDaoTest extends AbstractSpringTest {
+
+    private static final Long TEST_STOP_AFTER = 60L;
 
     @Autowired
     private StopServerlessRunDao stopServerlessRunDao;
@@ -47,6 +51,7 @@ public class StopServerlessRunDaoTest extends AbstractSpringTest {
         final StopServerlessRun stopServerlessRun = StopServerlessRun.builder()
                 .runId(pipelineRun.getId())
                 .lastUpdate(firstUpdate)
+                .stopAfter(TEST_STOP_AFTER)
                 .build();
         stopServerlessRunDao.createServerlessRun(stopServerlessRun);
         assertNotNull(stopServerlessRun.getId());
@@ -60,6 +65,11 @@ public class StopServerlessRunDaoTest extends AbstractSpringTest {
         final List<StopServerlessRun> loaded = stopServerlessRunDao.loadAll();
         assertEquals(loaded.size(), 1);
         assertEquals(loaded.get(0).getLastUpdate(), newUpdate);
+
+        final Optional<StopServerlessRun> loadedRun = stopServerlessRunDao.loadByRunId(pipelineRun.getId());
+        assertTrue(loadedRun.isPresent());
+        assertEquals(loadedRun.get().getRunId(), stopServerlessRun.getRunId());
+        assertEquals(loadedRun.get().getStopAfter(), stopServerlessRun.getStopAfter());
 
         stopServerlessRunDao.deleteByRunId(pipelineRun.getId());
 

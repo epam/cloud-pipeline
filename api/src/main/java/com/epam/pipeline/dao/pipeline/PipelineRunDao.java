@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
@@ -449,11 +450,9 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 .findFirst();
     }
 
-    public List<PipelineRun> loadServerlessRunsToStop(final LocalDateTime maxLastUpdate) {
-        final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue("MAX_LAST_UPDATE", maxLastUpdate);
+    public List<StopServerlessRun> loadServerlessRunsToStop() {
         return ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
-                .query(loadServerlessRunsToStopQuery, params, PipelineRunParameters.getRowMapper()));
+                .query(loadServerlessRunsToStopQuery, StopServerlessRunDao.StopServerlessRunParameters.getRowMapper()));
     }
 
     private MapSqlParameterSource getPagingParameters(PagingRunFilterVO filter) {

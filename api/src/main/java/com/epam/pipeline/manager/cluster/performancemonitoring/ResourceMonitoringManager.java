@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -408,11 +409,21 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         }
 
         private void processServerlessRuns() {
-            final Integer timeout = preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_STOP_TIMEOUT);
-            final LocalDateTime maxLastUpdate = LocalDateTime.now().minusMinutes(timeout);
-            final List<PipelineRun> runs = ListUtils.emptyIfNull(
-                    pipelineRunManager.loadExpiredServerlessRuns(maxLastUpdate));
-            runs.forEach(run -> pipelineRunManager.stopServerlessRun(run.getId()));
+            final List<StopServerlessRun> activeServerlessRuns = ListUtils.emptyIfNull(
+                    pipelineRunManager.loadActiveServerlessRuns());
+            activeServerlessRuns.stream()
+                    .filter(this::serverlessRunIsExpired)
+                    .forEach(run -> pipelineRunManager.stopServerlessRun(run.getId()));
+        }
+
+        private boolean serverlessRunIsExpired(final StopServerlessRun run) {
+            return run.getLastUpdate().isBefore(LocalDateTime.now().minusMinutes(getTimeoutMinutes(run)));
+        }
+
+        private Long getTimeoutMinutes(final StopServerlessRun run) {
+            return Objects.nonNull(run.getStopAfter())
+                    ? run.getStopAfter()
+                    : preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_STOP_TIMEOUT).longValue();
         }
     }
 }

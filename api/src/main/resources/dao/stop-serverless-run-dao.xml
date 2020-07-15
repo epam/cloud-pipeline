@@ -26,11 +26,13 @@
                     INSERT INTO pipeline.stop_serverless_run (
                         id,
                         run_id,
-                        last_update)
+                        last_update,
+                        stop_after)
                     VALUES (
                         :ID,
                         :RUN_ID,
-                        :LAST_UPDATE)
+                        :LAST_UPDATE,
+                        :STOP_AFTER)
                 ]]>
             </value>
         </property>
@@ -56,7 +58,21 @@
                     SELECT
                         id,
                         run_id,
-                        last_update
+                        last_update,
+                        stop_after
+                    FROM
+                        pipeline.stop_serverless_run
+                ]]>
+            </value>
+        </property>
+        <property name="loadServerlessunByRunIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        id,
+                        run_id,
+                        last_update,
+                        stop_after
                     FROM
                         pipeline.stop_serverless_run
                 ]]>

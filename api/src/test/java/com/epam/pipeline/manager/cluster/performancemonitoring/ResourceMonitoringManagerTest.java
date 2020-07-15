@@ -174,7 +174,7 @@ public class ResourceMonitoringManagerTest {
                 .thenReturn(IdleRunAction.NOTIFY.name());
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_STOP_TIMEOUT))
                 .thenReturn(TEST_MAX_IDLE_MONITORING_TIMEOUT);
-        when(pipelineRunManager.loadExpiredServerlessRuns(any())).thenReturn(Collections.emptyList());
+        when(pipelineRunManager.loadActiveServerlessRuns()).thenReturn(Collections.emptyList());
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         UserContext userContext = new UserContext(1L, "admin");

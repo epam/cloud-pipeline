@@ -37,10 +37,12 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -93,6 +95,8 @@ public class ServerlessConfigurationManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_WAIT_COUNT)).thenReturn(1);
         when(runManager.loadPipelineRun(any())).thenReturn(pipelineRun);
         doReturn(StringUtils.EMPTY).when(serverlessConfigurationManager).sendRequest(any(), any());
+        when(stopServerlessRunDao.loadByRunId(any())).thenReturn(Optional.empty());
+        doNothing().when(stopServerlessRunDao).createServerlessRun(any());
 
         serverlessConfigurationManager.run(CONFIGURATION_ID, TEST_NAME, mockRequest());
         verifyEndpoint();
@@ -117,6 +121,8 @@ public class ServerlessConfigurationManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_WAIT_COUNT)).thenReturn(1);
         when(runManager.loadPipelineRun(any())).thenReturn(pipelineRun);
         doReturn(StringUtils.EMPTY).when(serverlessConfigurationManager).sendRequest(any(), any());
+        when(stopServerlessRunDao.loadByRunId(any())).thenReturn(Optional.empty());
+        doNothing().when(stopServerlessRunDao).createServerlessRun(any());
 
         serverlessConfigurationManager.run(CONFIGURATION_ID, TEST_NAME, mockRequest());
         verifyEndpoint();
@@ -138,6 +144,8 @@ public class ServerlessConfigurationManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_WAIT_COUNT)).thenReturn(1);
         when(runManager.loadPipelineRun(any())).thenReturn(pipelineRun);
         doReturn(StringUtils.EMPTY).when(serverlessConfigurationManager).sendRequest(any(), any());
+        when(stopServerlessRunDao.loadByRunId(any())).thenReturn(Optional.empty());
+        doNothing().when(stopServerlessRunDao).createServerlessRun(any());
 
         serverlessConfigurationManager.run(CONFIGURATION_ID, TEST_NAME, mockRequest());
         verifyEndpoint();
@@ -167,6 +175,8 @@ public class ServerlessConfigurationManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_TASK_STATUS_UPDATE_RATE)).thenReturn(1);
         when(runManager.loadPipelineRun(any())).thenReturn(pipelineRun);
         when(runManager.searchPipelineRuns(any(), anyBoolean())).thenReturn(activeRuns);
+        when(stopServerlessRunDao.loadByRunId(any())).thenReturn(Optional.empty());
+        doNothing().when(stopServerlessRunDao).createServerlessRun(any());
 
         serverlessConfigurationManager.run(CONFIGURATION_ID, TEST_NAME, mockRequest());
     }

@@ -1644,58 +1644,15 @@
             <value>
                 <![CDATA[
                     SELECT
-                        r.run_id,
-                        r.pipeline_id,
-                        r.version,
-                        r.start_date,
-                        r.end_date,
-                        r.parameters,
-                        r.status,
-                        r.terminating,
-                        r.pod_id,
-                        r.node_type,
-                        r.node_disk,
-                        r.node_ip,
-                        r.node_id,
-                        r.node_name,
-                        r.node_image,
-                        r.node_cloud_region,
-                        r.docker_image,
-                        r.actual_docker_image,
-                        r.cmd_template,
-                        r.actual_cmd,
-                        r.timeout,
-                        r.owner,
-                        r.service_url,
-                        r.pod_ip,
-                        r.commit_status,
-                        r.last_change_commit_time,
-                        r.config_name,
-                        r.node_count,
-                        r.parent_id,
-                        r.entities_ids,
-                        r.is_spot,
-                        r.configuration_id,
-                        r.pod_status,
-                        r.prolonged_at_time,
-                        r.last_notification_time,
-                        r.last_idle_notification_time,
-                        r.exec_preferences,
-                        r.pretty_url,
-                        r.price_per_hour,
-                        r.compute_price_per_hour,
-                        r.disk_price_per_hour,
-                        r.state_reason,
-                        r.non_pause,
-                        r.node_real_disk,
-                        r.node_cloud_provider,
-                        r.tags,
-                        r.sensitive
+                        s.id,
+                        s.run_id,
+                        s.stop_after,
+                        s.last_update
                     FROM
-                        pipeline.pipeline_run r
-                    LEFT JOIN pipeline.stop_serverless_run s ON (s.run_id = r.run_id)
+                        pipeline.stop_serverless_run s
+                    LEFT JOIN pipeline.pipeline_run r ON (s.run_id = r.run_id)
                     WHERE
-                        r.status = 2 and s.last_update < :MAX_LAST_UPDATE
+                        r.status = 2
                     ORDER BY
                         r.start_date
                 ]]>

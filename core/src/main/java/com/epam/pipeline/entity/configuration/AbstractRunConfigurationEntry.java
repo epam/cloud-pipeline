@@ -50,7 +50,7 @@ public abstract class AbstractRunConfigurationEntry {
     @JsonProperty(value = "default")
     private boolean defaultConfiguration = false;
     private String endpointName;
-    private boolean stopAfter = false;
+    private Long stopAfter;
 
     public abstract boolean checkConfigComplete();
     public abstract PipelineStart toPipelineStart();

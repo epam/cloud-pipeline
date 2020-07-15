@@ -43,6 +43,7 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
@@ -1159,8 +1160,8 @@ public class PipelineRunManager {
                 .collect(Collectors.toList()));
     }
 
-    public List<PipelineRun> loadExpiredServerlessRuns(final LocalDateTime maxLastUpdate) {
-        return pipelineRunDao.loadServerlessRunsToStop(maxLastUpdate);
+    public List<StopServerlessRun> loadActiveServerlessRuns() {
+        return pipelineRunDao.loadServerlessRunsToStop();
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

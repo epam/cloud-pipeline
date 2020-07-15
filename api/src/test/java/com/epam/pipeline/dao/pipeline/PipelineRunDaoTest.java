@@ -841,7 +841,6 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     @Test
     public void shouldLoadExpiredServerlessRuns() {
         final LocalDateTime now = LocalDateTime.now();
-        final LocalDateTime maxLastUpdate = now.plusMinutes(30);
 
         final PipelineRun run1 = buildPipelineRun(null, null);
         run1.setStatus(TaskStatus.RUNNING);
@@ -853,18 +852,17 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         stopServerlessRunDao.createServerlessRun(serverlessRun1);
 
         final PipelineRun run2 = buildPipelineRun(null, null);
-        run2.setStatus(TaskStatus.RUNNING);
+        run2.setStatus(TaskStatus.STOPPED);
         pipelineRunDao.createPipelineRun(run2);
         final StopServerlessRun serverlessRun2 = StopServerlessRun.builder()
-                .lastUpdate(now.plusHours(1))
+                .lastUpdate(now)
                 .runId(run2.getId())
                 .build();
         stopServerlessRunDao.createServerlessRun(serverlessRun2);
 
-
-        final List<PipelineRun> pipelineRuns = pipelineRunDao.loadServerlessRunsToStop(maxLastUpdate);
+        final List<StopServerlessRun> pipelineRuns = pipelineRunDao.loadServerlessRunsToStop();
         assertEquals(pipelineRuns.size(), 1);
-        assertEquals(pipelineRuns.get(0).getId(), run1.getId());
+        assertEquals(pipelineRuns.get(0).getRunId(), run1.getId());
     }
 
     private PipelineRun createTestPipelineRun() {

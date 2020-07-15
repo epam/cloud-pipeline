@@ -69,6 +69,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -99,13 +100,7 @@ public class ServerlessConfigurationManager {
                         .format("Cannot find configuration with name '%s'", configName)));
         final PipelineRun pipelineRun = receivePipelineRun(configurationId, configuration);
 
-        final StopServerlessRun stopRunInfo = StopServerlessRun.builder()
-                .runId(pipelineRun.getId())
-                .lastUpdate(LocalDateTime.now())
-                .build();
-        if (configurationEntry.isStopAfter()) {
-            stopServerlessRunDao.createServerlessRun(stopRunInfo);
-        }
+        final StopServerlessRun stopRunInfo = getServerlessRun(pipelineRun.getId(), configurationEntry.getStopAfter());
 
         waitForRunInitialized(pipelineRun);
         final String endpointName = getEndpointUrl(configurationEntry, pipelineRun);
@@ -115,10 +110,8 @@ public class ServerlessConfigurationManager {
 
         final String response = sendRequest(request, appPath);
 
-        if (configurationEntry.isStopAfter()) {
-            stopRunInfo.setLastUpdate(LocalDateTime.now());
-            stopServerlessRunDao.updateServerlessRun(stopRunInfo);
-        }
+        stopRunInfo.setLastUpdate(LocalDateTime.now());
+        stopServerlessRunDao.updateServerlessRun(stopRunInfo);
 
         return response;
     }
@@ -129,6 +122,23 @@ public class ServerlessConfigurationManager {
         Assert.state(StringUtils.isNotBlank(apiHost), "API host is not specified");
         return String.format("%s/serverless/%d/%s", StringUtils.stripEnd(apiHost, "/"),
                 configurationId, configName);
+    }
+
+    private StopServerlessRun getServerlessRun(final Long runId, final Long stopAfter) {
+        final Optional<StopServerlessRun> stopServerlessRun = stopServerlessRunDao.loadByRunId(runId);
+        if (stopServerlessRun.isPresent()) {
+            final StopServerlessRun stopRunInfo = stopServerlessRun.get();
+            stopRunInfo.setLastUpdate(LocalDateTime.now());
+            stopServerlessRunDao.updateServerlessRun(stopRunInfo);
+            return stopRunInfo;
+        }
+        final StopServerlessRun stopRunInfo = StopServerlessRun.builder()
+                .runId(runId)
+                .stopAfter(stopAfter)
+                .lastUpdate(LocalDateTime.now())
+                .build();
+        stopServerlessRunDao.createServerlessRun(stopRunInfo);
+        return stopRunInfo;
     }
 
     private String getConfigurationName(final Long configurationId, final String configName) {
