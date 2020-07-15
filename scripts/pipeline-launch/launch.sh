@@ -456,6 +456,9 @@ function symlink_common_locations {
       local _REPOSITORY_MOUNT_SRC="${REPOSITORY_MOUNT}/${PIPELINE_NAME}/current"
       local _REPOSITORY_HOME="$_OWNER_HOME/code-repository"
       if [ ! -z "$GIT_REPO" ] && [ -d "$_REPOSITORY_MOUNT_SRC" ]; then
+            if [ -L "$_REPOSITORY_HOME/${PIPELINE_NAME}" ]; then
+                  unlink "$_REPOSITORY_HOME/${PIPELINE_NAME}"
+            fi
             mkdir -p $_REPOSITORY_HOME
             if [ -d "$_REPOSITORY_MOUNT_SRC/src" ]; then
                   ln -s "$_REPOSITORY_MOUNT_SRC/src" "$_REPOSITORY_HOME/${PIPELINE_NAME}"
