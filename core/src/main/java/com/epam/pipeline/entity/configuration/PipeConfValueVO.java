@@ -43,7 +43,13 @@ public class PipeConfValueVO {
     private boolean required;
 
     @JsonProperty(value = "enum")
-    private List<String> availableValues;
+    private List<Object> availableValues;
+
+    /**
+     * String expression to determine visibility of a param
+     * User for GUI client only
+     */
+    private String visible;
 
     private String description;
 
