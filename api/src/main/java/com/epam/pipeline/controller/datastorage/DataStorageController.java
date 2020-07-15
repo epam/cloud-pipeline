@@ -142,8 +142,8 @@ public class DataStorageController extends AbstractRestController {
     @GetMapping("/datastorage/allWithMounts")
     @ResponseBody
     @ApiOperation(
-            value = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object.",
-            notes = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object.",
+            value = "Returns all data storages allowed and FileShareMount object.",
+            notes = "Returns all data storages allowed and FileShareMount object.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
