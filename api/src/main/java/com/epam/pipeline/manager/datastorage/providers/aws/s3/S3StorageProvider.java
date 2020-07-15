@@ -32,7 +32,6 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.DatastoragePath;
-import com.epam.pipeline.entity.datastorage.MountCommand;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
@@ -291,11 +290,6 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
                                        final PathDescription pathDescription) {
         return getS3Helper(dataStorage).getDataSize(dataStorage,
                 ProviderUtils.buildPath(dataStorage, path), pathDescription);
-    }
-
-    @Override
-    public MountCommand buildMountCommand(final S3bucketDataStorage dataStorage, final String rootMountPoint) {
-        throw new UnsupportedOperationException("Mount command is supported for NFS provider only");
     }
 
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {
