@@ -893,7 +893,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       instance_size: values[EXEC_ENVIRONMENT].type,
       instance_disk: +values[EXEC_ENVIRONMENT].disk,
       timeout: +(values[ADVANCED].timeout || 0),
-      stopAfter: `${values[ADVANCED].stopAfter}` === 'true' ,
+      stopAfter: +(values[ADVANCED].stopAfter || 0),
       endpointName: values[ADVANCED].endpointName,
       cmd_template: cmd,
       node_count: this.state.launchCluster ? this.state.nodesCount : undefined,
@@ -3539,23 +3539,27 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'stopAfter')}
         {...this.leftFormItemLayout}
-        label="Stop after API call"
-      >
+        label="Stop after (min)"
+        hasFeedback>
         <Col span={10}>
           <FormItem
             className={styles.formItemRow}
-          >
+            hasFeedback>
             {this.getSectionFieldDecorator(ADVANCED)('stopAfter',
               {
-                initialValue: `${this.getDefaultValue('stopAfter')}` === 'true',
-                valuePropName: 'checked'
+                rules: [
+                  {
+                    pattern: /^\d+(\.\d+)?$/,
+                    message: 'Please enter a valid positive number'
+                  }
+                ],
+                initialValue: this.getDefaultValue('stopAfter')
               }
             )(
-              <Checkbox
+              <Input
                 disabled={
                   (this.props.readOnly && !this.props.canExecute)
-                }
-              />
+                } />
             )}
           </FormItem>
         </Col>

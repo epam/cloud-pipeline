@@ -139,7 +139,7 @@ const endpointNameHint = (localizedStringFn) => (
 
 const stopAfterHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
-    This value specifies whether to stop job after <b>serverless API</b> call
+    This value specifies how long shall the job be kept running after the last <b>serverless API</b> call
   </Row>
 );
 
