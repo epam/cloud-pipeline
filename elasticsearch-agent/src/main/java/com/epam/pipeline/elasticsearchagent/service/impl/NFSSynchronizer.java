@@ -155,7 +155,6 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                        final FileShareMount fileShareMount) throws IOException {
         final MountCommand mountCommand = cloudPipelineAPIClient
                 .buildMontCommand(dataStorage.getId(), rootMountPoint);
-        getMountCommandWithCredentials(mountCommand.getCommandFormat(), fileShareMount);
         final String commandToExecute = mountCommand.isCredentialsRequired()
                 ? getMountCommandWithCredentials(mountCommand.getCommandFormat(), fileShareMount)
                 : mountCommand.getCommandFormat();
@@ -277,7 +276,6 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                 String.format("Cloud region file '%s' was not found", pathToRegionCredentials));
         try {
             final String content = new String(Files.readAllBytes(pathToRegionCredentials));
-
             final Map<String, String> credentials = JsonMapper
                     .parseData(content, new TypeReference<Map<String, String>>() {}, jsonMapper);
             Assert.notNull(credentials, "Credentials file exists but empty");
