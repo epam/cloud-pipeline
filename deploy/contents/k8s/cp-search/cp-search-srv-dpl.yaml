@@ -32,9 +32,6 @@ spec:
           volumeMounts:
             - mountPath: /opt/search/logs
               name: search-logs
-            - name: cp-region-creds
-              mountPath: "/root/.cloud/regioncreds"
-              readOnly: true
           readinessProbe:
             tcpSocket:
               port: 8080
@@ -44,8 +41,5 @@ spec:
         - name: search-logs
           hostPath:
             path: /opt/search/logs
-        - name: cp-region-creds
-          secret:
-            secretName: cp-region-creds-secret
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

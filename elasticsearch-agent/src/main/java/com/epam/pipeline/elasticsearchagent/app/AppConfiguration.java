@@ -15,9 +15,6 @@
  */
 package com.epam.pipeline.elasticsearchagent.app;
 
-import com.epam.pipeline.cmd.CmdExecutor;
-import com.epam.pipeline.cmd.PlainCmdExecutor;
-import com.epam.pipeline.config.JsonMapper;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
 import net.javacrumbs.shedlock.spring.annotation.EnableSchedulerLock;
@@ -47,15 +44,5 @@ public class AppConfiguration {
     @Bean(name = "lockProvider")
     public LockProvider lockProvider(DataSource dataSource) {
         return new JdbcTemplateLockProvider(dataSource);
-    }
-
-    @Bean
-    public CmdExecutor cmdExecutor() {
-        return new PlainCmdExecutor();
-    }
-
-    @Bean
-    public JsonMapper jsonMapper() {
-        return new JsonMapper();
     }
 }

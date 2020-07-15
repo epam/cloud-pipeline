@@ -22,8 +22,6 @@ import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
-import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
-import com.epam.pipeline.entity.datastorage.MountCommand;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
@@ -80,7 +78,7 @@ public interface CloudPipelineAPI {
     String TO = "to";
     String TOOL_ID = "toolId";
     String REGION_ID = "regionId";
-    String ROOT = "root";
+
 
     @POST("run/{runId}/status")
     Call<Result<PipelineRun>> updateRunStatus(@Path(RUN_ID) Long runId,
@@ -218,10 +216,4 @@ public interface CloudPipelineAPI {
 
     @GET("cluster/node/{id}/disks")
     Call<Result<List<NodeDisk>>> loadNodeDisks(@Path(ID) String nodeId);
-
-    @GET("datastorage/{id}/mountCmd")
-    Call<Result<MountCommand>> buildMountCommand(@Path(ID) Long id, @Query(ROOT) String root);
-
-    @GET("datastorage/allWithMounts")
-    Call<Result<List<DataStorageWithShareMount>>> loadAllStoragesWithMounts();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,30 +15,21 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
-import com.epam.pipeline.cmd.CmdExecutionException;
-import com.epam.pipeline.cmd.CmdExecutor;
-import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
-import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
-import com.epam.pipeline.entity.datastorage.FileShareMount;
-import com.epam.pipeline.entity.datastorage.MountCommand;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityPermissionVO;
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
@@ -48,7 +39,6 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -62,8 +52,6 @@ import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
 public class NFSSynchronizer implements ElasticsearchSynchronizer {
     private static final Pattern NFS_ROOT_PATTERN = Pattern.compile("(.+:\\/?).*[^\\/]+");
     private static final Pattern NFS_PATTERN_WITH_HOME_DIR = Pattern.compile("(.+:)[^\\/]+");
-    private static final String STORAGE_ACCOUNT = "storage_account";
-    private static final String STORAGE_KEY = "storage_key";
 
     private final String indexSettingsPath;
     private final String rootMountPoint;
@@ -73,69 +61,53 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
     private final ElasticsearchServiceClient elasticsearchServiceClient;
     private final ElasticIndexService elasticIndexService;
-    private final CmdExecutor cmdExecutor;
-    private final JsonMapper jsonMapper;
-    private final String credentialsPath;
 
     public NFSSynchronizer(@Value("${sync.nfs-file.index.mapping}") String indexSettingsPath,
                            @Value("${sync.nfs-file.root.mount.point}") String rootMountPoint,
                            @Value("${sync.index.common.prefix}") String indexPrefix,
                            @Value("${sync.nfs-file.index.name}") String indexName,
                            @Value("${sync.nfs-file.bulk.insert.size}") Integer bulkInsertSize,
-                           @Value("${sync.nfs-file.creds.path:}") String credentialsPath,
                            CloudPipelineAPIClient cloudPipelineAPIClient,
                            ElasticsearchServiceClient elasticsearchServiceClient,
-                           ElasticIndexService elasticIndexService,
-                           CmdExecutor cmdExecutor,
-                           JsonMapper jsonMapper) {
+                           ElasticIndexService elasticIndexService) {
         this.indexSettingsPath = indexSettingsPath;
         this.rootMountPoint = rootMountPoint;
         this.indexPrefix = indexPrefix;
         this.indexName = indexName;
         this.bulkInsertSize = bulkInsertSize;
-        this.credentialsPath = credentialsPath;
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
         this.elasticsearchServiceClient = elasticsearchServiceClient;
         this.elasticIndexService = elasticIndexService;
-        this.cmdExecutor = cmdExecutor;
-        this.jsonMapper = jsonMapper;
     }
 
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
         log.debug("Started NFS synchronization");
 
-        final List<DataStorageWithShareMount> allDataStorages = cloudPipelineAPIClient.loadAllStoragesWithMounts();
+        List<AbstractDataStorage> allDataStorages = cloudPipelineAPIClient.loadAllDataStorages();
         allDataStorages.stream()
-                .filter(storage -> DataStorageType.NFS.equals(storage.getStorage().getType()))
+                .filter(dataStorage -> dataStorage.getType() == DataStorageType.NFS)
                 .forEach(this::createIndexAndDocuments);
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    void createIndexAndDocuments(final DataStorageWithShareMount storageWithShareMount) {
-        final AbstractDataStorage dataStorage = storageWithShareMount.getStorage();
-        final FileShareMount fileShareMount = storageWithShareMount.getShareMount();
-
-        final EntityPermissionVO entityPermission = cloudPipelineAPIClient
+    void createIndexAndDocuments(final AbstractDataStorage dataStorage) {
+        EntityPermissionVO entityPermission = cloudPipelineAPIClient
                 .loadPermissionsForEntity(dataStorage.getId(), dataStorage.getAclClass());
 
-        final PermissionsContainer permissionsContainer = new PermissionsContainer();
+        PermissionsContainer permissionsContainer = new PermissionsContainer();
         if (entityPermission != null) {
             permissionsContainer.add(entityPermission.getPermissions(), dataStorage.getOwner());
         }
 
-        final String alias = indexPrefix + indexName + String.format("-%d", dataStorage.getId());
-        final String indexName = generateRandomString(5).toLowerCase() + "-" + alias;
+        String alias = indexPrefix + indexName + String.format("-%d", dataStorage.getId());
+        String indexName = generateRandomString(5).toLowerCase() + "-" + alias;
         try {
-            final String currentIndexName = elasticsearchServiceClient.getIndexNameByAlias(alias);
+            String currentIndexName = elasticsearchServiceClient.getIndexNameByAlias(alias);
             elasticIndexService.createIndexIfNotExist(indexName, indexSettingsPath);
 
-            final String storageName = getStorageName(dataStorage.getPath());
-            final Path mountFolder = Paths.get(rootMountPoint, getMountDirName(dataStorage.getPath()), storageName);
-
-            if (!Files.exists(mountFolder)) {
-                mount(dataStorage, mountFolder, fileShareMount);
-            }
+            String storageName = getStorageName(dataStorage.getPath());
+            Path mountFolder = Paths.get(rootMountPoint, getMountDirName(dataStorage.getPath()), storageName);
 
             createDocuments(indexName, mountFolder, dataStorage, permissionsContainer);
 
@@ -148,23 +120,6 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
             if (elasticsearchServiceClient.isIndexExists(indexName))  {
                 elasticsearchServiceClient.deleteIndex(indexName);
             }
-        }
-    }
-
-    private void mount(final AbstractDataStorage dataStorage, final Path mountFolder,
-                       final FileShareMount fileShareMount) throws IOException {
-        final MountCommand mountCommand = cloudPipelineAPIClient
-                .buildMontCommand(dataStorage.getId(), rootMountPoint);
-        final String commandToExecute = mountCommand.isCredentialsRequired()
-                ? getMountCommandWithCredentials(mountCommand.getCommandFormat(), fileShareMount)
-                : mountCommand.getCommandFormat();
-        log.debug(commandToExecute);
-        try {
-            cmdExecutor.executeCommand(commandToExecute);
-        } catch (CmdExecutionException e) {
-            FileUtils.deleteDirectory(mountFolder.toFile());
-            log.error("Failed to execute mount command: '{}'", commandToExecute);
-            throw new IllegalArgumentException(e);
         }
     }
 
@@ -263,29 +218,6 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
             return jsonBuilder;
         } catch (IOException e) {
             throw new IllegalArgumentException("An error occurred while creating document: ", e);
-        }
-    }
-
-    private String getMountCommandWithCredentials(final String command, final FileShareMount fileShareMount) {
-        Assert.state(!StringUtils.isEmpty(credentialsPath), "Credentials path is required");
-        Assert.state(Files.exists(Paths.get(credentialsPath)), "Credentials folder does not exist");
-        Assert.notNull(fileShareMount, "File share must be specified for storage");
-
-        final Path pathToRegionCredentials = Paths.get(credentialsPath, fileShareMount.getRegionId().toString());
-        Assert.state(Files.exists(pathToRegionCredentials),
-                String.format("Cloud region file '%s' was not found", pathToRegionCredentials));
-        try {
-            final String content = new String(Files.readAllBytes(pathToRegionCredentials));
-            final Map<String, String> credentials = JsonMapper
-                    .parseData(content, new TypeReference<Map<String, String>>() {}, jsonMapper);
-            Assert.notNull(credentials, "Credentials file exists but empty");
-            final String account = credentials.get(STORAGE_ACCOUNT);
-            final String accountKey = credentials.get(STORAGE_KEY);
-            Assert.state(!StringUtils.isEmpty(account) && !StringUtils.isEmpty(accountKey),
-                    "Credentials are not provided");
-            return String.format(command, account, accountKey);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
         }
     }
 }
