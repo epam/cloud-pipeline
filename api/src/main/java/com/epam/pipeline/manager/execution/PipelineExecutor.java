@@ -163,7 +163,8 @@ public class PipelineExecutor {
         if (!StringUtils.isEmpty(secretName)) {
             spec.setImagePullSecrets(Collections.singletonList(new LocalObjectReference(secretName)));
         }
-        boolean isDockerInDockerEnabled = authManager.isAdmin() && isParameterEnabled(envVars, KubernetesConstants.CP_CAP_DIND_NATIVE);
+        boolean isDockerInDockerEnabled = authManager.isAdmin() && isParameterEnabled(envVars,
+                KubernetesConstants.CP_CAP_DIND_NATIVE);
         boolean isSystemdEnabled = isParameterEnabled(envVars, KubernetesConstants.CP_CAP_SYSTEMD_CONTAINER);
 
         spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled));
