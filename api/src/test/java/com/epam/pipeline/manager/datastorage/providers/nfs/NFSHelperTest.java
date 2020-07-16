@@ -62,9 +62,9 @@ public class NFSHelperTest {
         //smb protocol -> should format with //
         Assert.assertEquals("//" + unformattedPath, result);
 
-        //nfs protocol -> should not format
-        result = NFSHelper.formatNfsPath(unformattedPath, "nfs");
-        Assert.assertEquals(unformattedPath, result);
+        //nfs protocol -> should add suffix
+        result = NFSHelper.formatNfsPath("localhost", "nfs");
+        Assert.assertEquals("localhost:/", result);
     }
 
     @Test
