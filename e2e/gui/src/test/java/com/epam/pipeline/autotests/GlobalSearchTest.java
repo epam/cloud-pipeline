@@ -76,7 +76,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     private final String toolEndpoint = testingTool.substring(testingTool.lastIndexOf("/") + 1);
     private final String defaultProfile = "default";
     private final String configurationName = "test_conf";
-    private final String configurationNodeType = "c5.large (CPU: 2, RAM: 4)";
+    private final String configurationNodeType = C.ANOTHER_INSTANCE;
     private final String configurationDisk = "24";
     private final String configVar = "config.json";
     private final String title = "testIssue" + Utils.randomSuffix();
@@ -173,9 +173,9 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                                 .clear(NAME).setValue(NAME, configurationName)
                                 .clear(DISK).setValue(DISK, configurationDisk)
                                 .selectValue(INSTANCE_TYPE, configurationNodeType)
-                                .sleep(2, SECONDS)
+                                .sleep(3, SECONDS)
                                 .click(SAVE)
-                                .sleep(2, SECONDS)
+                                .sleep(3, SECONDS)
                 );
         draftVersionName = library()
                 .cd(folder)
@@ -206,7 +206,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(DESCRIPTION, text(pipeline))
                 .ensure(HIGHLIGHTS, text("Found in pipelineName"))
                 .ensure(PREVIEW, text(configurationDisk), text(configurationName),
-                        text(configurationNodeType.substring(0, configurationNodeType.indexOf(" "))))
+                        text(configurationNodeType))
                 .parent()
                 .moveToSearchResultItem(pipeline, () -> new PipelineLibraryContentAO(pipeline))
                 .assertPipelineName(pipeline);
@@ -275,7 +275,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .hover(SEARCH_RESULT)
                 .openSearchResultItemWithText(pipelineWithRun())
                 .ensure(TITLE, Status.SUCCESS.reached, text(testRunID), text(pipeline), text(draftVersionName))
-                .checkTags(configurationDisk, configurationNodeType.substring(0, configurationNodeType.indexOf(" ")))
+                .checkTags(configurationDisk, configurationNodeType)
                 .ensure(HIGHLIGHTS, text("Found in pipelineName"), text("Found in description"),
                         text("Found in podId"))
                 .ensure(PREVIEW, text("Owner"), text(LOGIN), text("Scheduled"), text("Started"),
@@ -389,7 +389,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .hover(SEARCH_RESULT)
                 .openSearchResultItemWithText(String.format("%s-%s", pipeline.toLowerCase(), getLastRunId()))
                 .ensure(TITLE, Status.SUCCESS.reached, text(getLastRunId()), text(pipeline), text(draftVersionName))
-                .checkTags(configurationDisk, configurationNodeType.substring(0, configurationNodeType.indexOf(" ")))
+                .checkTags(configurationDisk, configurationNodeType)
                 .ensure(HIGHLIGHTS, text("Found in logs"),
                         text(storage.toLowerCase() + " mounted to"));
     }

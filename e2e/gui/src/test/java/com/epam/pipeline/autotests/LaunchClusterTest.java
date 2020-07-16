@@ -19,7 +19,6 @@ import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
-import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -38,6 +37,7 @@ import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.C.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -45,12 +45,11 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
 
     private final String autoScaledSettingForm = "Auto-scaled cluster";
     private final String clusterSettingForm = "Cluster";
-    private final String defaultRegistry = C.DEFAULT_REGISTRY;
+    private final String defaultRegistry = DEFAULT_REGISTRY;
     private final String defaultGroup = "library";
     private final String testingTool = "rstudio";
-    private final String testingNode = C.ANOTHER_INSTANCE;
-    private final String defaultNode = C.DEFAULT_INSTANCE;
-    private final String instanceFamilyName = C.DEFAULT_INSTANCE_FAMILY_NAME;
+    private final String testingNode = ANOTHER_INSTANCE;
+    private final String instanceFamilyName = DEFAULT_INSTANCE_FAMILY_NAME;
 
     @AfterMethod(alwaysRun = true)
     @Override
@@ -78,7 +77,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     }
 
     @BeforeMethod
-    public void checkNavigateBarIsEnabled() {
+    public void refreshPage() {
         getWebDriver().navigate().refresh();
     }
 
@@ -128,7 +127,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .shouldContainRun(getPipelineName(), getRunId());
         $(byClassName("run-" + getRunId()))
                 .find(byClassName("ant-table-row-expand-icon"))
-                .waitUntil(appears, C.COMPLETION_TIMEOUT);
+                .waitUntil(appears, COMPLETION_TIMEOUT);
         navigationMenu()
                 .runs()
                 .activeRuns()
@@ -201,8 +200,8 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .waitForTask(gridEngineAutoscalingTask)
                 .click(taskWithName(gridEngineAutoscalingTask))
-                .waitForLog(String.format("Additional worker with host=%s has been created.",
-                        String.format("pipeline-%s", Integer.parseInt(getRunId()) + 2))
+                .waitForLog(String.format("Additional worker with host=%s and instance type=%s has been created.",
+                        String.format("pipeline-%s", Integer.parseInt(getRunId()) + 2), DEFAULT_INSTANCE)
                 );
 
         navigationMenu()
@@ -364,7 +363,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .waitForNestedRunsLink()
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
-                        instance.ensure(TYPE, text(C.DEFAULT_INSTANCE_FAMILY_NAME))
+                        instance.ensure(TYPE, text(DEFAULT_INSTANCE_FAMILY_NAME))
                 );
     }
 }
