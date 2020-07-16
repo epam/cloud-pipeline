@@ -353,8 +353,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         }
         configuration.executionEnvironment = opts.executionEnvironment;
         configuration.rootEntityId = opts.rootEntityId;
-        configuration.endpointName = opts.endpointName;
-        configuration.stopAfter = opts.stopAfter;
         opts.pipelineId = undefined;
         opts.pipelineVersion = undefined;
         opts.configName = undefined;
@@ -366,8 +364,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         opts.methodConfigurationSnapshot = undefined;
         opts.methodInputs = undefined;
         opts.methodOutputs = undefined;
-        opts.endpointName = undefined;
-        opts.stopAfter = undefined;
         if (opts.executionEnvironment) {
           opts.executionEnvironment = undefined;
         }
@@ -452,10 +448,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
   };
 
   getParameters = () => {
-    const extractEndpointNameAndStopAfter = (c) => ({
-      endpointName: c.endpointName,
-      stopAfter: c.stopAfter
-    });
     if (this.state.overriddenConfiguration) {
       const parameters = this.state.overriddenConfiguration.configuration
         ? this.state.overriddenConfiguration.configuration.parameters
@@ -465,7 +457,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         currentParam.readOnly = !!currentParam.value;
       }
       return {
-        ...extractEndpointNameAndStopAfter(this.state.overriddenConfiguration),
         ...this.state.overriddenConfiguration.configuration || this.state.overriddenConfiguration,
         parameters
       };
@@ -500,7 +491,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     }
 
     return {
-      ...extractEndpointNameAndStopAfter(configuration),
       ...configuration.configuration || configuration,
       parameters
     };

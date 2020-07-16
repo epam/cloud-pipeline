@@ -103,7 +103,6 @@ import {
   getOutputPaths
 } from '../../../runs/actions';
 import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSettings';
-import ServerlessAPIButton from '../../../special/serverless-api-button';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -901,8 +900,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       instance_size: values[EXEC_ENVIRONMENT].type,
       instance_disk: +values[EXEC_ENVIRONMENT].disk,
       timeout: +(values[ADVANCED].timeout || 0),
-      stopAfter: +(values[ADVANCED].stopAfter || 0),
-      endpointName: values[ADVANCED].endpointName,
       cmd_template: cmd,
       node_count: this.state.launchCluster ? this.state.nodesCount : undefined,
       docker_image: values[EXEC_ENVIRONMENT].dockerImage,
@@ -2922,38 +2919,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return undefined;
   };
 
-  renderEndpointNameFormItem = () => {
-    if (this.props.detached) {
-      return (
-        <FormItem
-          className={getFormItemClassName(styles.formItemRow, 'endpointName')}
-          {...this.leftFormItemLayout}
-          label="Endpoint Name"
-          hasFeedback>
-          <Col span={10}>
-            <FormItem
-              className={styles.formItemRow}
-              hasFeedback
-            >
-              {this.getSectionFieldDecorator(ADVANCED)('endpointName',
-                {
-                  initialValue: this.getDefaultValue('endpointName')
-                }
-              )(
-                <Input
-                  disabled={(this.props.readOnly && !this.props.canExecute)} />
-              )}
-            </FormItem>
-          </Col>
-          <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
-            {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.endpointNameHint)}
-          </Col>
-        </FormItem>
-      );
-    }
-    return undefined;
-  };
-
   renderInstanceTypeSelection = () => {
     if (this.state.isDts && this.props.detached) {
       return undefined;
@@ -3584,45 +3549,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
-  renderStopAfterFormItem = () => {
-    if (!this.props.detached) {
-      return undefined;
-    }
-    return (
-      <FormItem
-        className={getFormItemClassName(styles.formItemRow, 'stopAfter')}
-        {...this.leftFormItemLayout}
-        label="Stop after (min)"
-        hasFeedback>
-        <Col span={10}>
-          <FormItem
-            className={styles.formItemRow}
-            hasFeedback>
-            {this.getSectionFieldDecorator(ADVANCED)('stopAfter',
-              {
-                rules: [
-                  {
-                    pattern: /^\d+(\.\d+)?$/,
-                    message: 'Please enter a valid positive number'
-                  }
-                ],
-                initialValue: this.getDefaultValue('stopAfter')
-              }
-            )(
-              <Input
-                disabled={
-                  (this.props.readOnly && !this.props.canExecute)
-                } />
-            )}
-          </FormItem>
-        </Col>
-        <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
-          {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.stopAfterHint)}
-        </Col>
-      </FormItem>
-    );
-  };
-
   renderLimitMountsFormItem = () => {
     const getDefaultValue = () => {
       if (this.props.parameters.parameters &&
@@ -4184,11 +4110,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {
                 this.renderRunButton()
               }
-              <ServerlessAPIButton
-                style={{verticalAlign: 'middle', marginRight: 10}}
-                configurationId={this.props.configurationId}
-                configurationName={this.props.currentConfigurationName}
-              />
               {
                 this.props.canRemove && !this.props.readOnly
                   ? (
@@ -4516,8 +4437,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {this.renderDisableAutoPauseFormItem()}
               {this.renderPrettyUrlFormItem()}
               {this.renderTimeoutFormItem()}
-              {this.renderEndpointNameFormItem()}
-              {this.renderStopAfterFormItem()}
               {this.renderLimitMountsFormItem()}
               {this.renderCmdTemplateFormItem()}
               {this.renderParameters(true)}
