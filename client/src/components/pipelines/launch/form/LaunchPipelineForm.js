@@ -905,6 +905,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         ? +values[EXEC_ENVIRONMENT].cloudRegionId
         : undefined
     };
+    if (!this.props.detached) {
+      delete payload.endpointName;
+      delete payload.stopAfter;
+    }
     if (this.state.isDts && this.props.detached) {
       payload.instance_size = undefined;
       payload.instance_disk = undefined;
@@ -2870,7 +2874,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderEndpointNameFormItem = () => {
-    if (this.props.detached) {
+    if (this.props.detached && this.props.editConfigurationMode) {
       return (
         <FormItem
           className={getFormItemClassName(styles.formItemRow, 'endpointName')}
@@ -3532,7 +3536,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderStopAfterFormItem = () => {
-    if (!this.props.detached) {
+    if (!this.props.detached || !this.props.editConfigurationMode) {
       return undefined;
     }
     return (
@@ -4130,11 +4134,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {
                 this.renderRunButton()
               }
-              <ServerlessAPIButton
-                style={{verticalAlign: 'middle', marginRight: 10}}
-                configurationId={this.props.configurationId}
-                configurationName={this.props.currentConfigurationName}
-              />
+              {
+                this.props.detached && this.props.editConfigurationMode && (
+                  <ServerlessAPIButton
+                    style={{verticalAlign: 'middle', marginRight: 10}}
+                    configurationId={this.props.configurationId}
+                    configurationName={this.props.currentConfigurationName}
+                  />
+                )
+              }
               {
                 this.props.canRemove && !this.props.readOnly
                   ? (
