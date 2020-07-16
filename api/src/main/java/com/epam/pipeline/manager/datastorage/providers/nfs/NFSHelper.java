@@ -22,8 +22,12 @@ import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.springframework.util.StringUtils;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -100,5 +104,12 @@ final class NFSHelper {
             path = SMB_SCHEME + path;
         }
         return path;
+    }
+
+    static void deleteFolderIfEmpty(final File folder) throws IOException {
+        final String[] files = folder.list();
+        if (ArrayUtils.isEmpty(files)) {
+            FileUtils.deleteDirectory(folder);
+        }
     }
 }
