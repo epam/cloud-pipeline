@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
+import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
@@ -45,6 +46,7 @@ import com.epam.pipeline.manager.filter.FilterExpressionType;
 import com.epam.pipeline.manager.filter.FilterOperandType;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.util.TestUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
@@ -72,8 +74,8 @@ import java.util.stream.Stream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @Transactional
 public class PipelineRunDaoTest extends AbstractSpringTest {
@@ -135,6 +137,9 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
 
     @Autowired
     private CloudRegionDao regionDao;
+
+    @Autowired
+    private StopServerlessRunDao stopServerlessRunDao;
 
     @Value("${run.pipeline.init.task.name?:InitializeEnvironment}")
     private String initTaskName;
@@ -817,6 +822,49 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         final List<PipelineRun> runs = pipelineRunDao.loadRunsByStatuses(
                 Arrays.asList(TaskStatus.PAUSING, TaskStatus.RESUMING));
         assertEquals(2, runs.size());
+    }
+
+    @Test
+    public void shouldDeleteSidsFromRunByPipelineId() {
+        final RunSid runSid = new RunSid();
+        runSid.setName(GROUP_NAME);
+        runSid.setIsPrincipal(false);
+        final Pipeline pipeline = getPipeline();
+        final PipelineRun run = createRunWithRunSids(pipeline.getId(), null, Collections.singletonList(runSid));
+
+        pipelineRunDao.deleteRunSidsByPipelineId(pipeline.getId());
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertTrue(CollectionUtils.isEmpty(loadedRun.getRunSids()));
+    }
+
+    @Test
+    public void shouldLoadExpiredServerlessRuns() {
+        final LocalDateTime now = LocalDateTime.now();
+        final LocalDateTime maxLastUpdate = now.plusMinutes(30);
+
+        final PipelineRun run1 = buildPipelineRun(null, null);
+        run1.setStatus(TaskStatus.RUNNING);
+        pipelineRunDao.createPipelineRun(run1);
+        final StopServerlessRun serverlessRun1 = StopServerlessRun.builder()
+                .lastUpdate(now)
+                .runId(run1.getId())
+                .build();
+        stopServerlessRunDao.createServerlessRun(serverlessRun1);
+
+        final PipelineRun run2 = buildPipelineRun(null, null);
+        run2.setStatus(TaskStatus.RUNNING);
+        pipelineRunDao.createPipelineRun(run2);
+        final StopServerlessRun serverlessRun2 = StopServerlessRun.builder()
+                .lastUpdate(now.plusHours(1))
+                .runId(run2.getId())
+                .build();
+        stopServerlessRunDao.createServerlessRun(serverlessRun2);
+
+
+        final List<PipelineRun> pipelineRuns = pipelineRunDao.loadServerlessRunsToStop(maxLastUpdate);
+        assertEquals(pipelineRuns.size(), 1);
+        assertEquals(pipelineRuns.get(0).getId(), run1.getId());
     }
 
     private PipelineRun createTestPipelineRun() {

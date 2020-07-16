@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    cloud-pipeline/cp-git: "true"
+  name: cp-git
+  namespace: default
+spec:
+  ports:
+  - protocol: TCP
+    port: ${CP_GITLAB_INTERNAL_PORT}
+    targetPort: ${CP_GITLAB_INTERNAL_PORT}
+    name: cp-git-port-http
+  - protocol: TCP
+    port: 22
+    targetPort: 22
+    name: cp-git-port-ssh
+    externalIPs:
+${CP_GITLAB_SVC_EXTERNAL_IP_LIST}
+  selector:
+    cloud-pipeline/cp-git: "true"

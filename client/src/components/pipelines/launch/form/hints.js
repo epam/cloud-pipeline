@@ -91,6 +91,14 @@ const startIdleHint = (localizedStringFn) => (
   </Row>
 );
 
+const useDefaultCommandHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    To use the <b>CMD from the docker image</b> - select <b>Default Command</b> option.
+    <br />
+    This will read a command from the Dockefile's CMD instruction and use it to start the container.
+  </Row>
+);
+
 const priceTypeHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
     <b>{localizedStringFn('Spot')}</b> type will provide ~3 times lower prices, but may introduce longer startup time and accidental node failure.<br />
@@ -131,6 +139,18 @@ const prettyUrlHint = (localizedStringFn) => (
   </Row>
 );
 
+const endpointNameHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    This value specifies which <b>tool endpoint</b> will be used to process <b>serverless API</b> calls
+  </Row>
+);
+
+const stopAfterHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    This value specifies how long shall the job be kept running after the last <b>serverless API</b> call
+  </Row>
+);
+
 const executionEnvironmentSummaryHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
     General amount of resources that will be allocated during the run execution. Notice that in some specific configurations such as <b>hybrid autoscaling clusters</b> amount of resources can vary beyond the shown interval.
@@ -146,12 +166,15 @@ const hints = {
   awsRegionRestrictedByToolSettingsHint,
   diskHint,
   startIdleHint,
+  useDefaultCommandHint,
   priceTypeHint,
   autoPauseHint,
   timeOutHint,
   limitMountsHint,
   prettyUrlHint,
-  executionEnvironmentSummaryHint
+  executionEnvironmentSummaryHint,
+  endpointNameHint,
+  stopAfterHint
 };
 
 export default hints;

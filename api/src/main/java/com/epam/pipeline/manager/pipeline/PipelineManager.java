@@ -26,6 +26,7 @@ import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.pipeline.RunLogDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -40,6 +41,7 @@ import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.utils.GitUtils;
 import com.epam.pipeline.utils.PasswordGenerator;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -243,6 +245,7 @@ public class PipelineManager implements SecuredEntityManager {
         restartRunManager.deleteRestartedRunsForPipeline(id);
         runStatusManager.deleteRunStatusForPipeline(id);
         runScheduleManager.deleteSchedulesForRunByPipeline(id);
+        pipelineRunDao.deleteRunSidsByPipelineId(id);
         pipelineRunDao.deleteRunsByPipeline(id);
         dataStorageRuleDao.deleteRulesByPipeline(id);
         pipelineDao.deletePipeline(id);
@@ -329,6 +332,7 @@ public class PipelineManager implements SecuredEntityManager {
                 GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepository(), newProjectName);
         final String newRepositorySsh =
                 GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepositorySsh(), newProjectName);
+        final Long sourcePipelineId = loadedPipeline.getId();
 
         loadedPipeline.setRepository(newRepository);
         loadedPipeline.setRepositorySsh(newRepositorySsh);
@@ -338,7 +342,8 @@ public class PipelineManager implements SecuredEntityManager {
         loadedPipeline.setOwner(securityManager.getAuthorizedUser());
         loadedPipeline.setRepositoryType(null);
         loadedPipeline.setLocked(false);
-        final Pipeline newPipeline = crudManager.save(loadedPipeline);
+        final Pipeline newPipeline = crudManager.savePipeline(loadedPipeline);
+        copyStorageRules(sourcePipelineId, newPipeline.getId());
         gitManager.copyRepository(sourceProjectName, newProjectName, uuid);
         return newPipeline;
     }
@@ -371,5 +376,14 @@ public class PipelineManager implements SecuredEntityManager {
             return newProjectName;
         }
         return String.format("%s_copy%s", sourceProjectName, uuid);
+    }
+
+    private void copyStorageRules(final Long sourcePipelineId, final Long newPipelineId) {
+        final List<DataStorageRule> sourceStorageRules = ListUtils.emptyIfNull(dataStorageRuleDao
+                .loadDataStorageRulesForPipeline(sourcePipelineId));
+        sourceStorageRules.forEach(rule -> {
+            rule.setPipelineId(newPipelineId);
+            dataStorageRuleDao.createDataStorageRule(rule);
+        });
     }
 }

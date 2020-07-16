@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,7 +88,7 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
     }
 
     public void closeTab() {
-        List<String> tabs = new ArrayList<String>(getWebDriver().getWindowHandles());
+        List<String> tabs = new ArrayList<>(getWebDriver().getWindowHandles());
         getWebDriver().close();
         switchTo().window(tabs.get(0));
     }

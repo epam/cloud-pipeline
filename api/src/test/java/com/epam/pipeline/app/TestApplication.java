@@ -56,6 +56,7 @@ import java.util.concurrent.Executor;
 @SpringBootConfiguration
 @Import({AppMVCConfiguration.class,
         DBConfiguration.class,
+        CacheConfiguration.class,
         MappersConfiguration.class,
         ContextualPreferenceConfiguration.class})
 @EnableAutoConfiguration(exclude = {

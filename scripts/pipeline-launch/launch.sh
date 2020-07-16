@@ -183,7 +183,7 @@ function cp_cap_publish {
 
             sed -i "/$_DIND_CONTAINER_INIT/d" $_MASTER_CAP_INIT_PATH
             echo "$_DIND_CONTAINER_INIT" >> $_MASTER_CAP_INIT_PATH
-            
+
             sed -i "/$_DIND_CONTAINER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_DIND_CONTAINER_INIT" >> $_WORKER_CAP_INIT_PATH
       fi
@@ -287,7 +287,7 @@ function check_installed {
 # Verifies that a package is installed into the package manager's db (might not be an executable and exposed to $PATH)
 function check_package_installed {
       local _PACKAGE_TO_CHECK="$1"
-      
+
       if [ "${CP_IGNORE_INSTALLED_PACKAGES,,}" == 'true' ] || [ "${CP_IGNORE_INSTALLED_PACKAGES,,}" == 'yes' ]; then
             return 1
       fi
@@ -298,7 +298,7 @@ function check_package_installed {
       elif check_installed "rpm"; then
             rpm -q "$_PACKAGE_TO_CHECK"  &> /dev/null
             return $?
-      else 
+      else
             # For the "unknown" managers - report that a package is not installed
             return 1
       fi
@@ -368,7 +368,7 @@ function configure_package_manager {
             if [ "$CP_OS" == "centos" ]; then
                   curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
                   yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q > /dev/null 2>&1
-                  
+
                   if [ $? -ne 0 ]; then
                         echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the yum, removing the repo"
                         rm -f /etc/yum.repos.d/cloud-pipeline.repo
@@ -380,7 +380,7 @@ function configure_package_manager {
                   curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
                   sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
                   apt-get update -qq -y --allow-insecure-repositories
-                  
+
                   if [ $? -ne 0 ]; then
                         echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
                         sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
@@ -435,7 +435,10 @@ function symlink_common_locations {
       local _OWNER_HOME="$2"
 
       # Grant OWNER passwordless sudo
-      echo "$_OWNER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+      if check_cp_cap CP_CAP_SUDO_ENABLE || [[ "$_OWNER" == "root" ]]
+      then
+            echo "$_OWNER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+      fi
       user_create_home "$_OWNER" "$_OWNER_HOME"
 
       # Create symlinks to /cloud-data with mounted buckets into account's home dir
@@ -456,6 +459,9 @@ function symlink_common_locations {
       local _REPOSITORY_MOUNT_SRC="${REPOSITORY_MOUNT}/${PIPELINE_NAME}/current"
       local _REPOSITORY_HOME="$_OWNER_HOME/code-repository"
       if [ ! -z "$GIT_REPO" ] && [ -d "$_REPOSITORY_MOUNT_SRC" ]; then
+            if [ -L "$_REPOSITORY_HOME/${PIPELINE_NAME}" ]; then
+                  unlink "$_REPOSITORY_HOME/${PIPELINE_NAME}"
+            fi
             mkdir -p $_REPOSITORY_HOME
             if [ -d "$_REPOSITORY_MOUNT_SRC/src" ]; then
                   ln -s "$_REPOSITORY_MOUNT_SRC/src" "$_REPOSITORY_HOME/${PIPELINE_NAME}"
@@ -515,7 +521,7 @@ function install_private_packages {
       #    We can probably keep it, but it will fail if we need to update a resumed run
       rm -rf "${_install_path}/conda"
       CP_CONDA_DISTRO_URL="${CP_CONDA_DISTRO_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz}"
-      
+
       # Download the distro from a public bucket
       echo "Getting python distro from $CP_CONDA_DISTRO_URL"
       wget -q "${CP_CONDA_DISTRO_URL}" -O "${_tmp_install_dir}/conda.tgz" &> /dev/null
@@ -533,6 +539,22 @@ function install_private_packages {
 function list_storage_mounts() {
     local _MOUNT_ROOT="$1"
     echo $(df -T | awk 'index($2, "fuse")' | awk '{ print $7 }' | grep "^$_MOUNT_ROOT")
+}
+
+function update_user_limits() {
+    local _MAX_NOPEN_LIMIT=$1
+    local _MAX_PROCS_LIMIT=$2
+    ulimit -n "$_MAX_NOPEN_LIMIT" -u "$_MAX_PROCS_LIMIT"
+cat <<EOT >> /etc/security/limits.conf
+* soft nofile $_MAX_NOPEN_LIMIT
+* hard nofile $_MAX_NOPEN_LIMIT
+* soft nproc $_MAX_PROCS_LIMIT
+* hard nproc $_MAX_PROCS_LIMIT
+root soft nofile $_MAX_NOPEN_LIMIT
+root hard nofile $_MAX_NOPEN_LIMIT
+root soft nproc $_MAX_PROCS_LIMIT
+root hard nproc $_MAX_PROCS_LIMIT
+EOT
 }
 
 ######################################################
@@ -598,7 +620,7 @@ eval "$_DEPS_INSTALL_COMMAND"
 
 ### Then Setup directory for any CP-specific binaries/wrapper
 ### and install any "private"/preferred packages
-if [ -z "$CP_USR_BIN" ]; then 
+if [ -z "$CP_USR_BIN" ]; then
         export CP_USR_BIN="/usr/cpbin"
         echo "CP_USR_BIN is not defined, setting to ${CP_USR_BIN}"
 fi
@@ -627,7 +649,7 @@ if [ ! -f "$CP_PYTHON2_PATH" ]; then
                   echo "[ERROR] python2 environment not found, exiting."
                   exit 1
             fi
-      fi    
+      fi
 fi
 echo "Local python interpreter found: $CP_PYTHON2_PATH"
 
@@ -642,6 +664,20 @@ if ! jq --version > /dev/null 2>&1; then
     fi
     chmod +x /usr/bin/jq
 fi
+
+######################################################
+# Configure the dependencies if needed
+######################################################
+# Disable wget's robots.txt default parsing, as it breaks 
+# the recursive download for certain sites
+_CP_WGET_CONFIGS="/etc/wgetrc /usr/local/etc/wgetrc /root/.wgetrc /home/$OWNER/.wgetrc"
+for _CP_WGET_CONF in $_CP_WGET_CONFIGS; do
+      [ ! -f "$_CP_WGET_CONF" ] && continue
+      sed -i '/robots/d' $_CP_WGET_CONF
+      echo "robots = off" >> $_CP_WGET_CONF
+done
+
+
 
 echo "------"
 echo
@@ -759,6 +795,7 @@ fi
 echo "Creating default scripts directory at ${SCRIPTS_DIR}. Please use 'SCRIPTS_DIR' variable to run pipeline script"
 create_sys_dir $SCRIPTS_DIR
 
+
 # Setup cluster specific variables directory
 if [ -z "$SHARED_FOLDER" ] ;
     then
@@ -815,10 +852,14 @@ if [ -z "$CP_CAP_ENV_UMASK" ] ;
         echo "CP_CAP_ENV_UMASK is not defined, setting to ${CP_CAP_ENV_UMASK}"
 fi
 
-# Setup max open files and max processes limits for a current session, as default limit is 1024
-# Further this command is also pushed to the "profile" and "bashrc scripts" for SSH sessions
-_CP_ENV_ULIMIT="ulimit -n $MAX_NOPEN_LIMIT -u $MAX_PROCS_LIMIT"
-eval "$_CP_ENV_ULIMIT"
+if [ -z "$CP_CAP_SUDO_ENABLE" ] ;
+    then
+        export CP_CAP_SUDO_ENABLE="true"
+        echo "CP_CAP_SUDO_ENABLE is not defined, setting to ${CP_CAP_SUDO_ENABLE}"
+fi
+
+# Setup max open files and max processes limits for a current session and all ssh sessions, as default limit is 1024
+update_user_limits $MAX_NOPEN_LIMIT $MAX_PROCS_LIMIT
 
 # default 0002 - will result into 775 (dir) and 664 (file) permissions
 _CP_ENV_UMASK="umask ${CP_CAP_ENV_UMASK:-0002}"
@@ -867,6 +908,25 @@ echo
 ######################################################
 
 
+######################################################
+echo Configure sudo
+echo "-"
+######################################################
+
+if check_cp_cap CP_CAP_SUDO_ENABLE
+then
+  SUDO_INSTALL_COMMAND=
+  get_install_command_by_current_distr SUDO_INSTALL_COMMAND "sudo"
+  if [ -z "$SUDO_INSTALL_COMMAND" ] ;
+    then
+        echo "Unable to setup sudo, package manager not found (apt-get/yum/apk)"
+    else
+        # Install sudo
+        eval "$SUDO_INSTALL_COMMAND"
+  fi
+fi
+
+######################################################
 
 ######################################################
 echo Setting up SSH server
@@ -985,8 +1045,21 @@ else
             echo "[ERROR] 'pipe' CLI download failed. Exiting"
             exit 1
       fi
-      mv pipe /usr/bin/
-      chmod +x /usr/bin/pipe
+
+      # Clean any known locations, where previous verssion of the pipe might reside (E.g. committed by the user)
+      rm -f /bin/pipe
+      rm -f /usr/bin/pipe
+      rm -f /usr/local/bin/pipe
+      rm -f /sbin/pipe
+      rm -f /usr/sbin/pipe
+      rm -f /usr/local/sbin/pipe
+      rm -f ${CP_USR_BIN}/pipe
+
+      # Install into the PATH locationse
+      cp pipe /usr/bin/
+      cp pipe ${CP_USR_BIN}/
+      chmod +x /usr/bin/pipe ${CP_USR_BIN}/pipe
+      rm -f pipe
 fi
 
 # Install FS Browser

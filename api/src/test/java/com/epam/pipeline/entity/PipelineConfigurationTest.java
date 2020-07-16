@@ -35,12 +35,14 @@ public class PipelineConfigurationTest {
                     "\"main_file\" : {" +
                         "\"value\" : \"\"," +
                         "\"required\" : \"true\"," +
-                        "\"type\" : \"string\"" +
+                        "\"type\" : \"string\"," +
+                        "\"enum\" : [{\"name\": \"v1\"}, {\"name\": \"v2\"}]" +
                     "}," +
                     "\"main_class\" : {" +
                         "\"value\" : \"\"," +
                         "\"required\" : \"false\"," +
-                        "\"type\" : \"class\"" +
+                        "\"type\" : \"class\"," +
+                        "\"enum\" : [\"v1\", \"v2\"]" +
                     "}," +
                     "\"instance_size\" : {" +
                         "\"type\" : \"string\"" +

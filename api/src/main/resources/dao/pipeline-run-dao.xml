@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -1628,6 +1628,76 @@
                         status IN (:list) AND pod_ip = :POD_IP
                     ORDER BY
                         start_date
+                ]]>
+            </value>
+        </property>
+        <property name="deleteRunSidsByPipelineIdQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.run_user ru
+                    USING pipeline.pipeline_run pr, pipeline.pipeline p
+                    WHERE pr.run_id = ru.run_id AND p.pipeline_id = pr.pipeline_id AND p.pipeline_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadServerlessRunsToStopQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.run_id,
+                        r.pipeline_id,
+                        r.version,
+                        r.start_date,
+                        r.end_date,
+                        r.parameters,
+                        r.status,
+                        r.terminating,
+                        r.pod_id,
+                        r.node_type,
+                        r.node_disk,
+                        r.node_ip,
+                        r.node_id,
+                        r.node_name,
+                        r.node_image,
+                        r.node_cloud_region,
+                        r.docker_image,
+                        r.actual_docker_image,
+                        r.cmd_template,
+                        r.actual_cmd,
+                        r.timeout,
+                        r.owner,
+                        r.service_url,
+                        r.pod_ip,
+                        r.commit_status,
+                        r.last_change_commit_time,
+                        r.config_name,
+                        r.node_count,
+                        r.parent_id,
+                        r.entities_ids,
+                        r.is_spot,
+                        r.configuration_id,
+                        r.pod_status,
+                        r.prolonged_at_time,
+                        r.last_notification_time,
+                        r.last_idle_notification_time,
+                        r.exec_preferences,
+                        r.pretty_url,
+                        r.price_per_hour,
+                        r.compute_price_per_hour,
+                        r.disk_price_per_hour,
+                        r.state_reason,
+                        r.non_pause,
+                        r.node_real_disk,
+                        r.node_cloud_provider,
+                        r.tags,
+                        r.sensitive
+                    FROM
+                        pipeline.pipeline_run r
+                    LEFT JOIN pipeline.stop_serverless_run s ON (s.run_id = r.run_id)
+                    WHERE
+                        r.status = 2 and s.last_update < :MAX_LAST_UPDATE
+                    ORDER BY
+                        r.start_date
                 ]]>
             </value>
         </property>

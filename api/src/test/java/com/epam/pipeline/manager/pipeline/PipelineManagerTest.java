@@ -18,15 +18,20 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.PipelineVO;
+import com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
+import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.security.AuthManager;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -70,6 +75,9 @@ public class PipelineManagerTest {
     @Mock
     private MetadataManager metadataManager;
 
+    @Mock
+    private DataStorageRuleDao dataStorageRuleDao;
+
     @InjectMocks
     private PipelineManager pipelineManager = new PipelineManager();
 
@@ -85,6 +93,7 @@ public class PipelineManagerTest {
         when(gitManager.getRepository(eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN))).thenReturn(gitProject);
         when(gitManager.checkProjectExists(eq(REPOSITORY_NAME))).thenReturn(false);
         when(crudManager.save(any())).thenAnswer(invocation -> invocation.getArguments()[0]);
+        when(crudManager.savePipeline(any())).thenAnswer(invocation -> invocation.getArguments()[0]);
     }
 
     @Test
@@ -167,6 +176,7 @@ public class PipelineManagerTest {
         final String newName = REPOSITORY_NAME + "_copy";
         final String newRepository = "https://example.com:repository/repository_copy.git";
         final String newRepositorySsh = "git@example.com:repository/repository_copy.git";
+        final String storageRuleMask = "*.test";
 
         final PipelineVO pipelineVO = new PipelineVO();
         pipelineVO.setId(ID);
@@ -178,6 +188,8 @@ public class PipelineManagerTest {
         when(gitManager.copyRepository(any(), any(), any())).thenReturn(null);
         when(metadataManager.hasMetadata(any())).thenReturn(true);
         when(pipelineDao.loadPipeline(ID)).thenReturn(pipelineVO.toPipeline());
+        when(dataStorageRuleDao.loadDataStorageRulesForPipeline(ID))
+                .thenReturn(Collections.singletonList(buildStorageRule(ID, storageRuleMask)));
 
         final Pipeline copiedPipeline = pipelineManager.copyPipeline(ID, null, newName);
 
@@ -187,5 +199,18 @@ public class PipelineManagerTest {
         assertThat(copiedPipeline.getDescription(), is(pipelineVO.getDescription()));
         assertThat(copiedPipeline.getParentFolderId(), is(pipelineVO.getParentFolderId()));
         assertThat(copiedPipeline.getRepositoryToken(), is(pipelineVO.getRepositoryToken()));
+
+        final ArgumentCaptor<DataStorageRule> ruleCaptor = ArgumentCaptor.forClass(DataStorageRule.class);
+        verify(dataStorageRuleDao).createDataStorageRule(ruleCaptor.capture());
+        Assert.assertEquals(storageRuleMask, ruleCaptor.getValue().getFileMask());
+    }
+
+    private DataStorageRule buildStorageRule(final Long pipelineId, final String mask) {
+        final DataStorageRule dataStorageRule = new DataStorageRule();
+        dataStorageRule.setPipelineId(pipelineId);
+        dataStorageRule.setMoveToSts(true);
+        dataStorageRule.setCreatedDate(DateUtils.now());
+        dataStorageRule.setFileMask(mask);
+        return dataStorageRule;
     }
 }
