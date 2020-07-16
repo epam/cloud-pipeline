@@ -59,6 +59,7 @@ final class NFSHelper {
 
     private static final String SMB_SCHEME = "//";
     private static final String PATH_SEPARATOR = "/";
+    private static final String NFS_HOST_DELIMITER = ":/";
 
     private NFSHelper() {
 
@@ -102,6 +103,9 @@ final class NFSHelper {
     static String formatNfsPath(String path, String protocol){
         if (protocol.equalsIgnoreCase(MountType.SMB.getProtocol()) && !path.startsWith(SMB_SCHEME)) {
             path = SMB_SCHEME + path;
+        }
+        if (!protocol.equalsIgnoreCase(MountType.SMB.getProtocol()) && !path.contains(NFS_HOST_DELIMITER)) {
+            path = path + NFS_HOST_DELIMITER;
         }
         return path;
     }
