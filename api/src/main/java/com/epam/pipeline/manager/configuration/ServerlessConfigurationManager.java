@@ -129,20 +129,20 @@ public class ServerlessConfigurationManager {
     }
 
     private StopServerlessRun getServerlessRun(final Long runId, final Long stopAfter) {
-        final Optional<StopServerlessRun> stopServerlessRun = stopServerlessRunDao.loadByRunId(runId);
-        if (stopServerlessRun.isPresent()) {
-            final StopServerlessRun stopRunInfo = stopServerlessRun.get();
-            stopRunInfo.setLastUpdate(LocalDateTime.now());
-            stopServerlessRunDao.updateServerlessRun(stopRunInfo);
-            return stopRunInfo;
-        }
-        final StopServerlessRun stopRunInfo = StopServerlessRun.builder()
-                .runId(runId)
-                .stopAfter(stopAfter)
-                .lastUpdate(LocalDateTime.now())
-                .build();
-        stopServerlessRunDao.createServerlessRun(stopRunInfo);
-        return stopRunInfo;
+        return stopServerlessRunDao.loadByRunId(runId)
+                .map(run -> {
+                    run.setLastUpdate(LocalDateTime.now());
+                    stopServerlessRunDao.updateServerlessRun(run);
+                    return run;
+                }).orElseGet(() -> {
+                    final StopServerlessRun run = StopServerlessRun.builder()
+                            .runId(runId)
+                            .stopAfter(stopAfter)
+                            .lastUpdate(LocalDateTime.now())
+                            .build();
+                    stopServerlessRunDao.createServerlessRun(run);
+                    return run;
+                });
     }
 
     private String getConfigurationName(final Long configurationId, final String configName) {
