@@ -27,6 +27,7 @@ import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.switchTo;
@@ -69,6 +70,11 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
 
     public ToolPageAO validateAliveWorkersSparkPage(String num) {
         $(withText("Alive Workers:")).closest("li").should(appear).shouldHave(text(num));
+        return this;
+    }
+
+    public ToolPageAO validationPageHeader(String header) {
+        $(byXpath("//h3")).shouldHave(text(header));
         return this;
     }
 

@@ -58,7 +58,8 @@ public class LogAO implements AccessObject<LogAO> {
             entry(RESUME, $$(tagName("a")).findBy(exactText("RESUME"))),
             entry(ENDPOINT, $(withText("Endpoint")).closest("tr").find("a")),
             entry(INSTANCE, context().find(byXpath("//*[.//*[text()[contains(.,'Instance')]] and contains(@class, 'ant-collapse')]"))),
-            entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]")))
+            entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]"))),
+            entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find("a"))
     );
 
     public LogAO waitForCompletion() {
@@ -206,6 +207,16 @@ public class LogAO implements AccessObject<LogAO> {
     public String getEndpointLink(String link){
         return $(withText("Endpoint")).closest("tr").$(byXpath(String.format(".//a[.='%s']", link)))
                 .shouldBe(visible).attr("href");
+    }
+
+    public LogAO waitForNestedRunsLink() {
+        get(NESTED_RUNS).waitUntil(appears, SSH_LINK_APPEARING_TIMEOUT);
+        return this;
+    }
+
+    public LogAO clickOnNestedRunLink() {
+        get(NESTED_RUNS).click();
+        return this;
     }
 
     public LogAO validateException(final String exception) {

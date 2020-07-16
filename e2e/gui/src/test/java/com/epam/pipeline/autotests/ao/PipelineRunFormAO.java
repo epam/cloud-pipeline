@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import com.epam.pipeline.autotests.AbstractSinglePipelineRunningTest;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
+
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import org.openqa.selenium.By;
@@ -62,7 +64,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(AUTO_PAUSE, context().find(byText("Auto pause:")).closest(".ant-row-flex").find(cssSelector(".ant-checkbox-wrapper"))),
             entry(DOCKER_IMAGE, context().find(byText("Docker image")).closest(".ant-row").find(tagName("input"))),
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
-            entry(SAVE, $(byId("save-pipeline-configuration-button")))
+            entry(SAVE, $(byId("save-pipeline-configuration-button"))),
+            entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
+            entry(SYSTEM_PARAMETERS_DIALOG, context().find(byXpath("//*[.='Select system parameter to override']")))
     );
     private final String pipelineName;
     private int parameterIndex = 0;
@@ -300,6 +304,34 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return new RunParameterAO(this, parameterIndex);
     }
 
+    public PipelineRunFormAO clickAddSystemParameter() {
+        return click(ADD_SYSTEM_PARAMETER)
+                .ensure(SYSTEM_PARAMETERS_DIALOG, visible);
+    }
+
+    private PipelineRunFormAO selectSystemParameter(String parameter) {
+        SelenideElement inputField = $(byXpath("//*[@placeholder='Parameter']"));
+        Utils.clearTextField(inputField);
+        Utils.clickAndSendKeysWithSlashes(inputField, parameter);
+        $(byText(parameter)).shouldBe(visible).click();
+        return this;
+    }
+
+    public PipelineRunFormAO selectSystemParameters(String ... parameters) {
+        Arrays.stream(parameters).forEach(this::selectSystemParameter);
+        $(byId("system-parameters-browser-ok-button")).shouldBe(visible).click();
+        return this;
+    }
+
+    public PipelineRunFormAO inputSystemParameterValue(String parameter, String value) {
+        String inputFieldID = $(byXpath(String.format("//input[@value='%s']", parameter))).attr("id")
+                .replace(".name", ".value");
+        SelenideElement inputField = $(byXpath(String.format("//input[@id='%s']", inputFieldID)));
+        inputField.shouldBe(enabled);
+        Utils.sendKeysByChars(inputField, value);
+        return this;
+    }
+
     public PipelineRunFormAO chooseConfiguration(final String profileName) {
         click(CONFIGURATION);
         $$(className("ant-select-dropdown")).findBy(visible)
@@ -320,6 +352,11 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public PipelineRunFormAO resetClusterChildNodes () {
         $(byXpath("//*[contains(text(), 'Reset')]")).click();
+        return this;
+    }
+
+    public PipelineRunFormAO enableHybridClusterSelect () {
+        $(byXpath(".//span[.='Enable Hybrid cluster']/preceding-sibling::span")).click();
         return this;
     }
 

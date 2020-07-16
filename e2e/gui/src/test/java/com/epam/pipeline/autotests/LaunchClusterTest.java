@@ -23,15 +23,16 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.appears;
 import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
-import static com.codeborne.selenide.Selectors.byText;
-import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
@@ -43,11 +44,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest implements Authorization {
 
     private final String autoScaledSettingForm = "Auto-scaled cluster";
+    private final String clusterSettingForm = "Cluster";
     private final String defaultRegistry = C.DEFAULT_REGISTRY;
     private final String defaultGroup = "library";
     private final String testingTool = "rstudio";
-    private final String testingNode = "m5.2xlarge";
-
+    private final String testingNode = C.ANOTHER_INSTANCE;
+    private final String defaultNode = C.DEFAULT_INSTANCE;
+    private final String instanceFamilyName = C.DEFAULT_INSTANCE_FAMILY_NAME;
 
     @AfterMethod(alwaysRun = true)
     @Override
@@ -74,6 +77,11 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
         );
     }
 
+    @BeforeMethod
+    public void checkNavigateBarIsEnabled() {
+        getWebDriver().navigate().refresh();
+    }
+
     @Test
     @TestCase({"EPMCMBIBPC-975"})
     public void launchPipelineWithLaunchFlag() {
@@ -84,7 +92,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .runPipeline()
                 .setDefaultLaunchOptions()
                 .enableClusterLaunch()
-                .clusterSettingsForm("Cluster")
+                .clusterSettingsForm(clusterSettingForm)
                 .setWorkingNodesCount("2")
                 .click(button("OK"))
                 .launch(this)
@@ -141,7 +149,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .runPipeline()
                 .setDefaultLaunchOptions()
                 .enableClusterLaunch()
-                .clusterSettingsForm("Cluster")
+                .clusterSettingsForm(clusterSettingForm)
                 .setWorkingNodesCount("0")
                 .messageShouldAppear("Value should be greater than 0")
                 .setWorkingNodesCount("-1")
@@ -228,7 +236,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .runPipeline()
                 .setDefaultLaunchOptions()
                 .enableClusterLaunch()
-                .clusterSettingsForm("Cluster")
+                .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable GridEngine")
                 .click(button("OK"))
                 .checkConfigureClusterLabel("GridEngine Cluster (1 child node)")
@@ -271,7 +279,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .runPipeline()
                 .setDefaultLaunchOptions()
                 .enableClusterLaunch()
-                .clusterSettingsForm("Cluster")
+                .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable Slurm")
                 .click(button("OK"))
                 .checkConfigureClusterLabel("Slurm Cluster (1 child node)")
@@ -306,7 +314,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .perform(defaultRegistry, defaultGroup, String.format("%s/%s", defaultGroup, testingTool), ToolTab::runWithCustomSettings)
                 .selectValue(INSTANCE_TYPE, testingNode)
                 .enableClusterLaunch()
-                .clusterSettingsForm("Cluster")
+                .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable Apache Spark")
                 .click(button("OK"))
                 .checkConfigureClusterLabel("Apache Spark Cluster (1 child node)")
@@ -327,9 +335,36 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .ensure(log(), containsMessages("All workers are connected"))
                 .clickOnEndpointLink("SparkUI")
                 .sleep(3, SECONDS)
-                .assertPageContains(String.format("Spark Master at spark://pipeline-%s", getRunId()))
+                .validationPageHeader(String.format("Spark Master at spark://pipeline-%s", getRunId()))
                 .validateAliveWorkersSparkPage(" 2")
                 .assertPageContains("Workers (2)")
                 .closeTab();
+    }
+
+    @Test
+    @TestCase({"EPMCMBIBPC-3155"})
+    public void hybridAutoScaledClusterInstanceTypeFamily() {
+        library()
+                .createPipeline(Template.SHELL, getPipelineName())
+                .clickOnPipeline(getPipelineName())
+                .firstVersion()
+                .runPipeline()
+                .setDefaultLaunchOptions()
+                .enableClusterLaunch()
+                .clusterSettingsForm(autoScaledSettingForm)
+                .enableHybridClusterSelect()
+                .click(button("OK"))
+                .setCommand("qsub -b y -t 1:10 sleep 15m && sleep infinity")
+                .clickAddSystemParameter()
+                .selectSystemParameters("CP_CAP_AUTOSCALE_HYBRID_FAMILY")
+                .inputSystemParameterValue("CP_CAP_AUTOSCALE_HYBRID_FAMILY", instanceFamilyName)
+                .launch(this)
+                .shouldContainRun(getPipelineName(), getRunId())
+                .showLog(getRunId())
+                .waitForNestedRunsLink()
+                .clickOnNestedRunLink()
+                .instanceParameters(instance ->
+                        instance.ensure(TYPE, text(C.DEFAULT_INSTANCE_FAMILY_NAME))
+                );
     }
 }

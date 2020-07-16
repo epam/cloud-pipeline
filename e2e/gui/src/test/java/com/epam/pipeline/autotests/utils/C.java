@@ -73,6 +73,8 @@ public class C {
         AUTH_TOKEN = conf.getProperty("e2e.ui.auth.token");
         STORAGE_NAME_PREFIX = conf.getProperty("e2e.ui.storage.name.prefix");
         SEARCH_PREFIX = conf.getProperty("e2e.ui.search.prefix");
+        ANOTHER_INSTANCE = conf.getProperty("e2e.ui.another.instance.type");
+        DEFAULT_INSTANCE_FAMILY_NAME = conf.getProperty("e2e.ui.default.instance.family.name");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -119,6 +121,8 @@ public class C {
     public static final String DEFAULT_INSTANCE;
     public static final String DEFAULT_INSTANCE_PRICE_TYPE;
     public static final String CLOUD_PROVIDER;
+    public static final String ANOTHER_INSTANCE;
+    public static final String DEFAULT_INSTANCE_FAMILY_NAME;
 
     public static final String SPOT_PRICE_NAME;
     public static final String AUTH_TOKEN;
