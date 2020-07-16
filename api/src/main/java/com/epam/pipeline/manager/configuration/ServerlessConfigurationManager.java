@@ -50,8 +50,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -90,7 +88,6 @@ public class ServerlessConfigurationManager {
     private final StopServerlessRunDao stopServerlessRunDao;
     private final ObjectMapper objectMapper;
 
-    @Transactional(propagation = Propagation.REQUIRED)
     public String run(final Long configurationId, final String configName, final HttpServletRequest request) {
         final RunConfiguration configuration = runConfigurationManager.load(configurationId);
         final AbstractRunConfigurationEntry configurationEntry = configuration.getEntries().stream()
@@ -99,6 +96,7 @@ public class ServerlessConfigurationManager {
                 .orElseThrow(() -> new IllegalArgumentException(String
                         .format("Cannot find configuration with name '%s'", configName)));
         final PipelineRun pipelineRun = receivePipelineRun(configurationId, configuration);
+        log.debug("Pipeline run '{}' will be used for request", pipelineRun.getId());
 
         final StopServerlessRun stopRunInfo = getServerlessRun(pipelineRun.getId(), configurationEntry.getStopAfter());
 
@@ -168,6 +166,7 @@ public class ServerlessConfigurationManager {
     private PipelineRun receivePipelineRun(final Long configurationId, final RunConfiguration configuration) {
         List<PipelineRun> activeRunsForConfiguration = loadActiveRuns(configurationId);
         if (CollectionUtils.isEmpty(activeRunsForConfiguration)) {
+            log.debug("No active runs found. A new run will be launched");
             activeRunsForConfiguration = configurationRunner.runConfiguration(null,
                     runConfigurationMapper.toRunConfigurationWithEntitiesVO(configuration), null);
         }

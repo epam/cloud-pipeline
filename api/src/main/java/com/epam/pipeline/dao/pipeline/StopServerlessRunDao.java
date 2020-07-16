@@ -46,7 +46,7 @@ public class StopServerlessRunDao extends NamedParameterJdbcDaoSupport {
         return daoHelper.createId(serverlessRunSequenceQuery);
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public void createServerlessRun(final StopServerlessRun run) {
         final Long id = createServerlessRunId();
         run.setId(id);
@@ -54,7 +54,7 @@ public class StopServerlessRunDao extends NamedParameterJdbcDaoSupport {
                 StopServerlessRunParameters.getParameters(run));
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public void updateServerlessRun(final StopServerlessRun run) {
         getNamedParameterJdbcTemplate().update(updateServerlessRunQuery,
                 StopServerlessRunParameters.getParameters(run));
@@ -70,7 +70,7 @@ public class StopServerlessRunDao extends NamedParameterJdbcDaoSupport {
                 .findFirst();
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public void deleteByRunId(final Long runId) {
         getJdbcTemplate().update(deleteByRunIdServerlessRunQuery, runId);
     }
