@@ -85,7 +85,7 @@ function buildVisibilityFn (element) {
         normalizedParameters[key].value !== undefined
       ) {
         const value = normalizedParameters[key].value;
-        if (value === 'true' || value === 'false' || !isNaN(value)) {
+        if (value === 'true' || value === 'false' || (!isNaN(value) && +value === value)) {
           return `${value}`;
         }
         if (typeof value === 'string') {
