@@ -70,6 +70,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     private String loadStorageWithParentsQuery;
     private String loadDataStorageByPrefixesQuery;
     private String loadDataStoragesByIdsQuery;
+    private String loadDataStoragesFileShareId;
 
     @Autowired
     private DaoHelper daoHelper;
@@ -187,6 +188,11 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 .getRowMapper(), nfsRootPath + POSTGRES_LIKE_CHARACTER);
     }
 
+    public List<AbstractDataStorage> loadDataStoragesByFileShareMountID(Long fileShareId) {
+        return getJdbcTemplate().query(loadDataStoragesFileShareId, DataStorageParameters
+                .getRowMapper(), fileShareId);
+    }
+
     @Required
     public void setLoadDataStoragesByNFSRootPath(String loadDataStoragesByNFSRootPath) {
         this.loadDataStoragesByNFSRootPath = loadDataStoragesByNFSRootPath;
@@ -263,6 +269,10 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
     public void setLoadDataStoragesByIdsQuery(String loadDataStoragesByIdsQuery) {
         this.loadDataStoragesByIdsQuery = loadDataStoragesByIdsQuery;
+    }
+
+    public void setLoadDataStoragesFileShareId(String loadDataStoragesFileShareId) {
+        this.loadDataStoragesFileShareId = loadDataStoragesFileShareId;
     }
 
     public enum DataStorageParameters {
