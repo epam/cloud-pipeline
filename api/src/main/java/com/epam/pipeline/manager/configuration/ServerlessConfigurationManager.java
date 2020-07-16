@@ -29,7 +29,9 @@ import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
+import com.epam.pipeline.security.UserContext;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +57,7 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.SSLContext;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -63,6 +66,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -79,6 +83,7 @@ public class ServerlessConfigurationManager {
     private static final int REQUEST_TIMEOUT = 30 * 1000;
     private static final int DEFAULT_PAGE = 1;
     private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final String BEARER_COOKIE_NAME = "bearer";
 
     private final RunConfigurationManager runConfigurationManager;
     private final ConfigurationRunner configurationRunner;
@@ -87,6 +92,7 @@ public class ServerlessConfigurationManager {
     private final PreferenceManager preferenceManager;
     private final StopServerlessRunDao stopServerlessRunDao;
     private final ObjectMapper objectMapper;
+    private final AuthManager authManager;
 
     public String run(final Long configurationId, final String configName, final HttpServletRequest request) {
         final RunConfiguration configuration = runConfigurationManager.load(configurationId);
@@ -248,9 +254,24 @@ public class ServerlessConfigurationManager {
 
     private HttpHeaders buildHttpHeaders(final HttpServletRequest request) {
         final HttpHeaders headers = new HttpHeaders();
-        Collections.list(request.getHeaderNames())
+        final List<String> headerNames = Collections.list(request.getHeaderNames());
+        final Cookie[] cookies = request.getCookies();
+        if (!hasBearerCookie(cookies)) {
+            final String token = ((UserContext) authManager.getAuthentication().getPrincipal()).getJwtRawToken()
+                    .getToken();
+            headers.add(HttpHeaders.COOKIE, Objects.isNull(cookies)
+                    ? String.format("%s=%s", BEARER_COOKIE_NAME, token)
+                    : String.format("%s; %s=%s", request.getHeader(HttpHeaders.COOKIE), BEARER_COOKIE_NAME, token));
+        }
+        headerNames.stream()
+                .filter(headerName -> !(HttpHeaders.COOKIE.equals(headerName) && !hasBearerCookie(cookies)))
                 .forEach(headerName -> headers.add(headerName, request.getHeader(headerName)));
         return headers;
+    }
+
+    private boolean hasBearerCookie(final Cookie[] cookies) {
+        return Objects.nonNull(cookies) && Arrays.stream(cookies)
+                .anyMatch(cookie -> BEARER_COOKIE_NAME.equalsIgnoreCase(cookie.getName()));
     }
 
     private RestTemplate buildRestTemplate() throws KeyStoreException, NoSuchAlgorithmException,

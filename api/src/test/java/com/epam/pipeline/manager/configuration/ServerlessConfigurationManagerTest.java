@@ -28,6 +28,7 @@ import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
@@ -68,6 +69,7 @@ public class ServerlessConfigurationManagerTest {
     private final PipelineRunManager runManager = mock(PipelineRunManager.class);
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final StopServerlessRunDao stopServerlessRunDao = mock(StopServerlessRunDao.class);
+    private final AuthManager authManager = mock(AuthManager.class);
     private final ServerlessConfigurationManager serverlessConfigurationManager =
             spy(new ServerlessConfigurationManager(
                     runConfigurationManager,
@@ -76,7 +78,8 @@ public class ServerlessConfigurationManagerTest {
                     runManager,
                     preferenceManager,
                     stopServerlessRunDao,
-                    new JsonMapper()));
+                    new JsonMapper(),
+                    authManager));
 
     @Test
     public void shouldRunServerlessConfiguration() {
