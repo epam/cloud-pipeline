@@ -110,7 +110,7 @@ def run_ssh(run_id, command):
         sshpass = conn_info.ssh_pass
         sshuser = DEFAULT_SSH_USER
         ssh_default_root_user_enabled = PreferenceAPI.get_preference('system.ssh.default.root.user.enabled')
-        if ssh_default_root_user_enabled is not None and ssh_default_root_user_enabled.value.lower() is not "true":
+        if ssh_default_root_user_enabled is not None and ssh_default_root_user_enabled.value.lower() != "true":
             # split owner by @ in case it represented by email address
             owner_user_name = conn_info.owner.split("@")[0]
             sshpass = owner_user_name
