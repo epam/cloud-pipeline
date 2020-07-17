@@ -247,7 +247,7 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
                 click.echo('No storage rules are configured for pipeline')
 
         if permissions:
-            permissions_list = User.get_permissions(pipeline_model.identifier, 'pipeline')
+            permissions_list = User.get_permissions(pipeline_model.identifier, 'pipeline')[0]
             echo_title('Permissions', line=False)
             if len(permissions_list) > 0:
                 permissions_table = prettytable.PrettyTable()
