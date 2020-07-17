@@ -696,7 +696,7 @@ EOF
             print_err "Unable to get azure meter name for region $CP_CLOUD_REGION_ID, but this is required to setup a region, you will have to specify them manually via GUI/API"
             return 1
         fi
-        if [ -z $CP_CLOUD_CREDENTIALS_LOCATION ] || [ ! -f $CP_CLOUD_CREDENTIALS_LOCATION ]; then
+        if [ ! -z $CP_AZURE_PROFILE_FILE ] && [ ! -z $CP_AZURE_ACCESS_TOKEN_FILE ]; then
 read -r -d '' payload <<-EOF
 {
     "regionId":"$region_name",
