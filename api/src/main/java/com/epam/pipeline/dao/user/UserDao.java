@@ -458,7 +458,8 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Required
-    public void setLoadAllUsersWithDefaultDataStoragePathQuery(final String loadAllUsersWithDefaultDataStoragePathQuery) {
+    public void setLoadAllUsersWithDefaultDataStoragePathQuery(
+            final String loadAllUsersWithDefaultDataStoragePathQuery) {
         this.loadAllUsersWithDefaultDataStoragePathQuery = loadAllUsersWithDefaultDataStoragePathQuery;
     }
 }
