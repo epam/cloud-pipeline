@@ -50,6 +50,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     private final String testingTool = "rstudio";
     private final String testingNode = ANOTHER_INSTANCE;
     private final String instanceFamilyName = DEFAULT_INSTANCE_FAMILY_NAME;
+    private final String gridEngineAutoscalingTask = "GridEngineAutoscaling";
 
     @AfterMethod(alwaysRun = true)
     @Override
@@ -178,7 +179,6 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     @Test
     @TestCase({"EPMCMBIBPC-2628"})
     public void autoScaledClusterWithDefaultChildNodesValidationTest() {
-        final String gridEngineAutoscalingTask = "GridEngineAutoscaling";
         library()
                 .createPipeline(Template.SHELL, getPipelineName())
                 .clickOnPipeline(getPipelineName())
@@ -366,4 +366,168 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         instance.ensure(TYPE, text(DEFAULT_INSTANCE_FAMILY_NAME))
                 );
     }
+
+    @Test
+    @TestCase({"EPMCMBIBPC-3154"})
+    public void hybridAutoScaledClusterCPUDeadlock() {
+        library()
+                .createPipeline(Template.SHELL, getPipelineName())
+                .clickOnPipeline(getPipelineName())
+                .firstVersion()
+                .runPipeline()
+                .setDefaultLaunchOptions()
+                .enableClusterLaunch()
+                .clusterSettingsForm(autoScaledSettingForm)
+                .enableHybridClusterSelect()
+                .click(button("OK"))
+                .click(START_IDLE)
+                .launch(this)
+                .shouldContainRun(getPipelineName(), getRunId())
+                .showLog(getRunId())
+                .waitForSshLink()
+                .ssh(shell -> shell
+                        .execute("qsub -b y -pe local 150 sleep 5m")
+                        .assertOutputContains("Your job 1 (\"sleep\") has been submitted")
+                        .sleep(20, SECONDS)
+                        .execute("qstat")
+                        .close());
+        navigationMenu()
+                .runs()
+                .activeRuns()
+                .showLog(getRunId())
+                .waitForTask(gridEngineAutoscalingTask)
+                .click(taskWithName(gridEngineAutoscalingTask))
+                .ensure(log(), containsMessages("The following jobs cannot be satisfied with the " +
+                        "requested resources and therefore they will be rejected: 1 (150 cpu)"))
+                .ssh(shell -> shell
+                        .execute("qsub -b y -pe local 50 sleep 5m")
+                        .close());
+        navigationMenu()
+                .runs()
+                .activeRuns()
+                .showLog(getRunId())
+                .waitForNestedRunsLink()
+                .clickOnNestedRunLink()
+                .ensure(STATUS, text(String.valueOf(Integer.parseInt(getRunId()) + 1)));
+    }
+
+    @Test
+    @TestCase({"EPMCMBIBPC-3159"})
+    public void hybridAutoScaledClusterCPUDeadlockWithAdditionalRestrictions() {
+        final String systemParam = "CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE";
+        library()
+                .createPipeline(Template.SHELL, getPipelineName())
+                .clickOnPipeline(getPipelineName())
+                .firstVersion()
+                .runPipeline()
+                .setDefaultLaunchOptions()
+                .enableClusterLaunch()
+                .clusterSettingsForm(autoScaledSettingForm)
+                .enableHybridClusterSelect()
+                .click(button("OK"))
+                .click(START_IDLE)
+                .clickAddSystemParameter()
+                .selectSystemParameters(systemParam)
+                .inputSystemParameterValue(systemParam, "40")
+                .launch(this)
+                .shouldContainRun(getPipelineName(), getRunId())
+                .showLog(getRunId())
+                .waitForSshLink()
+                .ssh(shell -> shell
+                        .execute("qsub -b y -pe local 50 sleep 5m")
+                        .assertOutputContains("Your job 1 (\"sleep\") has been submitted")
+                        .sleep(20, SECONDS)
+                        .execute("qstat")
+                        .close());
+        navigationMenu()
+                .runs()
+                .activeRuns()
+                .showLog(getRunId())
+                .waitForTask(gridEngineAutoscalingTask)
+                .click(taskWithName(gridEngineAutoscalingTask))
+                .ensure(log(), containsMessages("The following jobs cannot be satisfied with the " +
+                        "requested resources and therefore they will be rejected: 1 (50 cpu)"));
+    }
+
+    @Test
+    @TestCase({"EPMCMBIBPC-3156"})
+    public void autoScaledClusterWorkersPriceTypeSpot() {
+        library()
+                .createPipeline(Template.SHELL, getPipelineName())
+                .clickOnPipeline(getPipelineName())
+                .firstVersion()
+                .runPipeline()
+                .setDefaultLaunchOptions()
+                .enableClusterLaunch()
+                .clusterSettingsForm(autoScaledSettingForm)
+                .setWorkingNodesCount("1")
+                .setWorkersPriceType("Spot")
+                .click(button("OK"))
+                .setPriceType("On-demand")
+                .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 1d && sleep infinity")
+                .launch(this)
+                .shouldContainRun(getPipelineName(), getRunId())
+                .showLog(getRunId())
+                .instanceParameters(instance ->
+                        instance.ensure(PRICE_TYPE, text("On-demand")))
+                .waitForNestedRunsLink()
+                .clickOnNestedRunLink()
+                .instanceParameters(instance ->
+                        instance.ensure(PRICE_TYPE, text("Spot")));
+    }
+
+    @Test
+    @TestCase({"EPMCMBIBPC-3160"})
+    public void autoScaledClusterWorkersPriceTypeOnDemand() {
+        library()
+                .createPipeline(Template.SHELL, getPipelineName())
+                .clickOnPipeline(getPipelineName())
+                .firstVersion()
+                .runPipeline()
+                .setDefaultLaunchOptions()
+                .enableClusterLaunch()
+                .clusterSettingsForm(autoScaledSettingForm)
+                .setWorkingNodesCount("1")
+                .setWorkersPriceType("On-demand")
+                .click(button("OK"))
+                .setPriceType("Spot")
+                .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 1d && sleep infinity")
+                .launch(this)
+                .shouldContainRun(getPipelineName(), getRunId())
+                .showLog(getRunId())
+                .instanceParameters(instance ->
+                        instance.ensure(PRICE_TYPE, text("Spot")))
+                .waitForNestedRunsLink()
+                .clickOnNestedRunLink()
+                .instanceParameters(instance ->
+                        instance.ensure(PRICE_TYPE, text("On-demand")));
+    }
+
+    @Test
+    @TestCase({"EPMCMBIBPC-3161"})
+    public void autoScaledClusterWorkersPriceTypeMastersConfig() {
+        library()
+                .createPipeline(Template.SHELL, getPipelineName())
+                .clickOnPipeline(getPipelineName())
+                .firstVersion()
+                .runPipeline()
+                .setDefaultLaunchOptions()
+                .enableClusterLaunch()
+                .clusterSettingsForm(autoScaledSettingForm)
+                .setWorkingNodesCount("1")
+                .setWorkersPriceType("Master's config")
+                .click(button("OK"))
+                .setPriceType("Spot")
+                .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 1d && sleep infinity")
+                .launch(this)
+                .shouldContainRun(getPipelineName(), getRunId())
+                .showLog(getRunId())
+                .instanceParameters(instance ->
+                        instance.ensure(PRICE_TYPE, text("Spot")))
+                .waitForNestedRunsLink()
+                .clickOnNestedRunLink()
+                .instanceParameters(instance ->
+                        instance.ensure(PRICE_TYPE, text("Spot")));
+    }
+
 }

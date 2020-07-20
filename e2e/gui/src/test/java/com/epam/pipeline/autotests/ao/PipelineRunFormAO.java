@@ -66,7 +66,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
             entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
-            entry(SYSTEM_PARAMETERS_DIALOG, context().find(byXpath("//*[.='Select system parameter to override']")))
+            entry(SYSTEM_PARAMETERS_DIALOG, context().find(byXpath("//*[.='Select system parameter to override']"))),
+            entry(WORKERS_PRICE_TYPE, context().find(byText("Workers price type:")).parent().find(byClassName("ant-select-selection--single")))
     );
     private final String pipelineName;
     private int parameterIndex = 0;
@@ -352,6 +353,14 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public PipelineRunFormAO resetClusterChildNodes () {
         $(byXpath("//*[contains(text(), 'Reset')]")).click();
+        return this;
+    }
+
+    public PipelineRunFormAO setWorkersPriceType(final String priceType) {
+        click(WORKERS_PRICE_TYPE);
+        context().find(PipelineSelectors.visible(byClassName("ant-select-dropdown"))).find(byText(priceType))
+                .shouldBe(visible)
+                .click();
         return this;
     }
 
