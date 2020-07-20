@@ -882,15 +882,16 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
               "follow - follow symlinks (default); "
               "skip - do not follow symlinks; "
               "filter - follow symlinks but check for cyclic links")
+@click.option('-n', '--threads', help='The number  of threads allowed for operation', type=int, required=False)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks):
+                      symlinks, threads):
     """ Moves a file or a folder from one datastorage to another one
     or between the local filesystem and a datastorage (in both directions)
     """
     DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
-                             symlinks, clean=True, skip_existing=skip_existing)
+                             symlinks, threads, clean=True, skip_existing=skip_existing)
 
 
 @storage.command('cp')
@@ -918,15 +919,16 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
               "follow - follow symlinks (default); "
               "skip - do not follow symlinks; "
               "filter - follow symlinks but check for cyclic links")
+@click.option('-n', '--threads', help='The number  of threads allowed for operation', type=int, required=False)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks):
+                      symlinks, threads):
     """ Copies files from one datastorage to another one
     or between the local filesystem and a datastorage (in both directions)
     """
     DataStorageOperations.cp(source, destination, recursive, force,
-                             exclude, include, quiet, tags, file_list, symlinks, skip_existing=skip_existing)
+                             exclude, include, quiet, tags, file_list, symlinks, threads, skip_existing=skip_existing)
 
 
 @storage.command('du')

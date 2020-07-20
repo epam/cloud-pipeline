@@ -192,7 +192,7 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
     _POLLS_ATTEMPTS = _POLLS_LIMIT / _POLLS_TIMEOUT
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), skip_existing=False):
+                 quiet=False, size=None, tags=(), skip_existing=False, lock=None):
         full_path = path
         destination_path = StorageOperations.normalize_path(destination_wrapper, relative_path)
         if skip_existing:
@@ -250,7 +250,7 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
 class AzureDownloadManager(AzureManager, AbstractTransferManager):
 
     def transfer(self, source_wrapper, destination_wrapper, path=None,
-                 relative_path=None, clean=False, quiet=False, size=None, tags=None, skip_existing=False):
+                 relative_path=None, clean=False, quiet=False, size=None, tags=None, skip_existing=False, lock=None):
         if path:
             source_key = path
         else:
@@ -266,10 +266,8 @@ class AzureDownloadManager(AzureManager, AbstractTransferManager):
                 if not quiet:
                     click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
                 return
-        folder = os.path.dirname(destination_key)
-        if folder and not os.path.exists(folder):
-            os.makedirs(folder)
-        progress_callback=AzureProgressPercentage.callback(source_key, size, quiet)
+        self.create_local_folder(destination_key, lock)
+        progress_callback = AzureProgressPercentage.callback(source_key, size, quiet)
         self.service.get_blob_to_path(source_wrapper.bucket.path, source_key, destination_key,
                                       progress_callback=progress_callback)
         if clean:
@@ -279,7 +277,7 @@ class AzureDownloadManager(AzureManager, AbstractTransferManager):
 class AzureUploadManager(AzureManager, AbstractTransferManager):
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), skip_existing=False):
+                 size=None, tags=(), skip_existing=False, lock=None):
         if path:
             source_key = os.path.join(source_wrapper.path, path)
         else:
@@ -314,7 +312,7 @@ class _SourceUrlIO(io.BytesIO):
 class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager):
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), skip_existing=False):
+                 size=None, tags=(), skip_existing=False, lock=None):
         if clean:
             raise AttributeError('Cannot perform \'mv\' operation due to deletion remote files '
                                  'is not supported for ftp/http sources.')

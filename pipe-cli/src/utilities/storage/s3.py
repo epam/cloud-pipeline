@@ -87,7 +87,7 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
         super(DownloadManager, self).__init__(session, bucket=bucket)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None,
-                 relative_path=None, clean=False, quiet=False, size=None, tags=None, skip_existing=False):
+                 relative_path=None, clean=False, quiet=False, size=None, tags=None, skip_existing=False, lock=None):
         if path:
             source_key = path
         else:
@@ -103,9 +103,7 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
                 if not quiet:
                     click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
                 return
-        folder = os.path.dirname(destination_key)
-        if folder and not os.path.exists(folder):
-            os.makedirs(folder)
+        self.create_local_folder(destination_key, lock)
         if StorageItemManager.show_progress(quiet, size):
             self.bucket.download_file(source_key, destination_key, Callback=ProgressPercentage(relative_path, size))
         else:
@@ -120,7 +118,7 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
         super(UploadManager, self).__init__(session, bucket=bucket)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
-                 clean=False, quiet=False, size=None, tags=(), skip_existing=False):
+                 clean=False, quiet=False, size=None, tags=(), skip_existing=False, lock=None):
         if path:
             source_key = os.path.join(source_wrapper.path, path)
         else:
@@ -154,7 +152,7 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
         super(TransferFromHttpOrFtpToS3Manager, self).__init__(session, bucket=bucket)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
-                 clean=False, quiet=False, size=None, tags=(), skip_existing=False):
+                 clean=False, quiet=False, size=None, tags=(), skip_existing=False, lock=None):
         if clean:
             raise AttributeError("Cannot perform 'mv' operation due to deletion remote files "
                                  "is not supported for ftp/http sources.")
@@ -193,7 +191,7 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         super(TransferBetweenBucketsManager, self).__init__(session, bucket=bucket)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), skip_existing=False):
+                 quiet=False, size=None, tags=(), skip_existing=False, lock=None):
         # checked is bucket and file
         source_bucket = source_wrapper.bucket.path
         destination_key = S3BucketOperations.normalize_s3_path(destination_wrapper, relative_path)

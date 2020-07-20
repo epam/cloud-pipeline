@@ -447,7 +447,7 @@ class GsRestoreManager(GsManager, AbstractRestoreManager):
 class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), skip_existing=False):
+                 size=None, tags=(), skip_existing=False, lock=None):
         full_path = path
         destination_path = StorageOperations.normalize_path(destination_wrapper, relative_path)
         if skip_existing:
@@ -499,7 +499,7 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
         self._buffering = int(os.environ.get(CP_CLI_DOWNLOAD_BUFFERING_SIZE) or buffering)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), skip_existing=False):
+                 size=None, tags=(), skip_existing=False, lock=False):
         if path:
             source_key = path
         else:
@@ -517,9 +517,7 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
                 if not quiet:
                     click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
                 return
-        folder = os.path.dirname(destination_key)
-        if folder and not os.path.exists(folder):
-            os.makedirs(folder)
+        self.create_local_folder(destination_key, lock)
         progress_callback = GsProgressPercentage.callback(source_key, size, quiet)
         bucket = self.client.bucket(source_wrapper.bucket.path)
         if StorageOperations.file_is_empty(size):
@@ -548,7 +546,7 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
 class GsUploadManager(GsManager, AbstractTransferManager):
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), skip_existing=False):
+                 size=None, tags=(), skip_existing=False, lock=None):
         if path:
             source_key = os.path.join(source_wrapper.path, path)
         else:
@@ -590,7 +588,7 @@ class _SourceUrlIO:
 class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), skip_existing=False):
+                 size=None, tags=(), skip_existing=False, lock=None):
         if clean:
             raise AttributeError('Cannot perform \'mv\' operation due to deletion remote files '
                                  'is not supported for ftp/http sources.')
