@@ -14,5 +14,9 @@
   {
     "route": "api/contents/(?!.*\\.ipynb)",
     "methods": ["PUT"]
+  },
+  {
+    "route": "nbconvert/.*",
+    "methods": ["GET"]
   }
 ]
