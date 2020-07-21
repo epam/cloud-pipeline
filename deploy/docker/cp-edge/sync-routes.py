@@ -534,10 +534,14 @@ for added_route in routes_to_add:
         nginx_sensitive_route_definitions = []
         if service_spec["sensitive"]:
                 for sensitive_route in sensitive_routes:
-                        nginx_sensitive_route_definition = nginx_sensitive_loc_module_template_contents\
-                                .replace('{edge_route_location}', service_location + sensitive_route['route'])\
-                                .replace('{edge_route_sensitive_methods}', '|'.join(sensitive_route['methods']))\
-                                .replace('{edge_route_target}', service_spec["edge_target"])\
+                        # proxy_pass cannot have trailing slash for regexp locations
+                        edge_target = service_spec["edge_target"]
+                        if edge_target.endswith("/"):
+                                edge_target = edge_target[:-1]
+                        nginx_sensitive_route_definition = nginx_sensitive_loc_module_template_contents \
+                                .replace('{edge_route_location}', service_location + sensitive_route['route']) \
+                                .replace('{edge_route_sensitive_methods}', '|'.join(sensitive_route['methods'])) \
+                                .replace('{edge_route_target}', edge_target) \
                                 .replace('{edge_route_owner}', service_spec["pod_owner"]) \
                                 .replace('{run_id}', service_spec["run_id"]) \
                                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \

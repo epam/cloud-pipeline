@@ -1,18 +1,18 @@
 [
   {
-    "route": "upload/",
+    "route": "upload.*",
     "methods": ["POST"]
   },
   {
-    "route": "export/",
+    "route": "export/.*",
     "methods": ["GET"]
   },
   {
-    "route": "files/",
+    "route": "files/.*",
     "methods": ["GET"]
   },
   {
-    "route": "api/contents/",
+    "route": "api/contents/(?!.*\\.ipynb)",
     "methods": ["PUT"]
   }
 ]
