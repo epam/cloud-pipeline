@@ -380,7 +380,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .launch(this)
                 .showLog(getLastRunId())
                 .waitForCompletion();
-        home().sleep(1, MINUTES);
+        home().sleep(3, MINUTES);
         search()
                 .click(RUNS)
                 .search(storage)
