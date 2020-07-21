@@ -45,19 +45,22 @@ class DataStorage:
     def __init__(self):
         self.id = None
         self.mask = None
+        self.sensitive = False
+        self.ro = False
 
     @classmethod
     def load(cls, json):
         instance = DataStorage()
         instance.id = json['id']
         instance.mask = json['mask']
+        instance.sensitive = json['sensitive']
         return instance
 
     def is_read_allowed(self):
         return self._is_allowed(self._READ_MASK)
 
     def is_write_allowed(self):
-        return self._is_allowed(self._WRITE_MASK)
+        return not self.ro and not self.sensitive and self._is_allowed(self._WRITE_MASK)
 
     def _is_allowed(self, mask):
         return self.mask & mask == mask
@@ -75,7 +78,13 @@ class CloudPipelineClient:
         logging.info('Getting data storage %s' % name)
         response_data = self._get('datastorage/findByPath?id={}'.format(name))
         if 'payload' in response_data:
-            return DataStorage.load(response_data['payload'])
+            bucket = DataStorage.load(response_data['payload'])
+            # When regular bucket is mounted inside a sensitive run, the only way
+            # check whether actual write will be allowed is to request write credentials
+            # from API server and parse response
+            if bucket.is_write_allowed():
+                bucket.ro = not self._check_write_allowed(bucket)
+            return bucket
         return None
 
     def get_temporary_credentials(self, bucket):
@@ -87,6 +96,16 @@ class CloudPipelineClient:
         }
         credentials = self._get_temporary_credentials([operation])
         return credentials
+
+    def _check_write_allowed(self, bucket):
+        try:
+            self.get_temporary_credentials(bucket)
+            return True
+        except RuntimeError as e:
+            if 'Write operations are forbidden for sensitive storages' in str(e.message):
+                return False
+            else:
+                raise e
 
     def _get_temporary_credentials(self, data):
         response_data = self._post('datastorage/tempCredentials/', data=json.dumps(data))
