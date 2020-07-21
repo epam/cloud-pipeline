@@ -1133,6 +1133,23 @@ if is_service_requested cp-tinyproxy; then
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-tinyproxy: Use http://${CP_TP_INTERNAL_HOST}:${CP_TP_INTERNAL_PORT} as an egress proxy"
     fi
     echo
+
+    print_ok "[Starting Tinyproxy (sensitive) deployment]"
+    print_info "-> Deleting existing instance of Tinyproxy (sensitive)"
+    delete_deployment_and_service   "cp-sensitive-proxy" \
+                                    "/opt/sensitive-proxy"
+
+    if is_install_requested; then
+        print_info "-> Deploying Tinyproxy"
+        create_kube_resource $K8S_SPECS_HOME/cp-sensitive-proxy/cp-sensitive-proxy-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-sensitive-proxy/cp-sensitive-proxy-svc.yaml
+
+        print_info "-> Waiting for Tinyproxy (sensitive) to initialize"
+        wait_for_deployment "cp-sensitive-proxy"
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-sensitive-proxy: Use http://${CP_SP_INTERNAL_HOST}:${CP_SP_INTERNAL_PORT} as an egress proxy"
+    fi
+    echo
 fi
 
 #Billing Service
