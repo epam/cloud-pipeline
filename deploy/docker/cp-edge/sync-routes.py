@@ -58,6 +58,8 @@ nginx_sites_path = '/etc/nginx/sites-enabled'
 nginx_domains_path = '/etc/nginx/sites-enabled/custom-domains'
 nginx_loc_module_template = '/etc/nginx/endpoints-config/route.template.loc.conf'
 nginx_srv_module_template = '/etc/nginx/endpoints-config/route.template' + nginx_custom_domain_config_ext
+nginx_sensitive_loc_module_template = '/etc/nginx/endpoints-config/sensitive.template.loc.conf'
+nginx_sensitive_routes_config_path = '/etc/nginx/endpoints-config/sensitive.routes.json'
 edge_service_port = 31000
 edge_service_external_ip = ''
 pki_search_path = '/opt/edge/pki/'
@@ -301,8 +303,9 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                 pretty_url = None
                 if "prettyUrl" in run_info:
                         pretty_url = parse_pretty_url(run_info["prettyUrl"])
+                sensitive = run_info.get("sensitive") or False
 
-                
+
                 print('User {} is determined as an owner of PodID ({}) - RunID ({})'.format(pod_owner, pod_id, pod_run_id))
 
                 shared_users_sids = run_sids_to_str(runs_sids, True)
@@ -375,7 +378,8 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                                                                 "custom_domain": pretty_url['domain'] if pretty_url else None,
                                                                                 "edge_target": edge_target,
                                                                                 "run_id": pod_run_id,
-                                                                                "additional" : additional}
+                                                                                "additional" : additional,
+                                                                                "sensitive": sensitive}
                         else:
                                 print('Unable to get details of the tool {} from API due to errors. Empty endpoints will be returned'.format(docker_image))
                 else:
@@ -502,6 +506,14 @@ nginx_loc_module_template_contents = ''
 with open(nginx_loc_module_template, 'r') as nginx_loc_module_template_file:
     nginx_loc_module_template_contents = nginx_loc_module_template_file.read()
 
+nginx_sensitive_loc_module_template_contents = ''
+with open(nginx_sensitive_loc_module_template, 'r') as nginx_sensitive_loc_module_template_file:
+    nginx_sensitive_loc_module_template_contents = nginx_sensitive_loc_module_template_file.read()
+
+sensitive_routes = []
+with open(nginx_sensitive_routes_config_path, 'r') as sensitive_routes_file:
+    sensitive_routes = json.load(sensitive_routes_file)
+
 service_url_dict = {}
 for added_route in routes_to_add:
         service_spec = services_list[added_route]
@@ -514,15 +526,39 @@ for added_route in routes_to_add:
                 .replace('{edge_route_location}', service_location)\
                 .replace('{edge_route_target}', service_spec["edge_target"])\
                 .replace('{edge_route_owner}', service_spec["pod_owner"]) \
-                 .replace('{run_id}', service_spec["run_id"]) \
+                .replace('{run_id}', service_spec["run_id"]) \
                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
                 .replace('{additional}', service_spec["additional"])
 
+        nginx_sensitive_route_definitions = []
+        if service_spec["sensitive"]:
+                for sensitive_route in sensitive_routes:
+                        # proxy_pass cannot have trailing slash for regexp locations
+                        edge_target = service_spec["edge_target"]
+                        if edge_target.endswith("/"):
+                                edge_target = edge_target[:-1]
+                        nginx_sensitive_route_definition = nginx_sensitive_loc_module_template_contents \
+                                .replace('{edge_route_location}', service_location + sensitive_route['route']) \
+                                .replace('{edge_route_sensitive_methods}', '|'.join(sensitive_route['methods'])) \
+                                .replace('{edge_route_target}', edge_target) \
+                                .replace('{edge_route_owner}', service_spec["pod_owner"]) \
+                                .replace('{run_id}', service_spec["run_id"]) \
+                                .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
+                                .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
+                                .replace('{additional}', service_spec["additional"])
+                        nginx_sensitive_route_definitions.append(nginx_sensitive_route_definition)
+
         path_to_route = os.path.join(nginx_sites_path, added_route + '.conf')
-        print('Adding new route: ' + path_to_route)
+        if service_spec["sensitive"]:
+                print('Adding new sensitive route: ' + path_to_route)
+        else:
+                print('Adding new route: ' + path_to_route)
         with open(path_to_route, "w") as added_route_file:
                 added_route_file.write(nginx_route_definition)
+                if nginx_sensitive_route_definitions:
+                        for nginx_sensitive_route_definition in nginx_sensitive_route_definitions:
+                                added_route_file.write(nginx_sensitive_route_definition)
 
         if has_custom_domain:
                 print('Adding {} route to the server block {}'.format(path_to_route, service_hostname))
