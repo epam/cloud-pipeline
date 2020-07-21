@@ -18,6 +18,7 @@ package com.epam.pipeline.dao.pipeline;
 
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.pipeline.StopServerlessRun;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 public class StopServerlessRunDao extends NamedParameterJdbcDaoSupport {
 
@@ -38,6 +40,8 @@ public class StopServerlessRunDao extends NamedParameterJdbcDaoSupport {
     private String updateServerlessRunQuery;
     private String loadAllServerlessRunsQuery;
     private String deleteByRunIdServerlessRunQuery;
+    private String loadServerlessunByRunIdQuery;
+    private String loadServerlessByStatusRunningQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public Long createServerlessRunId() {
@@ -62,7 +66,18 @@ public class StopServerlessRunDao extends NamedParameterJdbcDaoSupport {
         return getJdbcTemplate().query(loadAllServerlessRunsQuery, StopServerlessRunParameters.getRowMapper());
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    public Optional<StopServerlessRun> loadByRunId(final Long runId) {
+        return getJdbcTemplate().query(loadServerlessunByRunIdQuery, StopServerlessRunParameters.getRowMapper())
+                .stream()
+                .findFirst();
+    }
+
+    public List<StopServerlessRun> loadByStatusRunning() {
+        return ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
+                .query(loadServerlessByStatusRunningQuery, StopServerlessRunParameters.getRowMapper()));
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
     public void deleteByRunId(final Long runId) {
         getJdbcTemplate().update(deleteByRunIdServerlessRunQuery, runId);
     }
@@ -70,13 +85,15 @@ public class StopServerlessRunDao extends NamedParameterJdbcDaoSupport {
     public enum StopServerlessRunParameters {
         ID,
         RUN_ID,
-        LAST_UPDATE;
+        LAST_UPDATE,
+        STOP_AFTER;
 
         static MapSqlParameterSource getParameters(final StopServerlessRun run) {
             final MapSqlParameterSource params = new MapSqlParameterSource();
             params.addValue(ID.name(), run.getId());
             params.addValue(RUN_ID.name(), run.getRunId());
             params.addValue(LAST_UPDATE.name(), run.getLastUpdate());
+            params.addValue(STOP_AFTER.name(), run.getStopAfter());
             return params;
         }
 
@@ -86,6 +103,7 @@ public class StopServerlessRunDao extends NamedParameterJdbcDaoSupport {
                 run.setId(rs.getLong(ID.name()));
                 run.setRunId(rs.getLong(RUN_ID.name()));
                 run.setLastUpdate(rs.getTimestamp(LAST_UPDATE.name()).toLocalDateTime());
+                run.setStopAfter(rs.getLong(STOP_AFTER.name()));
                 return run;
             };
         }
@@ -114,5 +132,15 @@ public class StopServerlessRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setDeleteByRunIdServerlessRunQuery(final String deleteByRunIdServerlessRunQuery) {
         this.deleteByRunIdServerlessRunQuery = deleteByRunIdServerlessRunQuery;
+    }
+
+    @Required
+    public void setLoadServerlessunByRunIdQuery(final String loadServerlessunByRunIdQuery) {
+        this.loadServerlessunByRunIdQuery = loadServerlessunByRunIdQuery;
+    }
+
+    @Required
+    public void setLoadServerlessByStatusRunningQuery(final String loadServerlessByStatusRunningQuery) {
+        this.loadServerlessByStatusRunningQuery = loadServerlessByStatusRunningQuery;
     }
 }

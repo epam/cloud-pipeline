@@ -19,24 +19,28 @@ package com.epam.pipeline.manager.configuration;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
-import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockHttpServletRequest;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -65,7 +69,8 @@ public class ServerlessConfigurationManagerTest {
     private final AbstractRunConfigurationMapper runConfigurationMapper = mock(AbstractRunConfigurationMapper.class);
     private final PipelineRunManager runManager = mock(PipelineRunManager.class);
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
-    private final StopServerlessRunDao stopServerlessRunDao = mock(StopServerlessRunDao.class);
+    private final StopServerlessRunManager stopServerlessRunManager = mock(StopServerlessRunManager.class);
+    private final AuthManager authManager = mock(AuthManager.class);
     private final ServerlessConfigurationManager serverlessConfigurationManager =
             spy(new ServerlessConfigurationManager(
                     runConfigurationManager,
@@ -73,8 +78,9 @@ public class ServerlessConfigurationManagerTest {
                     runConfigurationMapper,
                     runManager,
                     preferenceManager,
-                    stopServerlessRunDao,
-                    new JsonMapper()));
+                    stopServerlessRunManager,
+                    new JsonMapper(),
+                    authManager));
 
     @Test
     public void shouldRunServerlessConfiguration() {
@@ -93,10 +99,13 @@ public class ServerlessConfigurationManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_WAIT_COUNT)).thenReturn(1);
         when(runManager.loadPipelineRun(any())).thenReturn(pipelineRun);
         doReturn(StringUtils.EMPTY).when(serverlessConfigurationManager).sendRequest(any(), any());
+        when(stopServerlessRunManager.loadByRunId(any())).thenReturn(Optional.empty());
 
         serverlessConfigurationManager.run(CONFIGURATION_ID, TEST_NAME, mockRequest());
         verifyEndpoint();
         verify(configurationRunner).runConfiguration(any(), any(), any());
+        verify(stopServerlessRunManager).createServerlessRun(any());
+        verify(stopServerlessRunManager).updateServerlessRun(any());
     }
 
     @Test
@@ -117,10 +126,13 @@ public class ServerlessConfigurationManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_WAIT_COUNT)).thenReturn(1);
         when(runManager.loadPipelineRun(any())).thenReturn(pipelineRun);
         doReturn(StringUtils.EMPTY).when(serverlessConfigurationManager).sendRequest(any(), any());
+        when(stopServerlessRunManager.loadByRunId(any())).thenReturn(Optional.empty());
 
         serverlessConfigurationManager.run(CONFIGURATION_ID, TEST_NAME, mockRequest());
         verifyEndpoint();
         verify(configurationRunner).runConfiguration(any(), any(), any());
+        verify(stopServerlessRunManager).createServerlessRun(any());
+        verify(stopServerlessRunManager).updateServerlessRun(any());
     }
 
     @Test
@@ -138,10 +150,17 @@ public class ServerlessConfigurationManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_WAIT_COUNT)).thenReturn(1);
         when(runManager.loadPipelineRun(any())).thenReturn(pipelineRun);
         doReturn(StringUtils.EMPTY).when(serverlessConfigurationManager).sendRequest(any(), any());
+        when(stopServerlessRunManager.loadByRunId(any())).thenReturn(Optional.of(
+                StopServerlessRun.builder()
+                        .runId(pipelineRun.getId())
+                        .lastUpdate(LocalDateTime.now())
+                        .build()));
 
         serverlessConfigurationManager.run(CONFIGURATION_ID, TEST_NAME, mockRequest());
         verifyEndpoint();
         verify(configurationRunner, times(0)).runConfiguration(any(), any(), any());
+        verify(stopServerlessRunManager, times(0)).createServerlessRun(any());
+        verify(stopServerlessRunManager, times(2)).updateServerlessRun(any());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -167,6 +186,7 @@ public class ServerlessConfigurationManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_TASK_STATUS_UPDATE_RATE)).thenReturn(1);
         when(runManager.loadPipelineRun(any())).thenReturn(pipelineRun);
         when(runManager.searchPipelineRuns(any(), anyBoolean())).thenReturn(activeRuns);
+        when(stopServerlessRunManager.loadByRunId(any())).thenReturn(Optional.empty());
 
         serverlessConfigurationManager.run(CONFIGURATION_ID, TEST_NAME, mockRequest());
     }

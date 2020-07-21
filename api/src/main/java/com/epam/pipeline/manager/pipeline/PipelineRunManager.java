@@ -24,7 +24,6 @@ import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
-import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
@@ -200,7 +199,7 @@ public class PipelineRunManager {
     private PipelineRunCRUDService runCRUDService;
 
     @Autowired
-    private StopServerlessRunDao stopServerlessRunDao;
+    private StopServerlessRunManager stopServerlessRunManager;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -1159,14 +1158,10 @@ public class PipelineRunManager {
                 .collect(Collectors.toList()));
     }
 
-    public List<PipelineRun> loadExpiredServerlessRuns(final LocalDateTime maxLastUpdate) {
-        return pipelineRunDao.loadServerlessRunsToStop(maxLastUpdate);
-    }
-
     @Transactional(propagation = Propagation.REQUIRED)
     public void stopServerlessRun(final Long runId) {
         stop(runId);
-        stopServerlessRunDao.deleteByRunId(runId);
+        stopServerlessRunManager.deleteByRunId(runId);
     }
 
     private int getTotalSize(final List<InstanceDisk> disks) {

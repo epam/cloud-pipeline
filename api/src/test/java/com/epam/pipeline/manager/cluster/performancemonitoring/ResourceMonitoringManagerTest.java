@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -123,6 +124,8 @@ public class ResourceMonitoringManagerTest {
     private MessageHelper messageHelper;
     @Mock
     private AuthManager authManager;
+    @Mock
+    private StopServerlessRunManager stopServerlessRunManager;
 
     @Captor
     ArgumentCaptor<List<PipelineRun>> runsToUpdateCaptor;
@@ -150,7 +153,8 @@ public class ResourceMonitoringManagerTest {
                                                                         notificationManager,
                                                                         monitoringESDao,
                                                                         messageHelper,
-                                                                        preferenceManager);
+                                                                        preferenceManager,
+                                                                        stopServerlessRunManager);
         resourceMonitoringManager = new ResourceMonitoringManager(instanceOfferManager, core);
         Whitebox.setInternalState(resourceMonitoringManager, "authManager", authManager);
         Whitebox.setInternalState(resourceMonitoringManager, "preferenceManager", preferenceManager);
@@ -174,7 +178,7 @@ public class ResourceMonitoringManagerTest {
                 .thenReturn(IdleRunAction.NOTIFY.name());
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_STOP_TIMEOUT))
                 .thenReturn(TEST_MAX_IDLE_MONITORING_TIMEOUT);
-        when(pipelineRunManager.loadExpiredServerlessRuns(any())).thenReturn(Collections.emptyList());
+        when(stopServerlessRunManager.loadActiveServerlessRuns()).thenReturn(Collections.emptyList());
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         UserContext userContext = new UserContext(1L, "admin");

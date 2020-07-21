@@ -122,7 +122,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String loadAllRunsPossiblyActiveInPeriodQuery;
     private String loadAllRunsByStatusQuery;
     private String loadRunByPodIPQuery;
-    private String loadServerlessRunsToStopQuery;
 
     // We put Propagation.REQUIRED here because this method can be called from non-transaction context
     // (see PipelineRunManager, it performs internal call for launchPipeline)
@@ -447,13 +446,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 .query(loadRunByPodIPQuery, params, PipelineRunParameters.getRowMapper()))
                 .stream()
                 .findFirst();
-    }
-
-    public List<PipelineRun> loadServerlessRunsToStop(final LocalDateTime maxLastUpdate) {
-        final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue("MAX_LAST_UPDATE", maxLastUpdate);
-        return ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
-                .query(loadServerlessRunsToStopQuery, params, PipelineRunParameters.getRowMapper()));
     }
 
     private MapSqlParameterSource getPagingParameters(PagingRunFilterVO filter) {
@@ -1203,10 +1195,5 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setDeleteRunSidsByPipelineIdQuery(final String deleteRunSidsByPipelineIdQuery) {
         this.deleteRunSidsByPipelineIdQuery = deleteRunSidsByPipelineIdQuery;
-    }
-
-    @Required
-    public void setLoadServerlessRunsToStopQuery(final String loadServerlessRunsToStopQuery) {
-        this.loadServerlessRunsToStopQuery = loadServerlessRunsToStopQuery;
     }
 }

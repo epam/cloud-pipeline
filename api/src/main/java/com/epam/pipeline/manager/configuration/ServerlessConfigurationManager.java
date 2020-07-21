@@ -19,17 +19,19 @@ package com.epam.pipeline.manager.configuration;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.ServiceUrlVO;
-import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
+import com.epam.pipeline.security.UserContext;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -50,13 +52,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.SSLContext;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -65,6 +66,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -80,16 +82,17 @@ public class ServerlessConfigurationManager {
     private static final int REQUEST_TIMEOUT = 30 * 1000;
     private static final int DEFAULT_PAGE = 1;
     private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final String BEARER_COOKIE_NAME = "bearer";
 
     private final RunConfigurationManager runConfigurationManager;
     private final ConfigurationRunner configurationRunner;
     private final AbstractRunConfigurationMapper runConfigurationMapper;
     private final PipelineRunManager runManager;
     private final PreferenceManager preferenceManager;
-    private final StopServerlessRunDao stopServerlessRunDao;
+    private final StopServerlessRunManager stopServerlessRunManager;
     private final ObjectMapper objectMapper;
+    private final AuthManager authManager;
 
-    @Transactional(propagation = Propagation.REQUIRED)
     public String run(final Long configurationId, final String configName, final HttpServletRequest request) {
         final RunConfiguration configuration = runConfigurationManager.load(configurationId);
         final AbstractRunConfigurationEntry configurationEntry = configuration.getEntries().stream()
@@ -98,14 +101,9 @@ public class ServerlessConfigurationManager {
                 .orElseThrow(() -> new IllegalArgumentException(String
                         .format("Cannot find configuration with name '%s'", configName)));
         final PipelineRun pipelineRun = receivePipelineRun(configurationId, configuration);
+        log.debug("Pipeline run '{}' will be used for request", pipelineRun.getId());
 
-        final StopServerlessRun stopRunInfo = StopServerlessRun.builder()
-                .runId(pipelineRun.getId())
-                .lastUpdate(LocalDateTime.now())
-                .build();
-        if (configurationEntry.isStopAfter()) {
-            stopServerlessRunDao.createServerlessRun(stopRunInfo);
-        }
+        final StopServerlessRun stopRunInfo = getServerlessRun(pipelineRun.getId(), configurationEntry.getStopAfter());
 
         waitForRunInitialized(pipelineRun);
         final String endpointName = getEndpointUrl(configurationEntry, pipelineRun);
@@ -115,10 +113,8 @@ public class ServerlessConfigurationManager {
 
         final String response = sendRequest(request, appPath);
 
-        if (configurationEntry.isStopAfter()) {
-            stopRunInfo.setLastUpdate(LocalDateTime.now());
-            stopServerlessRunDao.updateServerlessRun(stopRunInfo);
-        }
+        stopRunInfo.setLastUpdate(LocalDateTime.now());
+        stopServerlessRunManager.updateServerlessRun(stopRunInfo);
 
         return response;
     }
@@ -129,6 +125,23 @@ public class ServerlessConfigurationManager {
         Assert.state(StringUtils.isNotBlank(apiHost), "API host is not specified");
         return String.format("%s/serverless/%d/%s", StringUtils.stripEnd(apiHost, "/"),
                 configurationId, configName);
+    }
+
+    private StopServerlessRun getServerlessRun(final Long runId, final Long stopAfter) {
+        return stopServerlessRunManager.loadByRunId(runId)
+                .map(run -> {
+                    run.setLastUpdate(LocalDateTime.now());
+                    stopServerlessRunManager.updateServerlessRun(run);
+                    return run;
+                }).orElseGet(() -> {
+                    final StopServerlessRun run = StopServerlessRun.builder()
+                            .runId(runId)
+                            .stopAfter(stopAfter)
+                            .lastUpdate(LocalDateTime.now())
+                            .build();
+                    stopServerlessRunManager.createServerlessRun(run);
+                    return run;
+                });
     }
 
     private String getConfigurationName(final Long configurationId, final String configName) {
@@ -158,6 +171,7 @@ public class ServerlessConfigurationManager {
     private PipelineRun receivePipelineRun(final Long configurationId, final RunConfiguration configuration) {
         List<PipelineRun> activeRunsForConfiguration = loadActiveRuns(configurationId);
         if (CollectionUtils.isEmpty(activeRunsForConfiguration)) {
+            log.debug("No active runs found. A new run will be launched");
             activeRunsForConfiguration = configurationRunner.runConfiguration(null,
                     runConfigurationMapper.toRunConfigurationWithEntitiesVO(configuration), null);
         }
@@ -239,9 +253,24 @@ public class ServerlessConfigurationManager {
 
     private HttpHeaders buildHttpHeaders(final HttpServletRequest request) {
         final HttpHeaders headers = new HttpHeaders();
-        Collections.list(request.getHeaderNames())
+        final List<String> headerNames = Collections.list(request.getHeaderNames());
+        final Cookie[] cookies = request.getCookies();
+        if (!hasBearerCookie(cookies)) {
+            final String token = ((UserContext) authManager.getAuthentication().getPrincipal()).getJwtRawToken()
+                    .getToken();
+            headers.add(HttpHeaders.COOKIE, Objects.isNull(cookies)
+                    ? String.format("%s=%s", BEARER_COOKIE_NAME, token)
+                    : String.format("%s; %s=%s", request.getHeader(HttpHeaders.COOKIE), BEARER_COOKIE_NAME, token));
+        }
+        headerNames.stream()
+                .filter(headerName -> !(HttpHeaders.COOKIE.equals(headerName) && !hasBearerCookie(cookies)))
                 .forEach(headerName -> headers.add(headerName, request.getHeader(headerName)));
         return headers;
+    }
+
+    private boolean hasBearerCookie(final Cookie[] cookies) {
+        return Objects.nonNull(cookies) && Arrays.stream(cookies)
+                .anyMatch(cookie -> BEARER_COOKIE_NAME.equalsIgnoreCase(cookie.getName()));
     }
 
     private RestTemplate buildRestTemplate() throws KeyStoreException, NoSuchAlgorithmException,

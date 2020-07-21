@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.pipeline;
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.StopServerlessRun;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,12 +27,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @Transactional
 public class StopServerlessRunDaoTest extends AbstractSpringTest {
+
+    private static final Long TEST_STOP_AFTER = 60L;
 
     @Autowired
     private StopServerlessRunDao stopServerlessRunDao;
@@ -47,6 +52,7 @@ public class StopServerlessRunDaoTest extends AbstractSpringTest {
         final StopServerlessRun stopServerlessRun = StopServerlessRun.builder()
                 .runId(pipelineRun.getId())
                 .lastUpdate(firstUpdate)
+                .stopAfter(TEST_STOP_AFTER)
                 .build();
         stopServerlessRunDao.createServerlessRun(stopServerlessRun);
         assertNotNull(stopServerlessRun.getId());
@@ -61,11 +67,43 @@ public class StopServerlessRunDaoTest extends AbstractSpringTest {
         assertEquals(loaded.size(), 1);
         assertEquals(loaded.get(0).getLastUpdate(), newUpdate);
 
+        final Optional<StopServerlessRun> loadedRun = stopServerlessRunDao.loadByRunId(pipelineRun.getId());
+        assertTrue(loadedRun.isPresent());
+        assertEquals(loadedRun.get().getRunId(), stopServerlessRun.getRunId());
+        assertEquals(loadedRun.get().getStopAfter(), stopServerlessRun.getStopAfter());
+
         stopServerlessRunDao.deleteByRunId(pipelineRun.getId());
 
         assertEquals(stopServerlessRunDao.loadAll().size(), 0);
 
         pipelineRunDao.deleteRunsByPipeline(1L);
+    }
+
+    @Test
+    public void shouldLoadRunningServerlessRuns() {
+        final LocalDateTime now = LocalDateTime.now();
+
+        final PipelineRun run1 = pipelineRun();
+        run1.setStatus(TaskStatus.RUNNING);
+        pipelineRunDao.createPipelineRun(run1);
+        final StopServerlessRun serverlessRun1 = StopServerlessRun.builder()
+                .lastUpdate(now)
+                .runId(run1.getId())
+                .build();
+        stopServerlessRunDao.createServerlessRun(serverlessRun1);
+
+        final PipelineRun run2 = pipelineRun();
+        run2.setStatus(TaskStatus.STOPPED);
+        pipelineRunDao.createPipelineRun(run2);
+        final StopServerlessRun serverlessRun2 = StopServerlessRun.builder()
+                .lastUpdate(now)
+                .runId(run2.getId())
+                .build();
+        stopServerlessRunDao.createServerlessRun(serverlessRun2);
+
+        final List<StopServerlessRun> pipelineRuns = stopServerlessRunDao.loadByStatusRunning();
+        assertEquals(pipelineRuns.size(), 1);
+        assertEquals(pipelineRuns.get(0).getRunId(), run1.getId());
     }
 
     private PipelineRun pipelineRun() {

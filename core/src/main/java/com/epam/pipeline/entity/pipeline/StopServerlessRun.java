@@ -33,4 +33,5 @@ public class StopServerlessRun {
     private Long id;
     private Long runId;
     private LocalDateTime lastUpdate;
+    private Long stopAfter;
 }

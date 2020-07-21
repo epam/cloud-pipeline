@@ -32,7 +32,9 @@ import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.extern.slf4j.Slf4j;
@@ -118,6 +120,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         private final MonitoringESDao monitoringDao;
         private final MessageHelper messageHelper;
         private final PreferenceManager preferenceManager;
+        private final StopServerlessRunManager stopServerlessRunManager;
         private Map<String, InstanceType> instanceTypeMap = new HashMap<>();
 
         @Autowired
@@ -125,12 +128,14 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                       final NotificationManager notificationManager,
                                       final MonitoringESDao monitoringDao,
                                       final MessageHelper messageHelper,
-                                      final PreferenceManager preferenceManager) {
+                                      final PreferenceManager preferenceManager,
+                                      final StopServerlessRunManager stopServerlessRunManager) {
             this.pipelineRunManager = pipelineRunManager;
             this.messageHelper = messageHelper;
             this.notificationManager = notificationManager;
             this.monitoringDao = monitoringDao;
             this.preferenceManager = preferenceManager;
+            this.stopServerlessRunManager = stopServerlessRunManager;
         }
 
         @Scheduled(cron = "0 0 0 ? * *")
@@ -408,11 +413,22 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         }
 
         private void processServerlessRuns() {
-            final Integer timeout = preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_STOP_TIMEOUT);
-            final LocalDateTime maxLastUpdate = LocalDateTime.now().minusMinutes(timeout);
-            final List<PipelineRun> runs = ListUtils.emptyIfNull(
-                    pipelineRunManager.loadExpiredServerlessRuns(maxLastUpdate));
-            runs.forEach(run -> pipelineRunManager.stopServerlessRun(run.getId()));
+            final List<StopServerlessRun> activeServerlessRuns = ListUtils.emptyIfNull(
+                    stopServerlessRunManager.loadActiveServerlessRuns());
+            activeServerlessRuns.stream()
+                    .filter(this::serverlessRunIsExpired)
+                    .forEach(run -> pipelineRunManager.stopServerlessRun(run.getId()));
+        }
+
+        private boolean serverlessRunIsExpired(final StopServerlessRun run) {
+            final Long timeout = getTimeoutMinutes(run);
+            return Objects.nonNull(timeout) && run.getLastUpdate().isBefore(LocalDateTime.now().minusMinutes(timeout));
+        }
+
+        private Long getTimeoutMinutes(final StopServerlessRun run) {
+            return Objects.nonNull(run.getStopAfter())
+                    ? run.getStopAfter()
+                    : preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_STOP_TIMEOUT).longValue();
         }
     }
 }
