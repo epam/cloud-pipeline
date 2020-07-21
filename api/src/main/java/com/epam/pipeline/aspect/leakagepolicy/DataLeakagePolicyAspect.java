@@ -78,6 +78,10 @@ public class DataLeakagePolicyAspect {
         final boolean sensitiveRequest = storages.stream().anyMatch(AbstractDataStorage::isSensitive);
         log.debug("Sensitive data is{} requested.", sensitiveRequest ? "" : " not");
         if (!sensitiveContext && sensitiveRequest) {
+            if (actions.stream().allMatch(DataStorageAction::isListOnly)) {
+                log.debug("Listing-only request for sensitive data is allowed for non-sensitive request.");
+                return;
+            }
             log.debug("Sensitive data is requested outside of sensitive run. Request is forbidden.");
             throw new StorageForbiddenOperationException(messageHelper.getMessage(
                     MessageConstants.ERROR_SENSITIVE_REQUEST_WRONG_CONTEXT));

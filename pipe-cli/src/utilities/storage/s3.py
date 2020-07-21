@@ -729,7 +729,7 @@ class S3BucketOperations(object):
 
     @classmethod
     def get_list_manager(cls, source_wrapper, show_versions=False):
-        session = cls.assumed_session(source_wrapper.bucket.identifier, None, 'cp', versioning=show_versions)
+        session = cls.assumed_session(source_wrapper.bucket.identifier, None, 'ls', versioning=show_versions)
         return ListingManager(source_wrapper, session, show_versions=show_versions)
 
     @classmethod

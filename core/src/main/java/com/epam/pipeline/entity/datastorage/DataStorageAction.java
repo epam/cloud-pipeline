@@ -25,6 +25,8 @@ import lombok.Setter;
 public class DataStorageAction {
 
     private Long id;
+    private boolean list;
+    private boolean listVersion;
     private boolean read;
     private boolean readVersion = false;
     private boolean write;
@@ -34,5 +36,10 @@ public class DataStorageAction {
     private String bucketName;
     @JsonIgnore
     private String path;
+
+    @JsonIgnore
+    public boolean isListOnly() {
+        return list || listVersion && (!read && !readVersion && !write && !writeVersion);
+    }
 
 }
