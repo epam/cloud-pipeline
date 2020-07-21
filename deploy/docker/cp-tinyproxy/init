@@ -23,11 +23,12 @@ CP_TP_ALLOWED_CIDR="${CP_TP_ALLOWED_CIDR:-10.244.0.0/16}"
 CP_TP_INTERNAL_PORT="${CP_TP_INTERNAL_PORT:-3128}"
 CP_TP_VIA_NAME="${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME:-CloudPipeline}-tinyproxy"
 CP_TP_CONFIG_PATH="${CP_TP_CONFIG_PATH:-/opt/tinyproxy/tinyproxy.conf}"
+CP_TP_FILTER_PATH="${CP_TP_FILTER_PATH:-$(dirname $CP_TP_CONFIG_PATH)/filter.conf}"
 
 CP_TP_MAX_CLIENTS="${CP_TP_MAX_CLIENTS:-100}"
-CP_TP_MIN_SPARE_SERVERS="${CP_TP_MIN_SPARE_SERVERS:-2}"
-CP_TP_MAX_SPARE_SERVERS="${CP_TP_MAX_SPARE_SERVERS:-5}"
-CP_TP_START_SERVERS="${CP_TP_START_SERVERS:-2}"
+CP_TP_MIN_SPARE_SERVERS="${CP_TP_MIN_SPARE_SERVERS:-5}"
+CP_TP_MAX_SPARE_SERVERS="${CP_TP_MAX_SPARE_SERVERS:-10}"
+CP_TP_START_SERVERS="${CP_TP_START_SERVERS:-10}"
 CP_TP_MAX_REQ_PER_CHILD="${CP_TP_MAX_REQ_PER_CHILD:-0}"
 
 cat > "$CP_TP_CONFIG_PATH" <<EOF
@@ -62,6 +63,17 @@ fi
 
 if [ "$CP_TP_UPSTREAM" ]; then
     echo "Upstream http $CP_TP_UPSTREAM" >> "$CP_TP_CONFIG_PATH"
+fi
+
+if [ "$CP_TP_ALLOWED_DESTINATION" ]; then
+    echo "Setting proxy allowed destinations"
+    IFS=',' read -ra _allowed_dests <<< "$CP_TP_ALLOWED_DESTINATION"
+    for _d in "${_allowed_dests[@]}"; do
+        echo "$_d" >> $CP_TP_FILTER_PATH
+        echo "Entry added: $_d"
+    done
+    echo "FilterDefaultDeny Yes" >> "$CP_TP_CONFIG_PATH"
+    echo "Filter $CP_TP_FILTER_PATH" >> "$CP_TP_CONFIG_PATH"
 fi
 
 tinyproxy -c "$CP_TP_CONFIG_PATH"
