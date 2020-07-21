@@ -239,7 +239,12 @@ class DataStorage(API):
     @staticmethod
     def create_operation_info(source_bucket, destination_bucket, command, versioning=False):
         operations = []
-        if source_bucket and command == "cp":
+        if source_bucket and command == 'ls':
+            operation = {'id': source_bucket, 'list': True}
+            if versioning:
+                operation['listVersion'] = True
+            operations.append(operation)
+        if source_bucket and command == 'cp':
             operation = {'id': source_bucket, 'read': True, 'write': False}
             if versioning:
                 operation['readVersion'] = True
