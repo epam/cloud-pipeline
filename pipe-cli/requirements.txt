@@ -26,3 +26,4 @@ colorama==0.4.1
 pyopenssl==19.0.0
 setuptools
 treelib==1.5.5
+cryptography==2.9.2
