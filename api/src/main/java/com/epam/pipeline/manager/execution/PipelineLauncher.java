@@ -156,23 +156,19 @@ public class PipelineLauncher {
         final Map<String, Object> mergedEnvVars = new HashMap<>(
                 MapUtils.emptyIfNull(podEnvVarsFileMap.getDefaultEnvVars()));
         if (sensitiveRun) {
-            MapUtils.emptyIfNull(podEnvVarsFileMap.getSensitiveEnvVars())
-                    .putAll(mergedEnvVars);
+            mergedEnvVars.putAll(MapUtils.emptyIfNull(podEnvVarsFileMap.getSensitiveEnvVars()));
         }
         ListUtils.emptyIfNull(podEnvVarsFileMap.getRegionEnvVars())
                 .stream()
                 .filter(region -> regionId.equals(region.getRegionId()))
                 .findFirst()
                 .ifPresent(region -> {
-                    MapUtils.emptyIfNull(region.getEnvVars())
-                            .putAll(mergedEnvVars);
+                    mergedEnvVars.putAll(MapUtils.emptyIfNull(region.getEnvVars()));
                     if (sensitiveRun) {
-                        MapUtils.emptyIfNull(region.getSensitiveEnvVars())
-                                .putAll(mergedEnvVars);
+                        mergedEnvVars.putAll(MapUtils.emptyIfNull(region.getSensitiveEnvVars()));
                     }
                 });
-        return new ObjectMapper().convertValue(mergedEnvVars, new TypeReference<Map<String, String>>() {
-        });
+        return new ObjectMapper().convertValue(mergedEnvVars, new TypeReference<Map<String, String>>() {});
     }
 
     private void checkRunOnParentNode(PipelineRun run, String nodeIdLabel,
