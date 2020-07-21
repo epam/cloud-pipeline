@@ -28,7 +28,6 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
-import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
@@ -137,9 +136,6 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
 
     @Autowired
     private CloudRegionDao regionDao;
-
-    @Autowired
-    private StopServerlessRunDao stopServerlessRunDao;
 
     @Value("${run.pipeline.init.task.name?:InitializeEnvironment}")
     private String initTaskName;
@@ -836,33 +832,6 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
 
         final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
         assertTrue(CollectionUtils.isEmpty(loadedRun.getRunSids()));
-    }
-
-    @Test
-    public void shouldLoadExpiredServerlessRuns() {
-        final LocalDateTime now = LocalDateTime.now();
-
-        final PipelineRun run1 = buildPipelineRun(null, null);
-        run1.setStatus(TaskStatus.RUNNING);
-        pipelineRunDao.createPipelineRun(run1);
-        final StopServerlessRun serverlessRun1 = StopServerlessRun.builder()
-                .lastUpdate(now)
-                .runId(run1.getId())
-                .build();
-        stopServerlessRunDao.createServerlessRun(serverlessRun1);
-
-        final PipelineRun run2 = buildPipelineRun(null, null);
-        run2.setStatus(TaskStatus.STOPPED);
-        pipelineRunDao.createPipelineRun(run2);
-        final StopServerlessRun serverlessRun2 = StopServerlessRun.builder()
-                .lastUpdate(now)
-                .runId(run2.getId())
-                .build();
-        stopServerlessRunDao.createServerlessRun(serverlessRun2);
-
-        final List<StopServerlessRun> pipelineRuns = pipelineRunDao.loadServerlessRunsToStop();
-        assertEquals(pipelineRuns.size(), 1);
-        assertEquals(pipelineRuns.get(0).getRunId(), run1.getId());
     }
 
     private PipelineRun createTestPipelineRun() {

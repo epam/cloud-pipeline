@@ -19,13 +19,13 @@ package com.epam.pipeline.manager.configuration;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.ServiceUrlVO;
-import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -89,7 +89,7 @@ public class ServerlessConfigurationManager {
     private final AbstractRunConfigurationMapper runConfigurationMapper;
     private final PipelineRunManager runManager;
     private final PreferenceManager preferenceManager;
-    private final StopServerlessRunDao stopServerlessRunDao;
+    private final StopServerlessRunManager stopServerlessRunManager;
     private final ObjectMapper objectMapper;
     private final AuthManager authManager;
 
@@ -114,7 +114,7 @@ public class ServerlessConfigurationManager {
         final String response = sendRequest(request, appPath);
 
         stopRunInfo.setLastUpdate(LocalDateTime.now());
-        stopServerlessRunDao.updateServerlessRun(stopRunInfo);
+        stopServerlessRunManager.updateServerlessRun(stopRunInfo);
 
         return response;
     }
@@ -128,10 +128,10 @@ public class ServerlessConfigurationManager {
     }
 
     private StopServerlessRun getServerlessRun(final Long runId, final Long stopAfter) {
-        return stopServerlessRunDao.loadByRunId(runId)
+        return stopServerlessRunManager.loadByRunId(runId)
                 .map(run -> {
                     run.setLastUpdate(LocalDateTime.now());
-                    stopServerlessRunDao.updateServerlessRun(run);
+                    stopServerlessRunManager.updateServerlessRun(run);
                     return run;
                 }).orElseGet(() -> {
                     final StopServerlessRun run = StopServerlessRun.builder()
@@ -139,7 +139,7 @@ public class ServerlessConfigurationManager {
                             .stopAfter(stopAfter)
                             .lastUpdate(LocalDateTime.now())
                             .build();
-                    stopServerlessRunDao.createServerlessRun(run);
+                    stopServerlessRunManager.createServerlessRun(run);
                     return run;
                 });
     }

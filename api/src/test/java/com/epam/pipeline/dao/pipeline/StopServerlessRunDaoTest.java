@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.pipeline;
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.StopServerlessRun;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,6 +77,33 @@ public class StopServerlessRunDaoTest extends AbstractSpringTest {
         assertEquals(stopServerlessRunDao.loadAll().size(), 0);
 
         pipelineRunDao.deleteRunsByPipeline(1L);
+    }
+
+    @Test
+    public void shouldLoadRunningServerlessRuns() {
+        final LocalDateTime now = LocalDateTime.now();
+
+        final PipelineRun run1 = pipelineRun();
+        run1.setStatus(TaskStatus.RUNNING);
+        pipelineRunDao.createPipelineRun(run1);
+        final StopServerlessRun serverlessRun1 = StopServerlessRun.builder()
+                .lastUpdate(now)
+                .runId(run1.getId())
+                .build();
+        stopServerlessRunDao.createServerlessRun(serverlessRun1);
+
+        final PipelineRun run2 = pipelineRun();
+        run2.setStatus(TaskStatus.STOPPED);
+        pipelineRunDao.createPipelineRun(run2);
+        final StopServerlessRun serverlessRun2 = StopServerlessRun.builder()
+                .lastUpdate(now)
+                .runId(run2.getId())
+                .build();
+        stopServerlessRunDao.createServerlessRun(serverlessRun2);
+
+        final List<StopServerlessRun> pipelineRuns = stopServerlessRunDao.loadByStatusRunning();
+        assertEquals(pipelineRuns.size(), 1);
+        assertEquals(pipelineRuns.get(0).getRunId(), run1.getId());
     }
 
     private PipelineRun pipelineRun() {

@@ -78,5 +78,23 @@
                 ]]>
             </value>
         </property>
+        <property name="loadServerlessByStatusRunningQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        s.id,
+                        s.run_id,
+                        s.stop_after,
+                        s.last_update
+                    FROM
+                        pipeline.stop_serverless_run s
+                    LEFT JOIN pipeline.pipeline_run r ON (s.run_id = r.run_id)
+                    WHERE
+                        r.status = 2
+                    ORDER BY
+                        r.start_date
+                ]]>
+            </value>
+        </property>
     </bean>
 </beans>
