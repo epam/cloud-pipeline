@@ -217,6 +217,8 @@ else
     kubectl apply -f "$entry"
   done
 fi
+# label kube-system namespace, label is required for sensitive network policy
+kubectl label namespace kube-system name=kube-system
 
 #12
 kubectl create clusterrolebinding owner-cluster-admin-binding \
