@@ -44,7 +44,6 @@ import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.ao.Primitive.TYPE;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest implements Authorization {
@@ -52,11 +51,14 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     private final String autoScaledSettingForm = "Auto-scaled cluster";
     private final String clusterSettingForm = "Cluster";
     private final String defaultRegistry = C.DEFAULT_REGISTRY;
-    private final String defaultGroup = "library";
-    private final String testingTool = "rstudio";
+    private final String defaultGroup = C.ANOTHER_GROUP;
+    private final String testingTool = C.ANOTHER_TESTING_TOOL_NAME;
     private final String testingNode = C.ANOTHER_INSTANCE;
     private final String instanceFamilyName = C.DEFAULT_INSTANCE_FAMILY_NAME;
     private final String gridEngineAutoscalingTask = "GridEngineAutoscaling";
+    private final String spotPrice = C.SPOT_PRICE_NAME;
+    private final String onDemandPrice = "On-demand";
+    private final String mastersConfigPrice = "Master's config";
 
     @AfterMethod(alwaysRun = true)
     @Override
@@ -100,7 +102,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .setWorkingNodesCount("2")
-                .click(button("OK"))
+                .ok()
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId())
                 .openClusterRuns(getRunId())
@@ -128,7 +130,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .setWorkingNodesCount("1")
-                .click(button("OK"))
+                .ok()
                 .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 1d && sleep infinity")
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId());
@@ -191,13 +193,13 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
-                .setPriceType("On-demand")
+                .setPriceType(onDemandPrice)
                 .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 5m && sleep infinity")
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .setDefaultChildNodes("1")
                 .setWorkingNodesCount("2")
-                .click(button("OK"))
+                .ok()
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId())
                 .openClusterRuns(getRunId())
@@ -243,7 +245,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable GridEngine")
-                .click(button("OK"))
+                .ok()
                 .checkConfigureClusterLabel("GridEngine Cluster (1 child node)")
                 .expandTab(ADVANCED_PANEL)
                 .click(START_IDLE)
@@ -286,7 +288,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable Slurm")
-                .click(button("OK"))
+                .ok()
                 .checkConfigureClusterLabel("Slurm Cluster (1 child node)")
                 .expandTab(ADVANCED_PANEL)
                 .click(START_IDLE)
@@ -316,12 +318,13 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     @TestCase({"EPMCMBIBPC-3152"})
     public void validationOfApacheSparkCluster() {
         tools()
-                .perform(defaultRegistry, defaultGroup, String.format("%s/%s", defaultGroup, testingTool), ToolTab::runWithCustomSettings)
+                .perform(defaultRegistry, defaultGroup, String.format("%s/%s", defaultGroup, testingTool),
+                        ToolTab::runWithCustomSettings)
                 .selectValue(INSTANCE_TYPE, testingNode)
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable Apache Spark")
-                .click(button("OK"))
+                .ok()
                 .checkConfigureClusterLabel("Apache Spark Cluster (1 child node)")
                 .click(START_IDLE)
                 .launch(this)
@@ -358,10 +361,11 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .enableHybridClusterSelect()
-                .click(button("OK"))
+                .ok()
                 .setCommand("qsub -b y -t 1:10 sleep 15m && sleep infinity")
                 .clickAddSystemParameter()
                 .selectSystemParameters("CP_CAP_AUTOSCALE_HYBRID_FAMILY")
+                .ok()
                 .inputSystemParameterValue("CP_CAP_AUTOSCALE_HYBRID_FAMILY", instanceFamilyName)
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId())
@@ -385,7 +389,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .enableHybridClusterSelect()
-                .click(button("OK"))
+                .ok()
                 .click(START_IDLE)
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId())
@@ -430,10 +434,11 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .enableHybridClusterSelect()
-                .click(button("OK"))
+                .ok()
                 .click(START_IDLE)
                 .clickAddSystemParameter()
                 .selectSystemParameters(systemParam)
+                .ok()
                 .inputSystemParameterValue(systemParam, "40")
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId())
@@ -467,19 +472,19 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .setWorkingNodesCount("1")
-                .setWorkersPriceType("Spot")
-                .click(button("OK"))
-                .setPriceType("On-demand")
+                .setWorkersPriceType(spotPrice)
+                .ok()
+                .setPriceType(onDemandPrice)
                 .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 1d && sleep infinity")
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId())
                 .showLog(getRunId())
                 .instanceParameters(instance ->
-                        instance.ensure(PRICE_TYPE, text("On-demand")))
+                        instance.ensure(PRICE_TYPE, text(onDemandPrice)))
                 .waitForNestedRunsLink()
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
-                        instance.ensure(PRICE_TYPE, text("Spot")));
+                        instance.ensure(PRICE_TYPE, text(spotPrice)));
     }
 
     @Test
@@ -494,19 +499,19 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .setWorkingNodesCount("1")
-                .setWorkersPriceType("On-demand")
-                .click(button("OK"))
-                .setPriceType("Spot")
+                .setWorkersPriceType(onDemandPrice)
+                .ok()
+                .setPriceType(spotPrice)
                 .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 1d && sleep infinity")
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId())
                 .showLog(getRunId())
                 .instanceParameters(instance ->
-                        instance.ensure(PRICE_TYPE, text("Spot")))
+                        instance.ensure(PRICE_TYPE, text(spotPrice)))
                 .waitForNestedRunsLink()
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
-                        instance.ensure(PRICE_TYPE, text("On-demand")));
+                        instance.ensure(PRICE_TYPE, text(onDemandPrice)));
     }
 
     @Test
@@ -521,18 +526,18 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .setWorkingNodesCount("1")
-                .setWorkersPriceType("Master's config")
-                .click(button("OK"))
-                .setPriceType("Spot")
+                .setWorkersPriceType(mastersConfigPrice)
+                .ok()
+                .setPriceType(spotPrice)
                 .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 1d && sleep infinity")
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId())
                 .showLog(getRunId())
                 .instanceParameters(instance ->
-                        instance.ensure(PRICE_TYPE, text("Spot")))
+                        instance.ensure(PRICE_TYPE, text(spotPrice)))
                 .waitForNestedRunsLink()
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
-                        instance.ensure(PRICE_TYPE, text("Spot")));
+                        instance.ensure(PRICE_TYPE, text(spotPrice)));
     }
 }

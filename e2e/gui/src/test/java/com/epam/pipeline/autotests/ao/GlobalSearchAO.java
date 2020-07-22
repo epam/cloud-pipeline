@@ -233,7 +233,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
                     get(TAGS).find(By.xpath(".//span[3]")).text(),
                     get(TAGS).find(By.xpath(".//span[4]")).text(),
                     get(TAGS).find(By.xpath(".//span[5]")).text());
-            Arrays.stream(list).forEach(s -> assertTrue(tags.contains(s), String.format("Tag %s isn't found", s)));
+            Arrays.stream(list).forEach(s -> assertTrue(tags.contains(s), String.format("Tag %s isn't found in '%s'", s, tags)));
             return this;
         }
 

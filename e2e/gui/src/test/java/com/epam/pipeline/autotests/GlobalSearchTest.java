@@ -26,6 +26,7 @@ import com.epam.pipeline.autotests.ao.NavigationMenuAO;
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
 import com.epam.pipeline.autotests.ao.PipelineLibraryContentAO;
 import com.epam.pipeline.autotests.ao.StorageContentAO;
+import com.epam.pipeline.autotests.ao.ToolDescription;
 import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Navigation;
@@ -35,6 +36,8 @@ import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.util.function.Function;
 
 import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
@@ -65,8 +68,6 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     private final String storageFile2 = "globalSearchStorageFile2" + Utils.randomSuffix();
     private final String storageAlias = "globalSearchStorageAlias" + Utils.randomSuffix();
     private final String toolVersion = "latest";
-    private final String toolShortDescription = "Docker image used in E2E automated tests to verify HTTP endpoints and SSH access";
-    private final String toolDescription = "HTTP endpoints work correctly (will perform JWT authentication and print user's name)";
     private final String customConfigurationProfile = "customprofile" + Utils.randomSuffix();
     private final String customDisk = "22";
     private final String defaultInstanceType = C.DEFAULT_INSTANCE;
@@ -139,7 +140,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     }
 
     @BeforeMethod
-    public void checkNavigateBarIsEnabled() {
+    public void refreshPage() {
         getWebDriver().navigate().refresh();
     }
 
@@ -436,12 +437,15 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test
     @TestCase(value = {"EPMCMBIBPC-2667"})
     public void searchForTool() {
+        final ToolDescription tool = tools().perform(defaultRegistry, defaultGroup, testingTool, Function.identity());
+        String toolShortDescription = tool.get(SHORT_DESCRIPTION).getText();
+        String toolDescription = tool.get(FULL_DESCRIPTION).getText().replace("’","'");
         home();
         search()
                 .click(TOOLS)
                 .search(toolEndpoint)
                 .enter()
-                .sleep(2, SECONDS)
+                .sleep(5, SECONDS)
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(testingTool)
                 .ensure(TITLE, text(toolEndpoint))
@@ -706,6 +710,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .moveToSearchResultItem(customConfigurationProfile, Configuration::new)
                 .assertPageTitleIs(configuration)
                 .sleep(5, SECONDS);
+        refreshPage();
         home();
     }
 
@@ -730,6 +735,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .moveToSearchResultItem(customConfigurationProfile, Configuration::new)
                 .assertPageTitleIs(configuration)
                 .sleep(5, SECONDS);
+        refreshPage();
         home();
     }
 
