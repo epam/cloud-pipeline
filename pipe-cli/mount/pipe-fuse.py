@@ -71,15 +71,17 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
     api = os.environ.get('API', '')
     bearer = os.environ.get('API_TOKEN', '')
     chunk_size = os.environ.get('CP_PIPE_FUSE_CHUNK_SIZE', chunk_size)
+    if not api:
+        raise RuntimeError("Cloud Pipeline API should be specified.")
     if not bearer:
         raise RuntimeError("Cloud Pipeline API_TOKEN should be specified.")
+    pipe = CloudPipelineClient(api=api, token=bearer)
+    bucket_object = pipe.get_storage(bucket)
+    bucket_path = bucket_object.path
     if webdav:
         client = CPWebDavClient(webdav_url=webdav, bearer=bearer)
     else:
-        if not api:
-            raise RuntimeError("Cloud Pipeline API should be specified.")
-        pipe = CloudPipelineClient(api=api, token=bearer)
-        client = S3Client(bucket, pipe=pipe, chunk_size=chunk_size)
+        client = S3Client(bucket_path, pipe=pipe, chunk_size=chunk_size)
     if recording:
         client = RecordingFileSystemClient(client)
     if cache_ttl > 0 and cache_size > 0:

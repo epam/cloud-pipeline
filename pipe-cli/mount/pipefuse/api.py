@@ -44,6 +44,7 @@ class DataStorage:
 
     def __init__(self):
         self.id = None
+        self.path = None
         self.mask = None
         self.sensitive = False
         self.ro = False
@@ -52,6 +53,7 @@ class DataStorage:
     def load(cls, json):
         instance = DataStorage()
         instance.id = json['id']
+        instance.path = json['path']
         instance.mask = json['mask']
         instance.sensitive = json['sensitive']
         return instance
