@@ -709,8 +709,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .parent()
                 .moveToSearchResultItem(customConfigurationProfile, Configuration::new)
                 .assertPageTitleIs(configuration)
-                .sleep(5, SECONDS);
-        refreshPage();
+                .sleep(2, SECONDS);
         home();
     }
 
@@ -734,8 +733,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .parent()
                 .moveToSearchResultItem(customConfigurationProfile, Configuration::new)
                 .assertPageTitleIs(configuration)
-                .sleep(5, SECONDS);
-        refreshPage();
+                .sleep(2, SECONDS);
         home();
     }
 
