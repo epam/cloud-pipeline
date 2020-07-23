@@ -291,6 +291,10 @@
                     
     <a class="" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -312,6 +316,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
                 </li>
     </ul>
                 </li>
@@ -380,6 +388,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../12.12._System_logs/">12.12. System logs</a>
                 </li>
     </ul>
                 </li>
@@ -560,6 +572,7 @@
 <li><a href="#user-management">User management</a></li>
 <li><a href="#attributes">Attributes</a></li>
 <li><a href="#launch-options">Launch options</a></li>
+<li><a href="#possibility-to-revert-changes">Possibility to revert changes</a></li>
 </ul>
 </li>
 <li><a href="#blockunblock-a-group">Block/unblock a group</a></li>
@@ -619,7 +632,7 @@ Here you can specify:</p>
 <tr>
 <td><strong>Jobs visibility</strong></td>
 <td>In this field you may restrict the visibility of running jobs on the <strong>Active Runs</strong> page for non-owner users.</td>
-<td>If you want users from that group (role) will be able to view all pipeline runs (for that pipelines on which users have corresponding permissions), select "Inherit" in this dropdown list:<br /><img alt="CP_EditDeleteUsers" src="../attachments/EditGroupRole_14.png" /><br />If you want users from that group (role) can view only runs they launched, select "Only owner":<br /><img alt="CP_EditDeleteUsers" src="../attachments/EditGroupRole_15.png" /></td>
+<td>If you want users from that group (role) will be able to view all pipeline runs (for that pipelines on which users have corresponding permissions), select "Inherit" in this dropdown list:<br /><img alt="CP_EditGroupRole" src="../attachments/EditGroupRole_14.png" /><br />If you want users from that group (role) can view only runs they launched, select "Only owner":<br /><img alt="CP_EditGroupRole" src="../attachments/EditGroupRole_15.png" /></td>
 </tr>
 </tbody>
 </table>
@@ -642,29 +655,42 @@ For price type specifying - if it is set for the user/group/tool - GUI will allo
 <li>Group level (specified for a group/role) (see <a href="#launch-options">above</a>)</li>
 <li><em>(global)</em> <strong><code>launch.run.visibility</code></strong> (specified as global defaults via system-level settings) (see <a href="../12.10._Manage_system-level_settings/#launch">12.10. Manage system-level settings</a>)</li>
 </ul>
+<h3 id="possibility-to-revert-changes">Possibility to revert changes</h3>
+<p>In certain cases, there could be convenient to undo all changes in a group/role profile when modifying it - without closing the form.</p>
+<p>The admin has such ability:</p>
+<ul>
+<li>open the <strong>User management</strong> tab and then the <strong>Groups</strong>/<strong>Roles</strong> tab</li>
+<li>select the desired group to modify, click the <strong>Edit</strong> button to open the popup with the group's settings</li>
+<li>edit some settings</li>
+<li>if needed to revert done changes - click the <strong>REVERT</strong> button at the bottom of the form (<strong><em>Note</em></strong>: it's possible only before saving!):<br />
+<img alt="CP_EditGroupRole" src="../attachments/EditGroupRole_16.png" />  </li>
+<li>all done unsaved changes are reverted. The <strong>REVERT</strong> button becomes disabled:<br />
+<img alt="CP_EditGroupRole" src="../attachments/EditGroupRole_17.png" /></li>
+</ul>
+<p><strong><em>Note</em></strong>: in such way all unsaved changes of user settings could be reverted - <em>Default data storage</em>, <em>Users</em> list, <em>Attributes</em> and <em>Launch options</em>.</p>
 <h2 id="blockunblock-a-group">Block/unblock a group</h2>
 <p>To block a group:</p>
 <ol>
 <li>Open the <strong>Groups</strong> tab on the <strong>User management</strong> section of the system-level settings.</li>
 <li>Click the <strong>Edit</strong> button next to the group's name.<br />
-<img alt="CP_DeleteGroup" src="../attachments/BlockUnblockGroups_1.png" /><br />
+<img alt="CP_EditGroupRole" src="../attachments/BlockUnblockGroups_1.png" /><br />
 <strong><em>Note</em></strong>: system groups are created by the <strong>SSO authentication system</strong> automatically and can not be found here.</li>
 <li>Pop-up window will be displayed:<br />
-<img alt="CP_DeleteGroup" src="../attachments/BlockUnblockGroups_2.png" /></li>
+<img alt="CP_EditGroupRole" src="../attachments/BlockUnblockGroups_2.png" /></li>
 <li>Click the <strong>BLOCK</strong> button</li>
 <li>Confirm the blocking:<br />
-<img alt="CP_DeleteGroup" src="../attachments/BlockUnblockGroups_3.png" /></li>
+<img alt="CP_EditGroupRole" src="../attachments/BlockUnblockGroups_3.png" /></li>
 </ol>
 <p>To unblock a group:</p>
 <ol>
 <li>Open the <strong>Groups</strong> tab on the <strong>User management</strong> section of the system-level settings.</li>
 <li>Click the <strong>Edit</strong> button next to the group's name.<br />
-<img alt="CP_DeleteGroup" src="../attachments/BlockUnblockGroups_1.png" />  </li>
+<img alt="CP_EditGroupRole" src="../attachments/BlockUnblockGroups_1.png" />  </li>
 <li>Pop-up window will be shown:<br />
-<img alt="CP_DeleteGroup" src="../attachments/BlockUnblockGroups_4.png" /></li>
+<img alt="CP_EditGroupRole" src="../attachments/BlockUnblockGroups_4.png" /></li>
 <li>Click the <strong>UNBLOCK</strong> button</li>
 <li>Confirm the unblocking:<br />
-<img alt="CP_DeleteGroup" src="../attachments/BlockUnblockGroups_5.png" /></li>
+<img alt="CP_EditGroupRole" src="../attachments/BlockUnblockGroups_5.png" /></li>
 </ol>
               
             </div>

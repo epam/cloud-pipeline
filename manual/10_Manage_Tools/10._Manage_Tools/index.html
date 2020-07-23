@@ -305,6 +305,10 @@
                     
     <a class="" href="../10.7._Tool_version_menu/">10.7. Tool version menu</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -326,6 +330,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
                 </li>
     </ul>
                 </li>
@@ -380,6 +388,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
                 </li>
     </ul>
                 </li>
@@ -760,11 +772,12 @@ Every <strong>Tool</strong> object in the Cloud Pipeline is a representation o
 <li><strong>Tool endpoints</strong> - specify an endpoint for the service launched in a Tool.</li>
 <li><strong>Tool attributes</strong> - tool labels to briefly describe the Tool.</li>
 <li><strong>Execution defaults</strong> - execution environment settings with which tool will be run by default:  <ul>
-<li><strong>Instance type</strong> - An instance type in terms of Cloud Provider with specifying amounts of CPU, RAM and GPU.</li>
-<li><strong>Price type</strong> - spot or on-demand type of instance.</li>
+<li><strong>Instance type</strong> - an instance type in terms of Cloud Provider with specifying amounts of CPU, RAM and GPU.</li>
+<li><strong>Price type</strong> - <code>spot</code> or <code>on-demand</code> type of instance.</li>
 <li><strong>Disk</strong> - instance disk size in Gb.</li>
 <li><strong>Limit mounts</strong> - available storages for Tool execution.</li>
 <li><strong>Configure cluster</strong> - by clicking on this button cluster can be configured (for more details see <a href="../../06_Manage_Pipeline/6._Manage_Pipeline/#configuration">here</a>).</li>
+<li><strong>Cloud Region</strong> - the field where the admin/tool owner could select a specific <strong>Cloud Provider</strong>/<strong>Region</strong> to enforce users to run that tool in it. By default, has <strong><code>Not configured</code></strong> value. This means, that a tool will be launched in a <em>Default region</em> (configured in the global settings) or a user can set any allowed <strong>Cloud Region</strong>/<strong>Provider</strong> manually.</li>
 <li><strong>Cmd template</strong> - default command for Tool execution.</li>
 </ul>
 </li>

@@ -291,6 +291,10 @@
                     
     <a class="" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -312,6 +316,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
                 </li>
     </ul>
                 </li>
@@ -366,6 +374,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
                 </li>
     </ul>
                 </li>
@@ -643,11 +655,11 @@
 <img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_10.png" /></p>
 <p>To view information about specific run - enter its RunID at the end of the command, e.g.:<br />
 <img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_11.png" /><br />
-    You can additionally display information about instance used by a specific run - by the <code>-nd</code> (<code>--node-details</code>) flag:<br />
+You can additionally display information about instance used by a specific run - by the <code>-nd</code> (<code>--node-details</code>) flag:<br />
 <img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_17.png" /><br />
-    You can additionally display information about pipeline parameters used by a specific run - by the <code>-pd</code> (<code>--parameters-details</code>) flag:<br />
+You can additionally display information about pipeline parameters used by a specific run - by the <code>-pd</code> (<code>--parameters-details</code>) flag:<br />
 <img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_18.png" /><br />
-    You can additionally display information about run tasks - by the <code>-td</code> (<code>--tasks-details</code>) flag:<br />
+You can additionally display information about run tasks - by the <code>-td</code> (<code>--tasks-details</code>) flag:<br />
 <img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_19.png" /></p>
 <p><strong><em>Note</em></strong>: by default, the <code>view-runs</code> command outputs information about <strong><em>active</em></strong> runs.<br />
 To view a list of all runs with a specific status (see possible values in the table above) - use the <code>-s</code> (<code>--status</code>) option, e.g. to view a list of failed runs:</p>
@@ -661,8 +673,8 @@ To view a list of all runs with a specific status (see possible values in the ta
 Datetime shall be specified in one of the following formats: <strong>yyyy-MM-dd HH:mm:ss</strong> or <strong>yyyy-MM-dd</strong>, e.g.:<br />
 <img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_14.png" /></p>
 <p>Option <code>-dt</code> (<code>--date-to</code>) allows to output runs <strong><em>completed</em></strong> before specified datetime.<br />
-<strong><em>Note</em></strong>: since the <code>view-runs</code> command outputs by default information about active runs, then for using that command with the <code>-dt</code> option one of the completed statuses must be specified, e.g.:
-    <img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_24.png" /></p>
+<strong><em>Note</em></strong>: since the <code>view-runs</code> command outputs by default information about active runs, then for using that command with the <code>-dt</code> option one of the completed statuses must be specified, e.g.:<br />
+<img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_24.png" /></p>
 <p>To list history of runs for a specific pipeline use the <code>-p</code> (<code>--pipeline</code>) option and a pipeline name.<br />
 By default it will print a list of active runs for the <strong>latest</strong> pipeline version. If you want to launch non-latest pipeline version, specify version name after the pipeline name using the <code>@</code> symbol, e.g. to list <strong>STOPPED</strong> runs for the <strong>v1</strong> version of the <strong>simplepipeline</strong> pipeline:  </p>
 <pre><code class="bash">pipe view-runs -p simplepipeline@v1 -s STOPPED

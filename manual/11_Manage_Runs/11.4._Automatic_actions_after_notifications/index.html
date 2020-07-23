@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../../img/favicon.ico">
-  <title>12.12. System logs - Cloud Pipeline</title>
+  <title>11.4. Automatic labels and actions for the runs - Cloud Pipeline</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
@@ -18,8 +18,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "12.12. System logs";
-    var mkdocs_page_input_path = "manual/12_Manage_Settings/12.12._SystemLogs.md";
+    var mkdocs_page_name = "11.4. Automatic labels and actions for the runs";
+    var mkdocs_page_input_path = "manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -291,27 +291,49 @@
                     
     <a class="" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
     </ul>
                 </li>
-                <li class="">
+                <li class=" current">
                     
     <span class="caption-text">11. Manage Runs</span>
     <ul class="subnav">
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+    <a class="" href="../11._Manage_Runs/">11.0. Overview</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+    <a class="" href="../11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+    <a class="" href="../11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+    <a class="" href="../11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l3 current">
+                    
+    <a class="current" href="./">11.4. Automatic labels and actions for the runs</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l4"><a href="#automatic-actions-with-runs">Automatic actions with runs</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l5" href="#idle-runs">"Idle" runs</a></li>
+        
+            <li><a class="toctree-l5" href="#pressure-runs">"Pressure" runs</a></li>
+        
+        </ul>
+    
+
+    </ul>
                 </li>
     </ul>
                 </li>
@@ -321,51 +343,55 @@
     <ul class="subnav">
                 <li class="toctree-l3">
                     
-    <a class="" href="../12._Manage_Settings/">12.0. Overview</a>
+    <a class="" href="../../12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+    <a class="" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+    <a class="" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../12.3._Create_a_new_user/">12.3. Create a new user</a>
+    <a class="" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+    <a class="" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../12.5._Create_a_group/">12.5. Create a group</a>
+    <a class="" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+    <a class="" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../12.7._Delete_a_group/">12.7. Delete a group</a>
+    <a class="" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+    <a class="" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../12.9._Change_email_notification/">12.9. Change email notification</a>
+    <a class="" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Change email notification</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+    <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../12.11._Advanced_features/">12.11. Advanced features</a>
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
                 </li>
     </ul>
                 </li>
@@ -520,8 +546,16 @@
     <li><a href="../../..">Docs</a> &raquo;</li>
     
       
+        
+          <li>11. Manage Runs &raquo;</li>
+        
+      
+        
+          <li>User guide &raquo;</li>
+        
+      
     
-    <li>12.12. System logs</li>
+    <li>11.4. Automatic labels and actions for the runs</li>
     <li class="wy-breadcrumbs-aside">
       
     </li>
@@ -531,105 +565,114 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="1212-system-logs">12.12. System logs</h1>
-<blockquote>
-<p>User shall have <strong>ROLE_ADMIN</strong> to view system security logs.</p>
-</blockquote>
+                <h1 id="automatic-actions-with-runs">Automatic actions with runs</h1>
+<p>In this section, let's consider the configurable behavior of automatic actions/notifications for the launched runs that are being in "idle" or "under pressure" state for a long time.</p>
+<p>The following view of high-level metrics information for the Active Runs is implemented:</p>
 <ul>
-<li><a href="#filters">Filters</a><ul>
-<li><a href="#date-filter">Date filter</a></li>
-<li><a href="#service-filter">Service filter</a></li>
-<li><a href="#user-filter">User filter</a></li>
-<li><a href="#message-filter">Message filter</a></li>
-<li><a href="#advanced-filters">Advanced filters</a><ul>
-<li><a href="#hostname-filter">Hostname filter</a></li>
-<li><a href="#type-filter">Type filter</a></li>
-<li><a href="#show-service-account-events">Show service account events</a></li>
+<li><img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_01.png" /> - this auxiliary label is shown when node's CPU consumption is lower than a certain level, defined by the admin. This label should attract the users attention cause such run may produce extra costs.  </li>
+<li><img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_02.png" /> - this auxiliary label is shown when node's Memory/Disk consumption is higher than a certain level, defined by the admin. This label should attract the users attention cause such run may accidentally fail.</li>
 </ul>
-</li>
+<p>These labels are displayed:</p>
+<ul>
+<li>at the <strong>Runs</strong> page<br />
+<img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_03.png" /></li>
+<li>at the <strong>Run logs</strong> page<br />
+<img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_04.png" /></li>
+<li>at the main dashboard (the <strong>ACTIVE RUNS</strong> panel)<br />
+<img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_05.png" /></li>
 </ul>
-</li>
-</ul>
-<p>The System Logs tab contains the full list of security trail events.</p>
-<p>Each record in the logs list contains:</p>
+<p>If a user clicks that label from the <strong>Runs</strong> or the <strong>Run logs</strong> page the <em>Cluster node Monitor</em> will be opened to view the current node consumption.</p>
+<p>Admins can configure the emergence of these labels and system actions for each run state ("Idle"/"Pressure") by the system-level parameters.</p>
+<h2 id="idle-runs">"Idle" runs</h2>
+<p>The system behavior for the "idle" runs is defined by the set of the following System-level parameters (<a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#system">Preferences</a>):</p>
 <table>
 <thead>
 <tr>
-<th>Field</th>
+<th>Preference name</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Date</strong></td>
-<td>The date and time of the log event</td>
+<td><strong><code>system.max.idle.timeout.minutes</code></strong></td>
+<td>Specifies the duration in minutes after that the system should check node's activity. If after this duration node's CPU utilization will be below <strong><code>system.idle.cpu.threshold</code></strong> - email notification <em>IDLE_RUN</em> will be sent to the user and the run itself will be marked by the <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_01.png" /> label</td>
 </tr>
 <tr>
-<td><strong>Log status</strong></td>
-<td>The status of the log message (<code>INFO</code>, <code>ERROR</code>, etc.)</td>
+<td><strong><code>system.idle.action.timeout.minutes</code></strong></td>
+<td>Specifies the duration in minutes. If node's CPU utilization is below <strong><code>system.idle.cpu.threshold</code></strong> for this duration after the <strong><code>system.max.idle.timeout.minutes</code></strong> is over - an action, specified in <strong><code>system.idle.action</code></strong> will be performed</td>
 </tr>
 <tr>
-<td><strong>Log message</strong></td>
-<td>Description of the log event</td>
+<td><strong><code>system.idle.cpu.threshold</code></strong></td>
+<td>Specifies percentage of the node's CPU utilization, below which an action shall be taken</td>
 </tr>
 <tr>
-<td><strong>User</strong></td>
-<td>User name who performed the event</td>
+<td><strong><code>system.idle.action</code></strong></td>
+<td>Sets which action to perform with the node, that has the CPU utilization below than <strong><code>system.idle.cpu.threshold</code></strong>: <ul><li><b><i>NOTIFY</i></b> - only send email notification <i>IDLE_RUN</i>. This action will be repeated every <b><code>system.idle.action.timeout.minutes</b></code> if the node's CPU utilization will be still below than <b><code>system.idle.cpu.threshold</code></b></li><li><b><i>PAUSE</i></b> - pause an instance if possible (only if the instance is <i>On-Demand</i>, <i>Spot</i> instances are skipped) and send single email notification <i>IDLE_RUN_PAUSED</i></li><li><b><i>PAUSE_OR_STOP</i></b> - pause an instance if it is <i>On-Demand</i> or stop an instance if it is <i>Spot</i> and send the corresponding single email notification <i>IDLE_RUN_PAUSED</i>/<i>IDLE_RUN_STOPPED</i></li><li><b><i>STOP</i></b> - Stop an instance, disregarding price-type, and send single email notification <i>IDLE_RUN_STOPPED</i></li></ul></td>
 </tr>
 <tr>
-<td><strong>Service</strong></td>
-<td>Service name that registered the event (<code>api-srv</code>, <code>edge</code>)</td>
-</tr>
-<tr>
-<td><strong>Type</strong></td>
-<td>Log message type (currently, only <code>security</code> type is available)</td>
+<td><strong><code>system.resource.monitoring.period</code></strong></td>
+<td>Specifies period (in milliseconds) between the scannings of running instances to collect the monitoring metrics. After each such period, it's defined to display <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_01.png" /> label for the specific instance or not</td>
 </tr>
 </tbody>
 </table>
-<h2 id="filters">Filters</h2>
-<p>By default, in the list all logs are displayed from new to old.<br />
-For the more convenient search of the desired logs, there are filters over the logs list:<br />
-<img alt="CP_SystemLogs" src="../attachments/SystemLogs_1.png" /></p>
-<p>You may combine them in any order for your needs.</p>
-<h3 id="date-filter">Date filter</h3>
-<p>To restrict the list of logs for a specific date/time interval - use the <strong>From</strong> and <strong>To</strong> controls.<br />
-For example, to view logs for all events that were today after <code>21:30</code>:</p>
-<ul>
-<li>Click the <strong>From</strong> control:<br />
-<img alt="CP_SystemLogs" src="../attachments/SystemLogs_2.png" /><br />
-    Click the <strong>Select time</strong> button</li>
-<li>Select the desired time (the left column for hours, middle - for minutes, right - for secs):<br />
-<img alt="CP_SystemLogs" src="../attachments/SystemLogs_3.png" /><br />
-    Click the <strong>Ok</strong> button</li>
-<li>The logs list will be filtered:<br />
-<img alt="CP_SystemLogs" src="../attachments/SystemLogs_4.png" /></li>
+<p>Example of these settings:</p>
+<p><img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_06.png" /></p>
+<p>In general, the behavior will be the following:</p>
+<ol>
+<li>User launches a run</li>
+<li>After <strong><code>system.max.idle.timeout.minutes</code></strong> period, the system starts to check the node's activity.</li>
+<li>If the node's CPU utilization becomes below <strong><code>system.idle.cpu.threshold</code></strong>: email notification <em>IDLE_RUN</em> is being sent, the run itself is being marked by the <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_01.png" /> label</li>
+<li>After <strong><code>system.idle.action.timeout.minutes</code></strong>, if the node's CPU utilization is still below <strong><code>system.idle.cpu.threshold</code></strong>:<ul>
+<li>email notification <em>IDLE_RUN</em> is being sent (in case when <strong><code>system.idle.action</code></strong> is set as <strong><em>NOTIFY</em></strong>)</li>
+<li>run is being paused/stopped and the corresponding email notification <em>IDLE_RUN_PAUSED</em> or <em>IDLE_RUN_STOPPED</em> is being sent (in case when <strong><code>system.idle.action</code></strong> is set as <em>PAUSE</em>/<em>PAUSE_OR_STOP</em>/<em>STOP</em>)</li>
 </ul>
-<h3 id="service-filter">Service filter</h3>
-<p>To restrict the list of logs for a specific service - use the <strong>Service</strong> control. You may select the desired service from the dropdown list, e.g.:<br />
-<img alt="CP_SystemLogs" src="../attachments/SystemLogs_5.png" /></p>
-<p>The logs list will be filtered automatically:<br />
-<img alt="CP_SystemLogs" src="../attachments/SystemLogs_6.png" /></p>
-<p>Multi-select is supported.</p>
-<h3 id="user-filter">User filter</h3>
-<p>To restrict the list of logs for a specific user(s) - use the <strong>User</strong> control. You may select the desired user from the dropdown list. Multi-select is supported.</p>
-<h3 id="message-filter">Message filter</h3>
-<p>To find the log by its event message (or its part) - use the <strong>Message</strong> field. Just click this field, specify the desired text and press the Enter key, e.g.:<br />
-<img alt="CP_SystemLogs" src="../attachments/SystemLogs_7.png" /></p>
-<h3 id="advanced-filters">Advanced filters</h3>
-<p>To open advanced filters click the <strong>Show advanced</strong> button. Additional filters will appear:<br />
-<img alt="CP_SystemLogs" src="../attachments/SystemLogs_8.png" /></p>
-<h4 id="hostname-filter">Hostname filter</h4>
-<p>To restrict the list of logs for a certain service host(s) - use the <strong>Hostname</strong> control. You may select the desired host from the dropdown list.<br />
-Multi-select is supported.</p>
-<h4 id="type-filter">Type filter</h4>
-<p>To restrict the list of logs for a certain log message type(s) - use the <strong>Type</strong> control. You may select the desired type from the dropdown list.<br />
-<strong><em>Note</em></strong>: currently, only <code>security</code> type is available.</p>
-<h4 id="show-service-account-events">Show service account events</h4>
-<p>The <strong>Include Service Account Events</strong> checkbox allows to show/hide log message from the service account (main admin user). Since from this account many messages are received, much more than from other users, by default these messages are hidden.</p>
+</li>
+<li>In case when <strong><code>system.idle.action</code></strong> is set as <strong><em>NOTIFY</em></strong>, email notifications <em>IDLE_RUN</em> continue to be sent every <strong><code>system.idle.action.timeout.minutes</code></strong>, if the node's CPU utilization remains below the <strong><code>system.idle.cpu.threshold</code></strong></li>
+<li>The state of the <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_01.png" /> label (to display or not) is checked every <strong><code>system.resource.monitoring.period</code></strong></li>
+<li>The settings of the email notifications (message, the list of informed users, etc.) the admin can configure via the corresponding tab <a href="../../12_Manage_Settings/12._Manage_Settings/#email-notifications">Email notifications</a> of the system-level settings:<br />
+<img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_07.png" /></li>
+</ol>
+<p><strong><em>Note</em></strong>: users can manually disable the automatic pausing of on-demand instances if they aren't used. For that the "<strong>Auto pause</strong>" checkbox at the <strong>Launch</strong> page shall be unchecked before the run:<br />
+<img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_08.png" /></p>
+<p>This action cancels only the auto pause, but the <em>RUN_IDLE</em> email notifications will be being sent (if the corresponding conditions will be met).</p>
+<h2 id="pressure-runs">"Pressure" runs</h2>
+<p>The system behavior for the runs "under pressure" (high-consumed) is defined by the set of the following System-level parameters (<a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#system">Preferences</a>):</p>
+<table>
+<thead>
+<tr>
+<th>Preference name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>system.disk.consume.threshold</code></strong></td>
+<td>Specifies the node's disk threshold (in %) above which the email notification <em>HIGH_CONSUMED_RESOURCES</em> will be sent and the corresponding run will be marked by the <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_02.png" /> label</td>
+</tr>
+<tr>
+<td><strong><code>system.memory.consume.threshold</code></strong></td>
+<td>Specifies the node's memory threshold (in %) above which the email notification <em>HIGH_CONSUMED_RESOURCES</em> will be sent and the corresponding run will be marked by the <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_02.png" /> label</td>
+</tr>
+</tbody>
+</table>
+<p>Example of these settings:<br />
+<img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_09.png" /></p>
+<p>So, when memory or disk consuming will be higher than a threshold value for a specified period of time (in average) - a notification will be sent (and resent after a delay, if the problem is still in place. The default repeat delay is 30 minutes, it could be configured before the stand deployment).</p>
+<p>Preferences of the notification could be configured at the <em>HIGH_CONSUMED_RESOURCES</em> section of the <a href="../../12_Manage_Settings/12._Manage_Settings/#email-notifications">Email notifications</a> of the system-level settings:<br />
+<img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_10.png" /></p>
               
             </div>
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../../12_Manage_Settings/12._Manage_Settings/" class="btn btn-neutral float-right" title="12.0. Overview">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../11.3._Sharing_with_other_users_or_groups_of_users/" class="btn btn-neutral" title="11.3. Sharing with other users"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>
@@ -653,6 +696,10 @@ Multi-select is supported.</p>
     <span class="rst-current-version" data-toggle="rst-current-version">
       
       
+        <span><a href="../11.3._Sharing_with_other_users_or_groups_of_users/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../../12_Manage_Settings/12._Manage_Settings/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

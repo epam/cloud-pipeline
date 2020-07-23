@@ -151,6 +151,8 @@
         
             <li><a class="toctree-l4" href="#mounting-data-storages-to-linux-and-mac-workstations">Mounting data storages to Linux and Mac workstations</a></li>
         
+            <li><a class="toctree-l4" href="#allow-to-run-pipe-commands-on-behalf-of-the-other-user">Allow to run pipe commands on behalf of the other user</a></li>
+        
             <li><a class="toctree-l4" href="#ability-to-restrict-the-visibility-of-the-jobs">Ability to restrict the visibility of the jobs</a></li>
         
             <li><a class="toctree-l4" href="#ability-to-perform-scheduled-runs-from-detached-configurations">Ability to perform scheduled runs from detached configurations</a></li>
@@ -160,6 +162,8 @@
             <li><a class="toctree-l4" href="#displaying-of-the-additional-support-iconinfo">Displaying of the additional support icon/info</a></li>
         
             <li><a class="toctree-l4" href="#pass-proxy-settings-to-the-dind-containers">Pass proxy settings to the DIND containers</a></li>
+        
+            <li><a class="toctree-l4" href="#interactive-endpoints-can-be-optionally-available-to-the-anonymous-users">Interactive endpoints can be (optionally) available to the anonymous users</a></li>
         
             <li><a class="toctree-l4" href="#notable-bug-fixes">Notable Bug fixes</a></li>
         
@@ -389,6 +393,10 @@
                     
     <a class="" href="../../../manual/10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../../manual/10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -410,6 +418,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../../manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
                 </li>
     </ul>
                 </li>
@@ -464,6 +476,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../../manual/12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../../manual/12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
                 </li>
     </ul>
                 </li>
@@ -673,11 +689,13 @@
 <li><a href="#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol-via-pipe">Run a single command or an interactive session over the SSH protocol via <code>pipe</code></a></li>
 <li><a href="#perform-objects-restore-in-a-batch-mode-via-pipe">Perform objects restore in a batch mode via <code>pipe</code></a></li>
 <li><a href="#mounting-data-storages-to-linux-and-mac-workstations">Mounting data storages to Linux and Mac workstations</a></li>
+<li><a href="#allow-to-run-pipe-commands-on-behalf-of-the-other-user">Allow to run <code>pipe</code> commands on behalf of the other user</a></li>
 <li><a href="#ability-to-restrict-the-visibility-of-the-jobs">Ability to restrict the visibility of the jobs</a></li>
 <li><a href="#ability-to-perform-scheduled-runs-from-detached-configurations">Ability to perform scheduled runs from detached configurations</a></li>
 <li><a href="#the-ability-to-use-custom-domain-names-as-a-friendly-url-for-the-interactive-services">Using custom domain names as a "friendly URL" for the interactive services</a></li>
 <li><a href="#displaying-of-the-additional-support-iconinfo">Displaying of the additional support icon/info</a></li>
 <li><a href="#pass-proxy-settings-to-the-dind-containers">Pass proxy settings to the <code>DIND</code> containers</a></li>
+<li><a href="#interactive-endpoints-can-be-optionally-available-to-the-anonymous-users">Interactive endpoints can be (optionally) available to the anonymous users</a></li>
 </ul>
 <hr />
 <ul>
@@ -1226,6 +1244,21 @@ For the mounted storages, regular listing/read/write commands are supported, use
 </ul>
 <p>To unmount a mountpoint the <code>pipe storage umount</code> command was implemented.</p>
 <p>For more details about mounting data storages via the <code>pipe</code> see <a href="../../../manual/14_CLI/14.3._Manage_Storage_via_CLI/#mounting-of-storages">here</a>.</p>
+<h2 id="allow-to-run-pipe-commands-on-behalf-of-the-other-user">Allow to run <code>pipe</code> commands on behalf of the other user</h2>
+<p>In the current version, the ability to run <code>pipe</code> commands on behalf of the other user was implemented.<br />
+It could be convenient when administrators need to perform some operations on behalf of the other user (e.g. check permissions/act as a service account/etc.).</p>
+<p>This feature is implemented via the common option that was added to <strong>all</strong> <code>pipe</code> commands: <strong><code>--user|-u &lt;USER_ID&gt;</code></strong> (where <strong><code>&lt;USER_ID&gt;</code></strong> is the name of the user account).<br />
+<strong><em>Note</em></strong>: the option isn't available for the following <code>pipe</code> commands: <code>configure</code>, <code>--version</code>, <code>--help</code>.</p>
+<p>If this option is specified - operation (command execution) will be performed using the corresponding user account, e.g.:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeBehalfOfOtherUser_1.png" /><br />
+In the example above, active runs were outputted from the admin account (firstly) and then on behalf of the user without <em>ROLE_ADMIN</em> role.</p>
+<p>Additionally, a new command <strong><code>pipe token &lt;USER_ID&gt;</code></strong> was implemented. It prints the <code>JWT</code> token for a specified user.<br />
+This command also can be used with non-required option <strong><code>-d</code></strong> (<strong><code>--duration</code></strong>), that specified the number of days the token will be valid. If it's not set - the default value will be used, same as in the GUI.<br />
+Example of using:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeBehalfOfOtherUser_2.png" /></p>
+<p>Then, the generated <code>JWT</code> token could be used manually with the <code>pipe configure</code> command - to configure <code>pipe</code> CLI on behalf of the desired user.</p>
+<p><strong><em>Note</em></strong>: both - the command (<code>pipe token</code>) and the option (<code>--user</code>) - are available only for admins.</p>
+<p>For more details see <a href="../../../manual/14_CLI/14.1._Install_and_setup_CLI/#allow-to-run-pipe-commands-on-behalf-of-the-other-user">here</a>.</p>
 <h2 id="ability-to-restrict-the-visibility-of-the-jobs">Ability to restrict the visibility of the jobs</h2>
 <p>Previously, <code>Cloud Pipeline</code> inherited the pipeline jobs' permissions from the parent pipeline object. So, if two users had permissions on the same pipeline, then when the first user had launched that pipeline - the second user also could view (not manage) launched run in the <strong>Active Runs</strong> tab.<br />
 Now admin can restrict the visibility of the jobs for non-owner users. The setting of such visibility can get one of the following values:</p>
@@ -1301,6 +1334,27 @@ So the users had to pass this manually every time when using the <code>docker ru
 <p>Example of using:<br />
 <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_DINDvariations_1.png" /></p>
 <p>At the same time, a new system parameter (per run) was added - <strong><code>CP_CAP_DIND_CONTAINER_NO_VARS</code></strong>, which disables described behavior. You can set it before any run if you don't want to pass any additional variations to the <code>DIND</code> container.</p>
+<h2 id="interactive-endpoints-can-be-optionally-available-to-the-anonymous-users">Interactive endpoints can be (optionally) available to the anonymous users</h2>
+<p>Cloud Pipeline allows sharing the interactive and SSH endpoints with the other users/groups.</p>
+<p>Previously, this necessary required the end-user to be registered in the Cloud Pipeline users database.</p>
+<p>For certain use-cases, it is required to allow such type of access for any user, who has successfully passed the IdP authentication but is not registered in the Cloud Pipeline and also such users shall not be automatically registered at all and remain <code>Anonymous</code>.</p>
+<p>In the current version, such ability is implemented. It's enabled by the following application properties:</p>
+<ul>
+<li><code>saml.user.auto.create=EXPLICIT_GROUP</code></li>
+<li><code>saml.user.allow.anonymous=true</code></li>
+</ul>
+<p>After that, to share any interactive run with the <code>Anonymous</code> - it's simple enough to share endpoints with the following user group - <code>ROLE_ANONYMOUS_USER</code>:</p>
+<ul>
+<li>At the <strong>Run logs</strong> page:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_EndpointToAnonymous_01.png" /></li>
+<li>The user should select the <code>ROLE_ANONYMOUS_USER</code> role to share:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_EndpointToAnonymous_03.png" /></li>
+<li>Sharing with the <code>Anonymous</code> will be displayed at the Run logs page:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_EndpointToAnonymous_04.png" /></li>
+<li>That's all. Now, the endpoint-link of the run could be sent to the <code>Anonymous</code> user.</li>
+</ul>
+<p>If that <code>Anonymous</code> user passes <code>SAML</code> authentication, he will get access to the endpoint. Attempts to open any other Platform pages will fail.</p>
+<p>For more details see <a href="../../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/#sharing-runs-with-the-anonymous-users">here</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="incorrect-behavior-of-the-global-search-filter">Incorrect behavior of the global search filter</h3>

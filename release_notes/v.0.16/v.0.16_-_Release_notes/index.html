@@ -121,15 +121,23 @@
         
             <li><a class="toctree-l4" href="#pipe-cli-view-tools-definitions">pipe CLI: view tools definitions</a></li>
         
+            <li><a class="toctree-l4" href="#list-the-usersgroupsobjects-permissions-globally-via-pipe-cli">List the users/groups/objects permissions globally via pipe CLI</a></li>
+        
             <li><a class="toctree-l4" href="#storage-usage-statistics-retrieval-via-pipe">Storage usage statistics retrieval via pipe</a></li>
         
             <li><a class="toctree-l4" href="#ge-autoscaler-respects-cpu-requirements-of-the-job-in-the-queue">GE Autoscaler respects CPU requirements of the job in the queue</a></li>
+        
+            <li><a class="toctree-l4" href="#restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command">Restrictions of "other" users permissions for the storages mounted via the pipe storage mount command</a></li>
         
             <li><a class="toctree-l4" href="#the-ability-to-find-the-tool-by-its-versionpackage-name">The ability to find the tool by its version/package name</a></li>
         
             <li><a class="toctree-l4" href="#the-ability-to-restrict-which-run-statuses-trigger-the-email-notification">The ability to restrict which run statuses trigger the email notification</a></li>
         
-            <li><a class="toctree-l4" href="#restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command">Restrictions of "other" users permissions for the storages mounted via the pipe storage mount command</a></li>
+            <li><a class="toctree-l4" href="#the-ability-to-force-the-usage-of-the-specific-cloud-providerregion-for-a-given-image">The ability to force the usage of the specific Cloud Provider/Region for a given image</a></li>
+        
+            <li><a class="toctree-l4" href="#restrict-mounting-of-data-storages-for-a-given-cloud-provider">Restrict mounting of data storages for a given Cloud Provider</a></li>
+        
+            <li><a class="toctree-l4" href="#ability-to-symlink-the-tools-between-the-tools-groups">Ability to "symlink" the tools between the tools groups</a></li>
         
             <li><a class="toctree-l4" href="#notable-bug-fixes">Notable Bug fixes</a></li>
         
@@ -355,6 +363,10 @@
                     
     <a class="" href="../../../manual/10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../../manual/10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -376,6 +388,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../../manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
                 </li>
     </ul>
                 </li>
@@ -430,6 +446,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../../manual/12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../../manual/12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
                 </li>
     </ul>
                 </li>
@@ -622,11 +642,15 @@
 <li><a href="#enable-slurm-workload-manager-for-the-cloud-pipelines-clusters">Enable Slurm for the Cloud Pipeline's clusters</a></li>
 <li><a href="#the-ability-to-generate-the-pipe-run-command-from-the-gui">The ability to generate the <code>pipe run</code> command from the GUI</a></li>
 <li><a href="#pipe-cli-view-tools-definitions"><code>pipe</code> CLI: view tools definitions</a></li>
+<li><a href="#list-the-usersgroupsobjects-permissions-globally-via-pipe-cli">List the users/groups/objects permissions globally via <code>pipe</code> CLI</a></li>
 <li><a href="#storage-usage-statistics-retrieval-via-pipe">Storage usage statistics retrieval via <code>pipe</code></a></li>
 <li><a href="#ge-autoscaler-respects-cpu-requirements-of-the-job-in-the-queue">GE Autoscaler respects CPU requirements of the job in the queue</a></li>
+<li><a href="#restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command">Restrictions of "other" users permissions for the mounted storage</a></li>
 <li><a href="#the-ability-to-find-the-tool-by-its-versionpackage-name">Search the tool by its version/package name</a></li>
 <li><a href="#the-ability-to-restrict-which-run-statuses-trigger-the-email-notification">The ability to restrict which run statuses trigger the email notification</a></li>
-<li><a href="#restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command">Restrictions of "other" users permissions for the mounted storage</a></li>
+<li><a href="#the-ability-to-force-the-usage-of-the-specific-cloud-providerregion-for-a-given-image">The ability to force the specific Cloud Provider for an image</a></li>
+<li><a href="#restrict-mounting-of-data-storages-for-a-given-cloud-provider">Restrict mounting of data storages for a given Cloud Provider</a></li>
+<li><a href="#ability-to-symlink-the-tools-between-the-tools-groups">Ability to "symlink" the tools between the tools groups</a></li>
 </ul>
 <hr />
 <ul>
@@ -985,6 +1009,19 @@ The general command to perform these operations:</p>
 <p>Also the specifying of "path" to the object (registry/group/tool) is supported. The "full path" format is: <code>&lt;registry_name&gt;:&lt;port&gt;/&lt;group_name&gt;/&lt;tool_name&gt;:&lt;verion_name&gt;</code>:<br />
 <img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ViewTools_03.png" /></p>
 <p>For more details and usage examples see <a href="../../../manual/14_CLI/14.8._View_tools_definitions_via_CLI/">here</a>.</p>
+<h2 id="list-the-usersgroupsobjects-permissions-globally-via-pipe-cli">List the users/groups/objects permissions globally via <code>pipe</code> CLI</h2>
+<p>Administrators may need to receive the following information - in a quick and convenient way:</p>
+<ul>
+<li>Which objects are accessible by a user?</li>
+<li>Which objects are accessible by a user group?</li>
+<li>Which user(s)/group(s) have access to the object?</li>
+</ul>
+<p>The lattest case was implemented early - see the command <a href="../../../manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI/#view-permissions"><code>pipe view-acl</code></a>.</p>
+<p>For other cases, new commands were implemented: <code>pipe view-user-objects &lt;Username&gt; [OPTIONS]</code> and <code>pipe view-group-objects &lt;Groupname&gt; [OPTIONS]</code> - to get a list of objects accessible by a user and by a user group/role respectively:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ViewUserGroupObjects_1.png" /></p>
+<p>Each of these commands has the non-required option <code>-t</code> (<code>--object-type</code>) <code>&lt;OBJECT_TYPE&gt;</code> - to restrict the output list of accessible objects only for the specific type (e.g., "pipeline" or "tool", etc.):<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ViewUserGroupObjects_2.png" /></p>
+<p>For more details see: <a href="../../../manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI/#view-the-list-of-objects-accessible-by-a-user"><code>pipe view-user-objects</code></a> and <a href="../../../manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI/#view-the-list-of-objects-accessible-by-a-group"><code>pipe view-group-objects</code></a>.</p>
 <h2 id="storage-usage-statistics-retrieval-via-pipe">Storage usage statistics retrieval via <code>pipe</code></h2>
 <p>In some cases, it may be necessary to obtain an information about storage usage or some inner folder(s).<br />
 In the current version, the command <code>pipe storage du</code> is implemented that provides "disk usage" information on the supported data storages/path:</p>
@@ -1008,9 +1045,11 @@ With <code>-d</code> (<code>--depth</code>) option the command prints the "usage
 <p>At the moment, <strong>GE Autoscaler</strong> treats each job in the queue as a single-core job.<br />
 Previously, autoscale workers could have only fixed instance type (the same as the master) - that could lead to <code>unschedulable</code> jobs in the queue - for examle, if one of the jobs requested <strong>4</strong> slots in the <code>local</code> parallel environment within a <strong>2</strong>-cored machine. Described job waited in a queue forever (as autoscaler could setup only new <strong>2</strong>-cored nodes).</p>
 <p>In the current version the <code>hybrid</code> behavior for the <strong>GE Autoscaler</strong> was implemented, that allows processing the data even if the initial node type is not enough. That behavior allows to scale-up the cluster (attach a worker node) with the instance type distinct of the master - worker is being picked up based on the amount of unsatisfied <strong>CPU</strong> requirements of all pending jobs (according to required slots and parallel environment types).</p>
-<p>There are several <strong>System parameters</strong> to configure that behavior:</p>
+<p>To enable <code>hybrid</code> mode for auto-scaled cluster set the corresponding checkbox in the cluster settings before the run:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_HybridAutoscaler_4.png" /></p>
+<p>On the other hand, there are several <strong>System parameters</strong> to configure <code>hybrid</code> behavior in details:</p>
 <ul>
-<li><strong><code>CP_CAP_AUTOSCALE_HYBRID</code></strong> (<em>boolean</em>) - enables the <code>hybrid</code> mode. In that mode the additional worker type can vary within either master instance type family (or <code>CP_CAP_AUTOSCALE_HYBRID_FAMILY</code> if specified). If <code>disabled</code> or not specified - the <strong>GE Autoscaler</strong> will work in a general regimen (when scaled-up workers have the same instance type as the master node)</li>
+<li><strong><code>CP_CAP_AUTOSCALE_HYBRID</code></strong> (<em>boolean</em>) - enables the <code>hybrid</code> mode (<em>the same as the "Enable Hybrid cluster" checkbox setting</em>). In that mode the additional worker type can vary within either master instance type family (or <code>CP_CAP_AUTOSCALE_HYBRID_FAMILY</code> if specified). If <code>disabled</code> or not specified - the <strong>GE Autoscaler</strong> will work in a general regimen (when scaled-up workers have the same instance type as the master node)</li>
 <li><strong><code>CP_CAP_AUTOSCALE_HYBRID_FAMILY</code></strong> (<em>string</em>) - defines the instance "family", from which the <strong>GE Autoscaler</strong> should pick up the worker node in case of <code>hybrid</code> behavior. If not specified (by default) - the <strong>GE Autoscaler</strong> will pick up worker instance from the same "family" as the master node</li>
 <li><strong><code>CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE</code></strong> (<em>string</em>) - determines the maximum number of instance cores for the node to be scaled up by the <strong>GE Autoscaler</strong> in case of <code>hybrid</code> behavior</li>
 </ul>
@@ -1021,6 +1060,16 @@ Previously, autoscale workers could have only fixed instance type (the same as t
     and in the logs console at the same time:<br />
 <img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_HybridAutoscaler_3.png" /></p>
 <p>For more details about <strong>GE Autoscaler</strong> see <a href="../../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">here</a>.</p>
+<h2 id="restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command">Restrictions of "other" users permissions for the storages mounted via the <code>pipe storage mount</code> command</h2>
+<p>As was introduced in <a href="../../v.0.15/v.0.15_-_Release_notes/#mounting-data-storages-to-linux-and-mac-workstations">Release Notes v.0.15</a>, the ability to mount Cloud data storages (both - File Storages and Object Storages) to Linux and Mac workstations (requires <strong><code>FUSE</code></strong> installed) was added.<br />
+For that, the <code>pipe storage mount</code> command was implemented.</p>
+<p>Previously, Cloud Pipeline allowed read access to the mounted cloud storages for the other users, by default. This might introduce a security issue when dealing with the sensitive data.</p>
+<p>In the current version, for the <code>pipe storage mount</code> command the new option is added: <code>-m</code> (<code>--mode</code>), that allows to set the permissions on the mountpoint at a mount time.<br />
+Permissions are being configured by the numerical mask - similarly to <code>chmod</code> Linux command.  </p>
+<p>E.g. to mount the storage with <code>RW</code> access to the <strong>OWNER</strong>, <code>R</code> access to the <strong>GROUP</strong> and no access to the <strong>OTHERS</strong>:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_MountingMode.png" /></p>
+<p>If the option <code>-m</code> isn't specified - the default permission mask will be set - <code>700</code> (full access to the <strong>OWNER</strong> (<code>RWX</code>), no access to the <strong>GROUP</strong> and <strong>OTHERS</strong>).</p>
+<p>For more details about mounting data storages via the <code>pipe</code> see <a href="../../../manual/14_CLI/14.3._Manage_Storage_via_CLI/#mounting-of-storages">here</a>.</p>
 <h2 id="the-ability-to-find-the-tool-by-its-versionpackage-name">The ability to find the tool by its version/package name</h2>
 <p>Cloud Pipeline allows searching for the tools in the registry by its name or description. But in some cases, it is more convenient and useful to find which tool contains a specific software package and then use it.</p>
 <p>In the current version, this ability - to find a tool by its content - is implemented based on the global search capabilities.<br />
@@ -1038,16 +1087,51 @@ It is done through the <code>PIPELINE_RUN_STATUS</code> section at the <strong>E
 The email notifications will be sent only if the run enters one of the selected states.<br />
 <strong><em>Note</em></strong>: if no statuses are selected in the "<strong>Statuses to inform</strong>" field - email notifications will be sent as previously - for all status changes.</p>
 <p>For more information how to configure the email notifications see <a href="../../../manual/12_Manage_Settings/12.9._Change_email_notification/">here</a>.</p>
-<h2 id="restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command">Restrictions of "other" users permissions for the storages mounted via the <code>pipe storage mount</code> command</h2>
-<p>As was introduced in <a href="../../v.0.15/v.0.15_-_Release_notes/#mounting-data-storages-to-linux-and-mac-workstations">Release Notes v.0.15</a>, the ability to mount Cloud data storages (both - File Storages and Object Storages) to Linux and Mac workstations (requires <strong><code>FUSE</code></strong> installed) was added.<br />
-For that, the <code>pipe storage mount</code> command was implemented.</p>
-<p>Previously, Cloud Pipeline allowed read access to the mounted cloud storages for the other users, by default. This might introduce a security issue when dealing with the sensitive data.</p>
-<p>In the current version, for the <code>pipe storage mount</code> command the new option is added: <code>-m</code> (<code>--mode</code>), that allows to set the permissions on the mountpoint at a mount time.<br />
-Permissions are being configured by the numerical mask - similarly to <code>chmod</code> Linux command.  </p>
-<p>E.g. to mount the storage with <code>RW</code> access to the <strong>OWNER</strong>, <code>R</code> access to the <strong>GROUP</strong> and no access to the <strong>OTHERS</strong>:<br />
-<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_MountingMode.png" /></p>
-<p>If the option <code>-m</code> isn't specified - the default permission mask will be set - <code>700</code> (full access to the <strong>OWNER</strong> (<code>RWX</code>), no access to the <strong>GROUP</strong> and <strong>OTHERS</strong>).</p>
-<p>For more details about mounting data storages via the <code>pipe</code> see <a href="../../../manual/14_CLI/14.3._Manage_Storage_via_CLI/#mounting-of-storages">here</a>.</p>
+<h2 id="the-ability-to-force-the-usage-of-the-specific-cloud-providerregion-for-a-given-image">The ability to force the usage of the specific Cloud Provider/Region for a given image</h2>
+<p>Previously, the platform allowed to select a <strong>Cloud Provider</strong> (and <strong>Cloud Region</strong>) for a particular job execution via the <strong>Launch</strong> Form, but a tool/version itself didn't not have any link with a region.</p>
+<p>In certain cases, it's necessary to enforce users to run some tools in a specific <strong>Cloud Provider</strong>/<strong>Region</strong>.</p>
+<p>In the current version, such ability was implemented. The <strong>Tool</strong>/<strong>Version Settings</strong> forms contain the field for specifying a <strong>Cloud Region</strong>, e.g.:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ForcedToolRegion_1.png" /></p>
+<p>By default, this parameter has <strong><code>Not configured</code></strong> value. This means, that a tool will be launched in a <em>Default region</em> (configured by the Administrator in the global settings). Or a user can set any allowed <strong>Cloud Region</strong>/<strong>Provider</strong> manually. This behavior will be the same as previously.</p>
+<ul>
+<li>Admin or a tool owner can forcibly set a specific <strong>Cloud Region</strong>/<strong>Provider</strong> where the run shall be launched, e.g.:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ForcedToolRegion_2.png" /></li>
+<li>Then, if a specific <strong>Cloud Region</strong>/<strong>Provider</strong> is configured - users will have to use it, when launching a tool (regardless of how the launch was started - with default or custom settings):<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ForcedToolRegion_3.png" /></li>
+<li>And if a user does not have access to that <strong>Cloud Region</strong>/<strong>Provider</strong> - tool won't launch:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ForcedToolRegion_4.png" /><br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ForcedToolRegion_5.png" /></li>
+</ul>
+<p><strong><em>Note</em></strong>: if a specific <strong>Cloud Region</strong>/<strong>Provider</strong> is being specified for the Tool, in general - this action enforce the <strong>Region</strong>/<strong>Provider</strong> only for the latest version of that tool. For other versions the settings will remain previous.</p>
+<p>See for more details about tool execution settings <a href="../../../manual/10_Manage_Tools/10._Manage_Tools/#settings-tab">here</a>.
+See for more details about tool version execution settings <a href="../../../manual/10_Manage_Tools/10.7._Tool_version_menu/#version-settings">here</a>.</p>
+<h2 id="restrict-mounting-of-data-storages-for-a-given-cloud-provider">Restrict mounting of data storages for a given Cloud Provider</h2>
+<p>Previously, <code>Cloud Pipeline</code> attempted to mount all data storages available for the user despite the <strong>Cloud Providers</strong>/<strong>Regions</strong> of these storages. E.g. if a job was launched in the <code>GCP</code>, but the user has access to <code>AWS</code> S3 buckets - they were also mounted to the <code>GCP</code> instance.</p>
+<p>In the current version, the ability to restrict storage mount availability for a run, based on its <strong>Cloud Provider</strong>/<strong>Region</strong>, was implemented.</p>
+<p><strong>Cloud Regions</strong> system configuration now has a separate parameter "<strong><em>Mount storages across other regions</em></strong>":<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_RestrictCrossMount_1.png" /></p>
+<p>This parameter has 3 possible values:</p>
+<ul>
+<li><strong><code>None</code></strong> - if set, storages from this region will be unavailable for a mount to any jobs. Such storages will not be available even to the same regions (e.g. storage from <em><code>AWS us-east-1</code></em> will be unavailable for a mount to instances launched in <em><code>AWS eu-central-1</code></em> or any <em><code>GCP</code></em> region and even in <em><code>AWS us-east-1</code></em>)</li>
+<li><strong><code>Same Cloud</code></strong> - if set, storages from this region will be available only to different <strong>Cloud Regions</strong> of the same <strong>Cloud Provider</strong> (e.g. storage from <em><code>AWS us-east-1</code></em> will be available to instances launched in <em><code>AWS eu-central-1</code></em> too, but not in any <em><code>GCP</code></em> region)</li>
+<li><strong><code>All</code></strong> - if set, storages from this region will be available to all other <strong>Cloud Regions</strong>/<strong>Providers</strong></li>
+</ul>
+<h2 id="ability-to-symlink-the-tools-between-the-tools-groups">Ability to "symlink" the tools between the tools groups</h2>
+<p>The majority of the tools are managed by the administrators and are available via the <strong><em>library</em></strong> tool group.<br />
+But for some of the users it would be convenient to have separate tool groups, which are going to contain a mix of the custom tools (managed by the users themselves) and the <strong><em>library</em></strong> tools (managed by the admins).</p>
+<p>For the latter ones the ability to create "<code>symlinks</code>" into the other tool groups was implemented.</p>
+<p>"Symlinked" tools are displayed in that users' tool groups as the original tools but can't be edited/updated. When a run is started with "symlinked" tool as docker image it is being replaced with original image for <code>Kubernetes</code> pod spec.</p>
+<p>Example of the "symlinked" <code>ubuntu</code> tool:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_SymlinkedTools.png" /></p>
+<p>The following behavior is implemented:</p>
+<ul>
+<li>to create a "symlink" to the tool, the user shall have <strong><em>READ</em></strong> access to the source tool and <strong><em>WRITE</em></strong> access to the destination tool group</li>
+<li>for the "symlinked" tool all the same description, icon, settings as in the source image are displayed. It isn't possible to make any changes to the "symlink" data (description, icon, settings. attributes, issues, etc.), even for the admins</li>
+<li>admins and image OWNERs are able to manage the permissions for the "symlinks". Permissions on the "symlinked" tools are configured separately from the original tool</li>
+<li>two levels of "symlinks" is not possible ("symlink" to the "symlinked" tool can't be created)</li>
+<li>it isn't possible to "push" into the "symlinked" tool</li>
+</ul>
+<p>For more details see <a href="../../../manual/10_Manage_Tools/10.8._Symlinks_between_tools/">here</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="parameter-values-changes-cannot-be-saved-for-a-tool">Parameter values changes cannot be saved for a tool</h3>

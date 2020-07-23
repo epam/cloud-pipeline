@@ -291,6 +291,10 @@
                     
     <a class="" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -312,6 +316,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
                 </li>
     </ul>
                 </li>
@@ -367,6 +375,10 @@
                     
     <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -393,6 +405,8 @@
             <li><a class="toctree-l5" href="#how-to-install-and-setup-pipe-cli">How to install and setup pipe CLI</a></li>
         
             <li><a class="toctree-l5" href="#configure-command-options">configure command options</a></li>
+        
+            <li><a class="toctree-l5" href="#allow-to-run-pipe-commands-on-behalf-of-the-other-user">Allow to run pipe commands on behalf of the other user</a></li>
         
             <li><a class="toctree-l5" href="#update-the-cli">Update the CLI</a></li>
         
@@ -562,6 +576,11 @@
 <li><a href="#pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</a></li>
 </ul>
 </li>
+<li><a href="#allow-to-run-pipe-commands-on-behalf-of-the-other-user">Allow to run <code>pipe</code> commands on behalf of the other user</a><ul>
+<li><a href="#using-pipe-token-command">Using <code>pipe token</code> command</a></li>
+<li><a href="#using-user-option">Using '--user' option</a></li>
+</ul>
+</li>
 <li><a href="#update-the-cli">Update the CLI</a></li>
 </ul>
 <h2 id="how-to-install-and-setup-pipe-cli">How to install and setup <code>pipe</code> CLI</h2>
@@ -657,6 +676,57 @@ Example:</p>
 </code></pre>
 
 <p><img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_6.png" /></p>
+<h2 id="allow-to-run-pipe-commands-on-behalf-of-the-other-user">Allow to run <code>pipe</code> commands on behalf of the other user</h2>
+<blockquote>
+<p><strong><em>Note</em></strong>: the functionality is able only for users with the <strong>ROLE_ADMIN</strong> role.</p>
+</blockquote>
+<p>It could be convenient/useful for administrators to perform some operations on behalf of the other user (e.g. check permissions/act as a service account/etc.).<br />
+For that in <code>pipe</code> CLI, there are two abilities:</p>
+<ul>
+<li>separate <code>pipe token</code> command</li>
+<li>common option <strong><code>-u</code></strong> (<strong><code>--user</code></strong>) for all <code>pipe</code> commands</li>
+</ul>
+<h3 id="using-pipe-token-command">Using <code>pipe token</code> command</h3>
+<p>This command prints the <code>JWT</code> token for a specified user.<br />
+<code>JWT</code> token could be used manually as authentication API token with the <code>pipe configure</code> command (as described <a href="#configure-command-options">above</a>) - to configure <code>pipe</code> CLI on behalf of the desired user.</p>
+<p>The format of the command:</p>
+<pre><code class="bash">pipe token &lt;USER_ID&gt; [OPTIONS]
+</code></pre>
+
+<p><code>&lt;USER_ID&gt;</code> is the name of the user account.</p>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>-d</code></strong> / <strong><code>--duration</code></strong></td>
+<td>The number of days the token will be valid. If it's not set - the default value will be used, same as in the GUI</td>
+</tr>
+</tbody>
+</table>
+<p>For example, to get a <code>JWT</code> token for the user <strong>USER3</strong> for 5 days:<br />
+<img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_9.png" /></p>
+<h3 id="using-user-option">Using '--user' option</h3>
+<p>To run separate <code>pipe</code> commands on behalf of the other user - the common option, that was added to all pipe commands, can be used: <strong><code>--user|-u &lt;USER_ID&gt;</code></strong> (where <code>&lt;USER_ID&gt;</code> is the name of the user account).</p>
+<p><strong><em>Note</em></strong>: the option isn't available for the commands <code>configure</code>, <code>--version</code>, <code>--help</code>.</p>
+<p>If this option is specified - operation (command execution) will be performed using the corresponding user account.</p>
+<p>Some examples:</p>
+<ul>
+<li>view active runs on behalf of the user without <strong>ROLE_ADMIN</strong> role:<br />
+<img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_10.png" /></li>
+<li>list storage content on behalf of the user without <strong>ROLE_ADMIN</strong> role that hasn't read permission on that storage:<br />
+<img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_11.png" /></li>
+<li>list storage content and the attempt to upload the file on behalf of the user without <strong>ROLE_ADMIN</strong> role that has read permission and hasn't write permission on that storage:<br />
+<img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_12.png" /></li>
+</ul>
 <h2 id="update-the-cli">Update the CLI</h2>
 <p>The command to update the Cloud Pipeline CLI version:</p>
 <pre><code class="bash">pipe update [PATH]

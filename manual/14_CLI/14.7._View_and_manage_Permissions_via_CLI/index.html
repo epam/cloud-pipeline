@@ -291,6 +291,10 @@
                     
     <a class="" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -312,6 +316,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
                 </li>
     </ul>
                 </li>
@@ -367,6 +375,10 @@
                     
     <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -417,6 +429,10 @@
             <li><a class="toctree-l5" href="#view-permissions">View permissions</a></li>
         
             <li><a class="toctree-l5" href="#manage-permissions">Manage permissions</a></li>
+        
+            <li><a class="toctree-l5" href="#view-the-list-of-objects-accessible-by-a-user">View the list of objects accessible by a user</a></li>
+        
+            <li><a class="toctree-l5" href="#view-the-list-of-objects-accessible-by-a-group">View the list of objects accessible by a group</a></li>
         
             <li><a class="toctree-l5" href="#change-owner-property">Change OWNER property</a></li>
         
@@ -563,6 +579,8 @@
 <li><a href="#example-set-permissions-for-a-pipeline">Example: set permissions for a pipeline</a></li>
 </ul>
 </li>
+<li><a href="#view-the-list-of-objects-accessible-by-a-user">View the list of objects accessible by a user</a></li>
+<li><a href="#view-the-list-of-objects-accessible-by-a-group">View the list of objects accessible by a group</a></li>
 <li><a href="#change-owner-property">Change <code>OWNER</code> property</a></li>
 </ul>
 <blockquote>
@@ -624,6 +642,80 @@ In the example below we grant the user <strong><em>USER3</em></strong> <strong
 </code></pre>
 
 <p><img alt="CP_ViewAndManagePermissions" src="../attachments/ManagePermissionsViaCLI_4.png" /></p>
+<h2 id="view-the-list-of-objects-accessible-by-a-user">View the list of objects accessible by a user</h2>
+<blockquote>
+<p>To view objects accessible for a user you shall have the <strong>ROLE_ADMIN</strong> role.</p>
+</blockquote>
+<p>The command to view the full list of objects accessible by a user:</p>
+<pre><code class="bash">pipe view-user-objects &lt;Username&gt; [OPTIONS]
+</code></pre>
+
+<p>Where <code>&lt;Username&gt;</code> defines the name of the user for which you wish to view the accessible object list.</p>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-t</code> / <code>--object-type</code> <code>&lt;OBJECT_TYPE&gt;</code></td>
+<td>Defines a name of the object class. If specified, the command output will contain only the list of accessible objects of the specific type by a user. Possible values: <code>pipeline</code>, <code>folder</code>, <code>data_storage</code>, <code>configuration</code>, <code>docker_registry</code>, <code>tool</code>, <code>tool_group</code></td>
+</tr>
+</tbody>
+</table>
+<p>In the example below we'll print the list of objects accessible to the user <code>user3</code>:</p>
+<pre><code class="bash">pipe view-user-objects user3
+</code></pre>
+
+<p><img alt="CP_ViewAndManagePermissions" src="../attachments/ManagePermissionsViaCLI_5.png" /></p>
+<p>In the example below we'll print the list of pipelines accessible to the user <code>demo</code>:</p>
+<pre><code class="bash">pipe view-user-objects -t pipeline demo
+</code></pre>
+
+<p><img alt="CP_ViewAndManagePermissions" src="../attachments/ManagePermissionsViaCLI_6.png" /></p>
+<h2 id="view-the-list-of-objects-accessible-by-a-group">View the list of objects accessible by a group</h2>
+<blockquote>
+<p>To view objects accessible for a group you shall have the <strong>ROLE_ADMIN</strong> role.</p>
+</blockquote>
+<p>The command to view the full list of objects accessible by a user group/role:</p>
+<pre><code class="bash">pipe view-group-objects &lt;Groupname&gt; [OPTIONS]
+</code></pre>
+
+<p>Where <code>&lt;Groupname&gt;</code> defines the name of the user group/role for which you wish to view the accessible object list.</p>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-t</code> / <code>--object-type</code> <code>&lt;OBJECT_TYPE&gt;</code></td>
+<td>Defines a name of the object class. If specified, the command output will contain only the list of accessible objects of the specific type by a user group. Possible values: <code>pipeline</code>, <code>folder</code>, <code>data_storage</code>, <code>configuration</code>, <code>docker_registry</code>, <code>tool</code>, <code>tool_group</code></td>
+</tr>
+</tbody>
+</table>
+<p>In the example below we'll print the list of objects accessible to the role <code>ROLE_USER</code>:</p>
+<pre><code class="bash">pipe view-group-objects ROLE_USER
+</code></pre>
+
+<p><img alt="CP_ViewAndManagePermissions" src="../attachments/ManagePermissionsViaCLI_7.png" /></p>
+<p>In the example below we'll print the list of pipelines accessible to the group <code>LIBRARY</code>:</p>
+<pre><code class="bash">pipe view-group-objects -t pipeline ROLE_LIBRARY
+</code></pre>
+
+<p><img alt="CP_ViewAndManagePermissions" src="../attachments/ManagePermissionsViaCLI_8.png" /></p>
 <h2 id="change-owner-property">Change <code>OWNER</code> property</h2>
 <p>Each object has a mandatory <strong>OWNER</strong> property.<br />
 You can change an owner of the Cloud Pipeline object via CLI. Please note, for do that, you shall be an object <strong>OWNER</strong> or have the <strong>ROLE_ADMIN</strong> role.</p>

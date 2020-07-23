@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../../img/favicon.ico">
+  <title>12.12. System logs - Cloud Pipeline</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link href="../../../css/extra.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "12.12. System logs";
+    var mkdocs_page_input_path = "manual/12_Manage_Settings/12.12._System_logs.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../../.." class="icon icon-home"> Cloud Pipeline</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Release notes</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">User guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../03_Overview/3._Overview/">3. Overview</a>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">4. Manage Folder</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">5. Manage Metadata</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">6. Manage Pipeline</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">7. Manage Detached configuration</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">8. Manage Data Storage</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9. Manage cluster nodes</a>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">10. Manage Tools</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">11. Manage Runs</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+    </ul>
+                </li>
+                <li class=" current">
+                    
+    <span class="caption-text">12. Manage settings</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../12.9._Change_email_notification/">12.9. Change email notification</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l3 current">
+                    
+    <a class="current" href="./">12.12. System logs</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l4"><a href="#1212-system-logs">12.12. System logs</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l5" href="#filters">Filters</a></li>
+        
+        </ul>
+    
+
+    </ul>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">14. CLI interface</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">15. Interactive services</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../16_Issues/16._Issues/">16. Issues</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Cloud Pipeline API</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                </li>
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../..">Cloud Pipeline</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>12. Manage settings &raquo;</li>
+        
+      
+        
+          <li>User guide &raquo;</li>
+        
+      
+    
+    <li>12.12. System logs</li>
+    <li class="wy-breadcrumbs-aside">
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="1212-system-logs">12.12. System logs</h1>
+<blockquote>
+<p>User shall have <strong>ROLE_ADMIN</strong> to view system security logs.</p>
+</blockquote>
+<ul>
+<li><a href="#filters">Filters</a><ul>
+<li><a href="#date-filter">Date filter</a></li>
+<li><a href="#service-filter">Service filter</a></li>
+<li><a href="#user-filter">User filter</a></li>
+<li><a href="#message-filter">Message filter</a></li>
+<li><a href="#advanced-filters">Advanced filters</a><ul>
+<li><a href="#hostname-filter">Hostname filter</a></li>
+<li><a href="#type-filter">Type filter</a></li>
+<li><a href="#show-service-account-events">Show service account events</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>The System Logs tab contains the full list of security trail events.</p>
+<p>Each record in the logs list contains:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Date</strong></td>
+<td>The date and time of the log event</td>
+</tr>
+<tr>
+<td><strong>Log status</strong></td>
+<td>The status of the log message (<code>INFO</code>, <code>ERROR</code>, etc.)</td>
+</tr>
+<tr>
+<td><strong>Log message</strong></td>
+<td>Description of the log event</td>
+</tr>
+<tr>
+<td><strong>User</strong></td>
+<td>User name who performed the event</td>
+</tr>
+<tr>
+<td><strong>Service</strong></td>
+<td>Service name that registered the event (<code>api-srv</code>, <code>edge</code>)</td>
+</tr>
+<tr>
+<td><strong>Type</strong></td>
+<td>Log message type (currently, only <code>security</code> type is available)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="filters">Filters</h2>
+<p>By default, in the list all logs are displayed from new to old.<br />
+For the more convenient search of the desired logs, there are filters over the logs list:<br />
+<img alt="CP_SystemLogs" src="../attachments/SystemLogs_1.png" /></p>
+<p>You may combine them in any order for your needs.</p>
+<h3 id="date-filter">Date filter</h3>
+<p>To restrict the list of logs for a specific date/time interval - use the <strong>From</strong> and <strong>To</strong> controls.<br />
+For example, to view logs for all events that were today after <code>21:30</code>:</p>
+<ul>
+<li>Click the <strong>From</strong> control:<br />
+<img alt="CP_SystemLogs" src="../attachments/SystemLogs_2.png" /><br />
+    Click the <strong>Select time</strong> button</li>
+<li>Select the desired time (the left column for hours, middle - for minutes, right - for secs):<br />
+<img alt="CP_SystemLogs" src="../attachments/SystemLogs_3.png" /><br />
+    Click the <strong>Ok</strong> button</li>
+<li>The logs list will be filtered:<br />
+<img alt="CP_SystemLogs" src="../attachments/SystemLogs_4.png" /></li>
+</ul>
+<h3 id="service-filter">Service filter</h3>
+<p>To restrict the list of logs for a specific service - use the <strong>Service</strong> control. You may select the desired service from the dropdown list, e.g.:<br />
+<img alt="CP_SystemLogs" src="../attachments/SystemLogs_5.png" /></p>
+<p>The logs list will be filtered automatically:<br />
+<img alt="CP_SystemLogs" src="../attachments/SystemLogs_6.png" /></p>
+<p>Multi-select is supported.</p>
+<h3 id="user-filter">User filter</h3>
+<p>To restrict the list of logs for a specific user(s) - use the <strong>User</strong> control. You may select the desired user from the dropdown list. Multi-select is supported.</p>
+<h3 id="message-filter">Message filter</h3>
+<p>To find the log by its event message (or its part) - use the <strong>Message</strong> field. Just click this field, specify the desired text and press the Enter key, e.g.:<br />
+<img alt="CP_SystemLogs" src="../attachments/SystemLogs_7.png" /></p>
+<h3 id="advanced-filters">Advanced filters</h3>
+<p>To open advanced filters click the <strong>Show advanced</strong> button. Additional filters will appear:<br />
+<img alt="CP_SystemLogs" src="../attachments/SystemLogs_8.png" /></p>
+<h4 id="hostname-filter">Hostname filter</h4>
+<p>To restrict the list of logs for a certain service host(s) - use the <strong>Hostname</strong> control. You may select the desired host from the dropdown list.<br />
+Multi-select is supported.</p>
+<h4 id="type-filter">Type filter</h4>
+<p>To restrict the list of logs for a certain log message type(s) - use the <strong>Type</strong> control. You may select the desired type from the dropdown list.<br />
+<strong><em>Note</em></strong>: currently, only <code>security</code> type is available.</p>
+<h4 id="show-service-account-events">Show service account events</h4>
+<p>The <strong>Include Service Account Events</strong> checkbox allows to show/hide log message from the service account (main admin user). Since from this account many messages are received, much more than from other users, by default these messages are hidden.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../../13_Permissions/13._Permissions/" class="btn btn-neutral float-right" title="13. Permissions">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../12.11._Advanced_features/" class="btn btn-neutral" title="12.11. Advanced features"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+        <span><a href="../12.11._Advanced_features/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../../13_Permissions/13._Permissions/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+
+</body>
+</html>

@@ -291,6 +291,10 @@
                     
     <a class="" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -312,6 +316,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
                 </li>
     </ul>
                 </li>
@@ -382,6 +390,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../12.12._System_logs/">12.12. System logs</a>
                 </li>
     </ul>
                 </li>
@@ -562,6 +574,7 @@
 <li><a href="#groups-roles-management">Groups (roles) management</a></li>
 <li><a href="#attributes">Attributes</a></li>
 <li><a href="#launch-options">Launch options</a></li>
+<li><a href="#possibility-to-revert-changes">Possibility to revert changes</a></li>
 </ul>
 </li>
 <li><a href="#blockunblock-a-user">Block/unblock a user</a></li>
@@ -666,6 +679,19 @@ For price type specifying - if it is set for the user/group/tool - GUI will allo
 <li>Group level (specified for a group/role) (see <a href="../12.6._Edit_a_group_role/#launch-options">12.6. Edit a group/role</a>)</li>
 <li><em>(global)</em> <strong><code>launch.run.visibility</code></strong> (specified as global defaults via system-level settings) (see <a href="../12.10._Manage_system-level_settings/#launch">12.10. Manage system-level settings</a>)</li>
 </ul>
+<h3 id="possibility-to-revert-changes">Possibility to revert changes</h3>
+<p>In certain cases, there could be convenient to undo all changes in a user profile when modifying it - without closing the form.</p>
+<p>The admin has such ability:</p>
+<ul>
+<li>open the <strong>User management</strong> tab</li>
+<li>select the desired user to modify, click the <strong>Edit</strong> button to open the popup with the user's settings</li>
+<li>edit some settings</li>
+<li>if needed to revert done changes - click the <strong>REVERT</strong> button at the bottom of the form (<strong><em>Note</em></strong>: it's possible only before saving!):<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_22.png" /></li>
+<li>all done unsaved changes are reverted. The <strong>REVERT</strong> button becomes disabled:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_23.png" /></li>
+</ul>
+<p><strong><em>Note</em></strong>: in such way all unsaved changes of user settings could be reverted - <em>Default data storage</em>, <em>Roles &amp; Groups</em> list, <em>Attributes</em> and <em>Launch options</em>.</p>
 <h2 id="blockunblock-a-user">Block/unblock a user</h2>
 <p>To block user:</p>
 <ol>

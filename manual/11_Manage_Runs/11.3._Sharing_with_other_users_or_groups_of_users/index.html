@@ -291,6 +291,10 @@
                     
     <a class="" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
     </ul>
                 </li>
                 <li class=" current">
@@ -326,10 +330,16 @@
         
             <li><a class="toctree-l5" href="#work-with-a-sharing-running-instance-for-not-ownersadmins">Work with a sharing running instance (for not owners/admins)</a></li>
         
+            <li><a class="toctree-l5" href="#sharing-runs-with-the-anonymous-users">Sharing runs with the anonymous users</a></li>
+        
         </ul>
     
 
     </ul>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
                 </li>
     </ul>
                 </li>
@@ -384,6 +394,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
                 </li>
     </ul>
                 </li>
@@ -563,6 +577,7 @@
 <li><a href="#sharing-a-run-with-users">Sharing a run with user(s)</a></li>
 <li><a href="#sharing-a-run-with-users-groups">Sharing a run with users group(s)</a></li>
 <li><a href="#work-with-a-sharing-running-instance-for-not-ownersadmins">Work with a sharing running instance (for not owners/admins)</a></li>
+<li><a href="#sharing-runs-with-the-anonymous-users">Sharing runs with the anonymous users</a></li>
 </ul>
 <h2 id="overview">Overview</h2>
 <p>For certain use cases it is beneficial to be able to share applications with other users/groups. Cloud platform allows ability when runs environments will be accessed for several users, not only for the user, who launched the run (<strong>OWNER</strong>).<br />
@@ -647,6 +662,30 @@ For a non-interactive run the "share" pop-up looks slightly different ("<strong>
 <img alt="CP_SharingRuns" src="../attachments/SharingRuns_17.png" /><br />
     A new page with the <strong>Terminal access</strong> to the shared instance will appear:<br />
 <img alt="CP_SharingRuns" src="../attachments/SharingRuns_18.png" /></p>
+<h2 id="sharing-runs-with-the-anonymous-users">Sharing runs with the anonymous users</h2>
+<p>For certain use-cases, it is required to allow such type of access for any user, who has successfully passed the IdP authentication but is not registered in the Cloud Pipeline and also such users shall not be automatically registered at all and remain <code>Anonymous</code>.<br />
+To enable such behavior, the following application properties have to be specified before the deployment:</p>
+<ul>
+<li><code>saml.user.auto.create=EXPLICIT_GROUP</code></li>
+<li><code>saml.user.allow.anonymous=true</code></li>
+</ul>
+<p>Once anonymous access is enabled system-wide each run that requires to be accessible by <code>Anonymous</code> has to be configured to share endpoints with the following user group - <code>ROLE_ANONYMOUS_USER</code>.</p>
+<p>It could be performed in the following way:</p>
+<ul>
+<li>Cloud Pipeline user launches the run whose interactive endpoint he wishes to share.</li>
+<li>The user opens the <strong>Run logs</strong> page of the launched run</li>
+<li>Then clicks the link near the <strong>Share with</strong> label:<br />
+<img alt="CP_SharingRuns" src="../../../release_notes/v.0.15/attachments/RN015_EndpointToAnonymous_01.png" /></li>
+<li>In the opened popup clicks the corresponding button to share with a group/role:<br />
+<img alt="CP_SharingRuns" src="../../../release_notes/v.0.15/attachments/RN015_EndpointToAnonymous_02.png" /></li>
+<li>In the appeared window, the user should select the <code>ROLE_ANONYMOUS_USER</code> role:<br />
+<img alt="CP_SharingRuns" src="../../../release_notes/v.0.15/attachments/RN015_EndpointToAnonymous_03.png" /></li>
+<li>Sharing with the <code>Anonymous</code> will be displayed at the Run logs page:<br />
+<img alt="CP_SharingRuns" src="../../../release_notes/v.0.15/attachments/RN015_EndpointToAnonymous_04.png" /></li>
+<li>The user should copy the Endpoint-link of the run and send it to the <code>Anonymous</code> user he wants to share.</li>
+</ul>
+<p><code>Anonymous</code> user should open a new tab in a browser and just input the link of the sharing running instance, that he has received. If that user passes <code>SAML</code> authentication, he will get access to the endpoint. Attempts to open any other Platform pages will fail.</p>
+<p><strong><em>Note</em></strong>: a user is treated as <code>Anonymous</code> if he is logging in and the <code>SAML</code> response is valid, but the user is not registered in the Platform and the auto-registration (of any kind) is not enabled.</p>
               
             </div>
           </div>
@@ -654,7 +693,7 @@ For a non-interactive run the "share" pop-up looks slightly different ("<strong>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../../12_Manage_Settings/12._Manage_Settings/" class="btn btn-neutral float-right" title="12.0. Overview">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../11.4._Automatic_actions_after_notifications/" class="btn btn-neutral float-right" title="11.4. Automatic labels and actions for the runs">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../11.2._Auto-commit_Docker_image/" class="btn btn-neutral" title="11.2. Auto-commit Docker images"><span class="icon icon-circle-arrow-left"></span> Previous</a>
@@ -686,7 +725,7 @@ For a non-interactive run the "share" pop-up looks slightly different ("<strong>
         <span><a href="../11.2._Auto-commit_Docker_image/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../../12_Manage_Settings/12._Manage_Settings/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../11.4._Automatic_actions_after_notifications/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
