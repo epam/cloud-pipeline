@@ -57,7 +57,8 @@ public class ServerlessConfigurationManagerTest {
 
     private static final String TEST_NAME = "test";
     private static final String ANOTHER_TEST_NAME = "another";
-    private static final String TEST_URL = "https://external.api/";
+    private static final String TEST_URL = "https://external.api:80/pipeline/";
+    private static final String TEST_URL_TO_REPLACE = "https://new.host:11/pipeline/";
     private static final String TEST_QUERY = "query=1";
     private static final String TEST_APP_PATH = "app/path";
     private static final Long PIPELINE_ID = 1L;
@@ -80,7 +81,9 @@ public class ServerlessConfigurationManagerTest {
                     preferenceManager,
                     stopServerlessRunManager,
                     new JsonMapper(),
-                    authManager));
+                    authManager,
+                    null,
+                    null));
 
     @Test
     public void shouldRunServerlessConfiguration() {
@@ -217,6 +220,50 @@ public class ServerlessConfigurationManagerTest {
 
         final String result = serverlessConfigurationManager.generateUrl(CONFIGURATION_ID, null);
         assertEquals(TEST_URL + "serverless/" + CONFIGURATION_ID + "/" + TEST_NAME, result);
+    }
+
+    @Test
+    public void shouldReplaceHostAndPort() {
+        final RunConfigurationEntry entry = runConfigurationEntry(TEST_NAME, true);
+        final RunConfiguration configuration = runConfiguration(TEST_NAME, entry);
+        final RunConfigurationWithEntitiesVO runConfigurationVO = runConfigurationWithEntitiesVO(TEST_NAME, entry);
+        final PipelineRun pipelineRun = pipelineRun();
+        pipelineRun.setServiceUrl(String.format("[{\"url\": \"%s\"}]", TEST_URL_TO_REPLACE));
+        final PagedResult<List<PipelineRun>> activeRuns = new PagedResult<>(Collections.emptyList(), 0);
+
+        final ServerlessConfigurationManager serverlessConfigurationManager =
+                spy(new ServerlessConfigurationManager(
+                        runConfigurationManager,
+                        configurationRunner,
+                        runConfigurationMapper,
+                        runManager,
+                        preferenceManager,
+                        stopServerlessRunManager,
+                        new JsonMapper(),
+                        authManager,
+                        "external.api",
+                        80));
+
+        when(runConfigurationManager.load(any())).thenReturn(configuration);
+        when(runConfigurationMapper.toRunConfigurationWithEntitiesVO(any())).thenReturn(runConfigurationVO);
+        when(configurationRunner.runConfiguration(any(), any(), any()))
+                .thenReturn(Collections.singletonList(pipelineRun));
+        when(runManager.searchPipelineRuns(any(), anyBoolean())).thenReturn(activeRuns);
+        when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_WAIT_COUNT)).thenReturn(1);
+        when(runManager.loadPipelineRun(any())).thenReturn(pipelineRun);
+        doReturn(StringUtils.EMPTY).when(serverlessConfigurationManager).sendRequest(any(), any());
+        when(stopServerlessRunManager.loadByRunId(any())).thenReturn(Optional.empty());
+
+
+        serverlessConfigurationManager.run(CONFIGURATION_ID, TEST_NAME, mockRequest());
+
+        final ArgumentCaptor<String> endpointCaptor = ArgumentCaptor.forClass(String.class);
+        verify(serverlessConfigurationManager).sendRequest(any(), endpointCaptor.capture());
+        assertEquals(String.format("%s%s?%s", TEST_URL, TEST_APP_PATH, TEST_QUERY), endpointCaptor.getValue());
+
+        verify(configurationRunner).runConfiguration(any(), any(), any());
+        verify(stopServerlessRunManager).createServerlessRun(any());
+        verify(stopServerlessRunManager).updateServerlessRun(any());
     }
 
     private RunConfigurationEntry runConfigurationEntry(final String name, final boolean isDefault) {
