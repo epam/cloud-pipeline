@@ -26,6 +26,7 @@ import org.testng.ITest;
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 
 import java.awt.*;
 import java.lang.reflect.Method;
@@ -38,7 +39,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public abstract class AbstractBfxPipelineTest implements ITest {
 
-    private ThreadLocal<String> methodName = new ThreadLocal<>();
+    protected String methodName = "";
 
     @BeforeClass
     public void setUp() {
@@ -76,9 +77,24 @@ public abstract class AbstractBfxPipelineTest implements ITest {
         sleep(3, SECONDS);
     }
 
+    @BeforeMethod(alwaysRun = true)
+    public void setMethodName(Method method, Object[] testData) {
+        if (method.isAnnotationPresent(TestCase.class)) {
+            final TestCase testCaseAnnotation = method.getAnnotation(TestCase.class);
+            for (final String testCase : testCaseAnnotation.value()) {
+                this.methodName = String.format("%s - %s", method.getName(), testCase);
+                System.out.println("Test name was set " + method.getName());
+            }
+        } else {
+            this.methodName = method.getName();
+            System.out.println("Test name is " + method.getName());
+        }
+    }
+
     @Override
     public String getTestName() {
-        return methodName.get();
+        System.out.println("getTestName() is " + this.methodName);
+        return this.methodName;
     }
 
     @AfterMethod(alwaysRun = true)
@@ -91,9 +107,6 @@ public abstract class AbstractBfxPipelineTest implements ITest {
             for (String testCase : testCaseAnnotation.value()) {
                 testCasesString.append(testCase).append(" ");
             }
-            methodName.set(String.format("%s - %s", method.getName(), testCasesString));
-        } else {
-            methodName.set(method.getName());
         }
 
         System.out.println(String.format("%s::%s [ %s]: %s",
