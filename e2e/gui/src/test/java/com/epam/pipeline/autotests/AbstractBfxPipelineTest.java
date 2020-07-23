@@ -22,6 +22,7 @@ import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.openqa.selenium.Cookie;
+import org.testng.ITest;
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -35,7 +36,9 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public abstract class AbstractBfxPipelineTest {
+public abstract class AbstractBfxPipelineTest implements ITest {
+
+    private InheritableThreadLocal<String> methodName = new InheritableThreadLocal<>();
 
     @BeforeClass
     public void setUp() {
@@ -71,6 +74,23 @@ public abstract class AbstractBfxPipelineTest {
         //reset mouse
         $(byId("navigation-button-logo")).shouldBe(visible).click();
         sleep(3, SECONDS);
+    }
+
+    @Override
+    public String getTestName() {
+        return methodName.get();
+    }
+
+    @AfterMethod
+    public void setMethodName(Method method, Object[] testData) {
+        if (method.isAnnotationPresent(TestCase.class)) {
+            final TestCase testCaseAnnotation = method.getAnnotation(TestCase.class);
+            for (final String testCase : testCaseAnnotation.value()) {
+                methodName.set(String.format("%s - %s", method.getName(), testCase));
+            }
+        } else {
+            methodName.set(method.getName());
+        }
     }
 
     @AfterMethod
