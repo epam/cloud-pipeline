@@ -22,13 +22,12 @@ import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.openqa.selenium.Cookie;
+import org.testng.ITest;
 import org.testng.ITestResult;
-import org.testng.Reporter;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 
 import java.awt.*;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import static com.codeborne.selenide.Condition.visible;
@@ -37,7 +36,9 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public abstract class AbstractBfxPipelineTest {
+public abstract class AbstractBfxPipelineTest implements ITest {
+
+    private ThreadLocal<String> methodName = new ThreadLocal<>();
 
     @BeforeClass
     public void setUp() {
@@ -75,29 +76,12 @@ public abstract class AbstractBfxPipelineTest {
         sleep(3, SECONDS);
     }
 
-    @AfterMethod(alwaysRun = true)
-    public void afterMethod(final ITestResult result, final Method method) {
-        try {
-            if(result.getParameters().length <= 0) {
-                return;
-            }
-            if (!(result.getParameters()[0] instanceof String)) {
-                return;
-            }
-            Field methodName = org.testng.internal.BaseTestMethod.class.getDeclaredField("m_methodName");
-            methodName.setAccessible(true);
-            if (method.isAnnotationPresent(TestCase.class)) {
-                final TestCase testCaseAnnotation = method.getAnnotation(TestCase.class);
-                for (final String testCase : testCaseAnnotation.value()) {
-                    methodName.set(result.getMethod(), String.format("%s - %s", method.getName(), testCase));
-                }
-            }
-        } catch (Exception e) {
-            Reporter.log("Exception: " + e.getMessage());
-        }
+    @Override
+    public String getTestName() {
+        return methodName.get();
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void logging(ITestResult result) {
         StringBuilder testCasesString = new StringBuilder();
 
@@ -107,6 +91,9 @@ public abstract class AbstractBfxPipelineTest {
             for (String testCase : testCaseAnnotation.value()) {
                 testCasesString.append(testCase).append(" ");
             }
+            methodName.set(String.format("%s - %s", method.getName(), testCasesString));
+        } else {
+            methodName.set(method.getName());
         }
 
         System.out.println(String.format("%s::%s [ %s]: %s",
