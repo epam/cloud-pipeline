@@ -83,17 +83,14 @@ public abstract class AbstractBfxPipelineTest implements ITest {
             final TestCase testCaseAnnotation = method.getAnnotation(TestCase.class);
             for (final String testCase : testCaseAnnotation.value()) {
                 this.methodName = String.format("%s - %s", method.getName(), testCase);
-                System.out.println("Test name was set " + method.getName());
             }
         } else {
             this.methodName = method.getName();
-            System.out.println("Test name is " + method.getName());
         }
     }
 
     @Override
     public String getTestName() {
-        System.out.println("getTestName() is " + this.methodName);
         return this.methodName;
     }
 
