@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,6 +141,7 @@ public class FolderDaoTest extends AbstractSpringTest {
         pipelineDao.createPipeline(pipeline);
         Folder loadedParent2 = folderDao.loadFolder(parent.getId());
         assertEquals(pipeline.getId(), loadedParent2.getPipelines().get(0).getId());
+        assertEquals(pipeline.getOwner(), loadedParent2.getPipelines().get(0).getOwner());
         assertEquals(0, loadedParent2.getChildFolders().get(0).getPipelines().size());
 
         //delete
@@ -241,6 +242,7 @@ public class FolderDaoTest extends AbstractSpringTest {
         assertEquals(1, loadedConfigs.size());
         assertEquals(configuration.getId(), loadedConfigs.get(0).getId());
         assertEquals(loaded.getId(), loadedConfigs.get(0).getParent().getId());
+        assertEquals(configuration.getOwner(), loadedConfigs.get(0).getOwner());
     }
 
     private void checkStorageIsPresent(AbstractDataStorage storage, Folder loaded) {
@@ -250,6 +252,7 @@ public class FolderDaoTest extends AbstractSpringTest {
         assertEquals(loaded.getId(), loadedStorages.get(0).getParentFolderId());
         assertEquals(storage.getMountPoint(), loadedStorages.get(0).getMountPoint());
         assertEquals(storage.getMountOptions(), loadedStorages.get(0).getMountOptions());
+        assertEquals(storage.getOwner(), loadedStorages.get(0).getOwner());
     }
 
     private RunConfiguration addConfiguration(Folder folder) {

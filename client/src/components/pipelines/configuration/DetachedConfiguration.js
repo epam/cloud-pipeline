@@ -75,6 +75,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
 
   navigationBlockedListener;
   navigationBlocker;
+  allowedNavigation;
 
   state = {
     configurationsListCollapsed: false,
@@ -352,6 +353,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         }
         configuration.executionEnvironment = opts.executionEnvironment;
         configuration.rootEntityId = opts.rootEntityId;
+        configuration.endpointName = opts.endpointName;
+        configuration.stopAfter = opts.stopAfter;
         opts.pipelineId = undefined;
         opts.pipelineVersion = undefined;
         opts.configName = undefined;
@@ -363,6 +366,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         opts.methodConfigurationSnapshot = undefined;
         opts.methodInputs = undefined;
         opts.methodOutputs = undefined;
+        opts.endpointName = undefined;
+        opts.stopAfter = undefined;
         if (opts.executionEnvironment) {
           opts.executionEnvironment = undefined;
         }
@@ -396,7 +401,9 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
             overriddenConfiguration: null
           }, () => {
             if (this.selectedConfigurationName !== configuration.name) {
-              this.props.router.push(`/configuration/${this.props.configurationId}/${configuration.name}`);
+              this.allowedNavigation =
+                `/configuration/${this.props.configurationId}/${configuration.name}`;
+              this.props.router.push(this.allowedNavigation);
             }
           });
           return true;
@@ -445,6 +452,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
   };
 
   getParameters = () => {
+    const extractEndpointNameAndStopAfter = (c) => ({
+      endpointName: c.endpointName,
+      stopAfter: c.stopAfter
+    });
     if (this.state.overriddenConfiguration) {
       const parameters = this.state.overriddenConfiguration.configuration
         ? this.state.overriddenConfiguration.configuration.parameters
@@ -454,6 +465,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         currentParam.readOnly = !!currentParam.value;
       }
       return {
+        ...extractEndpointNameAndStopAfter(this.state.overriddenConfiguration),
         ...this.state.overriddenConfiguration.configuration || this.state.overriddenConfiguration,
         parameters
       };
@@ -488,6 +500,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     }
 
     return {
+      ...extractEndpointNameAndStopAfter(configuration),
       ...configuration.configuration || configuration,
       parameters
     };
@@ -995,8 +1008,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
                 this.props.configurations.value.entries.length > 1
               }
               onRemoveConfiguration={this.onRemoveConfigurationClicked(this.selectedConfiguration)}
-              detached={true}
-              editConfigurationMode={true}
+              detached
+              editConfigurationMode
               currentConfigurationName={this.selectedConfigurationName}
               currentConfigurationIsDefault={this.selectedConfigurationIsDefault}
               onSetConfigurationAsDefault={this.onSetAsDefault}
@@ -1011,7 +1024,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
               configurations={this.getConfigurations()}
               onLaunch={this.onSaveConfiguration}
               onSelectPipeline={this.onConfigurationSelectPipeline}
-              isDetachedConfiguration={true}
+              isDetachedConfiguration
               configurationId={this.props.configurationId}
               selectedPipelineParametersIsLoading={this.state.selectedPipelineParametersIsLoading}
               fireCloudMethod={this.selectedFireCloudMethod}
@@ -1050,7 +1063,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
           this.navigationBlocker = null;
         }, 0);
       };
-      if (this.configurationModified && !this.navigationBlocker) {
+      if (this.configurationModified && !this.navigationBlocker &&
+        location.pathname !== this.allowedNavigation) {
         const cancel = () => {
           if (this.props.history.getCurrentLocation().pathname !== locationBefore) {
             this.props.history.replace(locationBefore);

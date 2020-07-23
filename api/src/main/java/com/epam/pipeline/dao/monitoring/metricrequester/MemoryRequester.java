@@ -65,11 +65,11 @@ public class MemoryRequester extends AbstractMetricRequester {
                         .aggregation(AggregationBuilders.terms(AGGREGATION_NODE_NAME)
                                 .field(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW))
                                 .size(resourceIds.size())
-                                .subAggregation(average(AVG_AGGREGATION + MEMORY_ALLOCATABLE, NODE_ALLOCATABLE))
+                                .subAggregation(average(AVG_AGGREGATION + MEMORY_CAPACITY, NODE_CAPACITY))
                                 .subAggregation(average(AVG_AGGREGATION + MEMORY_UTILIZATION, WORKING_SET))
                                 .subAggregation(division(DIVISION_AGGREGATION + NODE_UTILIZATION,
                                         AVG_AGGREGATION + MEMORY_UTILIZATION,
-                                        AVG_AGGREGATION + MEMORY_ALLOCATABLE))));
+                                        AVG_AGGREGATION + MEMORY_CAPACITY))));
     }
 
     @Override

@@ -268,7 +268,8 @@ public class DataStorageApiService {
     }
 
     public void validateOperation(List<DataStorageAction> operations) {
-        operations.forEach(operation -> Assert.isTrue(operation.isRead() || operation.isWrite(),
+        operations.forEach(operation -> Assert.isTrue(operation.isList() || operation.isRead()
+                        || operation.isWrite(),
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_CREDENTIALS_REQUEST)));
     }
 

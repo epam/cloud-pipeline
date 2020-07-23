@@ -356,6 +356,38 @@
                 ]]>
             </value>
         </property>
+        <property name="loadDataStoragesFileShareId">
+            <value>
+                <![CDATA[
+                    SELECT
+                        datastorage_id,
+                        datastorage_name,
+                        description,
+                        datastorage_type,
+                        path,
+                        sts_duration,
+                        lts_duration,
+                        incomplete_upload_cleanup_days,
+                        folder_id,
+                        created_date,
+                        owner,
+                        enable_versioning,
+                        backup_duration,
+                        locked as datastorage_locked,
+                        mount_point,
+                        mount_options,
+                        shared,
+                        allowed_cidrs,
+                        region_id as region_id,
+                        file_share_mount_id,
+                        sensitive
+                    FROM
+                        pipeline.datastorage
+                    WHERE
+                        file_share_mount_id = ?
+                ]]>
+            </value>
+        </property>
         <property name="updateStorageLocksQuery">
             <value>
                 <![CDATA[

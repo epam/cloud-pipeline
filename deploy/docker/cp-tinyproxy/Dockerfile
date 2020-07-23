@@ -14,7 +14,11 @@
 
 FROM centos:7
 
-RUN yum install wget gcc make -y
+# 1. TinyProxy (HTTP proxy)
+RUN yum install wget \
+                gcc \
+                make -y
+
 RUN mkdir -p /opt/tinyproxy && \
     cd /opt/tinyproxy && \
     wget https://github.com/tinyproxy/tinyproxy/releases/download/1.10.0/tinyproxy-1.10.0.tar.gz -O tinyproxy.tgz && \
@@ -25,5 +29,10 @@ RUN mkdir -p /opt/tinyproxy && \
     ./configure && \
     make && \
     make install
+
+# 2. NGINX (TCP/UDP forward proxy)
+RUN yum install -y epel-release
+RUN yum install -y nginx
+
 ADD init /init
 RUN chmod +x /init

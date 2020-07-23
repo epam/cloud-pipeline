@@ -185,7 +185,7 @@ if [ ! -f "$CP_KUBEADM_INIT_CONFIG_YAML" ]; then
 fi
 CP_KUBEADM_INIT_CONFIG_YAML_TMP="/tmp/$(basename $CP_KUBEADM_INIT_CONFIG_YAML)"
 envsubst '${CP_KUBE_FLANNEL_CIDR} ${CP_KUBE_KUBELET_PORT}' < "$CP_KUBEADM_INIT_CONFIG_YAML" > "$CP_KUBEADM_INIT_CONFIG_YAML_TMP"
-kubeadm init --config "$CP_KUBEADM_INIT_CONFIG_YAML_TMP" --token-ttl 0
+kubeadm init --config "$CP_KUBEADM_INIT_CONFIG_YAML_TMP"
 sleep 30
 
 # Copy the admin's config file to the default location to "enable" kubectl
@@ -217,6 +217,8 @@ else
     kubectl apply -f "$entry"
   done
 fi
+# label kube-system namespace, label is required for sensitive network policy
+kubectl label namespace kube-system name=kube-system
 
 #12
 kubectl create clusterrolebinding owner-cluster-admin-binding \

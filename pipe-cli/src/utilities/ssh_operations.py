@@ -19,6 +19,7 @@ import os
 import paramiko
 from src.utilities.pipe_shell import plain_shell, interactive_shell
 from src.api.pipeline_run import PipelineRun
+from src.api.preferenceapi import PreferenceAPI
 from urllib.parse import urlparse
 
 DEFAULT_SSH_PORT = 22
@@ -77,10 +78,11 @@ def get_conn_info(run_id):
     if not ssh_proxy_port:
         ssh_proxy_port = 80 if ssh_url_parts.scheme == "http" else 443
 
-    run_conn_info = collections.namedtuple('conn_info', 'ssh_proxy ssh_endpoint ssh_pass')
+    run_conn_info = collections.namedtuple('conn_info', 'ssh_proxy ssh_endpoint ssh_pass owner')
     return run_conn_info(ssh_proxy=(ssh_proxy_host, ssh_proxy_port),
                          ssh_endpoint=(run_model.pod_ip, DEFAULT_SSH_PORT),
-                         ssh_pass=run_model.ssh_pass)
+                         ssh_pass=run_model.ssh_pass,
+                         owner=run_model.owner)
 
 
 def run_ssh_command(channel, command):
@@ -105,12 +107,20 @@ def run_ssh(run_id, command):
         transport = paramiko.Transport(socket)
         transport.start_client()
         # User password authentication, which available only to the OWNER and ROLE_ADMIN users
+        sshpass = conn_info.ssh_pass
+        sshuser = DEFAULT_SSH_USER
+        ssh_default_root_user_enabled = PreferenceAPI.get_preference('system.ssh.default.root.user.enabled')
+        if ssh_default_root_user_enabled is not None and ssh_default_root_user_enabled.value.lower() != "true":
+            # split owner by @ in case it represented by email address
+            owner_user_name = conn_info.owner.split("@")[0]
+            sshpass = owner_user_name
+            sshuser = owner_user_name
         try:
-            transport.auth_password(DEFAULT_SSH_USER, conn_info.ssh_pass)
+            transport.auth_password(sshuser, sshpass)
         except paramiko.ssh_exception.AuthenticationException:
             # Reraise authentication error to provide more details
             raise PermissionError('Authentication failed for {}@{}'.format(
-                DEFAULT_SSH_USER, conn_info.ssh_endpoint[0]))
+                sshuser, conn_info.ssh_endpoint[0]))
         channel = transport.open_session()
         # "get_pty" is used for non-interactive commands too
         # This allows to get stdout and stderr in a correct order

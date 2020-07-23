@@ -141,10 +141,12 @@ function limitMountsCheck (form, parameters) {
   const initial = getDefaultValue();
   return form.getFieldValue(`${ADVANCED}.limitMounts`) !== initial;
 }
-function cmdTemplateCheck (state, parameters, {cmdTemplateValue}) {
+function cmdTemplateCheck (state, parameters, {cmdTemplateValue, toolDefaultCmd}) {
   let code = cmdTemplateValue;
   if (state.startIdle) {
     code = 'sleep infinity';
+  } else if (state.useDefaultCmd && toolDefaultCmd) {
+    code = toolDefaultCmd;
   }
   if (code === undefined) {
     return false;
@@ -243,6 +245,10 @@ export default function (props, state, options) {
     modified(form, parameters, `${ADVANCED}.prettyUrl`, 'prettyUrl') ||
     // timeout check
     modified(form, parameters, `${ADVANCED}.timeout`, 'timeout') ||
+    // stopAfter check
+    modified(form, parameters, `${ADVANCED}.stopAfter`, 'stopAfter') ||
+    // endpointName check
+    modified(form, parameters, `${ADVANCED}.endpointName`, 'endpointName') ||
     // limit mounts check
     limitMountsCheck(form, parameters) ||
     // cmd template check

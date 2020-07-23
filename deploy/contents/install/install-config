@@ -21,6 +21,8 @@ PSG_PORT=5432
 PSG_DB=pipeline
 PSG_USER=pipeline
 PSG_PASS=pipeline
+PSG_SHARED_BUFFERS=128MB
+PSG_MAX_CONNECTIONS=100
 CP_API_SRV_CERT_DIR=/opt/api/pki
 CP_API_SRV_FED_META_DIR=/opt/api/sso
 CP_API_SRV_INTERNAL_HOST=cp-api-srv.default.svc.cluster.local
@@ -182,6 +184,13 @@ CP_TP_MIN_SPARE_SERVERS=2
 CP_TP_MAX_SPARE_SERVERS=5
 CP_TP_START_SERVERS=2
 CP_TP_MAX_REQ_PER_CHILD=0
+
+# cp-sensitive-proxy
+CP_SP_INTERNAL_HOST=cp-sensitive-proxy.default.svc.cluster.local
+
+# cp-redis
+CP_REDIS_INTERNAL_HOST=cp-redis.default.svc.cluster.local
+CP_REDIS_INTERNAL_PORT=30097
 
 # Other params, specified on command line
 #

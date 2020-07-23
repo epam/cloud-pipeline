@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
+import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.pipeline.Folder;
@@ -32,6 +33,12 @@ public abstract class AbstractRunConfigurationMapper {
 
     @Mapping(target = "parentId", expression = "java(fillParentFolderId(runConfiguration))")
     public abstract RunConfigurationVO toRunConfigurationVO(RunConfiguration runConfiguration);
+
+    @Mapping(target = "parentId", expression = "java(fillParentFolderId(runConfiguration))")
+    @Mapping(target = "metadataClass", ignore = true)
+    @Mapping(target = "entitiesIds", ignore = true)
+    @Mapping(target = "folderId", ignore = true)
+    public abstract RunConfigurationWithEntitiesVO toRunConfigurationWithEntitiesVO(RunConfiguration runConfiguration);
 
     @Mapping(target = "entries", expression = "java(fillEntries(runConfigurationVO))")
     @Mapping(target = "parent", expression = "java(fillParentFolder(runConfigurationVO))")

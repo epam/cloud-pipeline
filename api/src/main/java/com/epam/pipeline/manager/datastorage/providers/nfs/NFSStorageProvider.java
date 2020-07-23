@@ -164,31 +164,29 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     private synchronized File mount(NFSDataStorage dataStorage) {
         File mntDir = Paths.get(rootMountPoint, getMountDirName(dataStorage.getPath())).toFile();
-
         try {
-            if(!mntDir.exists()) {
-                Assert.isTrue(mntDir.mkdirs(), messageHelper.getMessage(
+            FileShareMount fileShareMount = shareMountManager.load(dataStorage.getFileShareMountId());
+            File rootMount = Paths.get(rootMountPoint, normalizePath(fileShareMount.getMountRoot())).toFile();
+            if(!rootMount.exists()) {
+                Assert.isTrue(rootMount.mkdirs(), messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT_DIRECTORY_NOT_CREATED));
 
-                FileShareMount fileShareMount = shareMountManager.load(dataStorage.getFileShareMountId());
-
-                String protocol = fileShareMount.getMountType().getProtocol();
-
                 AbstractCloudRegion cloudRegion = regionManager.load(fileShareMount.getRegionId());
+                String protocol = fileShareMount.getMountType().getProtocol();
                 AbstractCloudRegionCredentials credentials = cloudRegion.getProvider() == CloudProvider.AZURE ?
                          regionManager.loadCredentials(cloudRegion) : null;
 
                 String mountOptions = NFSHelper.getNFSMountOption(cloudRegion, credentials,
                         dataStorage.getMountOptions(), protocol);
 
-                String rootNfsPath = formatNfsPath(getNfsRootPath(dataStorage.getPath()), protocol);
+                String rootNfsPath = formatNfsPath(fileShareMount.getMountRoot(), protocol);
 
                 String mountCmd = String.format(NFS_MOUNT_CMD_PATTERN, protocol, mountOptions,
-                                                rootNfsPath, mntDir.getAbsolutePath());
+                                                rootNfsPath, rootMount.getAbsolutePath());
                 try {
                     cmdExecutor.executeCommand(mountCmd);
                 } catch (CmdExecutionException e) {
-                    FileUtils.deleteDirectory(mntDir);
+                    NFSHelper.deleteFolderIfEmpty(rootMount);
                     LOGGER.error(messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT_2, mountCmd, e.getMessage()));
                     throw new DataStorageException(messageHelper.getMessage(
@@ -207,16 +205,19 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     private synchronized void unmountNFSIfEmpty(AbstractDataStorage storage) {
-        String storagePath = storage.getPath();
-        File mntDir = Paths.get(rootMountPoint, getMountDirName(storagePath)).toFile();
-        List<AbstractDataStorage> remaining = dataStorageDao.loadDataStoragesByNFSPath(getNfsRootPath(storagePath));
+        FileShareMount fileShareMount = shareMountManager.load(storage.getFileShareMountId());
+        File rootMount = Paths.get(rootMountPoint, normalizePath(fileShareMount.getMountRoot())).toFile();
+
+        List<AbstractDataStorage> remaining = dataStorageDao.loadDataStoragesByFileShareMountID(
+                storage.getFileShareMountId());
         LOGGER.debug("Remaining NFS: " + remaining.stream().map(AbstractDataStorage::getPath)
-                .collect(Collectors.joining(";")) + " related with current root path");
-        if (mntDir.exists() && isStorageOnlyOnNFS(storage, remaining)) {
+                .collect(Collectors.joining(";")) + " related with current file share mount");
+
+        if (rootMount.exists() && isStorageOnlyOnNFS(storage, remaining)) {
             try {
-                String umountCmd = String.format(NFS_UNMOUNT_CMD_PATTERN, mntDir.getAbsolutePath());
+                String umountCmd = String.format(NFS_UNMOUNT_CMD_PATTERN, rootMount.getAbsolutePath());
                 cmdExecutor.executeCommand(umountCmd);
-                FileUtils.deleteDirectory(mntDir);
+                FileUtils.deleteDirectory(rootMount);
             } catch (IOException e) {
                 throw new DataStorageException(e);
             }
@@ -371,7 +372,11 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     private String getMountDirName(String nfsPath) {
-        return getNfsRootPath(nfsPath).replace(":", "/");
+        return normalizePath(getNfsRootPath(nfsPath));
+    }
+
+    private String normalizePath(String nfsPath) {
+        return nfsPath.replace(":", "/");
     }
 
     @Override

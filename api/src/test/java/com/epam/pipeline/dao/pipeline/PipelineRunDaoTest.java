@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import com.epam.pipeline.manager.filter.FilterExpressionType;
 import com.epam.pipeline.manager.filter.FilterOperandType;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.util.TestUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
@@ -72,8 +73,8 @@ import java.util.stream.Stream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @Transactional
 public class PipelineRunDaoTest extends AbstractSpringTest {
@@ -817,6 +818,20 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         final List<PipelineRun> runs = pipelineRunDao.loadRunsByStatuses(
                 Arrays.asList(TaskStatus.PAUSING, TaskStatus.RESUMING));
         assertEquals(2, runs.size());
+    }
+
+    @Test
+    public void shouldDeleteSidsFromRunByPipelineId() {
+        final RunSid runSid = new RunSid();
+        runSid.setName(GROUP_NAME);
+        runSid.setIsPrincipal(false);
+        final Pipeline pipeline = getPipeline();
+        final PipelineRun run = createRunWithRunSids(pipeline.getId(), null, Collections.singletonList(runSid));
+
+        pipelineRunDao.deleteRunSidsByPipelineId(pipeline.getId());
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertTrue(CollectionUtils.isEmpty(loadedRun.getRunSids()));
     }
 
     private PipelineRun createTestPipelineRun() {

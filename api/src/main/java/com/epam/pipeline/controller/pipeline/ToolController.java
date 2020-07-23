@@ -195,6 +195,20 @@ public class ToolController extends AbstractRestController {
         return Result.success(toolApiService.getImageHistory(id, version));
     }
 
+    @RequestMapping(value = "/tool/{id}/defaultCmd", method= RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+        value = "Returns a default command [ENTRYPOINT + CMD] of a tool, specified by ID and version.",
+        notes = "Returns a default command for a tool, extracted from image history.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        })
+    public Result<String> loadDefaultImageCmd(@PathVariable final Long id,
+                                              @RequestParam(value = "version") final String version) {
+        return Result.success(toolApiService.getImageDefaultCommand(id, version));
+    }
+
     @RequestMapping(value = "/tool/scan", method = RequestMethod.POST)
     @ResponseBody
     public Result<Boolean> scanTool(

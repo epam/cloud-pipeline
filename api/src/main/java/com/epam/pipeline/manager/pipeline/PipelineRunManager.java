@@ -198,6 +198,9 @@ public class PipelineRunManager {
     @Autowired
     private PipelineRunCRUDService runCRUDService;
 
+    @Autowired
+    private StopServerlessRunManager stopServerlessRunManager;
+
     /**
      * Launches cmd command execution, uses Tool as ACL identity
      * @param runVO
@@ -1153,6 +1156,12 @@ public class PipelineRunManager {
         return pipelineRunDao.loadRunByPodIP(ip, Arrays.stream(TaskStatus.values())
                 .filter(status -> !status.isFinal())
                 .collect(Collectors.toList()));
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void stopServerlessRun(final Long runId) {
+        stop(runId);
+        stopServerlessRunManager.deleteByRunId(runId);
     }
 
     private int getTotalSize(final List<InstanceDisk> disks) {

@@ -104,7 +104,7 @@ public class SystemPreferences {
     private static final String GCP_GROUP = "GCP";
     private static final String BILLING_GROUP = "Billing Reports";
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
-            "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc";
+            "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
 
     // COMMIT_GROUP
     public static final StringPreference COMMIT_DEPLOY_KEY = new StringPreference("commit.deploy.key", null,
@@ -384,6 +384,14 @@ public class SystemPreferences {
             LAUNCH_GROUP, isValidEnum(ContainerMemoryResourcePolicy.class));
     public static final IntPreference LAUNCH_CONTAINER_MEMORY_RESOURCE_REQUEST = new IntPreference(
             "launch.container.memory.resource.request", 1, LAUNCH_GROUP, isGreaterThan(0));
+    public static final IntPreference LAUNCH_SERVERLESS_WAIT_COUNT = new IntPreference(
+            "launch.serverless.wait.count", 20, LAUNCH_GROUP, isGreaterThan(0));
+    public static final IntPreference LAUNCH_SERVERLESS_STOP_TIMEOUT = new IntPreference(
+            "launch.serverless.stop.timeout", 60, LAUNCH_GROUP, isGreaterThan(0));
+    public static final IntPreference LAUNCH_SERVERLESS_ENDPOINT_WAIT_COUNT = new IntPreference(
+            "launch.serverless.endpoint.wait.count", 40, LAUNCH_GROUP, isGreaterThan(0));
+    public static final IntPreference LAUNCH_SERVERLESS_ENDPOINT_WAIT_TIME = new IntPreference(
+            "launch.serverless.endpoint.wait.time", 20000, LAUNCH_GROUP, isGreaterThan(0));
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",
@@ -521,6 +529,11 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_RESOURCE_MONITORING_STATS_RETENTION_PERIOD = new IntPreference(
         "system.resource.monitoring.stats.retention.period", 3, SYSTEM_GROUP, isGreaterThanOrEquals(0));
+    /**
+     * Specifies if interactive run ssh sessions should use root as a default user.
+     */
+    public static final BooleanPreference SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED = new BooleanPreference(
+            "system.ssh.default.root.user.enabled", true, SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(

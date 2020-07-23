@@ -16,15 +16,19 @@
 mkdir -p /opt/tinyproxy/logs
 mkdir -p /var/run/tinyproxy
 
+########################
+# TinyProxy config
+########################
 CP_TP_ALLOWED_CIDR="${CP_TP_ALLOWED_CIDR:-10.244.0.0/16}"
 CP_TP_INTERNAL_PORT="${CP_TP_INTERNAL_PORT:-3128}"
 CP_TP_VIA_NAME="${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME:-CloudPipeline}-tinyproxy"
 CP_TP_CONFIG_PATH="${CP_TP_CONFIG_PATH:-/opt/tinyproxy/tinyproxy.conf}"
+CP_TP_FILTER_PATH="${CP_TP_FILTER_PATH:-$(dirname $CP_TP_CONFIG_PATH)/filter.conf}"
 
 CP_TP_MAX_CLIENTS="${CP_TP_MAX_CLIENTS:-100}"
-CP_TP_MIN_SPARE_SERVERS="${CP_TP_MIN_SPARE_SERVERS:-2}"
-CP_TP_MAX_SPARE_SERVERS="${CP_TP_MAX_SPARE_SERVERS:-5}"
-CP_TP_START_SERVERS="${CP_TP_START_SERVERS:-2}"
+CP_TP_MIN_SPARE_SERVERS="${CP_TP_MIN_SPARE_SERVERS:-5}"
+CP_TP_MAX_SPARE_SERVERS="${CP_TP_MAX_SPARE_SERVERS:-10}"
+CP_TP_START_SERVERS="${CP_TP_START_SERVERS:-10}"
 CP_TP_MAX_REQ_PER_CHILD="${CP_TP_MAX_REQ_PER_CHILD:-0}"
 
 cat > "$CP_TP_CONFIG_PATH" <<EOF
@@ -61,4 +65,96 @@ if [ "$CP_TP_UPSTREAM" ]; then
     echo "Upstream http $CP_TP_UPSTREAM" >> "$CP_TP_CONFIG_PATH"
 fi
 
-tinyproxy -c "$CP_TP_CONFIG_PATH" -d
+if [ "$CP_TP_ALLOWED_DESTINATION" ]; then
+    echo "Setting proxy allowed destinations"
+    IFS=',' read -ra _allowed_dests <<< "$CP_TP_ALLOWED_DESTINATION"
+    for _d in "${_allowed_dests[@]}"; do
+        echo "$_d" >> $CP_TP_FILTER_PATH
+        echo "Entry added: $_d"
+    done
+    echo "FilterDefaultDeny Yes" >> "$CP_TP_CONFIG_PATH"
+    echo "Filter \"$CP_TP_FILTER_PATH\"" >> "$CP_TP_CONFIG_PATH"
+fi
+
+tinyproxy -c "$CP_TP_CONFIG_PATH"
+
+#################################
+# Nginx (TCP/UDP forward) config
+#################################
+function nginx_add_proxy_entry {
+    local _entry_spec="$1"
+    local _entry_protocol="$2"
+
+    echo "-"
+    echo "Processing entry: $_entry_spec"
+    echo "Protocol: $_entry_protocol"
+
+    if [ "$_entry_protocol" == "tcp" ]; then
+        _entry_protocol=
+    fi
+
+    IFS=',' read -ra _hosts <<< "$_entry_spec"
+    for _h in "${_hosts[@]}"; do
+        IFS=':' read -ra _host_port <<< "$_h"
+        _source_port="${_host_port[0]}"
+        _dest_host="${_host_port[1]}"
+        _dest_port="${_host_port[2]}"
+        if  [ -z "$_source_port" ] || \
+            [ -z "$_dest_host" ] || \
+            [ -z "$_dest_port" ]; then
+            echo "Invalid entry format, skipping"
+            continue
+        fi
+        echo "server { listen $_source_port; proxy_pass ${_dest_host}:${_dest_port} ${_entry_protocol}; }" >> "$CP_TP_NGINX_CONFIG"
+        echo "Entry added: ${_source_port}->${_dest_host}:${_dest_port}"
+    done
+
+    echo "-"
+}
+
+mkdir -p /opt/tinyproxy/nginx/logs
+CP_TP_NGINX_CONFIG="${CP_TP_NGINX_CONFIG:-/etc/nginx/nginx.conf}"
+
+if [ "$CP_TP_TCP_DEST" ] || [ "$CP_TP_UDP_DEST" ]; then
+
+# Add general nginx config
+cat > "$CP_TP_NGINX_CONFIG" <<EOF
+user nginx;
+worker_processes auto;
+error_log /opt/tinyproxy/nginx/logs/error.log;
+pid /run/nginx.pid;
+
+include /usr/share/nginx/modules/*.conf;
+
+events {
+    worker_connections 1024;
+}
+
+stream {
+EOF
+
+echo "Adding nginx tcp/udp forward entries"
+
+# CP_TP_TCP_DEST and CP_TP_UDP_DEST shall contain the specs in the following format:
+# SRC_PORT1:DEST_HOST1:DEST_PORT1,SRC_PORT2:DEST_HOST2:DEST_PORT2
+# - SRC_PORTx - will listen on this port
+# - DEST_HOSTx - will forward traffic to this host
+# - DEST_PORTx - will forward traffic to this port on DEST_HOSTx
+if [ "$CP_TP_TCP_DEST" ]; then
+    nginx_add_proxy_entry "$CP_TP_TCP_DEST" "tcp"
+fi
+if [ "$CP_TP_UDP_DEST" ]; then
+    nginx_add_proxy_entry "$CP_TP_UDP_DEST" "udp"
+fi
+
+# Add general nginx footer
+echo " }" >> "$CP_TP_NGINX_CONFIG"
+
+echo "Done adding nginx tcp/udp forward entries"
+
+nginx
+
+fi
+
+# Just wait on
+sleep infinity

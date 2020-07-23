@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,6 +111,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String deleteRunSidsByRunIdQuery;
     private String loadRunSidsQuery;
     private String loadRunSidsQueryForList;
+    private String deleteRunSidsByPipelineIdQuery;
     private String updatePodStatusQuery;
     private String loadEnvVarsQuery;
     private String updateLastNotificationQuery;
@@ -417,6 +418,11 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void deleteRunSids(Long runId) {
         getJdbcTemplate().update(deleteRunSidsByRunIdQuery, runId);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteRunSidsByPipelineId(final Long pipelineId) {
+        getJdbcTemplate().update(deleteRunSidsByPipelineIdQuery, pipelineId);
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -1184,5 +1190,10 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadRunByPodIPQuery(final String loadRunByPodIPQuery) {
         this.loadRunByPodIPQuery = loadRunByPodIPQuery;
+    }
+
+    @Required
+    public void setDeleteRunSidsByPipelineIdQuery(final String deleteRunSidsByPipelineIdQuery) {
+        this.deleteRunSidsByPipelineIdQuery = deleteRunSidsByPipelineIdQuery;
     }
 }

@@ -83,8 +83,12 @@ install_pip() {
 }
 
 install_pipeline_code() {
+    export _CP_PIP_EXTRA_ARGS="${_CP_PIP_EXTRA_ARGS} 
+                                --index-url http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple
+                                --trusted-host cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com"
+
     echo "Installing pipeline packages and code"
-    pip install --upgrade setuptools
+    pip install $_CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
     mkdir $COMMON_REPO_DIR
     cd $COMMON_REPO_DIR
     download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
@@ -95,7 +99,7 @@ install_pipeline_code() {
         exit "$_DOWNLOAD_RESULT"
     fi
     tar xf pipe-common.tar.gz
-    pip install . -q -I
+    pip install $_CP_PIP_EXTRA_ARGS . -q -I
     # Init path for shell scripts from common repository
     chmod +x $COMMON_REPO_DIR/shell/*
     export PATH=$PATH:$COMMON_REPO_DIR/shell

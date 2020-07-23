@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -255,6 +255,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                                 new Date(rs.getTimestamp(PIPELINE_CREATED_DATE.name()).getTime()));
                         pipeline.setLocked(rs.getBoolean(PIPELINE_LOCKED.name()));
                         pipeline.setParentFolderId(folderId);
+                        pipeline.setOwner(rs.getString(OWNER.name()));
                         folder.getPipelines().add(pipeline);
                     }
                     Long dataStorageId = rs.getLong(DATASTORAGE_ID.name());
@@ -296,6 +297,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                         dataStorage.setLocked(rs.getBoolean(DATASTORAGE_LOCKED.name()));
                         dataStorage.setShared(rs.getBoolean(DATASTORAGE_SHARED.name()));
                         dataStorage.setSensitive(rs.getBoolean(DATASTORAGE_SENSITIVE.name()));
+                        dataStorage.setOwner(rs.getString(OWNER.name()));
                         folder.getStorages().add(dataStorage);
                     }
                     rs.getLong(CONFIG_ID.name());

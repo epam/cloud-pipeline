@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.epam.pipeline.manager;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.PipelineVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
+import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
 import com.epam.pipeline.controller.vo.docker.DockerRegistryVO;
 import com.epam.pipeline.controller.vo.metadata.MetadataEntityVO;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
@@ -166,6 +167,16 @@ public final class ObjectCreatorUtils {
     public static RunConfigurationVO createRunConfigurationVO(String name, String description, Long parentFolderId,
                                                               List<AbstractRunConfigurationEntry> entries) {
         RunConfigurationVO runConfigurationVO = new RunConfigurationVO();
+        runConfigurationVO.setName(name);
+        runConfigurationVO.setDescription(description);
+        runConfigurationVO.setParentId(parentFolderId);
+        runConfigurationVO.setEntries(entries);
+        return runConfigurationVO;
+    }
+
+    public static RunConfigurationWithEntitiesVO createRunConfigurationWithEntitiesVO(
+            String name, String description, Long parentFolderId, List<AbstractRunConfigurationEntry> entries) {
+        RunConfigurationWithEntitiesVO runConfigurationVO = new RunConfigurationWithEntitiesVO();
         runConfigurationVO.setName(name);
         runConfigurationVO.setDescription(description);
         runConfigurationVO.setParentId(parentFolderId);

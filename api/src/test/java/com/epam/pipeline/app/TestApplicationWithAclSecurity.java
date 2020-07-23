@@ -41,7 +41,8 @@ import org.springframework.test.context.TestPropertySource;
 @Import({
         AppMVCConfiguration.class,
         DBConfiguration.class,
-        TestAclSecurityConfig.class
+        TestAclSecurityConfig.class,
+        CacheConfiguration.class
     })
 @EnableAutoConfiguration(exclude = {
     SecurityAutoConfiguration.class,

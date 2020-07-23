@@ -8,10 +8,8 @@ metadata:
 spec:
   ports:
   - protocol: TCP
-    nodePort: ${CP_CLAIR_INTERNAL_PORT}
     port: ${CP_CLAIR_INTERNAL_PORT}
     targetPort: 8080
     name: cp-clair-port-http
-  type: NodePort
   selector:
     cloud-pipeline/cp-clair: "true"

@@ -76,13 +76,11 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String USAGE_RATE = "usage_rate";
     protected static final String NODE_UTILIZATION = "node_utilization";
     protected static final String NODE_CAPACITY = "node_capacity";
-    protected static final String NODE_ALLOCATABLE = "node_allocatable";
     protected static final String WORKING_SET = "working_set";
     protected static final String CPU_CAPACITY = "cpu_capacity";
     protected static final String CPU_UTILIZATION = "cpu_utilization";
     protected static final String MEMORY_UTILIZATION = "memory_utilization";
     protected static final String MEMORY_CAPACITY = "memory_capacity";
-    protected static final String MEMORY_ALLOCATABLE = "memory_allocatable";
     protected static final String LIMIT = "limit";
     protected static final String VALUE = "value";
     protected static final String DEFAULT = "default";

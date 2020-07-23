@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -67,8 +68,14 @@ import java.util.Map;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyMap;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+@SuppressWarnings("PMD.TooManyStaticImports")
 public class ResourceMonitoringManagerTest {
     private static final long TEST_OK_RUN_ID = 1;
     private static final double TEST_OK_RUN_CPU_LOAD = 800.0;
@@ -117,6 +124,8 @@ public class ResourceMonitoringManagerTest {
     private MessageHelper messageHelper;
     @Mock
     private AuthManager authManager;
+    @Mock
+    private StopServerlessRunManager stopServerlessRunManager;
 
     @Captor
     ArgumentCaptor<List<PipelineRun>> runsToUpdateCaptor;
@@ -144,7 +153,8 @@ public class ResourceMonitoringManagerTest {
                                                                         notificationManager,
                                                                         monitoringESDao,
                                                                         messageHelper,
-                                                                        preferenceManager);
+                                                                        preferenceManager,
+                                                                        stopServerlessRunManager);
         resourceMonitoringManager = new ResourceMonitoringManager(instanceOfferManager, core);
         Whitebox.setInternalState(resourceMonitoringManager, "authManager", authManager);
         Whitebox.setInternalState(resourceMonitoringManager, "preferenceManager", preferenceManager);
@@ -166,6 +176,9 @@ public class ResourceMonitoringManagerTest {
                 .thenReturn(TEST_HIGH_CONSUMING_RUN_LOAD);
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
                 .thenReturn(IdleRunAction.NOTIFY.name());
+        when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_STOP_TIMEOUT))
+                .thenReturn(TEST_MAX_IDLE_MONITORING_TIMEOUT);
+        when(stopServerlessRunManager.loadActiveServerlessRuns()).thenReturn(Collections.emptyList());
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         UserContext userContext = new UserContext(1L, "admin");

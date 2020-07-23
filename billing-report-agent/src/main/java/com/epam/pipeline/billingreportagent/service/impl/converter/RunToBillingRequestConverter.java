@@ -62,7 +62,8 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
 
     private static final int PRICE_SCALE = 5;
     private static final int USER_PRICE_SCALE = 2;
-    
+    private static final int MAX_PERIOD = 700;
+
     private final AbstractEntityMapper<PipelineRunBillingInfo> mapper;
 
     /**
@@ -88,8 +89,17 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         final EntityContainer<PipelineRunWithType> runContainer,
         final LocalDateTime previousSync,
         final LocalDateTime syncStart) {
+        final PipelineRun pipelineRun = runContainer.getEntity().getPipelineRun();
+        if (previousSync != null && pipelineRun.getStatus().isFinal() &&
+                pipelineRun.getEndDate() != null &&
+                getEnd(pipelineRun).isBefore(previousSync)) {
+            log.debug("Run {} [{} - {}] was not active in period {} - {}.",
+                    pipelineRun.getId(), pipelineRun.getStartDate(),
+                    pipelineRun.getEndDate(), previousSync, syncStart);
+            return Collections.emptyList();
+        }
         final RunPrice price = getPrice(runContainer);
-        final List<RunStatus> statuses = adjustStatuses(runContainer.getEntity().getPipelineRun(),
+        final List<RunStatus> statuses = adjustStatuses(pipelineRun,
                 previousSync, syncStart);
 
         return createBillingsForPeriod(runContainer.getEntity(), price, statuses).stream()
@@ -321,7 +331,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
     }
 
     private boolean isPeriodTooLong(final LocalDateTime start, final LocalDateTime end) {
-        return Period.between(start.toLocalDate(), end.toLocalDate()).getYears() > 100;
+        return Period.between(start.toLocalDate(), end.toLocalDate()).getYears() > MAX_PERIOD;
     }
 
     private Stream<LocalDateTime> periodTimePoints(final LocalDateTime start, final LocalDateTime end) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,11 +38,16 @@ public class PipelineCRUDManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public Pipeline save(final Pipeline pipeline) {
-        Date now = DateUtils.now();
-        pipeline.setCreatedDate(now);
-        pipelineDao.createPipeline(pipeline);
-        DataStorageRule rule = createDefaultDataStorageRule(pipeline, now);
+        savePipeline(pipeline);
+        final DataStorageRule rule = createDefaultDataStorageRule(pipeline, DateUtils.now());
         dataStorageRuleDao.createDataStorageRule(rule);
+        return pipeline;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public Pipeline savePipeline(final Pipeline pipeline) {
+        pipeline.setCreatedDate(DateUtils.now());
+        pipelineDao.createPipeline(pipeline);
         return pipeline;
     }
 
