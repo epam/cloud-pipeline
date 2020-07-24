@@ -559,15 +559,29 @@ class DataStorageOperations(object):
         sorted_items.sort(key=itemgetter(size_index), reverse=True)
         splitted_items = cls._split_items_by_process(sorted_items, threads)
         lock = multiprocessing.Lock()
+
+        workers = []
         for i in range(threads):
-            multiprocessing.Process(target=cls._transfer_items,
-                                    args=(splitted_items[i],
-                                          manager,
-                                          source_wrapper,
-                                          destination_wrapper,
-                                          clean,
-                                          quiet,
-                                          tags,
-                                          skip_existing,
-                                          lock)) \
-                .start()
+            process = multiprocessing.Process(target=cls._transfer_items,
+                                              args=(splitted_items[i],
+                                                    manager,
+                                                    source_wrapper,
+                                                    destination_wrapper,
+                                                    clean,
+                                                    quiet,
+                                                    tags,
+                                                    skip_existing,
+                                                    lock))
+            process.start()
+            workers.append(process)
+        cls._handle_keyboard_interrupt(workers)
+
+    @staticmethod
+    def _handle_keyboard_interrupt(workers):
+        try:
+            for worker in workers:
+                worker.join()
+        except KeyboardInterrupt:
+            for worker in workers:
+                worker.terminate()
+                worker.join()

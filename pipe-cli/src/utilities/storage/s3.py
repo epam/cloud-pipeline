@@ -49,8 +49,8 @@ class StorageItemManager(object):
             self.bucket = self.s3.Bucket(bucket)
 
     @classmethod
-    def show_progress(cls, quiet, size):
-        return StorageOperations.show_progress(quiet, size)
+    def show_progress(cls, quiet, size, lock=None):
+        return StorageOperations.show_progress(quiet, size, lock)
 
     @classmethod
     def _get_user(cls):
@@ -104,7 +104,7 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
                     click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
                 return
         self.create_local_folder(destination_key, lock)
-        if StorageItemManager.show_progress(quiet, size):
+        if StorageItemManager.show_progress(quiet, size, lock):
             self.bucket.download_file(source_key, destination_key, Callback=ProgressPercentage(relative_path, size))
         else:
             self.bucket.download_file(source_key, destination_key)
@@ -137,7 +137,7 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
             'Tagging': self._convert_tags_to_url_string(tags)
         }
         TransferManager.ALLOWED_UPLOAD_ARGS.append('Tagging')
-        if StorageItemManager.show_progress(quiet, size):
+        if StorageItemManager.show_progress(quiet, size, lock):
             self.bucket.upload_file(source_key, destination_key, Callback=ProgressPercentage(relative_path, size),
                                     ExtraArgs=extra_args)
         else:
@@ -178,7 +178,7 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
         }
         TransferManager.ALLOWED_UPLOAD_ARGS.append('Tagging')
         file_stream = urlopen(source_key)
-        if StorageItemManager.show_progress(quiet, size):
+        if StorageItemManager.show_progress(quiet, size, lock):
             self.bucket.upload_fileobj(file_stream, destination_key, Callback=ProgressPercentage(relative_path, size),
                                        ExtraArgs=extra_args)
         else:
@@ -217,7 +217,7 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         extra_args = {
             'Tagging': self._convert_tags_to_url_string(tags)
         }
-        if StorageItemManager.show_progress(quiet, size):
+        if StorageItemManager.show_progress(quiet, size, lock):
             self.bucket.copy(copy_source, destination_key, Callback=ProgressPercentage(relative_path, size),
                              ExtraArgs=extra_args)
         else:

@@ -115,8 +115,8 @@ class StorageOperations:
         return re.sub(delimiter + '+', delimiter, path)
 
     @classmethod
-    def show_progress(cls, quiet, size):
-        return not quiet and size is not None and size != 0
+    def show_progress(cls, quiet, size, lock=None):
+        return not quiet and size is not None and size != 0 and lock is None
 
     @classmethod
     def get_local_file_size(cls, path):
@@ -241,10 +241,12 @@ class AbstractTransferManager:
         folder = os.path.dirname(destination_key)
         if lock:
             lock.acquire()
-        if folder and not os.path.exists(folder):
-            os.makedirs(folder)
-        if lock:
-            lock.release()
+        try:
+            if folder and not os.path.exists(folder):
+                os.makedirs(folder)
+        finally:
+            if lock:
+                lock.release()
 
 
 class AbstractListingManager:

@@ -71,7 +71,7 @@ class TransferFromHttpOrFtpToLocal(object):
                 return
         AbstractTransferManager.create_local_folder(destination_key, lock)
         file_stream = urlopen(source_key)
-        if StorageItemManager.show_progress(quiet, size):
+        if StorageItemManager.show_progress(quiet, size, lock):
             progress_bar = ProgressPercentage(relative_path, size)
         with open(destination_key, 'wb') as f:
             while True:
@@ -79,7 +79,7 @@ class TransferFromHttpOrFtpToLocal(object):
                 if not chunk:
                     break
                 f.write(chunk)
-                if StorageItemManager.show_progress(quiet, size):
+                if StorageItemManager.show_progress(quiet, size, lock):
                     progress_bar.__call__(len(chunk))
         file_stream.close()
 
