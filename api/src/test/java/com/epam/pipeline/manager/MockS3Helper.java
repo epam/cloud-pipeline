@@ -41,6 +41,7 @@ public class MockS3Helper extends S3Helper {
                                                          final List<CORSRule> corsRules,
                                                          final AwsRegion region,
                                                          final boolean shared,
+                                                         final String kmsKey,
                                                          final Map<String, String> tags) {
         return ActionStatus.success();
     }

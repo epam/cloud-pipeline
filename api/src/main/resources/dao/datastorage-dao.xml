@@ -44,7 +44,10 @@
                         allowed_cidrs,
                         region_id,
                         file_share_mount_id,
-                        sensitive
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role
                     ) VALUES (
                         :DATASTORAGE_ID,
                         :DATASTORAGE_NAME,
@@ -66,7 +69,10 @@
                         :ALLOWED_CIDRS,
                         :REGION_ID,
                         :FILE_SHARE_MOUNT_ID,
-                        :SENSITIVE
+                        :SENSITIVE,
+                        :S3_KMS_KEY_ARN,
+                        :S3_USE_ASSUMED_CREDS,
+                        :S3_TEMP_CREDS_ROLE
                     )
                 ]]>
             </value>
@@ -85,8 +91,7 @@
                         enable_versioning = :ENABLE_VERSIONING,
                         backup_duration = :BACKUP_DURATION,
                         mount_point = :MOUNT_POINT,
-                        mount_options = :MOUNT_OPTIONS,
-                        sensitive = :SENSITIVE
+                        mount_options = :MOUNT_OPTIONS
                     WHERE
                         datastorage_id = :DATASTORAGE_ID
                 ]]>
@@ -123,7 +128,10 @@
                         allowed_cidrs,
                         region_id as region_id,
                         file_share_mount_id,
-                        sensitive
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role
                     FROM
                         pipeline.datastorage
                     ORDER BY datastorage_id
@@ -154,7 +162,10 @@
                         allowed_cidrs,
                         region_id as region_id,
                         file_share_mount_id,
-                        sensitive
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -187,7 +198,10 @@
                         allowed_cidrs,
                         region_id as region_id,
                         file_share_mount_id,
-                        sensitive
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -219,7 +233,10 @@
                         allowed_cidrs,
                         region_id as region_id,
                         file_share_mount_id,
-                        sensitive
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -251,7 +268,10 @@
                         allowed_cidrs,
                         region_id as region_id,
                         file_share_mount_id,
-                        sensitive
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -283,7 +303,10 @@
                         allowed_cidrs,
                         region_id as region_id,
                         file_share_mount_id,
-                        sensitive
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -315,7 +338,10 @@
                         allowed_cidrs,
                         region_id as region_id,
                         file_share_mount_id,
-                        sensitive
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -348,7 +374,10 @@
                         allowed_cidrs,
                         region_id as region_id,
                         file_share_mount_id,
-                        sensitive
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -380,7 +409,10 @@
                         allowed_cidrs,
                         region_id as region_id,
                         file_share_mount_id,
-                        sensitive
+                        sensitive,
+                        s3_kms_key_arn,
+                        s3_use_assumed_creds,
+                        s3_temp_creds_role
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -430,6 +462,9 @@
                             d.region_id as region_id,
                             d.file_share_mount_id,
                             d.sensitive,
+                            d.s3_kms_key_arn,
+                            d.s3_use_assumed_creds,
+                            d.s3_temp_creds_role,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -461,6 +496,9 @@
                             null as region_id,
                             null as file_share_mount_id,
                             null as sensitive,
+                            null as s3_kms_key_arn,
+                            null as s3_use_assumed_creds,
+                            null as s3_temp_creds_role,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m
@@ -494,6 +532,9 @@
                             d.region_id as region_id,
                             d.file_share_mount_id,
                             d.sensitive,
+                            d.s3_kms_key_arn,
+                            d.s3_use_assumed_creds,
+                            d.s3_temp_creds_role,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -521,6 +562,9 @@
                             null as region_id,
                             null as file_share_mount_id,
                             null as sensitive,
+                            null as s3_kms_key_arn,
+                            null as s3_use_assumed_creds,
+                            null as s3_temp_creds_role,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m

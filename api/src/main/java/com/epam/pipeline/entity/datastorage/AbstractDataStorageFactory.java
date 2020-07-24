@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import java.util.List;
 import java.util.Optional;
 
+//TODO: refactor this code similar to AbstractCloudRegion hierarchy handling
 public abstract class AbstractDataStorageFactory {
 
     public static AbstractDataStorageFactory getDefaultDataStorageFactory() {
@@ -35,14 +36,16 @@ public abstract class AbstractDataStorageFactory {
     public abstract AbstractDataStorage convertToDataStorage(
             Long id, String name, String path, DataStorageType type,
             StoragePolicy policy, String mountOptions, String mountPoint,
-            List<String> allowedCidrs, Long regionId, Long fileShareMountId);
+            List<String> allowedCidrs, Long regionId, Long fileShareMountId,
+            String kmsKey, String tempRole, boolean useAssumedCreds);
 
     public AbstractDataStorage convertToDataStorage(DataStorageVO vo, final CloudProvider provider) {
         DataStorageType type = determineStorageType(vo, provider);
         AbstractDataStorage storage =
                 convertToDataStorage(vo.getId(), vo.getName(), vo.getPath(), type, vo.getStoragePolicy(),
-                                     vo.getMountOptions(), vo.getMountPoint(), vo.getAllowedCidrs(),
-                                     vo.getRegionId(), vo.getFileShareMountId());
+                        vo.getMountOptions(), vo.getMountPoint(), vo.getAllowedCidrs(),
+                        vo.getRegionId(), vo.getFileShareMountId(),
+                        vo.getKmsKeyArn(), vo.getTempCredentialsRole(), vo.isUseAssumedCredentials());
         storage.setDescription(vo.getDescription());
         storage.setParentFolderId(vo.getParentFolderId());
         storage.setShared(vo.isShared());
@@ -67,12 +70,17 @@ public abstract class AbstractDataStorageFactory {
                                                         final String path, final DataStorageType type,
                                                         final StoragePolicy policy, final String mountOptions,
                                                         final String mountPoint, final List<String> allowedCidrs,
-                                                        final Long regionId, Long fileShareMountId) {
+                                                        final Long regionId, final Long fileShareMountId,
+                                                        final String kmsKey, final String tempRole,
+                                                        final boolean useAssumedCreds) {
             switch (type) {
                 case S3:
                     S3bucketDataStorage bucket = new S3bucketDataStorage(id, name, path, policy, mountPoint);
                     bucket.setAllowedCidrs(allowedCidrs);
                     bucket.setRegionId(regionId);
+                    bucket.setKmsKeyArn(kmsKey);
+                    bucket.setTempCredentialsRole(tempRole);
+                    bucket.setUseAssumedCredentials(useAssumedCreds);
                     return bucket;
                 case NFS:
                     NFSDataStorage storage = new NFSDataStorage(id, name, path, policy, mountPoint);

@@ -32,6 +32,9 @@ public abstract class AbstractDataStorageMapper {
     @Mapping(target = "allowedCidrs", ignore = true)
     @Mapping(target = "regionId", ignore = true)
     @Mapping(target = "serviceType", ignore = true)
+    @Mapping(target = "kmsKeyArn", ignore = true)
+    @Mapping(target = "tempCredentialsRole", ignore = true)
+    @Mapping(target = "useAssumedCredentials", ignore = true)
     public abstract DataStorageVO toDataStorageVO(AbstractDataStorage dataStorage);
 
     @AfterMapping
@@ -45,6 +48,9 @@ public abstract class AbstractDataStorageMapper {
             S3bucketDataStorage s3bucketDataStorage = (S3bucketDataStorage) dataStorage;
             dataStorageVO.setAllowedCidrs(s3bucketDataStorage.getAllowedCidrs());
             dataStorageVO.setRegionId(s3bucketDataStorage.getRegionId());
+            dataStorageVO.setKmsKeyArn(s3bucketDataStorage.getKmsKeyArn());
+            dataStorageVO.setTempCredentialsRole(s3bucketDataStorage.getTempCredentialsRole());
+            dataStorageVO.setUseAssumedCredentials(s3bucketDataStorage.isUseAssumedCredentials());
         }
     }
 }

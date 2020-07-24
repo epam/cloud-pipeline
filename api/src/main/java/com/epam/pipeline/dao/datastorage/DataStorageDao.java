@@ -416,7 +416,10 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                     rs.getString(MOUNT_POINT.name()),
                     allowedCidrs,
                     regionId,
-                    fileShareMountId);
+                    fileShareMountId,
+                    rs.getString(S3_KMS_KEY_ARN.name()),
+                    rs.getString(S3_TEMP_CREDS_ROLE.name()),
+                    rs.getBoolean(S3_USE_ASSUMED_CREDS.name()));
 
             dataStorage.setShared(rs.getBoolean(SHARED.name()));
             dataStorage.setDescription(rs.getString(DESCRIPTION.name()));
