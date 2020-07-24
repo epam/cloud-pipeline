@@ -919,14 +919,36 @@ export default class RunTable extends localization.LocalizedReactComponent {
           display: 'inline-table',
           marginLeft: run.parentRunId ? '10px' : 0,
         };
-        let instance;
-        if (run.instance) {
-          instance = (
-            <AWSRegionTag
-              plainMode
-              provider={run.instance.cloudProvider}
-              regionId={run.instance.cloudRegionId}
-            />
+        let instanceOrSensitiveFlag;
+        if (run.instance || run.sensitive) {
+          instanceOrSensitiveFlag = (
+            <span>
+              {
+                run.instance && (
+                  <AWSRegionTag
+                    plainMode
+                    provider={run.instance.cloudProvider}
+                    regionId={run.instance.cloudRegionId}
+                  />
+                )
+              }
+              {
+                run.sensitive
+                  ? (
+                    <span
+                      style={
+                        Object.assign(
+                          {color: '#ff5c33'},
+                          run.instance ? {marginLeft: 5} : {}
+                        )
+                      }
+                    >
+                      sensitive
+                    </span>
+                  )
+                  : null
+              }
+            </span>
           );
         }
         const name = <b>{text}</b>;
@@ -952,11 +974,11 @@ export default class RunTable extends localization.LocalizedReactComponent {
                 }
                 trigger="hover">
                 {clusterIcon} <Icon type="export" /> {name}
-                {instance && <br />}
+                {instanceOrSensitiveFlag && <br />}
                 {
-                  instance &&
+                  instanceOrSensitiveFlag &&
                   <span style={{marginLeft: 18}}>
-                  {instance}
+                  {instanceOrSensitiveFlag}
                 </span>
                 }
               </Popover>
@@ -971,11 +993,11 @@ export default class RunTable extends localization.LocalizedReactComponent {
                 additionalStyle={{marginRight: 5}}
               />
               {clusterIcon}{name}
-              {instance && <br />}
+              {instanceOrSensitiveFlag && <br />}
               {
-                instance &&
+                instanceOrSensitiveFlag &&
                 <span style={{marginLeft: 18}}>
-                  {instance}
+                  {instanceOrSensitiveFlag}
                 </span>
               }
             </div>
