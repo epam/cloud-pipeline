@@ -249,7 +249,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         if (!exists) {
             return false;
         }
-        if (StringUtils.hasText(datastoragePath.getPath())) {
+        if (!dataStorage.isSensitive() && StringUtils.hasText(datastoragePath.getPath())) {
             s3Helper.createFile(datastoragePath.getRoot(),
                     ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
                     new byte[]{}, authManager.getAuthorizedUser());
