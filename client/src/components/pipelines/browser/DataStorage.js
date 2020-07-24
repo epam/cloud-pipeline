@@ -1386,6 +1386,7 @@ export default class DataStorage extends React.Component {
               iconClassName={`${styles.editableControl} ${storageTitleClassName}`}
               lock={this.props.info.value.locked}
               lockClassName={`${styles.editableControl} ${storageTitleClassName}`}
+              sensitive={this.props.info.value.sensitive}
               displayTextEditableField={
                 <span>
                     {this.props.info.value.name}
