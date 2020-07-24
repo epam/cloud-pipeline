@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners.confine;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
@@ -63,9 +64,8 @@ public class MetadataSelection
     }
 
     public RunsMenuAO launch(final AbstractSeveralPipelineRunningTest test,
-                             final String pipelineName
-    ) {
-        context().find(byText("OK")).closest("button").shouldBe(visible).click();
+                             final String pipelineName) {
+        context().find(withText("OK")).closest("button").shouldBe(visible).click();
         click(ignoreScope(visible(button("OK"))), RunsMenuAO::new);
 
         test.addRunId(Utils.getPipelineRunId(pipelineName));
