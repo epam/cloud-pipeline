@@ -52,4 +52,8 @@ public class DataStorageVO {
     private Long regionId;
     private Long fileShareMountId;
     private boolean sensitive;
+    // S3 specific fields
+    private String tempCredentialsRole;
+    private String kmsKeyArn;
+    private boolean useAssumedCredentials;
 }

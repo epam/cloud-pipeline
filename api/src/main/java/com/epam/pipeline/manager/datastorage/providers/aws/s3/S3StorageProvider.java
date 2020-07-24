@@ -38,6 +38,7 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
+import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 import com.epam.pipeline.manager.cloud.aws.S3TemporaryCredentialsGenerator;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
@@ -58,6 +59,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -111,9 +113,9 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
         final List<CORSRule> corsPolicyRules = JsonMapper.parseData(awsRegion.getCorsRules(),
                 new TypeReference<List<CORSRule>>() {}, corsRulesMapper);
-
+        final String kmsKeyId = AWSUtils.getKeyArnValue(storage, awsRegion);
         return getS3Helper(storage).postCreationProcessing(storage.getRoot(), awsRegion.getPolicy(),
-                storage.getAllowedCidrs(), corsPolicyRules, awsRegion, storage.isShared(), tags);
+                storage.getAllowedCidrs(), corsPolicyRules, awsRegion, storage.isShared(), kmsKeyId, tags);
     }
 
     @Override
@@ -294,6 +296,11 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {
         AwsRegion region = getAwsRegion(dataStorage);
+        if (dataStorage.isUseAssumedCredentials()) {
+            final String roleArn = Optional.ofNullable(dataStorage.getTempCredentialsRole())
+                    .orElse(region.getTempCredentialsRole());
+            return new AssumedCredentialsS3Helper(roleArn, region, messageHelper);
+        }
         return new RegionAwareS3Helper(region, messageHelper);
     }
 

@@ -106,7 +106,8 @@ public class PipelineLauncher {
     }
 
     public String launch(PipelineRun run, PipelineConfiguration configuration,
-                         List<String> endpoints, String nodeIdLabel, boolean useLaunch, String pipelineId, String clusterId) {
+                         List<String> endpoints, String nodeIdLabel, boolean useLaunch,
+                         String pipelineId, String clusterId) {
         return launch(run, configuration, endpoints, nodeIdLabel, useLaunch, pipelineId, clusterId, true);
     }
 

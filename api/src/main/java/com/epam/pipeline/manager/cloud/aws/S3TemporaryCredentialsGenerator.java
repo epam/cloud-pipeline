@@ -39,6 +39,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -80,11 +81,12 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
 
         final Integer duration =
                 preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_TEMP_CREDENTIALS_DURATION);
-        final String role = awsRegion.getTempCredentialsRole();
+        final String role = Optional.ofNullable(dataStorage.getTempCredentialsRole())
+                .orElse(awsRegion.getTempCredentialsRole());
         final String sessionName = "SessionID-" + PasswordGenerator.generateRandomString(10);
 
-
-        final String policy = createPolicyWithPermissions(actions, awsRegion.getKmsKeyArn());
+        //TODO: handle situation when we have actions for different storages with different KMS keys
+        final String policy = createPolicyWithPermissions(actions, AWSUtils.getKeyArnValue(dataStorage, awsRegion));
         final AssumeRoleRequest assumeRoleRequest = new AssumeRoleRequest()
                 .withDurationSeconds(duration)
                 .withPolicy(policy)
