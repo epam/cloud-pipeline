@@ -1133,6 +1133,14 @@ echo "-"
 ######################################################
 motd_setup init
 
+if [ "$CP_SENSITIVE_RUN" == "true" ]; then
+      motd_setup add "WARNING: Sensitive data is mounted
+This applies a number of restrictions:
+* No Internet access
+* All the data storages are available in a read-only mode
+* You are not allowed to extract the data from the job's filesystem"
+fi
+
 echo "------"
 echo
 ######################################################
