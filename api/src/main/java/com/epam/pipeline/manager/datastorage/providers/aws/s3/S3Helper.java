@@ -154,6 +154,7 @@ public class S3Helper {
                                                final List<CORSRule> corsRules,
                                                final AwsRegion region,
                                                final boolean shared,
+                                               String kmsDataEncryptionKeyId,
                                                final Map<String, String> tags) {
         try {
             final AmazonS3 s3client = getDefaultS3Client();
@@ -168,7 +169,6 @@ public class S3Helper {
                 s3client.setBucketPolicy(name, contents);
             }
 
-            final String kmsDataEncryptionKeyId = region.getKmsKeyId();
             if (!StringUtils.isNullOrEmpty(kmsDataEncryptionKeyId)) {
                 enableBucketEncryption(s3client, name, kmsDataEncryptionKeyId);
             }

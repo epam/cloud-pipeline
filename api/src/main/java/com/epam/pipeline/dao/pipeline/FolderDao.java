@@ -182,6 +182,9 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         DATASTORAGE_REGION_ID,
         DATASTORAGE_FILE_SHARE_MOUNT_ID,
         DATASTORAGE_SENSITIVE,
+        DATASTORAGE_S3_KMS_KEY_ARN,
+        DATASTORAGE_S3_USE_ASSUMED_CREDS,
+        DATASTORAGE_S3_TEMP_CREDS_ROLE,
         ENABLE_VERSIONING,
         BACKUP_DURATION,
         STS_DURATION,
@@ -286,7 +289,10 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                                         rs.getString(DATASTORAGE_MOUNT_POINT.name()),
                                         allowedCidrs,
                                         regionId,
-                                        fileShareMountId);
+                                        fileShareMountId,
+                                        rs.getString(DATASTORAGE_S3_KMS_KEY_ARN.name()),
+                                        rs.getString(DATASTORAGE_S3_TEMP_CREDS_ROLE.name()),
+                                        rs.getBoolean(DATASTORAGE_S3_USE_ASSUMED_CREDS.name()));
                         dataStorage.setDescription(rs.getString(DATASTORAGE_DESCRIPTION.name()));
                         dataStorage.setCreatedDate(
                                 new Date(rs.getTimestamp(DATASTORAGE_CREATED_DATE.name()).getTime())
