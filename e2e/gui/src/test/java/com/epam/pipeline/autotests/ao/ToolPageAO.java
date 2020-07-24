@@ -24,8 +24,11 @@ import java.util.Map;
 
 import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selectors.byXpath;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.switchTo;
 import static com.codeborne.selenide.Selenide.title;
@@ -55,8 +58,23 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
         return this;
     }
 
+    public ToolPageAO assertPageContains(String text) {
+        $(withText(text)).shouldBe(visible);
+        return this;
+    }
+
     public ToolPageAO validateEndpointPage() {
         $(byId("owner")).should(appear).shouldHave(text(C.LOGIN));
+        return this;
+    }
+
+    public ToolPageAO validateAliveWorkersSparkPage(String num) {
+        $(withText("Alive Workers:")).closest("li").should(appear).shouldHave(text(num));
+        return this;
+    }
+
+    public ToolPageAO validationPageHeader(String header) {
+        $(byXpath("//h3")).shouldHave(text(header));
         return this;
     }
 

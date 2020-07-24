@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import com.epam.pipeline.autotests.AbstractSinglePipelineRunningTest;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
+
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import org.openqa.selenium.By;
@@ -52,7 +54,6 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(CONFIGURATION, context().find(byXpath("//*[.//*[contains(text(), 'Configuration name')] and contains(@class, 'ant-select-selection')]"))),
             entry(LAUNCH_CLUSTER, context().find(byText("Configure cluster"))),
             entry(START_IDLE, context().find(byText("Start idle")).closest(".ant-checkbox-wrapper")),
-            entry(CLUSTER_DIALOG, context().find(byXpath("//*[@class='ant-modal-title' and //*[contains(text(), 'Configure cluster')]]"))),
             entry(EXEC_ENVIRONMENT, context().find(byId("launch-pipeline-exec-environment-panel"))),
             entry(ADVANCED_PANEL, context().find(byId("launch-pipeline-advanced-panel"))),
             entry(PARAMETERS_PANEL, context().find(byId("launch-pipeline-parameters-panel"))),
@@ -61,7 +62,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(AUTO_PAUSE, context().find(byText("Auto pause:")).closest(".ant-row-flex").find(cssSelector(".ant-checkbox-wrapper"))),
             entry(DOCKER_IMAGE, context().find(byText("Docker image")).closest(".ant-row").find(tagName("input"))),
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
-            entry(SAVE, $(byId("save-pipeline-configuration-button")))
+            entry(SAVE, $(byId("save-pipeline-configuration-button"))),
+            entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button")))
     );
     private final String pipelineName;
     private int parameterIndex = 0;
@@ -133,21 +135,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
-    public PipelineRunFormAO enableClusterLaunch() {
-        return click(LAUNCH_CLUSTER)
-                .ensure(CLUSTER_DIALOG, visible);
-    }
-
-    public PipelineRunFormAO clusterSettingsForm(String type){
-        if (type.equals("Single node") || type.equals("Cluster") || type.equals("Auto-scaled cluster")) {
-            context()
-                .find(byXpath(
-                    String.format(".//*[contains(@class, 'ant-radio-button-wrapper') and .//text()='%s']", type)))
-                .click();
-        } else {
-            fail("Wrong type of cluster was selected");
-        }
-        return this;
+    public ConfigureClusterPopupAO enableClusterLaunch() {
+        click(LAUNCH_CLUSTER);
+        return new ConfigureClusterPopupAO(this);
     }
 
     public PipelineRunFormAO addOutputParameter(String name, String value) {
@@ -299,6 +289,11 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return new RunParameterAO(this, parameterIndex);
     }
 
+    public SystemParameterPopupAO clickAddSystemParameter() {
+        click(ADD_SYSTEM_PARAMETER);
+        return new SystemParameterPopupAO(this);
+    }
+
     public PipelineRunFormAO chooseConfiguration(final String profileName) {
         click(CONFIGURATION);
         $$(className("ant-select-dropdown")).findBy(visible)
@@ -308,17 +303,16 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
-    public PipelineRunFormAO setWorkingNodesCount(final String nodesCount) {
-        return setValue(getElement(byXpath("(.//*[@class = 'ant-input-number-input'])[1]")), nodesCount);
+    public PipelineRunFormAO checkConfigureClusterLabel(String label) {
+        context().find(byXpath(".//div[@class='ant-row-flex ant-row-flex-end']/a"))
+                .shouldBe(visible).shouldHave(text(label));
+        return this;
     }
 
-    public PipelineRunFormAO setDefaultChildNodes(final String nodesCount) {
-        $(byText("Setup default child nodes count")).click();
-        return setValue(getElement(byXpath("(.//*[@class = 'ant-input-number-input'])[last()]")), nodesCount);
-    }
-
-    public PipelineRunFormAO resetClusterChildNodes () {
-        $(byXpath("//*[contains(text(), 'Reset')]")).click();
+    public PipelineRunFormAO inputSystemParameterValue(String parameter, String value) {
+        String inputFieldID = $(byXpath(String.format("//input[@value='%s']", parameter))).attr("id")
+                .replace(".name", ".value");
+        $(byXpath(String.format("//input[@id='%s']", inputFieldID))).shouldBe(enabled).setValue(value);
         return this;
     }
 
@@ -327,4 +321,113 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return elements;
     }
 
-}
+    public static class SystemParameterPopupAO  extends PopupAO<SystemParameterPopupAO, PipelineRunFormAO> {
+
+        private final Map<Primitive, SelenideElement> elements = initialiseElements(
+                entry(PARAMETER_NAME, context().$(byXpath("//*[@placeholder='Parameter']"))),
+                entry(ADD, context().find(byId("system-parameters-browser-ok-button"))),
+                entry(CANCEL, context().find(byClassName("system-parameters-browser-cancel-button")))
+        );
+
+        public SystemParameterPopupAO(PipelineRunFormAO parentAO) {
+            super(parentAO);
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
+        }
+        @Override
+        public PipelineRunFormAO cancel() {
+            return click(CANCEL).parent();
+        }
+
+        @Override
+        public PipelineRunFormAO ok() {
+            return click(ADD).parent();
+        }
+
+        private SystemParameterPopupAO selectSystemParameter(String parameter) {
+            clear(PARAMETER_NAME);
+            setValue(PARAMETER_NAME, parameter);
+            $(byText(parameter)).shouldBe(visible).click();
+            return this;
+        }
+
+        public SystemParameterPopupAO selectSystemParameters(String ... parameters) {
+            Arrays.stream(parameters).forEach(this::selectSystemParameter);
+            return this;
+        }
+    }
+
+    public static class ConfigureClusterPopupAO  extends PopupAO<ConfigureClusterPopupAO, PipelineRunFormAO> {
+
+        private final Map<Primitive, SelenideElement> elements = initialiseElements(
+                entry(WORKERS_PRICE_TYPE, context().find(byText("Workers price type:")).parent().find(byClassName("ant-select-selection--single"))),
+                entry(WORKING_NODES, context().find(byXpath("(.//*[@class = 'ant-input-number-input'])[1]"))),
+                entry(DEFAULT_CHILD_NODES, context().find(byXpath("(.//*[@class = 'ant-input-number-input'])[last()]"))),
+                entry(RESET, context().$(byXpath("//*[contains(text(), 'Reset')]")))
+        );
+
+        public ConfigureClusterPopupAO(PipelineRunFormAO parentAO) {
+            super(parentAO);
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
+        }
+
+        public ConfigureClusterPopupAO clusterSettingsForm(String type){
+            if (type.equals("Single node") || type.equals("Cluster") || type.equals("Auto-scaled cluster")) {
+                context()
+                        .find(byXpath(
+                                String.format(".//*[contains(@class, 'ant-radio-button-wrapper') and .//text()='%s']", type)))
+                        .click();
+            } else {
+                fail("Wrong type of cluster was selected");
+            }
+            return this;
+        }
+
+        public ConfigureClusterPopupAO setWorkingNodesCount(final String nodesCount) {
+            return setValue(WORKING_NODES, nodesCount);
+        }
+
+        public ConfigureClusterPopupAO setDefaultChildNodes(final String nodesCount) {
+            $(byText("Setup default child nodes count")).click();
+            return setValue(DEFAULT_CHILD_NODES, nodesCount);
+        }
+
+        public ConfigureClusterPopupAO resetClusterChildNodes () {
+            return click(RESET);
+        }
+
+        public ConfigureClusterPopupAO setWorkersPriceType(final String priceType) {
+            click(WORKERS_PRICE_TYPE);
+            context().find(PipelineSelectors.visible(byClassName("ant-select-dropdown"))).find(byText(priceType))
+                    .shouldBe(visible)
+                    .click();
+            return this;
+        }
+
+        public ConfigureClusterPopupAO enableHybridClusterSelect () {
+            $(byXpath(".//span[.='Enable Hybrid cluster']/preceding-sibling::span")).click();
+            return this;
+        }
+
+        public ConfigureClusterPopupAO clusterEnableCheckboxSelect(String checkBox){
+            if (checkBox.equals("Enable GridEngine")
+                    || checkBox.equals("Enable Apache Spark")
+                    || checkBox.equals("Enable Slurm")) {
+                context()
+                        .find(byXpath(
+                                String.format(".//span[.='%s']/preceding-sibling::span[@class='ant-checkbox']", checkBox)))
+                        .click();
+            } else {
+                fail("Wrong checkbox name was selected");
+            }
+            return this;
+        }
+    }
+    }

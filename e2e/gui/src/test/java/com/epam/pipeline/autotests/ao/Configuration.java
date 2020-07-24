@@ -32,6 +32,7 @@ import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -329,7 +330,7 @@ public class Configuration implements AccessObject<Configuration> {
     }
 
     public Configuration assertPageTitleIs(final String expectedTitle) {
-        assertTrue($(title()).getText().contains(expectedTitle));
+        $(title()).shouldHave(text(expectedTitle));
         return this;
     }
 }
