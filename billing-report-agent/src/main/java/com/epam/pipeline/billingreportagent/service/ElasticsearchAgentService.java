@@ -72,36 +72,39 @@ public class ElasticsearchAgentService {
         log.debug("Start synchronising billing data...");
 
         final LocalDateTime lastSyncTime = getLastSyncTime();
-        final LocalDateTime syncStart = LocalDateTime.now(Clock.systemUTC());
-
-        final List<CompletableFuture<Void>> results = synchronizers.stream()
-            .map(synchronizer -> CompletableFuture.runAsync(() -> {
-                LocalDateTime startSyncTime = LocalDateTime.now(Clock.systemUTC());
-                log.debug("Synchronizer {} starts work at {} ", synchronizer.getClass().getSimpleName(),
-                          startSyncTime);
-                synchronizer.synchronize(lastSyncTime, syncStart);
-                log.debug("Synchronizer {} stops work at {}. Duration is {} seconds.",
-                          synchronizer.getClass().getSimpleName(),
-                          LocalDateTime.now(Clock.systemUTC()),
-                          Duration.between(startSyncTime, LocalDateTime.now(Clock.systemUTC()))
-                              .abs()
-                              .getSeconds());
-            }, elasticsearchAgentThreadPool)
-                .exceptionally(throwable -> {
-                    log.warn("Exception while trying to send data to Elasticsearch service", throwable);
-                    log.debug("Synchronizer {} stops work at {}.",
-                              synchronizer.getClass().getSimpleName(), LocalDateTime.now(Clock.systemUTC()));
-                    return null;
-                })).collect(Collectors.toList());
-        try {
-            CompletableFuture.allOf(results.toArray(new CompletableFuture[0])).get();
-            Files.write(Paths.get(lastSynchronizationTimeFilePath),
-                        (syncStart.toString() + System.lineSeparator()).getBytes(),
-                        StandardOpenOption.APPEND, StandardOpenOption.CREATE);
-            log.debug("Finished billing data synchronization...");
-        } catch (IOException | InterruptedException | ExecutionException e) {
-            log.error("An error occurred synchronization: {}", e.getMessage());
-            log.error(e.getMessage(), e);
+        final LocalDateTime end = LocalDateTime.now(Clock.systemUTC());
+        for (LocalDateTime current = lastSyncTime; current.isBefore(end); current = current.plusDays(1)) {
+            final LocalDateTime syncStart = current;
+            log.debug("For date {}", syncStart);
+            final List<CompletableFuture<Void>> results = synchronizers.stream()
+                .map(synchronizer -> CompletableFuture.runAsync(() -> {
+                    LocalDateTime startSyncTime = LocalDateTime.now(Clock.systemUTC());
+                    log.debug("Synchronizer {} starts work at {} ", synchronizer.getClass().getSimpleName(),
+                              startSyncTime);
+                    synchronizer.synchronize(lastSyncTime, syncStart);
+                    log.debug("Synchronizer {} stops work at {}. Duration is {} seconds.",
+                              synchronizer.getClass().getSimpleName(),
+                              LocalDateTime.now(Clock.systemUTC()),
+                              Duration.between(startSyncTime, LocalDateTime.now(Clock.systemUTC()))
+                                  .abs()
+                                  .getSeconds());
+                }, elasticsearchAgentThreadPool)
+                    .exceptionally(throwable -> {
+                        log.warn("Exception while trying to send data to Elasticsearch service", throwable);
+                        log.debug("Synchronizer {} stops work at {}.",
+                                  synchronizer.getClass().getSimpleName(), LocalDateTime.now(Clock.systemUTC()));
+                        return null;
+                    })).collect(Collectors.toList());
+            try {
+                CompletableFuture.allOf(results.toArray(new CompletableFuture[0])).get();
+                Files.write(Paths.get(lastSynchronizationTimeFilePath),
+                            (syncStart.toString() + System.lineSeparator()).getBytes(),
+                            StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+                log.debug("Finished billing data synchronization...");
+            } catch (IOException | InterruptedException | ExecutionException e) {
+                log.error("An error occurred synchronization: {}", e.getMessage());
+                log.error(e.getMessage(), e);
+            }
         }
 
         log.debug("Stop Elasticsearch agent.");
