@@ -22,8 +22,7 @@ spec:
           securityContext:
             privileged: true
           imagePullPolicy: "IfNotPresent"
-          command: ["bash"]
-          args: ["-c", "/init.sh"]
+          command: ["bash", "-c", "chown -R elasticsearch /usr/share/elasticsearch/data && /init.sh"]
           env:
           - name: ES_JAVA_OPTS
             value: "-Xmx4g -Xms4g -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly"
@@ -31,7 +30,7 @@ spec:
           - configMapRef:
               name: cp-config-global
           volumeMounts:
-            - mountPath: /var/lib/elasticsearch
+            - mountPath: /usr/share/elasticsearch/data
               name: search-elk-data
             - name: cp-cloud-credentials
               mountPath: "/root/.cloud"
