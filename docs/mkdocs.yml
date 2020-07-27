@@ -116,3 +116,8 @@ nav:
   - Automation via CLI: 'api/API_tutorials/Automation_via_CLI.md'
   - Direct HTTP API implementation: 'api/API_tutorials/Direct_HTTP_API.md'
   - JavaScript example: 'api/API_tutorials/JavaScript_example.md'
+- Cloud Pipeline Installation:
+  - Prerequisites: 'installation/prerequisites/common.md'
+    - AWS: 'installation/prerequisites/aws.md'
+    - Azure: 'installation/prerequisites/azure.md'
+    - GCP: 'installation/prerequisites/gcp.md'
