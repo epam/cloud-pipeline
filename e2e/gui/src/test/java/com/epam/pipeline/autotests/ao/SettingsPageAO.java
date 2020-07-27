@@ -550,6 +550,57 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return this;
             }
 
+            public UsersTabAO setSearchName(String name) {
+                actions().sendKeys(name).perform();
+                return this;
+            }
+
+            private boolean userTabIsEmpty() {
+                sleep(1, SECONDS);
+                return $(byText("No data")).isDisplayed();
+            }
+
+            public CreateUserPopup clickCreateButton() {
+                click(CREATE_USER);
+                return new CreateUserPopup(this);
+            }
+
+
+            public UsersTabAO createIfNotExist(String name) {
+                if (clickSearch()
+                        .setSearchName(name)
+                        .pressEnter()
+                        .userTabIsEmpty()) {
+                    clickCreateButton()
+                    .setValue(NAME, name)
+                    .ok();
+                }
+                return this;
+            }
+
+            public UsersTabAO deleteUserIfExist(String name) {
+                if (!clickSearch()
+                        .setSearchName(name)
+                        .pressEnter()
+                        .userTabIsEmpty()) {
+                    SelenideElement entry = getUser(name.toUpperCase()).shouldBe(visible);
+                    new UserEntry(this, name.toUpperCase(), entry)
+                            .edit()
+                            .delete();
+                    confirmUserDeletion(name);
+                }
+                return this;
+            }
+
+            private UsersTabAO confirmUserDeletion(final String name) {
+                new ConfirmationPopupAO(this.parentAO)
+                        .ensureTitleIs(String.format("Are you sure you want to delete user %s?", name.toUpperCase()))
+                        .sleep(1, SECONDS)
+                        .click(OK);
+                return this;
+            }
+
+
             public class UserEntry implements AccessObject<SystemEventsEntry> {
                 private final UsersTabAO parentAO;
                 private SelenideElement entry;
@@ -606,6 +657,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     @Override
                     public UsersTabAO ok() {
                         click(OK);
+                        return parentAO;
+                    }
+
+                    public UsersTabAO delete() {
+                        click(DELETE);
                         return parentAO;
                     }
 
@@ -683,6 +739,28 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         }
                         return this;
                     }
+                }
+            }
+
+            public class CreateUserPopup extends PopupAO<CreateUserPopup, UsersTabAO>  {
+
+                public CreateUserPopup(UsersTabAO parentAO) {
+                    super(parentAO);
+                }
+
+                public final Map<Primitive, SelenideElement> elements = initialiseElements(
+                        entry(NAME, context().$(byId("name"))),
+                        entry(OK, context().$(byId("create-user-form-ok-button")))
+                );
+
+                @Override
+                public UsersTabAO ok() {
+                    return click(OK).parent();
+                }
+
+                @Override
+                public Map<Primitive, SelenideElement> elements() {
+                    return elements;
                 }
             }
         }

@@ -86,6 +86,21 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return new RunsMenuAO();
     }
 
+    public RunsMenuAO nextPageCompletedRuns() {
+        if ($(byClassName(" ant-pagination-next")).attr("aria-disabled").equals("false")) {
+            $(byClassName(" ant-pagination-next")).click();
+            tableShouldAppear();
+        }
+        return new RunsMenuAO();
+    }
+
+    public RunsMenuAO switchAllPagesCompletedRuns() {
+        while ($(byClassName(" ant-pagination-next")).attr("aria-disabled").equals("false")) {
+            nextPageCompletedRuns();
+        }
+        return new RunsMenuAO();
+    }
+
     public RunsMenuAO stopRun(String runId) {
         final SelenideElement runStopButton = $("#run-" + runId + "-stop-button");
         runStopButton.waitUntil(enabled, 5000).click();
