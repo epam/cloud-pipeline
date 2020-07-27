@@ -12,7 +12,6 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -85,33 +84,36 @@ public class ParallelLoadTests implements Navigation, Authorization {
         final String folder = "parallelTestFolder" + name + Utils.randomSuffix();
         loginAs(testUser);
         long testStartTime = System.currentTimeMillis();
-        navigationMenu()
-                .library()
-                .cd("parallelTestFolder");
-        executionTime("Open library", name, testStartTime);
-        long startTime = System.currentTimeMillis();
-        navigationMenu()
-                .runs();
-        executionTime("Open active runs", name, startTime);
-        startTime = System.currentTimeMillis();
-        navigationMenu()
-                .runs()
-                .completedRuns();
-        executionTime("Open completed runs", name, startTime);
-        startTime = System.currentTimeMillis();
-        runsMenu()
-                .completedRuns()
-                .nextPageCompletedRuns();
-        executionTime("Open 2nd page completed runs", name, startTime);
-        startTime = System.currentTimeMillis();
-        runsMenu()
-                .completedRuns()
-                .switchAllPagesCompletedRuns();
-        executionTime("Switch between all pages completed runs", name, startTime);
-        startTime = System.currentTimeMillis();
-        tools()
-                .perform(C.DEFAULT_REGISTRY, C.DEFAULT_GROUP, C.TESTING_TOOL_NAME, ToolTab::runWithCustomSettings);
-        executionTime("Open tool", name, startTime);
+        for (int i=1; i<=10; i++) {
+            long startTime = System.currentTimeMillis();
+            navigationMenu()
+                    .library()
+                    .cd("parallelTestFolder");
+            executionTime("Open library", name, startTime);
+            startTime = System.currentTimeMillis();
+            navigationMenu()
+                    .runs();
+            executionTime("Open active runs", name, startTime);
+            startTime = System.currentTimeMillis();
+            navigationMenu()
+                    .runs()
+                    .completedRuns();
+            executionTime("Open completed runs", name, startTime);
+            startTime = System.currentTimeMillis();
+            runsMenu()
+                    .completedRuns()
+                    .nextPageCompletedRuns();
+            executionTime("Open 2nd page completed runs", name, startTime);
+            startTime = System.currentTimeMillis();
+            runsMenu()
+                    .completedRuns()
+                    .switchAllPagesCompletedRuns();
+            executionTime("Switch between all pages completed runs", name, startTime);
+            startTime = System.currentTimeMillis();
+            tools()
+                    .perform(C.DEFAULT_REGISTRY, C.DEFAULT_GROUP, C.TESTING_TOOL_NAME, ToolTab::runWithCustomSettings);
+            executionTime("Open tool", name, startTime);
+        }
         executionTime("Summary time ", name, testStartTime);
     }
 
