@@ -882,7 +882,9 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
               "follow - follow symlinks (default); "
               "skip - do not follow symlinks; "
               "filter - follow symlinks but check for cyclic links")
-@click.option('-n', '--threads', help='The number  of threads allowed for operation', type=int, required=False)
+@click.option('-n', '--threads', type=int, required=False,
+              help='The number of threads that will work to perform operation. Allowed for folders only. '
+                   'Use to move a huge number of small files')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
@@ -919,7 +921,9 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
               "follow - follow symlinks (default); "
               "skip - do not follow symlinks; "
               "filter - follow symlinks but check for cyclic links")
-@click.option('-n', '--threads', help='The number  of threads allowed for operation', type=int, required=False)
+@click.option('-n', '--threads', type=int, required=False,
+              help='The number of threads that will work to perform operation. Allowed for folders only. '
+                   'Use to copy a huge number of small files')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
