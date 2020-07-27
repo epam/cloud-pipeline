@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,18 +53,22 @@ public class NFSHelperTest {
 
     @Test
     public void formatNfsPath() {
-        String rightPath = "//samba.share/path";
+        final String rightPath = "//samba.share/path";
         String result = NFSHelper.formatNfsPath(rightPath, "cifs");
         Assert.assertEquals(rightPath, result);
 
-        String unformattedPath = "samba.share/path";
+        final String unformattedPath = "samba.share/path";
         result = NFSHelper.formatNfsPath(unformattedPath, "cifs");
         //smb protocol -> should format with //
         Assert.assertEquals("//" + unformattedPath, result);
 
+        //lustre protocol -> should add suffix
+        result = NFSHelper.formatNfsPath(TEST_PATH, "lustre");
+        Assert.assertEquals(TEST_PATH + "@tcp:/", result);
+
         //nfs protocol -> should add suffix
-        result = NFSHelper.formatNfsPath("localhost", "nfs");
-        Assert.assertEquals("localhost:/", result);
+        result = NFSHelper.formatNfsPath(TEST_PATH, "nfs");
+        Assert.assertEquals(TEST_PATH + ":/", result);
     }
 
     @Test

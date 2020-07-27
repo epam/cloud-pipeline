@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ final class NFSHelper {
     private static final String SMB_SCHEME = "//";
     private static final String PATH_SEPARATOR = "/";
     private static final String NFS_HOST_DELIMITER = ":/";
+    private static final String LUSTRE_HOST_DELIMITER = "@tcp:/";
 
     private NFSHelper() {
 
@@ -104,7 +105,10 @@ final class NFSHelper {
         if (protocol.equalsIgnoreCase(MountType.SMB.getProtocol()) && !path.startsWith(SMB_SCHEME)) {
             path = SMB_SCHEME + path;
         }
-        if (!protocol.equalsIgnoreCase(MountType.SMB.getProtocol()) && !path.contains(NFS_HOST_DELIMITER)) {
+        if (protocol.equalsIgnoreCase(MountType.LUSTRE.getProtocol()) && !path.contains(LUSTRE_HOST_DELIMITER)) {
+            path = path + LUSTRE_HOST_DELIMITER;
+        }
+        if (protocol.equalsIgnoreCase(MountType.NFS.getProtocol()) && !path.contains(NFS_HOST_DELIMITER)) {
             path = path + NFS_HOST_DELIMITER;
         }
         return path;
