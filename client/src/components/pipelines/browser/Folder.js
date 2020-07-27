@@ -183,10 +183,14 @@ export default class Folder extends localization.LocalizedReactComponent {
         return <Icon type={icon} />;
       case ItemTypes.version: return <Icon type="tag" />;
       case ItemTypes.storage:
+        const style = {};
+        if (item.sensitive) {
+          style.color = '#ff5c33';
+        }
         if (item.storageType && item.storageType.toLowerCase() !== 'nfs') {
-          return <Icon type="inbox" />;
+          return <Icon type="inbox" style={style} />;
         } else {
-          return <Icon type="hdd" />;
+          return <Icon type="hdd" style={style} />;
         }
       case ItemTypes.configuration: return <Icon type="setting" />;
       case ItemTypes.metadata: return <Icon type="appstore-o" />;
