@@ -23,7 +23,7 @@ import java.util.Properties;
 
 import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 
-public class ParallelLoadTests implements Navigation, Authorization {
+public class ParallelLoadTests extends AbstractBfxPipelineTest implements Navigation, Authorization {
 
     public static final String CONF_PATH_PROPERTY = "com.epam.bfx.e2e.ui.property.path";
     public static final int userCount;
@@ -68,7 +68,7 @@ public class ParallelLoadTests implements Navigation, Authorization {
         closeDriverObjects();
     }
 
-    @BeforeMethod
+    @BeforeMethod(alwaysRun = true)
     public void setUp() {
         Configuration.timeout = C.DEFAULT_TIMEOUT;
         Configuration.browser = WebDriverRunner.CHROME;
