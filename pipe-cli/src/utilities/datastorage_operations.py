@@ -68,6 +68,9 @@ class DataStorageOperations(object):
             if threads and not recursive:
                 click.echo('-n (--threads) is allowed for folders only.', err=True)
                 sys.exit(1)
+            if threads and platform.system() == 'Windows':
+                click.echo('-n (--threads) is not supported for Windows OS', err=True)
+                sys.exit(1)
             relative = os.path.basename(source) if source_wrapper.is_file() else None
             if not force and not destination_wrapper.is_empty(relative=relative):
                 click.echo('Flag --force (-f) is required to overwrite files in the destination data.', err=True)
