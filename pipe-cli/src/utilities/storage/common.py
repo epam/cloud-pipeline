@@ -115,8 +115,8 @@ class StorageOperations:
         return re.sub(delimiter + '+', delimiter, path)
 
     @classmethod
-    def show_progress(cls, quiet, size):
-        return not quiet and size is not None and size != 0
+    def show_progress(cls, quiet, size, lock=None):
+        return not quiet and size is not None and size != 0 and lock is None
 
     @classmethod
     def get_local_file_size(cls, path):
@@ -215,7 +215,7 @@ class AbstractTransferManager:
 
     @abstractmethod
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), skip_existing=False):
+                 quiet=False, size=None, tags=(), skip_existing=False, lock=None):
         """
         Transfers data from the source storage to the destination storage.
 
@@ -231,8 +231,22 @@ class AbstractTransferManager:
         :param tags: Additional tags that will be included to the transferring object.
         Tags CP_SOURCE and CP_OWNER will be included by default.
         :param skip_existing: Skips transfer objects that already exist in the destination storage.
+        :param lock: The lock object if multithreaded transfer is requested
+        :type lock: multiprocessing.Lock
         """
         pass
+
+    @staticmethod
+    def create_local_folder(destination_key, lock):
+        folder = os.path.dirname(destination_key)
+        if lock:
+            lock.acquire()
+        try:
+            if folder and not os.path.exists(folder):
+                os.makedirs(folder)
+        finally:
+            if lock:
+                lock.release()
 
 
 class AbstractListingManager:

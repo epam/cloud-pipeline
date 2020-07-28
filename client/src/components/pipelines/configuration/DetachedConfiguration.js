@@ -644,6 +644,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         }
         configuration.executionEnvironment = opts.executionEnvironment;
         configuration.rootEntityId = opts.rootEntityId;
+        configuration.endpointName = opts.endpointName;
+        configuration.stopAfter = opts.stopAfter;
         opts.pipelineId = undefined;
         opts.pipelineVersion = undefined;
         opts.configName = undefined;
@@ -656,6 +658,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         opts.methodInputs = undefined;
         opts.methodOutputs = undefined;
         opts.executionEnvironment = undefined;
+        opts.endpointName = undefined;
+        opts.stopAfter = undefined;
         if (configuration.executionEnvironment === DTS_ENVIRONMENT) {
           for (const key in opts) {
             if (opts.hasOwnProperty(key) && opts[key] !== undefined) {

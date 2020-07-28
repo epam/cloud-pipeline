@@ -1293,6 +1293,7 @@ class Logs extends localization.LocalizedReactComponent {
       const owner = (this.props.run.value.owner || '').toLowerCase();
       const podIP = this.props.run.value.podIP;
       const podStatus = this.props.run.value.podStatus;
+      const sensitive = this.props.run.value.sensitive;
       let endpoints;
       let share;
       if (this.endpointAvailable) {
@@ -1441,6 +1442,13 @@ class Logs extends localization.LocalizedReactComponent {
         <div>
           <table className={styles.runDetailsTable}>
             <tbody>
+              {
+                sensitive ? (
+                  <tr>
+                    <th colSpan={2} style={{color: '#ff5c33'}}>SENSITIVE</th>
+                  </tr>
+                ) : undefined
+              }
               {endpoints}
               {share}
               <tr>

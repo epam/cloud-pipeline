@@ -26,6 +26,7 @@ import com.epam.pipeline.autotests.ao.NavigationMenuAO;
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
 import com.epam.pipeline.autotests.ao.PipelineLibraryContentAO;
 import com.epam.pipeline.autotests.ao.StorageContentAO;
+import com.epam.pipeline.autotests.ao.ToolDescription;
 import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Navigation;
@@ -35,6 +36,8 @@ import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.util.function.Function;
 
 import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
@@ -65,8 +68,6 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     private final String storageFile2 = "globalSearchStorageFile2" + Utils.randomSuffix();
     private final String storageAlias = "globalSearchStorageAlias" + Utils.randomSuffix();
     private final String toolVersion = "latest";
-    private final String toolShortDescription = "Docker image used in E2E automated tests to verify HTTP endpoints and SSH access";
-    private final String toolDescription = "HTTP endpoints work correctly (will perform JWT authentication and print user's name)";
     private final String customConfigurationProfile = "customprofile" + Utils.randomSuffix();
     private final String customDisk = "22";
     private final String defaultInstanceType = C.DEFAULT_INSTANCE;
@@ -76,7 +77,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     private final String toolEndpoint = testingTool.substring(testingTool.lastIndexOf("/") + 1);
     private final String defaultProfile = "default";
     private final String configurationName = "test_conf";
-    private final String configurationNodeType = "c5.large (CPU: 2, RAM: 4)";
+    private final String configurationNodeType = C.ANOTHER_INSTANCE;
     private final String configurationDisk = "24";
     private final String configVar = "config.json";
     private final String title = "testIssue" + Utils.randomSuffix();
@@ -139,7 +140,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     }
 
     @BeforeMethod
-    public void checkNavigateBarIsEnabled() {
+    public void refreshPage() {
         getWebDriver().navigate().refresh();
     }
 
@@ -173,9 +174,9 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                                 .clear(NAME).setValue(NAME, configurationName)
                                 .clear(DISK).setValue(DISK, configurationDisk)
                                 .selectValue(INSTANCE_TYPE, configurationNodeType)
-                                .sleep(2, SECONDS)
+                                .sleep(3, SECONDS)
                                 .click(SAVE)
-                                .sleep(2, SECONDS)
+                                .sleep(3, SECONDS)
                 );
         draftVersionName = library()
                 .cd(folder)
@@ -206,7 +207,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(DESCRIPTION, text(pipeline))
                 .ensure(HIGHLIGHTS, text("Found in pipelineName"))
                 .ensure(PREVIEW, text(configurationDisk), text(configurationName),
-                        text(configurationNodeType.substring(0, configurationNodeType.indexOf(" "))))
+                        text(configurationNodeType))
                 .parent()
                 .moveToSearchResultItem(pipeline, () -> new PipelineLibraryContentAO(pipeline))
                 .assertPipelineName(pipeline);
@@ -275,7 +276,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .hover(SEARCH_RESULT)
                 .openSearchResultItemWithText(pipelineWithRun())
                 .ensure(TITLE, Status.SUCCESS.reached, text(testRunID), text(pipeline), text(draftVersionName))
-                .checkTags(configurationDisk, configurationNodeType.substring(0, configurationNodeType.indexOf(" ")))
+                .checkTags(configurationDisk, configurationNodeType)
                 .ensure(HIGHLIGHTS, text("Found in pipelineName"), text("Found in description"),
                         text("Found in podId"))
                 .ensure(PREVIEW, text("Owner"), text(LOGIN), text("Scheduled"), text("Started"),
@@ -380,7 +381,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .launch(this)
                 .showLog(getLastRunId())
                 .waitForCompletion();
-        home().sleep(1, MINUTES);
+        home().sleep(3, MINUTES);
         search()
                 .click(RUNS)
                 .search(storage)
@@ -389,7 +390,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .hover(SEARCH_RESULT)
                 .openSearchResultItemWithText(String.format("%s-%s", pipeline.toLowerCase(), getLastRunId()))
                 .ensure(TITLE, Status.SUCCESS.reached, text(getLastRunId()), text(pipeline), text(draftVersionName))
-                .checkTags(configurationDisk, configurationNodeType.substring(0, configurationNodeType.indexOf(" ")))
+                .checkTags(configurationDisk, configurationNodeType)
                 .ensure(HIGHLIGHTS, text("Found in logs"),
                         text(storage.toLowerCase() + " mounted to"));
     }
@@ -436,12 +437,15 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test
     @TestCase(value = {"EPMCMBIBPC-2667"})
     public void searchForTool() {
+        final ToolDescription tool = tools().perform(defaultRegistry, defaultGroup, testingTool, Function.identity());
+        String toolShortDescription = tool.get(SHORT_DESCRIPTION).getText();
+        String toolDescription = tool.get(FULL_DESCRIPTION).getText().replace("’","'");
         home();
         search()
                 .click(TOOLS)
                 .search(toolEndpoint)
                 .enter()
-                .sleep(2, SECONDS)
+                .sleep(5, SECONDS)
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(testingTool)
                 .ensure(TITLE, text(toolEndpoint))
@@ -705,7 +709,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .parent()
                 .moveToSearchResultItem(customConfigurationProfile, Configuration::new)
                 .assertPageTitleIs(configuration)
-                .sleep(5, SECONDS);
+                .sleep(2, SECONDS);
         home();
     }
 
@@ -729,7 +733,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .parent()
                 .moveToSearchResultItem(customConfigurationProfile, Configuration::new)
                 .assertPageTitleIs(configuration)
-                .sleep(5, SECONDS);
+                .sleep(2, SECONDS);
         home();
     }
 

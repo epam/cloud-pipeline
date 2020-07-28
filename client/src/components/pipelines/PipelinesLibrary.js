@@ -293,6 +293,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
   renderItemTitle (item) {
     let icon;
     const subIcon = item.locked ? 'lock' : undefined;
+    let sensitive = false;
     let subTitle;
     switch (item.type) {
       case ItemTypes.pipeline: icon = 'fork'; break;
@@ -311,6 +312,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
         } else {
           icon = 'hdd';
         }
+        sensitive = item.sensitive;
         subTitle = (
           <AWSRegionTag
             className={styles.regionFlags}
@@ -348,8 +350,8 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       <span
         id={`pipelines-library-tree-node-${item.key}-name`}
         className={treeItemTitleClassName}>
-        {icon && <Icon type={icon} />}
-        {subIcon && <Icon type={subIcon} />}
+        {icon && <Icon type={icon} style={sensitive ? {color: '#ff5c33'} : {}} />}
+        {subIcon && <Icon type={subIcon} style={sensitive ? {color: '#ff5c33'} : {}} />}
         <span className="name">{name}</span>
         {subTitle}
       </span>

@@ -73,6 +73,10 @@ public class C {
         AUTH_TOKEN = conf.getProperty("e2e.ui.auth.token");
         STORAGE_NAME_PREFIX = conf.getProperty("e2e.ui.storage.name.prefix");
         SEARCH_PREFIX = conf.getProperty("e2e.ui.search.prefix");
+        ANOTHER_INSTANCE = conf.getProperty("e2e.ui.another.instance.type");
+        DEFAULT_INSTANCE_FAMILY_NAME = conf.getProperty("e2e.ui.default.instance.family.name");
+        ANOTHER_TESTING_TOOL_NAME = conf.getProperty("e2e.ui.another.testing.tool");
+        ANOTHER_GROUP = conf.getProperty("e2e.ui.another.group");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -95,12 +99,14 @@ public class C {
     public static final String DEFAULT_REGISTRY;
     public static final String DEFAULT_REGISTRY_IP;
     public static final String DEFAULT_GROUP;
+    public static final String ANOTHER_GROUP;
 
     public static final String CLEAN_HISTORY_LOGIN;
     public static final String CLEAN_HISTORY_PASSWORD;
 
     public static final String TESTING_TOOL_NAME;
     public static final String TOOL_WITHOUT_DEFAULT_SETTINGS;
+    public static final String ANOTHER_TESTING_TOOL_NAME;
 
     public static final String REGISTRY_PATH_FOR_TOOL;
     public static final String INVALID_REGISTRY_PATH_FOR_TOOL;
@@ -119,6 +125,8 @@ public class C {
     public static final String DEFAULT_INSTANCE;
     public static final String DEFAULT_INSTANCE_PRICE_TYPE;
     public static final String CLOUD_PROVIDER;
+    public static final String ANOTHER_INSTANCE;
+    public static final String DEFAULT_INSTANCE_FAMILY_NAME;
 
     public static final String SPOT_PRICE_NAME;
     public static final String AUTH_TOKEN;

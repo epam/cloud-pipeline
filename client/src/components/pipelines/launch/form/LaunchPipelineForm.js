@@ -897,11 +897,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     } else if (this.state.startIdle) {
       cmd = 'sleep infinity';
     }
+    const stopAfterIsIncorrect = (o) => o === null || o === undefined || o === '' || isNaN(o);
     let payload = {
       instance_size: values[EXEC_ENVIRONMENT].type,
       instance_disk: +values[EXEC_ENVIRONMENT].disk,
       timeout: +(values[ADVANCED].timeout || 0),
-      stopAfter: +(values[ADVANCED].stopAfter || 0),
+      stopAfter: stopAfterIsIncorrect(values[ADVANCED].stopAfter)
+        ? undefined
+        : (+values[ADVANCED].stopAfter || 0),
       endpointName: values[ADVANCED].endpointName,
       cmd_template: cmd,
       node_count: this.state.launchCluster ? this.state.nodesCount : undefined,

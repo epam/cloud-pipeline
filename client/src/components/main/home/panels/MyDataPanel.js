@@ -80,7 +80,12 @@ export default class MyDataPanel extends React.Component {
         style={{fontWeight: 'bold', fontSize: 'larger'}}>
         {
           storage.type.toUpperCase() === 'NFS' &&
-          <span className={styles.storageType} type={storage.type.toUpperCase()}>{storage.type.toUpperCase()}</span>
+          <span
+            className={styles.storageType}
+            type={storage.type.toUpperCase()}
+          >
+            {storage.type.toUpperCase()}
+          </span>
         }
         <span type="main">
           <AWSRegionTag regionId={storage.regionId} />
@@ -89,6 +94,11 @@ export default class MyDataPanel extends React.Component {
       </Row>,
       <Row key="path">
         {highlightText(storage.pathMask, search)}
+        {
+          storage.sensitive
+            ? (<span style={{marginLeft: 5, color: '#ff5c33'}}>sensitive</span>)
+            : null
+        }
       </Row>
     ];
   };

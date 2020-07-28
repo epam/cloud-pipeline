@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.exception.cloud.azure.AzureException;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.datastorage.providers.azure.AzureHelper;
+import com.microsoft.azure.CloudException;
 import com.microsoft.azure.Page;
 import com.microsoft.azure.PagedList;
 import com.microsoft.azure.management.Azure;
@@ -125,10 +126,15 @@ public class AzureVMService {
     }
 
     public Optional<InstanceViewStatus> getFailingVMStatus(final AzureRegion region, final String vmName) {
-        final Optional<String> scaleSetName = getScaleSetName(vmName);
-        return scaleSetName.isPresent()
-                ? fetchFailingStatusFromScaleSet(region, scaleSetName.get(), vmName)
-                : fetchFailingStatusFromVm(region, vmName);
+        try {
+            final Optional<String> scaleSetName = getScaleSetName(vmName);
+            return scaleSetName.isPresent()
+                    ? fetchFailingStatusFromScaleSet(region, scaleSetName.get(), vmName)
+                    : fetchFailingStatusFromVm(region, vmName);
+        } catch (CloudException e) {
+            log.error(e.getMessage(), e);
+            return Optional.empty();
+        }
     }
 
     private String getInstanceResourceName(final AzureRegion region, final String instanceId) {
