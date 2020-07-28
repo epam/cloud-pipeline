@@ -59,13 +59,9 @@ public class ParallelLoadTests extends AbstractBfxPipelineTest implements Naviga
         closeDriverObjects();
     }
 
-    @AfterClass
-    public void deleteUsers() {
-        setUp();
-        loginAs(admin);
-        Arrays.stream(userList)
-                .forEach(this::deleteUser);
-        closeDriverObjects();
+    @AfterMethod(alwaysRun=true)
+    public static void closeDriverObjects(){
+        getWebDriver().close();
     }
 
     @BeforeMethod(alwaysRun = true)
@@ -84,7 +80,7 @@ public class ParallelLoadTests extends AbstractBfxPipelineTest implements Naviga
         final String folder = "parallelTestFolder" + name + Utils.randomSuffix();
         loginAs(testUser);
         long testStartTime = System.currentTimeMillis();
-        for (int i=1; i<=10; i++) {
+        for (int i=1; i<=1; i++) {
             long startTime = System.currentTimeMillis();
             navigationMenu()
                     .library()
@@ -117,25 +113,12 @@ public class ParallelLoadTests extends AbstractBfxPipelineTest implements Naviga
         executionTime("Summary time ", name, testStartTime);
     }
 
-    @AfterMethod(alwaysRun = true)
-    public static void closeDriverObjects() {
-        getWebDriver().close();
-    }
-
     private void addUser(Object[] user) {
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
                 .switchToUsers()
                 .createIfNotExist(user[0].toString());
-    }
-
-    private void deleteUser(Object[] user) {
-        navigationMenu()
-                .settings()
-                .switchToUserManagement()
-                .switchToUsers()
-                .deleteUserIfExist(user[0].toString());
     }
 
     private void executionTime(String action, String user, long startTime) {
