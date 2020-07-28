@@ -114,7 +114,8 @@ nav:
   - Direct HTTP API implementation: 'api/API_tutorials/Direct_HTTP_API.md'
   - JavaScript example: 'api/API_tutorials/JavaScript_example.md'
 - Cloud Pipeline Installation:
-  - Prerequisites: 'installation/prerequisites/common.md'
+  - Prerequisites:
+    - General requirements: 'installation/prerequisites/common.md'
     - AWS: 'installation/prerequisites/aws.md'
     - Azure: 'installation/prerequisites/azure.md'
     - GCP: 'installation/prerequisites/gcp.md'
