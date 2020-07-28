@@ -1955,7 +1955,8 @@ class IPRangeFormItem extends React.Component {
 
 const MountOptions = {
   NFS: 'NFS',
-  SMB: 'SMB'
+  SMB: 'SMB',
+  LUSTRE: 'LUSTRE'
 };
 
 const DefaultMountOptions = {
@@ -1973,6 +1974,10 @@ const MountRootFormat = {
     [MountOptions.SMB]: {
       mask: /^[^:]+(:[\d]+)?$/i,
       format: 'server:port'
+    },
+    [MountOptions.LUSTRE]: {
+      mask: /^[^:]+(:[\d]+)?$/i,
+      format: 'server:port'
     }
   },
   AZURE: {
@@ -1983,6 +1988,10 @@ const MountRootFormat = {
     [MountOptions.SMB]: {
       mask: /^[^:]+(:[\d]+)?$/i,
       format: 'server:port'
+    },
+    [MountOptions.LUSTRE]: {
+      mask: /^[^:]+(:[\d]+)?$/i,
+      format: 'server:port'
     }
   },
   GCP: {
@@ -1991,6 +2000,10 @@ const MountRootFormat = {
       format: 'server:port:/root'
     },
     [MountOptions.SMB]: {
+      mask: /^[^:]+(:[\d]+)?:\/.+$/i,
+      format: 'server:port:/root'
+    },
+    [MountOptions.LUSTRE]: {
       mask: /^[^:]+(:[\d]+)?:\/.+$/i,
       format: 'server:port:/root'
     }
