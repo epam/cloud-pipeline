@@ -54,8 +54,8 @@ class AzureProgressPercentage(ProgressPercentage):
         super(AzureProgressPercentage, self).__call__(newest_bytes)
 
     @staticmethod
-    def callback(source_key, size, quiet):
-        if not StorageOperations.show_progress(quiet, size):
+    def callback(source_key, size, quiet, lock=None):
+        if not StorageOperations.show_progress(quiet, size, lock):
             return None
         progress = AzureProgressPercentage(source_key, size)
         return lambda current, _: progress(current)
@@ -192,7 +192,7 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
     _POLLS_ATTEMPTS = _POLLS_LIMIT / _POLLS_TIMEOUT
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), skip_existing=False):
+                 quiet=False, size=None, tags=(), skip_existing=False, lock=None):
         full_path = path
         destination_path = StorageOperations.normalize_path(destination_wrapper, relative_path)
         if skip_existing:
@@ -212,7 +212,7 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         sync_copy = size < TransferBetweenAzureBucketsManager._SYNC_COPY_SIZE_LIMIT
         if not size or size == 0:
             sync_copy = None
-        progress_callback = AzureProgressPercentage.callback(full_path, size, quiet)
+        progress_callback = AzureProgressPercentage.callback(full_path, size, quiet, lock)
         if progress_callback:
             progress_callback(0, size)
         self.service.copy_blob(destination_bucket, destination_path, source_blob_url,
@@ -250,7 +250,7 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
 class AzureDownloadManager(AzureManager, AbstractTransferManager):
 
     def transfer(self, source_wrapper, destination_wrapper, path=None,
-                 relative_path=None, clean=False, quiet=False, size=None, tags=None, skip_existing=False):
+                 relative_path=None, clean=False, quiet=False, size=None, tags=None, skip_existing=False, lock=None):
         if path:
             source_key = path
         else:
@@ -266,10 +266,8 @@ class AzureDownloadManager(AzureManager, AbstractTransferManager):
                 if not quiet:
                     click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
                 return
-        folder = os.path.dirname(destination_key)
-        if folder and not os.path.exists(folder):
-            os.makedirs(folder)
-        progress_callback=AzureProgressPercentage.callback(source_key, size, quiet)
+        self.create_local_folder(destination_key, lock)
+        progress_callback = AzureProgressPercentage.callback(source_key, size, quiet, lock)
         self.service.get_blob_to_path(source_wrapper.bucket.path, source_key, destination_key,
                                       progress_callback=progress_callback)
         if clean:
@@ -279,7 +277,7 @@ class AzureDownloadManager(AzureManager, AbstractTransferManager):
 class AzureUploadManager(AzureManager, AbstractTransferManager):
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), skip_existing=False):
+                 size=None, tags=(), skip_existing=False, lock=None):
         if path:
             source_key = os.path.join(source_wrapper.path, path)
         else:
@@ -293,7 +291,7 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
                     click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
                 return
         destination_tags = StorageOperations.generate_tags(tags, source_key)
-        progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet)
+        progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet, lock)
         self.service.create_blob_from_path(destination_wrapper.bucket.path, destination_key, source_key,
                                            metadata=destination_tags,
                                            progress_callback=progress_callback)
@@ -314,7 +312,7 @@ class _SourceUrlIO(io.BytesIO):
 class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager):
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), skip_existing=False):
+                 size=None, tags=(), skip_existing=False, lock=None):
         if clean:
             raise AttributeError('Cannot perform \'mv\' operation due to deletion remote files '
                                  'is not supported for ftp/http sources.')
@@ -334,7 +332,7 @@ class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager)
                     click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
                 return
         destination_tags = StorageOperations.generate_tags(tags, source_key)
-        progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet)
+        progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet, lock)
         self.service.create_blob_from_stream(destination_wrapper.bucket.path, destination_key, _SourceUrlIO(source_key),
                                              metadata=destination_tags,
                                              progress_callback=progress_callback)

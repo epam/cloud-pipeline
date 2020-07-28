@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import datetime
+import multiprocessing
 import os
 import platform
 import sys
@@ -20,6 +21,7 @@ import sys
 import click
 import prettytable
 from future.utils import iteritems
+from operator import itemgetter
 
 from src.api.data_storage import DataStorage
 from src.api.folder import Folder
@@ -36,8 +38,8 @@ ALL_ERRORS = Exception
 
 class DataStorageOperations(object):
     @classmethod
-    def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, clean=False,
-           skip_existing=False):
+    def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, threads,
+           clean=False, skip_existing=False):
         try:
             source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
             destination_wrapper = DataStorageWrapper.get_wrapper(destination)
@@ -63,6 +65,12 @@ class DataStorageOperations(object):
                     click.echo('Specified --file-list file does not exist.', err=True)
                     sys.exit(1)
                 files_to_copy = cls.__get_file_to_copy(file_list, source_wrapper.path)
+            if threads and not recursive:
+                click.echo('-n (--threads) is allowed for folders only.', err=True)
+                sys.exit(1)
+            if threads and platform.system() == 'Windows':
+                click.echo('-n (--threads) is not supported for Windows OS', err=True)
+                sys.exit(1)
             relative = os.path.basename(source) if source_wrapper.is_file() else None
             if not force and not destination_wrapper.is_empty(relative=relative):
                 click.echo('Flag --force (-f) is required to overwrite files in the destination data.', err=True)
@@ -85,6 +93,7 @@ class DataStorageOperations(object):
             permission_to_check = os.R_OK if command == 'cp' else os.W_OK
             manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
             items = files_to_copy if file_list else source_wrapper.get_items()
+            sorted_items = list()
             for item in items:
                 full_path = item[1]
                 relative_path = item[2]
@@ -109,9 +118,15 @@ class DataStorageOperations(object):
                         click.echo("Skipping file {} since it matches exclude patterns [{}]."
                                    .format(full_path, ",".join(exclude)))
                     continue
-                manager.transfer(source_wrapper, destination_wrapper, path=full_path,
-                                 relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                                 tags=tags, skip_existing=skip_existing)
+                if threads:
+                    sorted_items.append(item)
+                else:
+                    manager.transfer(source_wrapper, destination_wrapper, path=full_path,
+                                     relative_path=relative_path, clean=clean, quiet=quiet, size=size,
+                                     tags=tags, skip_existing=skip_existing)
+            if threads:
+                cls._multiprocess_transfer_items(sorted_items, threads, manager, source_wrapper, destination_wrapper,
+                                                 clean, quiet, tags, skip_existing)
         except ALL_ERRORS as error:
             click.echo('Error: %s' % str(error), err=True)
             sys.exit(1)
@@ -518,3 +533,58 @@ class DataStorageOperations(object):
         if platform.system() == 'Windows':
             click.echo('%s command is not supported for Windows OS.' % command, err=True)
             sys.exit(1)
+
+    @classmethod
+    def _split_items_by_process(cls, sorted_items, threads):
+        splitted_items = list()
+        for i in range(threads):
+            splitted_items.append(list())
+        for i in range(len(sorted_items)):
+            j = i % threads
+            splitted_items[j].append(sorted_items[i])
+        return splitted_items
+
+    @classmethod
+    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, skip_existing,
+                        lock):
+        for item in items:
+            full_path = item[1]
+            relative_path = item[2]
+            size = item[3]
+            manager.transfer(source_wrapper, destination_wrapper, path=full_path,
+                             relative_path=relative_path, clean=clean, quiet=quiet, size=size,
+                             tags=tags, skip_existing=skip_existing, lock=lock)
+
+    @classmethod
+    def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper, clean,
+                                     quiet, tags, skip_existing):
+        size_index = 3
+        sorted_items.sort(key=itemgetter(size_index), reverse=True)
+        splitted_items = cls._split_items_by_process(sorted_items, threads)
+        lock = multiprocessing.Lock()
+
+        workers = []
+        for i in range(threads):
+            process = multiprocessing.Process(target=cls._transfer_items,
+                                              args=(splitted_items[i],
+                                                    manager,
+                                                    source_wrapper,
+                                                    destination_wrapper,
+                                                    clean,
+                                                    quiet,
+                                                    tags,
+                                                    skip_existing,
+                                                    lock))
+            process.start()
+            workers.append(process)
+        cls._handle_keyboard_interrupt(workers)
+
+    @staticmethod
+    def _handle_keyboard_interrupt(workers):
+        try:
+            for worker in workers:
+                worker.join()
+        except KeyboardInterrupt:
+            for worker in workers:
+                worker.terminate()
+                worker.join()
