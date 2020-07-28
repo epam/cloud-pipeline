@@ -518,6 +518,8 @@ class NFSMounter(StorageMounter):
             command = command.format(protocol="cifs")
             if not params['path'].startswith("//"):
                 params['path'] = '//' + params['path']
+        elif self.share_mount.mount_type == "LUSTRE":
+            command = command.format(protocol="lustre")
         else:
             command = command.format(protocol="nfs")
 

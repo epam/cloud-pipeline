@@ -23,11 +23,27 @@ IS_RPM_BASED=$?
 
 if [[ "$IS_RPM_BASED" = 0 ]]
 then
-    CHECK_CMD="rpm -qa | grep nfs-utils && rpm -qa | grep cifs-utils"
-    INSTALL_CMD="yum install nfs-utils cifs-utils -y -q"
+    CHECK_CMD="rpm -qa | grep nfs-utils && rpm -qa | grep cifs-utils && rpm -qa | grep lustre-client"
+    AMAZON_FSX_PUBLIC_KEY_URL="https://fsx-lustre-client-repo-public-keys.s3.amazonaws.com/fsx-rpm-public-key.asc" &&
+    LUSTRE_CLIENT_REPO_URL="https://fsx-lustre-client-repo.s3.amazonaws.com/el/$(. /etc/os-release;echo $VERSION_ID)/fsx-lustre-client.repo" &&
+    read -r -d '' INSTALL_CMD <<- EOM
+      yum install nfs-utils cifs-utils wget -y -q &&
+      wget $AMAZON_FSX_PUBLIC_KEY_URL -qO /tmp/fsx-rpm-public-key.asc &&
+      rpm --import /tmp/fsx-rpm-public-key.asc &&
+      wget $LUSTRE_CLIENT_REPO_URL -qO /etc/yum.repos.d/aws-fsx.repo &&
+      yum install -y -q kmod-lustre-client lustre-client &&
+      rm -f /tmp/fsx-rpm-public-key.asc /etc/yum.repos.d/aws-fsx.repo
+EOM
 else
-    CHECK_CMD="dpkg -l | grep nfs-common && dpkg -l | grep cifs-utils"
-    INSTALL_CMD='apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" nfs-common cifs-utils -y -qq'
+    CHECK_CMD="dpkg -l | grep nfs-common && dpkg -l | grep cifs-utils && dpkg -l | grep lustre-client"
+    AMAZON_FSX_PUBLIC_KEY_URL="https://fsx-lustre-client-repo-public-keys.s3.amazonaws.com/fsx-ubuntu-public-key.asc"
+    LUSTRE_CLIENT_REPO_URL="https://fsx-lustre-client-repo.s3.amazonaws.com/$(. /etc/os-release;echo $ID $VERSION_CODENAME)"
+    read -r -d '' INSTALL_CMD <<- EOM
+      apt-get install wget apt-utils -y -qq  &&
+      wget -qO- $AMAZON_FSX_PUBLIC_KEY_URL | apt-key add - &&
+      echo "deb $LUSTRE_CLIENT_REPO_URL main" > /etc/apt/sources.list.d/fsxlustreclientrepo.list && apt-get update -qq &&
+      apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" nfs-common cifs-utils linux-aws lustre-client-modules-aws -y > /dev/null
+EOM
 fi
 
 eval "$CHECK_CMD"
