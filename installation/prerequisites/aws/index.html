@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../../img/favicon.ico">
-  <title>v.0.14 - Cloud Pipeline</title>
+  <title>AWS - Cloud Pipeline</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
@@ -18,8 +18,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "v.0.14";
-    var mkdocs_page_input_path = "release_notes/v.0.14/v.0.14_-_Release_notes.md";
+    var mkdocs_page_name = "AWS";
+    var mkdocs_page_input_path = "installation/prerequisites/aws.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -60,45 +60,19 @@
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../../v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
-                </li>
-                <li class=" current">
-                    
-    <a class="current" href="./">v.0.14</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l3"><a href="#cloud-pipeline-v014-release-notes">Cloud Pipeline v.0.14 - Release notes</a></li>
-    
-        <ul>
-        
-            <li><a class="toctree-l4" href="#docker-image-installed-packages-list">Docker image installed packages list</a></li>
-        
-            <li><a class="toctree-l4" href="#docker-image-version-settings">Docker image version settings</a></li>
-        
-            <li><a class="toctree-l4" href="#global-search">Global Search</a></li>
-        
-            <li><a class="toctree-l4" href="#default-values-restrictions-on-instance-types-for-the-users-groups-and-tools">Default values (restrictions) on instance types for the users (groups) and tools</a></li>
-        
-            <li><a class="toctree-l4" href="#auto-scaled-cluster">Auto-scaled cluster</a></li>
-        
-            <li><a class="toctree-l4" href="#a-mandatory-prefix-for-the-new-creating-s3-buckets">A mandatory prefix for the new creating S3-buckets</a></li>
-        
-            <li><a class="toctree-l4" href="#white-list-for-docker-images">"White list" for docker images</a></li>
-        
-            <li><a class="toctree-l4" href="#grace-period-for-unscanned-or-vulnerable-docker-images">"Grace" period for unscanned or vulnerable docker images</a></li>
-        
-        </ul>
-    
-
-    </ul>
+    <a class="" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+    <a class="" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+    <a class="" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
                 </li>
     </ul>
 	    </li>
@@ -541,25 +515,51 @@
 		
     <span class="caption-text">Cloud Pipeline Installation</span>
     <ul class="subnav">
-                <li class="">
+                <li class=" current">
                     
     <span class="caption-text">Prerequisites</span>
     <ul class="subnav">
                 <li class="toctree-l3">
                     
-    <a class="" href="../../../installation/prerequisites/common/">General requirements</a>
+    <a class="" href="../common/">General requirements</a>
+                </li>
+                <li class="toctree-l3 current">
+                    
+    <a class="current" href="./">AWS</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l4"><a href="#aws">AWS</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l5" href="#vpc">VPC</a></li>
+        
+            <li><a class="toctree-l5" href="#subnets">Subnets</a></li>
+        
+            <li><a class="toctree-l5" href="#security-groups">Security Groups</a></li>
+        
+            <li><a class="toctree-l5" href="#ami">AMI</a></li>
+        
+            <li><a class="toctree-l5" href="#vpc-s3-endpoint">VPC S3 Endpoint</a></li>
+        
+            <li><a class="toctree-l5" href="#ssh-key">SSH Key</a></li>
+        
+            <li><a class="toctree-l5" href="#iam">IAM</a></li>
+        
+            <li><a class="toctree-l5" href="#kms">KMS</a></li>
+        
+        </ul>
+    
+
+    </ul>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../../installation/prerequisites/aws/">AWS</a>
+    <a class="" href="../azure/">Azure</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../../installation/prerequisites/azure/">Azure</a>
-                </li>
-                <li class="toctree-l3">
-                    
-    <a class="" href="../../../installation/prerequisites/gcp/">GCP</a>
+    <a class="" href="../gcp/">GCP</a>
                 </li>
     </ul>
                 </li>
@@ -588,11 +588,15 @@
     
       
         
-          <li>Release notes &raquo;</li>
+          <li>Prerequisites &raquo;</li>
+        
+      
+        
+          <li>Cloud Pipeline Installation &raquo;</li>
         
       
     
-    <li>v.0.14</li>
+    <li>AWS</li>
     <li class="wy-breadcrumbs-aside">
       
     </li>
@@ -602,160 +606,359 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="cloud-pipeline-v014-release-notes">Cloud Pipeline v.0.14 - Release notes</h1>
+                <h1 id="aws">AWS</h1>
+<p><strong>Note</strong>: Account specific information shall be updated in the JSONs below:</p>
 <ul>
-<li><a href="#docker-image-installed-packages-list">Docker image installed packages list</a></li>
-<li><a href="#docker-image-version-settings">Docker image version settings</a></li>
-<li><a href="#global-search">Global Search</a></li>
-<li><a href="#default-values-restrictions-on-instance-types-for-the-users-groups-and-tools">Default values (restrictions) on instance types for the users (groups) and tools</a></li>
-<li><a href="#auto-scaled-cluster">Auto-scaled cluster</a></li>
-<li><a href="#a-mandatory-prefix-for-the-new-creating-s3-buckets">A mandatory prefix for the new creating S3-buckets</a></li>
-<li><a href="#white-list-for-docker-images">"White list" for docker images</a></li>
-<li><a href="#grace-period-for-unscanned-or-vulnerable-docker-images">"Grace" period for unscanned or vulnerable docker images</a></li>
+<li>Account name: <code>&lt;account-name&gt;</code></li>
+<li>Account ID: <code>&lt;account-id&gt;</code></li>
+<li>Region: <code>&lt;region-id&gt;</code></li>
 </ul>
-<h2 id="docker-image-installed-packages-list">Docker image installed packages list</h2>
-<p>Often users would like to know the full list software packages installed into a specific Docker images. E.g. to decide which one to run.<br />
-Now this information is available from the docker version menu.</p>
-<ol>
-<li>User can click a specific version of the tool<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_DockerImagePackages_1.png" /></li>
+<h2 id="vpc">VPC</h2>
+<p>A new VPC in the <code>&lt;region-id&gt;</code> region with the default configuration</p>
+<h2 id="subnets">Subnets</h2>
+<ul>
+<li>A routable subnet with /26 CIDR or a subnet with the Elastic IPs allowed. It will be used to deploy user-facing services</li>
+<li>Non routable subnets with any CIDR range (e.g. /16) in each of the available Availability Zones. These subnets will be used to launch the worker nodes. E.g. for us-east-1 region, the following subnets/CIDRs can be created:</li>
+<li>us-east-1a: 10.0.0.0/23</li>
+<li>us-east-1b: 10.0.2.0/23</li>
+<li>us-east-1c: 10.0.4.0/23</li>
+<li>us-east-1d: 10.0.6.0/23</li>
+<li>us-east-1e: 10.0.8.0/23</li>
+<li>us-east-1f: 10.0.10.0/23</li>
+</ul>
+<h2 id="security-groups">Security Groups</h2>
+<ul>
+<li>CP-Cluster-Internal:</li>
+<li>Traffic type: ALL</li>
+<li>Ports: ALL</li>
+<li>Inbound: from <CP-Cluster-Internal></li>
 <li>
-<p>"<strong>Packages</strong>" tab will shown in the list of tabs in menu of tool's version.<br />
-    List of packages is generated from the docker version together with vulnerabilities scanning (introduced in v0.12). This occurs nightly (all dockers are scanned) or if admin explicitly requests scanning by clicking SCAN button for a specific version.<br />
-    Currently the following types of software packages can be scanned:  </p>
-<ul>
-<li>System package manager's database (i.e. <strong>yum</strong>, <strong>apt</strong>)  </li>
-<li>R packages  </li>
-<li>Python packages  </li>
-</ul>
-<p>Software packages are combined into groups named "<strong>Ecosystems</strong>". User can select one of the ecosystems in the dropdown list and view its contents:<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_DockerImagePackages_2.png" /></p>
+<p>Outbound: to <CP-Cluster-Internal></p>
 </li>
 <li>
-<p>Information about each package contains the package name and its short description (<em>if available</em>).</p>
+<p>CP-HTTPS-Access:</p>
 </li>
-<li>User can filter packages by name (search will be done across all <strong>ecosystems</strong>)<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_DockerImagePackages_3.png" /></li>
-</ol>
-<p>For more details see <a href="../../../manual/10_Manage_Tools/10.7._Tool_version_menu/#version-packages">here</a>.</p>
-<h2 id="docker-image-version-settings">Docker image version settings</h2>
-<p>Previously docker image settings (instance type, disk, default command) were set using the following approaches:</p>
-<ul>
-<li>Global defaults</li>
-<li>Docker image settings</li>
-<li>Specific run launch parameters</li>
+<li>Traffic type: HTTPS</li>
+<li>Port: 443</li>
+<li>
+<p>Inbound: from <code>Internal networks or 0.0.0.0 (for the Elastic IPs usage)</code></p>
+</li>
+<li>
+<p>CP-Internet-Access:</p>
+</li>
+<li>Traffic type: Any</li>
+<li>Port: 3128</li>
+<li>Outbound: to <code>Egress HTTP proxy, if applicable</code></li>
 </ul>
-<p>This introduces a number of limitations, e.g. if a docker image contains two version: one with CPU-only and another with GPU support, user was not able to define which instance type to use for what version.<br />
-Now settings can be applied to the specific docker version. These settings are defined in the "<strong>Settings</strong>" tab of the tool's version menu:<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_DockerImageVersionSettings_1.png" /><br />
-If these (version-level) settings are specified - they will be applied to each run of the docker image:</p>
-<blockquote>
-<p>All other settings levels are still remaining in place. If version-specific settings are not defined: docker-level settings will be applied.</p>
-</blockquote>
-<p><img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_DockerImageVersionSettings_2.png" /><br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_DockerImageVersionSettings_3.png" /></p>
-<p>For more details see <a href="../../../manual/10_Manage_Tools/10.7._Tool_version_menu/#version-settings">here</a>.</p>
-<h2 id="global-search">Global Search</h2>
-<p>While Cloud Pipeline grows in terms of data and pipelines being add/implemented - it is crucial to be able to search for specific datasets or tools.<br />
-Previously user was able to search only for the jobs runs. In v0.14 of the Cloud Pipeline Platform - a capability to search over all existing objects types is implemented.<br />
-The following object types are being indexed and can be searched:</p>
+<h2 id="ami">AMI</h2>
+<p>The following AMIs shall be white-listed for the AWS Account:</p>
 <ul>
-<li>"<strong>FOLDERS</strong>" - in the folders ("Library hierarchy") and metadata entities</li>
-<li>"<strong>PIPELINES</strong>" - in the pipelines metadata, pipelines files (documents) and configurations</li>
-<li>"<strong>RUNS</strong>" - in the runs information</li>
-<li>"<strong>TOOLS</strong>" - in the docker registries, groups and tools</li>
-<li>"<strong>STORAGES</strong>" - in S3/NFS storages metadata, S3/NFS files (names)</li>
-<li>"<strong>ISSUES</strong>" - in the issues (discussions)</li>
+<li>CPU-only: <code>ami-0383ffd4e3eea1784</code></li>
+<li>GPU/CUDA: <code>ami-0b1141f33ec5cf631</code></li>
 </ul>
-<p>User can open a search form by pressing "Ctrl+F" being at any page of the Cloud Pipeline Web GUI (<em>excluding case when run's logs page is open</em>) or by clicking on <img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_GlobalSearch_1.png" /> in left menu bar (<em>global searching form will not be opened if any pop-up window is shown</em>):<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_GlobalSearch_2.png" /></p>
-<p>To start searching a "google-like" query string shall be entered (search can be triggered by pressing "Enter" button or automatically if no new input is provided for 2 seconds):<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_GlobalSearch_3.png" /><br />
-Special expressions in query string are available as well (the rules for their assignment are described in pop-up window that appears when hovering over the <img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_GlobalSearch_4.png" /> icon):<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_GlobalSearch_5.png" /></p>
-<p>By default search will occur across all the available object types. If user would to limit search scope - appropriate section can be selected above the query input:<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_GlobalSearch_6.png" /></p>
-<p>To get a brief information on the object found, user can hover an item with a mouse and a  "Preview" pane will be shown to the right or click an entry to navigate to it's location within the Cloud Pipeline.</p>
-<ol>
-<li>Tool preview:<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_GlobalSearch_7.png" /></li>
-<li>Pipeline preview:<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_GlobalSearch_8.png" /></li>
-</ol>
-<p>In the "Preview" window user can see:</p>
+<h2 id="vpc-s3-endpoint">VPC S3 Endpoint</h2>
+<p>A new VPC endpoint shall be created for the S3 service. No specific configuration is needed</p>
+<h2 id="ssh-key">SSH Key</h2>
+<p>A new SSH key named <code>CP-SSH-Key</code></p>
+<h2 id="iam">IAM</h2>
+<h3 id="policies">Policies</h3>
 <ul>
-<li>name of the found object</li>
-<li>path to the object in library</li>
-<li>description (<em>optionally</em>)</li>
-<li>block with indication and highlighting of the object's concrete part, where inputted word was found</li>
-<li>preview of the found object (<em>if it's available</em>)</li>
+<li>Name: <strong>CP-Service-Policy</strong></li>
 </ul>
-<h2 id="default-values-restrictions-on-instance-types-for-the-users-groups-and-tools">Default values (restrictions) on instance types for the users (groups) and tools</h2>
-<p>Users may make a mistake while selecting instance types and storages when launching a run.
-This may be:</p>
+<pre><code>{
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Statement&quot;: [
+        {
+            &quot;Sid&quot;: &quot;S3Allow&quot;,
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Action&quot;: [
+                &quot;s3:GetLifecycleConfiguration&quot;,
+                &quot;s3:GetBucketTagging&quot;,
+                &quot;s3:DeleteObjectVersion&quot;,
+                &quot;s3:GetObjectVersionTagging&quot;,
+                &quot;s3:ListBucketVersions&quot;,
+                &quot;s3:RestoreObject&quot;,
+                &quot;s3:CreateBucket&quot;,
+                &quot;s3:ListBucket&quot;,
+                &quot;s3:GetBucketPolicy&quot;,
+                &quot;s3:GetObjectAcl&quot;,
+                &quot;s3:AbortMultipartUpload&quot;,
+                &quot;s3:PutBucketTagging&quot;,
+                &quot;s3:PutLifecycleConfiguration&quot;,
+                &quot;s3:PutBucketAcl&quot;,
+                &quot;s3:GetObjectTagging&quot;,
+                &quot;s3:PutObjectTagging&quot;,
+                &quot;s3:*Delete*&quot;,
+                &quot;s3:PutBucketVersioning&quot;,
+                &quot;s3:PutObjectAcl&quot;,
+                &quot;s3:DeleteObjectTagging&quot;,
+                &quot;s3:ListBucketMultipartUploads&quot;,
+                &quot;s3:PutObjectVersionTagging&quot;,
+                &quot;s3:DeleteObjectVersionTagging&quot;,
+                &quot;s3:GetBucketVersioning&quot;,
+                &quot;s3:PutBucketCORS&quot;,
+                &quot;s3:GetBucketAcl&quot;,
+                &quot;s3:ListMultipartUploadParts&quot;,
+                &quot;s3:PutObject&quot;,
+                &quot;s3:GetObject&quot;,
+                &quot;s3:GetBucketCORS&quot;,
+                &quot;s3:PutBucketPolicy&quot;,
+                &quot;s3:GetBucketLocation&quot;,
+                &quot;s3:GetObjectVersion&quot;,
+                &quot;s3:PutEncryptionConfiguration&quot;,
+                &quot;s3:GetEncryptionConfiguration&quot;,
+                &quot;s3:ListAllMyBuckets&quot;
+            ],
+            &quot;Resource&quot;: [
+                &quot;arn:aws:s3:::*&quot;
+            ]
+        },
+        {
+            &quot;Sid&quot;: &quot;EFSAllow&quot;,
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Action&quot;: [
+                &quot;elasticfilesystem:*&quot;
+            ],
+            &quot;Resource&quot;: [
+                &quot;arn:aws:elasticfilesystem:&lt;region-id&gt;:*:file-system/*&quot;
+            ]
+        },
+        {
+            &quot;Sid&quot;: &quot;OtherAllow&quot;,
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Action&quot;: [
+                &quot;ec2:AttachVolume&quot;,
+                &quot;ec2:DeregisterImage&quot;,
+                &quot;kms:Decrypt&quot;,
+                &quot;ec2:DeleteSnapshot&quot;,
+                &quot;ec2:RequestSpotInstances&quot;,
+                &quot;ec2:DeleteTags&quot;,
+                &quot;elasticfilesystem:CreateFileSystem&quot;,
+                &quot;ec2:CancelSpotFleetRequests&quot;,
+                &quot;ec2:CreateKeyPair&quot;,
+                &quot;ec2:CreateImage&quot;,
+                &quot;ec2:RequestSpotFleet&quot;,
+                &quot;ec2:DeleteVolume&quot;,
+                &quot;ec2:DescribeNetworkInterfaces&quot;,
+                &quot;ec2:StartInstances&quot;,
+                &quot;kms:Encrypt&quot;,
+                &quot;ec2:CreateSnapshot&quot;,
+                &quot;kms:ReEncryptTo&quot;,
+                &quot;kms:DescribeKey&quot;,
+                &quot;ec2:ModifyInstanceAttribute&quot;,
+                &quot;ec2:DescribeInstanceStatus&quot;,
+                &quot;ec2:DetachVolume&quot;,
+                &quot;ec2:ReleaseAddress&quot;,
+                &quot;ec2:RebootInstances&quot;,
+                &quot;iam:GetRole&quot;,
+                &quot;ec2:TerminateInstances&quot;,
+                &quot;ec2:CreateTags&quot;,
+                &quot;ec2:RegisterImage&quot;,
+                &quot;iam:ListRoles&quot;,
+                &quot;ec2:RunInstances&quot;,
+                &quot;ec2:StopInstances&quot;,
+                &quot;kms:ReEncryptFrom&quot;,
+                &quot;ec2:CreateVolume&quot;,
+                &quot;ec2:CreateNetworkInterface&quot;,
+                &quot;ec2:CancelSpotInstanceRequests&quot;,
+                &quot;ec2:Describe*&quot;,
+                &quot;kms:GenerateDataKey&quot;,
+                &quot;ec2:DescribeSubnets&quot;,
+                &quot;ec2:DeleteKeyPair&quot;,
+                &quot;cloudwatch:GetMetricStatistics&quot;,
+                &quot;cloudwatch:ListMetrics&quot;,
+                &quot;cloudwatch:PutMetricData&quot;,
+                &quot;cloudwatch:GetMetricData&quot;
+            ],
+            &quot;Resource&quot;: &quot;*&quot;
+        },
+        {
+            &quot;Sid&quot;: &quot;STSAllow&quot;,
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Action&quot;: [
+                &quot;sts:AssumeRole&quot;
+            ],
+            &quot;Resource&quot;: [
+                &quot;arn:aws:iam::&lt;account-id&gt;:role/CP-S3viaSTS&quot;
+            ]
+        }
+    ]
+}
+</code></pre>
+
 <ul>
-<li>Too large instance type for the job</li>
-<li>Spot instance for GPU job</li>
-<li>Not valid data storage path</li>
-<li>etc.</li>
+<li>Name: <strong>CP-KMS-Assume-Policy</strong></li>
 </ul>
-<p>Now admin can restrict certain options for the specific users/groups or tools to minimize a number of invalid configurations runs.<br />
-Restrictions could be set by different ways on several forms:</p>
+<pre><code>{
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Statement&quot;: [
+        {
+            &quot;Sid&quot;: &quot;KMSAllowOps&quot;,
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Action&quot;: [
+                &quot;kms:Decrypt&quot;,
+                &quot;kms:Encrypt&quot;,
+                &quot;kms:DescribeKey&quot;,
+                &quot;kms:ReEncrypt*&quot;,
+                &quot;kms:GenerateDataKey*&quot;
+                &quot;kms:ListKeys&quot;
+            ],
+            &quot;Resource&quot;: &quot;*&quot;
+        }
+    ]
+}
+</code></pre>
+
 <ul>
-<li>within "User management" tab (for more information see <a href="../../../manual/12_Manage_Settings/12.4._Edit_delete_a_user/#launch-options">12.4. Edit/delete a user</a> and <a href="../../../manual/12_Manage_Settings/12.6._Edit_a_group_role/#launch-options">12.6. Edit a group/role</a>) admin can specify for a user or a group of users (role) allowed price types and allowed instance types for the pipelines, configurations and tool runs:<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_InstanceAndPriceTypesRestrictions_1.png" /></li>
-<li>within "Instance management" panel in tool settings (for more information see <a href="../../../manual/10_Manage_Tools/10.5._Launch_a_Tool/#instance-management">10.5. Launch a Tool</a>) admin can specify allowed price types and allowed instance types for Tool runs:<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_InstanceAndPriceTypesRestrictions_2.png" /></li>
-<li>within "Cluster" tab in "Preferences" section of the system-level settings (see <a href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/#cluster">here</a>) admin also can specify allowed price types (with setting <strong><code>cluster.allowed.price.types</code></strong>) and allowed instance types for the pipelines, configurations and tool runs (with settings <strong><code>cluster.allowed.instance.types</code></strong> and <strong><code>cluster.allowed.instance.types.docker</code></strong>) as global defaults:<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_InstanceAndPriceTypesRestrictions_3.png" /><br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_InstanceAndPriceTypesRestrictions_4.png" /><br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_InstanceAndPriceTypesRestrictions_5.png" /></li>
+<li>Name: <strong>CP-S3viaSTS-Policy</strong></li>
 </ul>
-<p>Next hierarchy is set for applying of inputted allowed instance types (sorted by priority):</p>
+<pre><code>{
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Statement&quot;: [
+        {
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Action&quot;: [
+                &quot;s3:ListBucket&quot;,
+                &quot;s3:GetObject&quot;,
+                &quot;s3:PutObject&quot;,
+                &quot;s3:DeleteObject&quot;,
+                &quot;s3:GetObjectTagging&quot;,
+                &quot;s3:PutObjectTagging&quot;,
+                &quot;s3:DeleteObjectTagging&quot;,
+                &quot;s3:GetObjectVersionTagging&quot;,
+                &quot;s3:PutObjectVersionTagging&quot;,
+                &quot;s3:DeleteObjectVersionTagging&quot;,
+                &quot;s3:GetObjectVersion&quot;,
+                &quot;s3:DeleteObjectVersion&quot;,
+                &quot;s3:ListBucketVersions&quot;,
+                &quot;s3:GetBucketTagging&quot;,
+                &quot;s3:PutBucketTagging&quot;
+            ],
+            &quot;Resource&quot;: [
+                &quot;arn:aws:s3:::*&quot;
+            ]
+        }
+    ]
+}
+</code></pre>
+
+<h3 id="roles">Roles</h3>
 <ul>
-<li>User level (specified for a user on "User management" tab)</li>
-<li>User group level (specified for a group (role) on "User management" tab. If a user is a member of several groups - list of allowed instances will be summarized across all the groups)</li>
-<li>Tool level (specified for a tool on "Instance management" panel )</li>
-<li><em>(global)</em> <strong><code>cluster.allowed.instance.types.docker</code></strong> (specified on "Cluster" tab in "Preferences" section of the system-level settings)</li>
-<li><em>(global)</em> <strong><code>cluster.allowed.instance.types</code></strong> (specified on "Cluster" tab in "Preferences" section of the system-level settings)</li>
+<li>
+<p><strong>AWSServiceRoleForEC2Spot</strong>: policies according to the AWS Documentation <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-requests.html#service-linked-roles-spot-instance-requests">Manually create the AWSServiceRoleForEC2Spot service-linked role</a></p>
+</li>
+<li>
+<p><strong>CP-Service</strong>: CP-Service-Policy and CP-KMS-Assume-Policy</p>
+</li>
+<li>
+<p><strong>CP-S3viaSTS</strong>: </p>
+</li>
+<li>Policies: CP-S3viaSTS-Policy and CP-KMS-Assume-Policy</li>
+<li>Trust relationship:</li>
 </ul>
-<p>After specifying allowed instance types, all GUI forms that allow to select the list of instance types (configurations/launch forms) - will display only valid instance type, according to hierarchy above.<br />
-For price type specifying - if it is set for the user/group/tool - GUI will allow to select only that price type.</p>
-<h2 id="auto-scaled-cluster">Auto-scaled cluster</h2>
-<p>Previously, when you needed several nodes running at one task, you could configure and launch cluster: master machine and one or several worker machines. Their count was predefined before launching the task and could not changing during the run.<br />
-In current version, the auto-scaled cluster is implemented. This one differs from "usual" cluster in that it can attach or drop additional nodes during the run depending on the queue load. Using such type of cluster will minimize total cost.<br />
-If during the run there are jobs in waiting state longer than a specific time (<em>this time threshold is set by admin in "Preferences" section of the system-level settings</em>) - auto-scaled cluster will attach new computation nodes ("scale-up"). If during the run the queue is empty or all jobs are running longer than a specific time (<em>this time threshold is set by admin tab in "Preferences" section of the system-level settings</em>) - auto-scaled cluster will drop existing auto-scaled nodes ("scale-down").<br />
-For this cluster user may specify total count of child nodes - max count of auto-scaled nodes, and the count of "persistent" child nodes - count of nodes that will never be "scaled-down".</p>
-<p>To set auto-scaled cluster click "Configure cluster" in "Exec environment" panel before launch a run:<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_AutoScaledCluster_1.png" /><br />
-In pop-up window select "Auto-scaled cluster" and specify total count of "auto-scaled" nodes:<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_AutoScaledCluster_2.png" /><br />
-If you want to set a count of "persistent" child nodes, click "Setup default child nodes count" and specify the value:<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_AutoScaledCluster_3.png" /></p>
-<p>For more details see <a href="../../../manual/06_Manage_Pipeline/6._Manage_Pipeline/#configuration">here</a> and <a href="../../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">here</a>.</p>
-<h2 id="a-mandatory-prefix-for-the-new-creating-s3-buckets">A mandatory prefix for the new creating S3-buckets</h2>
-<p>Now admin can set <strong><code>storage.object.prefix</code></strong> on "Data storage" tab in "Preferences" section of the system-level settings:<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_StorageMandatoryPrefix_1.png" />  </p>
-<p>If it is set, all new storages will be created with this prefix (e.g. "<em>ds</em>"):<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_StorageMandatoryPrefix_2.png" /></p>
-<p><img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_StorageMandatoryPrefix_3.png" /></p>
-<p>For more information see <a href="../../../manual/08_Manage_Data_Storage/8.1._Create_and_edit_storage/#create-s3-storage">8.1. Create and edit storage</a>.</p>
-<h2 id="white-list-for-docker-images">"White list" for docker images</h2>
-<p>Previously user is not able to run a new image if it is not scanned yet or has a lot of vulnerabilities.<br />
-In current version a "white list" option for docker images is implemented. It's meaning that admin may allow users to run certain docker versions even if they are vulnerable/unscanned.</p>
-<p>For do that admin has to check a docker version in tool-versions list by click on special flag "Add to white list" near the "SCAN" button:<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_WhiteList_1.png" /><br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_WhiteList_2.png" /></p>
-<p>In this case user would be able to run such version of tool and none errors will be displayed during launch time and viewing.
-Only admin can "add"/"remove" tool version to the "white list".</p>
-<p>For more details see <a href="../../../manual/10_Manage_Tools/10.6._Tool_security_check/#white-list-for-tool-versions">10.6. Tool security check</a>.</p>
-<h2 id="grace-period-for-unscanned-or-vulnerable-docker-images">"Grace" period for unscanned or vulnerable docker images</h2>
-<p>Previously user is not able to run a new image if it is not scanned yet or has a lot of vulnerabilities.<br />
-In current version a "grace" period option for such docker images is implemented. During this period user will be able to run a tool, but an appropriate message will be displayed when viewing a tool or running it. The duration of "grace" period (in <em>hours</em>) is set on "Docker security" tab in "Preferences" section of the system-level settings:<br />
-<img alt="CP_v.0.14_ReleaseNotes" src="../attachments/RN014_GracePeriod_1.png" /></p>
-<p>If this time value is not elapsed from the date/time since the docker version became vulnerable or since the push time (if this version was not scanned yet) - user would be able to run such version of tool, but warning message will be displaying during version launch.<br />
-Since "grace" period is elapsed for this tool's version - behavior will became as for "usual" vulnerable/unscanned docker image.</p>
-<p>For more details see <a href="../../../manual/10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a> and <a href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/#docker-security">12.10. Manage the system-level settings</a>.</p>
+<pre><code>{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Principal&quot;: {
+        &quot;AWS&quot;: &quot;arn:aws:iam::&lt;account-id&gt;:role/CP-Service&quot;
+      },
+      &quot;Action&quot;: &quot;sts:AssumeRole&quot;
+    }
+  ]
+}
+</code></pre>
+
+<h2 id="kms">KMS</h2>
+<p>The following AWS KMS key shall be created:
+* Region: <code>&lt;region-id&gt;</code>
+* Name: CP-KMS-<code>&lt;region-id&gt;</code>
+* Description: Cloud Pipeline KMS encryption key
+* Key Material: <code>AWS_KMS</code></p>
+<p>The following policy shall be attached to the key:</p>
+<pre><code>{
+    &quot;Id&quot;: &quot;CP-KMS-Key-Policy&quot;,
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Statement&quot;: [
+        {
+            &quot;Sid&quot;: &quot;Enable IAM User Permissions&quot;,
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Principal&quot;: {
+                &quot;AWS&quot;: &quot;arn:aws:iam::&lt;account-id&gt;:root&quot;
+            },
+            &quot;Action&quot;: &quot;kms:*&quot;,
+            &quot;Resource&quot;: &quot;*&quot;
+        },
+        {
+            &quot;Sid&quot;: &quot;Allow access for Key Administrators&quot;,
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Principal&quot;: {
+                &quot;AWS&quot;: [
+                    &quot;arn:aws:iam::&lt;account-id&gt;:role/CP-Service&quot;,
+                    &quot;arn:aws:iam::&lt;account-id&gt;:role/aws-service-role/spot.amazonaws.com/AWSServiceRoleForEC2Spot&quot;
+                ]
+            },
+            &quot;Action&quot;: [
+                &quot;kms:Create*&quot;,
+                &quot;kms:Describe*&quot;,
+                &quot;kms:Enable*&quot;,
+                &quot;kms:List*&quot;,
+                &quot;kms:Put*&quot;,
+                &quot;kms:Update*&quot;,
+                &quot;kms:Revoke*&quot;,
+                &quot;kms:Disable*&quot;,
+                &quot;kms:Get*&quot;,
+                &quot;kms:Delete*&quot;,
+                &quot;kms:TagResource&quot;,
+                &quot;kms:UntagResource&quot;,
+                &quot;kms:ScheduleKeyDeletion&quot;,
+                &quot;kms:CancelKeyDeletion&quot;
+            ],
+            &quot;Resource&quot;: &quot;*&quot;
+        },
+        {
+            &quot;Sid&quot;: &quot;Allow use of the key&quot;,
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Principal&quot;: {
+                &quot;AWS&quot;: [
+                    &quot;arn:aws:iam::&lt;account-id&gt;:role/CP-Service&quot;,
+                    &quot;arn:aws:iam::&lt;account-id&gt;:role/aws-service-role/spot.amazonaws.com/AWSServiceRoleForEC2Spot&quot;
+                ]
+            },
+            &quot;Action&quot;: [
+                &quot;kms:Encrypt&quot;,
+                &quot;kms:Decrypt&quot;,
+                &quot;kms:ReEncrypt*&quot;,
+                &quot;kms:GenerateDataKey*&quot;,
+                &quot;kms:DescribeKey&quot;
+            ],
+            &quot;Resource&quot;: &quot;*&quot;
+        },
+        {
+            &quot;Sid&quot;: &quot;Allow attachment of persistent resources&quot;,
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Principal&quot;: {
+                &quot;AWS&quot;: [
+                    &quot;arn:aws:iam::&lt;account-id&gt;:role/CP-Service&quot;,
+                    &quot;arn:aws:iam::&lt;account-id&gt;:role/aws-service-role/spot.amazonaws.com/AWSServiceRoleForEC2Spot&quot;
+                ]
+            },
+            &quot;Action&quot;: [
+                &quot;kms:CreateGrant&quot;,
+                &quot;kms:ListGrants&quot;,
+                &quot;kms:RevokeGrant&quot;
+            ],
+            &quot;Resource&quot;: &quot;*&quot;,
+            &quot;Condition&quot;: {
+                &quot;Bool&quot;: {
+                    &quot;kms:GrantIsForAWSResource&quot;: &quot;true&quot;
+                }
+            }
+        }
+    ]
+}
+</code></pre>
               
             </div>
           </div>
@@ -763,10 +966,10 @@ Since "grace" period is elapsed for this tool's version - behavior will became a
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../../v.0.15/v.0.15_-_Release_notes/" class="btn btn-neutral float-right" title="v.0.15">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../azure/" class="btn btn-neutral float-right" title="Azure">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../../v.0.13/v.0.13_-_Release_notes/" class="btn btn-neutral" title="v.0.13"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../common/" class="btn btn-neutral" title="General requirements"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -792,10 +995,10 @@ Since "grace" period is elapsed for this tool's version - behavior will became a
     <span class="rst-current-version" data-toggle="rst-current-version">
       
       
-        <span><a href="../../v.0.13/v.0.13_-_Release_notes/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../common/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../../v.0.15/v.0.15_-_Release_notes/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../azure/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
