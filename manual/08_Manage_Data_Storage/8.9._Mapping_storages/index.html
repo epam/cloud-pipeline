@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../../img/favicon.ico">
-  <title>8.6. Delete Files and Folders from Data Storage - Cloud Pipeline</title>
+  <title>8.9. Mapping storages - Cloud Pipeline</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
@@ -18,8 +18,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "8.6. Delete Files and Folders from Data Storage";
-    var mkdocs_page_input_path = "manual/08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage.md";
+    var mkdocs_page_name = "8.9. Mapping storages";
+    var mkdocs_page_input_path = "manual/08_Manage_Data_Storage/8.9._Mapping_storages.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -237,15 +237,9 @@
                     
     <a class="" href="../8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
                 </li>
-                <li class="toctree-l3 current">
+                <li class="toctree-l3">
                     
-    <a class="current" href="./">8.6. Delete Files and Folders from Data Storage</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l4"><a href="#86-delete-files-and-folders-from-storage">8.6. Delete Files and Folders from Storage</a></li>
-    
-
-    </ul>
+    <a class="" href="../8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -255,9 +249,21 @@
                     
     <a class="" href="../8.8._Data_sharing/">8.8. Data sharing</a>
                 </li>
-                <li class="toctree-l3">
+                <li class="toctree-l3 current">
                     
-    <a class="" href="../8.9._Mapping_storages/">8.9. Mapping storages</a>
+    <a class="current" href="./">8.9. Mapping storages</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l4"><a href="#mount-cloud-data-storage-to-the-local-workstation">Mount Cloud Data Storage to the local workstation</a></li>
+    
+
+    <li class="toctree-l4"><a href="#authenticate-within-cloud-pipeline-platform-and-obtain-mapping-token">Authenticate within Cloud Pipeline platform and obtain mapping token</a></li>
+    
+
+    <li class="toctree-l4"><a href="#map-network-drive-to-the-windows-workstation">Map network drive to the Windows workstation</a></li>
+    
+
+    </ul>
                 </li>
     </ul>
                 </li>
@@ -580,7 +586,7 @@
         
       
     
-    <li>8.6. Delete Files and Folders from Data Storage</li>
+    <li>8.9. Mapping storages</li>
     <li class="wy-breadcrumbs-aside">
       
     </li>
@@ -590,13 +596,52 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="86-delete-files-and-folders-from-storage">8.6. Delete Files and Folders from Storage</h1>
-<p><strong><em>Note</em></strong>: when you delete a folder, all child folders and files will be removed as well.</p>
+                <h1 id="mount-cloud-data-storage-to-the-local-workstation">Mount Cloud Data Storage to the local workstation</h1>
+<p>Introduction</p>
+<p>Cloud Pipeline platform allows to mount data storages, located in the Cloud, to the local workstation as a network drive.
+This provides an easy way to manage files, that shall be processed in the Cloud or downloaded locally.</p>
+<p>· Authenticate within Cloud Pipeline platform and obtain mapping token</p>
+<p>· Map network drive to the Windows workstation</p>
+<pre><code>Please consider the following limitations and prerequisites to map a network drive:
+
+1. Network drive mapping is only supported for Windows workstations
+2. Internet Explorer 11 shall be used for Authentication section of this manual Once authentication is done - Chrome or other web-browser can be used to further work
+3. Only NFS data storages (e.g. EFS/NFS/SMB) can be mapped to the local workstation. S3/AZ/GCP storages are not supported
+4. The following limits are applied to the data transfer:
+    1. Max 500 Mb per file
+    2. Max transfer duration: 30 min
+5. The following requirements shall be met for the user's account:
+    2. User shall be granted write permissions to any of the NFS data storages
+</code></pre>
+
+<h1 id="authenticate-within-cloud-pipeline-platform-and-obtain-mapping-token">Authenticate within Cloud Pipeline platform and obtain mapping token</h1>
 <ol>
-<li>Click the <strong>Delete</strong> button in the right side of the row with file or folder you want to delete.
-    <img alt="CP_DeleteFilesAndFoldersFromStorage" src="../attachments/DeleteFilesAndFoldersFromStorage_2.png" /></li>
-<li>Confirm the action.<br />
-<img alt="CP_DeleteFilesAndFoldersFromStorage" src="../attachments/DeleteFilesAndFoldersFromStorage_1.png" /></li>
+<li>Open Internet Explorer web-browser </li>
+<li>Navigate to the Cloud Pipeline GUI https://<cloud pipeline adress>/pipeline/</li>
+<li>Click "Settings" button in the left menu <img alt="CP_MappingStorages" src="../attachments/MappingStorages_1.png" /></li>
+<li>Navigate to the CLI tab and select Drive mapping section in the left menu
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_2.png" /></li>
+<li>Authentication prompt will be shown
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_3.png" /></li>
+<li>Click Authenticate button</li>
+<li>If authentication succeeds you will see a popup window with a link to map a network drive Copy the URL shown in the popup, it will be used in the workstation configuration section
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_4.png" /></li>
+</ol>
+<h1 id="map-network-drive-to-the-windows-workstation">Map network drive to the Windows workstation</h1>
+<ol>
+<li>Open This PC (My Computer) view</li>
+<li>Click Map network drive button
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_5.png" /></li>
+<li>A Map Network Drive dialog will be shown<ol>
+<li>Select a Drive letter (it will be used to address a drive, e.g. Z:) or keep the default value for the Drive: field</li>
+<li>Paste a mapping URL (obtained from the Cloud Pipeline authentication dialog) into Folder: field</li>
+<li>Tick Reconnect at logon checkbox</li>
+<li>Click Finish button
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_6.png" /></li>
+</ol>
+</li>
+<li>Drive will be mapped and opened. Further you can address it using a drive letter set at step.3 (e.g. Z:)
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_7.png" /></li>
 </ol>
               
             </div>
@@ -605,10 +650,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../8.7._Create_shared_file_system/" class="btn btn-neutral float-right" title="8.7. Create shared file system">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/" class="btn btn-neutral float-right" title="9. Manage cluster nodes">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../8.5._Delete_and_unregister_Data_Storage/" class="btn btn-neutral" title="8.5. Delete and unregister Data Storage"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../8.8._Data_sharing/" class="btn btn-neutral" title="8.8. Data sharing"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -634,10 +679,10 @@
     <span class="rst-current-version" data-toggle="rst-current-version">
       
       
-        <span><a href="../8.5._Delete_and_unregister_Data_Storage/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../8.8._Data_sharing/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../8.7._Create_shared_file_system/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
