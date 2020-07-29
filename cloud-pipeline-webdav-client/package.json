@@ -8,6 +8,7 @@
     "start": "DEV_MODE=true electron-forge start",
     "start:win32": "set DEV_MODE=true && electron-forge start",
     "package": "electron-forge package",
+    "package:linux": "electron-forge package --platform=linux",
     "package:win32": "electron-forge package --arch=ia32,x64 --platform=win32",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
