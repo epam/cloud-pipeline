@@ -256,6 +256,12 @@
             
     <li class="toctree-l4"><a href="#mount-cloud-data-storage-to-the-local-workstation">Mount Cloud Data Storage to the local workstation</a></li>
     
+        <ul>
+        
+            <li><a class="toctree-l5" href="#introduction">Introduction</a></li>
+        
+        </ul>
+    
 
     <li class="toctree-l4"><a href="#authenticate-within-cloud-pipeline-platform-and-obtain-mapping-token">Authenticate within Cloud Pipeline platform and obtain mapping token</a></li>
     
@@ -597,7 +603,7 @@
             <div class="section">
               
                 <h1 id="mount-cloud-data-storage-to-the-local-workstation">Mount Cloud Data Storage to the local workstation</h1>
-<p>Introduction</p>
+<h3 id="introduction">Introduction</h3>
 <p>Cloud Pipeline platform allows to mount data storages, located in the Cloud, to the local workstation as a network drive.
 This provides an easy way to manage files, that shall be processed in the Cloud or downloaded locally.</p>
 <p>· Authenticate within Cloud Pipeline platform and obtain mapping token</p>
@@ -619,29 +625,32 @@ This provides an easy way to manage files, that shall be processed in the Cloud 
 <li>Open Internet Explorer web-browser </li>
 <li>Navigate to the Cloud Pipeline GUI https://<cloud pipeline adress>/pipeline/</li>
 <li>Click "Settings" button in the left menu <img alt="CP_MappingStorages" src="../attachments/MappingStorages_1.png" /></li>
-<li>Navigate to the CLI tab and select Drive mapping section in the left menu
-<img alt="CP_MappingStorages" src="../attachments/MappingStorages_2.png" /></li>
-<li>Authentication prompt will be shown
-<img alt="CP_MappingStorages" src="../attachments/MappingStorages_3.png" /></li>
-<li>Click Authenticate button</li>
-<li>If authentication succeeds you will see a popup window with a link to map a network drive Copy the URL shown in the popup, it will be used in the workstation configuration section
-<img alt="CP_MappingStorages" src="../attachments/MappingStorages_4.png" /></li>
+<li>Navigate to the CLI tab and select Drive mapping section in the left menu</li>
 </ol>
+<p><img alt="CP_MappingStorages" src="../attachments/MappingStorages_2.png" />
+5. Authentication prompt will be shown</p>
+<p><img alt="CP_MappingStorages" src="../attachments/MappingStorages_3.png" />
+6. Click Authenticate button
+7. If authentication succeeds you will see a popup window with a link to map a network drive Copy the URL shown in the popup, it will be used in the workstation configuration section</p>
+<p><img alt="CP_MappingStorages" src="../attachments/MappingStorages_4.png" /></p>
 <h1 id="map-network-drive-to-the-windows-workstation">Map network drive to the Windows workstation</h1>
 <ol>
 <li>Open This PC (My Computer) view</li>
-<li>Click Map network drive button
-<img alt="CP_MappingStorages" src="../attachments/MappingStorages_5.png" /></li>
-<li>A Map Network Drive dialog will be shown<ol>
-<li>Select a Drive letter (it will be used to address a drive, e.g. Z:) or keep the default value for the Drive: field</li>
-<li>Paste a mapping URL (obtained from the Cloud Pipeline authentication dialog) into Folder: field</li>
-<li>Tick Reconnect at logon checkbox</li>
-<li>Click Finish button
-<img alt="CP_MappingStorages" src="../attachments/MappingStorages_6.png" /></li>
+<li>Click Map network drive button</li>
 </ol>
+<p><img alt="CP_MappingStorages" src="../attachments/MappingStorages_5.png" />
+3. A Map Network Drive dialog will be shown
+    1. Select a Drive letter (it will be used to address a drive, e.g. Z:) or keep the default value for the Drive: field
+    2. Paste a mapping URL (obtained from the Cloud Pipeline authentication dialog) into Folder: field
+    3. Tick Reconnect at logon checkbox
+    4. Click Finish button</p>
+<pre><code>    ![CP_MappingStorages](attachments/MappingStorages_6.png)
+</code></pre>
+<ol>
+<li>
+<p>Drive will be mapped and opened. Further you can address it using a drive letter set at step.3 (e.g. Z:)</p>
+<p><img alt="CP_MappingStorages" src="../attachments/MappingStorages_7.png" /></p>
 </li>
-<li>Drive will be mapped and opened. Further you can address it using a drive letter set at step.3 (e.g. Z:)
-<img alt="CP_MappingStorages" src="../attachments/MappingStorages_7.png" /></li>
 </ol>
               
             </div>
