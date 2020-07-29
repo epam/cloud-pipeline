@@ -34,6 +34,7 @@
     - [8.6. Delete Files and Folders from Storage](08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage.md)
     - [8.7. Create shared file system](08_Manage_Data_Storage/8.7._Create_shared_file_system.md)
     - [8.8. Data sharing](08_Manage_Data_Storage/8.8._Data_sharing.md)
+    - [8.9. Mapping storages](08_Manage_Data_Storage/8.9._Mapping_storages.md)
 - [9. Manage Cluster nodes](09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md)
 - [10. Manage Tools](10_Manage_Tools/10._Manage_Tools.md)
     - [10.1. Add/Edit a Docker registry](10_Manage_Tools/10.1._Add_Edit_a_Docker_registry.md)
