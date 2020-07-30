@@ -134,7 +134,8 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
         tags += ("CP_SOURCE={}".format(source_key),)
         tags += ("CP_OWNER={}".format(self._get_user()),)
         extra_args = {
-            'Tagging': self._convert_tags_to_url_string(tags)
+            'Tagging': self._convert_tags_to_url_string(tags),
+            'ACL': 'bucket-owner-full-control'
         }
         TransferManager.ALLOWED_UPLOAD_ARGS.append('Tagging')
         if StorageItemManager.show_progress(quiet, size, lock):
@@ -174,7 +175,8 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
         tags += ("CP_SOURCE={}".format(source_key),)
         tags += ("CP_OWNER={}".format(self._get_user()),)
         extra_args = {
-            'Tagging': self._convert_tags_to_url_string(tags)
+            'Tagging': self._convert_tags_to_url_string(tags),
+            'ACL': 'bucket-owner-full-control'
         }
         TransferManager.ALLOWED_UPLOAD_ARGS.append('Tagging')
         file_stream = urlopen(source_key)
@@ -215,7 +217,8 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
             tags += ('CP_OWNER={}'.format(self._get_user()),)
         TransferManager.ALLOWED_COPY_ARGS.append('Tagging')
         extra_args = {
-            'Tagging': self._convert_tags_to_url_string(tags)
+            'Tagging': self._convert_tags_to_url_string(tags),
+            'ACL': 'bucket-owner-full-control'
         }
         if StorageItemManager.show_progress(quiet, size, lock):
             self.bucket.copy(copy_source, destination_key, Callback=ProgressPercentage(relative_path, size),
