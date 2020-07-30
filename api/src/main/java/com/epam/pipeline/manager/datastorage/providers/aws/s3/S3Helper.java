@@ -29,6 +29,7 @@ import com.amazonaws.services.s3.model.BucketLifecycleConfiguration;
 import com.amazonaws.services.s3.model.BucketTaggingConfiguration;
 import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
 import com.amazonaws.services.s3.model.CORSRule;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
@@ -129,6 +130,7 @@ public class S3Helper {
     private static final String INCOMPLETE_UPLOAD_CLEANUP_RULE_ID = "Clean Incomplete Multipart Uploads";
     private static final String PATH_SHOULD_NOT_BE_EMPTY_MESSAGE = "Path should not be empty";
     private static final Long URL_EXPIRATION = 24 * 60 * 60 * 1000L;
+    private static final CannedAccessControlList DEFAULT_CANNED_ACL = CannedAccessControlList.BucketOwnerFullControl;
 
     private final MessageHelper messageHelper;
 
@@ -363,9 +365,9 @@ public class S3Helper {
                 .withExpiration(expires);
         String ownerTag = buildOwnerTag(owner);
         request.putCustomRequestHeader(Headers.S3_TAGGING, ownerTag);
-        return generatePresignedUrl(client, expires, ownerTag, request);
+        request.putCustomRequestHeader(Headers.S3_CANNED_ACL, DEFAULT_CANNED_ACL.toString());
+        return generatePresignedUrl(client, expires, ownerTag, DEFAULT_CANNED_ACL.toString(), request);
     }
-
 
     public DataStorageFile createFile(String bucket, String path, byte[] contents, String owner)
             throws DataStorageException {
@@ -401,6 +403,7 @@ public class S3Helper {
         PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, path, dataStream, objectMetadata);
         List<Tag> tags = Collections.singletonList(new Tag(ProviderUtils.OWNER_TAG_KEY, owner));
         putObjectRequest.withTagging(new ObjectTagging(tags));
+        putObjectRequest.withCannedAcl(DEFAULT_CANNED_ACL);
         client.putObject(putObjectRequest);
         return this.getFile(client, bucket, path);
     }
@@ -480,7 +483,10 @@ public class S3Helper {
             objectMetadata.setLastModified(new Date());
             byte[] contents = "".getBytes();
             ByteArrayInputStream byteInputStream = new ByteArrayInputStream(contents);
-            client.putObject(new PutObjectRequest(bucket, folderPath, byteInputStream, objectMetadata));
+            final PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, folderPath, byteInputStream, 
+                    objectMetadata);
+            putObjectRequest.withCannedAcl(DEFAULT_CANNED_ACL);
+            client.putObject(putObjectRequest);
             DataStorageFolder folder = new DataStorageFolder();
             folder.setName(folderName);
             folder.setPath(folderFullPath);
@@ -1036,16 +1042,18 @@ public class S3Helper {
 
     private DataStorageDownloadFileUrl generatePresignedUrl(AmazonS3 client, Date expires,
                                                             GeneratePresignedUrlRequest request) {
-        return generatePresignedUrl(client, expires, null, request);
+        return generatePresignedUrl(client, expires, null, null, request);
     }
 
     private DataStorageDownloadFileUrl generatePresignedUrl(AmazonS3 client, Date expires, String tagValue,
+                                                            String cannedACLValue,
                                                             GeneratePresignedUrlRequest request) {
         URL url = client.generatePresignedUrl(request);
         DataStorageDownloadFileUrl dataStorageDownloadFileUrl = new DataStorageDownloadFileUrl();
         dataStorageDownloadFileUrl.setUrl(url.toExternalForm());
         dataStorageDownloadFileUrl.setExpires(expires);
         dataStorageDownloadFileUrl.setTagValue(tagValue);
+        dataStorageDownloadFileUrl.setCannedACLValue(cannedACLValue);
         return dataStorageDownloadFileUrl;
     }
 

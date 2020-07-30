@@ -27,4 +27,5 @@ public class DataStorageDownloadFileUrl {
     private String url;
     private Date expires;
     private String tagValue;
+    private String cannedACLValue;
 }
