@@ -20,7 +20,6 @@ import com.epam.pipeline.dts.transfer.model.StorageItem;
 import com.epam.pipeline.dts.transfer.model.StorageType;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
 import com.epam.pipeline.dts.transfer.service.DataUploader;
-import com.epam.pipeline.dts.util.Utils;
 import java.util.List;
 import org.springframework.util.Assert;
 
@@ -31,7 +30,6 @@ public abstract class AbstractDataUploader implements DataUploader {
         final StorageItem source = transferTask.getSource();
         final StorageItem destination = transferTask.getDestination();
         if (source.getType() == StorageType.LOCAL) {
-            Utils.checkLocalPathReadability(source.getPath());
             upload(source, destination, transferTask.getIncluded(), transferTask.getUser());
         } else {
             checkStoragePath(source.getPath());

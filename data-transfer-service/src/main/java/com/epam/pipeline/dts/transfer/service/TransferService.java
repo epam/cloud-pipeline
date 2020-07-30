@@ -24,7 +24,6 @@ import java.util.List;
 
 public interface TransferService {
 
-    TransferTask runTransferTask(@NonNull StorageItem source, @NonNull StorageItem destination, List<String> included,
-                                 String username);
+    TransferTask runTransferTask(@NonNull StorageItem source, @NonNull StorageItem destination, List<String> included);
     void failRunningTasks();
 }

@@ -16,15 +16,18 @@
 
 package com.epam.pipeline.dts.transfer.service.impl;
 
+import com.epam.pipeline.dts.security.service.SecurityService;
 import com.epam.pipeline.dts.transfer.model.StorageItem;
 import com.epam.pipeline.dts.transfer.model.TaskStatus;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
+import com.epam.pipeline.dts.transfer.model.UsernameTransformation;
 import com.epam.pipeline.dts.transfer.service.DataUploaderProviderManager;
 import com.epam.pipeline.dts.transfer.service.TaskService;
 import com.epam.pipeline.dts.transfer.service.TransferService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -36,11 +39,16 @@ import java.util.List;
 public class TransferServiceImpl implements TransferService {
     private final TaskService taskService;
     private final DataUploaderProviderManager dataUploaderProviderManager;
+    private final SecurityService securityService;
+    @Value("${dts.username.transformation}")
+    private final UsernameTransformation usernameTransformation;
 
     @Override
     public TransferTask runTransferTask(@NonNull StorageItem source, @NonNull StorageItem destination,
-                                        List<String> included, String username) {
-        TransferTask transferTask = taskService.createTask(source, destination, included, username);
+                                        List<String> included) {
+        String authorizedUser = securityService.getAuthorizedUser();
+        String transferUser = usernameTransformation.apply(authorizedUser);
+        TransferTask transferTask = taskService.createTask(source, destination, included, transferUser);
         taskService.updateStatus(transferTask.getId(), TaskStatus.RUNNING);
         dataUploaderProviderManager.transferData(transferTask);
         return transferTask;

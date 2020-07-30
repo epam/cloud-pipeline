@@ -25,6 +25,7 @@ import com.epam.pipeline.dts.transfer.service.PipelineCliProvider;
 import com.epam.pipeline.dts.transfer.service.impl.AzureDataUploader;
 import com.epam.pipeline.dts.transfer.service.impl.CmdExecutorsProviderImpl;
 import com.epam.pipeline.dts.transfer.service.impl.DataUploaderProviderImpl;
+import com.epam.pipeline.dts.transfer.service.impl.GSDataUploader;
 import com.epam.pipeline.dts.transfer.service.impl.PipelineCliProviderImpl;
 import com.epam.pipeline.dts.transfer.service.impl.S3DataUploader;
 import org.apache.commons.collections4.CollectionUtils;
@@ -87,5 +88,10 @@ public class TransferConfiguration {
     @Bean
     public DataUploader azureDataUploader(final PipelineCliProvider pipelineCliProvider) {
         return new AzureDataUploader(pipelineCliProvider);
+    }
+    
+    @Bean
+    public DataUploader gsDataUploader(final PipelineCliProvider pipelineCliProvider) {
+        return new GSDataUploader(pipelineCliProvider);
     }
 }

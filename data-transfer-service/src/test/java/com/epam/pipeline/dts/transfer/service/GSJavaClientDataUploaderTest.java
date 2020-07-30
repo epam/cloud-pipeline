@@ -21,7 +21,7 @@ import com.epam.pipeline.dts.transfer.model.StorageType;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
 import com.epam.pipeline.dts.transfer.model.google.GoogleCredentials;
 import com.epam.pipeline.dts.transfer.model.google.GoogleTransferInfo;
-import com.epam.pipeline.dts.transfer.service.impl.GSDataUploader;
+import com.epam.pipeline.dts.transfer.service.impl.GSJavaClientDataUploader;
 import com.epam.pipeline.dts.transfer.service.impl.GoogleStorageClient;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-public class GSDataUploaderTest extends AbstractTransferTest {
+public class GSJavaClientDataUploaderTest extends AbstractTransferTest {
 
     private static final String PATH_TO_FILE = "/path/to/file";
     private static final String PATH_TO_FOLDER = "/path/to/folder";
@@ -45,7 +45,7 @@ public class GSDataUploaderTest extends AbstractTransferTest {
     private static final String PATH_TO_FOLDER_RELATIVE = "path/to/folder";
 
     private final GoogleStorageClient googleStorageClient = mock(GoogleStorageClient.class);
-    private final DataUploader dataUploader = new GSDataUploader(googleStorageClient);
+    private final DataUploader dataUploader = new GSJavaClientDataUploader(googleStorageClient);
     private final Path existingFolderPath = createTempFolder("dts-gs-data-uploader-test-folder");
     private final Path existingFilePath = createTempFile("dts-gs-data-uploader-test-file");
 

@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.transfer.rest.dto;
+package com.epam.pipeline.dts.security.exception;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.util.ArrayList;
-import java.util.List;
-
-@Data
-@NoArgsConstructor
-public class TaskCreationDTO {
-
-    private StorageItemWithCredentialsDTO source;
-    private StorageItemWithCredentialsDTO destination;
-    private List<String> included = new ArrayList<>();
+public class SecurityServiceException extends RuntimeException {
+    public SecurityServiceException(String message) {
+        super(message);
+    }
 }
