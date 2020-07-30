@@ -42,6 +42,7 @@ else
       apt-get install wget apt-utils -y -qq  &&
       wget -qO- $AMAZON_FSX_PUBLIC_KEY_URL | apt-key add - &&
       echo "deb $LUSTRE_CLIENT_REPO_URL main" > /etc/apt/sources.list.d/fsxlustreclientrepo.list && apt-get update -qq &&
+      mkdir -p /lib/modules/$(uname -r) &&
       apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" nfs-common cifs-utils linux-aws lustre-client-modules-aws -y > /dev/null
 EOM
 fi
