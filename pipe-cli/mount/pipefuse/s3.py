@@ -266,7 +266,7 @@ class S3Client(FileSystemClient):
         destination_path = self.build_full_path(path) if expand_path else path
         with io.BytesIO(bytearray(buf)) as body:
             self._s3.put_object(Bucket=self.bucket, Key=destination_path, Body=body,
-                                ExtraArgs={'ACL': 'bucket-owner-full-control'})
+                                ACL='bucket-owner-full-control')
 
     def delete(self, path, expand_path=True):
         source_path = self.build_full_path(path) if expand_path else path
@@ -365,7 +365,7 @@ class S3Client(FileSystemClient):
         with io.BytesIO(modified_bytes) as body:
             logging.info('Uploading range %d-%d for %s' % (offset, offset + len(buf), path))
             self._s3.put_object(Bucket=self.bucket, Key=path, Body=body,
-                                ExtraArgs={'ACL': 'bucket-owner-full-control'})
+                                ACL='bucket-owner-full-control')
 
     def flush(self, fh, path):
         source_path = self.build_full_path(path)
