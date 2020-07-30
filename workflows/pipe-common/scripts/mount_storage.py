@@ -385,6 +385,7 @@ class S3Mounter(StorageMounter):
             return 'AWS_ACCESS_KEY_ID={aws_key_id} AWS_SECRET_ACCESS_KEY={aws_secret} nohup goofys ' \
                    '--dir-mode {mask} --file-mode {mask} -o {permissions} -o allow_other ' \
                     '--stat-cache-ttl {stat_cache} --type-cache-ttl {type_cache} ' \
+                    '--acl "bucket-owner-full-control" ' \
                     '-f --gid 0 --region "{region_name}" {path} {mount} > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
         elif params['fuse_type'] == FUSE_S3FS_ID:
             params['path'] = '{bucket}:/{relative_path}'.format(**params) if params['relative_path'] else params['path']
@@ -393,6 +394,7 @@ class S3Mounter(StorageMounter):
             return 'AWSACCESSKEYID={aws_key_id} AWSSECRETACCESSKEY={aws_secret} s3fs {path} {mount} -o use_cache={tmp_dir} ' \
                     '-o umask=0000 -o {permissions} -o allow_other -o enable_noobj_cache ' \
                     '-o endpoint="{region_name}" -o url="https://s3.{region_name}.amazonaws.com" {ensure_diskfree_option} ' \
+                    '-o default_acl="bucket-owner-full-control" ' \
                     '-o dbglevel="info" -f > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
         else:
             return 'exit 1'

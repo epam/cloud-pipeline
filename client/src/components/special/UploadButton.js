@@ -189,6 +189,7 @@ export default class UploadButton extends React.Component {
     } else {
       const url = request.value.url;
       const tagValue = request.value.tagValue;
+      const cannedACLValue = request.value.cannedACLValue;
       return new Promise((resolve) => {
         const files = this.state.uploadingFiles;
         const [uploadingFile] = files.filter(f => f.uid === file.uid);
@@ -258,6 +259,9 @@ export default class UploadButton extends React.Component {
         request.open('PUT', url, true);
         if (tagValue) {
           request.setRequestHeader('x-amz-tagging', tagValue);
+        }
+        if (cannedACLValue) {
+          request.setRequestHeader('x-amz-acl', cannedACLValue);
         }
         request.send(file);
         uploadingFile.abortCallback = () => {
