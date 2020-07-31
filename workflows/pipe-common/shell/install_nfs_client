@@ -23,10 +23,12 @@ IS_RPM_BASED=$?
 
 if [[ "$IS_RPM_BASED" = 0 ]]
 then
-    CHECK_CMD="rpm -qa | grep nfs-utils && rpm -qa | grep cifs-utils && rpm -qa | grep lustre-client"
+    CHECK_NFS_SMB_CMD="rpm -qa | grep nfs-utils && rpm -qa | grep cifs-utils"
+    INSTALL_NFS_SMB_CMD="yum install nfs-utils cifs-utils -y -q"
+    CHECK_LUSTRE_CMD="rpm -qa | grep lustre-client"
     AMAZON_FSX_PUBLIC_KEY_URL="https://fsx-lustre-client-repo-public-keys.s3.amazonaws.com/fsx-rpm-public-key.asc" &&
     LUSTRE_CLIENT_REPO_URL="https://fsx-lustre-client-repo.s3.amazonaws.com/el/$(. /etc/os-release;echo $VERSION_ID)/fsx-lustre-client.repo" &&
-    read -r -d '' INSTALL_CMD <<- EOM
+    read -r -d '' INSTALL_LUSTRE_CMD <<- EOM
       yum install nfs-utils cifs-utils wget -y -q &&
       wget $AMAZON_FSX_PUBLIC_KEY_URL -qO /tmp/fsx-rpm-public-key.asc &&
       rpm --import /tmp/fsx-rpm-public-key.asc &&
@@ -35,10 +37,12 @@ then
       rm -f /tmp/fsx-rpm-public-key.asc /etc/yum.repos.d/aws-fsx.repo
 EOM
 else
-    CHECK_CMD="dpkg -l | grep nfs-common && dpkg -l | grep cifs-utils && dpkg -l | grep lustre-client"
+    CHECK_NFS_SMB_CMD="dpkg -l | grep nfs-common && dpkg -l | grep cifs-utils"
+    INSTALL_NFS_SMB_CMD='apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" nfs-common cifs-utils -y -qq'
+    CHECK_LUSTRE_CMD="dpkg -l | grep lustre-client"
     AMAZON_FSX_PUBLIC_KEY_URL="https://fsx-lustre-client-repo-public-keys.s3.amazonaws.com/fsx-ubuntu-public-key.asc"
     LUSTRE_CLIENT_REPO_URL="https://fsx-lustre-client-repo.s3.amazonaws.com/$(. /etc/os-release;echo $ID $VERSION_CODENAME)"
-    read -r -d '' INSTALL_CMD <<- EOM
+    read -r -d '' INSTALL_LUSTRE_CMD <<- EOM
       apt-get install wget apt-utils -y -qq  &&
       wget -qO- $AMAZON_FSX_PUBLIC_KEY_URL | apt-key add - &&
       echo "deb $LUSTRE_CLIENT_REPO_URL main" > /etc/apt/sources.list.d/fsxlustreclientrepo.list && apt-get update -qq &&
@@ -47,24 +51,54 @@ else
 EOM
 fi
 
-eval "$CHECK_CMD"
+eval "$CHECK_LUSTRE_CMD"
+IS_LUSTRE_INSTALLED=$?
+
+eval "$CHECK_NFS_SMB_CMD"
+IS_NFS_SMB_INSTALLED=$?
 
 ######################################################
 # If NFS client is already installed - skip installation, otherwise install
 ######################################################
-if [ $? -ne 0 ]
+if [ $IS_NFS_SMB_INSTALLED -eq 0 ] && [ $IS_LUSTRE_INSTALLED -eq 0 ]
 then
-    pipe_log_info "--> NFS client not found, proceeding with installation" "$NFS_INSTALL_TASK"
-    pipe_log_info "--> Installing NFS client" "$NFS_INSTALL_TASK"
-    eval "$INSTALL_CMD"
-    if [ $? -ne 0 ]
-    then
-        pipe_log_fail "Failed to install NFS client, process will not continue with shared FS initialization" "$NFS_INSTALL_TASK"
-        exit 1
-    fi
-    pipe_log_info "--> NFS client installed" "$NFS_INSTALL_TASK"
-else
     pipe_log_info "--> NFS client is already installed" "$NFS_INSTALL_TASK"
+else
+    pipe_log_info "--> NFS client not found, proceeding with installation" "$NFS_INSTALL_TASK"
+    pipe_log_info "--> Installing NFS clients" "$NFS_INSTALL_TASK"
+    if [ $IS_NFS_SMB_INSTALLED -ne 0 ]
+    then
+        pipe_log_info "--> Installing [nfs, smb] client" "$NFS_INSTALL_TASK"
+        eval "$INSTALL_NFS_SMB_CMD"
+        if [ $? -ne 0 ]
+        then
+            pipe_log_fail "Failed to install NFS client [nfs, smb], process will not continue with shared FS initialization" "$NFS_INSTALL_TASK"
+            exit 1
+        else
+            pipe_log_info "--> NFS client [nfs, smb] installed successfully" "$NFS_INSTALL_TASK"
+        fi
+    else
+        pipe_log_info "--> NFS client [nfs, smb] installed already" "$NFS_INSTALL_TASK"
+    fi
+    if [ $IS_LUSTRE_INSTALLED -ne 0 ]
+    then
+        pipe_log_info "--> Installing [lustre] client" "$NFS_INSTALL_TASK"
+        LUSTRE_INSTALLATION_LOG="/run/lustre_client_installation.log"
+        eval "$INSTALL_LUSTRE_CMD" > $LUSTRE_INSTALLATION_LOG 2>&1
+        if [ $? -ne 0 ]
+        then
+            pipe_log_fail "Errors occured during NFS client [lustre] installation, check $LUSTRE_INSTALLATION_LOG for more details" "$NFS_INSTALL_TASK"
+        else
+            pipe_log_info "--> NFS client packages [lustre] installed successfully" "$NFS_INSTALL_TASK"
+        fi
+    else
+        pipe_log_info "--> NFS client packages [lustre] installed already" "$NFS_INSTALL_TASK"
+    fi
+    eval "df -t lustre" > /dev/null 2>&1
+    if [[ -z $(cat /proc/filesystems | grep lustre) ]]; then
+        pipe_log_warn "--> [lustre] filesystem is not available. " "$NFS_INSTALL_TASK"
+    fi
+    pipe_log_info "--> NFS clients installation is finished" "$NFS_INSTALL_TASK"
 fi
 
 #####################################################
