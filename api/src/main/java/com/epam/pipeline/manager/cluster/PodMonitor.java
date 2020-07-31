@@ -60,6 +60,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
@@ -301,15 +302,27 @@ public class PodMonitor extends AbstractSchedulingManager {
             for (int i = 0; i < statuses.size() - 1; i++) {
                 final RunStatus previous = statuses.get(i);
                 final RunStatus current = statuses.get(i + 1);
-                if (TaskStatus.RUNNING.equals(previous.getStatus())) {
+                if (isRunning(previous)) {
                     duration += secondsBetween(previous, current);
                 }
+            }
+            final RunStatus last = statuses.get(statuses.size() - 1);
+            if (isRunning(last)) {
+                duration += secondsBetween(last.getTimestamp(), DateUtils.nowUTC());
             }
             return duration;
         }
 
-        private long secondsBetween(final RunStatus previous, final RunStatus current) {
-            return Duration.between(current.getTimestamp(), previous.getTimestamp()).getSeconds();
+        private boolean isRunning(final RunStatus status) {
+            return TaskStatus.RUNNING.equals(status.getStatus());
+        }
+
+        private long secondsBetween(final RunStatus first, final RunStatus second) {
+            return secondsBetween(first.getTimestamp(), second.getTimestamp());
+        }
+
+        private long secondsBetween(final LocalDateTime first, final LocalDateTime second) {
+            return Duration.between(first, second).getSeconds();
         }
 
         private boolean checkChildrenPods(PipelineRun run, KubernetesClient client, Pod parent) {
