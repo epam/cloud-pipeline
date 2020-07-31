@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.notification.NotificationManager;
@@ -33,6 +34,7 @@ import com.epam.pipeline.manager.notification.NotificationSettingsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RestartRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
+import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -59,6 +61,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -106,6 +109,7 @@ public class PodMonitor extends AbstractSchedulingManager {
         private final String kubeNamespace;
         private final RunLogManager runLogManager;
         private final PipelineRunManager pipelineRunManager;
+        private final RunStatusManager runStatusManager;
         private final MessageHelper messageHelper;
         private final KubernetesManager kubernetesManager;
         private final NotificationSettingsManager notificationSettingsManager;
@@ -118,6 +122,7 @@ public class PodMonitor extends AbstractSchedulingManager {
         @Autowired
         PodMonitorCore(final RunLogManager runLogManager,
                        final PipelineRunManager pipelineRunManager,
+                       final RunStatusManager runStatusManager,
                        final MessageHelper messageHelper,
                        final KubernetesManager kubernetesManager,
                        final NotificationSettingsManager notificationSettingsManager,
@@ -129,6 +134,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                        final @Value("${kube.namespace}") String kubeNamespace) {
             this.runLogManager = runLogManager;
             this.pipelineRunManager = pipelineRunManager;
+            this.runStatusManager = runStatusManager;
             this.messageHelper = messageHelper;
             this.kubernetesManager = kubernetesManager;
             this.notificationSettingsManager = notificationSettingsManager;
@@ -256,19 +262,54 @@ public class PodMonitor extends AbstractSchedulingManager {
                     pod.getMetadata().getLabels().containsKey(CLUSTER_ID_LABEL);
 
             if (threshold > 0 && !isClusterNode) {
-                long duration = Duration.between(run.getStartDate().toInstant(), DateUtils.now().toInstant())
-                        .abs()
-                        .getSeconds();
+                long duration = runningDurationOf(run);
                 if (duration >= threshold) {
                     Date lastNotificationDate = run.getLastNotificationTime();
                     if (checkNeedOfNotificationResend(lastNotificationDate, resendDelay)) {
-                        notificationManager.notifyLongRunningTask(run, settings);
+                        notificationManager.notifyLongRunningTask(run, duration, settings);
 
                         run.setLastNotificationTime(DateUtils.now());
                         pipelineRunManager.updatePipelineRunLastNotification(run);
                     }
                 }
             }
+        }
+
+        private long runningDurationOf(final PipelineRun run) {
+            return Optional.of(run)
+                    .map(PipelineRun::getId)
+                    .map(runStatusManager::loadRunStatus)
+                    .filter(CollectionUtils::isNotEmpty)
+                    .map(this::toSortedStatuses)
+                    .map(this::toRunningDuration)
+                    .filter(duration -> duration > 0)
+                    .orElseGet(() -> overallDurationOf(run));
+        }
+
+        private long overallDurationOf(final PipelineRun run) {
+            return Duration.between(run.getStartDate().toInstant(), DateUtils.now().toInstant()).abs().getSeconds();
+        }
+
+        private List<RunStatus> toSortedStatuses(final List<RunStatus> statuses) {
+            return statuses.stream()
+                    .sorted(Comparator.comparing(RunStatus::getTimestamp))
+                    .collect(Collectors.toList());
+        }
+
+        private long toRunningDuration(final List<RunStatus> statuses) {
+            long duration = 0L;
+            for (int i = 0; i < statuses.size() - 1; i++) {
+                final RunStatus previous = statuses.get(i);
+                final RunStatus current = statuses.get(i + 1);
+                if (TaskStatus.RUNNING.equals(previous.getStatus())) {
+                    duration += secondsBetween(previous, current);
+                }
+            }
+            return duration;
+        }
+
+        private long secondsBetween(final RunStatus previous, final RunStatus current) {
+            return Duration.between(current.getTimestamp(), previous.getTimestamp()).getSeconds();
         }
 
         private boolean checkChildrenPods(PipelineRun run, KubernetesClient client, Pod parent) {
