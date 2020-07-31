@@ -32,24 +32,26 @@ then
     LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.rpm"
     LUSTRE_KMOD_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/kmod-lustre-client-$LUSTRE_VERSION.rpm"
     read -r -d '' INSTALL_LUSTRE_CMD <<- EOM
-      yum install -y -q wget && \
-      wget -q $LUSTRE_KMOD_URL -O kmod-lustre-client.rpm && \
-      wget -q $LUSTRE_CLIENT_URL -O lustre-client.rpm && \
-      yum install -y -q kmod-lustre-client.rpm lustre-client.rpm && \
+      yum install -y -q wget &&
+      wget -q $LUSTRE_KMOD_URL -O kmod-lustre-client.rpm &&
+      wget -q $LUSTRE_CLIENT_URL -O lustre-client.rpm &&
+      yum install -y -q kmod-lustre-client.rpm lustre-client.rpm &&
       rm -f *lustre-client.rpm
 EOM
 else
     CHECK_NFS_SMB_CMD="dpkg -l | grep nfs-common && dpkg -l | grep cifs-utils"
     INSTALL_NFS_SMB_CMD='apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" nfs-common cifs-utils -y -qq'
     CHECK_LUSTRE_CMD="dpkg -l | grep lustre-client"
-    AMAZON_FSX_PUBLIC_KEY_URL="https://fsx-lustre-client-repo-public-keys.s3.amazonaws.com/fsx-ubuntu-public-key.asc"
-    LUSTRE_CLIENT_REPO_URL="https://fsx-lustre-client-repo.s3.amazonaws.com/$(. /etc/os-release;echo $ID $VERSION_CODENAME)"
+    LUSTRE_VERSION=$(. /etc/os-release;echo $ID-$VERSION_CODENAME)
+    LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/deb/lustre-client-$LUSTRE_VERSION.tar.gz"
     read -r -d '' INSTALL_LUSTRE_CMD <<- EOM
-      apt-get install wget apt-utils -y -qq  &&
-      wget -qO- $AMAZON_FSX_PUBLIC_KEY_URL | apt-key add - &&
-      echo "deb $LUSTRE_CLIENT_REPO_URL main" > /etc/apt/sources.list.d/fsxlustreclientrepo.list && apt-get update -qq &&
+      apt-get install wget -y -qq  &&
+      wget -q $LUSTRE_CLIENT_URL -O lustre-client.tar.gz &&
+      mkdir lustre-client-install/ &&
+      tar -C lustre-client-install/ -zxvf lustre-client.tar.gz &&
       mkdir -p /lib/modules/$(uname -r) &&
-      apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" nfs-common cifs-utils linux-aws lustre-client-modules-aws -y > /dev/null
+      dpkg -i lustre-client-install/* &&
+      rm -rf lustre-client-install/ lustre-client.tar.gz
 EOM
 fi
 
