@@ -99,7 +99,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
     private static final String BODY = "body";
     private static final String NON_EXISTING_USER = "not_existing_user";
     private static final Map<String, Object> PARAMETERS = Collections.singletonMap("key", "value");
-    public static final int LONG_STATUS_THRESHOLD = 100;
+    private static final int LONG_STATUS_THRESHOLD = 100;
+    private static final Duration LONG_RUNNING_DURATION = Duration.standardMinutes(6);
 
     @Autowired
     private NotificationManager notificationManager;
@@ -184,7 +185,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
                 HIGH_CONSUMED_RESOURCES.getDefaultThreshold(), HIGH_CONSUMED_RESOURCES.getDefaultResendDelay());
 
         longRunnging = new PipelineRun();
-        DateTime date = DateTime.now(DateTimeZone.UTC).minus(Duration.standardMinutes(6));
+        DateTime date = DateTime.now(DateTimeZone.UTC).minus(LONG_RUNNING_DURATION);
         longRunnging.setStartDate(date.toDate());
         longRunnging.setStatus(TaskStatus.RUNNING);
         longRunnging.setOwner(admin.getUserName());
@@ -280,7 +281,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         NotificationSettings settings = notificationSettingsDao.loadNotificationSettings(1L);
         settings.setKeepInformedAdmins(false);
         notificationSettingsDao.updateNotificationSettings(settings);
-        notificationManager.notifyLongRunningTask(longRunnging, settings);
+        notificationManager.notifyLongRunningTask(longRunnging, LONG_RUNNING_DURATION.getStandardSeconds(), settings);
 
         List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertEquals(1, messages.size());
@@ -291,7 +292,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         settings.setKeepInformedAdmins(false);
         settings.setInformedUserIds(Collections.singletonList(userDao.loadUserByName("admin").getId()));
         notificationSettingsDao.updateNotificationSettings(settings);
-        notificationManager.notifyLongRunningTask(longRunnging, settings);
+        notificationManager.notifyLongRunningTask(longRunnging, LONG_RUNNING_DURATION.getStandardSeconds(), settings);
         messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertTrue(messages.get(messages.size() - 1).getCopyUserIds().contains(admin.getId()));
     }

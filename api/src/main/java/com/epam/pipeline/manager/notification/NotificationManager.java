@@ -104,10 +104,11 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
      * Internal method for creating notification message that selecting appropriate email template from db,
      * serialize PipelineRun to key-value object and save it to notification_queue table.
      * @param run
+     * @param duration Running duration of a run in seconds.
      * @param settings defines, if a long initialization or long running message template should be used
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyLongRunningTask(PipelineRun run, NotificationSettings settings) {
+    public void notifyLongRunningTask(PipelineRun run, Long duration, NotificationSettings settings) {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_SUBMITTED, run.getPodId()));
 
         NotificationMessage notificationMessage = new NotificationMessage();
@@ -125,7 +126,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
                     settings.getTemplateId()));
         }
 
-        notificationMessage.setTemplateParameters(PipelineRunMapper.map(run, settings.getThreshold()));
+        notificationMessage.setTemplateParameters(PipelineRunMapper.map(run, settings.getThreshold(), duration));
         monitoringNotificationDao.createMonitoringNotification(notificationMessage);
     }
 
