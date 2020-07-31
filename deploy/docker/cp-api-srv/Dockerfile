@@ -37,13 +37,13 @@ RUN yum install -y \
                 cifs-utils \
                 gettext
 
-ARG AMAZON_FSX_PUBLIC_KEY_URL="https://fsx-lustre-client-repo-public-keys.s3.amazonaws.com/fsx-rpm-public-key.asc"
-ARG LUSTRE_CLIENT_REPO_URL="https://fsx-lustre-client-repo.s3.amazonaws.com/el/7/fsx-lustre-client.repo"
-RUN wget $AMAZON_FSX_PUBLIC_KEY_URL -O /tmp/fsx-rpm-public-key.asc && \
-    rpm --import /tmp/fsx-rpm-public-key.asc && \
-    wget $LUSTRE_CLIENT_REPO_URL -O /etc/yum.repos.d/aws-fsx.repo && \
-    yum install -y kmod-lustre-client lustre-client && \
-    rm -f /tmp/fsx-rpm-public-key.asc /etc/yum.repos.d/aws-fsx.repo
+ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
+ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.rpm"
+ARG LUSTRE_KMOD_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/kmod-lustre-client-$LUSTRE_VERSION.rpm"
+RUN wget -q $LUSTRE_KMOD_URL -O kmod-lustre-client.rpm && \
+    wget -q $LUSTRE_CLIENT_URL -O lustre-client.rpm && \
+    yum install -y -q kmod-lustre-client.rpm lustre-client.rpm && \
+    rm -f *lustre-client.rpm
 
 # Prebuild version of openssl v1.1.x which is required by osslsigncode.
 # As long as its compatibility is proven for osslsigncode tool only
