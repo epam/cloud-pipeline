@@ -26,15 +26,17 @@ then
     CHECK_NFS_SMB_CMD="rpm -qa | grep nfs-utils && rpm -qa | grep cifs-utils"
     INSTALL_NFS_SMB_CMD="yum install nfs-utils cifs-utils -y -q"
     CHECK_LUSTRE_CMD="rpm -qa | grep lustre-client"
-    AMAZON_FSX_PUBLIC_KEY_URL="https://fsx-lustre-client-repo-public-keys.s3.amazonaws.com/fsx-rpm-public-key.asc" &&
-    LUSTRE_CLIENT_REPO_URL="https://fsx-lustre-client-repo.s3.amazonaws.com/el/$(. /etc/os-release;echo $VERSION_ID)/fsx-lustre-client.repo" &&
+    OS_VERSION_ID=$(. /etc/os-release;echo $VERSION_ID)
+    LUSTRE_VERSION=$([ $OS_VERSION_ID -eq 6 ] && echo "2.10.8-1" || echo "2.12.5-1")
+    LUSTRE_VERSION="$LUSTRE_VERSION.el$OS_VERSION_ID.x86_64"
+    LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.rpm"
+    LUSTRE_KMOD_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/kmod-lustre-client-$LUSTRE_VERSION.rpm"
     read -r -d '' INSTALL_LUSTRE_CMD <<- EOM
-      yum install nfs-utils cifs-utils wget -y -q &&
-      wget $AMAZON_FSX_PUBLIC_KEY_URL -qO /tmp/fsx-rpm-public-key.asc &&
-      rpm --import /tmp/fsx-rpm-public-key.asc &&
-      wget $LUSTRE_CLIENT_REPO_URL -qO /etc/yum.repos.d/aws-fsx.repo &&
-      yum install -y -q kmod-lustre-client lustre-client &&
-      rm -f /tmp/fsx-rpm-public-key.asc /etc/yum.repos.d/aws-fsx.repo
+      yum install -y -q wget && \
+      wget -q $LUSTRE_KMOD_URL -O kmod-lustre-client.rpm && \
+      wget -q $LUSTRE_CLIENT_URL -O lustre-client.rpm && \
+      yum install -y -q kmod-lustre-client.rpm lustre-client.rpm && \
+      rm -f *lustre-client.rpm
 EOM
 else
     CHECK_NFS_SMB_CMD="dpkg -l | grep nfs-common && dpkg -l | grep cifs-utils"
