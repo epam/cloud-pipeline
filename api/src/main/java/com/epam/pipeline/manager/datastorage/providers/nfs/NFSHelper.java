@@ -32,7 +32,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-final class NFSHelper {
+public final class NFSHelper {
 
     /**
      * NFS path pattern for matching aws and google paths.
@@ -51,6 +51,16 @@ final class NFSHelper {
     private static final Pattern NFS_AZURE_ROOT_PATTERN = Pattern.compile("([^\\/]+\\/[^\\/]+\\/)[^\\/]+");
 
     /**
+     * NFS path pattern for matching Lustre paths.
+     * This pattern will match the following paths:
+     * <MGS NID>[:<MGS NID>]:/<fsname>, where <MGS NID> is <IPv4 address>@<LND protocol><lnd#>
+     * f.i.: 192.168.227.11@tcp1:/demo, 192.168.227.11@tcp1:192.168.227.12@tcp1:/demo
+     */
+    private static final String LUSTRE_MGS_NID_REGEX = "([^:]+(:\\d+)?@\\w+)";
+    private static final Pattern NFS_LUSTRE_ROOT_PATTERN =
+        Pattern.compile(String.format("^%1$s(:%1$s)*(:\\/)[^\\/]+", LUSTRE_MGS_NID_REGEX));
+
+    /**
      * NFS path pattern for matching aws paths.
      * This pattern will match the following paths:
      * AWS: {efs-host-name}:{bucket-name} (f.i. fs-12345678:bucket1)
@@ -60,10 +70,13 @@ final class NFSHelper {
     private static final String SMB_SCHEME = "//";
     private static final String PATH_SEPARATOR = "/";
     private static final String NFS_HOST_DELIMITER = ":/";
-    private static final String LUSTRE_HOST_DELIMITER = "@tcp:/";
 
     private NFSHelper() {
 
+    }
+
+    public static boolean isValidLustrePath(final String lustrePath) {
+        return NFS_LUSTRE_ROOT_PATTERN.matcher(lustrePath).find();
     }
 
     static String getNfsRootPath(String path) {
@@ -75,7 +88,7 @@ final class NFSHelper {
             return matcher.group(1);
         } else if (matcherWithHomeDir.find()) {
             return matcherWithHomeDir.group(1);
-        }else if (azureNfsMatcher.find()) {
+        } else if (azureNfsMatcher.find()) {
             return azureNfsMatcher.group(1);
         } else {
             throw new IllegalArgumentException("Invalid path");
@@ -101,12 +114,13 @@ final class NFSHelper {
         return StringUtils.isEmpty(result) ? "" : "-o " + result;
     }
 
-    static String formatNfsPath(String path, String protocol){
+    static String formatNfsPath(String path, String protocol) {
         if (protocol.equalsIgnoreCase(MountType.SMB.getProtocol()) && !path.startsWith(SMB_SCHEME)) {
             path = SMB_SCHEME + path;
         }
-        if (protocol.equalsIgnoreCase(MountType.LUSTRE.getProtocol()) && !path.contains(LUSTRE_HOST_DELIMITER)) {
-            path = path + LUSTRE_HOST_DELIMITER;
+        if (protocol.equalsIgnoreCase(MountType.LUSTRE.getProtocol())
+            && !NFS_LUSTRE_ROOT_PATTERN.matcher(path).find()) {
+            throw new IllegalArgumentException("Invalid Lustre path format!");
         }
         if (protocol.equalsIgnoreCase(MountType.NFS.getProtocol()) && !path.contains(NFS_HOST_DELIMITER)) {
             path = path + NFS_HOST_DELIMITER;
