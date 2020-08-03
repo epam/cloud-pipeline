@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -522,6 +522,8 @@ class NFSMounter(StorageMounter):
                 params['path'] = '//' + params['path']
         elif self.share_mount.mount_type == "LUSTRE":
             command = command.format(protocol="lustre")
+            if params['path'].count('/') > 1 and params['path'].endswith('/'):
+                params['path'] = params['path'][:-1]
         else:
             command = command.format(protocol="nfs")
 

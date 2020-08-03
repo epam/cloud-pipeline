@@ -35,6 +35,7 @@ public class NFSHelperTest {
 
     public static class NonParametrizedTests {
         private static final String TEST_PATH = "localhost";
+        private static final String TEST_LUSTRE_PATH = "localhost@tcp:/lustre";
         private static final String EMPTY_STRING = "";
         private static final String RESOURCE_GROUP = "rg";
 
@@ -69,6 +70,10 @@ public class NFSHelperTest {
             result = NFSHelper.formatNfsPath(unformattedPath, "cifs");
             //smb protocol -> should format with //
             Assert.assertEquals("//" + unformattedPath, result);
+
+            //lustre protocol -> remove path separator from the end
+            result = NFSHelper.formatNfsPath(TEST_LUSTRE_PATH+ "/", "lustre");
+            Assert.assertEquals(TEST_LUSTRE_PATH, result);
 
             //nfs protocol -> should add suffix
             result = NFSHelper.formatNfsPath(TEST_PATH, "nfs");

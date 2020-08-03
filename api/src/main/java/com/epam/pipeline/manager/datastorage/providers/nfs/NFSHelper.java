@@ -24,7 +24,7 @@ import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -121,9 +121,12 @@ public final class NFSHelper {
         if (protocol.equalsIgnoreCase(MountType.SMB.getProtocol()) && !path.startsWith(SMB_SCHEME)) {
             path = SMB_SCHEME + path;
         }
-        if (protocol.equalsIgnoreCase(MountType.LUSTRE.getProtocol())
-            && !NFS_LUSTRE_ROOT_PATTERN.matcher(path).find()) {
-            throw new IllegalArgumentException("Invalid Lustre path format!");
+        if (protocol.equalsIgnoreCase(MountType.LUSTRE.getProtocol())) {
+            if (!NFS_LUSTRE_ROOT_PATTERN.matcher(path).find()) {
+                throw new IllegalArgumentException("Invalid Lustre path format!");
+            } else if (path.endsWith(PATH_SEPARATOR)) {
+                path = StringUtils.chop(path);
+            }
         }
         if (protocol.equalsIgnoreCase(MountType.NFS.getProtocol()) && !path.contains(NFS_HOST_DELIMITER)) {
             path = path + NFS_HOST_DELIMITER;
