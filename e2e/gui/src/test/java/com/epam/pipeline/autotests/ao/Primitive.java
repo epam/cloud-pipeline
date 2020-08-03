@@ -188,6 +188,7 @@ public enum Primitive {
     SYSTEM_EVENTS_TAB,
     USER_MANAGEMENT_TAB,
     PREFERENCES_TAB,
+    SYSTEM_LOGS_TAB,
     USERS_TAB,
     ROLE_TAB,
     GROUPS_TAB,
@@ -253,5 +254,6 @@ public enum Primitive {
     NESTED_RUNS,
     WORKERS_PRICE_TYPE,
     DEFAULT_CHILD_NODES,
-    RESET
+    RESET,
+    CONTAINER_LOGS
 }
