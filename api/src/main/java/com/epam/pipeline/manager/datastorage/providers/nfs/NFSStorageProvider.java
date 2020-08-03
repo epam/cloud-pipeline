@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
+import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -166,7 +167,14 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         File mntDir = Paths.get(rootMountPoint, getMountDirName(dataStorage.getPath())).toFile();
         try {
             FileShareMount fileShareMount = shareMountManager.load(dataStorage.getFileShareMountId());
-            File rootMount = Paths.get(rootMountPoint, normalizePath(fileShareMount.getMountRoot())).toFile();
+            final String mountPath;
+            if (MountType.LUSTRE == fileShareMount.getMountType()) {
+                mntDir = Paths.get(rootMountPoint, getLustreMountDirName(dataStorage.getPath())).toFile();
+                mountPath = normalizeLustrePath(fileShareMount.getMountRoot());
+            } else {
+                mountPath = normalizePath(fileShareMount.getMountRoot());
+            }
+            final File rootMount = Paths.get(rootMountPoint, mountPath).toFile();
             if(!rootMount.exists()) {
                 Assert.isTrue(rootMount.mkdirs(), messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT_DIRECTORY_NOT_CREATED));
@@ -206,8 +214,10 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     private synchronized void unmountNFSIfEmpty(AbstractDataStorage storage) {
         FileShareMount fileShareMount = shareMountManager.load(storage.getFileShareMountId());
-        File rootMount = Paths.get(rootMountPoint, normalizePath(fileShareMount.getMountRoot())).toFile();
-
+        final String shareMountPath = MountType.LUSTRE == fileShareMount.getMountType()
+                                      ? normalizeLustrePath(fileShareMount.getMountRoot())
+                                      : normalizePath(fileShareMount.getMountRoot());
+        File rootMount = Paths.get(rootMountPoint, shareMountPath).toFile();
         List<AbstractDataStorage> remaining = dataStorageDao.loadDataStoragesByFileShareMountID(
                 storage.getFileShareMountId());
         LOGGER.debug("Remaining NFS: " + remaining.stream().map(AbstractDataStorage::getPath)
@@ -375,8 +385,16 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         return normalizePath(getNfsRootPath(nfsPath));
     }
 
+    private String getLustreMountDirName(String nfsPath) {
+        return normalizeLustrePath(getNfsRootPath(nfsPath));
+    }
+
     private String normalizePath(String nfsPath) {
         return nfsPath.replace(":", "/");
+    }
+
+    private String normalizeLustrePath(final String nfsPath) {
+        return nfsPath.replaceAll(":/", "/").replace(":", "_");
     }
 
     @Override

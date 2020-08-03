@@ -81,10 +81,13 @@ public final class NFSHelper {
 
     static String getNfsRootPath(String path) {
         path = path.endsWith(PATH_SEPARATOR) ? path.substring(0, path.length() - 1) : path;
-        Matcher matcher = NFS_ROOT_PATTERN.matcher(path);
-        Matcher matcherWithHomeDir = NFS_PATTERN_WITH_HOME_DIR.matcher(path);
-        Matcher azureNfsMatcher = NFS_AZURE_ROOT_PATTERN.matcher(path);
-        if (matcher.find()) {
+        final Matcher lustreMatcher = NFS_LUSTRE_ROOT_PATTERN.matcher(path);
+        final Matcher matcher = NFS_ROOT_PATTERN.matcher(path);
+        final Matcher matcherWithHomeDir = NFS_PATTERN_WITH_HOME_DIR.matcher(path);
+        final Matcher azureNfsMatcher = NFS_AZURE_ROOT_PATTERN.matcher(path);
+        if (lustreMatcher.find()) {
+            return lustreMatcher.group();
+        } else if (matcher.find()) {
             return matcher.group(1);
         } else if (matcherWithHomeDir.find()) {
             return matcherWithHomeDir.group(1);

@@ -89,6 +89,8 @@ public class NFSHelperTest {
             Assert.assertEquals(TEST_PATH + ":/mnt/", nfsRootPath);
             nfsRootPath = NFSHelper.getNfsRootPath(TEST_PATH  + "/mnt/directory");
             Assert.assertEquals(TEST_PATH + "/mnt/", nfsRootPath);
+            String lustreRootPath = NFSHelper.getNfsRootPath("host@tcp:/lustre/directory");
+            Assert.assertEquals("host@tcp:/lustre", lustreRootPath);
         }
 
         @Test(expected = IllegalArgumentException.class)
