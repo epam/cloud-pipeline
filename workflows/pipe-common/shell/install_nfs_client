@@ -87,7 +87,7 @@ else
     if [ $IS_LUSTRE_INSTALLED -ne 0 ]
     then
         pipe_log_info "--> Installing [lustre] client" "$NFS_INSTALL_TASK"
-        LUSTRE_INSTALLATION_LOG="/run/lustre_client_installation.log"
+        LUSTRE_INSTALLATION_LOG="/var/log/lustre_client_installation.log"
         eval "$INSTALL_LUSTRE_CMD" > $LUSTRE_INSTALLATION_LOG 2>&1
         if [ $? -ne 0 ]
         then
@@ -97,10 +97,6 @@ else
         fi
     else
         pipe_log_info "--> NFS client packages [lustre] installed already" "$NFS_INSTALL_TASK"
-    fi
-    eval "df -t lustre" > /dev/null 2>&1
-    if [[ -z $(cat /proc/filesystems | grep lustre) ]]; then
-        pipe_log_warn "--> [lustre] filesystem is not available. " "$NFS_INSTALL_TASK"
     fi
     pipe_log_info "--> NFS clients installation is finished" "$NFS_INSTALL_TASK"
 fi
