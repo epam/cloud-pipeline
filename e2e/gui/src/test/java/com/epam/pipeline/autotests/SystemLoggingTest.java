@@ -19,6 +19,7 @@ import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.Test;
 
@@ -44,4 +45,45 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 user.login, TYPE);
         systemLogsAO.validateTimeOrder(adminInfo, userInfo);
     }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-3163"})
+    public void userAuthenticationUnsuccessfulAttempt() {
+        try {
+            logoutIfNeeded();
+            loginAs(admin);
+            navigationMenu()
+                    .settings()
+                    .switchToUserManagement()
+                    .switchToUsers()
+                    .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
+                    .edit()
+                    .blockUser(userWithoutCompletedRuns.login.toUpperCase())
+                    .ok();
+            logout();
+            loginAs(userWithoutCompletedRuns);
+            validateErrorPage(format("%s was not able to authorize you", C.PLATFORM_NAME));
+            loginBack();
+            loginAs(admin);
+            navigationMenu()
+                    .settings()
+                    .switchToSystemLogs()
+                    .filterByUser(userWithoutCompletedRuns.login.toUpperCase())
+                    .validateRow(format("Authentication failed! User %s is blocked!", userWithoutCompletedRuns.login),
+                            userWithoutCompletedRuns.login, TYPE);
+        } finally {
+            logoutIfNeeded();
+            loginAs(admin);
+            navigationMenu()
+                    .settings()
+                    .switchToUserManagement()
+                    .switchToUsers()
+                    .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
+                    .edit()
+                    .unblockUser(userWithoutCompletedRuns.login.toUpperCase())
+                    .ok();
+        }
+    }
+
+
 }

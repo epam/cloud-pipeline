@@ -77,6 +77,7 @@ public class C {
         DEFAULT_INSTANCE_FAMILY_NAME = conf.getProperty("e2e.ui.default.instance.family.name");
         ANOTHER_TESTING_TOOL_NAME = conf.getProperty("e2e.ui.another.testing.tool");
         ANOTHER_GROUP = conf.getProperty("e2e.ui.another.group");
+        PLATFORM_NAME = conf.getProperty("e2e.ui.platform.name");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -132,4 +133,5 @@ public class C {
     public static final String AUTH_TOKEN;
     public static final String STORAGE_NAME_PREFIX;
     public static final String SEARCH_PREFIX;
+    public static final String PLATFORM_NAME;
 }

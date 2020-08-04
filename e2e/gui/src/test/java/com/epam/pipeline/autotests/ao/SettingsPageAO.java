@@ -36,6 +36,8 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -486,7 +488,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             entry(SEARCH, element),
                             entry(SEARCH_INPUT, element.find(By.className("ant-select-search__field"))),
                             entry(ADD_KEY, context().find(By.id("add-role-button"))),
-                            entry(OK, context().find(By.id("close-edit-user-form")))
+                            entry(OK, context().find(By.id("close-edit-user-form"))),
+                            entry(BLOCK, context().$(button("BLOCK"))),
+                            entry(UNBLOCK, context().$(button("UNBLOCK")))
                     );
 
                     public EditUserPopup(UsersTabAO parentAO) {
@@ -529,6 +533,22 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                                 .closest("tr")
                                 .find(By.id("delete-role-button"))
                                 .click();
+                        return this;
+                    }
+
+                    public EditUserPopup blockUser(final String user) {
+                        click(BLOCK);
+                        new ConfirmationPopupAO(this)
+                                .ensureTitleIs(format("Are you sure you want to block user %s?", user))
+                                .ok();
+                        return this;
+                    }
+
+                    public EditUserPopup unblockUser(final String user) {
+                        click(UNBLOCK);
+                        new ConfirmationPopupAO(this)
+                                .ensureTitleIs(format("Are you sure you want to unblock user %s?", user))
+                                .ok();
                         return this;
                     }
                 }
@@ -908,6 +928,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         private final ElementsCollection containerLogs = $(byClassName("ant-table-tbody"))
                 .should(exist)
                 .findAll(byClassName("ant-table-row"));
+        private final ElementsCollection filters = $(byClassName("ilters__filters"))
+                .findAll("ilters__filter");
 
         public SystemLogsAO(final PipelinesLibraryAO pipelinesLibraryAO) {
             super(pipelinesLibraryAO);
@@ -924,10 +946,19 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     });
         }
 
+        public SystemLogsAO filterByUser(final String user) {
+            selectValue(combobox("User"), user);
+            return this;
+        }
+
         public void validateTimeOrder(final SelenideElement info1, final SelenideElement info2) {
             LocalDateTime td1 = Utils.validateDateTimeString(info1.findAll("td").get(0).getText());
             LocalDateTime td2 = Utils.validateDateTimeString(info2.findAll("td").get(0).getText());
             assertTrue(td1.isAfter(td2));
+        }
+
+        public void validateRow(final String message, final String user, final String type) {
+            getInfoRow(message, user, type).should(exist);
         }
 
         @Override

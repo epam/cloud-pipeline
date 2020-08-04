@@ -255,5 +255,7 @@ public enum Primitive {
     WORKERS_PRICE_TYPE,
     DEFAULT_CHILD_NODES,
     RESET,
-    CONTAINER_LOGS
+    CONTAINER_LOGS,
+    BLOCK,
+    UNBLOCK
 }
