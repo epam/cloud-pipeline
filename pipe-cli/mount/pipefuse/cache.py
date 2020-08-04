@@ -16,11 +16,104 @@ import logging
 import time
 
 from datetime import datetime
+from threading import RLock
 
 import pytz
 
 from fsclient import File, FileSystemClientDecorator
 import fuseutils
+
+
+class ListingCache:
+
+    def __init__(self, cache):
+        """
+        Listing cache.
+
+        :param cache: Cache implementation.
+        """
+        self._cache = cache
+        self._delimiter = '/'
+
+    def get(self, path):
+        return self._cache.get(path, None)
+
+    def set(self, path, listing):
+        self._cache[path] = listing
+
+    def remove_from_parent_cache(self, path):
+        logging.info('Invalidating parent cache partially for %s' % path)
+        parent_path, _ = fuseutils.split_path(path)
+        parent_listing = self.get(parent_path)
+        if parent_listing:
+            parent_listing.pop(fuseutils.without_prefix(path, parent_path), None)
+
+    def invalidate_parent_cache(self, path):
+        parent_path, _ = fuseutils.split_path(path)
+        self.invalidate_cache(parent_path)
+
+    def invalidate_cache_recursively(self, path):
+        for cache_path in self._cache.keys():
+            if self._is_relative(cache_path, path):
+                self.invalidate_cache(cache_path)
+
+    def invalidate_cache(self, path):
+        logging.info('Invalidating cache for %s' % path)
+        self._cache.pop(path, None)
+
+    def _is_relative(self, cache_path, path):
+        if cache_path.startswith(path):
+            relative_path = fuseutils.without_prefix(cache_path, path)
+            return not relative_path or relative_path.startswith(self._delimiter)
+        return False
+
+
+def synchronized(func):
+    def wrapper(*args, **kwargs):
+        lock = args[0]._lock
+        try:
+            lock.acquire()
+            return_value = func(*args, **kwargs)
+            return return_value
+        finally:
+            lock.release()
+    return wrapper
+
+
+class ThreadSafeListingCache:
+
+    def __init__(self, inner):
+        """
+        Thread safe listing cache.
+
+        :param inner: Not thread safe listing cache.
+        """
+        self._inner = inner
+        self._lock = RLock()
+
+    @synchronized
+    def get(self, path):
+        return self._inner.get(path)
+
+    @synchronized
+    def set(self, path, listing):
+        self._inner.set(path, listing)
+
+    @synchronized
+    def remove_from_parent_cache(self, path):
+        self._inner.remove_from_parent_cache(path)
+
+    @synchronized
+    def invalidate_parent_cache(self, path):
+        self._inner.invalidate_parent_cache(path)
+
+    @synchronized
+    def invalidate_cache_recursively(self, path):
+        self._inner.invalidate_cache_recursively(path)
+
+    @synchronized
+    def invalidate_cache(self, path):
+        self._inner.invalidate_cache(path)
 
 
 class CachingFileSystemClient(FileSystemClientDecorator):
@@ -32,7 +125,7 @@ class CachingFileSystemClient(FileSystemClientDecorator):
         It caches listing calls to reduce number of calls to an inner file system client.
 
         :param inner: Decorating file system client.
-        :param cache: Caching dictionary.
+        :param cache: Listing cache.
         """
         super(CachingFileSystemClient, self).__init__(inner)
         self._inner = inner
@@ -45,7 +138,7 @@ class CachingFileSystemClient(FileSystemClientDecorator):
         if not file_name:
             return self._root()
         else:
-            parent_listing = self._cache.get(parent_path, None)
+            parent_listing = self._ls_as_dict(parent_path)
             if parent_listing:
                 file = self._find_in_listing(parent_listing, file_name)
                 if file:
@@ -57,13 +150,17 @@ class CachingFileSystemClient(FileSystemClientDecorator):
         return listing.get(file_name, None)
 
     def _ls_as_dict(self, path, depth=1):
-        listing = self._cache.get(path, None)
+        listing = self._cache.get(path)
         if listing:
             logging.info('Using cached listing for %s' % path)
         else:
-            logging.info('Listing %s' % path)
-            listing = {item.name.rstrip(self._delimiter): item for item in self._inner.ls(path, depth)}
-            self._cache[path] = listing
+            listing = self._uncached_ls_as_dict(path, depth)
+        return listing
+
+    def _uncached_ls_as_dict(self, path, depth=1):
+        logging.info('Listing %s' % path)
+        listing = {item.name.rstrip(self._delimiter): item for item in self._inner.ls(path, depth)}
+        self._cache.set(path, listing)
         return listing
 
     def _root(self):
@@ -79,52 +176,26 @@ class CachingFileSystemClient(FileSystemClientDecorator):
 
     def upload(self, buf, path):
         self._inner.upload(buf, path)
-        self._invalidate_parent_cache(path)
+        self._cache.invalidate_parent_cache(path)
 
     def delete(self, path):
         self._inner.delete(path)
-        self._remove_from_parent_cache(path)
+        self._cache.remove_from_parent_cache(path)
 
     def mv(self, old_path, path):
         self._inner.mv(old_path, path)
-        self._remove_from_parent_cache(old_path)
-        self._invalidate_parent_cache(path)
+        self._cache.remove_from_parent_cache(old_path)
+        self._cache.invalidate_parent_cache(path)
 
     def mkdir(self, path):
         self._inner.mkdir(path)
-        self._invalidate_parent_cache(path)
+        self._cache.invalidate_parent_cache(path)
 
     def rmdir(self, path):
         self._inner.rmdir(path)
-        self._remove_from_parent_cache(path)
-        self._invalidate_cache_recursively(path)
+        self._cache.remove_from_parent_cache(path)
+        self._cache.invalidate_cache_recursively(path)
 
     def flush(self, fh, path):
         self._inner.flush(fh, path)
-        self._invalidate_parent_cache(path)
-
-    def _remove_from_parent_cache(self, path):
-        logging.info('Invalidating cache for %s' % path)
-        parent_path, _ = fuseutils.split_path(path)
-        parent_listing = self._cache.get(parent_path, None)
-        if parent_listing:
-            parent_listing.pop(fuseutils.without_prefix(path, parent_path), None)
-
-    def _invalidate_parent_cache(self, path):
-        parent_path, _ = fuseutils.split_path(path)
-        self._invalidate_cache(parent_path)
-
-    def _invalidate_cache(self, path):
-        logging.info('Invalidating cache for %s' % path)
-        self._cache.pop(path, None)
-
-    def _invalidate_cache_recursively(self, path):
-        for cache_path in self._cache.keys():
-            if self._is_relative(cache_path, path):
-                self._invalidate_cache(cache_path)
-
-    def _is_relative(self, cache_path, path):
-        if cache_path.startswith(path):
-            relative_path = fuseutils.without_prefix(cache_path, path)
-            return not relative_path or relative_path.startswith(self._delimiter)
-        return False
+        self._cache.invalidate_parent_cache(path)
