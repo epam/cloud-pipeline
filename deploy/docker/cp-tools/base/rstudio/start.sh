@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,10 +20,11 @@ then
 fi
 
 # Add rstudio permissions to the OWNER and create a home dir for this account
-addgroup rstudio staff
-adduser $OWNER rstudio
-adduser $OWNER staff
-adduser $OWNER sudo
+groupadd rstudio
+groupadd staff
+usermod -a -G rstudio "$OWNER"
+usermod -a -G staff "$OWNER"
+usermod -a -G wheel "$OWNER"
 chmod g+wx /usr/local/lib/R/site-library
 
 # Configure env variables for R Session
@@ -57,4 +58,6 @@ sed -i "s|run_as shiny;|run_as ${OWNER};|g" /etc/shiny-server/shiny-server.conf
 
 # Configure nginx for SSO
 envsubst '${OWNER}' < /auto-fill-form-template.conf > /etc/nginx/sites-enabled/auto-fill-form.conf
-/init & nginx -g 'daemon off;'
+rstudio-server start
+/usr/bin/shiny-server &> /var/log/shiny-server.log &
+nginx -g 'daemon off;'
