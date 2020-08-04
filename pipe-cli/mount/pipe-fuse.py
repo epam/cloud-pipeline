@@ -190,11 +190,12 @@ if __name__ == '__main__':
         parser.error('Either --webdav or --bucket parameter should be specified.')
     if args.bucket and (args.chunk_size < 5 * MB or args.chunk_size > 5 * GB):
         parser.error('Chunk size can vary from 5 MB to 5 GB due to AWS s3 multipart upload limitations.')
-    if args.logging_level not in _allowed_logging_levels:
+    logging_level = os.environ.get('CP_PIPE_FUSE_LOGGING_LEVEL', args.logging_level)
+    if logging_level not in _allowed_logging_levels:
         parser.error('Only the following logging level are allowed: %s.' % _allowed_logging_levels_string)
-    recording = args.logging_level in [_info_logging_level, _debug_logging_level]
+    recording = logging_level in [_info_logging_level, _debug_logging_level]
     logging.basicConfig(format='[%(levelname)s] %(asctime)s %(filename)s - %(message)s',
-                        level=_allowed_logging_level_names[args.logging_level])
+                        level=_allowed_logging_level_names[logging_level])
     logging.getLogger('botocore').setLevel(logging.ERROR)
 
     if is_frozen:
