@@ -940,7 +940,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public SelenideElement getInfoRow(final String message, final String user, final String type) {
             return containerLogs.stream()
-                    .filter(r -> r.has(text(message)) && r.has(text(user)) && r.has(text(type)))
+                    .filter(r -> r.has(matchText(message)) && r.has(text(user)) && r.has(text(type)))
                     .findFirst()
                     .orElseThrow(() -> {
                         screenshot("SystemLogsFor" + user);

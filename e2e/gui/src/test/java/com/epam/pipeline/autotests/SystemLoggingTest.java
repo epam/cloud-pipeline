@@ -20,6 +20,7 @@ import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.PipelinePermission;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
@@ -27,6 +28,9 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Selenide.open;
+import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
+import static com.epam.pipeline.autotests.utils.Privilege.READ;
+import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -169,48 +173,21 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .clickOnPermissionsTab()
                 .addNewUser(userWithoutCompletedRuns.login)
                 .closeAll();
-
-        navigationMenu()
-                .settings()
-                .switchToUserManagement()
-                .switchToUsers()
-                .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
-                .edit()
-                .blockUser(userWithoutCompletedRuns.login.toUpperCase())
-                .unblockUser(userWithoutCompletedRuns.login.toUpperCase())
-                .ok();
-        final SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
-                .settings()
-                .switchToSystemLogs()
-                .filterByUser(admin.login)
-                .filterByMessage("Blocking status=false");
-        final SelenideElement blockingInfoRow = systemLogsAO
-                .getInfoRow("Blocking status=false", admin.login, TYPE);
-        final String userId = systemLogsAO.getUserId(blockingInfoRow);
-        navigationMenu()
-                .settings()
-                .switchToUserManagement()
-                .switchToUsers()
-                .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
-                .edit()
-                .sleep(1, SECONDS)
-                .deleteRoleOrGroup("ROLE_USER")
-                .ok();
-        navigationMenu()
-                .settings()
-                .switchToUserManagement()
-                .switchToUsers()
-                .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
-                .edit()
-                .addRoleOrGroup("ROLE_USER")
-                .sleep(2, SECONDS)
-                .ok();
+        givePermissions(userWithoutCompletedRuns,
+                PipelinePermission.allow(READ, pipeline),
+                PipelinePermission.allow(EXECUTE, pipeline),
+                PipelinePermission.deny(WRITE, pipeline));
         navigationMenu()
                 .settings()
                 .switchToSystemLogs()
                 .filterByUser(admin.login)
-                .filterByMessage(format("id=%s", userId))
-                .validateRow(format("Assing role. RoleId=2 UserIds=%s", userId), admin.login, TYPE)
-                .validateRow(format("Unassing role. RoleId=2 UserIds=%s", userId), admin.login, TYPE);
+                .filterByMessage("Granting permissions")
+                .validateRow(format(".*Granting permissions. Entity: class=PIPELINE id=[0-9]+, name=%s, permission: " +
+                                "\\(mask: 0\\). Sid: name=%s isPrincipal=true", pipeline, userWithoutCompletedRuns.login),
+                        admin.login, TYPE)
+                .validateRow(format(".*Granting permissions. Entity: class=PIPELINE id=[0-9]+, name=%s, permission: " +
+                                "READ,NO_WRITE,EXECUTE \\(mask: 25\\). Sid: name=%s isPrincipal=true", pipeline,
+                        userWithoutCompletedRuns.login),
+                        admin.login, TYPE);
     }
 }
