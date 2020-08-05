@@ -230,10 +230,10 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .filterByUser(user.login.toUpperCase())
                 .filterByService("edge")
                 .validateRow(format(
-                        ".*[SECURITY] Application: /pipeline-%s-%s-0/; User: %s; Status: Successfully authenticated.*",
+                        ".*[SECURITY] Application: /pipeline-%s-%s-0/; User: %s; Status: Successfully authenticated",
                         getLastRunId(), endpoint, user.login), user.login, TYPE)
                 .validateRow(format(
-                        ".*[SECURITY] Application: SSH-/ssh/pipeline/%s; User: %s; Status: Successfully authenticated.*",
+                        ".*[SECURITY] Application: SSH-/ssh/pipeline/%s; User: %s; Status: Successfully authenticated",
                         getLastRunId(), user.login), user.login, TYPE);
     }
 }
