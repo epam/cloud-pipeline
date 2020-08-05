@@ -42,7 +42,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
 
     private static final String TYPE = "security";
 
-    private final String pipeline = "systemLogging" + Utils.randomSuffix();
+    private final String pipeline = "SystemLogging" + Utils.randomSuffix();
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
@@ -211,6 +211,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .showLog(getLastRunId())
                 .waitForEndpointLink()
                 .clickOnEndpointLink()
+                .sleep(30, SECONDS)
                 .closeTab();
         final String sshLink =
                 runsMenu()
