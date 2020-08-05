@@ -219,6 +219,10 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
+    public String getNestedRunID(int childNum) {
+        return $(withText("Nested runs:")).closest("tr").find(byXpath(String.format("td/a[%s]/b", childNum))).getText();
+    }
+
     public LogAO validateException(final String exception) {
         $(byClassName("ant-alert-error")).has(text(exception));
         return this;

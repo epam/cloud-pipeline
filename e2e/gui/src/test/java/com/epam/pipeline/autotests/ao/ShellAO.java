@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import org.openqa.selenium.Keys;
+
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
@@ -46,6 +48,11 @@ public class ShellAO implements AccessObject<ShellAO> {
 
     public ShellAO assertPageContains(String text) {
         $(withText(text)).shouldBe(visible);
+        return this;
+    }
+
+    public ShellAO assertPageContains(String text1, String text2) {
+        $(withText(text1)).shouldHave(text(text2));
         return this;
     }
 

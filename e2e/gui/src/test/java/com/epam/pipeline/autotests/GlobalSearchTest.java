@@ -439,7 +439,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     public void searchForTool() {
         final ToolDescription tool = tools().perform(defaultRegistry, defaultGroup, testingTool, Function.identity());
         String toolShortDescription = tool.get(SHORT_DESCRIPTION).getText();
-        String toolDescription = tool.get(FULL_DESCRIPTION).getText().replace("’","'");
+        String toolDescription = tool.get(FULL_DESCRIPTION).getText();
         home();
         search()
                 .click(TOOLS)
