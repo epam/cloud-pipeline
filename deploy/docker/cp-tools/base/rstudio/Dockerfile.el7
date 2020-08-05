@@ -82,4 +82,6 @@ RUN chmod +x /root/post_commit.sh
 ADD start.sh /start.sh
 RUN chmod 777 /start.sh
 
+RUN yum install -y initscripts
+
 CMD ["/start.sh"]
