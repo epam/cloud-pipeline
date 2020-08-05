@@ -34,7 +34,7 @@ if os.path.exists(libfuse_path):
 
 
 from pipefuse.fuseutils import MB, GB
-from pipefuse.cache import CachingFileSystemClient
+from pipefuse.cache import CachingFileSystemClient, ListingCache, ThreadSafeListingCache
 from pipefuse.buff import BufferedFileSystemClient
 from pipefuse.trunc import CopyOnDownTruncateFileSystemClient, \
     WriteNullsOnUpTruncateFileSystemClient, \
@@ -83,7 +83,10 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
     if recording:
         client = RecordingFileSystemClient(client)
     if cache_ttl > 0 and cache_size > 0:
-        cache = TTLCache(maxsize=cache_size, ttl=cache_ttl)
+        cache_implementation = TTLCache(maxsize=cache_size, ttl=cache_ttl)
+        cache = ListingCache(cache_implementation)
+        if threads:
+            cache = ThreadSafeListingCache(cache)
         client = CachingFileSystemClient(client, cache)
     else:
         logging.info('Caching is disabled.')
