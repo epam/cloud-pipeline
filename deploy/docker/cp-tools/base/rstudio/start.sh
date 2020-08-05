@@ -19,16 +19,17 @@ then
     exit 1
 fi
 
+R_HOME=$(R RHOME)
 # Add rstudio permissions to the OWNER and create a home dir for this account
 groupadd rstudio
 groupadd staff
 usermod -a -G rstudio "$OWNER"
 usermod -a -G staff "$OWNER"
 usermod -a -G wheel "$OWNER"
-chmod g+wx /usr/local/lib/R/site-library
+chmod g+wx $R_HOME/library
 
 # Configure env variables for R Session
-R_ENV_FILE=$(R RHOME)/etc/Renviron
+R_ENV_FILE=$R_HOME/etc/Renviron
 cat $CP_ENV_FILE_TO_SOURCE | sed '/^export/s/export//' >> $R_ENV_FILE
 
 # Configure R executable
