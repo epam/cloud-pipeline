@@ -21,13 +21,35 @@ import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
+import com.epam.pipeline.autotests.utils.Utils;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import static com.codeborne.selenide.Selenide.open;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implements Authorization, Navigation {
 
     private static final String TYPE = "security";
+
+    private final String pipeline = "systemLogging" + Utils.randomSuffix();
+
+    @BeforeClass
+    public void prerequisites() {
+        navigationMenu()
+                .library()
+                .createPipeline(pipeline);
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void removePipelines() {
+        open(C.ROOT_ADDRESS);
+        navigationMenu()
+                .library()
+                .removePipelineIfExists(pipeline);
+    }
 
     @Test
     @TestCase(value = {"EPMCMBIBPC-3162"})
@@ -85,5 +107,110 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
         }
     }
 
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-3164"})
+    public void userProfileModifications() {
+        logoutIfNeeded();
+        loginAs(admin);
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
+                .edit()
+                .blockUser(userWithoutCompletedRuns.login.toUpperCase())
+                .unblockUser(userWithoutCompletedRuns.login.toUpperCase())
+                .ok();
+        final SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
+                .settings()
+                .switchToSystemLogs()
+                .filterByUser(admin.login)
+                .pressEnter()
+                .filterByMessage("Blocking status=false");
+        final SelenideElement blockingInfoRow = systemLogsAO
+                .getInfoRow("Blocking status=false", admin.login, TYPE);
+        final String userId = systemLogsAO.getUserId(blockingInfoRow);
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
+                .edit()
+                .sleep(1, SECONDS)
+                .deleteRoleOrGroup("ROLE_USER")
+                .ok();
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
+                .edit()
+                .addRoleOrGroup("ROLE_USER")
+                .sleep(2, SECONDS)
+                .ok();
+        navigationMenu()
+                .settings()
+                .switchToSystemLogs()
+                .filterByUser(admin.login)
+                .filterByMessage(format("id=%s", userId))
+                .validateRow(format("Assing role. RoleId=2 UserIds=%s", userId), admin.login, TYPE)
+                .validateRow(format("Unassing role. RoleId=2 UserIds=%s", userId), admin.login, TYPE);
+    }
 
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-3165"})
+    public void permissionsManagement() {
+        logoutIfNeeded();
+        loginAs(admin);
+        navigationMenu()
+                .library()
+                .clickOnPipeline(pipeline)
+                .clickEditButton()
+                .clickOnPermissionsTab()
+                .addNewUser(userWithoutCompletedRuns.login)
+                .closeAll();
+
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
+                .edit()
+                .blockUser(userWithoutCompletedRuns.login.toUpperCase())
+                .unblockUser(userWithoutCompletedRuns.login.toUpperCase())
+                .ok();
+        final SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
+                .settings()
+                .switchToSystemLogs()
+                .filterByUser(admin.login)
+                .filterByMessage("Blocking status=false");
+        final SelenideElement blockingInfoRow = systemLogsAO
+                .getInfoRow("Blocking status=false", admin.login, TYPE);
+        final String userId = systemLogsAO.getUserId(blockingInfoRow);
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
+                .edit()
+                .sleep(1, SECONDS)
+                .deleteRoleOrGroup("ROLE_USER")
+                .ok();
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchForUserEntry(userWithoutCompletedRuns.login.toUpperCase())
+                .edit()
+                .addRoleOrGroup("ROLE_USER")
+                .sleep(2, SECONDS)
+                .ok();
+        navigationMenu()
+                .settings()
+                .switchToSystemLogs()
+                .filterByUser(admin.login)
+                .filterByMessage(format("id=%s", userId))
+                .validateRow(format("Assing role. RoleId=2 UserIds=%s", userId), admin.login, TYPE)
+                .validateRow(format("Unassing role. RoleId=2 UserIds=%s", userId), admin.login, TYPE);
+    }
 }

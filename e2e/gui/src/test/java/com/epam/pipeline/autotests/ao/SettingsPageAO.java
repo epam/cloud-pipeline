@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.regex.Pattern;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -38,6 +39,8 @@ import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.fieldWithLabel;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -951,19 +954,46 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
+        public SystemLogsAO filterByMessage(final String message) {
+            setValue(inputOf(filterBy("Message")), message);
+            pressEnter();
+            return this;
+        }
+
+        public SystemLogsAO pressEnter() {
+            actions().sendKeys(Keys.ENTER).perform();
+            return this;
+        }
+
         public void validateTimeOrder(final SelenideElement info1, final SelenideElement info2) {
             LocalDateTime td1 = Utils.validateDateTimeString(info1.findAll("td").get(0).getText());
             LocalDateTime td2 = Utils.validateDateTimeString(info2.findAll("td").get(0).getText());
             assertTrue(td1.isAfter(td2));
         }
 
-        public void validateRow(final String message, final String user, final String type) {
+        public SystemLogsAO validateRow(final String message, final String user, final String type) {
             getInfoRow(message, user, type).should(exist);
+            return this;
+        }
+
+        public String getUserId(final SelenideElement element) {
+            final String message = getMessage(element);
+            return message.split("id=")[1].substring(0, 1);
         }
 
         @Override
         public Map<Primitive, SelenideElement> elements() {
             return elements;
+        }
+
+        private By filterBy(final String name) {
+            return byXpath(format("(//*[contains(@class, '%s') and .//*[contains(text(), '%s')]])[last()]",
+                    "ilters__filter", name
+            ));
+        }
+
+        private String getMessage(final SelenideElement element) {
+            return element.findAll("td").get(2).getText();
         }
     }
 }
