@@ -50,6 +50,7 @@ import DataStorageItemUpdateContent from '../../../models/dataStorage/DataStorag
 import DataStorageItemDelete from '../../../models/dataStorage/DataStorageItemDelete';
 import GenerateDownloadUrlRequest from '../../../models/dataStorage/GenerateDownloadUrl';
 import GenerateDownloadUrlsRequest from '../../../models/dataStorage/GenerateDownloadUrls';
+import GenerateFolderDownloadUrl from '../../../models/dataStorage/GenerateFolderDownloadUrl';
 import EditItemForm from './forms/EditItemForm';
 import {DataStorageEditDialog, ServiceTypes} from './forms/DataStorageEditDialog';
 import DataStorageNavigation from './forms/DataStorageNavigation';
@@ -80,6 +81,7 @@ const PAGE_SIZE = 40;
 @connect({
   dataStorages, folders, pipelinesLibrary
 })
+@inject('awsRegions')
 @inject(({routing, dataStorages, folders, pipelinesLibrary, preferences, dataStorageCache }, {params, onReloadTree}) => {
   const queryParameters = parseQueryParameters(routing);
   const showVersions = (queryParameters.versions || 'false').toLowerCase() === 'true';
@@ -103,6 +105,8 @@ export default class DataStorage extends React.Component {
   state = {
     editDialogVisible: false,
     downloadUrlModalVisible: false,
+    downloadFolderUrlModal: false,
+    generateFolderUrlWriteAccess: false,
     selectedItems: [],
     renameItem: null,
     createFolder: false,
@@ -119,12 +123,31 @@ export default class DataStorage extends React.Component {
   @observable
   _shareStorageLink = null;
 
+  @observable generateDownloadUrls;
+
   @computed
   get showMetadata () {
     if (this.state.metadata === undefined && this.props.info.loaded) {
       return this.props.info.value.hasMetadata && roleModel.readAllowed(this.props.info.value);
     }
     return !!this.state.metadata;
+  }
+
+  @computed
+  get provider () {
+    if (this.props.info && this.props.info.loaded && this.props.awsRegions.loaded) {
+      const {regionId} = this.props.info.value;
+      const [region] = (this.props.awsRegions.value || []).filter(r => +r.id === +regionId);
+      if (region) {
+        return region.provider;
+      }
+    }
+    return null;
+  }
+
+  @computed
+  get generateFolderURLAvailable () {
+    return /^azure$/i.test(this.provider);
   }
 
   @computed
@@ -387,11 +410,33 @@ export default class DataStorage extends React.Component {
     } else {
       this.generateDownloadUrls = null;
     }
-    this.setState({downloadUrlModalVisible});
+    this.setState({downloadUrlModalVisible, downloadFolderUrlModal: false});
+  };
+
+  showGenerateFolderDownloadUrlsModalFn = () => {
+    if (this.props.info && this.props.info.loaded && this.generateFolderURLAvailable) {
+      const writeAllowed = roleModel.writeAllowed(this.props.info.value);
+      this.setState({
+        generateFolderUrlWriteAccess: writeAllowed,
+        downloadUrlModalVisible: true,
+        downloadFolderUrlModal: true
+      }, this.generateFolderDownloadUrl);
+    }
+  };
+
+  generateFolderDownloadUrl = async () => {
+    const hide = message.loading('Generating url...', 0);
+    const {generateFolderUrlWriteAccess} = this.state;
+    this.generateDownloadUrls = new GenerateFolderDownloadUrl(this.props.storageId);
+    await this.generateDownloadUrls.send({
+      paths: [this.props.path || ''],
+      permissions: ['READ', generateFolderUrlWriteAccess ? 'WRITE' : undefined].filter(Boolean)
+    });
+    hide();
   };
 
   closeDownloadUrlModal = () => {
-    this.setState({downloadUrlModalVisible: false});
+    this.setState({downloadUrlModalVisible: false, downloadFolderUrlModal: false});
   };
 
   openRenameItemDialog = (event, item) => {
@@ -1406,6 +1451,16 @@ export default class DataStorage extends React.Component {
           </Col>
           <Col>
             <Row type="flex" justify="end" className={styles.currentFolderActions}>
+              {
+                this.generateFolderURLAvailable && (
+                  <Button
+                    id="generate-folder-url"
+                    size="small"
+                    onClick={this.showGenerateFolderDownloadUrlsModalFn}>
+                    Generate URL
+                  </Button>
+                )
+              }
               <Button
                 id={this.showMetadata ? 'hide-metadata-button' : 'show-metadata-button'}
                 size="small"
@@ -1547,15 +1602,49 @@ export default class DataStorage extends React.Component {
               OK
             </Button>
           }>
-          {this.generateDownloadUrls && (!this.generateDownloadUrls.pending
-            ? (
+          {
+            this.generateDownloadUrls &&
+            this.generateDownloadUrls.pending &&
+            !this.generateDownloadUrls.loaded && (
+              <div>
+                <Row type="flex" justify="center">
+                  <br />
+                  <Spin />
+                </Row>
+              </div>
+            )
+          }
+          {
+            this.generateDownloadUrls && this.generateDownloadUrls.loaded && (
               <Input
                 type="textarea"
                 className={styles.generateDownloadUrlInput}
                 rows={10}
                 value={this.generateDownloadUrls.value.map(u => u.url).join('\n')} />
             )
-            : <div><Row type="flex" justify="center"><br /><Spin /></Row></div>)
+          }
+          {
+            this.generateDownloadUrls && this.generateDownloadUrls.error && (
+              <Alert type="error" message={this.generateDownloadUrls.error} />
+            )
+          }
+          {
+            this.generateFolderURLAvailable && this.state.downloadFolderUrlModal && (
+              <Row style={{marginTop: 10}}>
+                <Checkbox
+                  checked={this.state.generateFolderUrlWriteAccess}
+                  disabled={!roleModel.writeAllowed(this.props.info.value)}
+                  onChange={
+                    (e) => this.setState({
+                      generateFolderUrlWriteAccess: e.target.checked
+                    }, this.generateFolderDownloadUrl
+                    )
+                  }
+                >
+                  Write access
+                </Checkbox>
+              </Row>
+            )
           }
         </Modal>
         <Modal
