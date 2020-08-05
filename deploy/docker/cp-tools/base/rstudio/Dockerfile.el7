@@ -15,8 +15,22 @@
 ARG BASE_IMAGE=centos:7
 FROM ${BASE_IMAGE}
 
-RUN yum install -y wget \
-        https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+RUN yum install -y \
+            centos-release-scl \
+            epel-release
+RUN yum install -y \
+            cmake \
+            devtoolset-7 \
+            java-1.8.0-openjdk-devel \
+            libcurl-openssl-devel \
+            libffi-devel \
+            libpng-devel \
+            libssh2-devel \
+            libxml2-devel \
+            openssl-devel \
+            python-devel \
+            wget && \
+        curl https://bootstrap.pypa.io/get-pip.py | python -
 RUN yum-config-manager --enable "rhel-*-optional-rpms"
 
 ARG R_VERSION=4.0.0
@@ -27,6 +41,21 @@ RUN wget -q $R_PACKAGE_URL -O rpackage.rpm && \
         ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R && \
         ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript
 
+RUN wget -q https://github.com/libgit2/libgit2/archive/v0.28.1.tar.gz && \
+         tar xzf v0.28.1.tar.gz && \
+         cd libgit2-0.28.1/ && \
+         cmake . && \
+         make && make install && cd .. && \
+         ldconfig && \
+         pip install 'pygit2==0.28.1'
+RUN wget -q https://codeload.github.com/PressLabs/gitfs/zip/0.5.2 && \
+        unzip 0.5.2 && \
+        cd gitfs-0.5.2 && \
+        python setup.py install && cd .. && \
+        mkdir -p /var/lib/gitfs
+SHELL [ "/usr/bin/scl", "enable", "devtoolset-7"]
+RUN R -e "install.packages(c('sparklyr', 'tidyverse', 'magrittr'), repos='http://cran.rstudio.com/')"
+
 ARG R_STUDIO_VERSION="el7-1.3.1056"
 ARG R_STUDIO_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/r/rstudio-server-${R_STUDIO_VERSION}-x86_64.rpm"
 RUN wget -q $R_STUDIO_URL -O rstudio-server.rpm && \
@@ -35,7 +64,8 @@ RUN wget -q $R_STUDIO_URL -O rstudio-server.rpm && \
 
 ARG SHINY_SERVER_VERSION="1.5.14.948"
 ARG SHINY_SERVER_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/r/shiny-server-${SHINY_SERVER_VERSION}.x86_64.rpm"
-RUN R -e "install.packages(c('shiny', 'rmarkdown', 'devtools', 'RJDBC'), repos='http://cran.rstudio.com/')" && \
+RUN R CMD javareconf -e && \
+        R -e "install.packages(c('shiny', 'rmarkdown', 'devtools', 'RJDBC'), repos='http://cran.rstudio.com/')" && \
         wget -q $SHINY_SERVER_URL -O shiny-server.rpm && \
         yum install -y shiny-server.rpm && \
         rm -f shiny-server.rpm
