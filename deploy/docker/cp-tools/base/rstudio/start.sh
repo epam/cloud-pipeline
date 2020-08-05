@@ -56,6 +56,8 @@ fi
 
 sed -i "s|run_as shiny;|run_as ${OWNER};|g" /etc/shiny-server/shiny-server.conf
 
+ln -s /srv/shiny-server /home/${OWNER}
+
 # Configure nginx for SSO
 envsubst '${OWNER}' < /auto-fill-form-template.conf > /etc/nginx/sites-enabled/auto-fill-form.conf
 rstudio-server start
