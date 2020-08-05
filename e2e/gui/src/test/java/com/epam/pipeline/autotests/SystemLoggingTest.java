@@ -17,8 +17,11 @@ package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
+import com.epam.pipeline.autotests.ao.ShellAO;
+import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
+import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelinePermission;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -31,14 +34,19 @@ import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
+import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implements Authorization, Navigation {
+public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implements Authorization, Navigation, Tools {
 
     private static final String TYPE = "security";
 
     private final String pipeline = "systemLogging" + Utils.randomSuffix();
+    private final String registry = C.DEFAULT_REGISTRY;
+    private final String tool = C.TESTING_TOOL_NAME;
+    private final String group = C.DEFAULT_GROUP;
+    private final String endpoint = C.VALID_ENDPOINT;
 
     @BeforeClass
     public void prerequisites() {
@@ -189,5 +197,42 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                                 "READ,NO_WRITE,EXECUTE \\(mask: 25\\). Sid: name=%s isPrincipal=true", pipeline,
                         userWithoutCompletedRuns.login),
                         admin.login, TYPE);
+    }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-3166"})
+    public void interactiveEndpointsAccess() {
+        logoutIfNeeded();
+        loginAs(user);
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .setDefaultLaunchOptions()
+                .launchTool(this, nameWithoutGroup(tool))
+                .showLog(getLastRunId())
+                .waitForEndpointLink()
+                .clickOnEndpointLink()
+                .closeTab();
+        final String sshLink =
+                runsMenu()
+                        .activeRuns()
+                        .showLog(getLastRunId())
+                        .waitForSshLink()
+                        .getSshLink();
+        ShellAO.open(sshLink)
+                .assertPageContains(String.format("pipeline-%s", getLastRunId()));
+        open(C.ROOT_ADDRESS);
+        logout();
+        loginAs(admin);
+        navigationMenu()
+                .settings()
+                .switchToSystemLogs()
+                .filterByUser(user.login.toUpperCase())
+                .filterByService("edge")
+                .validateRow(format(
+                        ".*[SECURITY] Application: /pipeline-%s-%s-0/; User: %s; Status: Successfully authenticated.*",
+                        getLastRunId(), endpoint, user.login), user.login, TYPE)
+                .validateRow(format(
+                        ".*[SECURITY] Application: SSH-/ssh/pipeline/%s; User: %s; Status: Successfully authenticated.*",
+                        getLastRunId(), user.login), user.login, TYPE);
     }
 }

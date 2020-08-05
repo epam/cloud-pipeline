@@ -960,6 +960,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
+        public SystemLogsAO filterByService(final String service) {
+            selectValue(combobox("Service"), service);
+            return this;
+        }
+
         public SystemLogsAO pressEnter() {
             actions().sendKeys(Keys.ENTER).perform();
             return this;
