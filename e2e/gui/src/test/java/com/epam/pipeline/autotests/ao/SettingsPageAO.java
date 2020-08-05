@@ -414,7 +414,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     super.elements(),
                     entry(TABLE, context().find(byClassName("ant-tabs-tabpane-active"))
                             .find(byClassName("ant-table-content"))),
-                    entry(SEARCH, context().find(byClassName("ant-input-search")))
+                    entry(SEARCH, context().find(byClassName("ant-input-search"))),
+                    entry(CREATE_USER, context().find(button("Create user")))
             );
 
             public UsersTabAO(PipelinesLibraryAO parentAO) {
@@ -435,6 +436,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 }
                 SelenideElement entry = getUser(login).shouldBe(visible);
                 return new UserEntry(this, login, entry);
+            }
+
+            public UsersTabAO createUser(final String name) {
+                click(CREATE_USER);
+                setValue(byId("name"), name);
+                click(byId("create-user-form-ok-button"), byClassName("ant-modal-content"));
+                return this;
             }
 
             private SelenideElement getUser(final String login) {
@@ -493,7 +501,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             entry(ADD_KEY, context().find(By.id("add-role-button"))),
                             entry(OK, context().find(By.id("close-edit-user-form"))),
                             entry(BLOCK, context().$(button("BLOCK"))),
-                            entry(UNBLOCK, context().$(button("UNBLOCK")))
+                            entry(UNBLOCK, context().$(button("UNBLOCK"))),
+                            entry(DELETE, context().$(byId("delete-user-button")))
                     );
 
                     public EditUserPopup(UsersTabAO parentAO) {
@@ -553,6 +562,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                                 .ensureTitleIs(format("Are you sure you want to unblock user %s?", user))
                                 .ok();
                         return this;
+                    }
+
+                    public UsersTabAO deleteUser(final String user) {
+                        click(DELETE);
+                        new ConfirmationPopupAO(this)
+                                .ensureTitleIs(format("Are you sure you want to delete user %s?", user))
+                                .ok();
+                        return parentAO;
                     }
                 }
             }

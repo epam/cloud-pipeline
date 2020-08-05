@@ -41,6 +41,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implements Authorization, Navigation, Tools {
 
     private static final String TYPE = "security";
+    private static final String USER_NAME = "TEST_SYSTEM_USER_NAME";
 
     private final String pipeline = "SystemLogging" + Utils.randomSuffix();
     private final String registry = C.DEFAULT_REGISTRY;
@@ -230,10 +231,31 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .filterByUser(user.login.toUpperCase())
                 .filterByService("edge")
                 .validateRow(format(
-                        ".*[SECURITY] Application: /pipeline-%s-%s-0/; User: %s; Status: Successfully authenticated",
+                        ".*\\[SECURITY\\] Application: /pipeline-%s-%s-0/; User: %s; Status: Successfully authenticated",
                         getLastRunId(), endpoint, user.login), user.login, TYPE)
                 .validateRow(format(
-                        ".*[SECURITY] Application: SSH-/ssh/pipeline/%s; User: %s; Status: Successfully authenticated",
+                        ".*\\[SECURITY\\] Application: SSH-/ssh/pipeline/%s; User: %s; Status: Successfully authenticated",
                         getLastRunId(), user.login), user.login, TYPE);
+    }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-3167"})
+    public void createAndDeleteUser() {
+        logoutIfNeeded();
+        loginAs(admin);
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .createUser(USER_NAME)
+                .searchForUserEntry(USER_NAME)
+                .edit()
+                .deleteUser(USER_NAME);
+        navigationMenu()
+                .settings()
+                .switchToSystemLogs()
+                .filterByMessage(USER_NAME)
+                .validateRow(format("Create user with name: %s", USER_NAME), admin.login, TYPE)
+                .validateRow(format("Delete user with name: %s", USER_NAME), admin.login, TYPE);
     }
 }
