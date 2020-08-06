@@ -21,7 +21,7 @@ class GenerateFolderDownloadUrl extends RemotePost {
 
   constructor (id) {
     super();
-    this.url = `/datastorage/${id}/generateUrl`; //todo:
+    this.url = `/datastorage/${id}/generateUrl`;
   };
 }
 

@@ -428,8 +428,12 @@ export default class DataStorage extends React.Component {
     const hide = message.loading('Generating url...', 0);
     const {generateFolderUrlWriteAccess} = this.state;
     this.generateDownloadUrls = new GenerateFolderDownloadUrl(this.props.storageId);
+    let path = this.props.path || '';
+    if (path.length > 0 && !path.endsWith('/')) {
+      path += '/';
+    }
     await this.generateDownloadUrls.send({
-      paths: [this.props.path || ''],
+      paths: [path],
       permissions: ['READ', generateFolderUrlWriteAccess ? 'WRITE' : undefined].filter(Boolean)
     });
     hide();
