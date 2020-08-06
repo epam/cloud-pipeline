@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.regex.Pattern;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -39,7 +38,6 @@ import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.fieldWithLabel;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -948,8 +946,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         private final ElementsCollection containerLogs = $(byClassName("ant-table-tbody"))
                 .should(exist)
                 .findAll(byClassName("ant-table-row"));
-        private final ElementsCollection filters = $(byClassName("ilters__filters"))
-                .findAll("ilters__filter");
 
         public SystemLogsAO(final PipelinesLibraryAO pipelinesLibraryAO) {
             super(pipelinesLibraryAO);

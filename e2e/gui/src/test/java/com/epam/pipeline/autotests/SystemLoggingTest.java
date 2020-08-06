@@ -221,7 +221,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                         .waitForSshLink()
                         .getSshLink();
         ShellAO.open(sshLink)
-                .assertPageContains(String.format("pipeline-%s", getLastRunId()));
+                .assertPageContains(format("pipeline-%s", getLastRunId()));
         open(C.ROOT_ADDRESS);
         logout();
         loginAs(admin);
