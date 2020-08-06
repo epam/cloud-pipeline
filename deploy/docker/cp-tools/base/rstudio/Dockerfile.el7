@@ -38,6 +38,7 @@ ARG R_PACKAGE_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/r/R-
 RUN wget -q $R_PACKAGE_URL -O rpackage.rpm && \
         yum install -y rpackage.rpm && \
         rm -f rpackage.rpm && \
+        chmod 777 -R /opt/R && \
         ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R && \
         ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript
 
