@@ -61,6 +61,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     private final String spotPrice = C.SPOT_PRICE_NAME;
     private final String onDemandPrice = "On-demand";
     private final String mastersConfigPrice = "Master's config";
+    private final String sleepCommand = "sleep";
 
     @AfterMethod(alwaysRun = true)
     @Override
@@ -472,9 +473,9 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                                 getPipelineName().toLowerCase(), getRunId()))
                         .sleep(20, SECONDS)
                         .execute("qstat")
-                        .assertPageContains("sleep", " 1 ")
-                        .assertPageContains("sleep", " qw ")
-                        .assertPageContains("sleep", String.format(" %s ", Integer.parseInt(cpu) + 1))
+                        .assertPageContains(sleepCommand, " 1 ")
+                        .assertPageContains(sleepCommand, " qw ")
+                        .assertPageContains(sleepCommand, String.format(" %s ", Integer.parseInt(cpu) + 1))
                         .close());
         String nestedRunID = navigationMenu()
                                 .runs()
@@ -498,8 +499,8 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                                 nestedRunID))
                         .sleep(20, SECONDS)
                         .execute("qstat")
-                        .assertPageContains("sleep", " r ")
-                        .assertPageContains("sleep", String.format("main.q@pipeline-%s", nestedRunID))
+                        .assertPageContains(sleepCommand, " r ")
+                        .assertPageContains(sleepCommand, String.format("main.q@pipeline-%s", nestedRunID))
                         .close());
     }
 
