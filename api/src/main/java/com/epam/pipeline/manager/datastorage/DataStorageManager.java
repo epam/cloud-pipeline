@@ -81,6 +81,7 @@ import org.springframework.util.Assert;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -411,14 +412,26 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public List<DataStorageDownloadFileUrl> generateDataStorageItemUrl(final Long dataStorageId,
-                                                                       final List<String> paths) {
-        AbstractDataStorage dataStorage = load(dataStorageId);
-        List<DataStorageDownloadFileUrl> urls = new ArrayList<>();
-        if (paths == null) {
-            return urls;
-        }
-        paths.forEach(path -> urls.add(storageProviderManager.generateDownloadURL(dataStorage, path, null, null)));
-        return urls;
+                                                                       final List<String> paths,
+                                                                       final List<String> permissions,
+                                                                       final long hours) {
+        final AbstractDataStorage dataStorage = load(dataStorageId);
+        final List<String> adjustedPermissions = adjustPermissions(permissions);
+        final Duration duration = resolveDuration(hours);
+        return CollectionUtils.emptyIfNull(paths)
+                .stream()
+                .map(path -> storageProviderManager.generateUrl(dataStorage, path, adjustedPermissions, duration))
+                .collect(Collectors.toList());
+    }
+
+    private List<String> adjustPermissions(final List<String> permissions) {
+        return Optional.ofNullable(permissions)
+                .filter(CollectionUtils::isNotEmpty)
+                .orElseGet(() -> Collections.singletonList("READ"));
+    }
+
+    private Duration resolveDuration(final long hours) {
+        return hours > 0 ? Duration.ofHours(hours) : Duration.ZERO;
     }
 
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(Long id, String path) {

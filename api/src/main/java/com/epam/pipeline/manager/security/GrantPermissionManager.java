@@ -111,6 +111,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -430,6 +431,14 @@ public class GrantPermissionManager {
         } else {
             return permissionsHelper.isAllowed(permissionName, storage);
         }
+    }
+
+    public boolean storagePermissions(Long storageId, List<String> permissionNames) {
+        return Optional.ofNullable(permissionNames)
+                .filter(org.apache.commons.collections4.CollectionUtils::isNotEmpty)
+                .orElseGet(() -> Collections.singletonList("READ"))
+                .stream()
+                .allMatch(permissionName -> storagePermission(storageId, permissionName));
     }
 
     public boolean storagePermissionByName(final String identifier, final String permissionName) {

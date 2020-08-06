@@ -55,6 +55,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -187,6 +188,14 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         final TemporaryCredentials credentials = getStsCredentials(dataStorage, null, true);
         return getS3Helper(credentials).generateDataStorageItemUploadUrl(
                 dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), authManager.getAuthorizedUser());
+    }
+
+    @Override
+    public DataStorageDownloadFileUrl generateUrl(final S3bucketDataStorage dataStorage,
+                                                  final String path,
+                                                  final List<String> permissions,
+                                                  final Duration duration) {
+        return generateDownloadURL(dataStorage, path, null, null);
     }
 
     @Override public DataStorageFile createFile(S3bucketDataStorage dataStorage, String path,

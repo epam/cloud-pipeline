@@ -379,12 +379,22 @@ class S3Mounter(StorageMounter):
 
     def build_mount_command(self, params):
         if params['aws_token'] is not None or params['fuse_type'] == FUSE_PIPE_ID:
-            return 'pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} -o allow_other'.format(**params)
+            persist_logs = os.getenv('CP_PIPE_FUSE_PERSIST_LOGS', 'false').lower() == 'true'
+            debug_libfuse = os.getenv('CP_PIPE_FUSE_DEBUG_LIBFUSE', 'false').lower() == 'true'
+            logging_level = os.getenv('CP_PIPE_FUSE_LOGGING_LEVEL')
+            if logging_level:
+                params['logging_level'] = logging_level
+            return ('pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} '
+                    + ('-l /var/log/fuse_{storage_id}.log ' if persist_logs else '')
+                    + ('-v {logging_level} ' if logging_level else '')
+                    + ('-o allow_other,debug ' if debug_libfuse else '-o allow_other ')
+                    ).format(**params)
         elif params['fuse_type'] == FUSE_GOOFYS_ID:
             params['path'] = '{bucket}:{relative_path}'.format(**params) if params['relative_path'] else params['path']
             return 'AWS_ACCESS_KEY_ID={aws_key_id} AWS_SECRET_ACCESS_KEY={aws_secret} nohup goofys ' \
                    '--dir-mode {mask} --file-mode {mask} -o {permissions} -o allow_other ' \
                     '--stat-cache-ttl {stat_cache} --type-cache-ttl {type_cache} ' \
+                    '--acl "bucket-owner-full-control" ' \
                     '-f --gid 0 --region "{region_name}" {path} {mount} > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
         elif params['fuse_type'] == FUSE_S3FS_ID:
             params['path'] = '{bucket}:/{relative_path}'.format(**params) if params['relative_path'] else params['path']
@@ -393,6 +403,7 @@ class S3Mounter(StorageMounter):
             return 'AWSACCESSKEYID={aws_key_id} AWSSECRETACCESSKEY={aws_secret} s3fs {path} {mount} -o use_cache={tmp_dir} ' \
                     '-o umask=0000 -o {permissions} -o allow_other -o enable_noobj_cache ' \
                     '-o endpoint="{region_name}" -o url="https://s3.{region_name}.amazonaws.com" {ensure_diskfree_option} ' \
+                    '-o default_acl="bucket-owner-full-control" ' \
                     '-o dbglevel="info" -f > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
         else:
             return 'exit 1'
@@ -518,6 +529,8 @@ class NFSMounter(StorageMounter):
             command = command.format(protocol="cifs")
             if not params['path'].startswith("//"):
                 params['path'] = '//' + params['path']
+        elif self.share_mount.mount_type == "LUSTRE":
+            command = command.format(protocol="lustre")
         else:
             command = command.format(protocol="nfs")
 

@@ -25,4 +25,6 @@ import java.util.List;
 @Setter
 public class GenerateDownloadUrlVO {
     private List<String> paths;
+    private List<String> permissions;
+    private long hours;
 }

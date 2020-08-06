@@ -40,6 +40,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
+import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -102,6 +104,14 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(final GSBucketStorage dataStorage,
                                                                        final String path) {
         return null;
+    }
+
+    @Override
+    public DataStorageDownloadFileUrl generateUrl(final GSBucketStorage dataStorage,
+                                                  final String path,
+                                                  final List<String> permissions,
+                                                  final Duration duration) {
+        return generateDownloadURL(dataStorage, path, null, null);
     }
 
     @Override

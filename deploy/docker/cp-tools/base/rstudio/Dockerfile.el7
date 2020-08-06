@@ -1,0 +1,88 @@
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+ARG BASE_IMAGE=centos:7
+FROM ${BASE_IMAGE}
+
+RUN yum install -y \
+            centos-release-scl \
+            epel-release
+RUN yum install -y \
+            cmake \
+            devtoolset-7 \
+            java-1.8.0-openjdk-devel \
+            libcurl-openssl-devel \
+            libffi-devel \
+            libpng-devel \
+            libssh2-devel \
+            libxml2-devel \
+            openssl-devel \
+            python-devel \
+            wget && \
+        curl https://bootstrap.pypa.io/get-pip.py | python -
+RUN yum-config-manager --enable "rhel-*-optional-rpms"
+
+ARG R_VERSION=4.0.0
+ARG R_PACKAGE_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/r/R-${R_VERSION}-1-1.el7.x86_64.rpm"
+RUN wget -q $R_PACKAGE_URL -O rpackage.rpm && \
+        yum install -y rpackage.rpm && \
+        rm -f rpackage.rpm && \
+        chmod 777 -R /opt/R && \
+        ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R && \
+        ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript
+
+RUN wget -q https://github.com/libgit2/libgit2/archive/v0.28.1.tar.gz && \
+         tar xzf v0.28.1.tar.gz && \
+         cd libgit2-0.28.1/ && \
+         cmake . && \
+         make && make install && cd .. && \
+         ldconfig && \
+         pip install 'pygit2==0.28.1'
+RUN wget -q https://codeload.github.com/PressLabs/gitfs/zip/0.5.2 && \
+        unzip 0.5.2 && \
+        cd gitfs-0.5.2 && \
+        python setup.py install && cd .. && \
+        mkdir -p /var/lib/gitfs
+SHELL [ "/usr/bin/scl", "enable", "devtoolset-7"]
+RUN R -e "install.packages(c('sparklyr', 'tidyverse', 'magrittr'), repos='http://cran.rstudio.com/')"
+
+ARG R_STUDIO_VERSION="el7-1.3.1056"
+ARG R_STUDIO_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/r/rstudio-server-${R_STUDIO_VERSION}-x86_64.rpm"
+RUN wget -q $R_STUDIO_URL -O rstudio-server.rpm && \
+        yum install -y rstudio-server.rpm && \
+        rm -f rstudio-server.rpm
+
+ARG SHINY_SERVER_VERSION="1.5.14.948"
+ARG SHINY_SERVER_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/r/shiny-server-${SHINY_SERVER_VERSION}.x86_64.rpm"
+RUN R CMD javareconf -e && \
+        R -e "install.packages(c('shiny', 'rmarkdown', 'devtools', 'RJDBC'), repos='http://cran.rstudio.com/')" && \
+        wget -q $SHINY_SERVER_URL -O shiny-server.rpm && \
+        yum install -y shiny-server.rpm && \
+        rm -f shiny-server.rpm
+
+# Configure nginx
+RUN yum install -y nginx gettext
+RUN mkdir -p /etc/nginx/sites-enabled/
+ADD auto-fill-form-template.conf /auto-fill-form-template.conf
+ADD nginx.conf /etc/nginx/nginx.conf
+
+ADD post_commit.sh /root/post_commit.sh
+RUN chmod +x /root/post_commit.sh
+
+ADD start.sh /start.sh
+RUN chmod 777 /start.sh
+
+RUN yum install -y initscripts
+
+CMD ["/start.sh"]

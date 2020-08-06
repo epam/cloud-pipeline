@@ -31,11 +31,12 @@ public final class PipelineRunMapper {
     /**
      * Mapping a {@code PipelineRun}
      * @param run {@code PipelineRun}
-     * @param threshold
+     * @param duration Pipeline run running duration in seconds.
+     * @param threshold Long running threshold in seconds.
      * @return a mapped {@code PipelineRun}, {@code Map} key - a field name of {@code PipelineRun},
      * {@code Map} value - a {@code PipelineRun} field value
      */
-    public static Map<String, Object> map(PipelineRun run, Long threshold) {
+    public static Map<String, Object> map(PipelineRun run, Long threshold, Long duration) {
         JsonMapper mapper = new JsonMapper();
         Map<String, Object> params = mapper.convertValue(run, mapper.getTypeFactory()
             .constructParametricType(Map.class, String.class, Object.class));
@@ -44,9 +45,16 @@ public final class PipelineRunMapper {
             params.put("timeThreshold", threshold / SECONDS_IN_MINUTE);
         }
 
-        params.put("runningTime", Duration.between(run.getStartDate().toInstant(), DateUtils.now()
-            .toInstant()).abs().getSeconds() / SECONDS_IN_MINUTE);
+        params.put("runningTime", duration / SECONDS_IN_MINUTE);
 
         return params;
+    }
+    
+    public static Map<String, Object> map(PipelineRun run, Long threshold) {
+        return map(run, threshold, overallDurationOf(run));
+    }
+
+    private static long overallDurationOf(PipelineRun run) {
+        return Duration.between(run.getStartDate().toInstant(), DateUtils.now().toInstant()).abs().getSeconds();
     }
 }

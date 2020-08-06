@@ -16,15 +16,19 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -32,8 +36,13 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
+import static org.testng.Assert.assertTrue;
 
 public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> implements AccessObject<SettingsPageAO> {
 
@@ -49,6 +58,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             entry(SYSTEM_EVENTS_TAB, $(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'System events')]"))),
             entry(USER_MANAGEMENT_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'User management')]"))),
             entry(PREFERENCES_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Preferences')]"))),
+            entry(SYSTEM_LOGS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'System Logs')]"))),
             entry(OK, context().find(byId("settings-form-ok-button")))
     );
 
@@ -82,6 +92,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         return new PreferencesAO(parentAO);
     }
 
+    public SystemLogsAO switchToSystemLogs() {
+        click(SYSTEM_LOGS_TAB);
+        return new SystemLogsAO(parentAO);
+    }
+
     @Override
     public PipelinesLibraryAO cancel() {
         click(CANCEL);
@@ -93,7 +108,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         return parentAO;
     }
 
-    private class CliAO{
+    private class CliAO {
     }
 
     public class SystemEventsAO extends SettingsPageAO {
@@ -126,7 +141,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public SystemEventsEntry searchForTableEntry(String title) {
             sleep(1, SECONDS);
             SelenideElement entry = elements().get(TABLE)
-                    .find(byXpath(String.format(
+                    .find(byXpath(format(
                             ".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", title)))
                     .shouldBe(visible);
             return new SystemEventsEntry(this, title, entry);
@@ -157,7 +172,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     .ok();
         }
 
-        public class CreateNotificationPopup extends PopupAO<CreateNotificationPopup, SystemEventsAO> implements AccessObject<CreateNotificationPopup>{
+        public class CreateNotificationPopup extends PopupAO<CreateNotificationPopup, SystemEventsAO> implements AccessObject<CreateNotificationPopup> {
             public final Map<Primitive, SelenideElement> elements = initialiseElements(
                     entry(TITLE, context().find(By.className("edit-notification-form-title-container")).find(byXpath("//label[contains(@title, 'Title')]"))),
                     entry(TITLE_FIELD, context().find(By.className("edit-notification-form-title-container")).find(By.className("ant-input-lg"))),
@@ -324,7 +339,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public SystemEventsEntry ensureSeverityIconIs(String severity) {
-                ensure(SEVERITY_ICON, cssClass(String.format("tyles__%s", severity.toLowerCase())));
+                ensure(SEVERITY_ICON, cssClass(format("tyles__%s", severity.toLowerCase())));
                 return this;
             }
 
@@ -339,7 +354,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public SystemEventsEntry ensureBodyHasText(String bodyText) {
-                $(byXpath(String.format("//td[contains(., '%s')]/following::tr", title))).shouldHave(text(bodyText));
+                $(byXpath(format("//td[contains(., '%s')]/following::tr", title))).shouldHave(text(bodyText));
                 return this;
             }
 
@@ -397,7 +412,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     super.elements(),
                     entry(TABLE, context().find(byClassName("ant-tabs-tabpane-active"))
                             .find(byClassName("ant-table-content"))),
-                    entry(SEARCH, context().find(byClassName("ant-input-search")))
+                    entry(SEARCH, context().find(byClassName("ant-input-search"))),
+                    entry(CREATE_USER, context().find(button("Create user")))
             );
 
             public UsersTabAO(PipelinesLibraryAO parentAO) {
@@ -420,9 +436,16 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return new UserEntry(this, login, entry);
             }
 
+            public UsersTabAO createUser(final String name) {
+                click(CREATE_USER);
+                setValue(byId("name"), name);
+                click(byId("create-user-form-ok-button"), byClassName("ant-modal-content"));
+                return this;
+            }
+
             private SelenideElement getUser(final String login) {
                 return elements().get(TABLE)
-                        .find(byXpath(String.format(
+                        .find(byXpath(format(
                                 ".//td[contains(@class, 'user-management-form__user-name-column') and " +
                                         "starts-with(., '%s')]", login)))
                         .closest(".ant-table-row-level-0");
@@ -474,7 +497,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             entry(SEARCH, element),
                             entry(SEARCH_INPUT, element.find(By.className("ant-select-search__field"))),
                             entry(ADD_KEY, context().find(By.id("add-role-button"))),
-                            entry(OK, context().find(By.id("close-edit-user-form")))
+                            entry(OK, context().find(By.id("close-edit-user-form"))),
+                            entry(BLOCK, context().$(button("BLOCK"))),
+                            entry(UNBLOCK, context().$(button("UNBLOCK"))),
+                            entry(DELETE, context().$(byId("delete-user-button")))
                     );
 
                     public EditUserPopup(UsersTabAO parentAO) {
@@ -518,6 +544,30 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                                 .find(By.id("delete-role-button"))
                                 .click();
                         return this;
+                    }
+
+                    public EditUserPopup blockUser(final String user) {
+                        click(BLOCK);
+                        new ConfirmationPopupAO(this)
+                                .ensureTitleIs(format("Are you sure you want to block user %s?", user))
+                                .ok();
+                        return this;
+                    }
+
+                    public EditUserPopup unblockUser(final String user) {
+                        click(UNBLOCK);
+                        new ConfirmationPopupAO(this)
+                                .ensureTitleIs(format("Are you sure you want to unblock user %s?", user))
+                                .ok();
+                        return this;
+                    }
+
+                    public UsersTabAO deleteUser(final String user) {
+                        click(DELETE);
+                        new ConfirmationPopupAO(this)
+                                .ensureTitleIs(format("Are you sure you want to delete user %s?", user))
+                                .ok();
+                        return parentAO;
                     }
                 }
             }
@@ -573,9 +623,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             private GroupsTabAO confirmGroupDeletion(final String groupName) {
                 new ConfirmationPopupAO(this.parentAO)
-                    .ensureTitleIs(String.format("Are you sure you want to delete group '%s'?", groupName))
-                    .sleep(1, SECONDS)
-                    .click(OK);
+                        .ensureTitleIs(format("Are you sure you want to delete group '%s'?", groupName))
+                        .sleep(1, SECONDS)
+                        .click(OK);
                 return this;
             }
 
@@ -888,6 +938,80 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         @Override
         public Map<Primitive, SelenideElement> elements() {
             return elements;
+        }
+    }
+
+    public class SystemLogsAO extends SettingsPageAO {
+
+        private final ElementsCollection containerLogs = $(byClassName("ant-table-tbody"))
+                .should(exist)
+                .findAll(byClassName("ant-table-row"));
+
+        public SystemLogsAO(final PipelinesLibraryAO pipelinesLibraryAO) {
+            super(pipelinesLibraryAO);
+        }
+
+        public SelenideElement getInfoRow(final String message, final String user, final String type) {
+            return containerLogs.stream()
+                    .filter(r -> r.has(matchText(message)) && r.has(text(user)) && r.has(text(type)))
+                    .findFirst()
+                    .orElseThrow(() -> {
+                        screenshot("SystemLogsFor" + user);
+                        return new NoSuchElementException(format("Supposed log info '%s' is not found.",
+                                format("%s message for %s with %s type", message, user, type)));
+                    });
+        }
+
+        public SystemLogsAO filterByUser(final String user) {
+            selectValue(combobox("User"), user);
+            return this;
+        }
+
+        public SystemLogsAO filterByMessage(final String message) {
+            setValue(inputOf(filterBy("Message")), message);
+            pressEnter();
+            return this;
+        }
+
+        public SystemLogsAO filterByService(final String service) {
+            selectValue(combobox("Service"), service);
+            return this;
+        }
+
+        public SystemLogsAO pressEnter() {
+            actions().sendKeys(Keys.ENTER).perform();
+            return this;
+        }
+
+        public void validateTimeOrder(final SelenideElement info1, final SelenideElement info2) {
+            LocalDateTime td1 = Utils.validateDateTimeString(info1.findAll("td").get(0).getText());
+            LocalDateTime td2 = Utils.validateDateTimeString(info2.findAll("td").get(0).getText());
+            assertTrue(td1.isAfter(td2));
+        }
+
+        public SystemLogsAO validateRow(final String message, final String user, final String type) {
+            getInfoRow(message, user, type).should(exist);
+            return this;
+        }
+
+        public String getUserId(final SelenideElement element) {
+            final String message = getMessage(element);
+            return message.split("id=")[1].substring(0, 1);
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
+        }
+
+        private By filterBy(final String name) {
+            return byXpath(format("(//*[contains(@class, '%s') and .//*[contains(text(), '%s')]])[last()]",
+                    "ilters__filter", name
+            ));
+        }
+
+        private String getMessage(final SelenideElement element) {
+            return element.findAll("td").get(2).getText();
         }
     }
 }
