@@ -63,6 +63,7 @@ import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
 import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_ID_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_ID_WRITE;
 import static com.epam.pipeline.security.acl.AclExpressions.STORAGE_ID_OWNER;
+import static com.epam.pipeline.security.acl.AclExpressions.STORAGE_ID_PERMISSIONS;
 import static com.epam.pipeline.security.acl.AclExpressions.STORAGE_ID_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.STORAGE_ID_WRITE;
 
@@ -191,10 +192,12 @@ public class DataStorageApiService {
         return dataStorageManager.generateDataStorageItemUrl(id, path, version, contentDisposition);
     }
 
-    @PreAuthorize(STORAGE_ID_READ)
+    @PreAuthorize(STORAGE_ID_PERMISSIONS)
     public List<DataStorageDownloadFileUrl> generateDataStorageItemUrl(final Long id,
-            final List<String> paths) {
-        return dataStorageManager.generateDataStorageItemUrl(id, paths);
+                                                                       final List<String> paths,
+                                                                       final List<String> permissions,
+                                                                       final long hours) {
+        return dataStorageManager.generateDataStorageItemUrl(id, paths, permissions, hours);
     }
 
     @PreAuthorize(STORAGE_ID_WRITE)
