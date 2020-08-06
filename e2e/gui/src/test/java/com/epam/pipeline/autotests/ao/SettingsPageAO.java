@@ -172,7 +172,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     .ok();
         }
 
-        public class CreateNotificationPopup extends PopupAO<CreateNotificationPopup, SystemEventsAO> implements AccessObject<CreateNotificationPopup> {
+        public class CreateNotificationPopup extends PopupAO<CreateNotificationPopup, SystemEventsAO> implements AccessObject<CreateNotificationPopup>{
             public final Map<Primitive, SelenideElement> elements = initialiseElements(
                     entry(TITLE, context().find(By.className("edit-notification-form-title-container")).find(byXpath("//label[contains(@title, 'Title')]"))),
                     entry(TITLE_FIELD, context().find(By.className("edit-notification-form-title-container")).find(By.className("ant-input-lg"))),
@@ -568,6 +568,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                                 .ensureTitleIs(format("Are you sure you want to delete user %s?", user))
                                 .ok();
                         return parentAO;
+                    }
+
+                    public EditUserPopup addAllowedLaunchOptions(String option, String mask) {
+                        setValue($(byXpath(format("//div/b[text()='%s']/following::div/input", option))), mask);
+                        return this;
                     }
                 }
             }
