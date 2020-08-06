@@ -79,7 +79,7 @@ public final class NFSHelper {
         return NFS_LUSTRE_ROOT_PATTERN.matcher(lustrePath).find();
     }
 
-    static String getNfsRootPath(String path) {
+    public static String getNfsRootPath(String path) {
         path = path.endsWith(PATH_SEPARATOR) ? path.substring(0, path.length() - 1) : path;
         final Matcher lustreMatcher = NFS_LUSTRE_ROOT_PATTERN.matcher(path);
         final Matcher matcher = NFS_ROOT_PATTERN.matcher(path);
