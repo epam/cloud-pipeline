@@ -79,12 +79,14 @@ public final class NFSHelper {
         return NFS_LUSTRE_ROOT_PATTERN.matcher(lustrePath).find();
     }
 
-    public static String getNfsRootPath(String path) {
-        path = path.endsWith(PATH_SEPARATOR) ? path.substring(0, path.length() - 1) : path;
-        final Matcher lustreMatcher = NFS_LUSTRE_ROOT_PATTERN.matcher(path);
-        final Matcher matcher = NFS_ROOT_PATTERN.matcher(path);
-        final Matcher matcherWithHomeDir = NFS_PATTERN_WITH_HOME_DIR.matcher(path);
-        final Matcher azureNfsMatcher = NFS_AZURE_ROOT_PATTERN.matcher(path);
+    public static String getNfsRootPath(final String path) {
+        final String pathToParse = path.endsWith(PATH_SEPARATOR)
+                                   ? path.substring(0, path.length() - 1)
+                                   : path;
+        final Matcher lustreMatcher = NFS_LUSTRE_ROOT_PATTERN.matcher(pathToParse);
+        final Matcher matcher = NFS_ROOT_PATTERN.matcher(pathToParse);
+        final Matcher matcherWithHomeDir = NFS_PATTERN_WITH_HOME_DIR.matcher(pathToParse);
+        final Matcher azureNfsMatcher = NFS_AZURE_ROOT_PATTERN.matcher(pathToParse);
         if (lustreMatcher.find()) {
             return lustreMatcher.group();
         } else if (matcher.find()) {
@@ -100,7 +102,7 @@ public final class NFSHelper {
 
     static String getNFSMountOption(final AbstractCloudRegion cloudRegion,
                                     final AbstractCloudRegionCredentials credentials,
-                                    final String defaultOptions, String protocol) {
+                                    final String defaultOptions, final String protocol) {
         String result = defaultOptions;
         if (cloudRegion != null && cloudRegion.getProvider() == CloudProvider.AZURE
                 && protocol.equalsIgnoreCase(MountType.SMB.getProtocol())) {
@@ -117,19 +119,19 @@ public final class NFSHelper {
         return StringUtils.isEmpty(result) ? "" : "-o " + result;
     }
 
-    static String formatNfsPath(String path, String protocol) {
+    static String formatNfsPath(final String path, final String protocol) {
         if (protocol.equalsIgnoreCase(MountType.SMB.getProtocol()) && !path.startsWith(SMB_SCHEME)) {
-            path = SMB_SCHEME + path;
+            return SMB_SCHEME + path;
         }
         if (protocol.equalsIgnoreCase(MountType.LUSTRE.getProtocol())) {
             if (!NFS_LUSTRE_ROOT_PATTERN.matcher(path).find()) {
                 throw new IllegalArgumentException("Invalid Lustre path format!");
             } else if (path.endsWith(PATH_SEPARATOR)) {
-                path = StringUtils.chop(path);
+                return StringUtils.chop(path);
             }
         }
         if (protocol.equalsIgnoreCase(MountType.NFS.getProtocol()) && !path.contains(NFS_HOST_DELIMITER)) {
-            path = path + NFS_HOST_DELIMITER;
+            return path + NFS_HOST_DELIMITER;
         }
         return path;
     }
