@@ -94,7 +94,7 @@ function install_pip_package {
             echo "[ERROR] ${_DIST_NAME} download failed. Exiting"
             exit "$_DOWNLOAD_RESULT"
         fi
-    $CP_PYTHON2_PATH -m pip install $_CP_PIP_EXTRA_ARGS ${_DIST_NAME}.tar.gz -q -I
+    $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS ${_DIST_NAME}.tar.gz -q -I
     _INSTALL_RESULT=$?
     rm -f ${_DIST_NAME}.tar.gz
     if [ "$_INSTALL_RESULT" -ne 0 ];
@@ -390,9 +390,7 @@ function configure_package_manager {
             # Pip setup
             local CP_REPO_PYPI_BASE_URL_DEFAULT="${CP_REPO_PYPI_BASE_URL_DEFAULT:-http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple}"
             local CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI_TRUSTED_HOST_DEFAULT:-cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com}"
-            export _CP_PIP_EXTRA_ARGS="${_CP_PIP_EXTRA_ARGS} 
-                                       --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT
-                                       --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
+            export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
       fi
 
 }
@@ -975,7 +973,7 @@ then
 else
     cd $COMMON_REPO_DIR
     # Fixed setuptools version to be compatible with the pipe-common package
-    $CP_PYTHON2_PATH -m pip install $_CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
+    $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
     download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
     _DOWNLOAD_RESULT=$?
     if [ "$_DOWNLOAD_RESULT" -ne 0 ];
@@ -985,7 +983,7 @@ else
     fi
     _INSTALL_RESULT=0
     tar xf pipe-common.tar.gz
-    $CP_PYTHON2_PATH -m pip install $_CP_PIP_EXTRA_ARGS . -q -I
+    $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS . -q -I
     _INSTALL_RESULT=$?
     if [ "$_INSTALL_RESULT" -ne 0 ];
     then
