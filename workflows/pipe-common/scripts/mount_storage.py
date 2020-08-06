@@ -522,8 +522,6 @@ class NFSMounter(StorageMounter):
                 params['path'] = '//' + params['path']
         elif self.share_mount.mount_type == "LUSTRE":
             command = command.format(protocol="lustre")
-            if params['path'].count('/') > 1 and params['path'].endswith('/'):
-                params['path'] = params['path'][:-1]
         else:
             command = command.format(protocol="nfs")
 
@@ -546,7 +544,17 @@ class NFSMounter(StorageMounter):
                 mount_options += ',' + file_mode_options
         if mount_options:
             command += ' -o {}'.format(mount_options)
-        command += ' {path} {mount}'.format(**params)
+        transition_mount = False
+        if self.share_mount.mount_type == "LUSTRE" and params['path'] != self.share_mount.mount_root:
+            lustre_root = self.share_mount.mount_root
+            hidden_lustre_root_mount = '/mnt/.{}'.format(os.path.basename(lustre_root))
+            if self.create_directory(hidden_lustre_root_mount, 'Hidden lustre root [{0}] creation'.format(lustre_root)):
+                transition_mount = True
+                command += ' {0} {1}'.format(lustre_root, hidden_lustre_root_mount)
+                path_in_hidden_root = params['path'].replace(lustre_root, hidden_lustre_root_mount)
+                command += ' && mount --bind {0} {1}'.format(path_in_hidden_root, params['mount'])
+        if not transition_mount:
+            command += ' {path} {mount}'.format(**params)
         if PermissionHelper.is_storage_writable(self.storage):
             command += ' && chmod {permission} {mount}'.format(permission=permission, **params)
         return command
