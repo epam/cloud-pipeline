@@ -17,6 +17,8 @@
 package com.epam.pipeline.manager.datastorage.providers;
 
 import java.io.InputStream;
+import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -56,6 +58,8 @@ public interface StorageProvider<T extends AbstractDataStorage> {
                                                    ContentDisposition contentDisposition);
 
     DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(T dataStorage, String path);
+
+    DataStorageDownloadFileUrl generateUrl(T dataStorage, String path, List<String> permissions, Duration duration);
 
     DataStorageFile createFile(T dataStorage, String path, byte[] contents)
             throws DataStorageException;

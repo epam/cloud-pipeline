@@ -443,7 +443,9 @@ public class DataStorageController extends AbstractRestController {
             @PathVariable(value = ID) final Long id,
             @RequestBody final GenerateDownloadUrlVO generateDownloadUrlVO) {
         return Result.success(dataStorageApiService
-                .generateDataStorageItemUrl(id, generateDownloadUrlVO.getPaths()));
+                .generateDataStorageItemUrl(id, generateDownloadUrlVO.getPaths(), 
+                        generateDownloadUrlVO.getPermissions(),
+                        generateDownloadUrlVO.getHours()));
     }
 
     @PostMapping("/datastorage/{id}/generateUploadUrl")

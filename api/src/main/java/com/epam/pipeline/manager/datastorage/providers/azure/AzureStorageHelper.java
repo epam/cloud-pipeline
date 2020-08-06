@@ -75,6 +75,7 @@ import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Date;
@@ -100,6 +101,9 @@ public class AzureStorageHelper {
     private static final String BLOB_URL_FORMAT = "https://%s.blob.core.windows.net";
     private static final int NOT_FOUND_STATUS_CODE = 404;
     private static final int RANGE_NOT_SATISFIABLE_STATUS_CODE = 416;
+    private static final String CONTAINER_CONTENT_TYPE = "container";
+    private static final String BLOB_CONTENT_TYPE = "blob";
+    private static final Duration FALLBACK_EXPIRATION_DURATION = Duration.ofDays(1);
     static final int MAX_PAGE_SIZE = 5000;
 
     private final AzureRegion azureRegion;
@@ -306,20 +310,67 @@ public class AzureStorageHelper {
                                                            final String path,
                                                            final String permission) {
         validateBlob(dataStorage, path, true);
+        return generateGenericPresignedUrl(dataStorage, path, permission, Duration.ZERO);
+    }
+
+    public DataStorageDownloadFileUrl generateGenericPresignedUrl(final AzureBlobStorage dataStorage,
+                                                                  final String path,
+                                                                  final String permission,
+                                                                  final Duration duration) {
+        final String sasToken = generateSASToken(dataStorage, path, permission, expirationOf(duration));
+        return generateResponseObject(dataStorage, path, sasToken);
+    }
+
+    private OffsetDateTime expirationOf(final Duration duration) {
+        final Duration adjustedDuration = Optional.ofNullable(duration)
+                .filter(d -> d.getSeconds() > 0)
+                .orElse(FALLBACK_EXPIRATION_DURATION);
+        return OffsetDateTime.now().plus(adjustedDuration);
+    }
+
+    private String generateSASToken(final AzureBlobStorage dataStorage,
+                                    final String path,
+                                    final String permission,
+                                    final OffsetDateTime expiryTime) {
+        return StringUtils.isBlank(path) || path.endsWith("/")
+                ? generateSASToken(dataStorage.getPath(), null, permission, expiryTime, CONTAINER_CONTENT_TYPE)
+                : generateSASToken(dataStorage.getPath(), path, permission, expiryTime, BLOB_CONTENT_TYPE);
+    }
+
+    private String generateSASToken(final String containerName,
+                                    final String blobName,
+                                    final String permission,
+                                    final OffsetDateTime expiryTime,
+                                    final String contentType) {
         final ServiceSASSignatureValues values = new ServiceSASSignatureValues()
-            .withProtocol(SASProtocol.HTTPS_ONLY)
-            .withExpiryTime(OffsetDateTime.now().plusDays(1))
-            .withContainerName(dataStorage.getPath())
-            .withBlobName(path)
-            .withContentType("blob")
-            .withPermissions(permission);
+                .withProtocol(SASProtocol.HTTPS_ONLY)
+                .withExpiryTime(expiryTime)
+                .withContainerName(containerName)
+                .withBlobName(blobName)
+                .withContentType(contentType)
+                .withPermissions(permission);
         addIPRangeToSASValue(values);
         final SharedKeyCredentials credential = getStorageCredential();
 
         final SASQueryParameters params = values.generateSASQueryParameters(credential);
-        final String encodedParams = params.encode();
-        final String blobUrl = String.format(BLOB_URL_FORMAT + "/%s/%s%s", azureRegion.getStorageAccount(),
-                dataStorage.getPath(), path, encodedParams);
+        return params.encode();
+    }
+
+    private DataStorageDownloadFileUrl generateResponseObject(final AzureBlobStorage dataStorage,
+                                                              final String path,
+                                                              final String sasToken) {
+        return responseWith(blobUrl(resourcePath(dataStorage.getPath(), path), sasToken));
+    }
+
+    private String resourcePath(final String container, final String path) {
+        return StringUtils.isBlank(path) || StringUtils.strip(path).equals("/") ? container  : container + "/" + path;
+    }
+
+    private String blobUrl(final String resourcePath, final String sasToken) {
+        return String.format(BLOB_URL_FORMAT + "/%s%s", azureRegion.getStorageAccount(), resourcePath, sasToken);
+    }
+
+    private DataStorageDownloadFileUrl responseWith(final String blobUrl) {
         final DataStorageDownloadFileUrl dataStorageDownloadFileUrl = new DataStorageDownloadFileUrl();
         dataStorageDownloadFileUrl.setUrl(blobUrl);
         dataStorageDownloadFileUrl.setExpires(new Date((new Date()).getTime() + URL_EXPIRATION));

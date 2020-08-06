@@ -41,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -112,6 +113,14 @@ public class StorageProviderManager {
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(AbstractDataStorage dataStorage,
                                                                        String path) {
         return getStorageProvider(dataStorage).generateDataStorageItemUploadUrl(dataStorage, path);
+    }
+
+    @SensitiveStorageOperation
+    public DataStorageDownloadFileUrl generateUrl(AbstractDataStorage dataStorage,
+                                                  String path,
+                                                  List<String> permissions,
+                                                  Duration duration) {
+        return getStorageProvider(dataStorage).generateUrl(dataStorage, path, permissions, duration);
     }
 
     public DataStorageFile createFile(AbstractDataStorage dataStorage, String path, byte[] contents)

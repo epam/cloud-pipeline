@@ -69,6 +69,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -339,6 +340,14 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     @Override
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(NFSDataStorage dataStorage, String path) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataStorageDownloadFileUrl generateUrl(final NFSDataStorage dataStorage,
+                                                  final String path,
+                                                  final List<String> permissions,
+                                                  final Duration duration) {
+        return generateDownloadURL(dataStorage, path, null, null);
     }
 
     @Override
