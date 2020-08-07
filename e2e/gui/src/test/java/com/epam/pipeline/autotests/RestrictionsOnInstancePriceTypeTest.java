@@ -21,11 +21,15 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Condition.value;
+import static com.epam.pipeline.autotests.ao.Primitive.CODE_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
+import static com.epam.pipeline.autotests.ao.Primitive.DOCKER_IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
@@ -48,29 +52,32 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     private final String defaultGroup = C.DEFAULT_GROUP;
     private final String folder = "restrictionTestFolder-" + Utils.randomSuffix();
     private final String pipeline = "restrictionTestPipeline" + Utils.randomSuffix();
+    private final String secondPipeline = "restrictionTestPipeline" + Utils.randomSuffix();
     private final String configuration = "restrictionTestConfiguration" + Utils.randomSuffix();
+    private final String secondConfiguration = "restrictionTestConfiguration" + Utils.randomSuffix();
     private final String customDisk = "22";
     private final String configurationName = "customConfig";
+    private final String testRole = "ROLE_USER";
+    private final String instanceTypesMask = "Allowed instance types mask";
 
     @AfterClass(alwaysRun = true)
     public void deletingEntities() {
         loginAs(admin);
         library()
                 .removeNotEmptyFolder(folder);
+        setMaskForUser(user.login, instanceTypesMask, "");
         logout();
     }
 
-    @Test
+    @AfterMethod
+    public void logoutUser() {
+        logout();
+    }
+
+    @Test(priority = 1)
     @TestCase({"EPMCMBIBPC-2637"})
     public void preparationForValidationOfInstanceTypesRestrictions() {
-        navigationMenu()
-                .settings()
-                .switchToUserManagement()
-                .switchToUsers()
-                .searchForUserEntry(user.login)
-                .edit()
-                .addAllowedLaunchOptions("Allowed instance types mask", String.format("%s.*", instanceFamilyName))
-                .ok();
+        setMaskForUser(user.login, instanceTypesMask, String.format("%s.*", instanceFamilyName));
         library()
                 .createFolder(folder)
                 .clickOnFolder(folder)
@@ -103,7 +110,8 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .cd(folder)
                 .createConfiguration(configuration)
                 .configurationWithin(configuration, configuration ->
-                        configuration.expandTabs(execEnvironmentTab)
+                        configuration
+                                .expandTabs(execEnvironmentTab)
                                 .setValue(DISK, customDisk)
                                 .selectValue(INSTANCE_TYPE, defaultInstanceType)
                                 .selectDockerImage(dockerImage ->
@@ -115,10 +123,9 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                 )
                                 .click(SAVE)
                                 .ensure(INSTANCE_TYPE, text(defaultInstanceType)));
-        logout();
     }
 
-    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
+    @Test(priority = 2, dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2638"})
     public void validationOfInstanceTypesRestrictionsExistingObjects() {
         loginAs(user);
@@ -130,8 +137,82 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                         profile
                                 .expandTab(EXEC_ENVIRONMENT)
                                 .ensure(INSTANCE_TYPE, empty)
-                );
+                                .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
+                )
+                .click(CODE_TAB)
+                .exitFromConfigurationWithoutSaved();
+        library()
+                .cd(folder)
+                .configurationWithin(configuration, configuration ->
+                        configuration
+                                .expandTabs(execEnvironmentTab)
+                                .ensure(DISK, value(customDisk))
+                                .ensure(DOCKER_IMAGE, value(defaultGroup), value(testingTool))
+                                .ensure(INSTANCE_TYPE, empty)
+                                .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
+                )
+                .exitFromConfigurationWithoutSaved();
+    }
+
+    @Test(priority = 2, dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
+    @TestCase({"EPMCMBIBPC-2639"})
+    public void validationOfInstanceTypesRestrictionsCreatingObjects() {
+        loginAs(user);
+        library()
+                .cd(folder)
+                .createPipeline(secondPipeline)
+                .clickOnDraftVersion(secondPipeline)
+                .configurationTab()
+                .editConfiguration("default", profile ->
+                        profile
+                                .expandTab(EXEC_ENVIRONMENT)
+                                .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
+                )
+                .click(CODE_TAB)
+                .exitFromConfigurationWithoutSaved();
+        library()
+                .cd(folder)
+                .createConfiguration(configuration)
+                .configurationWithin(configuration, configuration ->
+                        configuration
+                                .expandTabs(execEnvironmentTab)
+                                .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
+                )
+                .exitFromConfigurationWithoutSaved();
+    }
+
+    @Test(priority = 3, dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
+    @TestCase({"EPMCMBIBPC-2640"})
+    public void validationOfInstanceTypesRestrictionsForUserGroup() {
+        loginAs(admin);
+        setMaskForUser(user.login, instanceTypesMask, "");
+        setMaskForRole(testRole, instanceTypesMask, String.format("%s.*", instanceFamilyName));
         logout();
+        validationOfInstanceTypesRestrictionsExistingObjects();
+        logout();
+        loginAs(admin);
+        setMaskForRole(testRole, instanceTypesMask, "");
+    }
+
+    private void setMaskForUser(String user, String mask, String value) {
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchForUserEntry(user)
+                .edit()
+                .addAllowedLaunchOptions(mask, value)
+                .ok();
+    }
+
+    private void setMaskForRole(String role, String mask, String value){
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToRoles()
+                .editRole(role)
+                .addAllowedLaunchOptions(mask, value)
+                .ok();
     }
 
 }

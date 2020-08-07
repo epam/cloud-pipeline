@@ -407,6 +407,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return new GroupsTabAO(parentAO);
         }
 
+        public RolesTabAO switchToRoles() {
+            click(ROLE_TAB);
+            return new RolesTabAO(parentAO);
+        }
+
         public class UsersTabAO extends SystemEventsAO {
             public final Map<Primitive, SelenideElement> elements = initialiseElements(
                     super.elements(),
@@ -672,6 +677,75 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public GroupsTabAO cancel() {
                     click(CANCEL);
                     return parentAO;
+                }
+            }
+        }
+
+        public class RolesTabAO extends SystemEventsAO {
+            public final Map<Primitive, SelenideElement> elements = initialiseElements(
+                    super.elements(),
+                    entry(TABLE, context().find(byClassName("ant-tabs-tabpane-active"))
+                            .find(byClassName("ant-table-content"))),
+                    entry(SEARCH, context().find(byClassName("ant-input-search")))
+            );
+
+            public RolesTabAO(PipelinesLibraryAO parentAO) {
+                super(parentAO);
+            }
+
+            @Override
+            public Map<Primitive, SelenideElement> elements() {
+                return elements;
+            }
+
+            public RolesTabAO editRoleIfPresent(String role) {
+                sleep(2, SECONDS);
+                performIf(context().$$(byText(role)).filterBy(visible).first().exists(), t -> editRole(role));
+                return this;
+            }
+
+            public EditRolePopup editRole(final String role) {
+                sleep(1, SECONDS);
+                context().$$(byText(role))
+                        .filterBy(visible)
+                        .first()
+                        .closest(".ant-table-row-level-0")
+                        .find(byClassName("ant-btn-sm"))
+                        .click();
+                return new EditRolePopup(this);
+            }
+
+            public RolesTabAO clickSearch() {
+                click(SEARCH);
+                return this;
+            }
+
+            public class EditRolePopup extends PopupAO<EditRolePopup, RolesTabAO>
+                    implements AccessObject<EditRolePopup> {
+                private final RolesTabAO parentAO;
+                public final Map<Primitive, SelenideElement> elements = initialiseElements(
+                        entry(OK, context().find(By.id("close-edit-user-form")))
+                );
+
+                public EditRolePopup(final RolesTabAO parentAO) {
+                    super(parentAO);
+                    this.parentAO = parentAO;
+                }
+
+                @Override
+                public Map<Primitive, SelenideElement> elements() {
+                    return elements;
+                }
+
+                @Override
+                public RolesTabAO ok() {
+                    click(OK);
+                    return parentAO;
+                }
+
+                public EditRolePopup addAllowedLaunchOptions(String option, String mask) {
+                    setValue($(byXpath(String.format("//div/b[text()='%s']/following::div/input", option))), mask);
+                    return this;
                 }
             }
         }
