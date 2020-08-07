@@ -316,6 +316,11 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
+    public String getCPU() {
+        String cpu = $(byXpath(".//b[.='CPU']")).parent().getText();
+        return cpu.substring(0, cpu.indexOf(" "));
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;
