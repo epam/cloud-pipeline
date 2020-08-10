@@ -21,6 +21,7 @@ import platform
 import stat
 import time
 
+import easywebdav
 from fuse import FuseOSError, Operations
 from threading import RLock
 
@@ -72,6 +73,19 @@ def syncronized(func):
     return wrapper
 
 
+def errorlogged(func):
+    def wrapper(*args, **kwargs):
+        path = args[1]
+        try:
+            return func(*args, **kwargs)
+        except FuseOSError:
+            raise
+        except Exception:
+            logging.exception('Error occurred while %s for %s', func.__name__, path)
+            raise
+    return wrapper
+
+
 class PipeFS(Operations):
 
     def __init__(self, client, lock, mode=0o755):
@@ -94,6 +108,7 @@ class PipeFS(Operations):
     # Filesystem methods
     # ==================
 
+    @errorlogged
     def access(self, path, mode):
         if path == self.root:
             return
@@ -106,6 +121,7 @@ class PipeFS(Operations):
     def chown(self, path, uid, gid):
         pass
 
+    @errorlogged
     def getattr(self, path, fh=None):
         try:
             if self.is_skipped_mac_files(path):
@@ -130,11 +146,10 @@ class PipeFS(Operations):
             if props.ctime:
                 attrs['st_ctime'] = props.ctime
             return attrs
-        except FuseOSError:
-            raise
-        except Exception:
+        except easywebdav.OperationFailed:
             raise FuseOSError(errno.ENOENT)
 
+    @errorlogged
     def readdir(self, path, fh):
         dirents = ['.', '..']
         prefix = fuseutils.append_delimiter(path, self.delimiter)
@@ -154,17 +169,19 @@ class PipeFS(Operations):
         raise UnsupportedOperationException("mknod")
 
     @syncronized
+    @errorlogged
     def rmdir(self, path):
         self.client.rmdir(path)
 
     @syncronized
+    @errorlogged
     def mkdir(self, path, mode):
         try:
             self.client.mkdir(path)
-        except Exception:
-            logging.exception('Error occurred while creating directory %s' % path)
+        except easywebdav.OperationFailed:
             raise FuseOSError(errno.EACCES)
 
+    @errorlogged
     def statfs(self, path):
         # some magic, check if we need to customize this
         return {
@@ -176,6 +193,7 @@ class PipeFS(Operations):
         }
 
     @syncronized
+    @errorlogged
     def unlink(self, path):
         self.client.delete(path)
 
@@ -183,12 +201,14 @@ class PipeFS(Operations):
         raise UnsupportedOperationException("symlink")
 
     @syncronized
+    @errorlogged
     def rename(self, old, new):
         self.client.mv(old, new)
 
     def link(self, target, name):
         raise UnsupportedOperationException("link")
 
+    @errorlogged
     def utimens(self, path, times=None):
         self.client.utimens(path, times)
 
@@ -196,36 +216,43 @@ class PipeFS(Operations):
     # ============
 
     @syncronized
+    @errorlogged
     def open(self, path, flags):
         if self.client.exists(path):
             return self.container.get()
         raise FuseOSError(errno.ENOENT)
 
     @syncronized
+    @errorlogged
     def create(self, path, mode, fi=None):
         self.client.upload([], path)
         return self.container.get()
 
     @syncronized
+    @errorlogged
     def read(self, path, length, offset, fh):
         with io.BytesIO() as file_buff:
             self.client.download_range(fh, file_buff, path, offset=offset, length=length)
             return file_buff.getvalue()
 
     @syncronized
+    @errorlogged
     def write(self, path, buf, offset, fh):
         self.client.upload_range(fh, buf, path, offset=offset)
         return len(buf)
 
     @syncronized
+    @errorlogged
     def truncate(self, path, length, fh=None):
         self.client.truncate(fh, path, length)
 
     @syncronized
+    @errorlogged
     def flush(self, path, fh):
         self.client.flush(fh, path)
 
     @syncronized
+    @errorlogged
     def release(self, path, fh):
         self.container.release(fh)
 
@@ -244,6 +271,7 @@ class PipeFS(Operations):
         FALLOC_FL_UNSHARE_RANGE = 0x40
 
     @syncronized
+    @errorlogged
     def fallocate(self, path, mode, offset, length, fh):
         props = self.client.attrs(path)
         if not props:
