@@ -1,5 +1,8 @@
 buildscript {
-    repositories { jcenter() }
+    repositories {
+        jcenter()
+        mavenLocal()
+    }
 }
 
 plugins {
@@ -10,7 +13,8 @@ plugins {
 ext { springBootVersion = '1.5.2.RELEASE' }
 
 apply plugin: 'java'
-apply plugin: "jacoco"
+apply plugin: 'jacoco'
+apply plugin: 'maven-publish'
 
 jar {
     archiveName "core.pipeline.jar"
@@ -23,6 +27,14 @@ jar {
 sourceCompatibility = 1.8
 
 repositories { jcenter() }
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}
 
 dependencies {
     compile('org.springframework.boot:spring-boot-starter')

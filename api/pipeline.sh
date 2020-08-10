@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,4 +14,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-nohup $JAVA_HOME/bin/java -jar pipeline.jar 1>/dev/null 2>nohup.stderr.log &
+CP_API_SRV_JAVA_OPTS="-Dthin.root=. -Dspring.jmx.enabled=false -noverify -XX:TieredStopAtLevel=1 -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
+nohup $JAVA_HOME/bin/java $CP_API_SRV_JAVA_OPTS -jar pipeline.jar --thin.location=file:./config 1>/dev/null 2>nohup.stderr.log &

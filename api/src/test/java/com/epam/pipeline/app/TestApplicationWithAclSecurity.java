@@ -20,7 +20,6 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.actuate.autoconfigure.ManagementWebSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.SecurityFilterAutoConfiguration;
@@ -46,7 +45,6 @@ import org.springframework.test.context.TestPropertySource;
     })
 @EnableAutoConfiguration(exclude = {
     SecurityAutoConfiguration.class,
-    ManagementWebSecurityAutoConfiguration.class,
     SecurityFilterAutoConfiguration.class})
 @ComponentScan(
     basePackages = {

@@ -74,7 +74,7 @@ task buildDoc(type: Tar) {
 
 task buildAllFast(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin", ":jwt-generator:shadowJar",
-                          ":api:bootRepackage", ":notifier:smtp:bootRepackage", ":docker-comp-scan:bootRepackage",
+                          ":api:thinResolve", ":notifier:smtp:bootRepackage", ":docker-comp-scan:bootRepackage",
                           ":elasticsearch-agent:bootJar", ":data-transfer-service:bootJar", ":vm-monitor:bootJar",
                           ":data-sharing-service:buildFast", ":fs-browser:build", ":billing-report-agent:bootJar"]) {
     group = 'build'
@@ -138,8 +138,13 @@ task installDist() {
             into "$distFolder/vm-monitor-templates"
         }
 
+        copy {
+            from "$rootDir/api/build/thin/root/repository"
+            into "$distFolder/repository"
+        }
+
         def distFiles = files(
-                "$rootDir/api/build/libs/pipeline.jar",
+                "$rootDir/api/build/thin/root/pipeline.jar",
                 "$rootDir/api/pipeline.sh",
                 "$rootDir/jwt-generator/build/libs/jwt-generator.jar",
                 "$rootDir/notifier/smtp/build/libs/notifier.jar",

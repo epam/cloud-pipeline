@@ -1,5 +1,14 @@
 buildscript {
-    repositories { jcenter() }
+    repositories {
+        jcenter()
+        mavenLocal()
+    }
+    ext {
+        thinVersion = '1.0.24.RELEASE'
+    }
+    dependencies {
+        classpath("org.springframework.boot.experimental:spring-boot-thin-gradle-plugin:${thinVersion}")
+    }
 }
 
 plugins {
@@ -24,6 +33,8 @@ apply from: "profiles.gradle"
 apply plugin: "idea"
 apply plugin: "java"
 apply plugin: "jacoco"
+apply plugin: "maven"
+apply plugin: "org.springframework.boot.experimental.thin-launcher"
 
 task copyLaunchScripts(type: Copy) {
     from "$rootDir/scripts/pipeline-launch"
@@ -76,15 +87,23 @@ ext {
 
 ext["elasticsearch.version"] = project.ext.versionElasticsearch
 
+thinResolve {
+    group = 'build'
+    dependsOn ':core:publishToMavenLocal', ':api:thinProperties'
+    mustRunAfter ":client:buildUI", ":core:build", ":buildPipe", ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin"
+}
+thinProperties.mustRunAfter ':core:publishToMavenLocal'
+
 build.mustRunAfter ":client:buildUI", ":core:build", ":buildPipe", ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin"
 bootRepackage.mustRunAfter ":client:buildUI", ":core:build", ":buildPipe", ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin"
+build.finalizedBy thinResolve
+compileJava.dependsOn thinProperties
 
 dependencies {
     // Spring Boot
     configurations {
         all*.exclude module : "spring-boot-starter-logging"
     }
-    compile("org.springframework.boot:spring-boot-starter-actuator")
     compile group: "org.springframework.boot", name: "spring-boot-starter-web", version: project.ext.versionSpringBoot
     compile group: "org.springframework.session", name: "spring-session-jdbc", version: project.ext.versionSpringSession
     compile("org.springframework.boot:spring-boot-starter-tomcat")
