@@ -559,12 +559,16 @@ class NFSMounter(StorageMounter):
             hidden_lustre_root_mount = '/mnt/.{}'.format(os.path.basename(lustre_root))
             if self.create_directory(hidden_lustre_root_mount, 'Hidden lustre root [{0}] creation'.format(lustre_root)):
                 transition_mount = True
-                root_mount_options = mount_options.split(',')
+                root_mount_options = ''
                 bind_mount_options = ''
-                if READ_ONLY_MOUNT_OPT in root_mount_options:
-                    root_mount_options.remove(READ_ONLY_MOUNT_OPT)
-                    bind_mount_options = '-o ' + READ_ONLY_MOUNT_OPT
-                root_mount_options = ' -o {}'.format(','.join(root_mount_options))
+                if mount_options:
+                    root_mount_options = mount_options.strip().split(',')
+                    if READ_ONLY_MOUNT_OPT in root_mount_options:
+                        root_mount_options.remove(READ_ONLY_MOUNT_OPT)
+                        bind_mount_options = '-o ' + READ_ONLY_MOUNT_OPT
+                    root_mount_options = ','.join(root_mount_options)
+                    if root_mount_options:
+                        root_mount_options = '-o {}'.format(root_mount_options)
                 path_in_hidden_root = params['path'].replace(lustre_root, hidden_lustre_root_mount)
                 command += ' {0} {1} {2} && mount --bind {3} {4} {5}'\
                     .format(root_mount_options, lustre_root, hidden_lustre_root_mount,
