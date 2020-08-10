@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+NOMACHINE_INSTALL_TASK="NoMachineInitialization"
+NOMACHINE_VERSION="6.5.6_9"
+/usr/bin/rpm -q -f /usr/bin/rpm >/dev/null 2>&1
+IS_RPM_BASED=$?
+
+export LANG="en_US.UTF-8"
+export LANGUAGE=en_US
+
+if [[ "$IS_RPM_BASED" = 0 ]]
+then
+    CHECK_NOMACHINE_INSTALLATION="rpm -qa | grep nomachine"
+    read -r -d '' NOMACHINE_INSTALL_CMD <<- EOM
+    yum -y install epel-release && \
+    yum update -y && \
+    yum install -y  gcc \
+                    gcc-c++ \
+                    python \
+                    wget && \
+    yum --enablerepo=epel install  @^graphical-server-environment -y && \
+    yum --enablerepo=epel -y -x gnome-keyring --skip-broken install @xfce-desktop && \
+    yum -y groups install "Fonts" && \
+    yum erase -y *power* *screensaver* && \
+    yum clean all && \
+    rm -f /etc/xdg/autostart/xfce-polkit* && \
+    /bin/dbus-uuidgen > /etc/machine-id && \
+    yum install -y xfce4-xkb-plugin && \
+    wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine_${NOMACHINE_VERSION}_x86_64.rpm" -O nomachine.rpm && \
+    yum install -y nomachine.rpm && \
+    rm -f nomachine.rpm && \
+    sed -i '/DefaultDesktopCommand/c\DefaultDesktopCommand "/usr/bin/startxfce4"' /usr/NX/etc/node.cfg
+EOM
+
+    read -r -d '' NOMACHINE_CONFIG_CMD <<- EOM
+    sed -i 's@_XKB_PLUGIN_NAME_@xkb-plugin@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml && \
+    sed -i 's@_XKB_PLUGIN_ID_@6@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
+EOM
+    XKB_PLUGIN_ID=6
+else
+    export DEBIAN_FRONTEND=noninteractive
+    CHECK_NOMACHINE_INSTALLATION="dpkg -l | grep nomachine"
+    read -r -d '' NOMACHINE_INSTALL_CMD <<- EOM
+    apt-get update -y && \
+    apt-get install -y locales && \
+    locale-gen en_US.UTF-8 && \
+    locale-gen en_US && \
+    dpkg-reconfigure --frontend=noninteractive locales && \
+    update-locale LANG=$LANG && \
+    apt-get install -y  g++ \
+                        python \
+                        wget \
+                        xfce4 \
+                        xfce4-xkb-plugin && \
+    wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine_${NOMACHINE_VERSION}_amd64.deb" -O nomachine.deb && \
+    dpkg -i nomachine.deb && \
+    rm -f nomachine.deb
+EOM
+
+    read -r -d '' NOMACHINE_CONFIG_CMD <<- EOM
+    if [[ "$(. /etc/os-release;echo $VERSION_ID)" == *"18."* ]]; then
+        sed -i 's@_XKB_PLUGIN_NAME_@xkb@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml ;
+    else
+        sed -i 's@_XKB_PLUGIN_NAME_@xkb-plugin@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml ;
+    fi
+    sed -i 's@_XKB_PLUGIN_ID_@9@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
+EOM
+    XKB_PLUGIN_ID=9
+fi
+
+    read -r -d '' NOMACHINE_COMMON_CONFIG_CMD <<- EOM
+    curl https://bootstrap.pypa.io/get-pip.py | python - && \
+    wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine-common.tar.gz" -O nomachine-common.tar.gz && \
+    mkdir -p nomachine-common/ /etc/nomachine/ && \
+    tar -C nomachine-common/ -zxvf nomachine-common.tar.gz && \
+    g++ nomachine-common/scramble_alg.cpp -o /usr/local/bin/scramble && \
+    rm -f nomachine-common/scramble.cpp && \
+    cp -r nomachine-common/* /etc/nomachine/ && \
+    rm -f /etc/nomachine/xfce/.config/xfce4/panel/xkb-plugin-${XKB_PLUGIN_ID}.rc && \
+    mv /etc/nomachine/xfce/.config/xfce4/panel/xkb-plugin.rc /etc/nomachine/xfce/.config/xfce4/panel/xkb-plugin-${XKB_PLUGIN_ID}.rc && \
+    rm -rf nomachine-common*
+EOM
+
+eval "$CHECK_NOMACHINE_INSTALLATION"
+if [ $? -ne 0 ]
+then
+    pipe_log_info "--> NoMachine not found, proceeding with installation" "$NOMACHINE_INSTALL_TASK"
+    NOMACHINE_INSTALLATION_LOG="/var/log/nomachine_installation.log"
+    eval "$NOMACHINE_INSTALL_CMD" >> $NOMACHINE_INSTALLATION_LOG
+    if [ $? -ne 0 ]
+    then
+        pipe_log_fail "Failed to install NoMachine" "$NOMACHINE_INSTALL_TASK"
+        exit 1
+    else
+        pipe_log_info "--> NoMachine installed successfully" "$NOMACHINE_INSTALL_TASK"
+    fi
+    NOMACHINE_CONFIGURATION_LOG="/var/log/nomachine_configuration.log"
+    eval "$NOMACHINE_COMMON_CONFIG_CMD && $NOMACHINE_CONFIG_CMD" >> $NOMACHINE_CONFIGURATION_LOG
+    if [ $? -ne 0 ]
+    then
+        pipe_log_fail "Failed to configure NoMachine" "$NOMACHINE_INSTALL_TASK"
+        exit 1
+    else
+        pipe_log_info "--> NoMachine configured successfully" "$NOMACHINE_INSTALL_TASK"
+    fi
+else
+    pipe_log_info "--> NoMachine installed already" "$NOMACHINE_INSTALL_TASK"
+fi
+
+bash /etc/nomachine/nomachine_launcher.sh &
+pipe_log_success "Finished NoMachine initialization" "$NOMACHINE_INSTALL_TASK"
