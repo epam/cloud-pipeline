@@ -50,7 +50,7 @@ else
       mkdir lustre-client-install/ &&
       tar -C lustre-client-install/ -zxvf lustre-client.tar.gz &&
       mkdir -p /lib/modules/$(uname -r) &&
-      dpkg -i lustre-client-install/* &&
+      (dpkg -i lustre-client-install/* || apt-get --fix-broken install -y ) &&
       rm -rf lustre-client-install/ lustre-client.tar.gz
 EOM
 fi
