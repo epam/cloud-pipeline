@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ FUSE_GCSFUSE_ID = 'gcsfuse'
 FUSE_NA_ID = None
 AZURE_PROVIDER = 'AZURE'
 S3_PROVIDER = 'S3'
-
+READ_ONLY_MOUNT_OPT = 'ro'
 
 class PermissionHelper:
 
@@ -564,15 +564,38 @@ class NFSMounter(StorageMounter):
         if not PermissionHelper.is_storage_writable(self.storage) or PermissionHelper.is_run_sensitive():
             permission = 'g+rx'
             if not mount_options:
-                mount_options = 'ro'
+                mount_options = READ_ONLY_MOUNT_OPT
             else:
                 options = mount_options.split(',')
-                if 'ro' not in options:
-                    mount_options += ',ro'
+                if READ_ONLY_MOUNT_OPT not in options:
+                    mount_options += ',{0}'.format(READ_ONLY_MOUNT_OPT)
+        if self.share_mount.mount_type == "SMB":
+            file_mode_options = 'file_mode={mode},dir_mode={mode}'.format(mode=mask)
+            if not mount_options:
+                mount_options = file_mode_options
+            else:
+                mount_options += ',' + file_mode_options
 
-        if mount_options:
-            command += ' -o {}'.format(mount_options)
-        command += ' {path} {mount}'.format(**params)
+        transition_mount = False
+        if self.share_mount.mount_type == "LUSTRE" and params['path'] != self.share_mount.mount_root:
+            lustre_root = self.share_mount.mount_root
+            hidden_lustre_root_mount = '/mnt/.{}'.format(os.path.basename(lustre_root))
+            if self.create_directory(hidden_lustre_root_mount, 'Hidden lustre root [{0}] creation'.format(lustre_root)):
+                transition_mount = True
+                root_mount_options = mount_options.split(',')
+                bind_mount_options = ''
+                if READ_ONLY_MOUNT_OPT in root_mount_options:
+                    root_mount_options.remove(READ_ONLY_MOUNT_OPT)
+                    bind_mount_options = '-o ' + READ_ONLY_MOUNT_OPT
+                root_mount_options = ' -o {}'.format(','.join(root_mount_options))
+                path_in_hidden_root = params['path'].replace(lustre_root, hidden_lustre_root_mount)
+                command += ' {0} {1} {2} && mount --bind {3} {4} {5}'\
+                    .format(root_mount_options, lustre_root, hidden_lustre_root_mount,
+                            bind_mount_options, path_in_hidden_root, params['mount'])
+        if not transition_mount:
+            if mount_options:
+                command += ' -o {}'.format(mount_options)
+            command += ' {path} {mount}'.format(**params)
         if PermissionHelper.is_storage_writable(self.storage):
             command += ' && chmod {permission} {mount}'.format(permission=permission, **params)
         return command

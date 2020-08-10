@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
+import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -162,26 +163,26 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         return ActionStatus.notSupported();
     }
 
-    private synchronized File mount(NFSDataStorage dataStorage) {
-        File mntDir = Paths.get(rootMountPoint, getMountDirName(dataStorage.getPath())).toFile();
+    private synchronized File mount(final NFSDataStorage dataStorage) {
         try {
-            FileShareMount fileShareMount = shareMountManager.load(dataStorage.getFileShareMountId());
-            File rootMount = Paths.get(rootMountPoint, normalizePath(fileShareMount.getMountRoot())).toFile();
+            final FileShareMount fileShareMount = shareMountManager.load(dataStorage.getFileShareMountId());
+            final File mntDir = getStorageMountRoot(dataStorage, fileShareMount);
+            final File rootMount = getShareRootMount(fileShareMount);
             if(!rootMount.exists()) {
                 Assert.isTrue(rootMount.mkdirs(), messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT_DIRECTORY_NOT_CREATED));
 
-                AbstractCloudRegion cloudRegion = regionManager.load(fileShareMount.getRegionId());
-                String protocol = fileShareMount.getMountType().getProtocol();
-                AbstractCloudRegionCredentials credentials = cloudRegion.getProvider() == CloudProvider.AZURE ?
+                final AbstractCloudRegion cloudRegion = regionManager.load(fileShareMount.getRegionId());
+                final String protocol = fileShareMount.getMountType().getProtocol();
+                final AbstractCloudRegionCredentials credentials = cloudRegion.getProvider() == CloudProvider.AZURE ?
                          regionManager.loadCredentials(cloudRegion) : null;
 
-                String mountOptions = NFSHelper.getNFSMountOption(cloudRegion, credentials,
+                final String mountOptions = NFSHelper.getNFSMountOption(cloudRegion, credentials,
                         dataStorage.getMountOptions(), protocol);
 
-                String rootNfsPath = formatNfsPath(fileShareMount.getMountRoot(), protocol);
+                final String rootNfsPath = formatNfsPath(fileShareMount.getMountRoot(), protocol);
 
-                String mountCmd = String.format(NFS_MOUNT_CMD_PATTERN, protocol, mountOptions,
+                final String mountCmd = String.format(NFS_MOUNT_CMD_PATTERN, protocol, mountOptions,
                                                 rootNfsPath, rootMount.getAbsolutePath());
                 try {
                     cmdExecutor.executeCommand(mountCmd);
@@ -194,34 +195,46 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
                             dataStorage.getPath()), e);
                 }
             }
+            String storageName = getStorageName(dataStorage.getPath());
+            return new File(mntDir, storageName);
         } catch (IOException e) {
             throw new DataStorageException(messageHelper.getMessage(
                     messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT, dataStorage.getName(),
                                              dataStorage.getPath())), e);
         }
-
-        String storageName = getStorageName(dataStorage.getPath());
-        return new File(mntDir, storageName);
     }
 
     private synchronized void unmountNFSIfEmpty(AbstractDataStorage storage) {
-        FileShareMount fileShareMount = shareMountManager.load(storage.getFileShareMountId());
-        File rootMount = Paths.get(rootMountPoint, normalizePath(fileShareMount.getMountRoot())).toFile();
-
-        List<AbstractDataStorage> remaining = dataStorageDao.loadDataStoragesByFileShareMountID(
+        final FileShareMount fileShareMount = shareMountManager.load(storage.getFileShareMountId());
+        final File rootMount = getShareRootMount(fileShareMount);
+        final List<AbstractDataStorage> remaining = dataStorageDao.loadDataStoragesByFileShareMountID(
                 storage.getFileShareMountId());
         LOGGER.debug("Remaining NFS: " + remaining.stream().map(AbstractDataStorage::getPath)
                 .collect(Collectors.joining(";")) + " related with current file share mount");
 
         if (rootMount.exists() && isStorageOnlyOnNFS(storage, remaining)) {
             try {
-                String umountCmd = String.format(NFS_UNMOUNT_CMD_PATTERN, rootMount.getAbsolutePath());
+                final String umountCmd = String.format(NFS_UNMOUNT_CMD_PATTERN, rootMount.getAbsolutePath());
                 cmdExecutor.executeCommand(umountCmd);
                 FileUtils.deleteDirectory(rootMount);
             } catch (IOException e) {
                 throw new DataStorageException(e);
             }
         }
+    }
+
+    private File getStorageMountRoot(final NFSDataStorage dataStorage,  final FileShareMount fileShareMount) {
+        final String storageMountPath = MountType.LUSTRE == fileShareMount.getMountType()
+                                        ? normalizeLustrePath(getNfsRootPath(dataStorage.getPath()))
+                                        : normalizePath(getNfsRootPath(dataStorage.getPath()));
+        return Paths.get(rootMountPoint, storageMountPath).toFile();
+    }
+
+    private File getShareRootMount(final FileShareMount fileShareMount) {
+        final String shareMountPath = MountType.LUSTRE == fileShareMount.getMountType()
+                                      ? normalizeLustrePath(fileShareMount.getMountRoot())
+                                      : normalizePath(fileShareMount.getMountRoot());
+        return Paths.get(rootMountPoint, shareMountPath).toFile();
     }
 
     private boolean isStorageOnlyOnNFS(AbstractDataStorage storage, List<AbstractDataStorage> remaining) {
@@ -371,12 +384,12 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         return  path.replace(getNfsRootPath(path), "");
     }
 
-    private String getMountDirName(String nfsPath) {
-        return normalizePath(getNfsRootPath(nfsPath));
-    }
-
     private String normalizePath(String nfsPath) {
         return nfsPath.replace(":", "/");
+    }
+
+    private String normalizeLustrePath(final String nfsPath) {
+        return nfsPath.replaceAll(":/", "/").replace(":", "_");
     }
 
     @Override
