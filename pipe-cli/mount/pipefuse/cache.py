@@ -132,6 +132,9 @@ class CachingFileSystemClient(FileSystemClientDecorator):
         self._cache = cache
         self._delimiter = '/'
 
+    def exists(self, path):
+        return self.attrs(path) is not None
+
     def attrs(self, path):
         logging.info('Getting attributes for %s' % path)
         parent_path, file_name = fuseutils.split_path(path)
@@ -144,7 +147,7 @@ class CachingFileSystemClient(FileSystemClientDecorator):
                 if file:
                     logging.info('Using cached attributes for %s' % path)
                     return file
-        return self._find_in_listing(self._ls_as_dict(parent_path), file_name)
+        return self._find_in_listing(self._uncached_ls_as_dict(parent_path), file_name)
 
     def _find_in_listing(self, listing, file_name):
         return listing.get(file_name, None)
