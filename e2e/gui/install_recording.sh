@@ -17,12 +17,18 @@
 set -e
 
 _RECORDING="$1"
-_COMMAND="$2"
-_STAND_NAME="$3"
 
-_COMMAND > out.txt &
-
-if [ "$_RECORDING" == "true" ]; then
-    CURRENT_DATE_TIME=`date +"%Y-%m-%d_%T"`
-    /usr/local/bin/flvrec.py localhost:1 -o "${_STAND_NAME}_$CURRENT_DATE_TIME"
+if [ "$_RECORDING" != "true" ]; then
+    echo "Screen recording tool will not be installed. If it is required - rebuild with \"--build-arg RECORDING=true\""
+    exit 0
 fi
+
+# Install screen recording tool vnc2flv
+export TMP=/tmp
+cd $TMP
+wget -N https://files.pythonhosted.org/packages/1e/8e/40c71faa24e19dab555eeb25d6c07efbc503e98b0344f0b4c3131f59947f/vnc2flv-20100207.tar.gz -O vnc2flv-20100207.tar.gz
+tar -zxvf vnc2flv-20100207.tar.gz
+rm -f vnc2flv-20100207.tar.gz
+export RECORD=${TMP}/vnc2flv-20100207
+cd $RECORD
+python setup.py install
