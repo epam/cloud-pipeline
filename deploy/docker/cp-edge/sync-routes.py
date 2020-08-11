@@ -333,69 +333,72 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                 endpoints_response = call_api(load_tool_method)
                 if endpoints_response and "payload" in endpoints_response and "endpoints" in endpoints_response["payload"]:
                         endpoints_data = endpoints_response["payload"]["endpoints"]
-                        if endpoints_data:
-                                # FIXME: at the moment, "system endpoints" are added only to the runs, that already have at least one endpoint defined for the tool
-                                #        it shall be fixed further to allow "system endpoints" enablement for "non-interactive" tools
-                                endpoints_data = append_system_endpoints(endpoints_data, run_info)
-                                endpoints_count = len(endpoints_data)
-                                for i in range(endpoints_count):
-                                        endpoint = json.loads(endpoints_data[i])
-                                        if endpoint["nginx"]:
-                                                port = endpoint["nginx"]["port"]
-                                                path = endpoint["nginx"].get("path", "")
-                                                service_name = '"' + endpoint["name"] + '"' if "name" in endpoint.keys() else "null"
-                                                is_default_endpoint = '"' + str(endpoint["isDefault"]).lower() + '"' if "isDefault" in endpoint.keys() else '"false"'
-                                                additional = endpoint["nginx"].get("additional", "")
-                                                has_explicit_endpoint_num = "endpoint_num" in endpoint.keys()
-                                                custom_endpoint_num = int(endpoint["endpoint_num"]) if has_explicit_endpoint_num else i
-                                                if not pretty_url or has_explicit_endpoint_num:
-                                                        edge_location = EDGE_ROUTE_LOCATION_TMPL.format(pod_id=pod_id, endpoint_port=port, endpoint_num=custom_endpoint_num)
-                                                else:
-                                                        pretty_url_path = pretty_url["path"]
-                                                        if endpoints_count == 1:
-                                                                edge_location = pretty_url_path
-                                                        else:
-                                                                pretty_url_suffix = endpoint["name"] if "name" in endpoint.keys() else str(custom_endpoint_num)
-                                                                if pretty_url_path:
-                                                                        edge_location = '{}-{}'.format(pretty_url_path, pretty_url_suffix)
-                                                                else:
-                                                                        edge_location = pretty_url_suffix
-
-                                                if pretty_url and pretty_url['domain']:
-                                                        edge_location_id = '{}-{}.inc'.format(pretty_url['domain'], edge_location)
-                                                else:
-                                                        edge_location_id = '{}.loc'.format(edge_location)
-
-                                                edge_target = \
-                                                        EDGE_ROUTE_TARGET_PATH_TMPL.format(pod_ip=pod_ip, endpoint_port=port, endpoint_path=path) \
-                                                                if path \
-                                                                else EDGE_ROUTE_TARGET_TMPL.format(pod_ip=pod_ip, endpoint_port=port)
-
-                                                # If CP_EDGE_NO_PATH_CROP is present (any place) in the "additional" section of the route config
-                                                # then trailing "/" is not added to the proxy pass target. This will allow to forward original requests trailing path
-                                                if EDGE_ROUTE_NO_PATH_CROP in additional:
-                                                        additional = additional.replace(EDGE_ROUTE_NO_PATH_CROP, "")
-                                                else:
-                                                        edge_target = edge_target + "/"
-
-                                                service_list[edge_location_id] = {"pod_id": pod_id,
-                                                                                "pod_ip": pod_ip,
-                                                                                "pod_owner": pod_owner,
-                                                                                "shared_users_sids": shared_users_sids,
-                                                                                "shared_groups_sids": shared_groups_sids,
-                                                                                "service_name": service_name,
-                                                                                "is_default_endpoint": is_default_endpoint,
-                                                                                "edge_num": i,
-                                                                                "edge_location": edge_location,
-                                                                                "custom_domain": pretty_url['domain'] if pretty_url else None,
-                                                                                "edge_target": edge_target,
-                                                                                "run_id": pod_run_id,
-                                                                                "additional" : additional,
-                                                                                "sensitive": sensitive}
-                        else:
-                                print('Unable to get details of the tool {} from API due to errors. Empty endpoints will be returned'.format(docker_image))
                 else:
-                        print('Unable to get details of the tool {} from API due to errors. Empty endpoints will be returned'.format(docker_image))
+                        endpoints_data = []
+                tool_endpoints_count = len(endpoints_data)
+                print('{} endpoints are set for the tool {} via settings'.format(tool_endpoints_count, docker_image))
+                endpoints_data = append_system_endpoints(endpoints_data, run_info)
+                additional_system_endpoints_count = len(endpoints_data) - tool_endpoints_count
+                print('{} additional system endpoints are set for the tool {} via run parameters'
+                      .format(additional_system_endpoints_count, docker_image))
+                if endpoints_data:
+                        endpoints_count = len(endpoints_data)
+                        for i in range(endpoints_count):
+                                endpoint = json.loads(endpoints_data[i])
+                                if endpoint["nginx"]:
+                                        port = endpoint["nginx"]["port"]
+                                        path = endpoint["nginx"].get("path", "")
+                                        service_name = '"' + endpoint["name"] + '"' if "name" in endpoint.keys() else "null"
+                                        is_default_endpoint = '"' + str(endpoint["isDefault"]).lower() + '"' if "isDefault" in endpoint.keys() else '"false"'
+                                        additional = endpoint["nginx"].get("additional", "")
+                                        has_explicit_endpoint_num = "endpoint_num" in endpoint.keys()
+                                        custom_endpoint_num = int(endpoint["endpoint_num"]) if has_explicit_endpoint_num else i
+                                        if not pretty_url or has_explicit_endpoint_num:
+                                                edge_location = EDGE_ROUTE_LOCATION_TMPL.format(pod_id=pod_id, endpoint_port=port, endpoint_num=custom_endpoint_num)
+                                        else:
+                                                pretty_url_path = pretty_url["path"]
+                                                if endpoints_count == 1:
+                                                        edge_location = pretty_url_path
+                                                else:
+                                                        pretty_url_suffix = endpoint["name"] if "name" in endpoint.keys() else str(custom_endpoint_num)
+                                                        if pretty_url_path:
+                                                                edge_location = '{}-{}'.format(pretty_url_path, pretty_url_suffix)
+                                                        else:
+                                                                edge_location = pretty_url_suffix
+
+                                        if pretty_url and pretty_url['domain']:
+                                                edge_location_id = '{}-{}.inc'.format(pretty_url['domain'], edge_location)
+                                        else:
+                                                edge_location_id = '{}.loc'.format(edge_location)
+
+                                        edge_target = \
+                                                EDGE_ROUTE_TARGET_PATH_TMPL.format(pod_ip=pod_ip, endpoint_port=port, endpoint_path=path) \
+                                                        if path \
+                                                        else EDGE_ROUTE_TARGET_TMPL.format(pod_ip=pod_ip, endpoint_port=port)
+
+                                        # If CP_EDGE_NO_PATH_CROP is present (any place) in the "additional" section of the route config
+                                        # then trailing "/" is not added to the proxy pass target. This will allow to forward original requests trailing path
+                                        if EDGE_ROUTE_NO_PATH_CROP in additional:
+                                                additional = additional.replace(EDGE_ROUTE_NO_PATH_CROP, "")
+                                        else:
+                                                edge_target = edge_target + "/"
+
+                                        service_list[edge_location_id] = {"pod_id": pod_id,
+                                                                        "pod_ip": pod_ip,
+                                                                        "pod_owner": pod_owner,
+                                                                        "shared_users_sids": shared_users_sids,
+                                                                        "shared_groups_sids": shared_groups_sids,
+                                                                        "service_name": service_name,
+                                                                        "is_default_endpoint": is_default_endpoint,
+                                                                        "edge_num": i,
+                                                                        "edge_location": edge_location,
+                                                                        "custom_domain": pretty_url['domain'] if pretty_url else None,
+                                                                        "edge_target": edge_target,
+                                                                        "run_id": pod_run_id,
+                                                                        "additional" : additional,
+                                                                        "sensitive": sensitive}
+                else:
+                        print('No endpoints required for the tool {}'.format(docker_image))
         else:
                 print('Unable to get details of a RunID {} from API due to errors'.format(pod_run_id))
         return service_list
