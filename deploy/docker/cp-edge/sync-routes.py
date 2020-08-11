@@ -60,6 +60,7 @@ nginx_loc_module_template = '/etc/nginx/endpoints-config/route.template.loc.conf
 nginx_srv_module_template = '/etc/nginx/endpoints-config/route.template' + nginx_custom_domain_config_ext
 nginx_sensitive_loc_module_template = '/etc/nginx/endpoints-config/sensitive.template.loc.conf'
 nginx_sensitive_routes_config_path = '/etc/nginx/endpoints-config/sensitive.routes.json'
+nginx_system_endpoints_config_path = '/etc/nginx/endpoints-config/system_endpoints.json'
 edge_service_port = 31000
 edge_service_external_ip = ''
 pki_search_path = '/opt/edge/pki/'
@@ -131,7 +132,7 @@ def parse_pretty_url(pretty):
                         return None
         except:
                 pretty_obj = { 'path': pretty }
-        
+
         pretty_domain = None
         pretty_path = None
         if 'domain' in pretty_obj:
@@ -140,7 +141,7 @@ def parse_pretty_url(pretty):
                 pretty_path = pretty_obj['path']
                 if pretty_path.startswith('/'):
                         pretty_path = pretty_path[len('/'):]
-                
+
         if not pretty_domain and not pretty_path:
                 return None
         else:
@@ -172,7 +173,7 @@ def add_custom_domain(domain, location_block):
                                         .replace('{edge_route_server_name}', domain) \
                                         .replace('{edge_route_server_ssl_certificate}', domain_cert[0]) \
                                         .replace('{edge_route_server_ssl_certificate_key}', domain_cert[1])
-        
+
         location_block_include = nginx_custom_domain_loc_tmpl.format(location_block)
         domain_path_lines = domain_path_contents.splitlines()
 
@@ -245,24 +246,35 @@ def search_custom_domain_cert(domain):
         if not cert_path or not key_path:
                 cert_path = pki_default_cert
                 key_path = pki_default_cert_key
-        
+
         print('Certificate:Key for {} will be used: {}:{}'.format(domain, cert_path, key_path))
         return (cert_path, key_path)
 
-# FIXME: once we'll get more than one "system endpoint" - a list of such endpoints shall be moved to the configuration
-SYSTEM_ENDPOINTS={ "CP_CAP_SPARK": { 
-                        "value": "true", 
-                        "endpoint": str(os.environ.get("CP_CAP_SPARK_UI_PROXY_PORT", "8088")), 
-                        "endpoint_num":  str(os.environ.get("CP_CAP_SPARK_UI_PROXY_ENDPOINT_ID", "1000")),
-                        "friendly_name": "SparkUI" }}
+def read_system_endpoints():
+        system_endpoints = {}
+        with open(nginx_system_endpoints_config_path, 'r') as system_endpoints_file:
+                system_endpoints_list = json.load(system_endpoints_file)
+                for endpoint in system_endpoints_list:
+                        system_endpoints[endpoint['name']] = {
+                                "value": "true",
+                                "endpoint": str(os.environ.get(endpoint['endpoint_env'],
+                                                               endpoint['endpoint_default'])),
+                                "endpoint_num":  str(os.environ.get(endpoint['endpoint_num_env'],
+                                                                    endpoint['endpoint_num_default'])),
+                                "friendly_name": endpoint['friendly_name']
+                        }
+        return system_endpoints
+
+SYSTEM_ENDPOINTS = read_system_endpoints()
+
 def append_system_endpoints(tool_endpoints, run_details):
         if not tool_endpoints:
                 tool_endpoints = []
         system_endpoints_params = SYSTEM_ENDPOINTS.keys()
         if run_details and "pipelineRunParameters" in run_details:
                 # Get a list of endpoints from SYSTEM_ENDPOINTS which match the run's parameters (param name and a value)
-                system_endpoints_matched = [SYSTEM_ENDPOINTS[x["name"]] for x in run_details["pipelineRunParameters"] 
-                                                if x["name"] in system_endpoints_params 
+                system_endpoints_matched = [SYSTEM_ENDPOINTS[x["name"]] for x in run_details["pipelineRunParameters"]
+                                                if x["name"] in system_endpoints_params
                                                    and x["value"] == SYSTEM_ENDPOINTS[x["name"]]["value"]
                                                    and "endpoint" in SYSTEM_ENDPOINTS[x["name"]]
                                                    and SYSTEM_ENDPOINTS[x["name"]]["endpoint"]]
@@ -282,7 +294,7 @@ def append_system_endpoints(tool_endpoints, run_details):
                         if "endpoint_num" in system_endpoint and system_endpoint["endpoint_num"]:
                                 tool_endpoint["endpoint_num"] = system_endpoint["endpoint_num"]
                         tool_endpoints.append(json.dumps(tool_endpoint))
-        return tool_endpoints 
+        return tool_endpoints
 
 def get_service_list(pod_id, pod_run_id, pod_ip):
         service_list = {}
@@ -358,7 +370,7 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                                         EDGE_ROUTE_TARGET_PATH_TMPL.format(pod_ip=pod_ip, endpoint_port=port, endpoint_path=path) \
                                                                 if path \
                                                                 else EDGE_ROUTE_TARGET_TMPL.format(pod_ip=pod_ip, endpoint_port=port)
-                                                
+
                                                 # If CP_EDGE_NO_PATH_CROP is present (any place) in the "additional" section of the route config
                                                 # then trailing "/" is not added to the proxy pass target. This will allow to forward original requests trailing path
                                                 if EDGE_ROUTE_NO_PATH_CROP in additional:
@@ -455,7 +467,7 @@ for update_route in routes_to_update:
         path_to_update_route = os.path.join(nginx_sites_path, nginx_modules_list[update_route])
 
         print('Checking nginx config for updates: {}'.format(path_to_update_route))
-        with open(path_to_update_route) as update_route_file: 
+        with open(path_to_update_route) as update_route_file:
                 update_route_file_contents = update_route_file.read()
 
         shared_users_sids_to_check = ""
@@ -494,7 +506,7 @@ for obsolete_route in routes_to_delete:
         os.remove(path_to_route)
         remove_custom_domain_all(path_to_route)
 
-        
+
 
 # For each of the entries in the template of the new Pods we shall build nginx route in /etc/nginx/sites-enabled
 # -- File name of the route: {PodID}-{svc-port-N}-{N}
