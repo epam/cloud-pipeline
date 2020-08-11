@@ -19,8 +19,8 @@ ENV REFRESHED_AT 2020-08-10
 USER 0
 
 # Install common
-RUN apt-get update -y && \
-    apt-get install -y wget \
+RUN yum update -y && \
+    yum install -y wget \
                    curl \
                    unzip \
                    xvfb \
@@ -33,16 +33,12 @@ RUN apt-get update -y && \
                    gcc
 
 # Install Chrome
-RUN rm ~/google-chrome-63.0.3239.132-1.deb && \
-    wget -N https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/e2e/google-chrome-63.0.3239.132-1.deb -P ~/ && \
-    dpkg -i --force-depends ~/google-chrome-63.0.3239.132-1.deb && \
-    apt-get -f install -y
+RUN wget -N https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/e2e/google-chrome-stable-63.0.3239.132-1.x86_64.rpm -P ~/ && \
+    rpm –i ~/google-chrome-stable-63.0.3239.132-1.x86_64.rpm
 
 # Install ChromeDriver. Version: 2.36
 # ChromeDriver is taken from here: https://chromedriver.storage.googleapis.com/2.36/chromedriver_linux64.zip
-RUN rm ~/chromedriver_linux64.zip && \
-    rm /usr/local/bin/chromedriver && \
-    wget -N https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/e2e/chromedriver -P ~/ && \
+RUN wget -N https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/e2e/chromedriver -P ~/ && \
     mv -f ~/chromedriver /usr/local/bin/chromedriver && \
     chown root:root /usr/local/bin/chromedriver && \
     chmod 0755 /usr/local/bin/chromedriver && \

@@ -26,7 +26,7 @@ fi
 # Install screen recording tool vnc2flv
 export TMP=/tmp
 cd $TMP
-wget -N https://files.pythonhosted.org/packages/1e/8e/40c71faa24e19dab555eeb25d6c07efbc503e98b0344f0b4c3131f59947f/vnc2flv-20100207.tar.gz -O vnc2flv-20100207.tar.gz
+wget -N https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/e2e/vnc2flv-20100207.tar.gz -O vnc2flv-20100207.tar.gz
 tar -zxvf vnc2flv-20100207.tar.gz
 rm -f vnc2flv-20100207.tar.gz
 export RECORD=${TMP}/vnc2flv-20100207
