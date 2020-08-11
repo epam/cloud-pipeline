@@ -19,10 +19,11 @@ set -e
 _RECORDING="$1"
 _COMMAND="$2"
 _STAND_NAME="$3"
+_PASSWORD_FILE="$4"
 
 _COMMAND > out.txt &
 
 if [ "$_RECORDING" == "true" ]; then
     CURRENT_DATE_TIME=`date +"%Y-%m-%d_%T"`
-    /usr/local/bin/flvrec.py localhost:1 -o "${_STAND_NAME}_$CURRENT_DATE_TIME"
+    /usr/local/bin/flvrec.py -o "${_STAND_NAME}_$CURRENT_DATE_TIME" -P "${_PASSWORD_FILE}" localhost:1
 fi

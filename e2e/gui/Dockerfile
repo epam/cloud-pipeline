@@ -62,8 +62,9 @@ WORKDIR /$USER_HOME_DIR/e2e/gui
 ARG COMMAND="./gradlew clean test"
 ARG STAND_NAME="TEST_NAME"
 ADD run.sh /run.sh
+COPY password.txt /password.txt
 RUN chmod +x /run.sh && \
-    bash run.sh "$RECORDING" "$COMMAND" "$STAND_NAME"
+    bash run.sh "$RECORDING" "$COMMAND" "$STAND_NAME" "/password.txt"
 
 # switch back to default user
 USER 1000
