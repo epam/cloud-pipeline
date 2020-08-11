@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
 import com.epam.pipeline.autotests.AbstractSinglePipelineRunningTest;
@@ -35,6 +36,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.tagName;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
@@ -133,6 +135,30 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .shouldBe(visible)
                 .click();
         return this;
+    }
+
+    public PipelineRunFormAO ensurePriceTypeIsAbsent(String priceType) {
+        click(PRICE_TYPE);
+        context().find(PipelineSelectors.visible(byClassName("ant-select-dropdown")))
+                .find(byText(priceType))
+                .shouldNotBe(visible);
+        return this;
+    }
+
+    public PipelineRunFormAO ensurePriceTypeList(String ... priceTypes) {
+        click(PRICE_TYPE);
+        context().find(PipelineSelectors.visible(byClassName("ant-select-dropdown"))).shouldBe(visible);
+        ElementsCollection list = context().find(byClassName("ant-select-dropdown-menu")).$$("li");
+        assertTrue(list.size() == priceTypes.length,
+                "Expected: " + priceTypes.length + "Actual: " + list.size());
+        Arrays.stream(priceTypes).forEach(this::checkPriceTypeInList);
+        return this;
+    }
+
+    private void checkPriceTypeInList(String priceType) {
+        context().find(PipelineSelectors.visible(byClassName("ant-select-dropdown")))
+                .find(byText(priceType))
+                .shouldBe(visible);
     }
 
     public ConfigureClusterPopupAO enableClusterLaunch() {

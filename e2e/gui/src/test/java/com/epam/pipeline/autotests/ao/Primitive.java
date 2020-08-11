@@ -258,5 +258,6 @@ public enum Primitive {
     RESET,
     CONTAINER_LOGS,
     BLOCK,
-    UNBLOCK
+    UNBLOCK,
+    APPLY
 }

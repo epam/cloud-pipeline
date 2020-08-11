@@ -18,16 +18,23 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.SelenideElement;
 import java.util.Map;
 import java.util.function.Consumer;
+
+import com.epam.pipeline.autotests.utils.PipelineSelectors;
+import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.appears;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.attributesMenu;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.showAttributes;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.showInstanceManagement;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ToolDescription extends ToolTab<ToolDescription> {
 
@@ -73,6 +80,18 @@ public class ToolDescription extends ToolTab<ToolDescription> {
         return this;
     }
 
+    public ToolDescription showInstanceManagement(final Consumer<InstanceManagementSectionAO> action) {
+        hover(SHOW_METADATA);
+        ensure(attributesMenu, appears);
+        performIf(showAttributes, visible,
+                page -> click(showInstanceManagement),
+                page -> resetMouse()
+        );
+        InstanceManagementSectionAO instanceManagement = new InstanceManagementSectionAO(this);
+        action.accept(instanceManagement);
+        return this;
+    }
+
     public PermissionTabAO permissions() {
         hover(TOOL_SETTINGS).click(PERMISSIONS);
         return new PermissionTabAO(new ClosableAO() {
@@ -97,5 +116,54 @@ public class ToolDescription extends ToolTab<ToolDescription> {
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;
+    }
+
+    public class InstanceManagementSectionAO extends PopupAO<InstanceManagementSectionAO, AccessObject> {
+        private final Map<Primitive, SelenideElement> elements = initialiseElements(
+                entry(APPLY, $(byXpath("//button[.='APPLY']"))),
+                entry(PRICE_TYPE, context().find(byXpath(
+                        String.format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
+        );
+
+        public InstanceManagementSectionAO(AccessObject parentAO) {
+            super(parentAO);
+        }
+
+        public InstanceManagementSectionAO addAllowedLaunchOption(String option, String mask) {
+            By optionField = byXpath(String.format("//div/b[text()='%s']/following::div/input", option));
+            if(mask.equals("")) {
+                Utils.clearField(optionField);}
+            else {setValue(optionField, mask);}
+            return this;
+        }
+
+        public InstanceManagementSectionAO setPriceType(final String priceType) {
+            click(PRICE_TYPE);
+            context().find(PipelineSelectors.visible(byClassName("ant-select-dropdown"))).find(byText(priceType))
+                    .shouldBe(visible)
+                    .click();
+            return this;
+        }
+
+        public InstanceManagementSectionAO clearAllowedPriceTypeField() {
+            SelenideElement type = context().$(byClassName("ant-select-selection__choice__remove"));
+            while(type.isDisplayed()) {
+                type.click();
+                sleep(1, SECONDS);
+            }
+            if(get(APPLY).isEnabled()) {clickApply();}
+            return this;
+        }
+
+        public InstanceManagementSectionAO clickApply() {
+            click(APPLY);
+            return this;
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
+        }
+
     }
 }

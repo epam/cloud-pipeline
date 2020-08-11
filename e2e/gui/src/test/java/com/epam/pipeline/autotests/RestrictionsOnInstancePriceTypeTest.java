@@ -15,18 +15,25 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import com.epam.pipeline.autotests.utils.listener.Cloud;
+import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
+import static com.codeborne.selenide.Condition.appears;
 import static com.codeborne.selenide.Condition.empty;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
+import static com.codeborne.selenide.Condition.visible;
+import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CODE_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
 import static com.epam.pipeline.autotests.ao.Primitive.DOCKER_IMAGE;
@@ -35,11 +42,15 @@ import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
+import static com.epam.pipeline.autotests.ao.Primitive.SHOW_METADATA;
 import static com.epam.pipeline.autotests.ao.Profile.execEnvironmentTab;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.attributesMenu;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.showInstanceManagement;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
+import com.epam.pipeline.autotests.ao.ToolDescription.InstanceManagementSectionAO;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
@@ -59,17 +70,26 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     private final String configurationName = "customConfig";
     private final String testRole = "ROLE_USER";
     private final String instanceTypesMask = "Allowed instance types mask";
+    private final String toolInstanceTypesMask = "Allowed tool instance types mask";
+    private final String onDemandPrice = "On demand";
 
     @AfterClass(alwaysRun = true)
     public void deletingEntities() {
+        logoutIfNeeded();
         loginAs(admin);
         library()
                 .removeNotEmptyFolder(folder);
         setMaskForUser(user.login, instanceTypesMask, "");
+        setMaskForUser(user.login, toolInstanceTypesMask, "");
+        setMaskForRole(testRole, instanceTypesMask, "");
+        setMaskForRole(testRole, toolInstanceTypesMask, "");
+        tools()
+                .performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
+                        tool.showInstanceManagement(InstanceManagementSectionAO::clearAllowedPriceTypeField));
         logout();
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void logoutUser() {
         logout();
     }
@@ -146,6 +166,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .configurationWithin(configuration, configuration ->
                         configuration
                                 .expandTabs(execEnvironmentTab)
+                                .sleep(2, SECONDS)
                                 .ensure(DISK, value(customDisk))
                                 .ensure(DOCKER_IMAGE, value(defaultGroup), value(testingTool))
                                 .ensure(INSTANCE_TYPE, empty)
@@ -194,6 +215,71 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         setMaskForRole(testRole, instanceTypesMask, "");
     }
 
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
+    @Test(priority = 10)
+    @TestCase({"EPMCMBIBPC-2650"})
+    public void validationOfPriceTypesRestrictionsOverInstanceManagement() {
+        loginAs(admin);
+        tools()
+                .performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
+                    tool.showInstanceManagement(instanceManagement ->
+                            instanceManagement
+                                    .setPriceType(onDemandPrice)
+                                    .clickApply()
+                                    .sleep(2, SECONDS)));
+        tools()
+                .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .ensurePriceTypeList("On-demand");
+        logout();
+        loginAs(user);
+        tools()
+                .performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
+                        tool
+                                .hover(SHOW_METADATA)
+                                .ensure(attributesMenu, appears)
+                                .ensure(showInstanceManagement, not(visible)));
+        tools()
+                .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .ensurePriceTypeList("On-demand");
+        logout();
+        loginAs(admin);
+        tools()
+                .performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
+                        tool.showInstanceManagement(InstanceManagementSectionAO::clearAllowedPriceTypeField));
+    }
+
+    @Test(priority = 20)
+    @TestCase({"EPMCMBIBPC-2641"})
+    public void validationOfToolsInstanceTypesRestrictionsOverUserManagement() {
+        loginAs(admin);
+        setMaskForUser(user.login, toolInstanceTypesMask, String.format("%s.*", instanceFamilyName));
+        logout();
+        loginAs(user);
+        tools()
+                .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                .expandTab(EXEC_ENVIRONMENT)
+                .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName);
+    }
+
+    @Test(priority = 20, dependsOnMethods = {"validationOfToolsInstanceTypesRestrictionsOverUserManagement"})
+    @TestCase({"EPMCMBIBPC-2643"})
+    public void validationOfToolsInstanceTypesRestrictionsForUserGroup() {
+        loginAs(admin);
+        setMaskForUser(user.login, toolInstanceTypesMask, "");
+        setMaskForRole(testRole, toolInstanceTypesMask, String.format("%s.*", instanceFamilyName));
+        logout();
+        loginAs(user);
+        tools()
+                .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                .expandTab(EXEC_ENVIRONMENT)
+                .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName);
+        logout();
+        loginAs(admin);
+        setMaskForRole(testRole, toolInstanceTypesMask, "");
+    }
+
     private void setMaskForUser(String user, String mask, String value) {
         navigationMenu()
                 .settings()
@@ -214,5 +300,4 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .addAllowedLaunchOptions(mask, value)
                 .ok();
     }
-
 }

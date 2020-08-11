@@ -381,4 +381,10 @@ public class Utils {
         Selenide.close();
         Selenide.open(address);
     }
+
+    public static void clearField(By field) {
+        $(field).click();
+        $(field).sendKeys(Keys.chord(Keys.CONTROL, "a"));
+        $(field).sendKeys(Keys.DELETE);
+    }
 }

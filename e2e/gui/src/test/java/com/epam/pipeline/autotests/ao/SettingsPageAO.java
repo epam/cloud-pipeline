@@ -325,7 +325,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         entry(STATE, entry.find(byClassName("ant-checkbox-wrapper")).find(byClassName("ant-checkbox"))),
                         entry(ACTIVE_LABEL, entry.find(byClassName("notification-status-column")).find(byXpath(".//*[text() = 'Active']"))),
                         entry(EDIT, entry.find(byId("edit-notification-button"))),
-                        entry(DELETE, entry.find(byId("delete-notification-button")))
+                        entry(Primitive.DELETE, entry.find(byId("delete-notification-button")))
                 );
             }
 
@@ -374,7 +374,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public ConfirmationPopupAO<SystemEventsAO> delete() {
-                click(DELETE);
+                click(Primitive.DELETE);
                 return new ConfirmationPopupAO<>(this.parentAO);
             }
         }
@@ -505,7 +505,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             entry(OK, context().find(By.id("close-edit-user-form"))),
                             entry(BLOCK, context().$(button("BLOCK"))),
                             entry(UNBLOCK, context().$(button("UNBLOCK"))),
-                            entry(DELETE, context().$(byId("delete-user-button")))
+                            entry(Primitive.DELETE, context().$(byId("delete-user-button")))
                     );
 
                     public EditUserPopup(UsersTabAO parentAO) {
@@ -568,7 +568,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     }
 
                     public UsersTabAO deleteUser(final String user) {
-                        click(DELETE);
+                        click(Primitive.DELETE);
                         new ConfirmationPopupAO(this)
                                 .ensureTitleIs(format("Are you sure you want to delete user %s?", user))
                                 .ok();
@@ -744,7 +744,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 }
 
                 public EditRolePopup addAllowedLaunchOptions(String option, String mask) {
-                    setValue($(byXpath(String.format("//div/b[text()='%s']/following::div/input", option))), mask);
+                    By optionField = byXpath(String.format("//div/b[text()='%s']/following::div/input", option));
+                    if(mask.equals("")) {
+                        Utils.clearField(optionField);}
+                    else {setValue(optionField, mask);}
                     return this;
                 }
             }
@@ -791,6 +794,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public class ClusterTabAO extends PreferencesAO {
 
+            private final By clusterAllowedInstanceTypes = getByClusterField("cluster.allowed.instance.types");
+
             ClusterTabAO(final PipelinesLibraryAO parentAO) {
                 super(parentAO);
             }
@@ -818,6 +823,30 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public String getClusterHddExtraMulti() {
                 return $(clusterHddExtraMulti()).getValue();
+            }
+
+            public PreferencesAO setClusterAllowedInstanceTypes(String value) {
+                return setClusterValue(clusterAllowedInstanceTypes, value);
+            }
+
+            private By getByClusterField(final String variable) {
+                return new By() {
+                    @Override
+                    public List<WebElement> findElements(final SearchContext context) {
+                        return $$(byClassName("preference-group__preference-row"))
+                                .stream()
+                                .filter(element -> exactText(variable).apply(element))
+                                .map(e -> e.find(".ant-input-sm"))
+                                .collect(toList());
+                    }
+                };
+            }
+
+            private ClusterTabAO setClusterValue(final By clusterVariable, final String value) {
+                click(clusterVariable);
+                clear(clusterVariable);
+                setValue(clusterVariable, value);
+                return this;
             }
 
             @Override
@@ -1089,4 +1118,5 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return element.findAll("td").get(2).getText();
         }
     }
+
 }
