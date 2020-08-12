@@ -13,6 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Check if required proxy settings are correct
+export CP_NM_PROXY_HOST="${CP_CAP_NM_PROXY_HOST:-$(echo $CP_NM_PROXY_HOST)}"
+if [ -z $CP_NM_PROXY_HOST ]; then
+    pipe_log_fail "NoMachine proxy host is not set (CP_NM_PROXY_HOST). Exiting..."
+    exit 1
+fi
+
+export CP_NM_PROXY_PORT="${CP_CAP_NM_PROXY_PORT:-$(echo CP_NM_PROXY_PORT)}"
+if [ -z $CP_NM_PROXY_PORT ]; then
+    pipe_log_fail "NoMachine proxy port is not set (CP_NM_PROXY_PORT). Exiting..."
+    exit 1
+fi
+
 NOMACHINE_INSTALL_TASK="NoMachineInitialization"
 NOMACHINE_VERSION="${CP_CAP_NM_DEFAULT_VERSION:-6.5.6_9}"
 
@@ -22,8 +35,7 @@ IS_RPM_BASED=$?
 export LANG="en_US.UTF-8"
 export LANGUAGE=en_US
 
-if [[ "$IS_RPM_BASED" = 0 ]]
-then
+if [[ "$IS_RPM_BASED" = 0 ]]; then
     CHECK_NOMACHINE_INSTALLATION="rpm -qa | grep nomachine"
     GET_INSTALLED_NOMACHINE_VERSION="rpm -qa nomachine | sed 's/^\(nomachine-\)*//' | sed 's/.x86_64$//'"
 
@@ -43,6 +55,7 @@ EOM
     yum update -y && \
     yum install -y  gcc \
                     gcc-c++ \
+                    lsof \
                     python \
                     wget && \
     yum --enablerepo=epel install  @^graphical-server-environment -y && \
@@ -59,11 +72,11 @@ EOM
     sed -i '/DefaultDesktopCommand/c\DefaultDesktopCommand "/usr/bin/startxfce4"' /usr/NX/etc/node.cfg
 EOM
 
+    XKB_PLUGIN_ID=6
     read -r -d '' NOMACHINE_CONFIG_CMD <<- EOM
     sed -i 's@_XKB_PLUGIN_NAME_@xkb-plugin@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml && \
-    sed -i 's@_XKB_PLUGIN_ID_@6@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
+    sed -i 's@_XKB_PLUGIN_ID_@'"$XKB_PLUGIN_ID"'@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
 EOM
-    XKB_PLUGIN_ID=6
 else
     export DEBIAN_FRONTEND=noninteractive
     CHECK_NOMACHINE_INSTALLATION="dpkg -l | grep nomachine"
@@ -87,6 +100,7 @@ EOM
     dpkg-reconfigure --frontend=noninteractive locales && \
     update-locale LANG=$LANG && \
     apt-get install -y  g++ \
+                        lsof \
                         python \
                         wget \
                         xfce4 \
@@ -95,16 +109,15 @@ EOM
     dpkg -i nomachine.deb && \
     rm -f nomachine.deb
 EOM
-
+    XKB_PLUGIN_ID=9
     read -r -d '' NOMACHINE_CONFIG_CMD <<- EOM
     if [[ "$(. /etc/os-release;echo $VERSION_ID)" == *"18."* ]]; then
         sed -i 's@_XKB_PLUGIN_NAME_@xkb@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml ;
     else
         sed -i 's@_XKB_PLUGIN_NAME_@xkb-plugin@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml ;
     fi
-    sed -i 's@_XKB_PLUGIN_ID_@9@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
+    sed -i 's@_XKB_PLUGIN_ID_@'"$XKB_PLUGIN_ID"'@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
 EOM
-    XKB_PLUGIN_ID=9
 fi
 
     read -r -d '' NOMACHINE_COMMON_CONFIG_CMD <<- EOM
@@ -123,8 +136,7 @@ EOM
 NOMACHINE_INSTALLATION_LOG="/var/log/nomachine_installation.log"
 eval "$CHECK_NOMACHINE_INSTALLATION"
 IS_NM_INSTALLED=$?
-if [ $IS_NM_INSTALLED -eq 0 ]
-then
+if [ $IS_NM_INSTALLED -eq 0 ]; then
     NM_CURRENT_VERSION=$(eval "$GET_INSTALLED_NOMACHINE_VERSION")
     if [ NM_CURRENT_VERSION == NOMACHINE_VERSION ]; then
         pipe_log_info "--> NoMachine installed already" "$NOMACHINE_INSTALL_TASK"
@@ -132,12 +144,10 @@ then
         pipe_log_info "--> NoMachine installed, but version found [$NM_CURRENT_VERSION] differs from the target one [$NOMACHINE_VERSION]" "$NOMACHINE_INSTALL_TASK"
         pipe_log_info "--> Trying to configure required version" "$NOMACHINE_INSTALL_TASK"
         eval "$NOMACHINE_UPDATE_CMD" > $NOMACHINE_INSTALLATION_LOG 2>&1
-        if [ $? -ne 0 ]
-        then
+        if [ $? -ne 0 ]; then
             pipe_log_warn "Failed to repair NoMachine version, try removing it" "$NOMACHINE_INSTALL_TASK"
             eval "$NOMACHINE_REMOVE_CMD"
-            if [ $? -ne 0 ]
-            then
+            if [ $? -ne 0 ]; then
                 pipe_log_fail "Failed to remove installed NoMachine" "$NOMACHINE_INSTALL_TASK"
                 exit 1
             else
@@ -150,12 +160,10 @@ then
     fi
 fi
 
-if [ $IS_NM_INSTALLED -ne 0 ]
-then
+if [ $IS_NM_INSTALLED -ne 0 ]; then
     pipe_log_info "--> NoMachine is not detected, proceeding with the full installation" "$NOMACHINE_INSTALL_TASK"
     eval "$NOMACHINE_INSTALL_CMD" > $NOMACHINE_INSTALLATION_LOG 2>&1
-    if [ $? -ne 0 ]
-    then
+    if [ $? -ne 0 ]; then
         pipe_log_fail "Failed to install NoMachine" "$NOMACHINE_INSTALL_TASK"
         exit 1
     else
@@ -165,8 +173,7 @@ fi
 
 NOMACHINE_CONFIGURATION_LOG="/var/log/nomachine_configuration.log"
 eval "$NOMACHINE_COMMON_CONFIG_CMD && $NOMACHINE_CONFIG_CMD" > $NOMACHINE_CONFIGURATION_LOG 2>&1
-if [ $? -ne 0 ]
-then
+if [ $? -ne 0 ]; then
     pipe_log_fail "Failed to configure NoMachine" "$NOMACHINE_INSTALL_TASK"
     exit 1
 else
@@ -175,4 +182,21 @@ fi
 
 NOMACHINE_EXECUTION_LOG="/var/log/nomachine_execution.log"
 bash /etc/nomachine/nomachine_launcher.sh > $NOMACHINE_EXECUTION_LOG 2>&1 &
+if [ $? -ne 0 ]; then
+    pipe_log_fail "Failed to start NoMachine" "$NOMACHINE_INSTALL_TASK"
+    exit 1
+else
+    sleep 5
+    lsof -i:${CP_NM_NOMACHINE_PORT:-4000} | grep LISTEN > /dev/null
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "NM service is not active" "$NOMACHINE_INSTALL_TASK"
+        exit 1
+    fi
+    lsof -i:${CP_NM_LOCAL_PORT:-8888} | grep LISTEN > /dev/null
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "NM service is not available via selected $CP_NM_LOCAL_PORT " "$NOMACHINE_INSTALL_TASK"
+        exit 1
+    fi
+    pipe_log_info "--> NoMachine enabled" "$NOMACHINE_INSTALL_TASK"
+fi
 pipe_log_success "Finished NoMachine initialization" "$NOMACHINE_INSTALL_TASK"
