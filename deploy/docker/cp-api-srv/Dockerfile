@@ -60,8 +60,9 @@ RUN curl https://bootstrap.pypa.io/get-pip.py | python && \
                     cryptography==2.6.1
 
 # AWS - specific packages
-RUN pip install -I awscli==1.16.139 \
-                    boto3==1.9.129
+RUN pip install -I  awscli==1.16.314 \
+                    boto3==1.10.50 \
+                    botocore==1.13.50
 
 # Azure - specific packages
 RUN pip install -I  azure-common==1.1.18 \
