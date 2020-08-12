@@ -271,10 +271,16 @@ def append_system_endpoints(tool_endpoints, run_details):
         if not tool_endpoints:
                 tool_endpoints = []
         system_endpoints_params = SYSTEM_ENDPOINTS.keys()
+        tool_endpoints_dict = {}
+        for endpoint in tool_endpoints:
+                endpoint_obj = json.loads(endpoint)
+                tool_endpoints_dict[endpoint_obj['name']] = endpoint_obj['nginx']['port']
         if run_details and "pipelineRunParameters" in run_details:
                 # Get a list of endpoints from SYSTEM_ENDPOINTS which match the run's parameters (param name and a value)
                 system_endpoints_matched = [SYSTEM_ENDPOINTS[x["name"]] for x in run_details["pipelineRunParameters"]
                                                 if x["name"] in system_endpoints_params
+                                                   and (x["friendly_name"] not in tool_endpoints_dict
+                                                        or tool_endpoints_dict[x["friendly_name"]] != x['endpoint'])
                                                    and x["value"] == SYSTEM_ENDPOINTS[x["name"]]["value"]
                                                    and "endpoint" in SYSTEM_ENDPOINTS[x["name"]]
                                                    and SYSTEM_ENDPOINTS[x["name"]]["endpoint"]]
