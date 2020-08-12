@@ -77,6 +77,12 @@ EOM
     sed -i 's@_XKB_PLUGIN_NAME_@xkb-plugin@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml && \
     sed -i 's@_XKB_PLUGIN_ID_@'"$XKB_PLUGIN_ID"'@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
 EOM
+
+    read -r -d '' EXTRA_PACKAGES_INSTALLATION_CMD <<- EOM
+    wget -q "https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm" -O /opt/google-chrome-stable_current_x86_64.rpm && \
+    yum install -y /opt/google-chrome-stable_current_*.rpm && \
+    rm -f /opt/google-chrome-stable_current_*.rpm
+EOM
 else
     export DEBIAN_FRONTEND=noninteractive
     CHECK_NOMACHINE_INSTALLATION="dpkg -l | grep nomachine"
@@ -118,6 +124,13 @@ EOM
     fi
     sed -i 's@_XKB_PLUGIN_ID_@'"$XKB_PLUGIN_ID"'@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
 EOM
+
+    read -r -d '' EXTRA_PACKAGES_INSTALLATION_CMD <<- EOM
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' | tee /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update && \
+    apt-get install -y google-chrome-stable
+EOM
 fi
 
     read -r -d '' NOMACHINE_COMMON_CONFIG_CMD <<- EOM
@@ -125,12 +138,14 @@ fi
     wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine-common.tar.gz" -O nomachine-common.tar.gz && \
     mkdir -p nomachine-common/ /etc/nomachine/ && \
     tar -C nomachine-common/ -zxvf nomachine-common.tar.gz && \
+    mv nomachine-common/create_chrome_launcher.sh /tmp/ && \
     g++ nomachine-common/scramble_alg.cpp -o /usr/local/bin/scramble && \
     rm -f nomachine-common/scramble.cpp && \
     cp -r nomachine-common/* /etc/nomachine/ && \
     rm -f /etc/nomachine/xfce/.config/xfce4/panel/xkb-plugin-${XKB_PLUGIN_ID}.rc && \
     mv /etc/nomachine/xfce/.config/xfce4/panel/xkb-plugin.rc /etc/nomachine/xfce/.config/xfce4/panel/xkb-plugin-${XKB_PLUGIN_ID}.rc && \
-    rm -rf nomachine-common*
+    rm -rf nomachine-common* && \
+    cp /usr/NX/etc/server.cfg /usr/NX/etc/server.cfg.template
 EOM
 
 NOMACHINE_INSTALLATION_LOG="/var/log/nomachine_installation.log"
@@ -178,6 +193,17 @@ if [ $? -ne 0 ]; then
     exit 1
 else
     pipe_log_info "--> NoMachine configured successfully" "$NOMACHINE_INSTALL_TASK"
+fi
+
+NOMACHINE_EXTRAS_CONFIGURATION_LOG="/var/log/nomachine_extras_configuration.log"
+eval "$EXTRA_PACKAGES_INSTALLATION_CMD &&
+      mkdir -p /home/${OWNER}/Desktop/ &&
+      bash /tmp/create_chrome_launcher.sh &&
+      rm -f /tmp/create_chrome_launcher.sh" > $NOMACHINE_EXTRAS_CONFIGURATION_LOG 2>&1
+if [ $? -ne 0 ]; then
+    pipe_log_warn "Error during NoMachine extras configuration" "$NOMACHINE_INSTALL_TASK"
+else
+    pipe_log_info "--> NoMachine extras configured successfully" "$NOMACHINE_INSTALL_TASK"
 fi
 
 NOMACHINE_EXECUTION_LOG="/var/log/nomachine_execution.log"
