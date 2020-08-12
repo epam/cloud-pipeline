@@ -222,5 +222,12 @@
         "type": "string",
         "description": "Any job, that is failed due to the <command> or output upload errors, will be kept for this amount of time before terminated. <sleep> format is accepted",
         "defaultValue": "36000s"
+    },
+    {
+        "name": "CP_CAP_SINGULARITY",
+        "type": "boolean",
+        "description": "Enable singularity for a current run",
+        "defaultValue": "true",
+        "passToWorkers": true
     }
 ]
