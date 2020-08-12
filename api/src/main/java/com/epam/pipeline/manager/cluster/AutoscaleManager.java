@@ -72,6 +72,7 @@ import java.util.stream.Collectors;
 
 @Service
 @ConditionalOnProperty(value = "cluster.disable.autoscaling", matchIfMissing = true, havingValue = "false")
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class AutoscaleManager extends AbstractSchedulingManager {
     public static final int NODEUP_SPOT_FAILED_EXIT_CODE = 5;
     public static final int NODEUP_LIMIT_EXCEEDED_EXIT_CODE = 6;
@@ -361,9 +362,9 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 }
                 scheduledRuns.add(runId);
                 createNodeForRun(tasks, runId, requiredInstance);
-            } catch (GitClientException | CmdExecutionException | IllegalArgumentException e) {
+            } catch (Exception e) {
                 LOGGER.error("Failed to create node for run {}.", runId);
-                LOGGER.error("Failed to get pipeline configuration: " + e.getMessage(), e);
+                LOGGER.error("An error during pod processing: {}" + e.getMessage(), e);
             }
         }
 
