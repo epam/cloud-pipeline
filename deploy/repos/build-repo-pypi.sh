@@ -21,6 +21,18 @@ bandersnatch mirror
 nohup bandersnatch mirror &> pypi.log &
 
 # Minimal required list
+function download_list() {
+    local list="$1"
+    local dest="$2"
+    cd $dest
+    for _p in ${list[@]}; do
+        pip download $_p
+    done
+}
+
+pip install piprepo awscli
+mkdir -p /srv/pypi/web/
+
 pypi_packages="PyYAML==5.3.1
 backports-abc==0.5
 backports.ssl-match-hostname==3.7.0.1
@@ -96,13 +108,13 @@ boto3==1.9.129
 luigi==2.8.3
 pyasn1-modules==0.2.4
 pyasn1==0.4.5"
+download_list "$pypi_packages" /srv/pypi/web/
 
-pip install piprepo awscli
-mkdir -p /srv/pypi/web/
-cd /srv/pypi/web/
-for _p in ${pypi_packages[@]}; do
-    pip download $_p
-done
+pypi_packages="boto3==1.10.50
+botocore==1.13.50
+awscli==1.16.314"
+download_list "$pypi_packages" /srv/pypi/web/
+
 piprepo build /srv/pypi/web/
 
 # Upload to S3 (bucket shall have "Static sites hosting" enabled to serve index.html)

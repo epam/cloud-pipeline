@@ -143,20 +143,41 @@ def get_cloud_config_section(aws_region, section_name):
     else:
         return None
 
-
-def get_networks_config(ec2, aws_region):
+# FIXME: this method shall be synced with the pipe-common/autoscaling/awsprovider.py
+def get_networks_config(ec2, aws_region, instance_type):
     allowed_networks = get_cloud_config_section(aws_region, "networks")
     valid_networks = {}
 
     if allowed_networks and len(allowed_networks) > 0:
         try:
             allowed_networks_details = ec2.describe_subnets(SubnetIds=allowed_networks.values())['Subnets']
+            
+            # Get the list of AZs, which offer the "instance_type", as some of the AZs can't provide certain types and an error is thrown:
+            #   Your requested instance type (xxxxx) is not supported in your requested Availability Zone (xxxxx)
+            # The list of valid AZs will be placed into "instance_type_offerings_az_list"
+            instance_type_offerings = ec2.describe_instance_type_offerings(
+                LocationType='availability-zone',
+                Filters=[
+                    {
+                        'Name': 'instance-type',
+                        'Values': [ instance_type ]
+                    }
+                ]
+            )
+            instance_type_offerings_az_list = [x['Location'] for x in instance_type_offerings['InstanceTypeOfferings']]
+            instance_type_offerings_az_list_empty = len(instance_type_offerings_az_list) == 0
+            if instance_type_offerings_az_list_empty:
+                pipe_log('Empty list for the instance type offerings. Considering this as "All AZs offer this type"')
+            else:
+                pipe_log('Instance type {} is available only in the following AZs: {}'.format(instance_type, instance_type_offerings_az_list))
+
             for network in allowed_networks_details:
                 subnet_id = network['SubnetId']
                 az_name = network['AvailabilityZone']
                 subnet_ips = int(network['AvailableIpAddressCount'])
-                pipe_log('Subnet {} in {} zone has {} available IP addresses'.format(subnet_id, az_name, str(subnet_ips)))
-                if subnet_ips > 0:
+                az_provides_instance_type = az_name in instance_type_offerings_az_list or instance_type_offerings_az_list_empty
+                pipe_log('Subnet {} in {} zone has {} available IP addresses. Offers {} instance type: {}'.format(subnet_id, az_name, str(subnet_ips), instance_type, az_provides_instance_type))
+                if subnet_ips > 0 and az_provides_instance_type:
                     valid_networks.update({ az_name: subnet_id })
         except Exception as allowed_networks_details_e:
             pipe_log_warn('Cannot get the details of the subnets, so we do not validate subnet usage:\n' + str(allowed_networks_details_e))
@@ -296,7 +317,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                            kms_encyr_key_id, run_id, user_data_script, num_rep, time_rep,
                            swap_size):
     pipe_log('Creating on demand instance')
-    allowed_networks = get_networks_config(ec2, aws_region)
+    allowed_networks = get_networks_config(ec2, aws_region, ins_type)
     additional_args = {}
     subnet_id = None
     if allowed_networks and len(allowed_networks) > 0:
@@ -743,7 +764,7 @@ def get_availability_zones(ec2):
 
 def get_spot_prices(ec2, aws_region, instance_type, hours=3):
     prices = []
-    allowed_networks = get_networks_config(ec2, aws_region)
+    allowed_networks = get_networks_config(ec2, aws_region, instance_type)
     if allowed_networks and len(allowed_networks) > 0:
         zones = list(allowed_networks.keys())
     else:
@@ -777,7 +798,7 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
     pipe_log('- Checking spot prices for current region...')
     spot_prices = get_spot_prices(ec2, aws_region, ins_type)
 
-    allowed_networks = get_networks_config(ec2, aws_region)
+    allowed_networks = get_networks_config(ec2, aws_region, ins_type)
     cheapest_zone = ''
     if len(spot_prices) == 0:
         pipe_log('- Unable to get prices for a spot of type {}, cheapest zone can not be determined'.format(ins_type))
