@@ -59,7 +59,8 @@ _info_logging_level = _allowed_logging_level_names[logging.INFO]
 
 
 def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size, cache_ttl, cache_size, default_mode,
-          mount_options=None, threads=False, monitoring_delay=600, recording=False):
+          read_plain_size, read_ahead_size, mount_options=None, threads=False, monitoring_delay=600,
+          recording=False):
     if mount_options is None:
         mount_options = {}
     try:
@@ -71,6 +72,8 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
     api = os.environ.get('API', '')
     bearer = os.environ.get('API_TOKEN', '')
     chunk_size = os.environ.get('CP_PIPE_FUSE_CHUNK_SIZE', chunk_size)
+    read_plain_size = os.environ.get('CP_PIPE_FUSE_READ_PLAIN_SIZE', read_plain_size)
+    read_ahead_size = os.environ.get('CP_PIPE_FUSE_READ_AHEAD_SIZE', read_ahead_size)
     if not bearer:
         raise RuntimeError("Cloud Pipeline API_TOKEN should be specified.")
     if webdav:
@@ -91,7 +94,9 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
     else:
         logging.info('Caching is disabled.')
     if buffer_size > 0:
-        client = BufferedFileSystemClient(client, capacity=buffer_size)
+        client = BufferedFileSystemClient(client, capacity=buffer_size,
+                                          read_plain_size=read_plain_size,
+                                          read_ahead_size=read_ahead_size)
     else:
         logging.info('Buffering is disabled.')
     if trunc_buffer_size > 0:
@@ -172,8 +177,8 @@ if __name__ == '__main__':
     parser.add_argument("-r", "--trunc-buffer-size", type=int, required=False, default=512 * MB,
                         help="Truncating buffer size for a single file")
     parser.add_argument("-c", "--chunk-size", type=int, required=False, default=10 * MB,
-                        help="Multipart upload chunk size. Can be also specified via "
-                             "CP_PIPE_FUSE_CHUNK_SIZE environment variable.")
+                        help="Multipart upload chunk size. "
+                             "Can be configured via CP_PIPE_FUSE_CHUNK_SIZE environment variable.")
     parser.add_argument("-t", "--cache-ttl", type=int, required=False, default=60,
                         help="Listing cache time to live, seconds")
     parser.add_argument("-s", "--cache-size", type=int, required=False, default=100,
@@ -187,6 +192,12 @@ if __name__ == '__main__':
     parser.add_argument("-th", "--threads", action='store_true', help="Enables multithreading.")
     parser.add_argument("-d", "--monitoring-delay", type=int, required=False, default=600,
                         help="Delay between path lock monitoring cycles.")
+    parser.add_argument("--read-plain-size", type=int, required=False, default=1 * MB,
+                        help="Amount of bytes that will be read before skipping to read ahead mode. "
+                             "Can be configured via CP_PIPE_FUSE_READ_AHEAD_INITIAL_SIZE environment variable.")
+    parser.add_argument("--read-ahead-size", type=int, required=False, default=20 * MB,
+                        help="Amount of bytes that will be read for each read ahead call. "
+                             "Can be configured via CP_PIPE_FUSE_READ_AHEAD_SIZE environment variable.")
     args = parser.parse_args()
 
     if not args.webdav and not args.bucket:
@@ -208,7 +219,8 @@ if __name__ == '__main__':
     try:
         start(args.mountpoint, webdav=args.webdav, bucket=args.bucket, buffer_size=args.buffer_size,
               trunc_buffer_size=args.trunc_buffer_size, chunk_size=args.chunk_size, cache_ttl=args.cache_ttl,
-              cache_size=args.cache_size, default_mode=args.mode, mount_options=parse_mount_options(args.options),
+              cache_size=args.cache_size, default_mode=args.mode, read_plain_size=args.read_plain_size,
+              read_ahead_size=args.read_ahead_size, mount_options=parse_mount_options(args.options),
               threads=args.threads, monitoring_delay=args.monitoring_delay, recording=recording)
     except BaseException as e:
         logging.error('Unhandled error: %s' % str(e))

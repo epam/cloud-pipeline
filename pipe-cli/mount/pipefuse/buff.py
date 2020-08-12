@@ -43,6 +43,9 @@ class _FileBuffer(object):
         self._buffs.append(buf)
         self._current_offset += len(buf)
 
+    def suits(self, offset):
+        return offset == self._current_offset
+
 
 class _WriteBuffer(_FileBuffer):
 
@@ -67,11 +70,40 @@ class _WriteBuffer(_FileBuffer):
             current_offset += current_buf_size
         return collected_buf, self._offset
 
-    def suits(self, offset):
-        return offset == self._current_offset
-
 
 class _ReadBuffer(_FileBuffer):
+
+    def __init__(self, offset, capacity):
+        super(_ReadBuffer, self).__init__(offset, capacity)
+        self._current_offset = self._offset
+        self._accumulated_length = 0
+        self._skipped_length = 0
+        self._resets = 0
+        self._ahead = False
+
+    @property
+    def accumulated_length(self):
+        return self._accumulated_length
+
+    @property
+    def skipped_length(self):
+        return self._skipped_length
+
+    @property
+    def full(self):
+        return self._current_offset >= self._capacity
+
+    @property
+    def ahead(self):
+        return self._ahead
+
+    def append(self, buf):
+        super(_ReadBuffer, self).append(buf)
+        self._accumulated_length += len(buf)
+
+    def append_ahead(self, buf):
+        self.append(buf)
+        self._ahead = True
 
     def view(self, offset, length):
         start = offset
@@ -91,33 +123,44 @@ class _ReadBuffer(_FileBuffer):
             return self._buffs[0][relative_start:relative_gap] \
                    + self._buffs[1][relative_gap - second_buf_shift:relative_end - second_buf_shift]
 
-    def suits(self, offset, length):
-        return self._offset <= offset <= self._current_offset and \
-               (offset + length <= self._current_offset or self._current_offset == self._capacity)
+    def contains(self, offset, length):
+        return self._offset <= offset and offset + length <= self._current_offset
+
+    def adjacent(self, offset, length, read_ahead_length):
+        return self._offset <= offset and offset + length <= self._current_offset + read_ahead_length
 
     def shrink(self):
         if len(self._buffs) > 2:
             old_first_buf = self._buffs.pop(0)
             self._offset += len(old_first_buf)
 
+    def reset(self, offset):
+        self._skipped_length += abs(offset - self._current_offset)
+        self._offset = offset
+        self._current_offset = self._offset
+        self._buffs = []
+
 
 class BufferedFileSystemClient(FileSystemClientDecorator):
 
-    _READ_AHEAD_SIZE = 20 * MB
-    _READ_AHEAD_MULTIPLIER = 1.1
-
-    def __init__(self, inner, capacity):
+    def __init__(self, inner, capacity, read_plain_size, read_ahead_size):
         """
         Buffering file system client decorator.
 
         It merges multiple writes to temporary buffers to reduce number of calls to an inner file system client.
 
+        It performs read ahead buffering.
+
         :param inner: Decorating file system client.
         :param capacity: Capacity of single file buffer in bytes.
+        :param read_plain_size: Amount of bytes that will be read before skipping to read ahead mode.
+        :param read_ahead_size: Amount of bytes that will be read for each read ahead call.
         """
         super(BufferedFileSystemClient, self).__init__(inner)
         self._inner = inner
         self._capacity = capacity
+        self._read_ahead_size = read_ahead_size
+        self._read_plain_size = read_plain_size
         self._write_file_buffs = {}
         self._read_file_buffs = {}
 
@@ -129,6 +172,8 @@ class BufferedFileSystemClient(FileSystemClientDecorator):
         return attrs
 
     def download_range(self, fh, buf, path, offset=0, length=0):
+        # todo: Check why file reading is different with on and off buffering.
+        #  Probably extra\missing bits on the ends could be the reason
         buf_key = fh, path
         file_buf = self._read_file_buffs.get(buf_key)
         if not file_buf:
@@ -137,25 +182,44 @@ class BufferedFileSystemClient(FileSystemClientDecorator):
                 return
             file_buf = self._new_read_buf(fh, path, file_size, offset, length)
             self._read_file_buffs[buf_key] = file_buf
-        if not file_buf.suits(offset, length):
-            if file_buf.offset < file_buf.capacity:
-                file_buf.append(self._read_ahead(fh, path, file_buf.offset, length))
-                file_buf.shrink()
-            if not file_buf.suits(offset, length):
-                file_buf = self._new_read_buf(fh, path, file_buf.capacity, offset, length)
-                self._read_file_buffs[buf_key] = file_buf
+        if not file_buf.contains(offset, length) and not file_buf.full:
+            if file_buf.ahead:
+                if file_buf.adjacent(offset, length, self._read_ahead_size):
+                    file_buf.append(self._download(fh, path, file_buf.offset, self._read_ahead_size))
+                    file_buf.shrink()
+                else:
+                    file_buf = self._new_read_buf(fh, path, file_buf.capacity, offset, length)
+                    self._read_file_buffs[buf_key] = file_buf
+            else:
+                if not file_buf.suits(offset):
+                    file_buf.reset(offset)
+                if file_buf.accumulated_length >= self._read_plain_size:
+                    if file_buf.skipped_length <= self._read_plain_size:
+                        file_buf.append_ahead(self._download(fh, path, offset, self._read_ahead_size))
+                        file_buf.shrink()
+                    else:
+                        file_buf = self._new_read_buf(fh, path, file_buf.capacity, offset, length)
+                        self._read_file_buffs[buf_key] = file_buf
+                else:
+                    file_buf.append(self._download(fh, path, offset, length))
+                    file_buf.shrink()
         buf.write(file_buf.view(offset, length))
 
     def _new_read_buf(self, fh, path, file_size, offset, length):
         file_buf = _ReadBuffer(offset, file_size)
-        file_buf.append(self._read_ahead(fh, path, offset, length))
+        file_buf.append(self._download(fh, path, offset, length=self._download_length(0, length)))
         return file_buf
 
-    def _read_ahead(self, fh, path, offset, length):
-        size = max(self._READ_AHEAD_SIZE, int(length * self._READ_AHEAD_MULTIPLIER))
+    def _download_length(self, accumulated_length, length):
+        if accumulated_length >= self._read_plain_size:
+            return max(self._read_ahead_size, length)
+        else:
+            return length
+
+    def _download(self, fh, path, offset, length):
         with io.BytesIO() as read_ahead_buf:
-            logging.info('Downloading buffer range %d-%d for %d:%s' % (offset, offset + size, fh, path))
-            self._inner.download_range(fh, read_ahead_buf, path, offset, length=size)
+            logging.info('Downloading buffer range %d-%d for %d:%s' % (offset, offset + length, fh, path))
+            self._inner.download_range(fh, read_ahead_buf, path, offset, length=length)
             return read_ahead_buf.getvalue()
 
     def upload_range(self, fh, buf, path, offset=0):
