@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+######################################################
+# Singularity distribution build commands
+######################################################
+# yum install -y libarchive-devel squashfs-tools
+# VERSION=2.5.2
+# wget https://github.com/singularityware/singularity/releases/download/$VERSION/singularity-$VERSION.tar.gz && \
+# tar xvf singularity-$VERSION.tar.gz && \
+# cd singularity-$VERSION && \
+# ./configure --prefix=/var/lib/singularity && \
+# make -j$(nproc) && \
+# make install
+
+SNGLRT_SETUP_TASK="SetupSingularity"
+
+CP_SNGLRT_DISTR_URL="${CP_SNGLRT_DISTR_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/singularity/2.5.2/singularity.tgz}"
+CP_SNGLRT_INSTALL_PATH="${CP_SNGLRT_INSTALL_PATH:-/var/lib/singularity}"
+CP_SNGLRT_INSTALL_TEMP="$(mktemp -d)"
+
+pipe_log_info "Started Singularity setup\n-> Distribution URL: ${CP_SNGLRT_DISTR_URL}\n-> Install path: ${CP_SNGLRT_INSTALL_PATH}" "$SNGLRT_SETUP_TASK"
+
+wget -q "$CP_SNGLRT_DISTR_URL" -O "$CP_SNGLRT_INSTALL_TEMP/singularity.tgz"
+if [ $? -ne 0 ]; then
+    pipe_log_error "Cannot download singularity distribution from $CP_SNGLRT_DISTR_URL" "$SNGLRT_SETUP_TASK"
+    exit 1
+fi
+
+tar -zxf "$CP_SNGLRT_INSTALL_TEMP/singularity.tgz" -C "$CP_SNGLRT_INSTALL_TEMP"
+if [ $? -ne 0 ]; then
+    pipe_log_error "Cannot unpack singularity distribution to $CP_SNGLRT_INSTALL_PATH" "$SNGLRT_SETUP_TASK"
+    exit 1
+fi
+
+rm -rf "$CP_SNGLRT_INSTALL_PATH" && \
+mkdir -p "$CP_SNGLRT_INSTALL_PATH" && \
+mv "$CP_SNGLRT_INSTALL_TEMP/singularity/*" "${CP_SNGLRT_INSTALL_PATH}/"
+if [ $? -ne 0 ]; then
+    pipe_log_error "Cannot move singularity distribution from $CP_SNGLRT_INSTALL_TEMP" "$CP_SNGLRT_INSTALL_PATH"
+    exit 1
+fi
+
+rm -rf $CP_SNGLRT_INSTALL_TEMP
+
+# Configure the singularity setup
+if [ -d "$CP_USR_BIN" ]; then
+    rm -f "$CP_USR_BIN/singularity"
+    ln -s "$CP_SNGLRT_INSTALL_PATH/bin/singularity" "$CP_USR_BIN/singularity"
+    rm -f "/usr/local/bin/singularity"
+    ln -s "$CP_SNGLRT_INSTALL_PATH/bin/singularity" "/usr/local/bin/singularity"
+fi
+
+# Check singularity setup
+CP_SNGLRT_VERSION=$(singularity --version 2>/dev/null)
+if [ $? -ne 0 ]; then
+    pipe_log_error "Cannot check singularity version, installation might be corrupted" "$SNGLRT_SETUP_TASK"
+    exit 1
+fi
+
+pipe_log_success "Singularity successfully installed (version: $CP_SNGLRT_VERSION)" "$SNGLRT_SETUP_TASK"

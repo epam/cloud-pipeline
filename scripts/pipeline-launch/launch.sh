@@ -1535,6 +1535,22 @@ fi
 
 
 ######################################################
+# Setup "Singularity" support
+######################################################
+
+echo "Setup Singularity support"
+echo "-"
+
+if [ "$CP_CAP_SINGULARITY" == "true" ]; then
+      singularity_setup
+else
+    echo "Singularity support is not requested"
+fi
+
+######################################################
+
+
+######################################################
 echo Executing task
 echo "-"
 ######################################################
