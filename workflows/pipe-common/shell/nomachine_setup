@@ -13,21 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+NOMACHINE_INSTALL_TASK="NoMachineInitialization"
+NOMACHINE_VERSION="${CP_CAP_NM_DEFAULT_VERSION:-6.5.6_9}"
+
 # Check if required proxy settings are correct
 export CP_NM_PROXY_HOST="${CP_NM_PROXY_HOST:-$(echo $CP_CAP_NM_PROXY_HOST)}"
 if [ -z $CP_NM_PROXY_HOST ]; then
-    pipe_log_fail "NoMachine proxy host is not set (CP_NM_PROXY_HOST). Exiting..."
+    pipe_log_fail "NoMachine proxy host is not set (CP_NM_PROXY_HOST). Exiting..." "$NOMACHINE_INSTALL_TASK"
     exit 1
 fi
 
 export CP_NM_PROXY_PORT="${CP_NM_PROXY_PORT:-$(echo $CP_CAP_NM_PROXY_PORT)}"
 if [ -z $CP_NM_PROXY_PORT ]; then
-    pipe_log_fail "NoMachine proxy port is not set (CP_NM_PROXY_PORT). Exiting..."
+    pipe_log_fail "NoMachine proxy port is not set (CP_NM_PROXY_PORT). Exiting..." "$NOMACHINE_INSTALL_TASK"
     exit 1
 fi
-
-NOMACHINE_INSTALL_TASK="NoMachineInitialization"
-NOMACHINE_VERSION="${CP_CAP_NM_DEFAULT_VERSION:-6.5.6_9}"
 
 /usr/bin/rpm -q -f /usr/bin/rpm >/dev/null 2>&1
 IS_RPM_BASED=$?
@@ -58,7 +58,6 @@ EOM
                     lsof \
                     python \
                     wget && \
-    yum --enablerepo=epel install  @^graphical-server-environment -y && \
     yum --enablerepo=epel -y -x gnome-keyring --skip-broken install @xfce-desktop && \
     yum -y groups install "Fonts" && \
     yum erase -y *power* *screensaver* && \
