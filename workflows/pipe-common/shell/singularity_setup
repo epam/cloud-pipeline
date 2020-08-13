@@ -63,9 +63,9 @@ fi
 
 rm -rf "$CP_SNGLRT_INSTALL_PATH" && \
 mkdir -p "$CP_SNGLRT_INSTALL_PATH" && \
-mv "$CP_SNGLRT_INSTALL_TEMP/singularity/*" "${CP_SNGLRT_INSTALL_PATH}/"
+mv $CP_SNGLRT_INSTALL_TEMP/singularity/* "${CP_SNGLRT_INSTALL_PATH}/"
 if [ $? -ne 0 ]; then
-    pipe_log_fail "Cannot move singularity distribution from $CP_SNGLRT_INSTALL_TEMP" "$CP_SNGLRT_INSTALL_PATH"
+    pipe_log_fail "Cannot move singularity distribution from $CP_SNGLRT_INSTALL_TEMP" "$SNGLRT_SETUP_TASK"
     exit 1
 fi
 
