@@ -30,19 +30,34 @@ SNGLRT_SETUP_TASK="SetupSingularity"
 
 CP_SNGLRT_DISTR_URL="${CP_SNGLRT_DISTR_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/singularity/2.5.2/singularity.tgz}"
 CP_SNGLRT_INSTALL_PATH="${CP_SNGLRT_INSTALL_PATH:-/var/lib/singularity}"
-CP_SNGLRT_INSTALL_TEMP="$(mktemp -d)"
+CP_SNGLRT_INSTALL_TEMP="/tmp/snglrt-tmp"
+rm -rf "$CP_SNGLRT_INSTALL_TEMP" && \
+mkdir -p "$CP_SNGLRT_INSTALL_TEMP"
 
 pipe_log_info "Started Singularity setup\n-> Distribution URL: ${CP_SNGLRT_DISTR_URL}\n-> Install path: ${CP_SNGLRT_INSTALL_PATH}" "$SNGLRT_SETUP_TASK"
 
 wget -q "$CP_SNGLRT_DISTR_URL" -O "$CP_SNGLRT_INSTALL_TEMP/singularity.tgz"
 if [ $? -ne 0 ]; then
-    pipe_log_error "Cannot download singularity distribution from $CP_SNGLRT_DISTR_URL" "$SNGLRT_SETUP_TASK"
+    pipe_log_fail "Cannot download singularity distribution from $CP_SNGLRT_DISTR_URL" "$SNGLRT_SETUP_TASK"
+    exit 1
+fi
+if [ -f "$CP_SNGLRT_INSTALL_TEMP/singularity.tgz" ]; then
+    pipe_log_info "Distribution downloaded to $CP_SNGLRT_INSTALL_TEMP/singularity.tgz" "$SNGLRT_SETUP_TASK"
+else
+    pipe_log_fail "Cannot find singularity distribution at $CP_SNGLRT_INSTALL_TEMP/singularity.tgz" "$SNGLRT_SETUP_TASK"
     exit 1
 fi
 
 tar -zxf "$CP_SNGLRT_INSTALL_TEMP/singularity.tgz" -C "$CP_SNGLRT_INSTALL_TEMP"
 if [ $? -ne 0 ]; then
-    pipe_log_error "Cannot unpack singularity distribution to $CP_SNGLRT_INSTALL_PATH" "$SNGLRT_SETUP_TASK"
+    pipe_log_fail "Cannot unpack singularity distribution to $CP_SNGLRT_INSTALL_PATH" "$SNGLRT_SETUP_TASK"
+    exit 1
+fi
+CP_SNGLRT_EXTRACTED_FILES=($(shopt -s nullglob;shopt -s dotglob;echo $CP_SNGLRT_INSTALL_TEMP/singularity/*))
+if [ ${#CP_SNGLRT_EXTRACTED_FILES[@]} -gt 0 ]; then
+    pipe_log_info "Distribution extracted to: $CP_SNGLRT_INSTALL_TEMP (${#CP_SNGLRT_EXTRACTED_FILES[@]} files)" "$SNGLRT_SETUP_TASK"
+else
+    pipe_log_fail "Nothing is extracted from the $CP_SNGLRT_INSTALL_TEMP/singularity.tgz to $CP_SNGLRT_INSTALL_TEMP/singularity" "$SNGLRT_SETUP_TASK"
     exit 1
 fi
 
@@ -50,7 +65,7 @@ rm -rf "$CP_SNGLRT_INSTALL_PATH" && \
 mkdir -p "$CP_SNGLRT_INSTALL_PATH" && \
 mv "$CP_SNGLRT_INSTALL_TEMP/singularity/*" "${CP_SNGLRT_INSTALL_PATH}/"
 if [ $? -ne 0 ]; then
-    pipe_log_error "Cannot move singularity distribution from $CP_SNGLRT_INSTALL_TEMP" "$CP_SNGLRT_INSTALL_PATH"
+    pipe_log_fail "Cannot move singularity distribution from $CP_SNGLRT_INSTALL_TEMP" "$CP_SNGLRT_INSTALL_PATH"
     exit 1
 fi
 
@@ -67,7 +82,7 @@ fi
 # Check singularity setup
 CP_SNGLRT_VERSION=$(singularity --version 2>/dev/null)
 if [ $? -ne 0 ]; then
-    pipe_log_error "Cannot check singularity version, installation might be corrupted" "$SNGLRT_SETUP_TASK"
+    pipe_log_fail "Cannot check singularity version, installation might be corrupted" "$SNGLRT_SETUP_TASK"
     exit 1
 fi
 
