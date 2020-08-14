@@ -139,13 +139,14 @@ public class ToolDescription extends ToolTab<ToolDescription> {
 
         public InstanceManagementSectionAO setPriceType(final String priceType) {
             click(PRICE_TYPE);
-            context().find(PipelineSelectors.visible(byClassName("ant-select-dropdown"))).find(byText(priceType))
+            context().find(byClassName("ant-select-dropdown")).find(byText(priceType))
                     .shouldBe(visible)
                     .click();
             return this;
         }
 
         public InstanceManagementSectionAO clearAllowedPriceTypeField() {
+            ensureVisible(PRICE_TYPE);
             SelenideElement type = context().$(byClassName("ant-select-selection__choice__remove"));
             while(type.isDisplayed()) {
                 type.click();

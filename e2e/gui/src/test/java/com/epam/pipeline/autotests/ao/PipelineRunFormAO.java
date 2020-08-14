@@ -147,7 +147,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public PipelineRunFormAO ensurePriceTypeList(String ... priceTypes) {
         click(PRICE_TYPE);
-        context().find(PipelineSelectors.visible(byClassName("ant-select-dropdown"))).shouldBe(visible);
+        context().find(byClassName("ant-select-dropdown")).shouldBe(visible);
         ElementsCollection list = context().find(byClassName("ant-select-dropdown-menu")).$$("li");
         assertTrue(list.size() == priceTypes.length,
                 "Expected: " + priceTypes.length + "Actual: " + list.size());

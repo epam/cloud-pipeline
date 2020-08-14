@@ -25,6 +25,7 @@ import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.appears;
@@ -73,9 +74,13 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     private final String toolInstanceTypesMask = "Allowed tool instance types mask";
     private final String onDemandPrice = "On demand";
 
+    @BeforeClass
+    public void initialLogout() {
+        logout();
+    }
+
     @AfterClass(alwaysRun = true)
     public void deletingEntities() {
-        logoutIfNeeded();
         loginAs(admin);
         library()
                 .removeNotEmptyFolder(folder);
@@ -97,6 +102,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     @Test(priority = 1)
     @TestCase({"EPMCMBIBPC-2637"})
     public void preparationForValidationOfInstanceTypesRestrictions() {
+        loginAs(admin);
         setMaskForUser(user.login, instanceTypesMask, String.format("%s.*", instanceFamilyName));
         library()
                 .createFolder(folder)
@@ -166,7 +172,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .configurationWithin(configuration, configuration ->
                         configuration
                                 .expandTabs(execEnvironmentTab)
-                                .sleep(2, SECONDS)
+                                .sleep(4, SECONDS)
                                 .ensure(DISK, value(customDisk))
                                 .ensure(DOCKER_IMAGE, value(defaultGroup), value(testingTool))
                                 .ensure(INSTANCE_TYPE, empty)
@@ -193,13 +199,13 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .exitFromConfigurationWithoutSaved();
         library()
                 .cd(folder)
-                .createConfiguration(configuration)
-                .configurationWithin(configuration, configuration ->
+                .createConfiguration(secondConfiguration)
+                .configurationWithin(secondConfiguration, configuration ->
                         configuration
+                                .sleep(2, SECONDS)
                                 .expandTabs(execEnvironmentTab)
                                 .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
-                )
-                .exitFromConfigurationWithoutSaved();
+                );
     }
 
     @Test(priority = 3, dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
@@ -224,6 +230,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
                     tool.showInstanceManagement(instanceManagement ->
                             instanceManagement
+                                    .clearAllowedPriceTypeField()
                                     .setPriceType(onDemandPrice)
                                     .clickApply()
                                     .sleep(2, SECONDS)));
@@ -259,7 +266,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         loginAs(user);
         tools()
                 .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
-                .expandTab(EXEC_ENVIRONMENT)
+                .sleep(1, SECONDS)
                 .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName);
     }
 
