@@ -31,4 +31,4 @@ tar -zxvf vnc2flv-20100207.tar.gz
 rm -f vnc2flv-20100207.tar.gz
 export RECORD=${TMP}/vnc2flv-20100207
 cd $RECORD
-python setup.py install
+python setup.py install --prefix=/usr/local
