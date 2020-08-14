@@ -17,13 +17,14 @@
 set -e
 
 _RECORDING="$1"
-_COMMAND="$2"
-_STAND_NAME="$3"
-_PASSWORD_FILE="$4"
 
-_COMMAND > out.txt &
+PASSWORD_FILE=$USER_HOME_DIR/e2e/gui/password.txt
+CURRENT_DATE=$(date +"%Y-%m-%d")
+STAND_NAME=$(grep -i "e2e.ui.root.address=https://" /$USER_HOME_DIR/e2e/gui/default.conf | sed -n 's/.*https:\x2F\x2F*//p' | awk -F. '{print $1}')
 
 if [ "$_RECORDING" == "true" ]; then
-    CURRENT_DATE_TIME=`date +"%Y-%m-%d_%T"`
-    /usr/local/bin/flvrec.py -o "${_STAND_NAME}_$CURRENT_DATE_TIME" -P "${_PASSWORD_FILE}" localhost:1
+    (./gradlew clean test --tests com.epam.pipeline.autotests.ObjectMetadataFolderTest > out.txt && docker stop ui_test1) & \
+    /usr/local/bin/flvrec.py -o "${STAND_NAME}_${CURRENT_DATE_TIME}" -P "${PASSWORD_FILE}" localhost:1
+else
+    ./gradlew clean test --tests com.epam.pipeline.autotests.ObjectMetadataFolderTest > out.txt
 fi
