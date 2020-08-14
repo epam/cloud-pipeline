@@ -73,10 +73,12 @@ rm -rf $CP_SNGLRT_INSTALL_TEMP
 
 # Configure the singularity setup
 if [ -d "$CP_USR_BIN" ]; then
-    rm -f "$CP_USR_BIN/singularity"
+    rm -f $CP_USR_BIN/*singularity
     ln -s "$CP_SNGLRT_INSTALL_PATH/bin/singularity" "$CP_USR_BIN/singularity"
-    rm -f "/usr/local/bin/singularity"
+    ln -s "$CP_SNGLRT_INSTALL_PATH/bin/run-singularity" "$CP_USR_BIN/run-singularity"
+    rm -f /usr/local/bin/*singularity
     ln -s "$CP_SNGLRT_INSTALL_PATH/bin/singularity" "/usr/local/bin/singularity"
+    ln -s "$CP_SNGLRT_INSTALL_PATH/bin/run-singularity" "/usr/local/bin/run-singularity"
 fi
 
 # Check singularity setup
