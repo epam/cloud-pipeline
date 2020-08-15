@@ -72,9 +72,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     private final String testRole = "ROLE_USER";
     private final String instanceTypesMask = "Allowed instance types mask";
     private final String toolInstanceTypesMask = "Allowed tool instance types mask";
-    private final String allowedPriceTypes = "Allowed price types";
     private final String onDemandPrice = "On demand";
-    private final String spotPriceName = C.SPOT_PRICE_NAME;
 
     @BeforeClass
     public void initialLogout() {

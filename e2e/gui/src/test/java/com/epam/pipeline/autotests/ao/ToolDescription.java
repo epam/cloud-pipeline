@@ -19,7 +19,6 @@ import com.codeborne.selenide.SelenideElement;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 
