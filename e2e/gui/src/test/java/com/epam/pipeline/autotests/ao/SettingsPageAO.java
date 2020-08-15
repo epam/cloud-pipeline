@@ -795,6 +795,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public class ClusterTabAO extends PreferencesAO {
 
             private final By clusterAllowedInstanceTypes = getByClusterField("cluster.allowed.instance.types");
+            private final By clusterAllowedPriceTypes = getByClusterField("cluster.allowed.price.types");
 
             ClusterTabAO(final PipelinesLibraryAO parentAO) {
                 super(parentAO);
@@ -827,6 +828,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public PreferencesAO setClusterAllowedInstanceTypes(String value) {
                 return setClusterValue(clusterAllowedInstanceTypes, value);
+            }
+
+            public PreferencesAO setClusterAllowedPriceTypes(String value) {
+                return setClusterValue(clusterAllowedPriceTypes, value);
             }
 
             private By getByClusterField(final String variable) {
