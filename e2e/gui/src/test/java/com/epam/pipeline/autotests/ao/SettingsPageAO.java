@@ -325,7 +325,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         entry(STATE, entry.find(byClassName("ant-checkbox-wrapper")).find(byClassName("ant-checkbox"))),
                         entry(ACTIVE_LABEL, entry.find(byClassName("notification-status-column")).find(byXpath(".//*[text() = 'Active']"))),
                         entry(EDIT, entry.find(byId("edit-notification-button"))),
-                        entry(Primitive.DELETE, entry.find(byId("delete-notification-button")))
+                        entry(DELETE, entry.find(byId("delete-notification-button")))
                 );
             }
 
@@ -374,7 +374,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public ConfirmationPopupAO<SystemEventsAO> delete() {
-                click(Primitive.DELETE);
+                click(DELETE);
                 return new ConfirmationPopupAO<>(this.parentAO);
             }
         }
@@ -505,7 +505,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             entry(OK, context().find(By.id("close-edit-user-form"))),
                             entry(BLOCK, context().$(button("BLOCK"))),
                             entry(UNBLOCK, context().$(button("UNBLOCK"))),
-                            entry(Primitive.DELETE, context().$(byId("delete-user-button")))
+                            entry(DELETE, context().$(byId("delete-user-button")))
                     );
 
                     public EditUserPopup(UsersTabAO parentAO) {
@@ -568,7 +568,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     }
 
                     public UsersTabAO deleteUser(final String user) {
-                        click(Primitive.DELETE);
+                        click(DELETE);
                         new ConfirmationPopupAO(this)
                                 .ensureTitleIs(format("Are you sure you want to delete user %s?", user))
                                 .ok();
