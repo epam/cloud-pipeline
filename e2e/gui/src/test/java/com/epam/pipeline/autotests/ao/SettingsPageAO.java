@@ -744,7 +744,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 }
 
                 public EditRolePopup addAllowedLaunchOptions(String option, String mask) {
-                    By optionField = byXpath(String.format("//div/b[text()='%s']/following::div/input", option));
+                    By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
                     if(mask.equals("")) {
                         Utils.clearField(optionField);}
                     else {setValue(optionField, mask);}
