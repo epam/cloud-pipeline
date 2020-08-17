@@ -74,10 +74,10 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
         SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
                 .settings()
                 .switchToSystemLogs();
-        SelenideElement adminInfo = systemLogsAO.getInfoRow(format("Successfully authenticate user: %s", admin.login),
+        SelenideElement adminInfo = systemLogsAO.getInfoRow(format("Successfully authenticate user .*: %s", admin.login),
                 admin.login, TYPE);
-        SelenideElement userInfo = systemLogsAO.getInfoRow(format("Successfully authenticate user: %s", user.login),
-                user.login, TYPE);
+        SelenideElement userInfo = systemLogsAO.filterByUser(user.login)
+                .getInfoRow(format("Successfully authenticate user .*: %s", user.login), user.login, TYPE);
         systemLogsAO.validateTimeOrder(adminInfo, userInfo);
     }
 
@@ -254,6 +254,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
         navigationMenu()
                 .settings()
                 .switchToSystemLogs()
+                .sleep(2, SECONDS)
                 .filterByMessage(USER_NAME)
                 .validateRow(format("Create user with name: %s", USER_NAME), admin.login, TYPE)
                 .validateRow(format("Delete user with name: %s", USER_NAME), admin.login, TYPE);

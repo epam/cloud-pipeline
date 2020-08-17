@@ -451,7 +451,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(TITLE, text(toolEndpoint))
                 .ensure(TITLE_FIELD, text("registry"), text(C.DEFAULT_GROUP))
                 .ensure(SHORT_DESCRIPTION, text(toolShortDescription))
-                .ensure(HIGHLIGHTS, text("Found in description"))
+                .ensure(HIGHLIGHTS, text("Found in image"))
                 .ensure(PREVIEW, text("latest"), text("test"))
                 .ensure(PREVIEW_TAB, text(toolDescription))
                 .parent()

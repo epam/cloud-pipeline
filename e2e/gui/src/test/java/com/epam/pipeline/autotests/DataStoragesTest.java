@@ -97,8 +97,9 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .ensure(folderWithName(folder), not(exist).because(String.format(
                 "Folder with name %s is not supposed to appear until the page will be refreshed.", folder)
             ))
-            .sleep(2, SECONDS)
+            .sleep(3, SECONDS)
             .clickRefreshButton()
+            .sleep(1, SECONDS)
             .ensure(folderWithName(folder), visible.because(String.format(
                 "Folder with name %s should appear after the page has been refreshed.", folder)
             ))
