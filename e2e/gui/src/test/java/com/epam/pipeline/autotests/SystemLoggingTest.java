@@ -30,6 +30,8 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.NoSuchElementException;
+
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
@@ -74,10 +76,19 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
         SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
                 .settings()
                 .switchToSystemLogs();
-        SelenideElement adminInfo = systemLogsAO.getInfoRow(format("Successfully authenticate user .*: %s", admin.login),
-                admin.login, TYPE);
-        SelenideElement userInfo = systemLogsAO.filterByUser(user.login)
-                .getInfoRow(format("Successfully authenticate user .*: %s", user.login), user.login, TYPE);
+        SelenideElement adminInfo;
+        SelenideElement userInfo;
+        try {
+            adminInfo = systemLogsAO.getInfoRow(format("Successfully authenticate user: %s", admin.login),
+                    admin.login, TYPE);
+            userInfo = systemLogsAO.filterByUser(user.login)
+                    .getInfoRow(format("Successfully authenticate user: %s", user.login), user.login, TYPE);
+        } catch (NoSuchElementException e) {
+            adminInfo = systemLogsAO.getInfoRow(format("Successfully authenticate user .*: %s", admin.login),
+                    admin.login, TYPE);
+            userInfo = systemLogsAO.filterByUser(user.login)
+                    .getInfoRow(format("Successfully authenticate user .*: %s", user.login), user.login, TYPE);
+        }
         systemLogsAO.validateTimeOrder(adminInfo, userInfo);
     }
 
