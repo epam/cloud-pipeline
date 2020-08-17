@@ -94,7 +94,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
     public SystemLogsAO switchToSystemLogs() {
         click(SYSTEM_LOGS_TAB);
-        return new SystemLogsAO(parentAO);
+        return new SystemLogsAO();
     }
 
     @Override
@@ -941,15 +941,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
     }
 
-    public class SystemLogsAO extends SettingsPageAO {
+    public class SystemLogsAO implements AccessObject<SystemLogsAO> {
 
         private final ElementsCollection containerLogs = $(byClassName("ant-table-tbody"))
                 .should(exist)
                 .findAll(byClassName("ant-table-row"));
-
-        public SystemLogsAO(final PipelinesLibraryAO pipelinesLibraryAO) {
-            super(pipelinesLibraryAO);
-        }
 
         public SelenideElement getInfoRow(final String message, final String user, final String type) {
             return containerLogs.stream()

@@ -146,7 +146,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .shouldContainRun(getPipelineName(), getRunId())
                 .openClusterRuns(getRunId())
                 .shouldContainRunsWithParentRun(1, getRunId())
-                .stopRunIfPresent(String.valueOf(Integer.valueOf(getRunId())+1))
+                .stopRunIfPresent(String.valueOf(Integer.parseInt(getRunId())+1))
                 .stopRunIfPresent(getRunId());
     }
 
