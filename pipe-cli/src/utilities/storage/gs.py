@@ -16,8 +16,20 @@ import base64
 import copy
 import hashlib
 import os
+import ssl
 from datetime import datetime, timedelta
+
 from requests import RequestException
+from requests.adapters import HTTPAdapter
+from urllib3 import PoolManager, HTTPSConnectionPool
+from urllib3.poolmanager import SSL_KEYWORDS
+from urllib3.util import ssl_
+import logging
+
+try:
+    from http.client import HTTPConnection  # py3
+except ImportError:
+    from httplib import HTTPConnection  # py2
 
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
@@ -49,6 +61,21 @@ from src.utilities.storage.common import AbstractRestoreManager, AbstractListing
 
 CP_CLI_DOWNLOAD_BUFFERING_SIZE = 'CP_CLI_DOWNLOAD_BUFFERING_SIZE'
 CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS = 'CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS'
+
+HTTPConnection.debuglevel = 1
+logging.basicConfig()
+logging.getLogger().setLevel(logging.DEBUG)
+requests_log = logging.getLogger("requests.packages.urllib3")
+requests_log.setLevel(logging.DEBUG)
+requests_log.propagate = True
+
+
+def connection_inspector(connection):
+    sock = connection.sock
+    sock_connection = sock.connection
+    print('Protocol version: %s' % sock_connection.get_protocol_version_name())
+    print('Cipher is %s/%s' % (sock_connection.get_cipher_name(), sock_connection.get_cipher_version()))
+    print('Remote certificate: %s' % sock.getpeercert())
 
 
 class GsProgressPercentage(ProgressPercentage):
@@ -651,6 +678,63 @@ class _RefreshingCredentials(Credentials):
         headers['authorization'] = 'Bearer {}'.format(_helpers.from_bytes(self.temporary_credentials.session_token))
 
 
+class InspectedHTTPSConnectionPool(HTTPSConnectionPool):
+    @property
+    def inspector(self):
+        return self._inspector
+
+    @inspector.setter
+    def inspector(self, inspector):
+        self._inspector = inspector
+
+    def _validate_conn(self, conn):
+        r = super(InspectedHTTPSConnectionPool, self)._validate_conn(conn)
+        if self.inspector:
+            self.inspector(conn)
+
+        return r
+
+
+class InspectedPoolManager(PoolManager):
+    @property
+    def inspector(self):
+        return self._inspector
+
+    @inspector.setter
+    def inspector(self, inspector):
+        self._inspector = inspector
+
+    def _new_pool(self, scheme, host, port, request_context=None):
+        if scheme != 'https':
+            return super(InspectedPoolManager, self)._new_pool(scheme, host, port, request_context)
+
+        kwargs = self.connection_pool_kw
+        if scheme == 'http':
+            kwargs = self.connection_pool_kw.copy()
+            for kw in SSL_KEYWORDS:
+                kwargs.pop(kw, None)
+
+        pool = InspectedHTTPSConnectionPool(host, port, **kwargs)
+        pool.inspector = self.inspector
+        return pool
+
+
+class TlsAdapter(HTTPAdapter):
+
+    def __init__(self, inspector, **kwargs):
+        self._inspector = inspector
+        super(TlsAdapter, self).__init__(**kwargs)
+
+    def init_poolmanager(self, *pool_args, **pool_kwargs):
+        ctx = ssl_.create_urllib3_context(ssl.PROTOCOL_TLS)
+
+        ctx.options |= ssl.OP_NO_SSLv2
+        ctx.options |= ssl.OP_NO_SSLv3
+
+        self.poolmanager = InspectedPoolManager(*pool_args, ssl_context=ctx, **pool_kwargs)
+        self.poolmanager.inspector = self._inspector
+
+
 class _ProxySession(AuthorizedSession):
 
     def request(self, method, url, data=None, headers=None, **kwargs):
@@ -666,6 +750,9 @@ class _RefreshingClient(Client):
     def __init__(self, bucket, read, write, refresh_credentials, versioning=False):
         credentials = _RefreshingCredentials(refresh=lambda: refresh_credentials(bucket, read, write, versioning))
         session = _ProxySession(credentials, max_refresh_attempts=self.MAX_REFRESH_ATTEMPTS)
+        adapter = TlsAdapter(connection_inspector, max_retries=3)
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
         super(_RefreshingClient, self).__init__(project=credentials.temporary_credentials.secret_key, _http=session)
 
 
