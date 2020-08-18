@@ -132,7 +132,7 @@ class BufferedFileSystemClient(FileSystemClientDecorator):
         buf_key = fh, path
         file_buf = self._read_file_buffs.get(buf_key)
         if not file_buf:
-            file_size = self.attrs(path).size
+            file_size = self._inner.attrs(path).size
             if not file_size:
                 return
             file_buf = self._new_read_buf(fh, path, file_size, offset, length)
@@ -167,12 +167,14 @@ class BufferedFileSystemClient(FileSystemClientDecorator):
             file_buf.append(buf)
         else:
             logging.info('Upload buffer is not sequential for %d:%s. Buffer will be cleared.' % (fh, path))
-            old_file_buf = self._flush_write_buf(fh, path)
+            self._flush_write_buf(fh, path)
+            old_file_buf = self._remove_write_buf(fh, path)
             file_buf = self._new_write_buf(self._capacity, offset, buf, old_file_buf)
             self._write_file_buffs[path] = file_buf
         if file_buf.is_full():
             logging.info('Upload buffer is full for %d:%s. Buffer will be cleared.' % (fh, path))
             self._flush_write_buf(fh, path)
+            self._remove_write_buf(fh, path)
             file_buf = self._new_write_buf(self._capacity, file_buf.offset, buf=None, old_write_buf=file_buf)
             self._write_file_buffs[path] = file_buf
 
@@ -182,8 +184,21 @@ class BufferedFileSystemClient(FileSystemClientDecorator):
             write_buf.append(buf)
         return write_buf
 
+    def flush(self, fh, path):
+        logging.info('Flushing buffers for %d:%s' % (fh, path))
+        self._flush_write_buf(fh, path)
+        self._inner.flush(fh, path)
+        self._remove_read_buf(fh, path)
+        self._remove_write_buf(fh, path)
+
+    def _remove_read_buf(self, fh, path):
+        return self._read_file_buffs.pop((fh, path), None)
+
+    def _remove_write_buf(self, fh, path):
+        return self._write_file_buffs.pop(path, None)
+
     def _flush_write_buf(self, fh, path):
-        write_buf = self._write_file_buffs.pop(path, None)
+        write_buf = self._write_file_buffs.get(path, None)
         if write_buf:
             collected_buf, collected_offset = write_buf.collect()
             if collected_buf:
@@ -191,12 +206,3 @@ class BufferedFileSystemClient(FileSystemClientDecorator):
                              % (collected_offset, collected_offset + len(collected_buf), fh, path))
                 self._inner.upload_range(fh, collected_buf, path, collected_offset)
         return write_buf
-
-    def flush(self, fh, path):
-        logging.info('Flushing buffers for %d:%s' % (fh, path))
-        self._flush_read_buf(fh, path)
-        self._flush_write_buf(fh, path)
-        self._inner.flush(fh, path)
-
-    def _flush_read_buf(self, fh, path):
-        return self._read_file_buffs.pop((fh, path), None)

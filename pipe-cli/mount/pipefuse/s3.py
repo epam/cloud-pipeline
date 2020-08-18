@@ -29,7 +29,7 @@ import fuseutils
 from fsclient import File, FileSystemClient
 from fuseutils import MB, GB
 from mpu import MultipartUpload, SplittingMultipartCopyUpload, ChunkedMultipartUpload, \
-    TruncatingMultipartCopyUpload
+    TruncatingMultipartCopyUpload, UnmanageableMultipartUploadException
 
 _ANY_ERROR = Exception
 
@@ -327,16 +327,34 @@ class S3Client(FileSystemClient):
                 file_size = self.attrs(path).size
                 buf_size = len(buf)
                 if buf_size < self._SINGLE_UPLOAD_SIZE and file_size < self._SINGLE_UPLOAD_SIZE:
-                    logging.info('Using single range upload approach')
+                    logging.info('Using single range upload approach for %d:%s' % (fh, path))
                     self._upload_single_range(fh, buf, source_path, offset)
                 else:
-                    logging.info('Using multipart upload approach')
+                    logging.info('Using multipart upload approach for %d:%s' % (fh, path))
                     mpu = self._new_mpu(source_path, file_size, offset)
                     self._mpus[source_path] = mpu
                     mpu.initiate()
                     mpu.upload_part(buf, offset)
             else:
                 mpu.upload_part(buf, offset)
+        except UnmanageableMultipartUploadException:
+            if mpu:
+                try:
+                    logging.exception('Unmanageable multipart upload detected for %d:%s. '
+                                      'Attempting to reinitialize the multipart upload.' % (fh, path))
+                    mpu.complete()
+                    file_size = self.attrs(path).size
+                    mpu = self._new_mpu(source_path, file_size, offset)
+                    self._mpus[source_path] = mpu
+                    mpu.initiate()
+                    mpu.upload_part(buf, offset)
+                except _ANY_ERROR:
+                    if mpu:
+                        mpu.abort()
+                        del self._mpus[source_path]
+                    raise
+            else:
+                raise
         except _ANY_ERROR:
             if mpu:
                 mpu.abort()
