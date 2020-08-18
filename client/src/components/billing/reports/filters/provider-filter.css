@@ -1,0 +1,11 @@
+.dropdown > div {
+  max-height: 70vh;
+}
+
+.dropdown > div > ul {
+  max-height: unset;
+}
+
+.provider-select {
+
+}
