@@ -26,9 +26,10 @@ import {
   BillingTable,
   Summary
 } from './charts';
-import {costTickFormatter, DisplayUser, ResizableContainer} from './utilities';
+import {costTickFormatter, numberFormatter, DisplayUser, ResizableContainer} from './utilities';
 import Filters, {RUNNER_SEPARATOR, REGION_SEPARATOR} from './filters';
 import {Period, getPeriod} from './periods';
+import StorageFilter, {StorageFilters} from './filters/storage-filter';
 import Export, {ExportComposers} from './export';
 import Discounts, {discounts} from './discounts';
 import {
@@ -119,10 +120,26 @@ function renderTable ({storages, discounts: discountsFn, height}) {
       render: owner => (<DisplayUser userName={owner} />)
     },
     {
+      key: 'billingCenter',
+      title: 'Billing Center',
+      dataIndex: 'billingCenter'
+    },
+    {
+      key: 'storageType',
+      title: 'Type',
+      dataIndex: 'storageType'
+    },
+    {
       key: 'cost',
       title: 'Cost',
       dataIndex: 'value',
-      render: (value) => value ? `$${Math.round(value * 100.0) / 100.0}` : null
+      render: (value) => value ? costTickFormatter(value) : null
+    },
+    {
+      key: 'volume',
+      title: 'Volume',
+      dataIndex: 'usage',
+      render: (value) => value ? numberFormatter(value) : null
     },
     {
       key: 'region',
@@ -138,7 +155,7 @@ function renderTable ({storages, discounts: discountsFn, height}) {
       key: 'created',
       title: 'Created date',
       dataIndex: 'created',
-      render: (value) => moment.utc(value).format('DD MMM YYYY')
+      render: (value) => value ? moment.utc(value).format('DD MMM YYYY') : value
     }
   ];
   const dataSource = Object.values(
@@ -196,8 +213,19 @@ function renderTable ({storages, discounts: discountsFn, height}) {
 
 const RenderTable = observer(renderTable);
 
-function StorageReports ({storages, storagesTable, summary, type}) {
-  const getSummaryTitle = () => {
+class StorageReports extends React.Component {
+  state = {
+    dataSampleKey: StorageFilters.value.key
+  };
+
+  onChangeDataSample = (key) => {
+    this.setState({
+      dataSampleKey: key
+    });
+  };
+
+  getSummaryTitle = () => {
+    const {type} = this.props;
     if (/^file$/i.test(type)) {
       return 'File storages usage';
     }
@@ -206,7 +234,9 @@ function StorageReports ({storages, storagesTable, summary, type}) {
     }
     return 'Storages usage';
   };
-  const getTitle = () => {
+
+  getTitle = () => {
+    const {type} = this.props;
     if (/^file$/i.test(type)) {
       return 'File storages';
     }
@@ -215,118 +245,148 @@ function StorageReports ({storages, storagesTable, summary, type}) {
     }
     return 'Storages';
   };
-  const composers = [
-    {
-      composer: ExportComposers.discountsComposer,
-    },
-    {
-      composer: ExportComposers.tableComposer,
-      options: [
-        storages,
-        `${getTitle()} (TOP ${tablePageSize})`,
-        [
-          {
-            key: 'owner',
-            title: 'Owner'
-          },
+
+  render () {
+    const {storages, storagesTable, summary} = this.props;
+    const composers = [
+      {
+        composer: ExportComposers.discountsComposer
+      },
+      {
+        composer: ExportComposers.tableComposer,
+        options: [
+          storages,
+          `${this.getTitle()} (TOP ${tablePageSize})`,
+          [
+            {
+              key: 'owner',
+              title: 'Owner'
+            },
+            {
+              key: 'value',
+              title: 'Cost',
+              applyDiscounts: ({storage}) => storage,
+              formatter: costTickFormatter
+            },
+            {
+              key: 'region',
+              title: 'Region'
+            },
+            {
+              key: 'provider',
+              title: 'Provider'
+            },
+            {
+              key: 'created',
+              title: 'Created date',
+              formatter: displayDate
+            }
+          ],
+          'Storage',
           {
             key: 'value',
-            title: 'Cost',
-            applyDiscounts: ({storage}) => storage,
-            formatter: costTickFormatter
-          },
-          {
-            key: 'region',
-            title: 'Region'
-          },
-          {
-            key: 'provider',
-            title: 'Provider'
-          },
-          {
-            key: 'created',
-            title: 'Created date',
-            formatter: displayDate
+            top: tablePageSize
           }
-        ],
-        'Storage',
-        {
-          key: 'value',
-          top: tablePageSize
-        }
-      ]
-    }
-  ];
-  return (
-    <Discounts.Consumer>
-      {
-        (o, storageDiscounts) => (
-          <Export.Consumer
-            className={styles.chartsContainer}
-            composers={composers}
-          >
-            <Layout
-              layout={StorageReportLayout.Layout}
-              gridStyles={StorageReportLayout.GridStyles}
-            >
-              <div key={StorageReportLayout.Panels.summary}>
-                <Layout.Panel
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    minHeight: 0
-                  }}
-                >
-                  <BillingTable
-                    storages={summary}
-                    storagesDiscounts={storageDiscounts}
-                    showQuota={false}
-                  />
-                  <ResizableContainer style={{flex: 1}}>
-                    {
-                      ({width, height}) => (
-                        <Summary
-                          storages={summary}
-                          storagesDiscounts={storageDiscounts}
-                          quota={false}
-                          title={getSummaryTitle()}
-                          style={{width, height}}
-                        />
-                      )
-                    }
-                  </ResizableContainer>
-                </Layout.Panel>
-              </div>
-              <div key={StorageReportLayout.Panels.storages}>
-                <Layout.Panel>
-                  <ResizableContainer style={{width: '100%', height: '100%'}}>
-                    {
-                      ({height}) => (
-                        <div>
-                          <BarChart
-                            request={storages}
-                            discounts={storageDiscounts}
-                            title={getTitle()}
-                            top={tablePageSize}
-                            style={{height: height / 2.0}}
-                          />
-                          <RenderTable
-                            storages={storagesTable}
-                            discounts={storageDiscounts}
-                            height={height / 2.0}
-                          />
-                        </div>
-                      )
-                    }
-                  </ResizableContainer>
-                </Layout.Panel>
-              </div>
-            </Layout>
-          </Export.Consumer>
-        )
+        ]
       }
-    </Discounts.Consumer>
-  );
+    ];
+    const costsUsageSelectorHeight = 30;
+    return (
+      <Discounts.Consumer>
+        {
+          (o, storageDiscounts) => (
+            <Export.Consumer
+              className={styles.chartsContainer}
+              composers={composers}
+            >
+              <Layout
+                layout={StorageReportLayout.Layout}
+                gridStyles={StorageReportLayout.GridStyles}
+              >
+                <div key={StorageReportLayout.Panels.summary}>
+                  <Layout.Panel
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      minHeight: 0
+                    }}
+                  >
+                    <BillingTable
+                      storages={summary}
+                      storagesDiscounts={storageDiscounts}
+                      showQuota={false}
+                    />
+                    <ResizableContainer style={{flex: 1}}>
+                      {
+                        ({width, height}) => (
+                          <Summary
+                            storages={summary}
+                            storagesDiscounts={storageDiscounts}
+                            quota={false}
+                            title={this.getSummaryTitle()}
+                            style={{width, height}}
+                          />
+                        )
+                      }
+                    </ResizableContainer>
+                  </Layout.Panel>
+                </div>
+                <div key={StorageReportLayout.Panels.storages}>
+                  <Layout.Panel>
+                    <ResizableContainer style={{width: '100%', height: '100%'}}>
+                      {
+                        ({height}) => (
+                          <div>
+                            <div
+                              style={{
+                                display: 'flex',
+                                flexDirection: 'row',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                height: costsUsageSelectorHeight
+                              }}
+                            >
+                              <StorageFilter
+                                onChange={this.onChangeDataSample}
+                                value={this.state.dataSampleKey}
+                              />
+                            </div>
+                            <BarChart
+                              request={storages}
+                              discounts={storageDiscounts}
+                              title={this.getTitle()}
+                              top={tablePageSize}
+                              style={{height: height / 2.0 - costsUsageSelectorHeight}}
+                              dataSample={
+                                StorageFilters[this.state.dataSampleKey].dataSample
+                              }
+                              previousDataSample={
+                                StorageFilters[this.state.dataSampleKey].previousDataSample
+                              }
+                              valueFormatter={
+                                this.state.dataSampleKey === StorageFilters.value.key
+                                  ? costTickFormatter
+                                  : numberFormatter
+                              }
+                            />
+                            <RenderTable
+                              storages={storagesTable}
+                              discounts={storageDiscounts}
+                              height={height / 2.0 - costsUsageSelectorHeight}
+                            />
+                          </div>
+                        )
+                      }
+                    </ResizableContainer>
+                  </Layout.Panel>
+                </div>
+              </Layout>
+            </Export.Consumer>
+          )
+        }
+      </Discounts.Consumer>
+    );
+  }
 }
 
 export default inject(injection)(
