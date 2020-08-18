@@ -19,6 +19,7 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
@@ -172,7 +173,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     .ok();
         }
 
-        public class CreateNotificationPopup extends PopupAO<CreateNotificationPopup, SystemEventsAO> implements AccessObject<CreateNotificationPopup> {
+        public class CreateNotificationPopup extends PopupAO<CreateNotificationPopup, SystemEventsAO> implements AccessObject<CreateNotificationPopup>{
             public final Map<Primitive, SelenideElement> elements = initialiseElements(
                     entry(TITLE, context().find(By.className("edit-notification-form-title-container")).find(byXpath("//label[contains(@title, 'Title')]"))),
                     entry(TITLE_FIELD, context().find(By.className("edit-notification-form-title-container")).find(By.className("ant-input-lg"))),
@@ -407,6 +408,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return new GroupsTabAO(parentAO);
         }
 
+        public RolesTabAO switchToRoles() {
+            click(ROLE_TAB);
+            return new RolesTabAO(parentAO);
+        }
+
         public class UsersTabAO extends SystemEventsAO {
             public final Map<Primitive, SelenideElement> elements = initialiseElements(
                     super.elements(),
@@ -569,6 +575,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                                 .ok();
                         return parentAO;
                     }
+
+                    public EditUserPopup addAllowedLaunchOptions(final String option, final String mask) {
+                        SettingsPageAO.this.addAllowedLaunchOptions(option, mask);
+                        return this;
+                    }
                 }
             }
         }
@@ -670,6 +681,75 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 }
             }
         }
+
+        public class RolesTabAO extends SystemEventsAO {
+            public final Map<Primitive, SelenideElement> elements = initialiseElements(
+                    super.elements(),
+                    entry(TABLE, context().find(byClassName("ant-tabs-tabpane-active"))
+                            .find(byClassName("ant-table-content"))),
+                    entry(SEARCH, context().find(byClassName("ant-input-search")))
+            );
+
+            public RolesTabAO(PipelinesLibraryAO parentAO) {
+                super(parentAO);
+            }
+
+            @Override
+            public Map<Primitive, SelenideElement> elements() {
+                return elements;
+            }
+
+            public RolesTabAO editRoleIfPresent(String role) {
+                sleep(2, SECONDS);
+                performIf(context().$$(byText(role)).filterBy(visible).first().exists(), t -> editRole(role));
+                return this;
+            }
+
+            public EditRolePopup editRole(final String role) {
+                sleep(1, SECONDS);
+                context().$$(byText(role))
+                        .filterBy(visible)
+                        .first()
+                        .closest(".ant-table-row-level-0")
+                        .find(byClassName("ant-btn-sm"))
+                        .click();
+                return new EditRolePopup(this);
+            }
+
+            public RolesTabAO clickSearch() {
+                click(SEARCH);
+                return this;
+            }
+
+            public class EditRolePopup extends PopupAO<EditRolePopup, RolesTabAO>
+                    implements AccessObject<EditRolePopup> {
+                private final RolesTabAO parentAO;
+                public final Map<Primitive, SelenideElement> elements = initialiseElements(
+                        entry(OK, context().find(By.id("close-edit-user-form")))
+                );
+
+                public EditRolePopup(final RolesTabAO parentAO) {
+                    super(parentAO);
+                    this.parentAO = parentAO;
+                }
+
+                @Override
+                public Map<Primitive, SelenideElement> elements() {
+                    return elements;
+                }
+
+                @Override
+                public RolesTabAO ok() {
+                    click(OK);
+                    return parentAO;
+                }
+
+                public EditRolePopup addAllowedLaunchOptions(String option, String mask) {
+                    SettingsPageAO.this.addAllowedLaunchOptions(option, mask);
+                    return this;
+                }
+            }
+        }
     }
 
     public class PreferencesAO extends SettingsPageAO {
@@ -712,6 +792,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public class ClusterTabAO extends PreferencesAO {
 
+            private final By clusterAllowedInstanceTypes = getByClusterField("cluster.allowed.instance.types");
+            private final By clusterAllowedPriceTypes = getByClusterField("cluster.allowed.price.types");
+
             ClusterTabAO(final PipelinesLibraryAO parentAO) {
                 super(parentAO);
             }
@@ -739,6 +822,34 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public String getClusterHddExtraMulti() {
                 return $(clusterHddExtraMulti()).getValue();
+            }
+
+            public PreferencesAO setClusterAllowedInstanceTypes(String value) {
+                return setClusterValue(clusterAllowedInstanceTypes, value);
+            }
+
+            public PreferencesAO setClusterAllowedPriceTypes(String value) {
+                return setClusterValue(clusterAllowedPriceTypes, value);
+            }
+
+            private By getByClusterField(final String variable) {
+                return new By() {
+                    @Override
+                    public List<WebElement> findElements(final SearchContext context) {
+                        return $$(byClassName("preference-group__preference-row"))
+                                .stream()
+                                .filter(element -> exactText(variable).apply(element))
+                                .map(e -> e.find(".ant-input-sm"))
+                                .collect(toList());
+                    }
+                };
+            }
+
+            private ClusterTabAO setClusterValue(final By clusterVariable, final String value) {
+                click(clusterVariable);
+                clear(clusterVariable);
+                setValue(clusterVariable, value);
+                return this;
             }
 
             @Override
@@ -1009,5 +1120,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         private String getMessage(final SelenideElement element) {
             return element.findAll("td").get(2).getText();
         }
+    }
+
+    private void addAllowedLaunchOptions(final String option, final String mask) {
+        final By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
+        if (StringUtils.isBlank(mask)) {
+            clear(optionField);
+            return;
+        }
+        setValue(optionField, mask);
     }
 }

@@ -41,6 +41,7 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
+import static com.epam.pipeline.autotests.ao.Primitive.DOCKER_IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.EDIT;
 import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
@@ -61,7 +62,6 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.settingsButton
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.Objects.isNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertTrue;
 
 public class Configuration implements AccessObject<Configuration> {
 
@@ -159,7 +159,8 @@ public class Configuration implements AccessObject<Configuration> {
                 entry(SAVE, context().find(byId("save-pipeline-configuration-button"))),
                 entry(RUN, context().find(byId("run-configuration-button"))),
                 entry(ADD, context().find(byId("add-configuration-button"))),
-                entry(ADD_PARAMETER, context().find(byId("add-parameter-button")))
+                entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
+                entry(DOCKER_IMAGE, context().find(inputOf(fieldWithLabel("Docker image"))))
         );
     }
 

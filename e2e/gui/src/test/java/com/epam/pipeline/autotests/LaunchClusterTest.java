@@ -46,6 +46,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.ao.Primitive.TYPE;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest implements Authorization {
@@ -59,7 +60,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     private final String instanceFamilyName = C.DEFAULT_INSTANCE_FAMILY_NAME;
     private final String gridEngineAutoscalingTask = "GridEngineAutoscaling";
     private final String spotPrice = C.SPOT_PRICE_NAME;
-    private final String onDemandPrice = "On-demand";
+    private final String onDemandPrice = ON_DEMAND;
     private final String mastersConfigPrice = "Master's config";
     private final String sleepCommand = "sleep";
 

@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
 import com.epam.pipeline.autotests.AbstractSinglePipelineRunningTest;
@@ -32,9 +33,11 @@ import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static java.lang.String.format;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.tagName;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
@@ -135,6 +138,21 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
+    public PipelineRunFormAO ensurePriceTypeList(String... priceTypes) {
+        click(PRICE_TYPE);
+        context().find(byClassName("ant-select-dropdown")).shouldBe(visible);
+        ElementsCollection list = context().find(byClassName("ant-select-dropdown-menu")).$$("li");
+        assertEquals(priceTypes.length, list.size(), format("Expected: %d Actual: %d", priceTypes.length, list.size()));
+        Arrays.stream(priceTypes).forEach(this::checkPriceTypeInList);
+        return this;
+    }
+
+    private void checkPriceTypeInList(String priceType) {
+        context().find(PipelineSelectors.visible(byClassName("ant-select-dropdown")))
+                .find(byText(priceType))
+                .shouldBe(visible);
+    }
+
     public ConfigureClusterPopupAO enableClusterLaunch() {
         click(LAUNCH_CLUSTER);
         return new ConfigureClusterPopupAO(this);
@@ -232,7 +250,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public PipelineRunFormAO validateThereIsParameterOfType(String name, String value, ParameterType type, boolean required) {
         final String parameterNameClass = "launch-pipeline-form__parameter-name";
-        final SelenideElement nameElement = $(byXpath(String.format(
+        final SelenideElement nameElement = $(byXpath(format(
             ".//input[contains(concat(' ', @class, ' '), ' %s ') and @value = '%s']",
             parameterNameClass, name
         )));
@@ -310,9 +328,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO inputSystemParameterValue(String parameter, String value) {
-        String inputFieldID = $(byXpath(String.format("//input[@value='%s']", parameter))).attr("id")
+        String inputFieldID = $(byXpath(format("//input[@value='%s']", parameter))).attr("id")
                 .replace(".name", ".value");
-        $(byXpath(String.format("//input[@id='%s']", inputFieldID))).shouldBe(enabled).setValue(value);
+        $(byXpath(format("//input[@id='%s']", inputFieldID))).shouldBe(enabled).setValue(value);
         return this;
     }
 
@@ -387,7 +405,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             if (type.equals("Single node") || type.equals("Cluster") || type.equals("Auto-scaled cluster")) {
                 context()
                         .find(byXpath(
-                                String.format(".//*[contains(@class, 'ant-radio-button-wrapper') and .//text()='%s']", type)))
+                                format(".//*[contains(@class, 'ant-radio-button-wrapper') and .//text()='%s']", type)))
                         .click();
             } else {
                 fail("Wrong type of cluster was selected");
@@ -427,7 +445,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                     || checkBox.equals("Enable Slurm")) {
                 context()
                         .find(byXpath(
-                                String.format(".//span[.='%s']/preceding-sibling::span[@class='ant-checkbox']", checkBox)))
+                                format(".//span[.='%s']/preceding-sibling::span[@class='ant-checkbox']", checkBox)))
                         .click();
             } else {
                 fail("Wrong checkbox name was selected");
