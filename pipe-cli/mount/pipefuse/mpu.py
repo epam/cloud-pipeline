@@ -20,6 +20,12 @@ import intervals
 from fuseutils import MB, GB
 
 
+class UnmanageableMultipartUploadException(RuntimeError):
+
+    def __init__(self, *args):
+        super(UnmanageableMultipartUploadException, self).__init__(*args)
+
+
 class MultipartUpload:
     __metaclass__ = ABCMeta
 
@@ -75,6 +81,31 @@ class MultipartUploadDecorator(MultipartUpload):
 
 
 class _PartialChunk:
+    __metaclass__ = ABCMeta
+
+    @property
+    @abstractmethod
+    def offset(self):
+        pass
+
+    @abstractmethod
+    def append(self, offset, buf):
+        pass
+
+    @abstractmethod
+    def is_full(self):
+        pass
+
+    @abstractmethod
+    def missing_intervals(self):
+        pass
+
+    @abstractmethod
+    def collect(self):
+        pass
+
+
+class _IncompletePartialChunk(_PartialChunk):
 
     def __init__(self, offset, size):
         self._offset = offset
@@ -104,6 +135,28 @@ class _PartialChunk:
 
     def collect(self):
         return self._buf[:self._interval.upper]
+
+
+class _CompletePartialChunk(_PartialChunk):
+
+    def __init__(self, offset):
+        self._offset = offset
+
+    @property
+    def offset(self):
+        return self._offset
+
+    def append(self, offset, buf):
+        pass
+
+    def is_full(self):
+        return True
+
+    def missing_intervals(self):
+        return []
+
+    def collect(self):
+        return bytearray(0)
 
 
 class ChunkedMultipartUpload(MultipartUploadDecorator):
@@ -146,16 +199,20 @@ class ChunkedMultipartUpload(MultipartUploadDecorator):
             if chunk_shift or buf_shift + self._chunk_size - chunk_shift > len(buf):
                 partial_chunk = self._partial_chunks.get(chunk, None)
                 if not partial_chunk:
-                    partial_chunk = _PartialChunk(chunk_offset, self._chunk_size)
+                    partial_chunk = _IncompletePartialChunk(chunk_offset, self._chunk_size)
                     self._partial_chunks[chunk] = partial_chunk
+                if partial_chunk.is_full():
+                    raise UnmanageableMultipartUploadException(
+                        'Multipart upload chunk %s cannot be reuploaded for %s.' % (chunk, self.path))
                 partial_chunk.append(chunk_shift, buf[buf_shift:buf_shift + self._chunk_size - chunk_shift])
                 if partial_chunk.is_full():
                     self._mpu.upload_part(partial_chunk.collect(), partial_chunk.offset, chunk)
-                    del self._partial_chunks[chunk]
+                    self._partial_chunks[chunk] = _CompletePartialChunk(partial_chunk.offset)
             else:
                 chunk_buf = bytearray(self._chunk_size)
                 chunk_buf[chunk_shift:self._chunk_size] = buf[buf_shift:buf_shift + self._chunk_size]
                 self._mpu.upload_part(chunk_buf, chunk_offset, chunk)
+                self._partial_chunks[chunk] = _CompletePartialChunk(chunk_offset)
             buf_shift += self._chunk_size - chunk_shift
             self._chunks.add(chunk)
             chunk += 1
@@ -191,6 +248,8 @@ class ChunkedMultipartUpload(MultipartUploadDecorator):
         if last_chunk_end < self._original_size:
             self._mpu.upload_copy_part(last_chunk_end, self._original_size, last_chunk_end, last_missing_chunk)
         for chunk_number, partial_chunk in self._partial_chunks.items():
+            if partial_chunk.is_full():
+                continue
             for missing_start, missing_end in partial_chunk.missing_intervals():
                 actual_start = missing_start + partial_chunk.offset
                 actual_end = min(missing_end + partial_chunk.offset, self._original_size)
