@@ -93,18 +93,21 @@ function RenderUserName ({user, myUserName}) {
   if (!user) {
     return null;
   }
+  const you = user.userName === myUserName
+    ? (<b>{' (you)'}</b>)
+    : undefined;
   if (user.attributesValues) {
     const attributesString = (user.attributesValues || []).join(', ');
     return (
       <Row type="flex" style={{flexDirection: 'column'}}>
-        <Row>{user.userName}{user.userName === myUserName ? <b> (you)</b> : undefined}</Row>
+        <Row>{user.userName}{you}</Row>
         <Row><span style={{fontSize: 'smaller'}}>{attributesString}</span></Row>
       </Row>
     );
   }
   return (
     <span>
-      {user.userName}{user.userName === myUserName ? <b> (you)</b> : undefined}
+      {user.userName}{you}
     </span>
   );
 }
@@ -361,7 +364,7 @@ class RunnerFilter extends React.Component {
         dropdownMatchSelectWidth={false}
         className={styles.runnerSelect}
         dropdownClassName={styles.dropdown}
-        style={{width: 200}}
+        style={{width: 185}}
         placeholder="All users / groups"
         notFoundContent={
           searchCriteria ? 'Not found' : 'Specify user or billing center name'

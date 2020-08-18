@@ -21,6 +21,7 @@ import ReportsRouting from './reports-routing';
 
 class Filter {
   static RUNNER_SEPARATOR = '|';
+  static REGION_SEPARATOR = '|';
   @observable period;
   @observable range;
   @observable report;
@@ -32,7 +33,8 @@ class Filter {
       period = Period.month,
       user,
       group,
-      range
+      range,
+      region
     } = (location || {}).query || {};
     if (user) {
       this.runner = {
@@ -50,10 +52,11 @@ class Filter {
     this.report = ReportsRouting.parse(location);
     this.period = period;
     this.range = range;
+    this.region = (region || '').split(Filter.REGION_SEPARATOR).filter(Boolean);
   };
 
   navigate = (navigation, strictRange = false) => {
-    let {report, runner, period, range} = navigation || {};
+    let {report, runner, period, range, region} = navigation || {};
     if (report === undefined) {
       report = this.report;
     }
@@ -66,9 +69,19 @@ class Filter {
     if (range === undefined && !strictRange) {
       range = this.range;
     }
+    if (region === undefined) {
+      region = this.region;
+    }
+    const regions = (region || []);
     const mapRunnerId = (id) => {
       if (id && (Array.isArray(id) || isObservableArray(id))) {
         return id.join(Filter.RUNNER_SEPARATOR);
+      }
+      return id;
+    };
+    const mapRegionId = (id) => {
+      if (id && (Array.isArray(id) || isObservableArray(id))) {
+        return id.join(Filter.REGION_SEPARATOR);
       }
       return id;
     };
@@ -76,7 +89,8 @@ class Filter {
       runner && runner.type === RunnerType.user && `user=${mapRunnerId(runner.id)}`,
       runner && runner.type === RunnerType.group && `group=${mapRunnerId(runner.id)}`,
       period && `period=${period}`,
-      range && `range=${range}`
+      range && `range=${range}`,
+      regions.length > 0 && `region=${mapRegionId(regions)}`
     ].filter(Boolean);
     let query = '';
     if (params.length) {

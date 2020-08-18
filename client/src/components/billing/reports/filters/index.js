@@ -22,6 +22,7 @@ import FilterStore from './filter-store';
 import PeriodFilter from './period-filter';
 import ReportFilter from './report-filter';
 import RunnerFilter, {RunnerType} from './runner-filter';
+import ProviderFilter from './provider-filter';
 import reportsRouting from './reports-routing';
 import Divider from './divider';
 import {RestoreButton} from '../layout';
@@ -82,6 +83,11 @@ class Filters extends React.Component {
               filter={this.filterStore.runner}
               onChange={this.filterStore.buildNavigationFn('runner')}
             />
+            <Divider />
+            <ProviderFilter
+              filter={this.filterStore.region}
+              onChange={this.filterStore.buildNavigationFn('region')}
+            />
             <div className={styles.actionsBlock}>
               <Discounts.Button className={styles.discountsButton} />
               <RestoreButton className={styles.restoreLayoutButton} />
@@ -104,6 +110,7 @@ class Filters extends React.Component {
 }
 
 const RUNNER_SEPARATOR = FilterStore.RUNNER_SEPARATOR;
+const REGION_SEPARATOR = FilterStore.REGION_SEPARATOR;
 
-export {RUNNER_SEPARATOR};
+export {RUNNER_SEPARATOR, REGION_SEPARATOR};
 export default inject('users')(observer(Filters));

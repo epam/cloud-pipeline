@@ -27,7 +27,7 @@ import {
   Summary
 } from './charts';
 import {DisplayUser, ResizableContainer} from './utilities';
-import Filters, {RUNNER_SEPARATOR} from './filters';
+import Filters, {RUNNER_SEPARATOR, REGION_SEPARATOR} from './filters';
 import {Period, getPeriod} from './periods';
 import Export, {ExportComposers} from './export';
 import Discounts, {discounts} from './discounts';
@@ -52,15 +52,18 @@ function injection (stores, props) {
     user: userQ,
     group: groupQ,
     period = Period.month,
-    range
+    range,
+    region: regionQ
   } = location.query;
   const periodInfo = getPeriod(period, range);
   const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
   const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
+  const cloudRegionId = regionQ && regionQ.length ? regionQ.split(REGION_SEPARATOR) : undefined;
   const filters = {
     group,
     user,
     type,
+    cloudRegionId,
     ...periodInfo
   };
   let filterBy = GetBillingData.FILTER_BY.storages;
