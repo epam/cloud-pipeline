@@ -73,9 +73,9 @@ requests_log.propagate = True
 def connection_inspector(connection):
     sock = connection.sock
     sock_connection = sock.connection
-    print('Protocol version: %s' % sock_connection.get_protocol_version_name())
-    print('Cipher is %s/%s' % (sock_connection.get_cipher_name(), sock_connection.get_cipher_version()))
-    print('Remote certificate: %s' % sock.getpeercert())
+    click.echo('Protocol version: %s' % sock_connection.get_protocol_version_name())
+    click.echo('Cipher is %s/%s' % (sock_connection.get_cipher_name(), sock_connection.get_cipher_version()))
+    click.echo('Remote certificate: %s' % sock.getpeercert())
 
 
 class GsProgressPercentage(ProgressPercentage):
