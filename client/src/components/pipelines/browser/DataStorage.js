@@ -87,9 +87,14 @@ const PAGE_SIZE = 40;
     onReloadTree,
     dataStorageCache,
     storageId: params.id,
-    path: queryParameters.path,
+    path: decodeURIComponent(queryParameters.path || ''),
     showVersions: showVersions,
-    storage: new DataStorageRequest(params.id, queryParameters.path, showVersions, PAGE_SIZE),
+    storage: new DataStorageRequest(
+      params.id,
+      decodeURIComponent(queryParameters.path || ''),
+      showVersions,
+      PAGE_SIZE
+    ),
     info: dataStorages.load(params.id),
     dataStorages,
     pipelinesLibrary,
@@ -419,7 +424,7 @@ export default class DataStorage extends React.Component {
     }
     const payload = [{
       oldPath: this.state.renameItem.path,
-      path: decodeURIComponent(`${path}${name}`),
+      path: `${path}${name}`,
       type: this.state.renameItem.type,
       action: 'Move'
     }];
@@ -461,7 +466,7 @@ export default class DataStorage extends React.Component {
       path += '/';
     }
     const payload = [{
-      path: decodeURIComponent(`${path}${trimmedName}`),
+      path: `${path}${trimmedName}`,
       type: 'Folder',
       action: 'Create'
     }];
@@ -484,7 +489,7 @@ export default class DataStorage extends React.Component {
       path += '/';
     }
     const payload = [{
-      path: decodeURIComponent(`${path}${trimmedName}`),
+      path: `${path}${trimmedName}`,
       type: 'File',
       contents: content ? btoa(content) : '',
       action: 'Create'
@@ -1118,7 +1123,7 @@ export default class DataStorage extends React.Component {
 
   showFilesVersionsChanged = (e) => {
     if (this.props.path) {
-      this.props.router.push(`/storage/${this.props.storageId}?path=${this.props.path}&versions=${e.target.checked}`);
+      this.props.router.push(`/storage/${this.props.storageId}?path=${encodeURIComponent(this.props.path)}&versions=${e.target.checked}`);
     } else {
       this.props.router.push(`/storage/${this.props.storageId}?versions=${e.target.checked}`);
     }
@@ -1293,7 +1298,12 @@ export default class DataStorage extends React.Component {
                     // synchronous
                     uploadToS3={this.props.info.value.type === 'S3'}
                     uploadToNFS={this.props.info.value.type === 'NFS'}
-                    action={DataStorageItemUpdate.uploadUrl(this.props.storageId, this.props.path)}
+                    action={
+                      DataStorageItemUpdate.uploadUrl(
+                        this.props.storageId,
+                        this.props.path
+                      )
+                    }
                   />
                 )
               }

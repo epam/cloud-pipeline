@@ -46,12 +46,10 @@ class DataStoragePage extends Remote {
 
   buildUrl () {
     const query = [
-      !!this.path &&
-        `path=${isEncodedString(this.path) ? this.path : encodeURIComponent(this.path)}`,
+      !!this.path && `path=${encodeURIComponent(this.path)}`,
       `showVersion=${!!this.showVersion}`,
       `pageSize=${this.pageSize}`,
-      !!this.marker &&
-        `marker=${isEncodedString(this.marker) ? this.marker : encodeURIComponent(this.marker)}`
+      !!this.marker && `marker=${encodeURIComponent(this.marker)}`
     ]
       .filter(Boolean)
       .join('&');
