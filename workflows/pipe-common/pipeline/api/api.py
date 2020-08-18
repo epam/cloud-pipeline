@@ -334,14 +334,11 @@ class PipelineAPI:
         url = self.GET_TASK_URL.format(run_id, task_name)
         if parameters:
             url += "&parameters={}".format(parameters)
-        result = requests.get(str(self.api_url) + url, headers=self.header, verify=False)
-        if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
-            raise RuntimeError('Failed to load task {}. API response: {}'.format(run_id, result.json()['message']))
-        if 'payload' in result.json():
-            return result.json()['payload']
-        else:
-            return None
-
+        try:
+            return self.execute_request(str(self.api_url) + url)
+        except Exception as e:
+            raise RuntimeError("Failed to load task {}. API response: {}".format(run_id, str(e.message)))
+    
     def launch_pipeline(self, pipeline_id, pipeline_version, parameters,
                         cmd=None, docker=None, instance=None, disk=None, parent_node_id=None, parent_run_id=None):
         request = {'pipelineId': pipeline_id, 'version': pipeline_version, 'params': parameters}
