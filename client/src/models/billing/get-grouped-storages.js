@@ -16,6 +16,7 @@ export class GetGroupedStorages extends BaseBillingRequest {
 
   prepareStoragesData (raw) {
     const res = {};
+    const GB = 1024 * 1024 * 1024;
 
     (raw && raw.length ? raw : []).forEach(i => {
       let name = i.info && i.info.name ? i.info.name : i.groupingInfo.STORAGE;
@@ -27,6 +28,9 @@ export class GetGroupedStorages extends BaseBillingRequest {
           region: i.groupingInfo.region,
           provider: i.groupingInfo.provider,
           value: isNaN(i.cost) ? 0 : costMapper(i.cost),
+          usage: isNaN(i.groupingInfo.usage_storages)
+            ? 0
+            : Math.floor(+(i.groupingInfo.usage_storages) / GB * 100) / 100.0,
           ...i
         };
       }
