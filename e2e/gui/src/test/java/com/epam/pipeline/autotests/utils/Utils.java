@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,7 @@ import static org.testng.Assert.assertTrue;
 public class Utils {
 
     public static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
+    public static final String ON_DEMAND = "On-demand";
 
     public static void assertTimePassed(String dateAndTimeString, int maxSeconds) {
         LocalDateTime runDateTime = validateDateTimeString(dateAndTimeString);
@@ -341,14 +342,13 @@ public class Utils {
         return context.find(withText(label)).closest(".ant-row");
     }
 
-    public static String convertRGBColorToHex(String folderBackgroundСolor) {
-        String[] RGB = folderBackgroundСolor.split(", ");
+    public static String convertRGBColorToHex(String folderBackgroundColor) {
+        String[] RGB = folderBackgroundColor.split(", ");
         Color color = new Color(
-                Integer.valueOf(RGB[0].substring(RGB[0].indexOf("(") + 1)),
-                Integer.valueOf(RGB[1]),
-                Integer.valueOf(RGB[2]));
-        String hex = "#" + Integer.toHexString(color.getRGB()).substring(2);
-        return hex;
+                Integer.parseInt(RGB[0].substring(RGB[0].indexOf("(") + 1)),
+                Integer.parseInt(RGB[1]),
+                Integer.parseInt(RGB[2]));
+        return String.format("#%s", Integer.toHexString(color.getRGB()).substring(2));
     }
 
     /**
@@ -380,11 +380,5 @@ public class Utils {
     public static void restartBrowser(final String address) {
         Selenide.close();
         Selenide.open(address);
-    }
-
-    public static void clearField(By field) {
-        $(field).click();
-        $(field).sendKeys(Keys.chord(Keys.CONTROL, "a"));
-        $(field).sendKeys(Keys.DELETE);
     }
 }

@@ -52,6 +52,9 @@ import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
 import com.epam.pipeline.autotests.ao.ToolDescription.InstanceManagementSectionAO;
+
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
@@ -156,7 +159,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     @TestCase({"EPMCMBIBPC-2638"})
     public void validationOfInstanceTypesRestrictionsExistingObjects() {
         loginAs(admin);
-        setMaskForUser(user.login, instanceTypesMask, String.format("%s.*", instanceFamilyName));
+        setMaskForUser(user.login, instanceTypesMask, format("%s.*", instanceFamilyName));
         logout();
         loginAs(user);
         library()
@@ -189,7 +192,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     @TestCase({"EPMCMBIBPC-2639"})
     public void validationOfInstanceTypesRestrictionsCreatingObjects() {
         loginAs(admin);
-        setMaskForUser(user.login, instanceTypesMask, String.format("%s.*", instanceFamilyName));
+        setMaskForUser(user.login, instanceTypesMask, format("%s.*", instanceFamilyName));
         logout();
         loginAs(user);
         library()
@@ -219,7 +222,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     @TestCase({"EPMCMBIBPC-2640"})
     public void validationOfInstanceTypesRestrictionsForUserGroup() {
         loginAs(admin);
-        setMaskForRole(testRole, instanceTypesMask, String.format("%s.*", instanceFamilyName));
+        setMaskForRole(testRole, instanceTypesMask, format("%s.*", instanceFamilyName));
         logout();
         validationOfInstanceTypesRestrictionsExistingObjects();
         logout();
@@ -243,7 +246,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         tools()
                 .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
                 .expandTab(ADVANCED_PANEL)
-                .ensurePriceTypeList("On-demand");
+                .ensurePriceTypeList(ON_DEMAND);
         logout();
         loginAs(user);
         tools()
@@ -255,14 +258,14 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         tools()
                 .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
                 .expandTab(ADVANCED_PANEL)
-                .ensurePriceTypeList("On-demand");
+                .ensurePriceTypeList(ON_DEMAND);
     }
 
     @Test(priority = 20)
     @TestCase({"EPMCMBIBPC-2641"})
     public void validationOfToolsInstanceTypesRestrictionsOverUserManagement() {
         loginAs(admin);
-        setMaskForUser(user.login, toolInstanceTypesMask, String.format("%s.*", instanceFamilyName));
+        setMaskForUser(user.login, toolInstanceTypesMask, format("%s.*", instanceFamilyName));
         logout();
         loginAs(user);
         tools()
@@ -275,7 +278,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     @TestCase({"EPMCMBIBPC-2643"})
     public void validationOfToolsInstanceTypesRestrictionsForUserGroup() {
         loginAs(admin);
-        setMaskForRole(testRole, toolInstanceTypesMask, String.format("%s.*", instanceFamilyName));
+        setMaskForRole(testRole, toolInstanceTypesMask, format("%s.*", instanceFamilyName));
         logout();
         loginAs(user);
         tools()

@@ -19,7 +19,6 @@ import com.codeborne.selenide.SelenideElement;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.appears;
@@ -33,6 +32,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.attributesMenu;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.showAttributes;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.showInstanceManagement;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ToolDescription extends ToolTab<ToolDescription> {
@@ -68,37 +68,20 @@ public class ToolDescription extends ToolTab<ToolDescription> {
     }
 
     public ToolDescription showMetadata(final Consumer<MetadataSectionAO> action) {
-        hover(SHOW_METADATA);
-        ensure(attributesMenu, appears);
-        performIf(showAttributes, visible,
-                page -> click(showAttributes),
-                page -> resetMouse()
-        );
-        MetadataSectionAO metadata = new MetadataSectionAO(this);
-        action.accept(metadata);
+        showMetadata(showAttributes);
+        action.accept(new MetadataSectionAO(this));
         return this;
     }
 
     public ToolDescription showInstanceManagement(final Consumer<InstanceManagementSectionAO> action) {
-        hover(SHOW_METADATA);
-        ensure(attributesMenu, appears);
-        performIf(showAttributes, visible,
-                page -> click(showInstanceManagement),
-                page -> resetMouse()
-        );
-        InstanceManagementSectionAO instanceManagement = new InstanceManagementSectionAO(this);
-        action.accept(instanceManagement);
+        showMetadata(showInstanceManagement);
+        action.accept(new InstanceManagementSectionAO(this));
         return this;
     }
 
     public PermissionTabAO permissions() {
         hover(TOOL_SETTINGS).click(PERMISSIONS);
-        return new PermissionTabAO(new ClosableAO() {
-            @Override
-            public void closeAll() {
-                $(byClassName("ant-modal-close-x")).shouldBe(visible).click();
-            }
-        });
+        return new PermissionTabAO(() -> $(byClassName("ant-modal-close-x")).shouldBe(visible).click());
     }
 
     public static By editButtonFor(final Primitive primitive) {
@@ -108,8 +91,17 @@ public class ToolDescription extends ToolTab<ToolDescription> {
             case FULL_DESCRIPTION:
                 return byId("description-edit-button");
             default:
-                throw new RuntimeException(String.format("There is no edit button for %s.", primitive));
+                throw new IllegalArgumentException(format("There is no edit button for %s.", primitive));
         }
+    }
+
+    private void showMetadata(final By attribute) {
+        hover(SHOW_METADATA);
+        ensure(attributesMenu, appears);
+        performIf(showAttributes, visible,
+                page -> click(attribute),
+                page -> resetMouse()
+        );
     }
 
     @Override
@@ -121,19 +113,11 @@ public class ToolDescription extends ToolTab<ToolDescription> {
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
                 entry(APPLY, $(byXpath("//button[.='APPLY']"))),
                 entry(PRICE_TYPE, context().find(byXpath(
-                        String.format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
+                        format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
         );
 
         public InstanceManagementSectionAO(AccessObject parentAO) {
             super(parentAO);
-        }
-
-        public InstanceManagementSectionAO addAllowedLaunchOption(String option, String mask) {
-            By optionField = byXpath(String.format("//div/b[text()='%s']/following::div/input", option));
-            if(mask.equals("")) {
-                Utils.clearField(optionField);}
-            else {setValue(optionField, mask);}
-            return this;
         }
 
         public InstanceManagementSectionAO setPriceType(final String priceType) {
@@ -147,11 +131,13 @@ public class ToolDescription extends ToolTab<ToolDescription> {
         public InstanceManagementSectionAO clearAllowedPriceTypeField() {
             ensureVisible(PRICE_TYPE);
             SelenideElement type = context().$(byClassName("ant-select-selection__choice__remove"));
-            while(type.isDisplayed()) {
+            while (type.isDisplayed()) {
                 type.click();
                 sleep(1, SECONDS);
             }
-            if(get(APPLY).isEnabled()) {clickApply();}
+            if (get(APPLY).isEnabled()) {
+                clickApply();
+            }
             return this;
         }
 
@@ -164,6 +150,5 @@ public class ToolDescription extends ToolTab<ToolDescription> {
         public Map<Primitive, SelenideElement> elements() {
             return elements;
         }
-
     }
 }

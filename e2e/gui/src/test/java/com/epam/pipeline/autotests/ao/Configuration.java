@@ -62,7 +62,6 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.settingsButton
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.Objects.isNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertTrue;
 
 public class Configuration implements AccessObject<Configuration> {
 

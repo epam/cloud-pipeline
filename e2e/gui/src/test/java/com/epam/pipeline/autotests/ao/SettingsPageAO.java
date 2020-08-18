@@ -19,6 +19,7 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
@@ -575,8 +576,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         return parentAO;
                     }
 
-                    public EditUserPopup addAllowedLaunchOptions(String option, String mask) {
-                        setValue($(byXpath(format("//div/b[text()='%s']/following::div/input", option))), mask);
+                    public EditUserPopup addAllowedLaunchOptions(final String option, final String mask) {
+                        SettingsPageAO.this.addAllowedLaunchOptions(option, mask);
                         return this;
                     }
                 }
@@ -744,10 +745,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 }
 
                 public EditRolePopup addAllowedLaunchOptions(String option, String mask) {
-                    By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
-                    if(mask.equals("")) {
-                        Utils.clearField(optionField);}
-                    else {setValue(optionField, mask);}
+                    SettingsPageAO.this.addAllowedLaunchOptions(option, mask);
                     return this;
                 }
             }
@@ -1124,4 +1122,12 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
     }
 
+    private void addAllowedLaunchOptions(final String option, final String mask) {
+        final By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
+        if (StringUtils.isBlank(mask)) {
+            clear(optionField);
+            return;
+        }
+        setValue(optionField, mask);
+    }
 }

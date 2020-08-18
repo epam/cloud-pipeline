@@ -16,8 +16,6 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.LogAO;
-import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
-import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -46,13 +44,13 @@ import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.NodePage.labelWithType;
 import static com.epam.pipeline.autotests.ao.NodePage.mainInfo;
 import static com.epam.pipeline.autotests.ao.Primitive.ENDPOINT;
-import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.PAUSE;
 import static com.epam.pipeline.autotests.ao.Primitive.SSH_LINK;
 import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import static com.epam.pipeline.autotests.utils.Conditions.textMatches;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.tabWithName;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -67,7 +65,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     private final String testFileContent = "test";
     private final String ipField = "IP";
     private final String instanceType = C.DEFAULT_INSTANCE;
-    private final String priceType = "On-demand";
+    private final String priceType = ON_DEMAND;
     private final String pauseTask = "PausePipelineRun";
 
     private String endpoint;
