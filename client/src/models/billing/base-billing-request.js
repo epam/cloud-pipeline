@@ -64,6 +64,9 @@ export default class BaseBillingRequest extends RemotePost {
         ? this.filters.group
         : [this.filters.group];
     }
+    if (this.filters && this.filters.cloudRegionId) {
+      this.body.filters.cloudRegionId = this.filters.cloudRegionId.slice();
+    }
     if (this.loadDetails) {
       this.body.loadDetails = true;
     }

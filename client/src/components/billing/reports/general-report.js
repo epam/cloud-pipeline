@@ -26,7 +26,7 @@ import {
   Summary
 } from './charts';
 import {Period, getPeriod} from './periods';
-import Filters, {RUNNER_SEPARATOR} from './filters';
+import Filters, {RUNNER_SEPARATOR, REGION_SEPARATOR} from './filters';
 import {
   GetBillingData,
   GetGroupedBillingCenters,
@@ -51,16 +51,19 @@ function injection (stores, props) {
     user: userQ,
     group: groupQ,
     period = Period.month,
-    range
+    range,
+    region: regionQ
   } = location.query;
   const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
   const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
+  const cloudRegionId = regionQ && regionQ.length ? regionQ.split(REGION_SEPARATOR) : undefined;
   const periodInfo = getPeriod(period, range);
   const prevPeriodInfo = getPeriod(period, periodInfo.before);
   const prevPrevPeriodInfo = getPeriod(period, prevPeriodInfo.before);
   const filters = {
     group,
     user,
+    cloudRegionId,
     ...periodInfo
   };
   const billingCentersStorageRequest = new GetGroupedBillingCentersWithPrevious(
