@@ -22,7 +22,9 @@ import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -209,11 +211,17 @@ public class BillingManager {
 
     private void setAuthorizationFilters(final Map<String, List<String>> filters) {
         final PipelineUser authorizedUser = authManager.getCurrentUser();
-        if (authorizedUser.isAdmin()) {
-            return;
+        if (!hasFullBillingAccess(authorizedUser)) {
+            filters.put("owner", Collections.singletonList(authorizedUser.getUserName()));
+            filters.put("groups", authorizedUser.getGroups());
         }
-        filters.put("owner", Collections.singletonList(authorizedUser.getUserName()));
-        filters.put("groups", authorizedUser.getGroups());
+    }
+
+    private boolean hasFullBillingAccess(final PipelineUser authorizedUser) {
+        return authorizedUser.isAdmin()
+               || authorizedUser.getRoles().stream()
+                   .map(Role::getName)
+                   .anyMatch(DefaultRoles.ROLE_BILLING_MANAGER.getName()::equals);
     }
 
     private List<BillingChartInfo> getBillingStats(final RestHighLevelClient elasticsearchClient,
