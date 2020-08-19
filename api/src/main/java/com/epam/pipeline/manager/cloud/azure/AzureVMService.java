@@ -96,7 +96,7 @@ public class AzureVMService {
     public AzureVirtualMachineStats getRunningVMByRunId(final AzureRegion region, final String tagValue) {
         final AzureVirtualMachineStats virtualMachine = getVMStatsByTag(region, tagValue);
         final PowerState powerState = virtualMachine.getPowerState();
-        if (powerState != null && !powerState.equals(PowerState.RUNNING) && !powerState.equals(PowerState.STARTING)) {
+        if (powerState == null || (!powerState.equals(PowerState.RUNNING) && !powerState.equals(PowerState.STARTING))) {
             throw new AzureException(messageHelper.getMessage(
                     MessageConstants.ERROR_AZURE_INSTANCE_NOT_RUNNING, tagValue, powerState));
         }
