@@ -213,7 +213,6 @@ public class BillingManager {
         final PipelineUser authorizedUser = authManager.getCurrentUser();
         if (!hasFullBillingAccess(authorizedUser)) {
             filters.put("owner", Collections.singletonList(authorizedUser.getUserName()));
-            filters.put("groups", authorizedUser.getGroups());
         }
     }
 
