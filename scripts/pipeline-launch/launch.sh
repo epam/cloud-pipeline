@@ -1332,6 +1332,7 @@ for var in $(compgen -e)
 do
 	if    [ ${#var} -lt 2 ] || \
             [[ "$var" == "SECURE_ENV_VARS" ]] || \
+            [[ "$var" == "RESUMED_RUN" ]] || \
             [[ "$var" == "KUBERNETES_"* ]] || \
             [[ "$var" == "EDGE_SERVICE_"* ]] || \
             [[ "$var" == "HOME" ]] || \
