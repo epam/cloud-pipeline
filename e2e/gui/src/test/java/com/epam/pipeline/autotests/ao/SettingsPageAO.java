@@ -611,6 +611,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public GroupsTabAO deleteGroupIfPresent(String group) {
                 sleep(2, SECONDS);
+                searchGroupBySubstring(group);
                 performIf(context().$$(byText(group)).filterBy(visible).first().exists(), t -> deleteGroup(group));
                 return this;
             }
@@ -1125,7 +1126,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     private void addAllowedLaunchOptions(final String option, final String mask) {
         final By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
         if (StringUtils.isBlank(mask)) {
-            clear(optionField);
+            clearByKey(optionField);
             return;
         }
         setValue(optionField, mask);

@@ -136,6 +136,7 @@ public class DetachedConfigurationsTest
             .configurationTab()
             .createConfiguration(pipelineCustomProfile)
             .createConfiguration(pipelineProfile1611)
+            .sleep(1, SECONDS)
             .editConfiguration(pipelineCustomProfile, profile ->
                 profile.expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                     .setValue(DISK, customDisk)

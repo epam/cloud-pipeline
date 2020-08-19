@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
-import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -291,10 +290,6 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
         return this;
     }
 
-    public ElementsCollection getStorages() {
-        return $$("[class^=pipelines-library-tree-node-storage]");
-    }
-
     public PipelinesLibraryAO validateStoragePictogram(final String storage) {
         $(treeItem(storage)).$(byClassName("ant-tree-switcher")).shouldHave(cssClass("ant-tree-switcher-noop"));
         return this;
@@ -413,10 +408,5 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;
-    }
-
-    public void ensurePopupIsClosed() {
-        sleep(2, SECONDS);
-        $(byClassName("ant-modal-body")).shouldNotBe(visible);
     }
 }

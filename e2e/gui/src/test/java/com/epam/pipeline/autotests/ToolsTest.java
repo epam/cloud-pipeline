@@ -38,6 +38,9 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
+import static com.epam.pipeline.autotests.ao.Profile.execEnvironmentTab;
+import static com.epam.pipeline.autotests.ao.Profile.parametersTab;
 import static com.epam.pipeline.autotests.ao.ToolDescription.editButtonFor;
 import static com.epam.pipeline.autotests.ao.ToolGroup.tool;
 import static com.epam.pipeline.autotests.ao.ToolGroup.toolsNames;
@@ -436,7 +439,7 @@ public class ToolsTest
                 .ensure(VERSION, text("latest"))
                 .ensure(ESTIMATED_PRICE, not(visible))
                 .ensure(INFORMATION_ICON, not(visible))
-                .expandTabs(EXEC_ENVIRONMENT, ADVANCED_PANEL, PARAMETERS_PANEL)
+                .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                 .ensure(DOCKER_IMAGE, valueContains(image))
                 .ensure(DEFAULT_COMMAND, empty)
                 .ensure(INSTANCE_TYPE, text("Node type"))
@@ -485,10 +488,6 @@ public class ToolsTest
 
     private By message(final String text) {
         return withText(text);
-    }
-
-    private Consumer<ToolsPage> registryIsPresented(final String registry) {
-        return tools -> tools.get(REGISTRIES_LIST).shouldHave(text(registry));
     }
 
     private Consumer<Registry> selectGroup(final String defaultGroup) {

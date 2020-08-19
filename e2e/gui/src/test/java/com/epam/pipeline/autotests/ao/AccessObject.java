@@ -129,6 +129,13 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         return (ELEMENT_TYPE) this;
     }
 
+    default ELEMENT_TYPE clearByKey(final By qualifier) {
+        $(qualifier).click();
+        $(qualifier).sendKeys(Keys.chord(Keys.CONTROL, "a"));
+        $(qualifier).sendKeys(Keys.DELETE);
+        return (ELEMENT_TYPE) this;
+    }
+
     default ELEMENT_TYPE enter(Primitive primitive) {
         get(primitive).pressEnter();
         return (ELEMENT_TYPE) this;
@@ -252,15 +259,6 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
             selenideElement.click();
         }
         selenideElement.shouldBe(expandedTab);
-        return (ELEMENT_TYPE) this;
-    }
-
-    /**
-     * @deprecated Use {@link #expandTabs(By...)} instead.
-     */
-    @Deprecated
-    default ELEMENT_TYPE expandTabs(final Primitive... elements) {
-        Arrays.stream(elements).forEach(this::expandTab);
         return (ELEMENT_TYPE) this;
     }
 
