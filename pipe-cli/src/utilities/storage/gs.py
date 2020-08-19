@@ -18,19 +18,26 @@ import hashlib
 import os
 from datetime import datetime, timedelta
 
-from requests import RequestException
+from requests import RequestException, Session
 from requests.adapters import HTTPAdapter
 from requests.exceptions import InvalidProxyURL
 from requests.utils import select_proxy, prepend_scheme_if_needed
-from urllib3 import PoolManager
+from urllib3 import PoolManager, proxy_from_url
 from urllib3.util import ssl_, parse_url
+from urllib3.connection import VerifiedHTTPSConnection
 import logging
 import ssl
 
 try:
     from http.client import HTTPConnection  # py3
+    import http.client as http_client
+    from http.HTTPStatus import OK
 except ImportError:
     from httplib import HTTPConnection  # py2
+    import httplib as http_client
+    from httplib import OK
+
+http_client.HTTPConnection.debuglevel = 1
 
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
@@ -671,38 +678,58 @@ class _RefreshingCredentials(Credentials):
         headers['authorization'] = 'Bearer {}'.format(_helpers.from_bytes(self.temporary_credentials.session_token))
 
 
+class VerifiedHTTPSConnectionWithHeaders(VerifiedHTTPSConnection):
+    def _tunnel(self):
+        """This is just a simple rework of the CONNECT method to combine
+        the headers with the CONNECT request as it causes problems for
+        some proxies
+        """
+        connect_str = "CONNECT %s:%d HTTP/1.0\r\n" % (self._tunnel_host,
+            self._tunnel_port)
+        header_bytes = connect_str.encode("ascii")
+
+        for header, value in self._tunnel_headers.items():
+            header_str = "%s: %s\r\n" % (header, value)
+            header_bytes += header_str.encode("latin-1")
+
+        self.send(header_bytes + b'\r\n')
+
+        response = self.response_class(self.sock, method=self._method)
+        (version, code, message) = response._read_status()
+
+        if code != OK:
+            self.close()
+            raise OSError("Tunnel connection failed: %d %s" % (code,
+                                                               message.strip()))
+        while True:
+            line = response.fp.readline(http_client._MAXLINE + 1)
+            if len(line) > http_client._MAXLINE:
+                raise RuntimeError("header line")
+            if not line:
+                # for sites which EOF without sending a trailer
+                break
+            if line in (b'\r\n', b'\n', b''):
+                break
+
+            if self.debuglevel > 0:
+                print('header:', line.decode())
+
+
+class ProxyConnectWithHeadersHTTPSAdapter(HTTPAdapter):
+    """Overriding HTTP Adapter so that we can use our own Connection, since
+        we need to get at _tunnel()
+    """
+    def proxy_manager_for(self, proxy, **proxy_kwargs):
+        manager = super(ProxyConnectWithHeadersHTTPSAdapter, self).proxy_manager_for(proxy, **proxy_kwargs)
+        # Need to override the ConnectionCls with our Subclassed one to get at _tunnel()
+        manager.pool_classes_by_scheme['https'].ConnectionCls = VerifiedHTTPSConnectionWithHeaders
+        return manager
+
+
 class TlsAdapter(HTTPAdapter):
 
     def __init__(self,  **kwargs):
         super(TlsAdapter, self).__init__(**kwargs)
-
-    def get_connection(self, url, proxies=None):
-        """Returns a urllib3 connection for the given URL. This should not be
-        called from user code, and is only exposed for use when subclassing the
-        :class:`HTTPAdapter <requests.adapters.HTTPAdapter>`.
-
-        :param url: The URL to connect to.
-        :param proxies: (optional) A Requests-style dictionary of proxies used on this request.
-        :rtype: urllib3.ConnectionPool
-        """
-        requests_log.debug("Proxies: %s" % str(proxies))
-        proxy = select_proxy(url, proxies)
-        requests_log.debug("Proxy: %s" % str(proxy))
-        if proxy:
-            proxy = prepend_scheme_if_needed(proxy, 'http')
-            proxy_url = parse_url(proxy)
-            if not proxy_url.host:
-                raise InvalidProxyURL("Please check proxy URL. It is malformed"
-                                      " and could be missing the host.")
-            proxy_manager = self.proxy_manager_for(proxy)
-            conn = proxy_manager.connection_from_url(url)
-        else:
-            # Only scheme should be lower case
-            parsed = urlparse(url)
-            url = parsed.geturl()
-            conn = self.poolmanager.connection_from_url(url)
-
-        return conn
 
     def init_poolmanager(self, *pool_args, **pool_kwargs):
         ctx = ssl_.create_urllib3_context(ssl.PROTOCOL_TLS)
@@ -728,7 +755,7 @@ class _RefreshingClient(Client):
     def __init__(self, bucket, read, write, refresh_credentials, versioning=False):
         credentials = _RefreshingCredentials(refresh=lambda: refresh_credentials(bucket, read, write, versioning))
         session = _ProxySession(credentials, max_refresh_attempts=self.MAX_REFRESH_ATTEMPTS)
-        adapter = TlsAdapter(max_retries=3)
+        adapter = ProxyConnectWithHeadersHTTPSAdapter(max_retries=3)
         session.mount("https://", adapter)
         click.echo("session.proxies: %s" % session.proxies)
         super(_RefreshingClient, self).__init__(project=credentials.temporary_credentials.secret_key, _http=session)
