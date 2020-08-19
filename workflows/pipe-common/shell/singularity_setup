@@ -17,6 +17,8 @@
 ######################################################
 # Singularity distribution build commands
 ######################################################
+# v2.5.2
+# -
 # yum install -y libarchive-devel squashfs-tools
 # VERSION=2.5.2
 # wget https://github.com/singularityware/singularity/releases/download/$VERSION/singularity-$VERSION.tar.gz && \
@@ -26,9 +28,47 @@
 # make -j$(nproc) && \
 # make install
 
+# v3.6.1
+# -
+# yum update -y && \
+#     yum groupinstall -y 'Development Tools' && \
+#     yum install -y \
+#     openssl-devel \
+#     libuuid-devel \
+#     libseccomp-devel \
+#     wget \
+#     squashfs-tools
+
+# cd ~
+# export VERSION=1.15 OS=linux ARCH=amd64 && \
+#     wget https://dl.google.com/go/go$VERSION.$OS-$ARCH.tar.gz && \
+#     tar -C /usr/local -xzvf go$VERSION.$OS-$ARCH.tar.gz && \
+#     rm -f go$VERSION.$OS-$ARCH.tar.gz
+# export GOPATH=${HOME}/go
+# export PATH=/usr/local/go/bin:${PATH}:${GOPATH}/bin
+# go get -u github.com/golang/dep/cmd/dep
+
+# export VERSION=3.6.1 && \
+#     mkdir -p $GOPATH/src/github.com/sylabs && \
+#     cd $GOPATH/src/github.com/sylabs && \
+#     wget https://github.com/sylabs/singularity/releases/download/v${VERSION}/singularity-${VERSION}.tar.gz && \
+#     tar -xzf singularity-${VERSION}.tar.gz && \
+#     cd singularity
+# ./mconfig --prefix=/var/lib/singularity && \
+#     make -C ./builddir && \
+#     make -C ./builddir install
+
+# Packing both versions
+# -
+# cd /var/lib/
+# tar -zcf singularity.tgz singularity/
+
 SNGLRT_SETUP_TASK="SetupSingularity"
 
-CP_SNGLRT_DISTR_URL="${CP_SNGLRT_DISTR_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/singularity/2.5.2/singularity.tgz}"
+# Two version are avaialble for now:
+# 2.5.2:            https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/singularity/2.5.2/singularity.tgz
+# 3.6.1 (default):  https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/singularity/3.6.1/singularity.tgz
+CP_SNGLRT_DISTR_URL="${CP_SNGLRT_DISTR_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/singularity/3.6.1/singularity.tgz}"
 CP_SNGLRT_INSTALL_PATH="${CP_SNGLRT_INSTALL_PATH:-/var/lib/singularity}"
 CP_SNGLRT_INSTALL_TEMP="/tmp/snglrt-tmp"
 rm -rf "$CP_SNGLRT_INSTALL_TEMP" && \
