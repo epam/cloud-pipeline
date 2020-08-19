@@ -362,30 +362,35 @@ function configure_package_manager {
       fi
 
       # Add a Cloud Pipeline repo, which contains the required runtime packages
+      CP_REPO_RETRY_COUNT=${CP_REPO_RETRY_COUNT:-3}
       if [ "${CP_REPO_ENABLED,,}" == 'true' ]; then
             # System package manager setup
             local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos}"
             local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
             if [ "$CP_OS" == "centos" ]; then
-                  curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
-                  yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q > /dev/null 2>&1
-                  
-                  if [ $? -ne 0 ]; then
-                        echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the yum, removing the repo"
-                        rm -f /etc/yum.repos.d/cloud-pipeline.repo
-                  fi
+                  for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
+                        curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
+                        yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q > /dev/null 2>&1
+                        
+                        if [ $? -ne 0 ]; then
+                              echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the yum, removing the repo"
+                              rm -f /etc/yum.repos.d/cloud-pipeline.repo
+                        fi
+                  done
             elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
-                  apt-get update -qq -y --allow-insecure-repositories && \
-                  apt-get install curl apt-transport-https gnupg -y -qq && \
-                  sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
-                  curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
-                  sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
-                  apt-get update -qq -y --allow-insecure-repositories
-                  
-                  if [ $? -ne 0 ]; then
-                        echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
-                        sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
-                  fi
+                  for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
+                        apt-get update -qq -y --allow-insecure-repositories && \
+                        apt-get install curl apt-transport-https gnupg -y -qq && \
+                        sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
+                        curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
+                        sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
+                        apt-get update -qq -y --allow-insecure-repositories
+                        
+                        if [ $? -ne 0 ]; then
+                              echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
+                              sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+                        fi
+                  done
             fi
             # Pip setup
             local CP_REPO_PYPI_BASE_URL_DEFAULT="${CP_REPO_PYPI_BASE_URL_DEFAULT:-http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple}"
