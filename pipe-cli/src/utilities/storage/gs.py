@@ -27,6 +27,8 @@ from urllib3.util import ssl_, parse_url
 import logging
 import ssl
 
+log = logging.getLogger(__name__)
+
 try:
     from http.client import HTTPConnection  # py3
 except ImportError:
@@ -685,9 +687,9 @@ class TlsAdapter(HTTPAdapter):
         :param proxies: (optional) A Requests-style dictionary of proxies used on this request.
         :rtype: urllib3.ConnectionPool
         """
-        click.echo("Proxies: %s" % str(proxies))
+        log.debug("Proxies: %s" % str(proxies))
         proxy = select_proxy(url, proxies)
-        click.echo("Proxy: %s" % str(proxy))
+        log.debug("Proxy: %s" % str(proxy))
         if proxy:
             proxy = prepend_scheme_if_needed(proxy, 'http')
             proxy_url = parse_url(proxy)
@@ -715,6 +717,7 @@ class TlsAdapter(HTTPAdapter):
 class _ProxySession(AuthorizedSession):
 
     def request(self, method, url, data=None, headers=None, **kwargs):
+        log.debug("Executing request")
         parsed_url = urlparse(url)
         request_url = '%s://%s' % (parsed_url.scheme, parsed_url.netloc)
         self.proxies = StorageOperations.get_proxy_config(request_url)
