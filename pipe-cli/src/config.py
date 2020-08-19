@@ -130,7 +130,7 @@ class Config(object):
         if not self.proxy:
             return None
         elif self.proxy == PROXY_TYPE_PAC:
-            pac_file = PacAPI.get_pac()
+            pac_file = PacAPI.get_pac(url='http://127.0.0.1:9000/localproxy.pac')
             if not pac_file:
                 return None
             proxy_resolver = PacProxyResolver(pac_file)
