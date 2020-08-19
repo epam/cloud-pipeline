@@ -259,6 +259,6 @@ echo "export SGE_CLUSTER_NAME=$SGE_CLUSTER_NAME" >> /etc/cp_env.sh
 echo "export CP_CAP_SGE_QUEUE_NAME=$CP_CAP_SGE_QUEUE_NAME" >> /etc/cp_env.sh
 
 # Setup any additional SGE consumable resources if available
-sge_setup_resources "$HOSTNAME" "$SGE_WORKER_SETUP_TASK"
+sge_setup_resources "$HOSTNAME" "$SGE_WORKER_SETUP_TASK" "$_WORKER_CORES"
 
 pipe_log_success "SGE worker node was successfully configured" "$SGE_WORKER_SETUP_TASK"

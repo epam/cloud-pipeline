@@ -486,7 +486,7 @@ configure_pe "$CP_CAP_SGE_PE_MPI_NAME" \
              "FALSE"
 
 # Setup any additional SGE consumable resources if available
-sge_setup_resources "$HOSTNAME" "$SGE_MASTER_SETUP_TASK"
+sge_setup_resources "$HOSTNAME" "$SGE_MASTER_SETUP_TASK" "$_MASTER_WORKER_CORES"
 
 pipe_log_success "SGE master node was successfully configured" "$SGE_MASTER_SETUP_TASK"
 
