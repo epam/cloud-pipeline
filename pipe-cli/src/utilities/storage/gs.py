@@ -715,7 +715,7 @@ class TlsAdapter(HTTPAdapter):
 class _ProxySession(AuthorizedSession):
 
     def request(self, method, url, data=None, headers=None, **kwargs):
-        log.debug("Executing request")
+        requests_log.debug("Executing request")
         parsed_url = urlparse(url)
         request_url = '%s://%s' % (parsed_url.scheme, parsed_url.netloc)
         self.proxies = StorageOperations.get_proxy_config(request_url)
