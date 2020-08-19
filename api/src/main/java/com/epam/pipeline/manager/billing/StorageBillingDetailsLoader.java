@@ -62,6 +62,9 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
     @Autowired
     private final FileShareMountManager fileShareMountManager;
 
+    @Autowired
+    private final UserBillingDetailsLoader userBillingDetailsLoader;
+
     @Override
     public BillingGrouping getGrouping() {
         return BillingGrouping.STORAGE;
@@ -88,12 +91,17 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
                                                                         .toInstant()
                                                                         .atZone(ZoneId.systemDefault())
                                                                         .toLocalDateTime()));
+        details.put(BillingGrouping.BILLING_CENTER.getCorrespondingField(),
+                    userBillingDetailsLoader.getUserBillingCenter(storage.getOwner()));
+        details.put(BillingGrouping.STORAGE_TYPE.getCorrespondingField(), getExplicitStorageType(storage));
         return details;
     }
 
     @Override
     public Map<String, String> getEmptyDetails() {
-        return Stream.of(PROVIDER, REGION, OWNER, CREATED)
+        return Stream.of(PROVIDER, REGION, OWNER, CREATED,
+                         BillingGrouping.BILLING_CENTER.getCorrespondingField(),
+                         BillingGrouping.STORAGE_TYPE.getCorrespondingField())
             .collect(Collectors.toMap(Function.identity(), k -> emptyValue));
     }
 
@@ -140,5 +148,15 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
             }
         }
         return null;
+    }
+
+    private String getExplicitStorageType(final AbstractDataStorage dataStorage) {
+        final DataStorageType commonType = dataStorage.getType();
+        return commonType != DataStorageType.NFS
+               ? commonType.getId()
+               : fileShareMountManager.find(dataStorage.getFileShareMountId())
+                   .map(FileShareMount::getMountType)
+                   .map(Enum::name)
+                   .orElse(emptyValue);
     }
 }

@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class FileShareMountManager {
@@ -39,8 +40,11 @@ public class FileShareMountManager {
     private FileShareMountDao fileShareMountDao;
 
     public FileShareMount load(final Long id) {
-        return fileShareMountDao.loadById(id)
-                .orElseThrow(() -> new IllegalArgumentException("There is no FileShare mount with id:" + id));
+        return find(id).orElseThrow(() -> new IllegalArgumentException("There is no FileShare mount with id:" + id));
+    }
+
+    public Optional<FileShareMount> find(final Long id) {
+        return fileShareMountDao.loadById(id);
     }
 
     public List<FileShareMount> loadByRegionId(final Long regionId) {
