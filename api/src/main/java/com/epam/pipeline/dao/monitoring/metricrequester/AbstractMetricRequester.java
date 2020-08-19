@@ -35,6 +35,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggre
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.ParsedSingleValueNumericMetricsAggregation;
 import org.elasticsearch.search.aggregations.metrics.avg.AvgAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.max.MaxAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.bucketscript.BucketScriptPipelineAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
@@ -98,6 +99,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String POD_CONTAINER = "pod_container";
 
     protected static final String AVG_AGGREGATION = "avg_";
+    protected static final String MAX_AGGREGATION = "max_";
     protected static final String DIVISION_AGGREGATION = "division_";
     protected static final String AGGREGATION_POD_NAME = "pod_name";
     protected static final String FIELD_POD_NAME_RAW = "pod_name.raw";
@@ -162,11 +164,12 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     }
 
     public Map<String, Double> collectAggregation(final SearchResponse response,
-                                                  final String aggName, final String subAggName) {
+                                                  final String aggName, final String ... subAggNames) {
         return ((Terms)response.getAggregations().get(aggName)).getBuckets()
                 .stream()
-                .map(b -> Pair.of(b.getKey().toString(),
-                        doubleValue(aggregations(b), subAggName))
+                .flatMap(b -> Stream.of(subAggNames)
+                    .map(subAggName -> Pair.of(b.getKey().toString(),
+                                               doubleValue(aggregations(b), subAggName)))
                 )
                 .filter(pair -> pair.getRight().isPresent())
                 .collect(Collectors.toMap(Pair::getLeft, p -> p.getRight().get()));
@@ -245,6 +248,10 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected AvgAggregationBuilder average(final String name, final String field) {
         return AggregationBuilders.avg(name)
                 .field(field(field));
+    }
+
+    protected MaxAggregationBuilder max(final String name, final String field) {
+        return AggregationBuilders.max(name).field(field(field));
     }
 
     protected PipelineAggregationBuilder division(final String name, final String divider, final String divisor) {

@@ -42,6 +42,7 @@ public class MonitoringStats {
     @Getter
     public static class CPUUsage {
         private double load;
+        private double max;
     }
 
 
@@ -50,6 +51,7 @@ public class MonitoringStats {
     public static class MemoryUsage {
         private long capacity;
         private long usage;
+        private long max;
     }
 
     @Setter

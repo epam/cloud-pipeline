@@ -67,14 +67,21 @@ public class MemoryRequester extends AbstractMetricRequester {
                                 .size(resourceIds.size())
                                 .subAggregation(average(AVG_AGGREGATION + MEMORY_CAPACITY, NODE_CAPACITY))
                                 .subAggregation(average(AVG_AGGREGATION + MEMORY_UTILIZATION, WORKING_SET))
-                                .subAggregation(division(DIVISION_AGGREGATION + NODE_UTILIZATION,
+                                .subAggregation(max(MAX_AGGREGATION + MEMORY_UTILIZATION, WORKING_SET))
+                                .subAggregation(division(AVG_AGGREGATION + DIVISION_AGGREGATION + NODE_UTILIZATION,
                                         AVG_AGGREGATION + MEMORY_UTILIZATION,
-                                        AVG_AGGREGATION + MEMORY_CAPACITY))));
+                                        AVG_AGGREGATION + MEMORY_CAPACITY))
+                                .subAggregation(division(MAX_AGGREGATION + DIVISION_AGGREGATION + NODE_UTILIZATION,
+                                        MAX_AGGREGATION + MEMORY_UTILIZATION,
+                                        AVG_AGGREGATION + MEMORY_CAPACITY))
+                        ));
     }
 
     @Override
     public Map<String, Double> parseResponse(final SearchResponse response) {
-        return collectAggregation(response, AGGREGATION_NODE_NAME, DIVISION_AGGREGATION + NODE_UTILIZATION);
+        return collectAggregation(response, AGGREGATION_NODE_NAME,
+                                  AVG_AGGREGATION + DIVISION_AGGREGATION + NODE_UTILIZATION,
+                                  MAX_AGGREGATION + DIVISION_AGGREGATION + NODE_UTILIZATION);
     }
 
     @Override
@@ -85,6 +92,7 @@ public class MemoryRequester extends AbstractMetricRequester {
                         .size(0)
                         .aggregation(dateHistogram(MEMORY_HISTOGRAM, interval)
                                 .subAggregation(average(AVG_AGGREGATION + MEMORY_UTILIZATION, WORKING_SET))
+                                .subAggregation(max(MAX_AGGREGATION + MEMORY_UTILIZATION, WORKING_SET))
                                 .subAggregation(average(AVG_AGGREGATION + MEMORY_CAPACITY, NODE_CAPACITY))));
     }
 
@@ -109,10 +117,12 @@ public class MemoryRequester extends AbstractMetricRequester {
         final MonitoringStats monitoringStats = new MonitoringStats();
         Optional.ofNullable(bucket.getKeyAsString()).ifPresent(monitoringStats::setStartTime);
         final List<Aggregation> aggregations = aggregations(bucket);
-        final Optional<Long> utilization = longValue(aggregations, AVG_AGGREGATION + MEMORY_UTILIZATION);
+        final Optional<Long> avgUtilization = longValue(aggregations, AVG_AGGREGATION + MEMORY_UTILIZATION);
+        final Optional<Long> maxUtilization = longValue(aggregations, MAX_AGGREGATION + MEMORY_UTILIZATION);
         final Optional<Long> capacity = longValue(aggregations, AVG_AGGREGATION + MEMORY_CAPACITY);
         final MonitoringStats.MemoryUsage memoryUsage = new MonitoringStats.MemoryUsage();
-        utilization.ifPresent(memoryUsage::setUsage);
+        avgUtilization.ifPresent(memoryUsage::setUsage);
+        maxUtilization.ifPresent(memoryUsage::setMax);
         capacity.ifPresent(memoryUsage::setCapacity);
         monitoringStats.setMemoryUsage(memoryUsage);
         final MonitoringStats.ContainerSpec containerSpec = new MonitoringStats.ContainerSpec();
