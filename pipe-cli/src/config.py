@@ -128,10 +128,12 @@ class Config(object):
 
     def resolve_proxy(self, target_url=None):
         if not self.proxy:
+            click.echo("no proxy")
             return None
         elif self.proxy == PROXY_TYPE_PAC:
             pac_file = PacAPI.get_pac(url='http://127.0.0.1:9000/localproxy.pac')
             if not pac_file:
+                click.echo("no pac file")
                 return None
             proxy_resolver = PacProxyResolver(pac_file)
             url_to_resolve = target_url
@@ -140,7 +142,9 @@ class Config(object):
             if not url_to_resolve:
                 url_to_resolve = PROXY_PAC_DEFAULT_URL
 
-            return proxy_resolver.get_proxy_for_requests(url_to_resolve)
+            result = proxy_resolver.get_proxy_for_requests(url_to_resolve)
+            click.echo(result)
+            return result
         elif self.proxy_ntlm:
             ntlm_proxy = network_utilities.NTLMProxy.get_proxy(self.build_ntlm_module_path(),
                                                                self.proxy_ntlm_domain,
@@ -148,13 +152,17 @@ class Config(object):
                                                                self.proxy_ntlm_pass,
                                                                self.proxy)
             ntlm_aps_proxy_url = ntlm_proxy.get_ntlm_aps_local_url()
-            return {'http': ntlm_aps_proxy_url,
-                    'https': ntlm_aps_proxy_url,
-                    'ftp': ntlm_aps_proxy_url}
+            result = {'http': ntlm_aps_proxy_url,
+                      'https': ntlm_aps_proxy_url,
+                      'ftp': ntlm_aps_proxy_url}
+            click.echo(result)
+            return result
         else:
-            return {'http': self.proxy,
-                    'https': self.proxy,
-                    'ftp': self.proxy}
+            result = {'http': self.proxy,
+                      'https': self.proxy,
+                      'ftp': self.proxy}
+            click.echo(result)
+            return result
 
     @classmethod
     def get_base_source_dir(cls):

@@ -699,6 +699,7 @@ class _RefreshingClient(Client):
         session = _ProxySession(credentials, max_refresh_attempts=self.MAX_REFRESH_ATTEMPTS)
         adapter = TlsAdapter(max_retries=3)
         session.mount("https://", adapter)
+        click.echo("session.proxies: %s" % session.proxies)
         super(_RefreshingClient, self).__init__(project=credentials.temporary_credentials.secret_key, _http=session)
 
 
