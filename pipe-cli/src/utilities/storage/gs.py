@@ -23,6 +23,7 @@ from requests.adapters import HTTPAdapter
 from urllib3 import PoolManager
 from urllib3.util import ssl_
 import logging
+import ssl
 
 try:
     from http.client import HTTPConnection  # py3
