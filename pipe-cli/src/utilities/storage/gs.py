@@ -685,6 +685,7 @@ class TlsAdapter(HTTPAdapter):
         :param proxies: (optional) A Requests-style dictionary of proxies used on this request.
         :rtype: urllib3.ConnectionPool
         """
+        click.echo("Proxies: %s" % str(proxies))
         proxy = select_proxy(url, proxies)
         click.echo("Proxy: %s" % str(proxy))
         if proxy:
