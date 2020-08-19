@@ -31,7 +31,8 @@ import ssl
 try:
     from http.client import HTTPConnection  # py3
     import http.client as http_client
-    from http.HTTPStatus import OK
+    from http import HTTPStatus
+    OK = HTTPStatus.OK
 except ImportError:
     from httplib import HTTPConnection  # py2
     import httplib as http_client
