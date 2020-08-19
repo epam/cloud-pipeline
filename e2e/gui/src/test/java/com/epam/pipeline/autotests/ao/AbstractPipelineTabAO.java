@@ -162,5 +162,4 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
             return this;
         }
     }
-
 }
