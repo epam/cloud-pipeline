@@ -94,6 +94,6 @@ then
 fi
 
 configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM" "MEMORY" "0G" "$_NODE_RAM_COUNT"
-configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU" "INT" "0" "$_NODE_CPU_COUNT"
+configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU" "DOUBLE" "0" "$_NODE_CPU_COUNT"
 
 pipe_log_success "Finished GridEngine resources configuration" "$_SGE_RESOURCES_SETUP_TASK"
