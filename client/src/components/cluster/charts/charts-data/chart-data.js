@@ -246,7 +246,7 @@ class CPUUsageData extends ChartData {
     }, {
       field: 'cpuMax',
       group: 'default',
-      valueFn: o => o.cpuUsage.loadMax
+      valueFn: o => o.cpuUsage.max
     }];
   }
 }
@@ -264,14 +264,14 @@ class MemoryUsageData extends ChartData {
     }, {
       field: 'memoryMax',
       group: 'default',
-      valueFn: o => o.memoryUsage.usageMax
-        ? o.memoryUsage.usageMax / (1024 ** 2)
+      valueFn: o => o.memoryUsage.max
+        ? o.memoryUsage.max / (1024 ** 2)
         : undefined
     }, {
       field: 'percentMax',
       group: 'percent',
-      valueFn: o => o.memoryUsage.usageMax
-        ? o.memoryUsage.usageMax / o.memoryUsage.capacity
+      valueFn: o => o.memoryUsage.max
+        ? o.memoryUsage.max / o.memoryUsage.capacity
         : undefined
     }, {
       field: 'usage',
