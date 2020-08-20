@@ -36,7 +36,8 @@ import java.util.stream.IntStream;
 public class MonitoringStatsWriter {
 
     private static final List<String> COMMON_STATS_HEADER =
-        Arrays.asList("Timestamp", "CPU_cores", "CPU_usage[%]", "MEM_capacity[bytes]", "MEM_usage[%]");
+        Arrays.asList("Timestamp", "CPU_cores", "CPU_usage_avg[%]", "CPU_usage_max[%]",
+                      "MEM_capacity[bytes]", "MEM_usage_avg[%]", "MEM_usage_max[%]");
     private static final String DISK_TOTAL_HEADER_TEMPLATE = "%s_total[bytes]";
     private static final String DISK_USAGE_HEADER_TEMPLATE = "%s_usage[%%]";
     private static final String NETWORK_USAGE_IN_HEADER_TEMPLATE = "%s_in[bytes]";
@@ -106,9 +107,11 @@ public class MonitoringStatsWriter {
         newLine.add(stat.getEndTime());
         newLine.add(Integer.toString(stat.getContainerSpec().getNumberOfCores()));
         newLine.add(Double.toString(HUNDRED_PERCENTS * stat.getCpuUsage().getLoad()));
+        newLine.add(Double.toString(HUNDRED_PERCENTS * stat.getCpuUsage().getMax()));
         final long memCapacity = stat.getMemoryUsage().getCapacity();
         newLine.add(Long.toString(memCapacity));
         newLine.add(Double.toString(HUNDRED_PERCENTS * stat.getMemoryUsage().getUsage() / memCapacity));
+        newLine.add(Double.toString(HUNDRED_PERCENTS * stat.getMemoryUsage().getMax() / memCapacity));
     }
 
     private void fillDisksColumns(final MonitoringStats stat, final MonitoringStatsHeader header,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ public class MonitoringStats {
     @Getter
     public static class CPUUsage {
         private double load;
+        private double max;
     }
 
 
@@ -50,6 +51,7 @@ public class MonitoringStats {
     public static class MemoryUsage {
         private long capacity;
         private long usage;
+        private long max;
     }
 
     @Setter

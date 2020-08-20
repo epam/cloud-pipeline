@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,12 +65,15 @@ public class CPURequester extends AbstractMetricRequester {
                         .aggregation(AggregationBuilders.terms(AGGREGATION_NODE_NAME)
                                 .field(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW))
                                 .size(resourceIds.size())
+                                .subAggregation(max(MAX_AGGREGATION + USAGE_RATE, USAGE_RATE))
                                 .subAggregation(average(AVG_AGGREGATION + USAGE_RATE, USAGE_RATE))));
     }
 
     @Override
     public Map<String, Double> parseResponse(final SearchResponse response) {
-        return collectAggregation(response, AGGREGATION_NODE_NAME, AVG_AGGREGATION + USAGE_RATE);
+        return collectAggregation(response, AGGREGATION_NODE_NAME,
+                                  AVG_AGGREGATION + USAGE_RATE,
+                                  MAX_AGGREGATION + USAGE_RATE);
     }
 
     @Override
@@ -82,6 +85,7 @@ public class CPURequester extends AbstractMetricRequester {
                         .size(0)
                         .aggregation(dateHistogram(CPU_HISTOGRAM, interval)
                                 .subAggregation(average(AVG_AGGREGATION + CPU_UTILIZATION, NODE_UTILIZATION))
+                                .subAggregation(max(MAX_AGGREGATION + CPU_UTILIZATION, NODE_UTILIZATION))
                                 .subAggregation(average(AVG_AGGREGATION + CPU_CAPACITY, NODE_CAPACITY))));
     }
 
@@ -111,15 +115,23 @@ public class CPURequester extends AbstractMetricRequester {
                 // Elastic CPU capacity is a number of cores times 1000. Therefore last three digits can be omitted.
                 .map(it -> it.substring(0, it.length() - 3))
                 .map(Integer::valueOf);
-        final Optional<Double> utilization = doubleValue(aggregations, AVG_AGGREGATION + CPU_UTILIZATION)
-                // Elastic CPU utilization is a share. Therefore it should be multiplied by number of cores.
-                .flatMap(u -> capacity.map(c -> Math.min(u * c, c)));
+        final Optional<Double> avgUtilization = getCpuUtilization(AVG_AGGREGATION, aggregations, capacity);
+        final Optional<Double> maxUtilization = getCpuUtilization(MAX_AGGREGATION, aggregations, capacity);
         final MonitoringStats.CPUUsage cpuUsage = new MonitoringStats.CPUUsage();
-        utilization.ifPresent(cpuUsage::setLoad);
+        avgUtilization.ifPresent(cpuUsage::setLoad);
+        maxUtilization.ifPresent(cpuUsage::setMax);
         monitoringStats.setCpuUsage(cpuUsage);
         final MonitoringStats.ContainerSpec containerSpec = new MonitoringStats.ContainerSpec();
         capacity.ifPresent(containerSpec::setNumberOfCores);
         monitoringStats.setContainerSpec(containerSpec);
         return monitoringStats;
+    }
+
+    private Optional<Double> getCpuUtilization(final String aggregationPrefix,
+                                               final List<Aggregation> aggregations,
+                                               final Optional<Integer> capacity) {
+        return doubleValue(aggregations, aggregationPrefix + CPU_UTILIZATION)
+                // Elastic CPU utilization is a share. Therefore it should be multiplied by number of cores.
+                .flatMap(u -> capacity.map(c -> Math.min(u * c, c)));
     }
 }
