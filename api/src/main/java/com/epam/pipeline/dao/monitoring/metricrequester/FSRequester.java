@@ -18,12 +18,10 @@ package com.epam.pipeline.dao.monitoring.metricrequester;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
-import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -56,24 +54,13 @@ public class FSRequester extends AbstractMetricRequester {
     }
 
     @Override
-    public Map<String, Double> performRequest(final Collection<String> resourceIds,
-                                              final LocalDateTime from, final LocalDateTime to) {
-        final Map<String, String> diskNamesResponse =
-                parseDiskNamesResponse(executeRequest(buildDiskNameRequest(resourceIds, from, to)));
-        return parseResponse(
-                executeRequest(
-                        buildRequest(
-                                resourceIds, from, to, diskNamesResponse))
-        );
-    }
-
-    @Override
     public SearchRequest buildRequest(final Collection<String> resourceIds, final LocalDateTime from,
                                       final LocalDateTime to, final Map <String, String> additional) {
-
         return request(from, to,
                 new SearchSourceBuilder().query(
-                        QueryBuilders.boolQuery().must(getQueryWithNodeToDiskMatching(resourceIds, additional))
+                        QueryBuilders.boolQuery()
+                                .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW),
+                                        resourceIds))
                                 .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
                                 .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
                                         .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
@@ -81,68 +68,36 @@ public class FSRequester extends AbstractMetricRequester {
                         .size(0)
                         .aggregation(AggregationBuilders.terms(AGGREGATION_NODE_NAME)
                                 .field(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW))
-                                .subAggregation(average(AVG_AGGREGATION + LIMIT, LIMIT))
-                                .subAggregation(average(AVG_AGGREGATION + USAGE, USAGE))));
-    }
-
-    private BoolQueryBuilder getQueryWithNodeToDiskMatching(final Collection<String> resourceIds,
-                                                            final Map<String, String> additional) {
-        final BoolQueryBuilder result = QueryBuilders.boolQuery();
-        resourceIds.forEach(node -> {
-            final String nodeDiskName = additional.get(node);
-            if (nodeDiskName != null) {
-                final BoolQueryBuilder query = QueryBuilders.boolQuery();
-                final List<QueryBuilder> must = query.must();
-                must.add(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW), node));
-                must.add(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, RESOURCE_ID), nodeDiskName));
-                result.should().add(query);
-            }
-        });
-        return result;
+                                .subAggregation(AggregationBuilders.terms(AGGREGATION_DISK_NAME)
+                                        .field(path(FIELD_METRICS_TAGS, RESOURCE_ID))
+                                        .subAggregation(average(AVG_AGGREGATION + LIMIT, LIMIT))
+                                        .subAggregation(average(AVG_AGGREGATION + USAGE, USAGE)))));
     }
 
     @Override
     public Map<String, Double> parseResponse(final SearchResponse response) {
         return ((Terms) response.getAggregations().get(AGGREGATION_NODE_NAME)).getBuckets().stream().collect(
-            HashMap::new,
-            (m, b) -> {
-                final double limit = ((Avg) b.getAggregations().get(AVG_AGGREGATION + LIMIT)).getValue();
-                final double usage = ((Avg) b.getAggregations().get(AVG_AGGREGATION + USAGE)).getValue();
-                m.put(b.getKey().toString(), getRate(usage, limit));
-            },
-            Map::putAll
-        );
+                Collectors.toMap(MultiBucketsAggregation.Bucket::getKeyAsString,
+                        b -> ((Terms) b.getAggregations().get(AGGREGATION_DISK_NAME)).getBuckets().stream()
+                                .filter(diskBucket -> !SWAP_FILESYSTEM.equalsIgnoreCase(diskBucket.getKeyAsString()))
+                                .map(this::toUsageAndLimit)
+                                .collect(Collectors.collectingAndThen(
+                                        Collectors.reducing(Pair.of(0d, 0d), this::toMergedUsageAndLimit),
+                                        this::toUsageRate))));
     }
 
-
-    private SearchRequest buildDiskNameRequest(final Collection<String> resourceIds,
-                                               final LocalDateTime from, final LocalDateTime to) {
-
-        return request(from, to,
-                new SearchSourceBuilder()
-                        .query(QueryBuilders.boolQuery()
-                                .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW),
-                                        resourceIds))
-                                .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), POD_CONTAINER))
-                                .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
-                                        .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                                        .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
-                        .size(0)
-                        .aggregation(AggregationBuilders.terms(AGGREGATION_NODE_NAME)
-                                .field(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW))
-                                .subAggregation(AggregationBuilders.terms(AGGREGATION_DISK_NAME)
-                                        .field(path(FIELD_METRICS_TAGS, RESOURCE_ID)))));
+    private Pair<Double, Double> toUsageAndLimit(final Terms.Bucket diskBucket) {
+        final double limit = ((Avg) diskBucket.getAggregations().get(AVG_AGGREGATION + LIMIT)).getValue();
+        final double usage = ((Avg) diskBucket.getAggregations().get(AVG_AGGREGATION + USAGE)).getValue();
+        return Pair.of(usage, limit);
     }
 
-    private Map<String, String> parseDiskNamesResponse(final SearchResponse response) {
-        return ((Terms) response.getAggregations().get(AGGREGATION_NODE_NAME))
-                .getBuckets().stream()
-                .map((b) -> new ImmutablePair<>(
-                        b.getKey().toString(),
-                        ((Terms) b.getAggregations().get(AGGREGATION_DISK_NAME)).getBuckets().stream().findFirst()
-                                .map(d -> d.getKey().toString()).orElse(null)))
+    private Pair<Double, Double> toMergedUsageAndLimit(final Pair<Double, Double> p1, final Pair<Double, Double> p2) {
+        return Pair.of(p1.getLeft() + p2.getLeft(), p1.getRight() + p2.getRight());
+    }
 
-                .collect(HashMap::new, (m, b) -> m.put(b.getKey(), b.getValue()), Map::putAll);
+    private Double toUsageRate(final Pair<Double, Double> p) {
+        return getRate(p.getLeft(), p.getRight());
     }
 
     private Double getRate(final Double usage, final Double limit) {
