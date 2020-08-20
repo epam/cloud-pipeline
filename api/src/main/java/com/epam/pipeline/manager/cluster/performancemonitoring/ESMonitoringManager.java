@@ -226,11 +226,6 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         return LocalDateTime.parse(dateTimeString, MonitoringConstants.FORMATTER);
     }
 
-    private LocalDateTime asDateTime(final String dateTimeString) {
-        return LocalDateTime.parse(dateTimeString, MonitoringConstants.DATE_TIME_FORMATTER);
-    }
-
-
     private Optional<MonitoringStats> statsWithinRegion(final MonitoringStats stats, final LocalDateTime regionStart,
                                               final LocalDateTime regionEnd, final Duration interval) {
         final LocalDateTime intervalStart = asMonitoringDateTime(stats.getStartTime());

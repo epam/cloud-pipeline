@@ -78,12 +78,12 @@ public class FSRequester extends AbstractMetricRequester {
     public Map<String, Double> parseResponse(final SearchResponse response) {
         return ((Terms) response.getAggregations().get(AGGREGATION_NODE_NAME)).getBuckets().stream().collect(
                 Collectors.toMap(MultiBucketsAggregation.Bucket::getKeyAsString,
-                        b -> ((Terms) b.getAggregations().get(AGGREGATION_DISK_NAME)).getBuckets().stream()
-                                .filter(diskBucket -> !SWAP_FILESYSTEM.equalsIgnoreCase(diskBucket.getKeyAsString()))
-                                .map(this::toUsageAndLimit)
-                                .collect(Collectors.collectingAndThen(
-                                        Collectors.reducing(Pair.of(0d, 0d), this::toMergedUsageAndLimit),
-                                        this::toUsageRate))));
+                    b -> ((Terms) b.getAggregations().get(AGGREGATION_DISK_NAME)).getBuckets().stream()
+                            .filter(diskBucket -> !SWAP_FILESYSTEM.equalsIgnoreCase(diskBucket.getKeyAsString()))
+                            .map(this::toUsageAndLimit)
+                            .collect(Collectors.collectingAndThen(
+                                    Collectors.reducing(Pair.of(0d, 0d), this::toMergedUsageAndLimit),
+                                    this::toUsageRate))));
     }
 
     private Pair<Double, Double> toUsageAndLimit(final Terms.Bucket diskBucket) {
