@@ -1050,8 +1050,14 @@ if [ "$CP_PIPELINE_CLI_FROM_DIST_TAR" ]; then
 else
       echo "Installing 'pipe' CLI"
       echo "-"
-      CP_PIPELINE_CLI_BINARY_NAME="${CP_PIPELINE_CLI_BINARY_NAME:-pipe}"
-      download_file "${DISTRIBUTION_URL}${CP_PIPELINE_CLI_BINARY_NAME}"
+      if [ "$CP_PIPELINE_CLI_FROM_TARBALL_INSTALL" ]; then
+        CP_PIPELINE_CLI_NAME="${CP_PIPELINE_CLI_TARBALL_NAME:-pipe.tar.gz}"
+      else
+        CP_PIPELINE_CLI_NAME="${CP_PIPELINE_CLI_BINARY_NAME:-pipe}"
+      fi
+
+      download_file "${DISTRIBUTION_URL}${CP_PIPELINE_CLI_NAME}"
+
       if [ $? -ne 0 ]; then
             echo "[ERROR] 'pipe' CLI download failed. Exiting"
             exit 1
@@ -1064,13 +1070,20 @@ else
       rm -f /sbin/pipe
       rm -f /usr/sbin/pipe
       rm -f /usr/local/sbin/pipe
-      rm -f ${CP_USR_BIN}/pipe
+      rm -rf ${CP_USR_BIN}/pipe
 
-      # Install into the PATH locationse
-      cp pipe /usr/bin/
-      cp pipe ${CP_USR_BIN}/
-      chmod +x /usr/bin/pipe ${CP_USR_BIN}/pipe
-      rm -f pipe
+
+      if [ "$CP_PIPELINE_CLI_FROM_TARBALL_INSTALL" ]; then
+        tar -xf "$CP_PIPELINE_CLI_NAME" -C ${CP_USR_BIN}/
+        rm -f "$CP_PIPELINE_CLI_NAME"
+        ln -s ${CP_USR_BIN}/pipe/pipe /usr/bin/pipe
+      else
+        # Install into the PATH locationse
+        cp pipe /usr/bin/
+        cp pipe ${CP_USR_BIN}/
+        chmod +x /usr/bin/pipe ${CP_USR_BIN}/pipe
+        rm -f pipe
+      fi
 fi
 
 # Install FS Browser
