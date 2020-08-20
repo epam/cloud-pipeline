@@ -27,6 +27,7 @@ import reportsRouting from './reports-routing';
 import Divider from './divider';
 import {RestoreButton} from '../layout';
 import ExportReports, {ExportFormat} from '../export';
+import roleModel from '../../../../utils/roleModel';
 import styles from '../reports.css';
 
 class Filters extends React.Component {
@@ -75,17 +76,27 @@ class Filters extends React.Component {
               onChange={this.filterStore.periodNavigation}
             />
             <Divider />
-            <RunnerFilter
-              filter={this.filterStore.runner}
-              onChange={this.filterStore.buildNavigationFn('runner')}
-            />
+            {
+              roleModel.manager.billing(
+                <RunnerFilter
+                  filter={this.filterStore.runner}
+                  onChange={this.filterStore.buildNavigationFn('runner')}
+                />,
+                'runner filter'
+              )
+            }
             <Divider />
             <ProviderFilter
               filter={this.filterStore.region}
               onChange={this.filterStore.buildNavigationFn('region')}
             />
             <div className={styles.actionsBlock}>
-              <Discounts.Button className={styles.discountsButton} />
+              {
+                roleModel.manager.billing(
+                  <Discounts.Button className={styles.discountsButton} />,
+                  'discounts button'
+                )
+              }
               <RestoreButton className={styles.restoreLayoutButton} />
               <ExportReports
                 className={styles.exportReportsButton}
@@ -109,4 +120,4 @@ const RUNNER_SEPARATOR = FilterStore.RUNNER_SEPARATOR;
 const REGION_SEPARATOR = FilterStore.REGION_SEPARATOR;
 
 export {RUNNER_SEPARATOR, REGION_SEPARATOR};
-export default inject('users')(observer(Filters));
+export default inject('users')(roleModel.authenticationInfo(observer(Filters)));
