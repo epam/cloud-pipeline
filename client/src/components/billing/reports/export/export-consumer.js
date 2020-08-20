@@ -18,8 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {CSV, buildCascadeComposers} from './composers';
-
-const SEPARATOR = ',';
+import Discounts from '../discounts';
 
 class ExportConsumer extends React.Component {
   componentDidMount () {
@@ -33,14 +32,14 @@ class ExportConsumer extends React.Component {
   }
 
   getExportData = () => {
-    const {composers} = this.props;
-    const compose = buildCascadeComposers(composers);
+    const {composers, discounts} = this.props;
+    const compose = buildCascadeComposers(composers, discounts);
     const csv = new CSV();
     return new Promise((resolve, reject) => {
       compose(csv)
         .then(() => {
           const content = csv.getData()
-            .map(line => line.join(SEPARATOR))
+            .map(line => line.join(csv.SEPARATOR))
             .join('\n');
           const blob = new Blob([content], {type: 'text/csv;charset=utf-8'});
           resolve(blob);
@@ -64,13 +63,62 @@ ExportConsumer.propTypes = {
   composers: PropTypes.arrayOf(PropTypes.shape({
     composer: PropTypes.func,
     options: PropTypes.array
-  }))
+  })),
+  discounts: PropTypes.shape({
+    compute: PropTypes.func,
+    storage: PropTypes.func,
+    computeValue: PropTypes.number,
+    storageValue: PropTypes.number
+  })
 };
 
 ExportConsumer.defaultProps = {
   composers: []
 };
 
-export default inject('export')(
+const ExportConsumerInjected = inject('export')(
   observer(ExportConsumer)
 );
+
+function ExportConsumerWithDiscounts ({className, composers, children}) {
+  return (
+    <Discounts.Consumer>
+      {
+        (computeDiscounts, storageDiscounts, computeDiscountValue, storageDiscountValue) => (
+          <ExportConsumerInjected
+            className={className}
+            composers={composers}
+            discounts={{
+              compute: computeDiscounts,
+              storage: storageDiscounts,
+              computeValue: computeDiscountValue,
+              storageValue: storageDiscountValue
+            }}
+          >
+            {children}
+          </ExportConsumerInjected>
+        )
+      }
+    </Discounts.Consumer>
+  );
+}
+
+ExportConsumerWithDiscounts.propTypes = {
+  className: PropTypes.string,
+  composers: PropTypes.arrayOf(PropTypes.shape({
+    composer: PropTypes.func,
+    options: PropTypes.array
+  })),
+  discounts: PropTypes.shape({
+    compute: PropTypes.func,
+    storage: PropTypes.func,
+    computeValue: PropTypes.number,
+    storageValue: PropTypes.number
+  })
+};
+
+ExportConsumerWithDiscounts.defaultProps = {
+  composers: []
+};
+
+export default ExportConsumerWithDiscounts;

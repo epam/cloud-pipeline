@@ -58,11 +58,7 @@ class Filters extends React.Component {
     if (!this.filterStore) {
       return null;
     }
-    const {children, users, location} = this.props;
-    const {pathname} = location;
-    const formats = /billing\/reports$/.test(pathname)
-      ? [ExportFormat.csv, ExportFormat.image]
-      : [ExportFormat.image];
+    const {children, users} = this.props;
     return (
       <div className={styles.container}>
         <div className={styles.reportFilter}>
@@ -94,7 +90,7 @@ class Filters extends React.Component {
               <ExportReports
                 className={styles.exportReportsButton}
                 documentName={() => this.filterStore.getDescription({users})}
-                formats={formats}
+                formats={[ExportFormat.csv, ExportFormat.image]}
               />
             </div>
           </div>
