@@ -74,9 +74,6 @@ class DiscountsStore {
 }
 
 function SingleDiscountsSliderComponent ({value, onChange, title}) {
-  const parser = value => {
-    return value ? `${value}`.replace(/ %$/g, '') : '0';
-  };
   return (
     <div className={styles.subContainer}>
       <span className={styles.label}>
@@ -97,9 +94,9 @@ function SingleDiscountsSliderComponent ({value, onChange, title}) {
         min={-100}
         max={100}
         step={1}
-        formatter={value => `${value || 0} %`}
-        parser={parser}
+        style={{width: 70}}
       />
+      <span style={{marginLeft: 5}}>%</span>
     </div>
   );
 }
