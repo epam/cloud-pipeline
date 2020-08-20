@@ -20,5 +20,5 @@ export default function (value) {
   if (isNaN(value)) {
     return value;
   }
-  return `$${numberFormatter(value)}`;
+  return `$${numberFormatter(+value)}`;
 }

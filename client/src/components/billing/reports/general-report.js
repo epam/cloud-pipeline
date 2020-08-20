@@ -253,10 +253,10 @@ function UserReport ({
     navigation.resourcesNavigation,
     filters
   );
-  const composers = (discounts) => [
+  const composers = [
     {
       composer: ExportComposers.billingCentersComposer,
-      options: [exportCsvRequest, discounts]
+      options: [exportCsvRequest]
     }
     // {
     //   composer: ExportComposers.summaryComposer,
@@ -273,14 +273,7 @@ function UserReport ({
         (computeDiscounts, storageDiscounts, computeDiscountValue, storageDiscountValue) => (
           <Export.Consumer
             className={styles.chartsContainer}
-            composers={
-              composers({
-                compute: computeDiscounts,
-                storage: storageDiscounts,
-                computeValue: computeDiscountValue,
-                storageValue: storageDiscountValue
-              })
-            }
+            composers={composers}
           >
             <Layout
               layout={GeneralReportLayout.Layout}

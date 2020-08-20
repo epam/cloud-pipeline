@@ -26,7 +26,7 @@ import {
   BillingTable,
   Summary
 } from './charts';
-import {DisplayUser, ResizableContainer} from './utilities';
+import {costTickFormatter, DisplayUser, ResizableContainer} from './utilities';
 import Filters, {RUNNER_SEPARATOR, REGION_SEPARATOR} from './filters';
 import {Period, getPeriod} from './periods';
 import Export, {ExportComposers} from './export';
@@ -42,6 +42,7 @@ import {
 } from '../../../models/billing';
 import {StorageReportLayout, Layout} from './layout';
 import styles from './reports.css';
+import displayDate from '../../../utils/displayDate';
 
 const tablePageSize = 10;
 
@@ -216,18 +217,42 @@ function StorageReports ({storages, storagesTable, summary, type}) {
   };
   const composers = [
     {
-      composer: ExportComposers.summaryComposer,
-      options: [summary]
+      composer: ExportComposers.discountsComposer,
     },
     {
-      composer: ExportComposers.defaultComposer,
+      composer: ExportComposers.tableComposer,
       options: [
         storages,
+        `${getTitle()} (TOP ${tablePageSize})`,
+        [
+          {
+            key: 'owner',
+            title: 'Owner'
+          },
+          {
+            key: 'value',
+            title: 'Cost',
+            applyDiscounts: ({storage}) => storage,
+            formatter: costTickFormatter
+          },
+          {
+            key: 'region',
+            title: 'Region'
+          },
+          {
+            key: 'provider',
+            title: 'Provider'
+          },
+          {
+            key: 'created',
+            title: 'Created date',
+            formatter: displayDate
+          }
+        ],
+        'Storage',
         {
-          owner: 'owner',
-          cloud_provider: 'provider',
-          cloud_region: 'region',
-          created_date: 'created'
+          key: 'value',
+          top: tablePageSize
         }
       ]
     }
