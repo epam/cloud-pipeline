@@ -106,6 +106,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String AGGREGATION_DISK_NAME = "disk_name";
 
     protected static final String SYNTHETIC_NETWORK_INTERFACE = "summary";
+    protected static final String SWAP_FILESYSTEM = "tmpfs";
 
     private RestHighLevelClient client;
 

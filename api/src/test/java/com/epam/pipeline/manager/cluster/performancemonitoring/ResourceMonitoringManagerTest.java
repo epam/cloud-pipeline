@@ -253,11 +253,11 @@ public class ResourceMonitoringManagerTest {
         highConsumingRun.setTags(stubTagMap);
 
         mockStats = new HashMap<>();
-        mockStats.put(okayRun.getPodId(), TEST_OK_RUN_CPU_LOAD); // in milicores, equals 80% of core load, per 2 cores,
+        mockStats.put(okayRun.getInstance().getNodeName(), TEST_OK_RUN_CPU_LOAD); // in milicores, equals 80% of core load, per 2 cores,
                                                                     // should be = 40% load
-        mockStats.put(idleSpotRun.getPodId(), TEST_IDLE_SPOT_RUN_CPU_LOAD);
-        mockStats.put(idleOnDemandRun.getPodId(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD);
-        mockStats.put(autoscaleMasterRun.getPodId(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD);
+        mockStats.put(idleSpotRun.getInstance().getNodeName(), TEST_IDLE_SPOT_RUN_CPU_LOAD);
+        mockStats.put(idleOnDemandRun.getInstance().getNodeName(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD);
+        mockStats.put(autoscaleMasterRun.getInstance().getNodeName(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD);
 
         when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.CPU), any(), any(LocalDateTime.class),
                 any(LocalDateTime.class))).thenReturn(mockStats);
@@ -295,7 +295,7 @@ public class ResourceMonitoringManagerTest {
         Assert.assertEquals(2, runsToNotify.size());
         Assert.assertTrue(runsToNotify.stream().anyMatch(r -> r.getLeft().getPodId().equals(idleSpotRun.getPodId())));
         Assert.assertEquals(
-            mockStats.get(idleSpotRun.getPodId()) / MILICORES_TO_CORES / testType.getVCPU(),
+            mockStats.get(idleSpotRun.getInstance().getNodeName()) / MILICORES_TO_CORES / testType.getVCPU(),
             runsToNotify.stream()
                 .filter(r -> r.getLeft().getPodId().equals(idleSpotRun.getPodId()))
                 .findFirst().get().getRight(),
@@ -304,7 +304,7 @@ public class ResourceMonitoringManagerTest {
         Assert.assertTrue(runsToNotify.stream()
                 .anyMatch(r -> r.getLeft().getPodId().equals(idleOnDemandRun.getPodId())));
         Assert.assertEquals(
-            mockStats.get(idleOnDemandRun.getPodId()) / MILICORES_TO_CORES / testType.getVCPU(),
+            mockStats.get(idleOnDemandRun.getInstance().getNodeName()) / MILICORES_TO_CORES / testType.getVCPU(),
             runsToNotify.stream()
                 .filter(r -> r.getLeft().getPodId().equals(idleOnDemandRun.getPodId()))
                 .findFirst().get().getRight(),
@@ -319,7 +319,8 @@ public class ResourceMonitoringManagerTest {
         when(pipelineRunManager.loadPipelineRun(idleRunToProlong.getId())).thenReturn(idleRunToProlong);
         when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.CPU), any(), any(LocalDateTime.class),
                 any(LocalDateTime.class)))
-                .thenReturn(Collections.singletonMap(idleRunToProlong.getPodId(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD));
+                .thenReturn(Collections.singletonMap(idleRunToProlong.getInstance().getNodeName(), 
+                        TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD));
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
                 .thenReturn(IdleRunAction.NOTIFY.name());
 
@@ -530,7 +531,7 @@ public class ResourceMonitoringManagerTest {
             .thenReturn(IdleRunAction.STOP.name());
 
         mockAlreadyNotifiedRuns();
-        mockStats.put(idleSpotRun.getPodId(), NON_IDLE_CPU_LOAD); // mock not idle anymore
+        mockStats.put(idleSpotRun.getInstance().getNodeName(), NON_IDLE_CPU_LOAD); // mock not idle anymore
 
         Thread.sleep(10);
         idleSpotRun.setTags(new HashMap<>());
