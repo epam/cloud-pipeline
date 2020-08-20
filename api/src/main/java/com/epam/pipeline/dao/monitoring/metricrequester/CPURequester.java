@@ -65,15 +65,12 @@ public class CPURequester extends AbstractMetricRequester {
                         .aggregation(AggregationBuilders.terms(AGGREGATION_NODE_NAME)
                                 .field(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW))
                                 .size(resourceIds.size())
-                                .subAggregation(max(MAX_AGGREGATION + USAGE_RATE, USAGE_RATE))
                                 .subAggregation(average(AVG_AGGREGATION + USAGE_RATE, USAGE_RATE))));
     }
 
     @Override
     public Map<String, Double> parseResponse(final SearchResponse response) {
-        return collectAggregation(response, AGGREGATION_NODE_NAME,
-                                  AVG_AGGREGATION + USAGE_RATE,
-                                  MAX_AGGREGATION + USAGE_RATE);
+        return collectAggregation(response, AGGREGATION_NODE_NAME, AVG_AGGREGATION + USAGE_RATE);
     }
 
     @Override

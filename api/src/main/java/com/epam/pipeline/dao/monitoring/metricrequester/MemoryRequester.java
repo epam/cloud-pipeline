@@ -67,21 +67,14 @@ public class MemoryRequester extends AbstractMetricRequester {
                                 .size(resourceIds.size())
                                 .subAggregation(average(AVG_AGGREGATION + MEMORY_CAPACITY, NODE_CAPACITY))
                                 .subAggregation(average(AVG_AGGREGATION + MEMORY_UTILIZATION, WORKING_SET))
-                                .subAggregation(max(MAX_AGGREGATION + MEMORY_UTILIZATION, WORKING_SET))
-                                .subAggregation(division(AVG_AGGREGATION + DIVISION_AGGREGATION + NODE_UTILIZATION,
+                                .subAggregation(division(DIVISION_AGGREGATION + NODE_UTILIZATION,
                                         AVG_AGGREGATION + MEMORY_UTILIZATION,
-                                        AVG_AGGREGATION + MEMORY_CAPACITY))
-                                .subAggregation(division(MAX_AGGREGATION + DIVISION_AGGREGATION + NODE_UTILIZATION,
-                                        MAX_AGGREGATION + MEMORY_UTILIZATION,
-                                        AVG_AGGREGATION + MEMORY_CAPACITY))
-                        ));
+                                        AVG_AGGREGATION + MEMORY_CAPACITY))));
     }
 
     @Override
     public Map<String, Double> parseResponse(final SearchResponse response) {
-        return collectAggregation(response, AGGREGATION_NODE_NAME,
-                                  AVG_AGGREGATION + DIVISION_AGGREGATION + NODE_UTILIZATION,
-                                  MAX_AGGREGATION + DIVISION_AGGREGATION + NODE_UTILIZATION);
+        return collectAggregation(response, AGGREGATION_NODE_NAME, DIVISION_AGGREGATION + NODE_UTILIZATION);
     }
 
     @Override
