@@ -60,14 +60,7 @@ public class UserBillingDetailsLoader implements EntityBillingDetailsLoader {
         final Map<String, String> details = new HashMap<>();
         final PipelineUser user = userManager.loadUserByName(entityIdentifier);
         if (user != null) {
-            final String billingCenter = Optional.ofNullable(
-                    metadataManager.loadMetadataItem(user.getId(), AclClass.PIPELINE_USER))
-                    .map(MetadataEntry::getData)
-                    .filter(MapUtils::isNotEmpty)
-                    .flatMap(attributes -> Optional.ofNullable(attributes.get(billingCenterKey)))
-                    .flatMap(value -> Optional.ofNullable(value.getValue()))
-                    .orElse(emptyValue);
-            details.put(BillingGrouping.BILLING_CENTER.getCorrespondingField(), billingCenter);
+            details.put(BillingGrouping.BILLING_CENTER.getCorrespondingField(), getUserBillingCenter(user));
         } else {
             details.putAll(getEmptyDetails());
         }
@@ -77,5 +70,20 @@ public class UserBillingDetailsLoader implements EntityBillingDetailsLoader {
     @Override
     public Map<String, String> getEmptyDetails() {
         return Collections.singletonMap(BillingGrouping.BILLING_CENTER.getCorrespondingField(), emptyValue);
+    }
+
+    String getUserBillingCenter(final String username) {
+        return Optional.ofNullable(userManager.loadUserByName(username))
+            .map(this::getUserBillingCenter)
+            .orElse(emptyValue);
+    }
+
+    private String getUserBillingCenter(final PipelineUser user) {
+        return Optional.ofNullable(metadataManager.loadMetadataItem(user.getId(), AclClass.PIPELINE_USER))
+            .map(MetadataEntry::getData)
+            .filter(MapUtils::isNotEmpty)
+            .flatMap(attributes -> Optional.ofNullable(attributes.get(billingCenterKey)))
+            .flatMap(value -> Optional.ofNullable(value.getValue()))
+            .orElse(emptyValue);
     }
 }
