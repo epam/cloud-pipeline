@@ -17,7 +17,7 @@
 import {minutesToHours} from '../../../../../models/billing/utils';
 import {Range} from '../../periods';
 
-function compose (csv, resources, discounts) {
+function compose (csv, discounts, resources) {
   return new Promise((resolve, reject) => {
     if (
       !resources ||
@@ -68,12 +68,12 @@ function compose (csv, resources, discounts) {
       csv.setCellValueByIndex(
         computeDiscountRow,
         0,
-        computeValue > 0 ? `${round(computeValue)} %` : '-'
+        computeValue !== 0 ? `${round(computeValue)} %` : '-'
       );
       csv.setCellValueByIndex(
         storageDiscountRow,
         0,
-        storageValue > 0 ? `${round(storageValue)} %` : '-'
+        storageValue !== 0 ? `${round(storageValue)} %` : '-'
       );
       for (let i = 0; i < resources.length; i++) {
         const [resource] = resources[i];

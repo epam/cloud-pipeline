@@ -45,7 +45,7 @@ import {
 import {InstanceReportLayout, Layout} from './layout';
 import styles from './reports.css';
 
-const tablePageSize = 6;
+const tablePageSize = 10;
 
 function injection (stores, props) {
   const {location, params} = props;
@@ -295,38 +295,97 @@ class InstanceReport extends React.Component {
     const {dataSample, previousDataSample} = this.state;
     const composers = [
       {
-        composer: ExportComposers.summaryComposer,
-        options: [summary]
+        composer: ExportComposers.discountsComposer,
       },
       {
-        composer: ExportComposers.defaultComposer,
+        composer: ExportComposers.tableComposer,
         options: [
           instances,
+          `Instances (TOP ${tablePageSize})`,
+          [
+            {
+              key: 'usage',
+              title: 'Usage (hours)'
+            },
+            {
+              key: 'runsCount',
+              title: 'Runs count'
+            },
+            {
+              key: 'value',
+              title: 'Cost',
+              formatter: costTickFormatter,
+              applyDiscounts: ({compute}) => compute
+            }
+          ],
+          'Instance',
           {
-            usage: 'usage',
-            runs_count: 'runsCount'
+            key: 'value',
+            top: tablePageSize
           }
         ]
       },
       {
-        composer: ExportComposers.defaultComposer,
-        options: [
-          tools,
-          {
-            owner: 'owner',
-            usage: 'usage',
-            runs_count: 'runsCount'
-          }
-        ]
-      },
-      {
-        composer: ExportComposers.defaultComposer,
+        composer: ExportComposers.tableComposer,
         options: [
           pipelines,
+          `Pipelines (TOP ${tablePageSize})`,
+          [
+            {
+              key: 'owner',
+              title: 'Owner'
+            },
+            {
+              key: 'usage',
+              title: 'Usage (hours)'
+            },
+            {
+              key: 'runsCount',
+              title: 'Runs count'
+            },
+            {
+              key: 'value',
+              title: 'Cost',
+              formatter: costTickFormatter,
+              applyDiscounts: ({compute}) => compute
+            }
+          ],
+          'Pipeline',
           {
-            owner: 'owner',
-            usage: 'usage',
-            runs_count: 'runsCount'
+            key: 'value',
+            top: tablePageSize
+          }
+        ]
+      },
+      {
+        composer: ExportComposers.tableComposer,
+        options: [
+          tools,
+          `Tools (TOP ${tablePageSize})`,
+          [
+            {
+              key: 'owner',
+              title: 'Owner'
+            },
+            {
+              key: 'usage',
+              title: 'Usage (hours)'
+            },
+            {
+              key: 'runsCount',
+              title: 'Runs count'
+            },
+            {
+              key: 'value',
+              title: 'Cost',
+              formatter: costTickFormatter,
+              applyDiscounts: ({compute}) => compute
+            }
+          ],
+          'Tool',
+          {
+            key: 'value',
+            top: tablePageSize
           }
         ]
       }
