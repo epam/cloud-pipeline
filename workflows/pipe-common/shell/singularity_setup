@@ -65,6 +65,40 @@
 
 SNGLRT_SETUP_TASK="SetupSingularity"
 
+########################
+# Install prerequisites
+########################
+
+pipe_log_info "Started singularity dependencies setup" "$SNGLRT_SETUP_TASK"
+
+pkg_manager=$(which_pkg_manager)
+if [ $? -ne 0 ]; then
+    pipe_log_fail "Cannot find package manager to install singularity dependencies" "$SNGLRT_SETUP_TASK"
+    exit 1
+fi
+
+if [ "$pkg_manager" == "yum" ]; then
+    yum install squashfs-tools libseccomp-devel -y -q
+    deps_install_result=$?
+elif [ "$pkg_manager" == "apt" ]; then
+    apt-get install -t stable squashfs-tools libseccomp-dev -y -qq
+    deps_install_result=$?
+else
+    pipe_log_fail "Unknown package manager: $pkg_manager" "$SNGLRT_SETUP_TASK"
+    exit 1
+fi
+
+if [ $deps_install_result -ne 0 ]; then
+    pipe_log_fail "Cannot install singularity dependencies" "$SNGLRT_SETUP_TASK"
+    exit 1
+fi
+
+pipe_log_info "Done with singularity dependencies" "$SNGLRT_SETUP_TASK"
+
+######################
+# Install Singularity 
+######################
+
 # Two version are avaialble for now:
 # 2.5.2:            https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/singularity/2.5.2/singularity.tgz
 # 3.6.1 (default):  https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/singularity/3.6.1/singularity.tgz
