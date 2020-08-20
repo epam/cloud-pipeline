@@ -151,7 +151,8 @@ const manager = {
   configuration: management('ROLE_CONFIGURATION_MANAGER'),
   storage: management('ROLE_STORAGE_MANAGER'),
   toolGroup: management('ROLE_TOOL_GROUP_MANAGER'),
-  entities: management('ROLE_ENTITIES_MANAGER')
+  entities: management('ROLE_ENTITIES_MANAGER'),
+  billing: management('ROLE_BILLING_MANAGER')
 };
 
 const isManager = {
@@ -160,7 +161,8 @@ const isManager = {
   configuration: hasRole('ROLE_CONFIGURATION_MANAGER'),
   storage: hasRole('ROLE_STORAGE_MANAGER'),
   toolGroup: hasRole('ROLE_TOOL_GROUP_MANAGER'),
-  entities: hasRole('ROLE_ENTITIES_MANAGER')
+  entities: hasRole('ROLE_ENTITIES_MANAGER'),
+  billing: hasRole('ROLE_BILLING_MANAGER')
 };
 
 export default {

@@ -43,6 +43,7 @@ import {
   ResizableContainer
 } from './utilities';
 import {GeneralReportLayout, Layout} from './layout';
+import roleModel from '../../../utils/roleModel';
 import styles from './reports.css';
 
 function injection (stores, props) {
@@ -258,14 +259,6 @@ function UserReport ({
       composer: ExportComposers.billingCentersComposer,
       options: [exportCsvRequest]
     }
-    // {
-    //   composer: ExportComposers.summaryComposer,
-    //   options: [summary]
-    // },
-    // {
-    //   composer: ExportComposers.resourcesComposer,
-    //   options: [resources]
-    // }
   ];
   return (
     <Discounts.Consumer>
@@ -458,6 +451,7 @@ class UsersChartComponent extends React.Component {
 const UsersChart = inject('users', 'preferences')(observer(UsersChartComponent));
 
 function GroupReport ({
+  authenticatedUserInfo,
   group,
   billingCentersComputeRequest,
   billingCentersStorageRequest,
@@ -510,34 +504,15 @@ function GroupReport ({
     navigation.resourcesNavigation,
     filters
   );
-  const onUserSelect = navigation.wrapNavigation(
-    navigation.usersNavigation,
-    filters
-  );
+  const props = {authenticatedUserInfo};
+  const onUserSelect = roleModel.isManager.billing({props})
+    ? navigation.wrapNavigation(navigation.usersNavigation, filters)
+    : undefined;
   const composers = (discounts) => [
     {
       composer: ExportComposers.billingCentersComposer,
       options: [exportCsvRequest, discounts]
     }
-    // {
-    //   composer: ExportComposers.summaryComposer,
-    //   options: [summary]
-    // },
-    // {
-    //   composer: ExportComposers.resourcesComposer,
-    //   options: [resources]
-    // },
-    // {
-    //   composer: ExportComposers.defaultComposer,
-    //   options: [
-    //     billingCentersRequest,
-    //     {
-    //       runs_duration: 'runsDuration',
-    //       runs_count: 'runsCount',
-    //       billing_center: () => group
-    //     }
-    //   ]
-    // }
   ];
   return (
     <Discounts.Consumer>
@@ -646,6 +621,7 @@ function GroupReport ({
 }
 
 function GeneralReport ({
+  authenticatedUserInfo,
   billingCentersComputeRequest,
   billingCentersStorageRequest,
   resources,
@@ -658,10 +634,11 @@ function GeneralReport ({
     navigation.resourcesNavigation,
     filters
   );
-  const onBillingCenterSelect = navigation.wrapNavigation(
-    navigation.billingCentersNavigation,
-    filters
-  );
+  const props = {authenticatedUserInfo};
+  const isBillingManager = roleModel.isManager.billing({props});
+  const onBillingCenterSelect = isBillingManager
+    ? navigation.wrapNavigation(navigation.billingCentersNavigation, filters)
+    : undefined;
   const composers = (discounts) => [
     {
       composer: ExportComposers.billingCentersComposer,
@@ -756,21 +733,25 @@ function GeneralReport ({
               <div
                 key={GeneralReportLayout.Panels.runners}
               >
-                <Layout.Panel>
-                  <ResizableContainer style={{width: '100%', height: '100%'}}>
-                    {
-                      ({height}) => (
-                        <BillingCenters
-                          request={[billingCentersComputeRequest, billingCentersStorageRequest]}
-                          discounts={[computeDiscounts, storageDiscounts]}
-                          onSelect={onBillingCenterSelect}
-                          title="Billing centers"
-                          height={height}
-                        />
-                      )
-                    }
-                  </ResizableContainer>
-                </Layout.Panel>
+                {
+                  isBillingManager && (
+                    <Layout.Panel>
+                      <ResizableContainer style={{width: '100%', height: '100%'}}>
+                        {
+                          ({height}) => (
+                            <BillingCenters
+                              request={[billingCentersComputeRequest, billingCentersStorageRequest]}
+                              discounts={[computeDiscounts, storageDiscounts]}
+                              onSelect={onBillingCenterSelect}
+                              title="Billing centers"
+                              height={height}
+                            />
+                          )
+                        }
+                      </ResizableContainer>
+                    </Layout.Panel>
+                  )
+                }
               </div>
             </Layout>
           </Export.Consumer>
@@ -794,7 +775,9 @@ function DefaultReport (props) {
 export default inject('billingCenters')(
   inject(injection)(
     Filters.attach(
-      observer(DefaultReport)
+      roleModel.authenticationInfo(
+        observer(DefaultReport)
+      )
     )
   )
 );
