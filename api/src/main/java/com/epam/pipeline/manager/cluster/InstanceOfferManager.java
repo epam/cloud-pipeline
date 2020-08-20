@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,6 +126,8 @@ public class InstanceOfferManager {
             SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES.getKey());
     private static final List<String> PRICE_TYPES_PREFERENCES = Collections.singletonList(
             SystemPreferences.CLUSTER_ALLOWED_PRICE_TYPES.getKey());
+    private static final List<String> MASTER_PRICE_TYPES_PREFERENCES = Collections.singletonList(
+            SystemPreferences.CLUSTER_ALLOWED_MASTER_PRICE_TYPES.getKey());
 
     @PostConstruct
     public void init() {
@@ -421,11 +423,21 @@ public class InstanceOfferManager {
      *
      * @param priceType To be checked.
      * @param toolResource Optional tool resource.
+     * @param isMaster is checking node a master in cluster run
      */
     public boolean isPriceTypeAllowed(final String priceType,
+                                      final ContextualPreferenceExternalResource toolResource,
+                                      final boolean isMaster) {
+        final List<String> priceTypesPreferences = isMaster
+                                     ? MASTER_PRICE_TYPES_PREFERENCES
+                                     : PRICE_TYPES_PREFERENCES;
+        return getContextualPreferenceValueAsList(toolResource, priceTypesPreferences).stream()
+            .anyMatch(priceType::equals);
+    }
+
+    public boolean isPriceTypeAllowed(final String priceType,
                                       final ContextualPreferenceExternalResource toolResource) {
-        return getContextualPreferenceValueAsList(toolResource, PRICE_TYPES_PREFERENCES).stream()
-                .anyMatch(priceType::equals);
+        return isPriceTypeAllowed(priceType, toolResource, false);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -535,7 +547,10 @@ public class InstanceOfferManager {
                 SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES);
         final List<String> allowedPriceTypes = getContextualPreferenceValueAsList(resource,
                 SystemPreferences.CLUSTER_ALLOWED_PRICE_TYPES);
-        return new AllowedInstanceAndPriceTypes(allowedInstanceTypes, allowedInstanceDockerTypes, allowedPriceTypes);
+        final List<String> allowedMasterPriceTypes = getContextualPreferenceValueAsList(resource,
+                SystemPreferences.CLUSTER_ALLOWED_MASTER_PRICE_TYPES);
+        return new AllowedInstanceAndPriceTypes(allowedInstanceTypes, allowedInstanceDockerTypes,
+                                                allowedPriceTypes, allowedMasterPriceTypes);
     }
 
     private ContextualPreferenceExternalResource toolResource(final Long toolId) {

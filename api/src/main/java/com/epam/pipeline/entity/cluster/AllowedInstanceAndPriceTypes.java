@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,4 +32,7 @@ public class AllowedInstanceAndPriceTypes {
 
     @JsonProperty("cluster.allowed.price.types")
     private final List<String> allowedPriceTypes;
+
+    @JsonProperty("cluster.allowed.price.types.master")
+    private final List<String> allowedMasterPriceTypes;
 }
