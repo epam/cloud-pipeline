@@ -84,7 +84,7 @@ else
     else
         pipe_log_info "--> NFS client [nfs, smb] installed already" "$NFS_INSTALL_TASK"
     fi
-    if [ $IS_LUSTRE_INSTALLED -ne 0 ]
+    if [ $IS_LUSTRE_INSTALLED -ne 0 ] && [ "${CLOUD_PROVIDER}" == "AWS" ]
     then
         pipe_log_info "--> Installing [lustre] client" "$NFS_INSTALL_TASK"
         LUSTRE_INSTALLATION_LOG="/var/log/lustre_client_installation.log"
