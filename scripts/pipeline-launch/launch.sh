@@ -1065,15 +1065,13 @@ else
       rm -f /sbin/pipe
       rm -f /usr/sbin/pipe
       rm -f /usr/local/sbin/pipe
-      rm -f ${CP_USR_BIN}/pipe
-      rm -rf /opt/pipe
+      rm -rf ${CP_USR_BIN}/pipe
 
 
       if [ "$CP_PIPELINE_CLI_FROM_TARBALL_INSTALL" ]; then
-        tar -xf "$CP_PIPELINE_CLI_NAME" -C /opt/
+        tar -xf "$CP_PIPELINE_CLI_NAME" -C ${CP_USR_BIN}/
         rm -f "$CP_PIPELINE_CLI_NAME"
-        ln -s /opt/pipe/pipe /usr/bin/pipe
-        ln -s /opt/pipe/pipe ${CP_USR_BIN}/pipe
+        ln -s ${CP_USR_BIN}/pipe/pipe /usr/bin/pipe
       else
         # Install into the PATH locationse
         cp pipe /usr/bin/
