@@ -164,12 +164,11 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     }
 
     public Map<String, Double> collectAggregation(final SearchResponse response,
-                                                  final String aggName, final String ... subAggNames) {
+                                                  final String aggName, final String subAggName) {
         return ((Terms)response.getAggregations().get(aggName)).getBuckets()
                 .stream()
-                .flatMap(b -> Stream.of(subAggNames)
-                    .map(subAggName -> Pair.of(b.getKey().toString(),
-                                               doubleValue(aggregations(b), subAggName)))
+                .map(b -> Pair.of(b.getKey().toString(),
+                        doubleValue(aggregations(b), subAggName))
                 )
                 .filter(pair -> pair.getRight().isPresent())
                 .collect(Collectors.toMap(Pair::getLeft, p -> p.getRight().get()));
