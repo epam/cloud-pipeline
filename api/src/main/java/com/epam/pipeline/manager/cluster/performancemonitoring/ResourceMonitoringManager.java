@@ -166,17 +166,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         }
 
         private void processOverloadedRuns(final List<PipelineRun> runs) {
-            final Map<String, PipelineRun> running = runs.stream()
-                    .filter(r -> {
-                        final boolean hasNodeName = Objects.nonNull(r.getInstance())
-                                && Objects.nonNull(r.getInstance().getNodeName());
-                        if (!hasNodeName) {
-                            log.debug(messageHelper.getMessage(
-                                    MessageConstants.DEBUG_RUN_HAS_NOT_NODE_NAME, r.getId()));
-                        }
-                        return hasNodeName;
-                    })
-                    .collect(Collectors.toMap(r -> r.getInstance().getNodeName(), r -> r));
+            final Map<String, PipelineRun> running = groupedByNode(runs);
             final int timeRange = preferenceManager.getPreference(
                     SystemPreferences.SYSTEM_MONITORING_METRIC_TIME_RANGE);
             final Map<ELKUsageMetric, Double> thresholds = getThresholds();
@@ -205,6 +195,20 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             final List<PipelineRun> runsToUpdateTags = getRunsToUpdatePressuredTags(running, runsToNotify);
             notificationManager.notifyHighResourceConsumingRuns(runsToNotify, NotificationType.HIGH_CONSUMED_RESOURCES);
             pipelineRunManager.updateRunsTags(runsToUpdateTags);
+        }
+
+        private Map<String, PipelineRun> groupedByNode(final List<PipelineRun> runs) {
+            return runs.stream()
+                    .filter(r -> {
+                        final boolean hasNodeName = Objects.nonNull(r.getInstance())
+                                && Objects.nonNull(r.getInstance().getNodeName());
+                        if (!hasNodeName) {
+                            log.debug(messageHelper.getMessage(
+                                    MessageConstants.DEBUG_RUN_HAS_NOT_NODE_NAME, r.getId()));
+                        }
+                        return hasNodeName;
+                    })
+                    .collect(Collectors.toMap(r -> r.getInstance().getNodeName(), r -> r));
         }
 
         private List<PipelineRun> getRunsToUpdatePressuredTags(
@@ -261,8 +265,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         }
 
         private void processIdleRuns(final List<PipelineRun> runs) {
-            final Map<String, PipelineRun> running = runs.stream()
-                    .collect(Collectors.toMap(PipelineRun::getPodId, r -> r));
+            final Map<String, PipelineRun> running = groupedByNode(runs);
 
             final int idleTimeout = preferenceManager.getPreference(SystemPreferences.SYSTEM_MAX_IDLE_TIMEOUT_MINUTES);
 

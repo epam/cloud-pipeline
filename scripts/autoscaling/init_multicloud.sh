@@ -125,7 +125,7 @@ if check_installed "nvidia-smi"; then
 cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "/ebs/docker",
-  "storage-driver": "overlay2",
+  "storage-driver": "btrfs",
   "max-concurrent-uploads": 1,
   "default-runtime": "nvidia",
    "runtimes": {
@@ -140,7 +140,7 @@ else
 cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "/ebs/docker",
-  "storage-driver": "overlay2",
+  "storage-driver": "btrfs",
   "max-concurrent-uploads": 1
 }
 EOT
