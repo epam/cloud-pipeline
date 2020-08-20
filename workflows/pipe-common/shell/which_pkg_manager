@@ -14,17 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-command -v apt-get &> /dev/null
-_result_code=$?
-if [ $_result_code -eq 0 ]; then
-    _result_dist="apt"
-fi
+pkg_managers='apt yum'
 
-command -v yum &> /dev/null
-_result_code=$?
-if [ $_result_code -eq 0 ]; then
-    _result_dist="yum"
-fi
+for pkg_m in $pkg_managers; do
+    if command -v "$pkg_m" &> /dev/null; then
+        echo "$pkg_m"
+        exit 0
+    fi
+done
 
-echo "$_result_dist"
-exit $_result_code
+# None of the support package managers found
+exit 1
