@@ -697,9 +697,6 @@ class VerifiedHTTPSConnectionWithHeaders(VerifiedHTTPSConnection):
             if line in (b'\r\n', b'\n', b''):
                 break
 
-            if self.debuglevel > 0:
-                print('header:', line.decode())
-
 
 class ProxyConnectWithHeadersHTTPSAdapter(HTTPAdapter):
     """Overriding HTTP Adapter so that we can use our own Connection, since
@@ -715,7 +712,6 @@ class ProxyConnectWithHeadersHTTPSAdapter(HTTPAdapter):
 class _ProxySession(AuthorizedSession):
 
     def request(self, method, url, data=None, headers=None, **kwargs):
-        requests_log.debug("Executing request")
         parsed_url = urlparse(url)
         request_url = '%s://%s' % (parsed_url.scheme, parsed_url.netloc)
         self.proxies = StorageOperations.get_proxy_config(request_url)
@@ -730,7 +726,6 @@ class _RefreshingClient(Client):
         session = _ProxySession(credentials, max_refresh_attempts=self.MAX_REFRESH_ATTEMPTS)
         adapter = ProxyConnectWithHeadersHTTPSAdapter(max_retries=3)
         session.mount("https://", adapter)
-        click.echo("session.proxies: %s" % session.proxies)
         super(_RefreshingClient, self).__init__(project=credentials.temporary_credentials.secret_key, _http=session)
 
 
