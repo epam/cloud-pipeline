@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -875,6 +875,7 @@ function api_setup_base_preferences {
     api_set_preference "cluster.instance.hdd" "${CP_PREF_CLUSTER_INSTANCE_HDD:-50}" "true"
     api_set_preference "cluster.instance.type" "${CP_PREF_CLUSTER_INSTANCE_TYPE}" "true"
     api_set_preference "cluster.allowed.price.types" "${CP_PREF_CLUSTER_ALLOWED_PRICE_TYPES}" "true"
+    api_set_preference "cluster.allowed.price.types.master" "${CP_PREF_CLUSTER_ALLOWED_MASTER_PRICE_TYPES}" "true"
     api_set_preference "cluster.spot" "${CP_PREF_CLUSTER_SPOT:-"true"}" "true"
 
     ## Git
