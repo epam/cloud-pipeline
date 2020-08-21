@@ -18,15 +18,9 @@ import hashlib
 import os
 from datetime import datetime, timedelta
 
-from requests import RequestException, Session
+from requests import RequestException
 from requests.adapters import HTTPAdapter
-from requests.exceptions import InvalidProxyURL
-from requests.utils import select_proxy, prepend_scheme_if_needed
-from urllib3 import PoolManager, proxy_from_url
-from urllib3.util import ssl_, parse_url
 from urllib3.connection import VerifiedHTTPSConnection
-import logging
-import ssl
 
 try:
     from http.client import HTTPConnection  # py3
@@ -37,8 +31,6 @@ except ImportError:
     from httplib import HTTPConnection  # py2
     import httplib as http_client
     from httplib import OK
-
-http_client.HTTPConnection.debuglevel = 1
 
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
@@ -70,13 +62,6 @@ from src.utilities.storage.common import AbstractRestoreManager, AbstractListing
 
 CP_CLI_DOWNLOAD_BUFFERING_SIZE = 'CP_CLI_DOWNLOAD_BUFFERING_SIZE'
 CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS = 'CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS'
-
-HTTPConnection.debuglevel = 1
-logging.basicConfig()
-logging.getLogger().setLevel(logging.DEBUG)
-requests_log = logging.getLogger("requests.packages.urllib3")
-requests_log.setLevel(logging.DEBUG)
-requests_log.propagate = True
 
 
 class GsProgressPercentage(ProgressPercentage):
@@ -725,19 +710,6 @@ class ProxyConnectWithHeadersHTTPSAdapter(HTTPAdapter):
         # Need to override the ConnectionCls with our Subclassed one to get at _tunnel()
         manager.pool_classes_by_scheme['https'].ConnectionCls = VerifiedHTTPSConnectionWithHeaders
         return manager
-
-
-class TlsAdapter(HTTPAdapter):
-
-    def __init__(self,  **kwargs):
-        super(TlsAdapter, self).__init__(**kwargs)
-
-    def init_poolmanager(self, *pool_args, **pool_kwargs):
-        ctx = ssl_.create_urllib3_context(ssl.PROTOCOL_TLS)
-
-        ctx.options |= ssl.OP_NO_SSLv2
-        ctx.options |= ssl.OP_NO_SSLv3
-        self.poolmanager = PoolManager(*pool_args, ssl_context=ctx, **pool_kwargs)
 
 
 class _ProxySession(AuthorizedSession):

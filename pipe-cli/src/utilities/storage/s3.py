@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from botocore.endpoint import BotocoreHTTPSession, MAX_POOL_CONNECTIONS
+
+from src.utilities.storage.s3_proxy_utils import AwsProxyConnectWithHeadersHTTPSAdapter
+
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
 try:
@@ -45,6 +49,8 @@ class StorageItemManager(object):
     def __init__(self, session, bucket=None):
         self.session = session
         self.s3 = session.resource('s3', config=S3BucketOperations.get_proxy_config())
+        self.s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
+            max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         if bucket:
             self.bucket = self.s3.Bucket(bucket)
 
@@ -64,9 +70,15 @@ class StorageItemManager(object):
         formatted_tags = ['%s=%s' % (key, value) for key, value in parsed_tags.items()]
         return '&'.join(formatted_tags)
 
+    def _get_client(self):
+        client = self.session.client('s3', config=S3BucketOperations.get_proxy_config())
+        client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
+            max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
+        return client
+
     def get_s3_file_size(self, bucket, key):
         try:
-            client = self.session.client('s3', config=S3BucketOperations.get_proxy_config())
+            client = self._get_client()
             item = client.head_object(Bucket=bucket, Key=key)
             if 'DeleteMarker' in item:
                 return None
@@ -251,7 +263,7 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
         self.bucket = bucket
 
     def restore_version(self, version, exclude=[], include=[], recursive=False):
-        client = self.session.client('s3', config=S3BucketOperations.get_proxy_config())
+        client = self._get_client()
         bucket = self.bucket.bucket.path
 
         if not recursive:
@@ -355,7 +367,7 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
         self.bucket = bucket
 
     def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
-        client = self.session.client('s3', config=S3BucketOperations.get_proxy_config())
+        client = self._get_client()
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
         bucket = self.bucket.bucket.path
         prefix = StorageOperations.get_prefix(relative_path)
@@ -402,7 +414,7 @@ class ListingManager(StorageItemManager, AbstractListingManager):
     def list_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
                    show_all=False):
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
-        client = self.session.client('s3', config=S3BucketOperations.get_proxy_config())
+        client = self._get_client()
         operation_parameters = {
             'Bucket': self.bucket.bucket.path
         }
@@ -425,7 +437,7 @@ class ListingManager(StorageItemManager, AbstractListingManager):
     def get_summary_with_depth(self, max_depth, relative_path=None):
         bucket_name = self.bucket.bucket.path
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
-        client = self.session.client('s3', config=S3BucketOperations.get_proxy_config())
+        client = self._get_client()
         operation_parameters = {
             'Bucket': bucket_name
         }
@@ -451,7 +463,7 @@ class ListingManager(StorageItemManager, AbstractListingManager):
 
     def get_summary(self, relative_path=None):
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
-        client = self.session.client('s3', config=S3BucketOperations.get_proxy_config())
+        client = self._get_client()
         operation_parameters = {
             'Bucket': self.bucket.bucket.path
         }
@@ -573,7 +585,7 @@ class ObjectTaggingManager(StorageItemManager):
         self.bucket = bucket
 
     def get_object_tagging(self, source):
-        client = self.session.client('s3', config=S3BucketOperations.get_proxy_config())
+        client = self._get_client()
         response = client.get_object_tagging(
             Bucket=self.bucket,
             Key=source
@@ -598,6 +610,13 @@ class S3BucketOperations(object):
             return AwsConfig(proxies=cls.__config__.resolve_proxy(target_url=cls.S3_ENDPOINT_URL))
 
     @classmethod
+    def _get_client(cls, session):
+        client = session.client('s3', config=S3BucketOperations.get_proxy_config())
+        client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
+            max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
+        return client
+
+    @classmethod
     def init_wrapper(cls, storage_wrapper, session=None, versioning=False):
         if storage_wrapper.is_local():
             return storage_wrapper
@@ -610,7 +629,7 @@ class S3BucketOperations(object):
         if session is None:
             session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'cp', versioning=versioning)
             storage_wrapper.session = session
-        client = session.client('s3', config=S3BucketOperations.get_proxy_config())
+        client = cls._get_client(session)
         if versioning:
             paginator = client.get_paginator('list_object_versions')
         else:
@@ -668,7 +687,7 @@ class S3BucketOperations(object):
             session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'cp')
 
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
-        client = session.client('s3', config=S3BucketOperations.get_proxy_config())
+        client = cls._get_client(session)
         paginator = client.get_paginator('list_objects_v2')
         operation_parameters = {
             'Bucket': storage_wrapper.bucket.path,
@@ -697,7 +716,7 @@ class S3BucketOperations(object):
                 prefix = prefix + delimiter + relative_path
         if session is None:
             session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'cp')
-        client = session.client('s3', config=S3BucketOperations.get_proxy_config())
+        client = cls._get_client(session)
         paginator = client.get_paginator('list_objects_v2')
         operation_parameters = {
             'Bucket': storage_wrapper.bucket.path,
@@ -747,7 +766,7 @@ class S3BucketOperations(object):
     def delete_item(cls, storage_wrapper, relative_path, session=None):
         if session is None:
             session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'mv')
-        client = session.client('s3', config=S3BucketOperations.get_proxy_config())
+        client = cls._get_client(session)
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
         bucket = storage_wrapper.bucket.path
         if relative_path:
