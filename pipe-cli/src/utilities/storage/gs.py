@@ -23,14 +23,12 @@ from requests.adapters import HTTPAdapter
 from urllib3.connection import VerifiedHTTPSConnection
 
 try:
-    from http.client import HTTPConnection  # py3
-    import http.client as http_client
-    from http import HTTPStatus
+    import http.client as http_client  # Python 3
+    from http import HTTPStatus  # Python 3
     OK = HTTPStatus.OK
 except ImportError:
-    from httplib import HTTPConnection  # py2
-    import httplib as http_client
-    from httplib import OK
+    import httplib as http_client  # Python 2
+    from httplib import OK  # Python 2
 
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
