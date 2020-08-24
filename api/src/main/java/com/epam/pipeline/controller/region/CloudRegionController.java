@@ -75,6 +75,19 @@ public class CloudRegionController extends AbstractRestController {
         return Result.success(cloudRegionApiService.loadAll());
     }
 
+    @GetMapping("/billing")
+    @ApiOperation(
+        value = "Lists all regions for billing.",
+        notes = "Lists all regions for billing. Some fields, which are not used for billing purposes are "
+                + "restored to default values.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        })
+    public Result<List<? extends AbstractCloudRegion>> loadAllForBilling() {
+        return Result.success(cloudRegionApiService.loadAllForBilling());
+    }
+
     @GetMapping(REGION_ID_URL)
     @ApiOperation(
             value = "Lists single region by the specified id.",

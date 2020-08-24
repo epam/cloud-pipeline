@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -52,9 +53,11 @@ import org.springframework.util.Assert;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @AclSync
@@ -64,6 +67,8 @@ import java.util.stream.Collectors;
 public class CloudRegionManager implements SecuredEntityManager {
 
     public static final String CP_REGION_CREDS_SECRET = "cp-region-creds-secret";
+    private static final Set<String> NON_SENSITIVE_REGION_FIELDS =
+        new HashSet<>(Arrays.asList("id", "name", "provider", "regionCode"));
 
     private final CloudRegionDao cloudRegionDao;
     private final FileShareMountManager shareMountManager;
@@ -93,6 +98,12 @@ public class CloudRegionManager implements SecuredEntityManager {
 
     public List<? extends AbstractCloudRegion> loadAll() {
         return cloudRegionDao.loadAll();
+    }
+
+    public List<? extends AbstractCloudRegion> loadAllForBilling() {
+        return loadAll().stream()
+            .map(region -> EntityManager.resetAllFieldsExcept(region, NON_SENSITIVE_REGION_FIELDS))
+            .collect(Collectors.toList());
     }
 
     @Transactional
@@ -332,5 +343,4 @@ public class CloudRegionManager implements SecuredEntityManager {
     private CloudRegionHelper getHelper(CloudProvider type) {
         return helpers.get(type);
     }
-
 }

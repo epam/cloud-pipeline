@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ public final class AclExpressions {
     private static final String OR = " OR ";
 
     public static final String ADMIN_ONLY = "hasRole('ADMIN')";
+
+    public static final String FULL_BILLING_ACCESS = ADMIN_ONLY + OR + "hasRole('BILLING_MANAGER')";
 
     public static final String PIPELINE_ID_READ =
             "hasRole('ADMIN') OR hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Pipeline', 'READ')";

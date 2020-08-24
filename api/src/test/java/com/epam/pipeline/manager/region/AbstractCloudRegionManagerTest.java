@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,16 +29,22 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
+import com.google.common.base.Defaults;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
+import org.springframework.util.ReflectionUtils;
 
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.isEmpty;
@@ -53,6 +59,8 @@ public abstract class AbstractCloudRegionManagerTest {
 
     static final long ID = 1L;
     static final String REGION_NAME = "name";
+    static final Set<String> ALLOWED_REGION_OBJECT_FIELDS =
+        new HashSet<>(Arrays.asList("id", "name", "provider", "regionCode"));
 
     final CloudRegionMapper cloudRegionMapper = Mappers.getMapper(CloudRegionMapper.class);
     final CloudRegionDao cloudRegionDao = mock(CloudRegionDao.class);
@@ -108,6 +116,39 @@ public abstract class AbstractCloudRegionManagerTest {
         final AbstractCloudRegion secondRegion = commonRegion();
         doReturn(Arrays.asList(firstRegion, secondRegion)).when(cloudRegionDao).loadAll();
         assertThat(cloudRegionManager.loadAll(), containsInAnyOrder(firstRegion, secondRegion));
+    }
+
+    @Test
+    public void loadAllForBillingShouldReturnAllEntitiesFromDaoWithHiddenFiedls() {
+        final AbstractCloudRegion firstRegion = commonRegion();
+        doReturn(Collections.singletonList(firstRegion)).when(cloudRegionDao).loadAll();
+        final List<? extends AbstractCloudRegion> allRegions = cloudRegionManager.loadAll();
+        assertThat(allRegions, containsInAnyOrder(firstRegion));
+        final AbstractCloudRegion firstRegionAfterLoading = allRegions.get(0);
+        Assert.assertNotNull(firstRegionAfterLoading.getCreatedDate());
+        Assert.assertNotNull(firstRegionAfterLoading.getFileShareMounts());
+        Assert.assertNotNull(firstRegionAfterLoading.getMountStorageRule());
+        Assert.assertNotNull(firstRegionAfterLoading.getOwner());
+
+        final List<? extends AbstractCloudRegion> allRegionsWithHiddenFields = cloudRegionManager.loadAllForBilling();
+        assertThat(allRegionsWithHiddenFields, containsInAnyOrder(firstRegion));
+        final AbstractCloudRegion firstRegionWithHiddenFields = allRegionsWithHiddenFields.get(0);
+        ReflectionUtils.doWithFields(firstRegionWithHiddenFields.getClass(), field -> {
+            if (!Modifier.isStatic(field.getModifiers())) {
+                field.setAccessible(true);
+                final Object fieldValue = field.get(firstRegionWithHiddenFields);
+                if (!ALLOWED_REGION_OBJECT_FIELDS.contains(field.getName())) {
+                    final Class<?> fieldType = field.getType();
+                    if (fieldType.isPrimitive()) {
+                        Assert.assertEquals(Defaults.defaultValue(fieldType), fieldValue);
+                    } else {
+                        Assert.assertNull(fieldValue);
+                    }
+                } else {
+                    Assert.assertNotNull(fieldValue);
+                }
+            }
+        });
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,11 @@ public class CloudRegionApiService {
     @PostFilter("hasRole('ADMIN') OR hasPermission(filterObject,'READ')")
     public List<? extends AbstractCloudRegion> loadAll() {
         return cloudRegionManager.loadAll();
+    }
+
+    @PreAuthorize(AclExpressions.FULL_BILLING_ACCESS)
+    public List<? extends AbstractCloudRegion> loadAllForBilling() {
+        return cloudRegionManager.loadAllForBilling();
     }
 
     @PostAuthorize("hasRole('ADMIN') OR hasPermission(returnObject, 'READ')")
