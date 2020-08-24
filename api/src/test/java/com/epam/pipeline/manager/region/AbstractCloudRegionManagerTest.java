@@ -30,7 +30,6 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.google.common.base.Defaults;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mapstruct.factory.Mappers;
@@ -125,10 +124,10 @@ public abstract class AbstractCloudRegionManagerTest {
         final List<? extends AbstractCloudRegion> allRegions = cloudRegionManager.loadAll();
         assertThat(allRegions, containsInAnyOrder(firstRegion));
         final AbstractCloudRegion firstRegionAfterLoading = allRegions.get(0);
-        Assert.assertNotNull(firstRegionAfterLoading.getCreatedDate());
-        Assert.assertNotNull(firstRegionAfterLoading.getFileShareMounts());
-        Assert.assertNotNull(firstRegionAfterLoading.getMountStorageRule());
-        Assert.assertNotNull(firstRegionAfterLoading.getOwner());
+        assertNotNull(firstRegionAfterLoading.getCreatedDate());
+        assertNotNull(firstRegionAfterLoading.getFileShareMounts());
+        assertNotNull(firstRegionAfterLoading.getMountStorageRule());
+        assertNotNull(firstRegionAfterLoading.getOwner());
 
         final List<? extends AbstractCloudRegion> allRegionsWithHiddenFields = cloudRegionManager.loadAllForBilling();
         assertThat(allRegionsWithHiddenFields, containsInAnyOrder(firstRegion));
@@ -140,12 +139,12 @@ public abstract class AbstractCloudRegionManagerTest {
                 if (!ALLOWED_REGION_OBJECT_FIELDS.contains(field.getName())) {
                     final Class<?> fieldType = field.getType();
                     if (fieldType.isPrimitive()) {
-                        Assert.assertEquals(Defaults.defaultValue(fieldType), fieldValue);
+                        assertEquals(Defaults.defaultValue(fieldType), fieldValue);
                     } else {
-                        Assert.assertNull(fieldValue);
+                        assertNull(fieldValue);
                     }
                 } else {
-                    Assert.assertNotNull(fieldValue);
+                    assertNotNull(fieldValue);
                 }
             }
         });

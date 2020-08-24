@@ -218,6 +218,20 @@ public class UserController extends AbstractRestController {
         return Result.success(userApiService.loadUsers());
     }
 
+    @RequestMapping(value = "/users/billing", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads all registered users for billing purposes.",
+            notes = "Loads all registered users. Some fields, which are not used for billing purposes are "
+                    + "restored to default values.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<PipelineUser>> loadUsersForBilling() {
+        return Result.success(userApiService.loadUsersForBilling());
+    }
+
     @RequestMapping(value = "/user/controls", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(

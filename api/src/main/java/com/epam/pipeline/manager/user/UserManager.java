@@ -159,6 +159,10 @@ public class UserManager {
         return userDao.loadAllUsers();
     }
 
+    public Collection<PipelineUser> loadAllUsersForBilling() {
+        return this.loadAllUsers();
+    }
+
     public Collection<PipelineUserWithStoragePath> loadAllUsersWithDataStoragePath() {
         return userDao.loadAllUsersWithDataStoragePath();
     }

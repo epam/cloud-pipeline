@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.FULL_BILLING_ACCESS;
 
 @Service
 public class UserApiService {
@@ -108,6 +109,11 @@ public class UserApiService {
     @PreAuthorize(ADMIN_ONLY)
     public List<PipelineUser> loadUsers() {
         return new ArrayList<>(userManager.loadAllUsers());
+    }
+
+    @PreAuthorize(FULL_BILLING_ACCESS)
+    public List<PipelineUser> loadUsersForBilling() {
+        return new ArrayList<>(userManager.loadAllUsersForBilling());
     }
 
     public PipelineUser getCurrentUser() {
