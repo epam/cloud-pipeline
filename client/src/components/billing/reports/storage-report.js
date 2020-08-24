@@ -119,6 +119,16 @@ function renderTable ({storages, discounts: discountsFn, height}) {
       render: owner => (<DisplayUser userName={owner} />)
     },
     {
+      key: 'billingCenter',
+      title: 'Billing Center',
+      dataIndex: 'billingCenter'
+    },
+    {
+      key: 'storageType',
+      title: 'Type',
+      dataIndex: 'storageType'
+    },
+    {
       key: 'cost',
       title: 'Cost',
       dataIndex: 'value',
@@ -144,7 +154,7 @@ function renderTable ({storages, discounts: discountsFn, height}) {
       key: 'created',
       title: 'Created date',
       dataIndex: 'created',
-      render: (value) => moment.utc(value).format('DD MMM YYYY')
+      render: (value) => value ? moment.utc(value).format('DD MMM YYYY') : value
     }
   ];
   const dataSource = Object.values(
