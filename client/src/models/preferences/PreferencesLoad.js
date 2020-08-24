@@ -83,6 +83,15 @@ class PreferencesLoad extends Remote {
     return value && `${value}`.toLowerCase() === 'true';
   }
 
+  @computed
+  get allowedMasterPriceTypes () {
+    const value = this.getPreferenceValue('cluster.allowed.price.types.master') || '';
+    if (!value) {
+      return [true, false];
+    }
+    return value.split(',').map(v => /^spot$/i.test(v));
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
