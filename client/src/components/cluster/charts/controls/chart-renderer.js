@@ -104,6 +104,24 @@ function ChartRenderer (
   );
 }
 
+function splitDataParts(data) {
+  const result = [];
+  let current;
+  for (let d = 0; d < (data || []).length; d++) {
+    const item = data[d];
+    if (item.y === undefined && current) {
+      current = null;
+    } else if (item.y !== undefined) {
+      if (!current) {
+        current = [];
+        result.push(current);
+      }
+      current.push(item);
+    }
+  }
+  return result;
+}
+
 @observer
 class ChartRendererWithOffset extends React.PureComponent {
   state = {
@@ -124,12 +142,18 @@ class ChartRendererWithOffset extends React.PureComponent {
       return plotX * xRatio;
     };
     const getYCoordinate = (plotY) => {
+      if (plotY === undefined) {
+        return undefined;
+      }
       return canvasYStart - (plotY - yFrom) * yRatio;
     };
     return plots.map((plot) => ({
       plot: plot.name,
       color: PlotColors[plot.index % PlotColors.length],
-      data: (data || []).map(i => ({x: getXCoordinate(i.x), y: getYCoordinate(i[plot.name])}))
+      data: splitDataParts(
+        (data || [])
+          .map(i => ({x: getXCoordinate(i.x), y: getYCoordinate(i[plot.name])}))
+      )
     }));
   }
 
@@ -183,18 +207,18 @@ class ChartRendererWithOffset extends React.PureComponent {
       return null;
     }
     const {baseLine} = this.state;
-    const lineParts = plot.data.map((coordinate, index) => {
+    const lineParts = plot.data.map(part => part.map((coordinate, index) => {
       if (index === 0) {
         return `M ${coordinate.x},${coordinate.y}`;
       }
       return `L ${coordinate.x},${coordinate.y}`;
-    }).join(' ');
-    const areaParts = [
-      `M ${plot.data[0].x}, ${baseLine}`,
-      ...plot.data.map(coordinate => `L ${coordinate.x},${coordinate.y}`),
-      `L ${plot.data[plot.data.length - 1].x}, ${baseLine}`,
+    }).join(' ')).join(' ');
+    const areaParts = plot.data.map(part => [
+      `M ${part[0].x}, ${baseLine}`,
+      ...part.map(coordinate => `L ${coordinate.x},${coordinate.y}`),
+      `L ${part[part.length - 1].x}, ${baseLine}`,
       'Z'
-    ].join(' ');
+    ].join(' ')).join(' ');
     return (
       <g
         key={index}
@@ -202,7 +226,7 @@ class ChartRendererWithOffset extends React.PureComponent {
       >
         <path d={areaParts} stroke={'none'} fill={plot.color} opacity={0.2} />
         <path d={lineParts} stroke={plot.color} strokeWidth={2} fill={'none'} />
-        {plot.data.map(({x, y}, index) => (
+        {plot.data.reduce((r, c) => ([...r, ...c]), []).map(({x, y}, index) => (
           <circle
             key={index}
             cx={x}
