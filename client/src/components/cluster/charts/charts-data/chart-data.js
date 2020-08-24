@@ -271,7 +271,7 @@ class MemoryUsageData extends ChartData {
       field: 'percentMax',
       group: 'percent',
       valueFn: o => o.memoryUsage.max
-        ? o.memoryUsage.max / o.memoryUsage.capacity
+        ? o.memoryUsage.max / o.memoryUsage.capacity * 100.0
         : undefined
     }, {
       field: 'usage',
