@@ -17,7 +17,18 @@ import copy
 import hashlib
 import os
 from datetime import datetime, timedelta
+
 from requests import RequestException
+from requests.adapters import HTTPAdapter
+from urllib3.connection import VerifiedHTTPSConnection
+
+try:
+    import http.client as http_client  # Python 3
+    from http import HTTPStatus  # Python 3
+    OK = HTTPStatus.OK
+except ImportError:
+    import httplib as http_client  # Python 2
+    from httplib import OK  # Python 2
 
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
@@ -651,6 +662,51 @@ class _RefreshingCredentials(Credentials):
         headers['authorization'] = 'Bearer {}'.format(_helpers.from_bytes(self.temporary_credentials.session_token))
 
 
+class VerifiedHTTPSConnectionWithHeaders(VerifiedHTTPSConnection):
+    def _tunnel(self):
+        """This is just a simple rework of the CONNECT method to combine
+        the headers with the CONNECT request as it causes problems for
+        some proxies
+        """
+        connect_str = "CONNECT %s:%d HTTP/1.0\r\n" % (self._tunnel_host,
+            self._tunnel_port)
+        header_bytes = connect_str.encode("ascii")
+
+        for header, value in self._tunnel_headers.items():
+            header_str = "%s: %s\r\n" % (header, value)
+            header_bytes += header_str.encode("latin-1")
+
+        self.send(header_bytes + b'\r\n')
+
+        response = self.response_class(self.sock, method=self._method)
+        (version, code, message) = response._read_status()
+
+        if code != OK:
+            self.close()
+            raise OSError("Tunnel connection failed: %d %s" % (code,
+                                                               message.strip()))
+        while True:
+            line = response.fp.readline(http_client._MAXLINE + 1)
+            if len(line) > http_client._MAXLINE:
+                raise RuntimeError("header line")
+            if not line:
+                # for sites which EOF without sending a trailer
+                break
+            if line in (b'\r\n', b'\n', b''):
+                break
+
+
+class ProxyConnectWithHeadersHTTPSAdapter(HTTPAdapter):
+    """Overriding HTTP Adapter so that we can use our own Connection, since
+        we need to get at _tunnel()
+    """
+    def proxy_manager_for(self, proxy, **proxy_kwargs):
+        manager = super(ProxyConnectWithHeadersHTTPSAdapter, self).proxy_manager_for(proxy, **proxy_kwargs)
+        # Need to override the ConnectionCls with our Subclassed one to get at _tunnel()
+        manager.pool_classes_by_scheme['https'].ConnectionCls = VerifiedHTTPSConnectionWithHeaders
+        return manager
+
+
 class _ProxySession(AuthorizedSession):
 
     def request(self, method, url, data=None, headers=None, **kwargs):
@@ -666,6 +722,8 @@ class _RefreshingClient(Client):
     def __init__(self, bucket, read, write, refresh_credentials, versioning=False):
         credentials = _RefreshingCredentials(refresh=lambda: refresh_credentials(bucket, read, write, versioning))
         session = _ProxySession(credentials, max_refresh_attempts=self.MAX_REFRESH_ATTEMPTS)
+        adapter = ProxyConnectWithHeadersHTTPSAdapter(max_retries=3)
+        session.mount("https://", adapter)
         super(_RefreshingClient, self).__init__(project=credentials.temporary_credentials.secret_key, _http=session)
 
 
