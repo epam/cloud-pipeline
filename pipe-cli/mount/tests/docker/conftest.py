@@ -1,9 +1,12 @@
 import itertools
+import json
 import os
 
 from collections import namedtuple
 
 Storage = namedtuple('Storage', ['type', 'region'])
+Share = namedtuple('Share', ['id', 'region'])
+Distribution = namedtuple('Distribution', ['name', 'image'])
 
 root_path = os.getcwd()
 source_path = os.path.join(root_path, 'random.tmp')
@@ -16,9 +19,10 @@ tests_path = os.path.join(root_path, 'tests')
 host_tests_path = os.path.join(root_path, 'tests')
 log_path = os.path.join(root_path, 'log.txt')
 
-default_distributions = ['lifescience/cloud-pipeline:tools-base-ubuntu-18.04-0.16',
-                         'lifescience/cloud-pipeline:tools-base-centos-7-0.16']
-default_storages = [Storage(type='S3', region='1')]
+default_distributions = [Distribution(name='ubuntu:18.04', image='lifescience/cloud-pipeline:tools-base-ubuntu-18.04-0.16'),
+                         Distribution(name='centos:7', image='lifescience/cloud-pipeline:tools-base-centos-7-0.16')]
+default_storages = [Storage(type='S3', region='1'),
+                    Share(id='2', region='1')]
 default_sizes = None
 default_folder = None
 containers = {}
@@ -34,13 +38,21 @@ def pytest_addoption(parser):
 
 
 def pytest_generate_tests(metafunc):
+    if 'storage' in metafunc.function.__name__:
+        generate_tests(metafunc, type_class=Storage, type_name_func=lambda storage: storage.type)
+    elif 'webdav' in metafunc.function.__name__:
+        generate_tests(metafunc, type_class=Share, type_name_func=lambda storage: 'File share')
+
+
+def generate_tests(metafunc, type_class, type_name_func):
     distributions = _get_distributions(metafunc.config)
-    storages = _get_storages(metafunc.config) or default_storages
+    storages = [storage for storage in _get_storages(metafunc.config) or default_storages
+                if isinstance(storage, type_class)]
     distribution_storage_combinations = list(itertools.product(distributions, storages))
-    folder = metafunc.config.option.sizes or default_folder
+    folder = metafunc.config.option.folder or default_folder
     pytest_arguments = _get_pytest_arguments(metafunc.config)
     parameters = [[dsc[0], dsc[1], folder, pytest_arguments] for dsc in distribution_storage_combinations]
-    ids = [dsc[1].type + ' on ' + dsc[0] for dsc in distribution_storage_combinations]
+    ids = [type_name_func(dsc[1]) + ' on ' + dsc[0].name for dsc in distribution_storage_combinations]
     metafunc.parametrize('distribution, storage, folder, pytest_arguments', parameters, ids=ids)
 
 
@@ -56,7 +68,6 @@ def _get_pytest_arguments(config):
 def _get_storages(config):
     storages_string = config.option.storages
     if storages_string:
-        import json
         storages_json = json.loads(storages_string)
         storages = [Storage(**storage) for storage in storages_json]
     else:
@@ -67,9 +78,8 @@ def _get_storages(config):
 def _get_distributions(config):
     distributions_string = config.option.distributions
     if distributions_string:
-        distributions = [raw_distribution.strip()
-                         for raw_distribution in distributions_string.split(',')
-                         if raw_distribution.strip()]
+        distributions_json = json.loads(distributions_string)
+        distributions = [Distribution(**distribution) for distribution in distributions_json]
     else:
         distributions = default_distributions
-    return sorted(distributions)
+    return sorted(distributions, key=lambda it: it.name)
