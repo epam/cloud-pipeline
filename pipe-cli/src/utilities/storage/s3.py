@@ -495,7 +495,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                     item = self.get_file_object(delete_marker, name, version=True, storage_class=False)
                     item.delete_marker = True
                     self.process_version(item, item_keys, name)
-            break
+            if 'IsTruncated' in page and not page['IsTruncated']:
+                break
         items.extend(item_keys.values())
         for item in items:
             item.versions.sort(key=lambda x: x.changed, reverse=True)
@@ -527,7 +528,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                     name = self.get_file_name(file, prefix, recursive)
                     item = self.get_file_object(file, name)
                     items.append(item)
-            break
+            if 'IsTruncated' in page and not page['IsTruncated']:
+                break
         return items
 
     def get_file_object(self, file, name, version=False, storage_class=True):
