@@ -207,7 +207,8 @@ class S3Client(FileSystemClient):
                         name = self.get_file_name(file, prefix, recursive)
                         item = self.get_file_object(file, name)
                         items.append(item)
-            break
+            if 'IsTruncated' in page and not page['IsTruncated']:
+                break
         return items if path.endswith(self._delimiter) else self._matching_paths(items, path)
 
     def _matching_paths(self, items, path):
