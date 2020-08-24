@@ -1284,8 +1284,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   @computed
   get priceTypes () {
+    let availableMasterNodeTypes = [true, false];
+    if (this.state.launchCluster && this.props.preferences.loaded) {
+      availableMasterNodeTypes = this.props.preferences.allowedMasterPriceTypes;
+    }
     if (!this.props.allowedInstanceTypes || !this.props.allowedInstanceTypes.loaded) {
-      return [true, false];
+      return availableMasterNodeTypes;
     }
     return (this.props.allowedInstanceTypes.value[names.allowedPriceTypes] || [])
       .map(v => {
@@ -1296,7 +1300,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
         return undefined;
       })
-      .filter(v => v !== undefined);
+      .filter(v => v !== undefined && availableMasterNodeTypes.indexOf(v) >= 0);
   }
 
   getInstanceTypeParameterDefaultValue = (key) => {
@@ -3183,7 +3187,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       nodesCount,
       maxNodesCount,
       autoScaledPriceType
-    }, this.closeConfigureClusterDialog);
+    }, () => {
+      this.closeConfigureClusterDialog();
+      const priceType = this.getSectionFieldValue(ADVANCED)('is_spot') ||
+        this.getDefaultValue('is_spot');
+      const priceTypeField = `${ADVANCED}.is_spot`;
+      this.props.form.setFieldsValue({
+        [priceTypeField]: this.correctPriceTypeValue(priceType)
+      });
+    });
   };
 
   renderExecutionEnvironmentSummary = () => {
