@@ -49,12 +49,11 @@ import org.elasticsearch.search.aggregations.bucket.histogram.ParsedDateHistogra
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.avg.AvgAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.avg.ParsedAvg;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.ParsedSimpleValue;
 import org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders;
+import org.elasticsearch.search.aggregations.pipeline.bucketmetrics.sum.SumBucketPipelineAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,9 +86,12 @@ public class BillingManager {
     private static final String ACCUMULATED_COST = "accumulatedCost";
     private static final String RUN_USAGE_AGG = "usage_runs";
     private static final String RUN_USAGE_FIELD = "usage_minutes";
-    private static final String STORAGE_USAGE_AGG = "usage_storages";
+    private static final String STORAGE_GROUPING_AGG = "storage_buckets";
+    private static final String SINGLE_STORAGE_USAGE_AGG = "usage_storage";
+    private static final String TOTAL_STORAGE_USAGE_AGG = "usage_storages";
     private static final String STORAGE_USAGE_FIELD = "usage_bytes";
     private static final String RUN_ID_FIELD = "run_id";
+    private static final String STORAGE_ID_FIELD = "storage_id";
     private static final String UNIQUE_RUNS = "runs";
     private static final String PAGE = "page";
     private static final String TOTAL_PAGES = "totalPages";
@@ -107,7 +109,8 @@ public class BillingManager {
     private final List<DateHistogramInterval> validIntervals;
     private final SumAggregationBuilder costAggregation;
     private final SumAggregationBuilder runUsageAggregation;
-    private final AvgAggregationBuilder storageUsageAggregation;
+    private final TermsAggregationBuilder storageUsageGroupingAggregation;
+    private final SumBucketPipelineAggregationBuilder storageUsageTotalAggregation;
     private final TermsAggregationBuilder uniqueRunsAggregation;
     private final Map<BillingGrouping, EntityBillingDetailsLoader> billingDetailsLoaders;
     private final String emptyValue;
@@ -142,7 +145,11 @@ public class BillingManager {
                                             DateHistogramInterval.YEAR);
         this.costAggregation = AggregationBuilders.sum(COST_FIELD).field(COST_FIELD);
         this.runUsageAggregation = AggregationBuilders.sum(RUN_USAGE_AGG).field(RUN_USAGE_FIELD);
-        this.storageUsageAggregation = AggregationBuilders.avg(STORAGE_USAGE_AGG).field(STORAGE_USAGE_FIELD);
+        this.storageUsageGroupingAggregation = AggregationBuilders
+            .terms(STORAGE_GROUPING_AGG).field(STORAGE_ID_FIELD).size(Integer.MAX_VALUE)
+            .subAggregation(AggregationBuilders.avg(SINGLE_STORAGE_USAGE_AGG).field(STORAGE_USAGE_FIELD));
+        this.storageUsageTotalAggregation = PipelineAggregatorBuilders
+            .sumBucket(TOTAL_STORAGE_USAGE_AGG, String.format("%s.%s", STORAGE_GROUPING_AGG, SINGLE_STORAGE_USAGE_AGG));
         this.uniqueRunsAggregation = AggregationBuilders.terms(UNIQUE_RUNS).field(RUN_ID_FIELD).size(Integer.MAX_VALUE);
         this.billingDetailsLoaders = billingDetailsLoaders.stream()
             .collect(Collectors.toMap(EntityBillingDetailsLoader::getGrouping,
@@ -273,7 +280,8 @@ public class BillingManager {
                 fieldAgg.subAggregation(uniqueRunsAggregation);
             }
             if (grouping.storageUsageDetailsRequired()) {
-                fieldAgg.subAggregation(storageUsageAggregation);
+                fieldAgg.subAggregation(storageUsageGroupingAggregation);
+                fieldAgg.subAggregation(storageUsageTotalAggregation);
             }
             searchSource.aggregation(fieldAgg);
         }
@@ -397,12 +405,9 @@ public class BillingManager {
                 groupingInfo.put(UNIQUE_RUNS, Integer.toString(ids.getBuckets().size()));
             }
             if (grouping.storageUsageDetailsRequired()) {
-                final ParsedAvg usageAggResult = aggregations.get(STORAGE_USAGE_AGG);
-                final double aggValue = usageAggResult.getValue();
-                final long usageVal =  Double.isFinite(aggValue)
-                                       ? new Double(aggValue).longValue()
-                                       : 0L;
-                groupingInfo.put(STORAGE_USAGE_AGG, Long.toString(usageVal));
+                final ParsedSimpleValue totalStorageUsage = aggregations.get(TOTAL_STORAGE_USAGE_AGG);
+                final long storageUsageVal = new Double(totalStorageUsage.value()).longValue();
+                groupingInfo.put(TOTAL_STORAGE_USAGE_AGG, Long.toString(storageUsageVal));
             }
             if (detailsLoader != null) {
                 try {
