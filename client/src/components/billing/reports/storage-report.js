@@ -263,10 +263,23 @@ class StorageReports extends React.Component {
               title: 'Owner'
             },
             {
+              key: 'billingCenter',
+              title: 'Billing Center'
+            },
+            {
+              key: 'storageType',
+              title: 'Type'
+            },
+            {
               key: 'value',
               title: 'Cost',
               applyDiscounts: ({storage}) => storage,
               formatter: costTickFormatter
+            },
+            {
+              key: 'usage',
+              title: 'Volume',
+              formatter: numberFormatter
             },
             {
               key: 'region',
