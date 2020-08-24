@@ -635,7 +635,8 @@ function GeneralReport ({
     filters
   );
   const props = {authenticatedUserInfo};
-  const onBillingCenterSelect = roleModel.isManager.billing({props})
+  const isBillingManager = roleModel.isManager.billing({props});
+  const onBillingCenterSelect = isBillingManager
     ? navigation.wrapNavigation(navigation.billingCentersNavigation, filters)
     : undefined;
   const composers = (discounts) => [
@@ -732,21 +733,25 @@ function GeneralReport ({
               <div
                 key={GeneralReportLayout.Panels.runners}
               >
-                <Layout.Panel>
-                  <ResizableContainer style={{width: '100%', height: '100%'}}>
-                    {
-                      ({height}) => (
-                        <BillingCenters
-                          request={[billingCentersComputeRequest, billingCentersStorageRequest]}
-                          discounts={[computeDiscounts, storageDiscounts]}
-                          onSelect={onBillingCenterSelect}
-                          title="Billing centers"
-                          height={height}
-                        />
-                      )
-                    }
-                  </ResizableContainer>
-                </Layout.Panel>
+                {
+                  isBillingManager && (
+                    <Layout.Panel>
+                      <ResizableContainer style={{width: '100%', height: '100%'}}>
+                        {
+                          ({height}) => (
+                            <BillingCenters
+                              request={[billingCentersComputeRequest, billingCentersStorageRequest]}
+                              discounts={[computeDiscounts, storageDiscounts]}
+                              onSelect={onBillingCenterSelect}
+                              title="Billing centers"
+                              height={height}
+                            />
+                          )
+                        }
+                      </ResizableContainer>
+                    </Layout.Panel>
+                  )
+                }
               </div>
             </Layout>
           </Export.Consumer>
