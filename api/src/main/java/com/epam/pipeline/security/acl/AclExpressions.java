@@ -22,8 +22,6 @@ public final class AclExpressions {
 
     public static final String ADMIN_ONLY = "hasRole('ADMIN')";
 
-    public static final String FULL_BILLING_ACCESS = ADMIN_ONLY + OR + "hasRole('BILLING_MANAGER')";
-
     public static final String PIPELINE_ID_READ =
             "hasRole('ADMIN') OR hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Pipeline', 'READ')";
 

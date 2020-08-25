@@ -21,6 +21,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.controller.vo.RouteType;
+import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
@@ -218,18 +219,18 @@ public class UserController extends AbstractRestController {
         return Result.success(userApiService.loadUsers());
     }
 
-    @RequestMapping(value = "/users/billing", method = RequestMethod.GET)
+    @GetMapping(value = "/users/info")
     @ResponseBody
     @ApiOperation(
-            value = "Loads all registered users for billing purposes.",
-            notes = "Loads all registered users. Some fields, which are not used for billing purposes are "
-                    + "restored to default values.",
+            value = "Loads all users' brief information.",
+            notes = "Loads all registered users, but instead of providing detailed description only the general "
+                    + "information is returned.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<PipelineUser>> loadUsersForBilling() {
-        return Result.success(userApiService.loadUsersForBilling());
+    public Result<List<UserInfo>> loadUsersInfo() {
+        return Result.success(userApiService.loadUsersInfo());
     }
 
     @RequestMapping(value = "/user/controls", method = RequestMethod.GET)
