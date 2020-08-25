@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.billing;
+package com.epam.pipeline.entity.info;
 
 import com.epam.pipeline.entity.region.CloudProvider;
 import lombok.Builder;
@@ -22,7 +22,7 @@ import lombok.Value;
 
 @Value
 @Builder
-public class RegionForBilling {
+public class CloudRegionInfo {
 
     private final Long id;
     private final String name;

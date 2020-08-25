@@ -17,7 +17,7 @@
 package com.epam.pipeline.manager.region;
 
 import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
-import com.epam.pipeline.entity.billing.RegionForBilling;
+import com.epam.pipeline.entity.info.CloudRegionInfo;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.security.acl.AclExpressions;
@@ -40,9 +40,8 @@ public class CloudRegionApiService {
         return cloudRegionManager.loadAll();
     }
 
-    @PreAuthorize(AclExpressions.FULL_BILLING_ACCESS)
-    public List<RegionForBilling> loadAllForBilling() {
-        return cloudRegionManager.loadAllForBilling();
+    public List<CloudRegionInfo> loadAllRegionsInfo() {
+        return cloudRegionManager.loadAllRegionsInfo();
     }
 
     @PostAuthorize("hasRole('ADMIN') OR hasPermission(returnObject, 'READ')")

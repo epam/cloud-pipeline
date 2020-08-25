@@ -21,7 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
-import com.epam.pipeline.entity.billing.RegionForBilling;
+import com.epam.pipeline.entity.info.CloudRegionInfo;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
@@ -96,9 +96,9 @@ public class CloudRegionManager implements SecuredEntityManager {
         return cloudRegionDao.loadAll();
     }
 
-    public List<RegionForBilling> loadAllForBilling() {
+    public List<CloudRegionInfo> loadAllRegionsInfo() {
         return loadAll().stream()
-            .map(region -> RegionForBilling.builder()
+            .map(region -> CloudRegionInfo.builder()
                 .id(region.getId())
                 .name(region.getName())
                 .provider(region.getProvider())
