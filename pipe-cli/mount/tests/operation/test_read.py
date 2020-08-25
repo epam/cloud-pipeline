@@ -1,7 +1,7 @@
 import os
 
 from utils import MB, execute, assert_content
-from random_io import read, read_with_gaps
+from pyio import read, read_with_gaps
 
 small_read_size = 5
 

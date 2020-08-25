@@ -1,6 +1,6 @@
 import pytest
 from utils import MB, execute, as_size, assert_content
-from random_io import write, write_with_gaps
+from pyio import write, write_with_gaps
 
 small_write_size = 5
 

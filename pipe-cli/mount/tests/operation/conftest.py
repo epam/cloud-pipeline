@@ -27,13 +27,20 @@ def pytest_addoption(parser):
 def pytest_generate_tests(metafunc):
     local_path = _get_local_path(config=metafunc.config)
     mounted_path = _get_mount_path(config=metafunc.config)
-    sizes = _get_sizes(config=metafunc.config)
-    size_literals = [as_literal(size) for size in sizes]
-    file_names = ['file_' + size for size in size_literals]
-    local_files = [os.path.join(local_path, file_name) for file_name in file_names]
-    mounted_files = [os.path.join(mounted_path, file_name) for file_name in file_names]
-    parameters = zip(size_literals, local_files, mounted_files, [source_path] * len(sizes))
-    metafunc.parametrize('size, local_file, mounted_file, source_path', parameters, ids=size_literals)
+    # todo: We should run each test in module directory.
+    #  Nevertheless tests should be performed for both mount root and folders.
+    # module_local_path = os.path.join(local_path, metafunc.module.__name__)
+    # module_mounted_path = os.path.join(mounted_path, metafunc.module.__name__)
+    if 'read' in metafunc.module.__name__ or 'write' in metafunc.module.__name__:
+        sizes = _get_sizes(config=metafunc.config)
+        size_literals = [as_literal(size) for size in sizes]
+        file_names = ['file_' + size for size in size_literals]
+        local_files = [os.path.join(local_path, file_name) for file_name in file_names]
+        mounted_files = [os.path.join(mounted_path, file_name) for file_name in file_names]
+        parameters = zip(size_literals, local_files, mounted_files, [source_path] * len(sizes))
+        metafunc.parametrize('size, local_file, mounted_file, source_path', parameters, ids=size_literals)
+    elif 'mkdir' in metafunc.module.__name__ or 'rm' in metafunc.module.__name__:
+        metafunc.parametrize('mount_path', [mounted_path], ids=[''])
 
 
 def _get_local_path(config):

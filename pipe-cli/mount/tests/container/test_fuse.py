@@ -35,13 +35,13 @@ def test_fuse_storage(distribution, storage, folder, pytest_arguments):
                             -r '{region}' \
                             -u '' \
                             -f '{folder}'
-    '{pipe}' storage mount -l '{log_path}' -b '{storage_name}' '{mounted_path}'
+    '{pipe}' storage mount -t -l '{log_path}' -b '{storage_name}' '{mounted_path}'
     cp -r '{tests_path}' /tests
     rm -rf /tests/.pytest_cache
     cd /tests
     export PYTHONPATH=$PWD:$PYTHONPATH
     pip install pytest
-    pytest -s -v local {pytest_arguments}
+    pytest -s -v operation {pytest_arguments}
     {pipe} storage delete -n {storage_name} -y -c
     """.format(pipe=host_pipe_path,
                storage_name=storage_name,
@@ -93,7 +93,7 @@ def test_fuse_webdav(distribution, storage, folder, pytest_arguments):
            "serviceType": "FILE_SHARE" \
          }}' \
          '{api}datastorage/save?cloud=true&skipPolicy=false'
-    '{pipe}' storage mount -l '{log_path}' -f '{mounted_path}'
+    '{pipe}' storage mount -t -l '{log_path}' -f '{mounted_path}'
     cp -r '{tests_path}' /tests
     rm -rf /tests/.pytest_cache
     cd /tests
@@ -117,7 +117,7 @@ def test_fuse_webdav(distribution, storage, folder, pytest_arguments):
         exit 1
     fi
     mkdir "$STORAGE_MOUNT_PATH"
-    pytest -s -v local {pytest_arguments} --mount "$STORAGE_MOUNT_PATH"
+    pytest -s -v operation {pytest_arguments} --mount "$STORAGE_MOUNT_PATH"
     {pipe} storage delete -n {storage_name} -y -c
     """.format(api=os.getenv('API'),
                api_token=os.getenv('API_TOKEN'),
