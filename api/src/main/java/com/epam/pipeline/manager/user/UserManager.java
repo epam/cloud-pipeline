@@ -162,11 +162,7 @@ public class UserManager {
 
     public List<UserInfo> loadUsersInfo() {
         return this.loadAllUsers().stream()
-            .map(user -> UserInfo.builder()
-                .id(user.getId())
-                .name(user.getUserName())
-                .attributes(user.getAttributes())
-                .build())
+            .map(UserInfo::new)
             .collect(Collectors.toList());
     }
 

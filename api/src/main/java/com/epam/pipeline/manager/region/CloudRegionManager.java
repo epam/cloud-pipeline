@@ -98,12 +98,7 @@ public class CloudRegionManager implements SecuredEntityManager {
 
     public List<CloudRegionInfo> loadAllRegionsInfo() {
         return loadAll().stream()
-            .map(region -> CloudRegionInfo.builder()
-                .id(region.getId())
-                .name(region.getName())
-                .provider(region.getProvider())
-                .regionId(region.getRegionCode())
-                .build())
+            .map(CloudRegionInfo::new)
             .collect(Collectors.toList());
     }
 

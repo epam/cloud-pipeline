@@ -16,16 +16,21 @@
 
 package com.epam.pipeline.entity.info;
 
-import lombok.Builder;
+import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.Value;
 
 import java.util.Map;
 
 @Value
-@Builder
 public class UserInfo {
 
     private final Long id;
     private final String name;
     private final Map<String, String> attributes;
+
+    public UserInfo(final PipelineUser user) {
+        this.attributes = user.getAttributes();
+        this.id = user.getId();
+        this.name = user.getUserName();
+    }
 }
