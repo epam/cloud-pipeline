@@ -32,9 +32,9 @@ class MemoryUsageChart extends Base {
           data={data}
           {...this.plotProperties}
           plots={[{
-            name: 'memoryMax', renderer: 'memory-usage', group: 'default', title: 'MB used'
+            name: 'memoryMax', renderer: 'memory-usage', group: 'default', title: 'MB used (max)'
           }, {
-            name: 'percentMax', isPercent: true, group: 'percent', title: 'MB used (%)'
+            name: 'percentMax', isPercent: true, group: 'percent', title: 'MB used (%, max)'
           }, {
             name: 'memory', renderer: 'memory-usage', group: 'default', title: 'MB used (average)'
           }, {

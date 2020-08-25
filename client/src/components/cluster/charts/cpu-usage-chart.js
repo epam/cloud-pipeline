@@ -30,7 +30,7 @@ class CPUUsageChart extends Base {
         {...this.plotProperties}
         plots={
           [
-            {title: 'CPU Usage', name: 'cpuMax', renderer: 'cpu-usage'},
+            {title: 'CPU Usage (max)', name: 'cpuMax', renderer: 'cpu-usage'},
             {title: 'CPU Usage (average)', name: 'cpu', renderer: 'cpu-usage'}
           ]
         }
