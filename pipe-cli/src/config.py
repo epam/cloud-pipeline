@@ -21,6 +21,7 @@ import os
 import pytz
 import sys
 import tzlocal
+import platform
 from pypac import api as PacAPI
 from pypac.resolver import ProxyResolver as PacProxyResolver
 
@@ -103,9 +104,17 @@ class Config(object):
                     self.initialized = True
         elif raise_config_not_found_exception:
             raise ConfigNotFoundError()
+        self.validate_pac_proxy(self.proxy)
 
     def validate(self, print_info=False):
         check_token(self.access_key, self.tz, print_info=print_info)
+
+    @classmethod
+    def validate_pac_proxy(cls, proxy):
+        if proxy and str(proxy).lower() == PROXY_TYPE_PAC and platform.system() != 'Windows':
+            click.echo('"pac" (Proxy Auto Configuration) is not supported in the non-Windows environment. '
+                       'Please set the proxy address explicitly or keep it empty (e.g. --proxy "")', err=True)
+            exit(1)
 
     @classmethod
     def validate_access_token(cls, _func=None, quiet_flag_property_name=None):
@@ -180,6 +189,7 @@ class Config(object):
             raise ProxyInvalidConfig('NTLM proxy authentication is supported only for prebuilt CLI binaries.')
         if proxy_ntlm_pass:
             click.secho('Warning: NTLM proxy user password will be stored unencrypted.', fg='yellow')
+        cls.validate_pac_proxy(proxy)
         config = {'api': api,
                   'access_key': access_key,
                   'tz': timezone,
