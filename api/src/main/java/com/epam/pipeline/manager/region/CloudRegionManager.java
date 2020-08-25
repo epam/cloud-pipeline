@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.billing.RegionForBilling;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
@@ -34,7 +35,6 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -53,11 +53,9 @@ import org.springframework.util.Assert;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @AclSync
@@ -67,8 +65,6 @@ import java.util.stream.Collectors;
 public class CloudRegionManager implements SecuredEntityManager {
 
     public static final String CP_REGION_CREDS_SECRET = "cp-region-creds-secret";
-    private static final Set<String> NON_SENSITIVE_REGION_FIELDS =
-        new HashSet<>(Arrays.asList("id", "name", "provider", "regionCode"));
 
     private final CloudRegionDao cloudRegionDao;
     private final FileShareMountManager shareMountManager;
@@ -100,9 +96,14 @@ public class CloudRegionManager implements SecuredEntityManager {
         return cloudRegionDao.loadAll();
     }
 
-    public List<? extends AbstractCloudRegion> loadAllForBilling() {
+    public List<RegionForBilling> loadAllForBilling() {
         return loadAll().stream()
-            .map(region -> EntityManager.resetAllFieldsExcept(region, NON_SENSITIVE_REGION_FIELDS))
+            .map(region -> RegionForBilling.builder()
+                .id(region.getId())
+                .name(region.getName())
+                .provider(region.getProvider())
+                .regionId(region.getRegionCode())
+                .build())
             .collect(Collectors.toList());
     }
 

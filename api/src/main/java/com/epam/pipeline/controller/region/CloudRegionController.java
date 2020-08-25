@@ -19,6 +19,7 @@ package com.epam.pipeline.controller.region;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
+import com.epam.pipeline.entity.billing.RegionForBilling;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.region.CloudRegionApiService;
@@ -84,7 +85,7 @@ public class CloudRegionController extends AbstractRestController {
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
-    public Result<List<? extends AbstractCloudRegion>> loadAllForBilling() {
+    public Result<List<RegionForBilling>> loadAllForBilling() {
         return Result.success(cloudRegionApiService.loadAllForBilling());
     }
 

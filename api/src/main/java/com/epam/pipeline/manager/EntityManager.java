@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager;
 
-import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
@@ -29,11 +28,9 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
-import com.google.common.base.Defaults;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ReflectionUtils;
 
 @Service
 public class EntityManager {
@@ -42,26 +39,6 @@ public class EntityManager {
     private MessageHelper messageHelper;
 
     private Map<AclClass, SecuredEntityManager> managers;
-
-    /**
-     * This method allows to reset field values (default - for primitives, null - for others),
-     * excluding fields, specified in the {@code fieldsToKeep}
-     * @param obj object to modify
-     * @param fieldsToKeep names of the fields, that shouldn't be modified
-     * @return modified object
-     */
-    public static <T> T resetAllFieldsExcept(final T obj, final Collection<String> fieldsToKeep) {
-        ReflectionUtils.doWithFields(obj.getClass(), field -> {
-            if (!fieldsToKeep.contains(field.getName())
-                && !Modifier.isStatic(field.getModifiers())) {
-                final boolean isAccessible = field.isAccessible();
-                field.setAccessible(true);
-                field.set(obj, Defaults.defaultValue(field.getType()));
-                field.setAccessible(isAccessible);
-            }
-        });
-        return obj;
-    }
 
     @Autowired
     public void setManagers(List<SecuredEntityManager> managers) {
