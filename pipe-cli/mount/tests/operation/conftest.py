@@ -39,7 +39,7 @@ def pytest_generate_tests(metafunc):
         mounted_files = [os.path.join(mounted_path, file_name) for file_name in file_names]
         parameters = zip(size_literals, local_files, mounted_files, [source_path] * len(sizes))
         metafunc.parametrize('size, local_file, mounted_file, source_path', parameters, ids=size_literals)
-    elif 'mkdir' in metafunc.module.__name__ or 'rm' in metafunc.module.__name__:
+    elif 'mkdir' in metafunc.module.__name__ or 'rm' in metafunc.module.__name__ or 'mv' in metafunc.module.__name__:
         metafunc.parametrize('mount_path', [mounted_path], ids=[''])
 
 

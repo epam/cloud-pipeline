@@ -17,3 +17,7 @@ def rm(folder_path, recursive=False):
 
 def touch(file_path):
     execute('touch "%s"' % file_path)
+
+
+def mv(old_path, new_path):
+    execute('mv "%s" "%s"' % (old_path, new_path))
