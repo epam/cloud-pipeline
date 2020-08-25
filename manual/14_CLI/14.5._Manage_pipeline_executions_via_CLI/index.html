@@ -426,6 +426,8 @@
         
             <li><a class="toctree-l5" href="#schedule-a-pipeline-execution">Schedule a pipeline execution</a></li>
         
+            <li><a class="toctree-l5" href="#runs-sharing">Runs sharing</a></li>
+        
             <li><a class="toctree-l5" href="#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol">Run a single command or an interactive session over the SSH protocol</a></li>
         
             <li><a class="toctree-l5" href="#stop-a-pipeline-execution">Stop a pipeline execution</a></li>
@@ -616,6 +618,12 @@
 <li><a href="#launch-a-job-on-the-existing-running-instance">Launch a job on the existing running instance</a></li>
 <li><a href="#run-a-tool">Run a tool</a></li>
 <li><a href="#generate-pipeline-launch-command-via-the-gui">Generate pipeline launch command via the GUI</a></li>
+</ul>
+</li>
+<li><a href="#runs-sharing">Runs sharing</a><ul>
+<li><a href="#view-sharing-status">View sharing status</a></li>
+<li><a href="#share-a-run">Share a run</a></li>
+<li><a href="#unshare-a-run">Unshare a run</a></li>
 </ul>
 </li>
 <li><a href="#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol">Run a single command or an interactive session over the SSH protocol</a></li>
@@ -916,6 +924,92 @@ For that:</p>
 </blockquote>
 <p>Also, user can select the <strong>API</strong> tab in the "Launch commands" popup and get the <code>POST</code> request for a job launch:<br />
 <img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_31.png" /></p>
+<h2 id="runs-sharing">Runs sharing</h2>
+<blockquote>
+<p><strong><em>Note</em></strong>: to share a run with other users/groups, user shall be the <strong>OWNER</strong> of that run or has an <strong>ADMIN</strong> role.</p>
+</blockquote>
+<p>About sharing run via the GUI see <a href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">here</a>.</p>
+<h3 id="view-sharing-status">View sharing status</h3>
+<p>The command to view for whom a run is shared:</p>
+<pre><code class="bash">pipe share get RUN_ID
+</code></pre>
+
+<p>The example below lists users/groups for whom the run with ID <strong>38081</strong> is shared:</p>
+<pre><code class="bash">pipe share get 38081
+</code></pre>
+
+<p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_32.png" /></p>
+<h3 id="share-a-run">Share a run</h3>
+<p>The command to share a running job with other users/groups:</p>
+<pre><code class="bash">pipe share add RUN_ID [OPTIONS]
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-su</code> / <code>--shared-user</code></td>
+<td>Specifies the user for whom the run will be shared. Multiple options are supported</td>
+</tr>
+<tr>
+<td><code>-sg</code> / <code>--shared-group</code></td>
+<td>Specifies the group/role for which the run will be shared. Multiple options are supported</td>
+</tr>
+<tr>
+<td><code>-ssh</code> / <code>--share-ssh</code></td>
+<td>Share SSH-session of the run. Non-required option for the runs with endpoints</td>
+</tr>
+</tbody>
+</table>
+<p>One of the option <code>-su</code> or <code>-sg</code> shall be necessarily specified. Both options also can be used simultaneously.<br />
+<code>-ssh</code> option is necessarily required only in cases when the run hasn't endpoints.</p>
+<p>In the example below we will share the SSH-session of the run with ID <strong>38081</strong> with the user <strong>USER1</strong> and then check it by the command <code>pipe share get</code>:</p>
+<pre><code class="bash">pipe share add 38081 -ssh -su USER1
+</code></pre>
+
+<p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_33.png" /></p>
+<h3 id="unshare-a-run">Unshare a run</h3>
+<p>The command to unshare a running job from other users/groups for whom the access was shared before:</p>
+<pre><code class="bash">pipe share remove RUN_ID [OPTIONS]
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-su</code> / <code>--shared-user</code></td>
+<td>Specifies the user for whom the sharing of the run will be disabled. Multiple options are supported</td>
+</tr>
+<tr>
+<td><code>-sg</code> / <code>--shared-group</code></td>
+<td>Specifies the group/role for which the sharing of the run will be disabled. Multiple options are supported</td>
+</tr>
+<tr>
+<td><code>-ssh</code> / <code>--share-ssh</code></td>
+<td>Remove only SSH-sharing for all users/groups for runs with endpoint(s) or remove all users/groups of the run shared list for runs without endpoints</td>
+</tr>
+</tbody>
+</table>
+<p>Without any additional options the command will remove all sharings of the run.</p>
+<p>In the example below we will unshare the run with ID <strong>38081</strong> with the role <strong>ROLE_USER</strong> and check it by the command <code>pipe share get</code>:</p>
+<pre><code class="bash">pipe share remove 38081 -sg ROLE_USER
+</code></pre>
+
+<p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_34.png" /></p>
 <h2 id="run-a-single-command-or-an-interactive-session-over-the-ssh-protocol">Run a single command or an interactive session over the SSH protocol</h2>
 <blockquote>
 <p><strong><em>Note</em></strong>: to perform a command or run an interactive session over the running job, user shall be the <strong>OWNER</strong> of that job or has an <strong>ADMIN</strong> role.</p>

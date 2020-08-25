@@ -254,19 +254,19 @@
     <a class="current" href="./">8.9. Mapping storages</a>
     <ul class="subnav">
             
-    <li class="toctree-l4"><a href="#mount-cloud-data-storage-to-the-local-workstation">Mount Cloud Data Storage to the local workstation</a></li>
+    <li class="toctree-l4"><a href="#89-mount-cloud-data-storage-to-the-local-workstation">8.9. Mount Cloud Data Storage to the local workstation</a></li>
     
         <ul>
         
             <li><a class="toctree-l5" href="#introduction">Introduction</a></li>
         
+            <li><a class="toctree-l5" href="#authenticate-within-cloud-pipeline-platform-and-obtain-mapping-token">Authenticate within Cloud Pipeline platform and obtain mapping token</a></li>
+        
+            <li><a class="toctree-l5" href="#map-a-storage-as-the-network-drive-to-the-windows-workstation-using-built-in-tools">Map a storage as the network drive to the Windows workstation using built-in tools</a></li>
+        
+            <li><a class="toctree-l5" href="#map-a-storage-using-cyberduck-tool">Map a storage using CyberDuck tool</a></li>
+        
         </ul>
-    
-
-    <li class="toctree-l4"><a href="#authenticate-within-cloud-pipeline-platform-and-obtain-mapping-token">Authenticate within Cloud Pipeline platform and obtain mapping token</a></li>
-    
-
-    <li class="toctree-l4"><a href="#map-network-drive-to-the-windows-workstation">Map network drive to the Windows workstation</a></li>
     
 
     </ul>
@@ -602,62 +602,81 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="mount-cloud-data-storage-to-the-local-workstation">Mount Cloud Data Storage to the local workstation</h1>
-<h3 id="introduction">Introduction</h3>
+                <h1 id="89-mount-cloud-data-storage-to-the-local-workstation">8.9. Mount Cloud Data Storage to the local workstation</h1>
+<h2 id="introduction">Introduction</h2>
 <p>Cloud Pipeline platform allows to mount data storages, located in the Cloud, to the local workstation as a network drive.
 This provides an easy way to manage files, that shall be processed in the Cloud or downloaded locally.</p>
-<p>· Authenticate within Cloud Pipeline platform and obtain mapping token</p>
-<p>· Map network drive to the Windows workstation</p>
-<pre><code>Please consider the following limitations and prerequisites to map a network drive:
+<ul>
+<li><a href="#authenticate-within-cloud-pipeline-platform-and-obtain-mapping-token">Authenticate within Cloud Pipeline platform and obtain mapping token</a></li>
+<li><a href="#map-a-storage-as-the-network-drive-to-the-windows-workstation-using-built-in-tools">Map a storage as the network drive to the Windows workstation using built-in tools</a></li>
+<li><a href="#map-a-storage-using-cyberduck-tool">Map a storage using CyberDuck tool</a></li>
+</ul>
+<pre><code class="bash">Please consider the following limitations and prerequisites to map a network drive:
 
-1. Network drive mapping is only supported for Windows workstations
-2. Internet Explorer 11 shall be used for Authentication section of this manual Once authentication is done - Chrome or other web-browser can be used to further work
-3. Only NFS data storages (e.g. EFS/NFS/SMB) can be mapped to the local workstation. S3/AZ/GCP storages are not supported
+1. Network drive mapping is only supported for Windows workstations.
+2. Internet Explorer 11 shall be used for Authentication section of this manual. Once authentication is done - Chrome or other web-browser can be used to further work.
+3. Only NFS data storages (e.g. EFS/NFS/SMB) can be mapped to the local workstation. S3/AZ/GCP storages are not supported.
 4. The following limits are applied to the data transfer:
-    1. Max 500 Mb per file
-    2. Max transfer duration: 30 min
-5. The following requirements shall be met for the user account:
-    1. User shall be granted write permissions to any of the NFS data storages
+   - Max 500 Mb per file
+   - Max transfer duration: 30 min
+5. The following requirements shall be set for the user account:
+    - User shall be granted write permissions to any of the NFS data storages
 </code></pre>
 
-<h1 id="authenticate-within-cloud-pipeline-platform-and-obtain-mapping-token">Authenticate within Cloud Pipeline platform and obtain mapping token</h1>
+<h2 id="authenticate-within-cloud-pipeline-platform-and-obtain-mapping-token">Authenticate within Cloud Pipeline platform and obtain mapping token</h2>
 <ol>
-<li>Open Internet Explorer web-browser </li>
-<li>Navigate to the Cloud Pipeline GUI https://<cloud pipeline adress>/pipeline/</li>
-<li>Click "Settings" button in the left menu <img alt="CP_MappingStorages" src="../attachments/MappingStorages_1.png" /></li>
-<li>Navigate to the CLI tab and select Drive mapping section in the left menu</li>
+<li>Open <strong>Internet Explorer</strong> web-browser</li>
+<li>Navigate to the Cloud Pipeline GUI - <code>https://&lt;cloud pipeline adress&gt;/pipeline/</code></li>
+<li>Click the <strong>Settings</strong> button in the left menu <img alt="CP_MappingStorages" src="../attachments/MappingStorages_1.png" /></li>
+<li>Navigate to the CLI tab and select Drive mapping section in the left menu:<br />
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_2.png" /></li>
+<li>Authentication prompt will be shown:<br />
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_3.png" /></li>
+<li>Click the <strong>Authenticate</strong> button</li>
+<li>If authentication succeeds you will see a popup window with a link to map a network drive. Copy the URL shown in the popup, it will be used in the workstation configuration section:<br />
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_4.png" /></li>
 </ol>
-<p><img alt="CP_MappingStorages" src="../attachments/MappingStorages_2.png" /></p>
+<h2 id="map-a-storage-as-the-network-drive-to-the-windows-workstation-using-built-in-tools">Map a storage as the network drive to the Windows workstation using built-in tools</h2>
 <ol>
-<li>Authentication prompt will be shown</li>
-</ol>
-<p><img alt="CP_MappingStorages" src="../attachments/MappingStorages_3.png" /></p>
-<ol>
-<li>Click Authenticate button</li>
-<li>If authentication succeeds you will see a popup window with a link to map a network drive Copy the URL shown in the popup, it will be used in the workstation configuration section</li>
-</ol>
-<p><img alt="CP_MappingStorages" src="../attachments/MappingStorages_4.png" /></p>
-<h1 id="map-network-drive-to-the-windows-workstation">Map network drive to the Windows workstation</h1>
-<ol>
-<li>Open This PC (My Computer) view</li>
-<li>Click Map network drive button</li>
-</ol>
-<p><img alt="CP_MappingStorages" src="../attachments/MappingStorages_5.png" /></p>
-<ol>
-<li>
-<p>A Map Network Drive dialog will be shown</p>
-<ol>
-<li>Select a Drive letter (it will be used to address a drive, e.g. Z:) or keep the default value for the Drive: field</li>
-<li>Paste a mapping URL (obtained from the Cloud Pipeline authentication dialog) into Folder: field</li>
-<li>Tick Reconnect at logon checkbox</li>
-<li>Click Finish button</li>
-</ol>
-<p><img alt="CP_MappingStorages" src="../attachments/MappingStorages_6.png" /></p>
+<li>Open <strong>This PC</strong> (<strong>My Computer</strong>) view</li>
+<li>Click the <strong>Map network drive</strong> button:<br />
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_5.png" /></li>
+<li><strong>Map Network Drive</strong> dialog will be shown:<ul>
+<li>Select a Drive letter (it will be used to address a drive, e.g. <code>Z:\</code>) or keep the default value for the "Drive" field</li>
+<li>Paste a mapping URL (obtained from the Cloud Pipeline authentication dialog) into the "Folder" field</li>
+<li>Tick "<strong>Reconnect at logon</strong>" checkbox</li>
+<li>Click the <strong>Finish</strong> button:<br />
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_6.png" /></li>
+</ul>
 </li>
-<li>
-<p>Drive will be mapped and opened. Further you can address it using a drive letter set at step.3 (e.g. Z:)</p>
-<p><img alt="CP_MappingStorages" src="../attachments/MappingStorages_7.png" /></p>
-</li>
+<li>Drive will be mapped and opened. Further you can address it using a Drive letter set above (e.g. <code>Z:\</code>):<br />
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_7.png" /></li>
+</ol>
+<h2 id="map-a-storage-using-cyberduck-tool">Map a storage using CyberDuck tool</h2>
+<p><strong><em>Prerequisites</em></strong>: get a mapping URL by the way described <a href="#authenticate-within-cloud-pipeline-platform-and-obtain-mapping-token">above</a>.</p>
+<ol>
+<li>Launch <a href="https://cyberduck.io/"><strong><code>CyberDuck</code></strong></a> tool.</li>
+<li>Click the <strong>Open Connection</strong> button:<br />
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_8.png" /></li>
+<li>In the appeared popup, click the upper dropdown list with connection types:<br />
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_9.png" /></li>
+<li>Select the item "<strong>WebDAV (HTTPS)</strong>":<br />
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_10.png" /></li>
+<li>Paste a mapping URL (from the prerequisites) into the "Server" field. Fields "URL", "Port", "Path" will be filled in automatically:<br />
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_11.png" /></li>
+<li>Specify your Cloud Pipeline credentials - <strong><em>username</em></strong> into the "Username" field, <strong><em>access key</em></strong> into the "Password" field:<br />
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_12.png" /><br />
+<strong><em>Note</em></strong>: to get your access token - open <strong>System Settings</strong>, then <strong>CLI</strong> tab, and in the sub-tab <strong>Pipe CLI</strong>, click the "<strong>Generate access key</strong>" button:<br />
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_13.png" /></li>
+<li>Click the <strong>Connect</strong> button to confirm.</li>
+<li>After authentication will be done, all available to the user FS mounts will appear:<br />
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_14.png" /><br />
+   They are displayed as folders.</li>
+<li>Double-click the folder you wish - FS storage content will appear, e.g.:<br />
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_15.png" /></li>
+<li>In this window, you can manage files/folders as in any file commander, according to your permissions on that FS mount. More about <code>Cyberduck</code> functionality you may see <a href="https://trac.cyberduck.io/wiki/help/en#Cyberduck">here</a>.</li>
+<li>After all, close the connection:<br />
+<img alt="CP_MappingStorages" src="../attachments/MappingStorages_16.png" /></li>
 </ol>
               
             </div>
