@@ -25,7 +25,11 @@ import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.GSBucketStorage;
+import com.epam.pipeline.entity.datastorage.NFSDataStorage;
+import com.epam.pipeline.entity.datastorage.S3bucketDataStorage;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -169,7 +173,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
 
         try {
             billing
-                .regionName(regionLocation)
+                .regionId(getRegionId(storageContainer))
                 .cost(calculateDailyCost(byteSize, regionLocation, billingDate));
         } catch (IllegalArgumentException e) {
             billing.cost(calculateDailyCost(byteSize, storagePricing.getDefaultPriceGb(), billingDate));
@@ -222,5 +226,20 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                                                endRange - beginRange);
                 return calculateDailyCost(bytesForCurrentTierPrice, entity.getPriceCentsPerGb(), date);
             }).sum();
+    }
+
+    private Long getRegionId(final EntityContainer<AbstractDataStorage> storageContainer) {
+        final AbstractDataStorage storage = storageContainer.getEntity();
+        if (storage instanceof S3bucketDataStorage) {
+            return ((S3bucketDataStorage) storage).getRegionId();
+        } else if (storage instanceof AzureBlobStorage) {
+            return ((AzureBlobStorage) storage).getRegionId();
+        } else if (storage instanceof GSBucketStorage) {
+            return ((GSBucketStorage) storage).getRegionId();
+        } else if (storage instanceof NFSDataStorage) {
+            return null;
+        } else {
+            throw new IllegalArgumentException("Unknown storage type!");
+        }
     }
 }
