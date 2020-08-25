@@ -65,6 +65,7 @@ import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
+import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
@@ -180,6 +181,8 @@ public class GrantPermissionManager {
     @Autowired private EntityEventServiceManager entityEventServiceManager;
 
     @Autowired private RunPermissionManager runPermissionManager;
+
+    @Autowired private RoleManager roleManager;
 
     public boolean isActionAllowedForUser(AbstractSecuredEntity entity, String user, Permission permission) {
         return isActionAllowedForUser(entity, user, Collections.singletonList(permission));
@@ -662,7 +665,8 @@ public class GrantPermissionManager {
     }
 
     public EntityWithPermissionVO loadAllEntitiesPermissions(AclClass aclClass, Integer page, Integer pageSize,
-                                                             boolean expandGroups, Integer filterMask) {
+                                                             boolean expandGroups, Integer filterMask,
+                                                             boolean includeAdmins) {
         EntityWithPermissionVO result = new EntityWithPermissionVO();
         Collection<? extends AbstractSecuredEntity> entities =
                 entityManager.loadAllWithParents(aclClass, page, pageSize);
@@ -673,6 +677,10 @@ public class GrantPermissionManager {
                 .sorted(Comparator.comparingLong(BaseEntity::getId))
                 .map(entity -> getEntityPermission(allPermissions, entity))
                 .collect(toList());
+        if (includeAdmins) {
+            permissions.forEach(permission -> mergePermissionsWithAdmins(SetUtils
+                    .emptyIfNull(permission.getPermissions())));
+        }
         if (expandGroups) {
             expandGroups(permissions);
             if (filterMask != null) {
@@ -686,6 +694,29 @@ public class GrantPermissionManager {
         }
         result.setEntityPermissions(permissions);
         return result;
+    }
+
+    private void mergePermissionsWithAdmins(final Set<AclPermissionEntry> permissions) {
+        final int allPermissions = AclPermission.READ.getMask()
+                | AclPermission.WRITE.getMask()
+                | AclPermission.EXECUTE.getMask();
+        final Set<String> currentUsers = permissions
+                .stream()
+                .filter(sid -> sid.getSid().isPrincipal())
+                .map(AclPermissionEntry::getSid)
+                .map(AclSid::getName)
+                .map(String::toUpperCase)
+                .collect(toSet());
+        ListUtils.emptyIfNull(roleManager.loadRoleWithUsers(DefaultRoles.ROLE_ADMIN.getId())
+                .getUsers())
+                .stream()
+                .map(PipelineUser::getUserName)
+                .map(String::toUpperCase)
+                .filter(admin -> !currentUsers.contains(admin))
+                .forEach(admin -> {
+                    final AclPermissionEntry aclEntry = new AclPermissionEntry(new PrincipalSid(admin), allPermissions);
+                    permissions.add(aclEntry);
+                });
     }
 
     private EntityPermission getEntityPermission(Map<AbstractSecuredEntity, List<AclPermissionEntry>> allPermissions,
@@ -710,7 +741,8 @@ public class GrantPermissionManager {
     public PipelinesWithPermissionsVO loadAllPipelinesWithPermissions(Integer pageNum, Integer pageSize) {
         //TODO: fully switch to common method loadAllEntitiesPermissions when client is ready
         EntityWithPermissionVO entityWithPermissionVO =
-                loadAllEntitiesPermissions(AclClass.PIPELINE, pageNum, pageSize, false, null);
+                loadAllEntitiesPermissions(AclClass.PIPELINE, pageNum, pageSize, false, null,
+                        false);
         PipelinesWithPermissionsVO result = new PipelinesWithPermissionsVO();
         result.setTotalCount(entityWithPermissionVO.getTotalCount());
         result.setPipelines(entityWithPermissionVO.getEntityPermissions().stream().map(e -> {

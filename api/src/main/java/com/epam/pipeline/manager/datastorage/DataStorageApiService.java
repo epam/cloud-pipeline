@@ -67,6 +67,7 @@ import static com.epam.pipeline.security.acl.AclExpressions.STORAGE_ID_PERMISSIO
 import static com.epam.pipeline.security.acl.AclExpressions.STORAGE_ID_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.STORAGE_ID_WRITE;
 
+@SuppressWarnings("PMD.TooManyStaticImports")
 @Service
 public class DataStorageApiService {
 
@@ -329,11 +330,12 @@ public class DataStorageApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public EntityWithPermissionVO getStoragePermission(Integer page, Integer pageSize, Integer filterMask) {
+    public EntityWithPermissionVO getStoragePermission(Integer page, Integer pageSize, Integer filterMask,
+                                                       boolean includeAdmins) {
         Integer mask = Optional.ofNullable(filterMask)
                 .orElse(AclPermission.WRITE.getMask() | AclPermission.READ.getMask());
         return grantPermissionManager
-                .loadAllEntitiesPermissions(AclClass.DATA_STORAGE, page, pageSize, true, mask);
+                .loadAllEntitiesPermissions(AclClass.DATA_STORAGE, page, pageSize, true, mask, includeAdmins);
     }
 
     @PostAuthorize(AclExpressions.STORAGE_PATHS_READ)
