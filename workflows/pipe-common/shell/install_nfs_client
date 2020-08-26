@@ -35,7 +35,7 @@ then
       yum install -y -q wget &&
       wget -q $LUSTRE_KMOD_URL -O kmod-lustre-client.rpm &&
       wget -q $LUSTRE_CLIENT_URL -O lustre-client.rpm &&
-      yum install -y -q kmod-lustre-client.rpm lustre-client.rpm &&
+      rpm -i --nodeps --quiet kmod-lustre-client.rpm lustre-client.rpm &&
       rm -f *lustre-client.rpm
 EOM
 else
