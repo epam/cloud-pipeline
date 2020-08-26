@@ -260,6 +260,9 @@ public class SystemPreferences {
     public static final StringPreference CLUSTER_ALLOWED_PRICE_TYPES = new StringPreference(
             "cluster.allowed.price.types", String.format("%s,%s", PriceType.SPOT, PriceType.ON_DEMAND),
             CLUSTER_GROUP, PreferenceValidators.isNotBlank);
+    public static final StringPreference CLUSTER_ALLOWED_MASTER_PRICE_TYPES = new StringPreference(
+            "cluster.allowed.price.types.master", String.format("%s,%s", PriceType.SPOT, PriceType.ON_DEMAND),
+            CLUSTER_GROUP, PreferenceValidators.isNotBlank);
     public static final StringPreference CLUSTER_INSTANCE_TYPE = new StringPreference("cluster.instance.type",
         "m5.large", CLUSTER_GROUP, PreferenceValidators.isClusterInstanceTypeAllowed, CLUSTER_ALLOWED_INSTANCE_TYPES);
 

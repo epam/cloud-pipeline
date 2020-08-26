@@ -404,27 +404,31 @@ public class PipelineRunManager {
         final PriceType priceType = configuration.getIsSpot() != null && configuration.getIsSpot()
                 ? PriceType.SPOT
                 : PriceType.ON_DEMAND;
+        final boolean isMaster = PipelineConfigurationManager.isClusterConfiguration(configuration);
         if (pipeline != null) {
-            validatePipelineInstanceAndPriceTypes(instanceType, priceType, region.getId());
+            validatePipelineInstanceAndPriceTypes(instanceType, priceType, region.getId(), isMaster);
         } else {
-            validateToolInstanceAndPriceTypes(instanceType, priceType,  region.getId(), configuration.getDockerImage());
+            validateToolInstanceAndPriceTypes(instanceType, priceType,  region.getId(), configuration.getDockerImage(),
+                                              isMaster);
         }
     }
 
     private void validatePipelineInstanceAndPriceTypes(final String instanceType,
                                                        final PriceType priceType,
-                                                       final Long regionId) {
+                                                       final Long regionId,
+                                                       final boolean isMasterNode) {
         Assert.isTrue(!StringUtils.hasText(instanceType)
                         || instanceOfferManager.isInstanceAllowed(instanceType, regionId, priceType == PriceType.SPOT),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, instanceType));
-        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), null),
+        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), null, isMasterNode),
                 messageHelper.getMessage(MessageConstants.ERROR_PRICE_TYPE_IS_NOT_ALLOWED, priceType));
     }
 
     private void validateToolInstanceAndPriceTypes(final String instanceType,
                                                    final PriceType priceType,
                                                    final Long regionId,
-                                                   final String dockerImage) {
+                                                   final String dockerImage,
+                                                   final boolean isMasterNode) {
         final Tool tool = toolManager.loadByNameOrId(dockerImage);
         final ContextualPreferenceExternalResource toolResource =
                 new ContextualPreferenceExternalResource(ContextualPreferenceLevel.TOOL, tool.getId().toString());
@@ -432,7 +436,7 @@ public class PipelineRunManager {
                         || instanceOfferManager.isToolInstanceAllowed(instanceType, toolResource,
                                                     regionId, priceType == PriceType.SPOT),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, instanceType));
-        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), toolResource),
+        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), toolResource, isMasterNode),
                 messageHelper.getMessage(MessageConstants.ERROR_PRICE_TYPE_IS_NOT_ALLOWED, priceType));
     }
 
