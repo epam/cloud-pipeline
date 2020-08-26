@@ -42,7 +42,7 @@ else
     CHECK_NFS_SMB_CMD="dpkg -l | grep nfs-common && dpkg -l | grep cifs-utils"
     INSTALL_NFS_SMB_CMD='apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" nfs-common cifs-utils -y -qq'
     CHECK_LUSTRE_CMD="dpkg -l | grep lustre-client"
-    LUSTRE_VERSION=$(. /etc/os-release;echo $ID-$VERSION_CODENAME)
+    LUSTRE_VERSION=$(. /etc/os-release;echo $ID-${VERSION_ID//.})
     LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/deb/lustre-client-$LUSTRE_VERSION.tar.gz"
     read -r -d '' INSTALL_LUSTRE_CMD <<- EOM
       apt-get install wget -y -qq  &&
