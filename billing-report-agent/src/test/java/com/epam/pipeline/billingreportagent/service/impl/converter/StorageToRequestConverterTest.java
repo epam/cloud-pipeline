@@ -77,6 +77,8 @@ public class StorageToRequestConverterTest {
     private static final Long STORAGE_ID = 1L;
     private static final String STORAGE_NAME = "TestStorage";
     private static final int DOC_ID = 2;
+    private static final Long TEST_REGION_ID = 1L;
+    private static final Long TEST_FILESHARE_MOUNT_ID = 1L;
 
     private static final long BYTES_IN_1_GB = 1L << 30;
     private static final String SIZE_SUM_SEARCH = "sizeSumSearch";
@@ -106,6 +108,7 @@ public class StorageToRequestConverterTest {
             .build();
 
     private ElasticsearchServiceClient elasticsearchClient = Mockito.mock(ElasticsearchServiceClient.class);
+    private FileShareMountsService fileShareMountsService = Mockito.mock(FileShareMountsService.class);
     private StorageToBillingRequestConverter s3Converter;
     private StorageToBillingRequestConverter nfsConverter;
     private StorageToBillingRequestConverter gcpConverter;
@@ -156,7 +159,8 @@ public class StorageToRequestConverterTest {
             elasticsearchClient,
             StorageType.FILE_STORAGE,
             testStoragePricing,
-            StringUtils.EMPTY);
+            StringUtils.EMPTY,
+            fileShareMountsService);
         gcpConverter = new StorageToBillingRequestConverter(
             new StorageBillingMapper(SearchDocumentType.GS_STORAGE, BILLING_CENTER_KEY),
             elasticsearchClient,
@@ -216,7 +220,7 @@ public class StorageToRequestConverterTest {
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.S3_STORAGE.name(),
                             requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        assertFields(s3Storage, requestFieldsMap, US_EAST_1, StorageType.OBJECT_STORAGE,
+        assertFields(s3Storage, requestFieldsMap, TEST_REGION_ID, StorageType.OBJECT_STORAGE,
                      BYTES_IN_1_GB, BigDecimal.ONE.scaleByPowerOfTen(2).longValue());
     }
 
@@ -224,7 +228,7 @@ public class StorageToRequestConverterTest {
     public void testEFSStorageConverting() throws IOException {
         final AbstractDataStorage nfsStorage = nfsStorageContainer.getEntity();
         createElasticsearchSearchContext(BYTES_IN_1_GB, false, US_EAST_1);
-
+        Mockito.when(fileShareMountsService.getRegionIdForShare(TEST_FILESHARE_MOUNT_ID)).thenReturn(TEST_REGION_ID);
         final DocWriteRequest request = nfsConverter.convertEntityToRequests(nfsStorageContainer,
                                                                              TestUtils.STORAGE_BILLING_PREFIX,
                                                                              SYNC_START, SYNC_END).get(0);
@@ -234,7 +238,7 @@ public class StorageToRequestConverterTest {
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.NFS_STORAGE.name(),
                             requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        assertFields(nfsStorage, requestFieldsMap, US_EAST_1, StorageType.FILE_STORAGE,
+        assertFields(nfsStorage, requestFieldsMap, TEST_REGION_ID, StorageType.FILE_STORAGE,
                      BYTES_IN_1_GB, BigDecimal.ONE.scaleByPowerOfTen(2).longValue());
     }
 
@@ -251,7 +255,7 @@ public class StorageToRequestConverterTest {
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.GS_STORAGE.name(),
                             requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        assertFields(gsStorage, requestFieldsMap, US_EAST_1, StorageType.OBJECT_STORAGE,
+        assertFields(gsStorage, requestFieldsMap, TEST_REGION_ID, StorageType.OBJECT_STORAGE,
                      BYTES_IN_1_GB, BigDecimal.ONE.scaleByPowerOfTen(2).longValue());
     }
 
@@ -268,25 +272,8 @@ public class StorageToRequestConverterTest {
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.AZ_BLOB_STORAGE.name(),
                             requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        assertFields(azureStorage, requestFieldsMap, US_EAST_1, StorageType.OBJECT_STORAGE,
+        assertFields(azureStorage, requestFieldsMap, TEST_REGION_ID, StorageType.OBJECT_STORAGE,
                      BYTES_IN_1_GB, BigDecimal.ONE.scaleByPowerOfTen(2).longValue());
-    }
-
-    @Test
-    public void testStorageWithUnknownRegionConverting() throws IOException {
-        final AbstractDataStorage s3Storage = s3StorageContainer.getEntity();
-        createElasticsearchSearchContext(BYTES_IN_1_GB, false, UNKNOWN_REGION);
-        final DocWriteRequest request = s3Converter.convertEntityToRequests(s3StorageContainer,
-                                                                            TestUtils.STORAGE_BILLING_PREFIX,
-                                                                            SYNC_START, SYNC_END).get(0);
-        final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.STORAGE_BILLING_PREFIX, SYNC_START);
-        Assert.assertEquals(s3Storage.getId().toString(), request.id());
-        final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
-        Assert.assertEquals(expectedIndex, request.index());
-        Assert.assertEquals(SearchDocumentType.S3_STORAGE.name(),
-                            requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        assertFields(s3Storage, requestFieldsMap, UNKNOWN_REGION, StorageType.OBJECT_STORAGE, BYTES_IN_1_GB,
-                     BigDecimal.TEN.scaleByPowerOfTen(2).longValue());
     }
 
     @Test
@@ -343,10 +330,10 @@ public class StorageToRequestConverterTest {
     }
 
     private void assertFields(final AbstractDataStorage storage, final Map<String, Object> fieldMap,
-                              final String region, final StorageType storageType, final Long usage, final Long cost) {
+                              final Long region, final StorageType storageType, final Long usage, final Long cost) {
         Assert.assertEquals(storage.getId().intValue(), fieldMap.get("storage_id"));
         Assert.assertEquals(ResourceType.STORAGE.toString(), fieldMap.get("resource_type"));
-        Assert.assertEquals(region, fieldMap.get("region"));
+        Assert.assertEquals(region.intValue(), fieldMap.get("cloudRegionId"));
         Assert.assertEquals(storage.getType().toString(), fieldMap.get("provider"));
         Assert.assertEquals(storageType.toString(), fieldMap.get("storage_type"));
         Assert.assertEquals(testUser.getUserName(), fieldMap.get("owner"));
@@ -362,16 +349,24 @@ public class StorageToRequestConverterTest {
         final AbstractDataStorage storage;
         switch (storageType) {
             case GS:
-                storage = new GSBucketStorage(id, name, path, null, null);
+                final GSBucketStorage gsBucketStorage = new GSBucketStorage(id, name, path, null, null);
+                gsBucketStorage.setRegionId(TEST_REGION_ID);
+                storage = gsBucketStorage;
                 break;
             case NFS:
-                storage = new NFSDataStorage(id, name, path);
+                final NFSDataStorage nfsDataStorage = new NFSDataStorage(id, name, path);
+                nfsDataStorage.setFileShareMountId(TEST_FILESHARE_MOUNT_ID);
+                storage = nfsDataStorage;
                 break;
             case AZ:
-                storage = new AzureBlobStorage(id, name, path, null, null);
+                final AzureBlobStorage azureBlobStorage = new AzureBlobStorage(id, name, path, null, null);
+                azureBlobStorage.setRegionId(TEST_REGION_ID);
+                storage = azureBlobStorage;
                 break;
             default:
-                storage = new S3bucketDataStorage(id, name, path);
+                final S3bucketDataStorage s3bucketDataStorage = new S3bucketDataStorage(id, name, path);
+                s3bucketDataStorage.setRegionId(TEST_REGION_ID);
+                storage = s3bucketDataStorage;
                 break;
         }
         return EntityContainer.<AbstractDataStorage>builder()
