@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,13 @@
 
 package com.epam.pipeline.manager.region;
 
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
+
 import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
+import com.epam.pipeline.entity.info.CloudRegionInfo;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PostFilter;
@@ -39,27 +42,32 @@ public class CloudRegionApiService {
         return cloudRegionManager.loadAll();
     }
 
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public List<CloudRegionInfo> loadAllRegionsInfo() {
+        return cloudRegionManager.loadAllRegionsInfo();
+    }
+
     @PostAuthorize("hasRole('ADMIN') OR hasPermission(returnObject, 'READ')")
     public AbstractCloudRegion load(final Long id) {
         return cloudRegionManager.load(id);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY)
     public AbstractCloudRegion create(final AbstractCloudRegionDTO region) {
         return cloudRegionManager.create(region);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY)
     public AbstractCloudRegion update(final Long id, final AbstractCloudRegionDTO region) {
         return cloudRegionManager.update(id, region);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY)
     public AbstractCloudRegion delete(final Long id) {
         return cloudRegionManager.delete(id);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY)
     public List<String> loadAllAvailable(CloudProvider provider) {
         return cloudRegionManager.loadAllAvailable(provider);
     }

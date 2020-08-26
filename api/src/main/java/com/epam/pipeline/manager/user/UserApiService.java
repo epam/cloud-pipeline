@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.user;
 
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
+import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 
 @Service
 public class UserApiService {
@@ -108,6 +110,11 @@ public class UserApiService {
     @PreAuthorize(ADMIN_ONLY)
     public List<PipelineUser> loadUsers() {
         return new ArrayList<>(userManager.loadAllUsers());
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public List<UserInfo> loadUsersInfo() {
+        return userManager.loadUsersInfo();
     }
 
     public PipelineUser getCurrentUser() {

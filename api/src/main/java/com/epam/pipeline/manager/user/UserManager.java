@@ -23,6 +23,7 @@ import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.DefaultRoles;
@@ -157,6 +158,12 @@ public class UserManager {
 
     public Collection<PipelineUser> loadAllUsers() {
         return userDao.loadAllUsers();
+    }
+
+    public List<UserInfo> loadUsersInfo() {
+        return this.loadAllUsers().stream()
+            .map(UserInfo::new)
+            .collect(Collectors.toList());
     }
 
     public Collection<PipelineUserWithStoragePath> loadAllUsersWithDataStoragePath() {

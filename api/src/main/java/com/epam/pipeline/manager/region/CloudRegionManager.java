@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.info.CloudRegionInfo;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
@@ -93,6 +94,12 @@ public class CloudRegionManager implements SecuredEntityManager {
 
     public List<? extends AbstractCloudRegion> loadAll() {
         return cloudRegionDao.loadAll();
+    }
+
+    public List<CloudRegionInfo> loadAllRegionsInfo() {
+        return loadAll().stream()
+            .map(CloudRegionInfo::new)
+            .collect(Collectors.toList());
     }
 
     @Transactional
@@ -332,5 +339,4 @@ public class CloudRegionManager implements SecuredEntityManager {
     private CloudRegionHelper getHelper(CloudProvider type) {
         return helpers.get(type);
     }
-
 }
