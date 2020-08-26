@@ -185,7 +185,6 @@ class ChunkedMultipartUpload(MultipartUploadDecorator):
         self._original_size = original_size
         self._download_func = download_func
         self._chunk_size = chunk_size
-        self._chunks = set()
         self._partial_chunks = {}
         self._min_chunk = min_chunk
         self._max_chunk = max_chunk
@@ -214,7 +213,6 @@ class ChunkedMultipartUpload(MultipartUploadDecorator):
                 self._mpu.upload_part(chunk_buf, chunk_offset, chunk)
                 self._partial_chunks[chunk] = _CompletePartialChunk(chunk_offset)
             buf_shift += self._chunk_size - chunk_shift
-            self._chunks.add(chunk)
             chunk += 1
             chunk_offset += self._chunk_size
             chunk_shift = 0
@@ -237,13 +235,15 @@ class ChunkedMultipartUpload(MultipartUploadDecorator):
         return (chunk - 1) * self._chunk_size
 
     def complete(self):
-        last_missing_chunk = 1
-        for chunk in sorted(self._chunks):
-            if chunk > last_missing_chunk:
-                missing_start = self._chunk_offset(last_missing_chunk)
+        current_missing_chunk = 1
+        for chunk in sorted(self._partial_chunks.keys()):
+            if chunk > current_missing_chunk:
+                missing_start = self._chunk_offset(current_missing_chunk)
                 missing_end = self._chunk_offset(chunk)
-                self._mpu.upload_copy_part(missing_start, missing_end, missing_start, last_missing_chunk)
-            last_missing_chunk = chunk + 1
+                self._mpu.upload_copy_part(missing_start, missing_end, missing_start, current_missing_chunk)
+            current_missing_chunk = chunk + 1
+        last_written_chunk = max(self._partial_chunks.keys())
+        last_missing_chunk = last_written_chunk + 1
         last_chunk_end = self._chunk_offset(last_missing_chunk)
         if last_chunk_end < self._original_size:
             self._mpu.upload_copy_part(last_chunk_end, self._original_size, last_chunk_end, last_missing_chunk)
@@ -252,8 +252,18 @@ class ChunkedMultipartUpload(MultipartUploadDecorator):
                 continue
             for missing_start, missing_end in partial_chunk.missing_intervals():
                 actual_start = missing_start + partial_chunk.offset
-                actual_end = min(missing_end + partial_chunk.offset, self._original_size)
-                if actual_end > actual_start:
+                actual_end = missing_end + partial_chunk.offset
+                if self._original_size <= actual_start:
+                    if chunk_number < last_written_chunk:
+                        partial_chunk.append(missing_start,
+                                             bytearray(actual_end - actual_start))
+                elif actual_start < self._original_size < actual_end:
+                    partial_chunk.append(missing_start,
+                                         self._download_func(actual_start, self._original_size - actual_start))
+                    if chunk_number < last_written_chunk:
+                        partial_chunk.append(missing_start + self._original_size - actual_start,
+                                             bytearray(actual_end - self._original_size))
+                else:
                     partial_chunk.append(missing_start, self._download_func(actual_start, actual_end - actual_start))
             chunk = partial_chunk.collect()
             self._mpu.upload_part(chunk, partial_chunk.offset, chunk_number)
@@ -281,7 +291,7 @@ class SplittingMultipartCopyUpload(MultipartUploadDecorator):
     def upload_copy_part(self, start, end, offset=None, part_number=None):
         copy_part_length = end - start
         if copy_part_length > self._max_part_size:
-            logging.debug('Splitting upload part into pieces for %s' % self.path)
+            logging.debug('Splitting copy upload part %d into pieces for %s' % (part_number, self.path))
             remaining_length = copy_part_length
             current_offset = offset
             actual_part_number = part_number
@@ -300,6 +310,62 @@ class SplittingMultipartCopyUpload(MultipartUploadDecorator):
             return remaining_length
         else:
             return min(self._max_part_size, remaining_length - self._min_part_size)
+
+
+class OutOfBoundsSplittingMultipartCopyUpload(SplittingMultipartCopyUpload):
+
+    def __init__(self, mpu, original_size, min_part_size, max_part_size):
+        """
+        Out of bounds splitting multipart copy upload.
+
+        Splits out of bounds copy upload parts into several ones to fit memory-safe part size limit.
+        Also takes into the account minimum upload part size.
+
+        :param mpu: Wrapping multipart upload.
+        :param original_size: Destination file original size.
+        :param min_part_size: Minimum upload part size.
+        :param max_part_size: Maximum upload part size.
+        """
+        super(OutOfBoundsSplittingMultipartCopyUpload, self).__init__(mpu, min_part_size, max_part_size)
+        self._original_size = original_size
+
+    def upload_copy_part(self, start, end, offset=None, part_number=None):
+        if self._original_size < end:
+            super(OutOfBoundsSplittingMultipartCopyUpload, self).upload_copy_part(start, end, offset, part_number)
+        else:
+            self._mpu.upload_copy_part(start, end, offset, part_number)
+
+
+class OutOfBoundsFillingMultipartCopyUpload(MultipartUploadDecorator):
+
+    def __init__(self, mpu, original_size, download_func):
+        """
+        Out of bounds filling multipart copy upload.
+
+        Fills copy upload part regions which are located beyond the original file size with null bytes.
+
+        :param mpu: Wrapping multipart upload.
+        :param original_size: Destination file original size.
+        :param download_func: Function that retrieves content from the original file by its offset and length.
+        """
+        super(OutOfBoundsFillingMultipartCopyUpload, self).__init__(mpu)
+        self._mpu = mpu
+        self._original_size = original_size
+        self._download_func = download_func
+
+    def upload_copy_part(self, start, end, offset=None, part_number=None):
+        if self._original_size <= start:
+            logging.debug('Filling out of bounds copy upload part %s whole %d-%d for %s' % (part_number, start, end, self.path))
+            modified_buf = bytearray(end - start)
+            self._mpu.upload_part(modified_buf, offset, part_number)
+        elif start < self._original_size < end:
+            logging.debug('Filling out of bounds copy upload part %s region %d-%d with nulls for %s' % (part_number, start, end, self.path))
+            original_buf = self._download_func(start, end - start)
+            modified_buf = bytearray(end - start)
+            modified_buf[0:len(original_buf)] = original_buf
+            self._mpu.upload_part(modified_buf, offset, part_number)
+        else:
+            self._mpu.upload_copy_part(start, end, offset, part_number)
 
 
 class TruncatingMultipartCopyUpload(MultipartUploadDecorator):
