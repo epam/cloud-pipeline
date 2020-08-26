@@ -86,7 +86,7 @@
 - [Appendix C. Working with autoscaled cluster runs](Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md)
 - [Appendix D. Costs management](Appendix_D/Appendix_D._Costs_management.md)
 - [Appendix E. Pipeline objects concept](Appendix_E/Appendix_E._Pipeline_objects_concept.md)
-- [Appendix F. Сomparison of using different FS storages (FSx for Lustre vs EFS in AWS)](Appendix_F/Appendix_F._Сomparison_of_using_different_FS_storages_(FSx_for_Lustre_vs_EFS_in_AWS).md)
+- [Appendix F. Сomparison of using different FS storage types](Appendix_F/Appendix_F._Сomparison_of_using_different_FS_storages_(FSx_for_Lustre_vs_EFS_in_AWS).md)
 
 [1. Quick start](01_Quick_start/1._Quick_start.md)  
 This chapter will give you a basic knowledge of pipeline running procedure.
@@ -157,5 +157,5 @@ Get details about costs management concept.
 [Appendix E. Pipeline objects concept](Appendix_E/Appendix_E._Pipeline_objects_concept.md)  
 Get details about the Pipeline objects concept in Cloud Pipeline environment.
 
-[Appendix F. Сomparison of using different FS storages (FSx for Lustre vs EFS in AWS)](Appendix_F/Appendix_F._Сomparison_of_using_different_FS_storages_(FSx_for_Lustre_vs_EFS_in_AWS).md)
-Get details about the comparison of using different FS storages in Cloud Pipeline environment.
+[Appendix F. Сomparison of using different FS storage types](Appendix_F/Appendix_F._Сomparison_of_using_different_FS_storages_(FSx_for_Lustre_vs_EFS_in_AWS).md)  
+Get details about the comparison of using different FS storage types (**FSx for Lustre** vs **EFS** in `AWS`) in Cloud Pipeline environment.
