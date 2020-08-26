@@ -102,6 +102,8 @@ class Config(object):
                         self.proxy_ntlm_pass = None
                 if self.api and self.access_key:
                     self.initialized = True
+                if 'codec' in data:
+                    self.change_encoding(data['codec'])
         elif raise_config_not_found_exception:
             raise ConfigNotFoundError()
         self.validate_pac_proxy(self.proxy)
@@ -180,7 +182,7 @@ class Config(object):
 
     @classmethod
     def store(cls, access_key, api, timezone, proxy,
-              proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass):
+              proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec):
         check_token(access_key, timezone)
         if proxy == PROXY_TYPE_PAC and proxy_ntlm:
             raise ProxyInvalidConfig('NTLM proxy authentication cannot be used for the PAC proxy type'
@@ -197,7 +199,8 @@ class Config(object):
                   'proxy_ntlm': proxy_ntlm,
                   'proxy_ntlm_user': proxy_ntlm_user,
                   'proxy_ntlm_domain': proxy_ntlm_domain,
-                  'proxy_ntlm_pass': cls.encode_password(proxy_ntlm_pass)
+                  'proxy_ntlm_pass': cls.encode_password(proxy_ntlm_pass),
+                  'codec': codec
                   }
         config_file = cls.config_path()
         # create file
@@ -208,6 +211,15 @@ class Config(object):
         # save
         with open(config_file, 'w+') as config_file_stream:
             json.dump(config, config_file_stream)
+
+    @classmethod
+    def change_encoding(cls, codec):
+        if codec:
+            try:
+                reload(sys)
+                sys.setdefaultencoding(codec)
+            except NameError:
+                pass
 
     @classmethod
     def config_path(cls):
