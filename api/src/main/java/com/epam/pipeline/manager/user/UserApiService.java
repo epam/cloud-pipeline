@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 
 @Service
 public class UserApiService {
@@ -111,6 +112,7 @@ public class UserApiService {
         return new ArrayList<>(userManager.loadAllUsers());
     }
 
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public List<UserInfo> loadUsersInfo() {
         return userManager.loadUsersInfo();
     }

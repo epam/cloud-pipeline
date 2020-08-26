@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ public final class AclExpressions {
     public static final String ISSUE_CREATE = ADMIN_ONLY + " OR (@grantPermissionManager.metadataPermission(" +
             "#issueVO.entity.entityId, #issueVO.entity.entityClass, 'READ'))";
 
-    public static final String DTS_REGISTRY_PERMISSIONS = "hasRole('ADMIN') OR hasRole('ROLE_USER')";
+    public static final String ADMIN_OR_GENERAL_USER = "hasRole('ADMIN') OR hasRole('ROLE_USER')";
 
     public static final String NODE_READ = ADMIN_ONLY + OR +
             "@grantPermissionManager.nodePermission(#name, 'READ')";

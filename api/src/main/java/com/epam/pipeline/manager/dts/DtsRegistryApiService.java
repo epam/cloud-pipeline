@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,34 +24,34 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-import static com.epam.pipeline.security.acl.AclExpressions.DTS_REGISTRY_PERMISSIONS;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 
 @Service
 @AllArgsConstructor
 public class DtsRegistryApiService {
     private DtsRegistryManager dtsRegistryManager;
 
-    @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public List<DtsRegistry> loadAll() {
         return dtsRegistryManager.loadAll();
     }
 
-    @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public DtsRegistry load(Long registryId) {
         return dtsRegistryManager.load(registryId);
     }
 
-    @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public DtsRegistry create(DtsRegistryVO dtsRegistryVO) {
         return dtsRegistryManager.create(dtsRegistryVO);
     }
 
-    @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public DtsRegistry update(Long registryId, DtsRegistryVO dtsRegistryVO) {
         return dtsRegistryManager.update(registryId, dtsRegistryVO);
     }
 
-    @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public DtsRegistry delete(Long registryId) {
         return dtsRegistryManager.delete(registryId);
     }
