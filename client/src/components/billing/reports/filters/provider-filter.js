@@ -79,14 +79,14 @@ class ProviderFilter extends React.Component {
   };
 
   correctValue = async (value) => {
-    const {awsRegions} = this.props;
-    await awsRegions.fetchIfNeededOrWait();
-    if (awsRegions.loaded) {
-      const regions = (awsRegions.value || []);
+    const {cloudRegionsInfo} = this.props;
+    await cloudRegionsInfo.fetchIfNeededOrWait();
+    if (cloudRegionsInfo.loaded) {
+      const regions = (cloudRegionsInfo.value || []);
       const currentValue = (value || []).map(this.mapRegion);
       const newValue = [];
       let modified = false;
-      [...(new Set((awsRegions.value || []).map(o => o.provider)))]
+      [...(new Set((cloudRegionsInfo.value || []).map(o => o.provider)))]
         .forEach((provider) => {
           if (currentValue.some(r => r.type === RegionType.provider && r.id === provider)) {
             return;
@@ -129,14 +129,14 @@ class ProviderFilter extends React.Component {
   onBlur = () => {
     this.setState({focused: false}, async () => {
       const {value} = this.state;
-      const {awsRegions, onChange} = this.props;
-      await awsRegions.fetchIfNeededOrWait();
-      if (awsRegions.loaded) {
+      const {cloudRegionsInfo, onChange} = this.props;
+      await cloudRegionsInfo.fetchIfNeededOrWait();
+      if (cloudRegionsInfo.loaded) {
         const payload = value.map(this.mapRegion);
         const providers = payload.filter(p => p.type === RegionType.provider);
         providers.forEach(provider => {
           const index = payload.indexOf(provider);
-          const regions = (awsRegions.value || [])
+          const regions = (cloudRegionsInfo.value || [])
             .filter(r => r.provider === provider.id)
             .map(r => ({type: RegionType.region, id: r.id}));
           payload.splice(index, 1, ...regions);
@@ -154,15 +154,15 @@ class ProviderFilter extends React.Component {
 
   onChange = (opts) => {
     const {value} = this.state;
-    const {awsRegions} = this.props;
-    if (value.length < opts.length && awsRegions.loaded) {
+    const {cloudRegionsInfo} = this.props;
+    if (value.length < opts.length && cloudRegionsInfo.loaded) {
       const old = new Set(value);
       const newSelection = opts.find(o => !old.has(o));
       if (newSelection) {
         const {type, id} = this.mapRegion(newSelection);
         if (type === RegionType.provider) {
           const providerRegions = new Set(
-            (awsRegions.value || [])
+            (cloudRegionsInfo.value || [])
               .filter(r => (r.provider || '').toLowerCase() === id.toLowerCase())
               .map(r => `${r.id}`)
           );
@@ -183,13 +183,13 @@ class ProviderFilter extends React.Component {
   };
 
   render () {
-    const {awsRegions} = this.props;
+    const {cloudRegionsInfo} = this.props;
     const {focused, value} = this.state;
     let regions = [];
     let providers = [];
-    if (awsRegions.loaded) {
-      regions = (awsRegions.value || []).map(o => o);
-      providers = [...new Set((awsRegions.value || []).map(o => o.provider))];
+    if (cloudRegionsInfo.loaded) {
+      regions = (cloudRegionsInfo.value || []).map(o => o);
+      providers = [...new Set((cloudRegionsInfo.value || []).map(o => o.provider))];
     }
     return (
       <Select
@@ -257,4 +257,4 @@ ProviderFilter.propTypes = {
   onChange: PropTypes.func
 };
 
-export default inject('awsRegions')(observer(ProviderFilter));
+export default inject('cloudRegionsInfo')(observer(ProviderFilter));
