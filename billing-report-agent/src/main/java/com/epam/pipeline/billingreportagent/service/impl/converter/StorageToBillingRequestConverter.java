@@ -66,17 +66,28 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
     private final StorageType storageType;
     private final StoragePricingService storagePricing;
     private final String esFileIndexPattern;
+    private final Optional<FileShareMountsService> fileshareMountsService;
 
     public StorageToBillingRequestConverter(final AbstractEntityMapper<StorageBillingInfo> mapper,
                                             final ElasticsearchServiceClient elasticsearchService,
                                             final StorageType storageType,
                                             final StoragePricingService storagePricing,
                                             final String esFileIndexPattern) {
+        this(mapper, elasticsearchService, storageType, storagePricing, esFileIndexPattern, null);
+    }
+
+    public StorageToBillingRequestConverter(final AbstractEntityMapper<StorageBillingInfo> mapper,
+                                            final ElasticsearchServiceClient elasticsearchService,
+                                            final StorageType storageType,
+                                            final StoragePricingService storagePricing,
+                                            final String esFileIndexPattern,
+                                            final FileShareMountsService fileshareMountsService) {
         this.mapper = mapper;
         this.elasticsearchService = elasticsearchService;
         this.storageType = storageType;
         this.storagePricing = storagePricing;
         this.esFileIndexPattern = esFileIndexPattern;
+        this.fileshareMountsService = Optional.ofNullable(fileshareMountsService);
     }
 
     @Override
@@ -99,6 +110,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                                            final LocalDateTime previousSync,
                                                            final LocalDateTime syncStart) {
         storagePricing.updatePrices();
+        fileshareMountsService.ifPresent(fileShareMountsService -> fileShareMountsService.updateSharesRegions());
         return EntityToBillingRequestConverter.super
             .convertEntitiesToRequests(containers, indexName, previousSync, syncStart);
     }
@@ -137,7 +149,9 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
     }
 
     private Optional<Long> extractStorageSize(final SearchResponse response) {
-        final long totalMatches = response.getHits().getTotalHits();
+        final long totalMatches = Optional.ofNullable(response.getHits().getHits())
+            .map(hits -> hits.length)
+            .orElse(0);
         if (totalMatches == 0) {
             return Optional.empty();
         }
@@ -237,7 +251,10 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
         } else if (storage instanceof GSBucketStorage) {
             return ((GSBucketStorage) storage).getRegionId();
         } else if (storage instanceof NFSDataStorage) {
-            return null;
+            return fileshareMountsService.
+                map(fileShareMountsService -> fileShareMountsService.getRegionIdForShare(storage.getFileShareMountId()))
+                .orElseThrow(
+                    () -> new IllegalStateException("FileShareMountService is not available for NFSSynchronizer!"));
         } else {
             throw new IllegalArgumentException("Unknown storage type!");
         }
