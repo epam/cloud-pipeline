@@ -53,7 +53,7 @@ function runnersEqual (runnersA, runnersB) {
 function getUserSearchOptions (user) {
   if (user) {
     const searchParts = [
-      (user.userName || '').toLowerCase()
+      (user.name || '').toLowerCase()
     ];
     if (user.attributes) {
       const getAttributesValues = () => {
@@ -93,21 +93,21 @@ function RenderUserName ({user, myUserName}) {
   if (!user) {
     return null;
   }
-  const you = user.userName === myUserName
+  const you = user.name === myUserName
     ? (<b>{' (you)'}</b>)
     : undefined;
   if (user.attributesValues) {
     const attributesString = (user.attributesValues || []).join(', ');
     return (
       <Row type="flex" style={{flexDirection: 'column'}}>
-        <Row>{user.userName}{you}</Row>
+        <Row>{user.name}{you}</Row>
         <Row><span style={{fontSize: 'smaller'}}>{attributesString}</span></Row>
       </Row>
     );
   }
   return (
     <span>
-      {user.userName}{you}
+      {user.name}{you}
     </span>
   );
 }
@@ -170,10 +170,10 @@ class RunnerFilter extends React.Component {
     }
     const items = this.users.map((user) => ({
       item: user,
-      key: `${RunnerType.user}_${user.userName}`,
-      label: user.userName === this.myUserName
-        ? `${user.userName} (you)`
-        : user.userName
+      key: `${RunnerType.user}_${user.name}`,
+      label: user.name === this.myUserName
+        ? `${user.name} (you)`
+        : user.name
     }));
     items.push(
       ...this.centers.map((center) => ({
@@ -204,15 +204,15 @@ class RunnerFilter extends React.Component {
   @computed
   get users () {
     const {
-      users: usersRequest
+      usersInfo: usersRequest
     } = this.props;
     let users = [];
     if (usersRequest && usersRequest.loaded) {
       users = (usersRequest.value || []).map(u => u).sort((a, b) => {
-        if (a.userName > b.userName) {
+        if (a.name > b.name) {
           return 1;
         }
-        if (a.userName < b.userName) {
+        if (a.name < b.name) {
           return -1;
         }
         return 0;
@@ -265,7 +265,7 @@ class RunnerFilter extends React.Component {
     }, async () => {
       const {
         billingCenters: billingCentersRequest,
-        users: usersRequest
+        usersInfo: usersRequest
       } = this.props;
       await billingCentersRequest.fetchIfNeededOrWait();
       await usersRequest.fetchIfNeededOrWait();
@@ -394,8 +394,8 @@ class RunnerFilter extends React.Component {
           {
             filteredUsers.map((user) => (
               <Select.Option
-                key={`${RunnerType.user}_${user.userName}`}
-                value={`${RunnerType.user}_${user.userName}`}
+                key={`${RunnerType.user}_${user.name}`}
+                value={`${RunnerType.user}_${user.name}`}
               >
                 <RenderUserName myUserName={this.myUserName} user={user} />
               </Select.Option>
@@ -407,5 +407,5 @@ class RunnerFilter extends React.Component {
   }
 }
 
-export default inject('authenticatedUserInfo', 'billingCenters', 'users')(observer(RunnerFilter));
+export default inject('authenticatedUserInfo', 'billingCenters', 'usersInfo')(observer(RunnerFilter));
 export {RunnerType};

@@ -31,6 +31,7 @@ import pipelinesLibrary from '../../models/folders/FolderLoadTree';
 import folders from '../../models/folders/Folders';
 import dataStorages from '../../models/dataStorage/DataStorages';
 import awsRegions from '../../models/cloudRegions/CloudRegions';
+import cloudRegionsInfo from '../../models/cloudRegions/CloudRegionsInfo';
 import availableCloudRegions from '../../models/cloudRegions/AvailableCloudRegions';
 import cloudProviders from '../../models/cloudRegions/CloudProviders';
 import dataStorageCache from '../../models/dataStorage/DataStorageCache';
@@ -43,6 +44,7 @@ import dockerRegistries from '../../models/tools/DockerRegistriesTree';
 import RunCount from '../../models/pipelines/RunCount';
 import MyIssues from '../../models/issues/MyIssues';
 import Users from '../../models/user/Users';
+import UsersInfo from '../../models/user/UsersInfo';
 import AppLocalization from '../../utils/localization';
 import IssuesRenderer from '../../components/special/issues/utilities/IssueRenderer';
 import NotificationRenderer from '../special/notifications/utilities/NotificationRenderer';
@@ -62,6 +64,7 @@ const myIssues = new MyIssues();
 const googleApi = new GoogleApi(preferences);
 const fireCloudMethods = new FireCloudMethods(googleApi);
 const users = new Users();
+const usersInfo = new UsersInfo();
 const allowedInstanceTypes = new AllowedInstanceTypes();
 const searchEngine = new Search();
 
@@ -71,6 +74,7 @@ const spotToolInstanceTypes = new ToolInstanceTypes(true);
 const onDemandToolInstanceTypes = new ToolInstanceTypes(false);
 
 (() => { return awsRegions.fetchIfNeededOrWait(); })();
+(() => { return cloudRegionsInfo.fetchIfNeededOrWait(); })();
 (() => { return allowedInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return spotInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return onDemandInstanceTypes.fetchIfNeededOrWait(); })();
@@ -94,6 +98,7 @@ const Root = () =>
       pipelinesLibrary,
       dataStorages,
       awsRegions,
+      cloudRegionsInfo,
       availableCloudRegions,
       cloudProviders,
       folders,
@@ -112,6 +117,7 @@ const Root = () =>
       notificationsRenderer,
       myIssues,
       users,
+      usersInfo,
       allowedInstanceTypes,
       searchEngine,
       configurationSchedules,
