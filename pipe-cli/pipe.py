@@ -116,7 +116,7 @@ def cli():
               help='Password of the user, specified by the "--proxy-ntlm-user"',
               default=None)
 @click.option('-c', '--codec',
-              help='',
+              help='Encoding that shall be used',
               default=None)
 def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec):
     """Configures CLI parameters
