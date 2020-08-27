@@ -115,7 +115,10 @@ def cli():
 @click.option('-np', '--proxy-ntlm-pass',
               help='Password of the user, specified by the "--proxy-ntlm-user"',
               default=None)
-def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass):
+@click.option('-c', '--codec',
+              help='Encoding that shall be used',
+              default=None)
+def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec):
     """Configures CLI parameters
     """
     if proxy_ntlm and not proxy_ntlm_user:
@@ -132,7 +135,8 @@ def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, pro
                  proxy_ntlm,
                  proxy_ntlm_user,
                  proxy_ntlm_domain,
-                 proxy_ntlm_pass)
+                 proxy_ntlm_pass,
+                 codec)
 
 
 def echo_title(title, line=True):
