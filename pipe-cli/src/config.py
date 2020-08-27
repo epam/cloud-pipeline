@@ -216,6 +216,15 @@ class Config(object):
             json.dump(config, config_file_stream)
 
     @classmethod
+    def change_encoding(cls, codec):
+        if codec:
+            try:
+                reload(sys)
+                sys.setdefaultencoding(codec)
+            except NameError:
+                pass
+
+    @classmethod
     def config_path(cls):
         home = os.path.expanduser("~")
         config_folder = os.path.join(home, '.pipe')
