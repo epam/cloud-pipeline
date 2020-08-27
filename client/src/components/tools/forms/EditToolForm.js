@@ -72,6 +72,7 @@ const regionNotConfiguredValue = 'not_configured';
 
 @Form.create()
 @inject(
+  'preferences',
   'awsRegions',
   'allowedInstanceTypes',
   'dataStorageAvailable',
@@ -333,7 +334,7 @@ export default class EditToolForm extends React.Component {
       this.props.configuration && this.props.configuration.is_spot !== undefined
         ? `${this.props.configuration.is_spot}`
         : `${this.props.defaultPriceTypeIsSpot}`
-    )
+    );
   };
 
   getDiskInitialValue = () => {
@@ -569,18 +570,25 @@ export default class EditToolForm extends React.Component {
 
   @computed
   get allowedPriceTypes () {
-    let priceTypes = [true, false];
+    let availableMasterNodeTypes = [true, false];
+    if (this.state.launchCluster && this.props.preferences.loaded) {
+      availableMasterNodeTypes = this.props.preferences.allowedMasterPriceTypes;
+    }
+    let priceTypes = availableMasterNodeTypes.slice();
     if (this.props.allowedInstanceTypes.loaded && this.props.allowedInstanceTypes.value[names.allowedPriceTypes]) {
       priceTypes = [];
       for (let i = 0; i < (this.props.allowedInstanceTypes.value[names.allowedPriceTypes] || []).length; i++) {
         const isSpot = this.props.allowedInstanceTypes.value[names.allowedPriceTypes][i].toLowerCase() === 'spot';
-        priceTypes.push(isSpot);
+        if (availableMasterNodeTypes.indexOf(isSpot) >= 0) {
+          priceTypes.push(isSpot);
+        }
       }
     }
     return priceTypes.map(isSpot => ({
       isSpot,
       name: getSpotTypeName(isSpot, this.getCloudProvider())
-    }));
+    }))
+      .filter(v => availableMasterNodeTypes.indexOf(v.isSpot) >= 0);
   }
 
   @computed
@@ -752,7 +760,13 @@ export default class EditToolForm extends React.Component {
       sparkEnabled,
       slurmEnabled,
       autoScaledPriceType
-    }, this.closeConfigureClusterDialog);
+    }, () => {
+      this.closeConfigureClusterDialog();
+      const priceType = this.props.form.getFieldValue('is_spot') || this.getPriceTypeInitialValue();
+      this.props.form.setFieldsValue({
+        is_spot: this.correctPriceTypeValue(priceType)
+      });
+    });
   };
 
   renderExecutionEnvironmentSummary = () => {
