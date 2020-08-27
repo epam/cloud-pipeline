@@ -191,6 +191,9 @@ class Config(object):
             raise ProxyInvalidConfig('NTLM proxy authentication is supported only for prebuilt CLI binaries.')
         if proxy_ntlm_pass:
             click.secho('Warning: NTLM proxy user password will be stored unencrypted.', fg='yellow')
+        if codec and sys.version_info[0] >= 3:
+            click.echo('Encoding can not be configured with current environment.', err=True)
+            exit(1)
         cls.validate_pac_proxy(proxy)
         config = {'api': api,
                   'access_key': access_key,
