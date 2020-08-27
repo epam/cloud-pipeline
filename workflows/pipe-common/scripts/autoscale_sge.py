@@ -665,8 +665,7 @@ class GridEngineScaleUpHandler:
         raise ScalingError(error_msg)
 
     def _add_worker_to_master_hosts(self, pod):
-        self.executor.execute('echo "%s\t%s" >> /etc/hosts' % (pod.ip, pod.name))
-        self.executor.execute('echo %s >> %s' % (pod.name, self.default_hostfile))
+        self.executor.execute('add_to_hosts "%s" "%s"' % (pod.name, pod.ip))
 
     def _await_worker_initialization(self, run_id):
         Logger.info('Waiting for additional worker with run_id=%s to initialize.' % run_id)
@@ -692,12 +691,6 @@ class GridEngineScaleUpHandler:
 
 
 class GridEngineScaleDownHandler:
-    # todo: This approach is not interrupt-safe because cp command can end up in a damaged destination file.
-    #  Another approach was to use mv command because it most likely has atomicity on the OS level
-    #  but it ends up with a 'device or resource busy' error every time on /etc/hosts file at least.
-    _REMOVE_LINE_COMMAND = 'cat %(file)s | grep -v "%(line)s" > %(file)s_MODIFIED; ' \
-                           'cp %(file)s_MODIFIED %(file)s; ' \
-                           'rm %(file)s_MODIFIED'
 
     def __init__(self, cmd_executor, grid_engine, default_hostfile):
         """
@@ -735,7 +728,6 @@ class GridEngineScaleDownHandler:
         self._decrease_parallel_environment_slots(child_host_slots)
         self._stop_pipeline(child_host)
         self._remove_host_from_hosts(child_host)
-        self._remove_host_from_default_hostfile(child_host)
         Logger.info('Additional worker with host=%s has been stopped.' % child_host, crucial=True)
         return True
 
@@ -759,16 +751,9 @@ class GridEngineScaleDownHandler:
         host_elements = host.split('-')
         return host_elements[len(host_elements) - 1]
 
-    def _remove_host_from_default_hostfile(self, host):
-        Logger.info('Remove host %s from default hostfile.' % host)
-        self._remove_line_from_file(file=self.default_hostfile, line=host)
-
     def _remove_host_from_hosts(self, host):
-        Logger.info('Remove host %s from /etc/hosts.' % host)
-        self._remove_line_from_file(file='/etc/hosts', line=host)
-
-    def _remove_line_from_file(self, file, line):
-        self.executor.execute(GridEngineScaleDownHandler._REMOVE_LINE_COMMAND % {'file': file, 'line': line})
+        Logger.info('Remove host %s from /etc/hosts and default hostfile.' % host)
+        self.executor.execute('remove_from_hosts "%s"' % host)
 
 
 class MemoryHostStorage:
@@ -1091,7 +1076,6 @@ class GridEngineWorkerValidator:
     def _remove_worker_from_hosts(self, host):
         Logger.info('Remove worker (host=%s) from the well-known hosts.' % host)
         self.scale_down_handler._remove_host_from_hosts(host)
-        self.scale_down_handler._remove_host_from_default_hostfile(host)
 
 
 class CloudPipelineInstanceHelper:
