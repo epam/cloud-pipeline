@@ -355,12 +355,13 @@ class OutOfBoundsFillingMultipartCopyUpload(MultipartUploadDecorator):
 
     def upload_copy_part(self, start, end, offset=None, part_number=None):
         if self._original_size <= start:
-            logging.debug('Filling out of bounds copy upload part %s whole %d-%d for %s' % (part_number, start, end, self.path))
-            modified_buf = bytearray(end - start)
-            self._mpu.upload_part(modified_buf, offset, part_number)
+            logging.debug('Filling out of bounds copy upload part %s whole %d-%d for %s'
+                          % (part_number, start, end, self.path))
+            self._mpu.upload_part(bytearray(end - start), offset, part_number)
         elif start < self._original_size < end:
-            logging.debug('Filling out of bounds copy upload part %s region %d-%d with nulls for %s' % (part_number, start, end, self.path))
-            original_buf = self._download_func(start, end - start)
+            logging.debug('Filling out of bounds copy upload part %s region %d-%d with nulls for %s'
+                          % (part_number, self._original_size, end, self.path))
+            original_buf = self._download_func(start, self._original_size - start)
             modified_buf = bytearray(end - start)
             modified_buf[0:len(original_buf)] = original_buf
             self._mpu.upload_part(modified_buf, offset, part_number)
