@@ -25,7 +25,11 @@ import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.GSBucketStorage;
+import com.epam.pipeline.entity.datastorage.NFSDataStorage;
+import com.epam.pipeline.entity.datastorage.S3bucketDataStorage;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -62,17 +66,28 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
     private final StorageType storageType;
     private final StoragePricingService storagePricing;
     private final String esFileIndexPattern;
+    private final Optional<FileShareMountsService> fileshareMountsService;
 
     public StorageToBillingRequestConverter(final AbstractEntityMapper<StorageBillingInfo> mapper,
                                             final ElasticsearchServiceClient elasticsearchService,
                                             final StorageType storageType,
                                             final StoragePricingService storagePricing,
                                             final String esFileIndexPattern) {
+        this(mapper, elasticsearchService, storageType, storagePricing, esFileIndexPattern, null);
+    }
+
+    public StorageToBillingRequestConverter(final AbstractEntityMapper<StorageBillingInfo> mapper,
+                                            final ElasticsearchServiceClient elasticsearchService,
+                                            final StorageType storageType,
+                                            final StoragePricingService storagePricing,
+                                            final String esFileIndexPattern,
+                                            final FileShareMountsService fileshareMountsService) {
         this.mapper = mapper;
         this.elasticsearchService = elasticsearchService;
         this.storageType = storageType;
         this.storagePricing = storagePricing;
         this.esFileIndexPattern = esFileIndexPattern;
+        this.fileshareMountsService = Optional.ofNullable(fileshareMountsService);
     }
 
     @Override
@@ -95,6 +110,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                                            final LocalDateTime previousSync,
                                                            final LocalDateTime syncStart) {
         storagePricing.updatePrices();
+        fileshareMountsService.ifPresent(fileShareMountsService -> fileShareMountsService.updateSharesRegions());
         return EntityToBillingRequestConverter.super
             .convertEntitiesToRequests(containers, indexName, previousSync, syncStart);
     }
@@ -133,7 +149,9 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
     }
 
     private Optional<Long> extractStorageSize(final SearchResponse response) {
-        final long totalMatches = response.getHits().getTotalHits();
+        final long totalMatches = Optional.ofNullable(response.getHits().getHits())
+            .map(hits -> hits.length)
+            .orElse(0);
         if (totalMatches == 0) {
             return Optional.empty();
         }
@@ -169,7 +187,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
 
         try {
             billing
-                .regionName(regionLocation)
+                .regionId(getRegionId(storageContainer))
                 .cost(calculateDailyCost(byteSize, regionLocation, billingDate));
         } catch (IllegalArgumentException e) {
             billing.cost(calculateDailyCost(byteSize, storagePricing.getDefaultPriceGb(), billingDate));
@@ -222,5 +240,23 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                                                endRange - beginRange);
                 return calculateDailyCost(bytesForCurrentTierPrice, entity.getPriceCentsPerGb(), date);
             }).sum();
+    }
+
+    private Long getRegionId(final EntityContainer<AbstractDataStorage> storageContainer) {
+        final AbstractDataStorage storage = storageContainer.getEntity();
+        if (storage instanceof S3bucketDataStorage) {
+            return ((S3bucketDataStorage) storage).getRegionId();
+        } else if (storage instanceof AzureBlobStorage) {
+            return ((AzureBlobStorage) storage).getRegionId();
+        } else if (storage instanceof GSBucketStorage) {
+            return ((GSBucketStorage) storage).getRegionId();
+        } else if (storage instanceof NFSDataStorage) {
+            return fileshareMountsService.
+                map(fileShareMountsService -> fileShareMountsService.getRegionIdForShare(storage.getFileShareMountId()))
+                .orElseThrow(
+                    () -> new IllegalStateException("FileShareMountService is not available for NFSSynchronizer!"));
+        } else {
+            throw new IllegalArgumentException("Unknown storage type!");
+        }
     }
 }

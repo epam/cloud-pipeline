@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.PipelineResponseException;
 import com.epam.pipeline.utils.QueryUtils;
@@ -72,5 +73,9 @@ public class CloudPipelineAPIClient {
 
     public List<NodeDisk> loadNodeDisks(final String nodeId) {
         return QueryUtils.execute(cloudPipelineAPI.loadNodeDisks(nodeId));
+    }
+
+    public List<AbstractCloudRegion> loadAllCloudRegions() {
+        return QueryUtils.execute(cloudPipelineAPI.loadAllRegions());
     }
 }
