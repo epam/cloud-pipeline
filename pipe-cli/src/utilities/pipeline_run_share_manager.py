@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 import click
 from prettytable import prettytable
 
@@ -43,14 +44,14 @@ class PipelineRunShareManager(object):
         run = PipelineRun.get(run_id)
         if not run:
             click.echo("Failed to load run '%s'" % str(run_id), err=True)
-            exit(1)
+            sys.exit(1)
         if not users and not groups or len(users) == 0 and len(groups) == 0:
             click.echo("Users or groups must be specified", err=True)
-            exit(1)
+            sys.exit(1)
         self._check_run_is_running(run)
         if not run.endpoints and not ssh:
             click.echo("Run doesn't have endpoints. Please, specify '-ssh' option to share ssh.", err=True)
-            exit(1)
+            sys.exit(1)
 
         existing_users, existing_groups = self._get_existing_sids(run, run_id)
         self._add_sids(users, existing_users, run_id, ssh, True)
@@ -59,14 +60,14 @@ class PipelineRunShareManager(object):
         result = PipelineRun.update_run_sids(run_id, existing_users.values() + existing_groups.values())
         if not result:
             click.echo("Failed to share run '%s'" % str(run_id), err=True)
-            exit(1)
+            sys.exit(1)
         click.echo("Done")
 
     def remove(self, run_id, users, groups, ssh):
         run = PipelineRun.get(run_id)
         if not run:
             click.echo("Failed to load run '%s'" % str(run_id), err=True)
-            exit(1)
+            sys.exit(1)
         self._check_run_is_running(run)
 
         if not users and not groups or len(users) == 0 and len(groups) == 0:
@@ -80,14 +81,14 @@ class PipelineRunShareManager(object):
         result = PipelineRun.update_run_sids(run_id, sids_to_delete)
         if not result:
             click.echo("Failed to unshare run '%s'" % str(run_id), err=True)
-            exit(1)
+            sys.exit(1)
         click.echo("Done")
 
     @staticmethod
     def _check_run_is_running(run):
         if run.status != 'RUNNING':
             click.echo("Run is not running", err=True)
-            exit(1)
+            sys.exit(1)
 
     @staticmethod
     def _to_json(name, is_principal, access_type, run_id):

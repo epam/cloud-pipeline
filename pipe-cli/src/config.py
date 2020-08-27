@@ -116,7 +116,7 @@ class Config(object):
         if proxy and str(proxy).lower() == PROXY_TYPE_PAC and platform.system() != 'Windows':
             click.echo('"pac" (Proxy Auto Configuration) is not supported in the non-Windows environment. '
                        'Please set the proxy address explicitly or keep it empty (e.g. --proxy "")', err=True)
-            exit(1)
+            sys.exit(1)
 
     @classmethod
     def validate_access_token(cls, _func=None, quiet_flag_property_name=None):
@@ -193,7 +193,7 @@ class Config(object):
             click.secho('Warning: NTLM proxy user password will be stored unencrypted.', fg='yellow')
         if codec and sys.version_info[0] >= 3:
             click.echo('Encoding can not be configured with current environment.', err=True)
-            exit(1)
+            sys.exit(1)
         cls.validate_pac_proxy(proxy)
         config = {'api': api,
                   'access_key': access_key,
