@@ -31,7 +31,7 @@ def pytest_generate_tests(metafunc):
     #  Nevertheless tests should be performed for both mount root and folders.
     # module_local_path = os.path.join(local_path, metafunc.module.__name__)
     # module_mounted_path = os.path.join(mounted_path, metafunc.module.__name__)
-    if 'read' in metafunc.module.__name__ or 'write' in metafunc.module.__name__:
+    if any(operation in metafunc.module.__name__ for operation in ['read', 'write', 'truncate', 'fallocate']):
         sizes = _get_sizes(config=metafunc.config)
         size_literals = [as_literal(size) for size in sizes]
         file_names = ['file_' + size for size in size_literals]
@@ -39,7 +39,7 @@ def pytest_generate_tests(metafunc):
         mounted_files = [os.path.join(mounted_path, file_name) for file_name in file_names]
         parameters = zip(size_literals, local_files, mounted_files, [source_path] * len(sizes))
         metafunc.parametrize('size, local_file, mounted_file, source_path', parameters, ids=size_literals)
-    elif 'mkdir' in metafunc.module.__name__ or 'rm' in metafunc.module.__name__ or 'mv' in metafunc.module.__name__:
+    elif any(operation in metafunc.module.__name__ for operation in ['mkdir', 'mv', 'rm', 'touch']):
         metafunc.parametrize('mount_path', [mounted_path], ids=[''])
 
 

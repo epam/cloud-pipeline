@@ -8,11 +8,11 @@ def mkdir(folder_path, recursive=False):
         execute('mkdir "%s"' % folder_path)
 
 
-def rm(folder_path, recursive=False):
+def rm(item_path, recursive=False):
     if recursive:
-        execute('rm -r "%s"' % folder_path)
+        execute('rm -r "%s"' % item_path)
     else:
-        execute('rm "%s"' % folder_path)
+        execute('rm "%s"' % item_path)
 
 
 def touch(file_path):
@@ -21,3 +21,11 @@ def touch(file_path):
 
 def mv(old_path, new_path):
     execute('mv "%s" "%s"' % (old_path, new_path))
+
+
+def truncate(file_path, size):
+    execute('truncate -s "%s" "%s"' % (size, file_path))
+
+
+def fallocate(local_file, size):
+    execute('fallocate -l "%s" "%s"' % (size, local_file))
