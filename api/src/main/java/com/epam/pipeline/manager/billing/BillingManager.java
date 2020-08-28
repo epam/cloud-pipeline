@@ -53,6 +53,8 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.valuecount.ParsedValueCount;
+import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCountAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.tophits.ParsedTopHits;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.ParsedSimpleValue;
@@ -120,7 +122,7 @@ public class BillingManager {
     private final TermsAggregationBuilder storageUsageGroupingAggregation;
     private final TopHitsAggregationBuilder lastByDateDocAggregation;
     private final SumBucketPipelineAggregationBuilder storageUsageTotalAggregation;
-    private final TermsAggregationBuilder uniqueRunsAggregation;
+    private final ValueCountAggregationBuilder uniqueRunsAggregation;
     private final Map<BillingGrouping, EntityBillingDetailsLoader> billingDetailsLoaders;
     private final String emptyValue;
     private final String billingCenterKey;
@@ -162,7 +164,7 @@ public class BillingManager {
             .sort(BILLING_DATE_FIELD, SortOrder.DESC);
         this.storageUsageTotalAggregation = PipelineAggregatorBuilders
             .sumBucket(TOTAL_STORAGE_USAGE_AGG, String.format("%s.%s", STORAGE_GROUPING_AGG, SINGLE_STORAGE_USAGE_AGG));
-        this.uniqueRunsAggregation = AggregationBuilders.terms(UNIQUE_RUNS).field(RUN_ID_FIELD).size(Integer.MAX_VALUE);
+        this.uniqueRunsAggregation = AggregationBuilders.count(UNIQUE_RUNS).field(RUN_ID_FIELD);
         this.billingDetailsLoaders = billingDetailsLoaders.stream()
             .collect(Collectors.toMap(EntityBillingDetailsLoader::getGrouping,
                                       Function.identity()));
@@ -417,8 +419,8 @@ public class BillingManager {
                 final ParsedSum usageAggResult = aggregations.get(RUN_USAGE_AGG);
                 final long usageVal = new Double(usageAggResult.getValue()).longValue();
                 groupingInfo.put(RUN_USAGE_AGG, Long.toString(usageVal));
-                final ParsedStringTerms ids = aggregations.get(UNIQUE_RUNS);
-                groupingInfo.put(UNIQUE_RUNS, Integer.toString(ids.getBuckets().size()));
+                final ParsedValueCount uniqueRunIds = aggregations.get(UNIQUE_RUNS);
+                groupingInfo.put(UNIQUE_RUNS, Long.toString(uniqueRunIds.getValue()));
             }
             if (grouping.storageUsageDetailsRequired()) {
                 final ParsedSimpleValue totalStorageUsage = aggregations.get(TOTAL_STORAGE_USAGE_AGG);
