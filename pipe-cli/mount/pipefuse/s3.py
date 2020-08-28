@@ -29,7 +29,8 @@ import fuseutils
 from fsclient import File, FileSystemClient
 from fuseutils import MB, GB
 from mpu import MultipartUpload, SplittingMultipartCopyUpload, ChunkedMultipartUpload, \
-    TruncatingMultipartCopyUpload, UnmanageableMultipartUploadException
+    TruncatingMultipartCopyUpload, UnmanageableMultipartUploadException, OutOfBoundsFillingMultipartCopyUpload, \
+    OutOfBoundsSplittingMultipartCopyUpload
 
 _ANY_ERROR = Exception
 
@@ -70,7 +71,8 @@ class S3MultipartUpload(MultipartUpload):
         self._upload_id = response['UploadId']
 
     def upload_part(self, buf, offset=None, part_number=None):
-        logging.info('Uploading multipart upload part range %d-%d for %s' % (offset, offset + len(buf), self._path))
+        logging.info('Uploading multipart upload part %d range %d-%d for %s'
+                     % (part_number, offset, offset + len(buf), self._path))
         with io.BytesIO(buf) as body:
             response = self._s3.upload_part(
                 Bucket=self._bucket,
@@ -82,7 +84,8 @@ class S3MultipartUpload(MultipartUpload):
         self._parts[part_number] = response['ETag']
 
     def upload_copy_part(self, start, end, offset=None, part_number=None):
-        logging.info('Uploading multipart upload part copy range %d-%d for %s' % (start, end, self._path))
+        logging.info('Uploading multipart upload part %d copy range %d-%d for %s'
+                     % (part_number, start, end, self._path))
         response = self._s3.upload_part_copy(
             Bucket=self._bucket,
             Key=self._path,
@@ -327,7 +330,9 @@ class S3Client(FileSystemClient):
             if not mpu:
                 file_size = self.attrs(path).size
                 buf_size = len(buf)
-                if buf_size < self._SINGLE_UPLOAD_SIZE and file_size < self._SINGLE_UPLOAD_SIZE:
+                if buf_size < self._SINGLE_UPLOAD_SIZE \
+                        and file_size < self._SINGLE_UPLOAD_SIZE \
+                        and offset < self._SINGLE_UPLOAD_SIZE:
                     logging.info('Using single range upload approach for %d:%s' % (fh, path))
                     self._upload_single_range(fh, buf, source_path, offset)
                 else:
@@ -364,8 +369,13 @@ class S3Client(FileSystemClient):
 
     def _new_mpu(self, source_path, file_size, offset):
         mpu = S3MultipartUpload(source_path, offset, self.bucket, self._s3)
+        mpu = OutOfBoundsFillingMultipartCopyUpload(mpu, original_size=file_size,
+                                                    download_func=self._generate_region_download_function(source_path))
         mpu = SplittingMultipartCopyUpload(mpu, min_part_size=self._MIN_PART_SIZE, max_part_size=self._MAX_PART_SIZE)
-        mpu = ChunkedMultipartUpload(mpu, file_size, download_func=self._generate_region_download_function(source_path),
+        mpu = OutOfBoundsSplittingMultipartCopyUpload(mpu, original_size=file_size,
+                                                      min_part_size=self._MIN_PART_SIZE, max_part_size=self._chunk_size)
+        mpu = ChunkedMultipartUpload(mpu, original_size=file_size,
+                                     download_func=self._generate_region_download_function(source_path),
                                      chunk_size=self._chunk_size, min_chunk=self._MIN_CHUNK, max_chunk=self._MAX_CHUNK)
         return mpu
 
@@ -379,7 +389,9 @@ class S3Client(FileSystemClient):
     def _upload_single_range(self, fh, buf, path, offset):
         with io.BytesIO() as original_buf:
             self.download_range(fh, original_buf, path, expand_path=False)
-            modified_bytes = bytearray(original_buf.getvalue())
+            original_bytes = bytearray(original_buf.getvalue())
+        modified_bytes = bytearray(max(offset + len(buf), len(original_bytes)))
+        modified_bytes[0: len(original_bytes)] = original_bytes
         modified_bytes[offset: offset + len(buf)] = buf
         with io.BytesIO(modified_bytes) as body:
             logging.info('Uploading range %d-%d for %s' % (offset, offset + len(buf), path))
