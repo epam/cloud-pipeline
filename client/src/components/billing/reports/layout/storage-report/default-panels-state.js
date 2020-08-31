@@ -17,6 +17,6 @@
 import Panels from './panels';
 
 export default [
-  {'w': 12, 'h': 24, 'x': 0, 'y': 0, 'i': Panels.summary, 'moved': false, 'static': false},
-  {'w': 12, 'h': 24, 'x': 12, 'y': 0, 'i': Panels.storages, 'moved': false, 'static': false}
+  {'w': 8, 'h': 24, 'x': 0, 'y': 0, 'i': Panels.summary, 'moved': false, 'static': false},
+  {'w': 16, 'h': 24, 'x': 8, 'y': 0, 'i': Panels.storages, 'moved': false, 'static': false}
 ];

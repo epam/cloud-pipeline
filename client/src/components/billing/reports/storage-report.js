@@ -137,7 +137,7 @@ function renderTable ({storages, discounts: discountsFn, height}) {
     },
     {
       key: 'volume',
-      title: 'Volume',
+      title: 'Volume (GB)',
       dataIndex: 'usage',
       render: (value) => value ? numberFormatter(value) : null
     },
