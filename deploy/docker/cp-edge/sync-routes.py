@@ -280,8 +280,8 @@ def append_system_endpoints(tool_endpoints, run_details):
                 # Get a list of endpoints from SYSTEM_ENDPOINTS which match the run's parameters (param name and a value)
                 system_endpoints_matched = [SYSTEM_ENDPOINTS[x["name"]] for x in run_details["pipelineRunParameters"]
                                                 if x["name"] in system_endpoints_params
-                                                   and (x["friendly_name"] not in tool_endpoints_dict
-                                                        or tool_endpoints_dict[x["friendly_name"]] != x['endpoint'])
+                                                   and (SYSTEM_ENDPOINTS[x["name"]]["friendly_name"] not in tool_endpoints_dict
+                                                        or tool_endpoints_dict[SYSTEM_ENDPOINTS[x["name"]]["friendly_name"]] != SYSTEM_ENDPOINTS[x["name"]]['endpoint'])
                                                    and x["value"] == SYSTEM_ENDPOINTS[x["name"]]["value"]
                                                    and "endpoint" in SYSTEM_ENDPOINTS[x["name"]]
                                                    and SYSTEM_ENDPOINTS[x["name"]]["endpoint"]]
