@@ -173,14 +173,15 @@ public class PipelineManagerTest {
 
     @Test
     public void shouldCopyPipeline() {
-        final String newName = REPOSITORY_NAME + "_copy";
-        final String newRepository = "https://example.com:repository/repository_copy.git";
-        final String newRepositorySsh = "git@example.com:repository/repository_copy.git";
+        final String sourceRepositoryName = "repository-clone";
+        final String newName = sourceRepositoryName + "_copy";
+        final String newRepository = "https://example.com:repository/repositoryclone_copy.git";
+        final String newRepositorySsh = "git@example.com:repository/repositoryclone_copy.git";
         final String storageRuleMask = "*.test";
 
         final PipelineVO pipelineVO = new PipelineVO();
         pipelineVO.setId(ID);
-        pipelineVO.setName(REPOSITORY_NAME);
+        pipelineVO.setName(sourceRepositoryName);
         pipelineVO.setRepository(REPOSITORY_HTTPS);
         pipelineVO.setRepositoryToken(REPOSITORY_TOKEN);
         pipelineVO.setRepositorySsh(REPOSITORY_SSH);
@@ -193,7 +194,8 @@ public class PipelineManagerTest {
 
         final Pipeline copiedPipeline = pipelineManager.copyPipeline(ID, null, newName);
 
-        assertThat(copiedPipeline.getName(), is(newName));
+        final String expectedNewRepositoryName = "repositoryclone_copy";
+        assertThat(copiedPipeline.getName(), is(expectedNewRepositoryName));
         assertThat(copiedPipeline.getRepository(), is(newRepository));
         assertThat(copiedPipeline.getRepositorySsh(), is(newRepositorySsh));
         assertThat(copiedPipeline.getDescription(), is(pipelineVO.getDescription()));

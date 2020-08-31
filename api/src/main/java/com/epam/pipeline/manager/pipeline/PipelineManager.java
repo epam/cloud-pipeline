@@ -326,7 +326,8 @@ public class PipelineManager implements SecuredEntityManager {
 
         final String sourceProjectName = GitUtils.convertPipeNameToProject(loadedPipeline.getName());
         final String uuid = PasswordGenerator.generateRandomString(20);
-        final String newProjectName = buildCopyProjectName(sourceProjectName, uuid, newName);
+        final String newProjectName = GitUtils.convertPipeNameToProject(
+                buildCopyProjectName(sourceProjectName, uuid, newName));
         final String newRepository =
                 GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepository(), newProjectName);
         final String newRepositorySsh =
