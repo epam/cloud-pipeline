@@ -194,8 +194,7 @@ public class PipelineManagerTest {
 
         final Pipeline copiedPipeline = pipelineManager.copyPipeline(ID, null, newName);
 
-        final String expectedNewRepositoryName = "repositoryclone_copy";
-        assertThat(copiedPipeline.getName(), is(expectedNewRepositoryName));
+        assertThat(copiedPipeline.getName(), is(newName));
         assertThat(copiedPipeline.getRepository(), is(newRepository));
         assertThat(copiedPipeline.getRepositorySsh(), is(newRepositorySsh));
         assertThat(copiedPipeline.getDescription(), is(pipelineVO.getDescription()));
