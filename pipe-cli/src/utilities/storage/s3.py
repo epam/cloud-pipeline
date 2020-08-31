@@ -423,6 +423,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                     'MaxItems': page_size,
                     'PageSize': page_size
                  }
+        else:
+            page_size = None
         if not recursive:
             operation_parameters['Delimiter'] = delimiter
         prefix = S3BucketOperations.get_prefix(delimiter, relative_path)
@@ -430,9 +432,9 @@ class ListingManager(StorageItemManager, AbstractListingManager):
             operation_parameters['Prefix'] = prefix
 
         if self.show_versions:
-            return self.list_versions(client, prefix, operation_parameters, recursive)
+            return self.list_versions(client, prefix, operation_parameters, recursive, page_size)
         else:
-            return self.list_objects(client, prefix, operation_parameters, recursive)
+            return self.list_objects(client, prefix, operation_parameters, recursive, page_size)
 
     def get_summary_with_depth(self, max_depth, relative_path=None):
         bucket_name = self.bucket.bucket.path
@@ -486,16 +488,18 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                 break
         return delimiter.join([self.bucket.bucket.path, relative_path]), total_objects, total_size
 
-    def list_versions(self, client, prefix,  operation_parameters, recursive):
+    def list_versions(self, client, prefix,  operation_parameters, recursive, page_size):
         paginator = client.get_paginator('list_object_versions')
         page_iterator = paginator.paginate(**operation_parameters)
         items = []
         item_keys = collections.OrderedDict()
+        items_count = 0
         for page in page_iterator:
             if 'CommonPrefixes' in page:
                 for folder in page['CommonPrefixes']:
                     name = S3BucketOperations.get_item_name(folder['Prefix'], prefix=prefix)
                     items.append(self.get_folder_object(name))
+                    items_count += 1
             if 'Versions' in page:
                 for version in page['Versions']:
                     name = self.get_file_name(version, prefix, recursive)
@@ -507,7 +511,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                     item = self.get_file_object(delete_marker, name, version=True, storage_class=False)
                     item.delete_marker = True
                     self.process_version(item, item_keys, name)
-            if 'IsTruncated' in page and not page['IsTruncated']:
+            items_count += len(item_keys)
+            if self.need_to_stop_paging(page, page_size, items_count):
                 break
         items.extend(item_keys.values())
         for item in items:
@@ -526,21 +531,24 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                 item.versions = versions
                 item_keys[name] = item
 
-    def list_objects(self, client, prefix, operation_parameters, recursive):
+    def list_objects(self, client, prefix, operation_parameters, recursive, page_size):
         paginator = client.get_paginator('list_objects_v2')
         page_iterator = paginator.paginate(**operation_parameters)
         items = []
+        items_count = 0
         for page in page_iterator:
             if 'CommonPrefixes' in page:
                 for folder in page['CommonPrefixes']:
                     name = S3BucketOperations.get_item_name(folder['Prefix'], prefix=prefix)
                     items.append(self.get_folder_object(name))
+                    items_count += 1
             if 'Contents' in page:
                 for file in page['Contents']:
                     name = self.get_file_name(file, prefix, recursive)
                     item = self.get_file_object(file, name)
                     items.append(item)
-            if 'IsTruncated' in page and not page['IsTruncated']:
+                    items_count += 1
+            if self.need_to_stop_paging(page, page_size, items_count):
                 break
         return items
 
@@ -578,6 +586,14 @@ class ListingManager(StorageItemManager, AbstractListingManager):
 
     def get_file_tags(self, relative_path):
         return ObjectTaggingManager.get_object_tagging(ObjectTaggingManager(self.session, self.bucket), relative_path)
+
+    @staticmethod
+    def need_to_stop_paging(page, page_size, items_count):
+        if 'IsTruncated' in page and not page['IsTruncated']:
+            return True
+        if page_size and items_count >= page_size:
+            return True
+        return False
 
 
 class ObjectTaggingManager(StorageItemManager):
