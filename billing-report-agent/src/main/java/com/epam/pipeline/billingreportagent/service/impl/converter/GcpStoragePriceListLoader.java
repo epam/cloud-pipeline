@@ -34,6 +34,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,24 +45,26 @@ import java.util.stream.Collectors;
 public class GcpStoragePriceListLoader implements StoragePriceListLoader{
 
     private static final String GCP_STORAGE_SERVICES_FAMILY = "Cloud Storage";
+    private static final List<String> BILLING_SCOPES =
+            Collections.singletonList("https://www.googleapis.com/auth/cloud-platform");
     private static final List<String> SUPPORTED_STORAGE = Arrays.asList("RegionalStorage", "MultiRegionalStorage");
 
     @Override
     public Map<String, StoragePricing> loadFullPriceList() throws IOException, GeneralSecurityException {
-        final String accessToken = GoogleCredential.getApplicationDefault().getAccessToken();
-        final Cloudbilling cloudbilling = new Cloudbilling(GoogleNetHttpTransport.newTrustedTransport(),
-                                                           JacksonFactory.getDefaultInstance(),
-                                                           null);
-        final ListServicesResponse services = cloudbilling.services().list().setAccessToken(accessToken).execute();
+        final GoogleCredential credentials = GoogleCredential.getApplicationDefault();
+        final Cloudbilling cloudBilling = new Cloudbilling.Builder(GoogleNetHttpTransport.newTrustedTransport(),
+                JacksonFactory.getDefaultInstance(), credentials.createScoped(BILLING_SCOPES))
+                .setApplicationName("Cloud Pipeline Billing Agent")
+                .build();
+        final ListServicesResponse services = cloudBilling.services().list().execute();
         final Service cloudStorageService = services.getServices().stream()
             .filter(service -> service.getDisplayName().equals(GCP_STORAGE_SERVICES_FAMILY))
             .findAny()
             .orElseThrow(() -> new IllegalStateException("No services received from GCP!"));
 
-        final ListSkusResponse skuResponse = cloudbilling.services()
+        final ListSkusResponse skuResponse = cloudBilling.services()
             .skus()
             .list(cloudStorageService.getName())
-            .setAccessToken(accessToken)
             .execute();
 
         return skuResponse.getSkus().stream()
