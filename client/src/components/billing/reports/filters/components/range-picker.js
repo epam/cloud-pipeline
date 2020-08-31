@@ -23,17 +23,15 @@ import styles from './range-picker.css';
 import PickerButton from './picker-button';
 import pickerStyles from './pickers.css';
 
-const {MonthPicker} = DatePicker;
-
 function checkDateInRange (date, start = undefined, end = undefined) {
-  const dateToCheck = moment.utc(date).startOf('M').add(1, 'D');
-  if (start && moment.utc(start).startOf('M') > dateToCheck) {
+  const dateToCheck = moment.utc(date).startOf('D').add(1, 'D');
+  if (start && moment.utc(start).startOf('D') > dateToCheck) {
     return true;
   }
-  if (end && moment.utc(end).endOf('M') < dateToCheck) {
+  if (end && moment.utc(end).endOf('D') < dateToCheck) {
     return true;
   }
-  return moment.utc().endOf('M') < dateToCheck;
+  return moment.utc().endOf('D') < dateToCheck;
 }
 
 class RangeFilter extends React.Component {
@@ -107,11 +105,11 @@ class RangeFilter extends React.Component {
     const {start, end} = Range.parse(range, Period.custom);
     const getRangePeriodString = () => {
       if (start && end) {
-        const display = (value) => value.format('MMM YYYY');
+        const display = (value) => value.format('D MMM YYYY');
         const from = display(start);
         const to = display(end);
         return from === to
-          ? `${end.format('MMMM YYYY')}`
+          ? `${end.format('D MMMM YYYY')}`
           : `${from} to ${to}`;
       }
       return undefined;
@@ -131,20 +129,20 @@ class RangeFilter extends React.Component {
     const menu = (
       <div className={styles.menuContainer}>
         <div className={styles.datesContainer}>
-          <MonthPicker
+          <DatePicker
             disabledDate={this.disabledStartDate}
-            format="MMM YYYY"
+            format="D MMM YYYY"
             value={startValue}
             placeholder="From"
             onChange={onStartChange}
             style={{marginRight: 15}}
             onOpenChange={handleFromPickerVisibility}
           />
-          <MonthPicker
+          <DatePicker
             disabledDate={this.disabledEndDate}
-            format="MMM YYYY"
+            format="D MMM YYYY"
             value={endValue}
-            placeholder="End month"
+            placeholder="To"
             onChange={onEndChange}
             onOpenChange={handleToPickerVisibility}
           />
