@@ -218,6 +218,15 @@ def get_allowed_instance_image(cloud_region, instance_type, default_image):
 
     return default_object
 
+def get_possible_kube_node_names(ec2, ins_id):
+    try:
+        response = ec2.describe_instances(InstanceIds=[ins_id])
+        nodename_full = response['Reservations'][0]['Instances'][0]['PrivateDnsName']
+        nodename = nodename_full.split('.', 1)[0]
+        return [nodename, nodename_full, ins_id]
+    except:
+        return []
+
 #############################
 
 ROOT_DEVICE_DEFAULT = {
@@ -301,21 +310,21 @@ def run_id_filter(run_id):
            }
 
 
-def run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token):
+def run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token, kube_client):
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
     user_data_script = get_user_data_script(api_url, api_token, aws_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size)
     if is_spot:
         ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
-                                            user_data_script, num_rep, time_rep, swap_size)
+                                            user_data_script, num_rep, time_rep, swap_size, kube_client)
     else:
         ins_id, ins_ip = run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, user_data_script,
-                                                num_rep, time_rep, swap_size)
+                                                num_rep, time_rep, swap_size, kube_client)
     return ins_id, ins_ip
 
 
 def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                            kms_encyr_key_id, run_id, user_data_script, num_rep, time_rep,
-                           swap_size):
+                           swap_size, kube_client):
     pipe_log('Creating on demand instance')
     allowed_networks = get_networks_config(ec2, aws_region, ins_type)
     additional_args = {}
@@ -370,7 +379,8 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                                 rep,
                                 'Exceeded retry count ({}) for instance ({}) status check'.format(num_rep, ins_id),
                                 ec2_client=ec2,
-                                kill_instance_id_on_fail=ins_id)
+                                kill_instance_id_on_fail=ins_id,
+                                kube_client=kube_client)
     pipe_log('Instance created. ID: {}, IP: {}\n-'.format(ins_id, ins_ip))
 
     ebs_tags = resource_tags()
@@ -567,7 +577,7 @@ def poll_instance(sock, timeout, ip, port):
     sock.settimeout(None)
     return result
 
-def check_instance(ec2, ins_id, run_id, num_rep, time_rep):
+def check_instance(ec2, ins_id, run_id, num_rep, time_rep, kube_client):
     pipe_log('Checking instance ({}) boot state'.format(ins_id))
     port=8888
     response = ec2.describe_instances(InstanceIds=[ins_id])
@@ -583,7 +593,8 @@ def check_instance(ec2, ins_id, run_id, num_rep, time_rep):
         result = poll_instance(sock, time_rep, ipaddr, port)
         rep = increment_or_fail(num_rep, rep, 'Exceeded retry count ({}) for instance ({}) network check on port {}'.format(num_rep, ins_id, port),
                                 ec2_client=ec2,
-                                kill_instance_id_on_fail=ins_id)
+                                kill_instance_id_on_fail=ins_id,
+                                kube_client=kube_client)
     pipe_log('Instance is booted. ID: {}, IP: {}\n-'.format(ins_id, ipaddr))
 
 
@@ -638,10 +649,7 @@ def verify_run_id(ec2, run_id):
 
 
 def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
-    response = ec2.describe_instances(InstanceIds=[ins_id])
-    nodename_full = response['Reservations'][0]['Instances'][0]['PrivateDnsName']
-    nodename = nodename_full.split('.', 1)[0]
-    nodenames = [nodename, nodename_full, ins_id]
+    nodenames = get_possible_kube_node_names(ec2, ins_id)
     pipe_log('Waiting for instance {} registration in cluster with name(s) {}'.format(ins_id, nodenames))
 
     ret_namenode = ''
@@ -653,7 +661,8 @@ def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
         rep = increment_or_fail(num_rep, rep,
                                 'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) cluster registration'.format(num_rep, ins_id, nodename),
                                 ec2_client=ec2,
-                                kill_instance_id_on_fail=ins_id)
+                                kill_instance_id_on_fail=ins_id,
+                                kube_client=api)
         sleep(time_rep)
 
     if ret_namenode:  # useless?
@@ -668,7 +677,8 @@ def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
             rep = increment_or_fail(num_rep, rep,
                                     'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) kube node READY check'.format(num_rep, ins_id, ret_namenode),
                                     ec2_client=ec2,
-                                    kill_instance_id_on_fail=ins_id)
+                                    kill_instance_id_on_fail=ins_id,
+                                    kube_client=api)
             sleep(time_rep)
 
         rep = 0
@@ -684,13 +694,15 @@ def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
             rep = increment_or_fail(num_rep, rep,
                                     'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) kube system pods check'.format(num_rep, ins_id, ret_namenode),
                                     ec2_client=ec2,
-                                    kill_instance_id_on_fail=ins_id)
+                                    kill_instance_id_on_fail=ins_id,
+                                    kube_client=api)
             sleep(time_rep)
         pipe_log('Instance {} successfully registred in cluster with name {}\n-'.format(ins_id, nodename))
     return ret_namenode
 
 
-def terminate_instance(ec2_client, instance_id, spot_request_id=None):
+def terminate_instance(ec2_client, instance_id, spot_request_id=None, kube_client=None):
+    # Kill AWS instance    
     if not instance_id or len(instance_id) == 0:
         pipe_log('[ERROR] None or empty string specified when calling terminate_instance, nothing will be done')
         return
@@ -720,7 +732,23 @@ def terminate_instance(ec2_client, instance_id, spot_request_id=None):
 
     pipe_log('Instance {} state is changed from {} to {}'.format(instance_id, prev_state, current_state))
 
-def increment_or_fail(num_rep, rep, error_message, ec2_client=None, kill_instance_id_on_fail=None):
+    # Kill kube node as well (if it was able to register)
+    if kube_client:
+        kube_node_names = get_possible_kube_node_names(ec2_client, instance_id)
+        kube_node_real_name = find_node(kube_node_names, kube_client)
+        if kube_node_real_name:
+            pipe_log('Node {} has been found in the kube cluster - it will be deleted'.format(kube_node_real_name))
+            try:
+                kube_node = pykube.Node.objects(kube_client).get(name=kube_node_real_name)
+                kube_node.delete()
+                pipe_log('Node {} has been deleted from the kube cluster'.format(kube_node_real_name))
+            except Exception as node_delete_exception:
+                pipe_log('[ERROR] Cannot delete node {} from the kube cluster:\n{}'.format(kube_node_real_name, str(node_delete_exception)))
+        else:
+            pipe_log('Node {} was not found in the kube cluster'.format(kube_node_real_name))
+
+
+def increment_or_fail(num_rep, rep, error_message, ec2_client=None, kill_instance_id_on_fail=None, kube_client=None):
     rep = rep + 1
     if rep > num_rep:
         if kill_instance_id_on_fail:
@@ -730,7 +758,7 @@ def increment_or_fail(num_rep, rep, error_message, ec2_client=None, kill_instanc
             instance = ec2_client.describe_instances(InstanceIds=[kill_instance_id_on_fail])['Reservations'][0]['Instances'][0]
             if 'SpotInstanceRequestId' in instance and instance['SpotInstanceRequestId']:
                 spot_request_id = instance['SpotInstanceRequestId']
-            terminate_instance(ec2_client, kill_instance_id_on_fail, spot_request_id)
+            terminate_instance(ec2_client, kill_instance_id_on_fail, spot_request_id, kube_client)
         raise RuntimeError(error_message)
     return rep
 
@@ -792,7 +820,7 @@ def exit_if_spot_unavailable(run_id, last_status):
 
 def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key,
                        ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep,
-                       swap_size):
+                       swap_size, kube_client):
     pipe_log('Creating spot request')
 
     pipe_log('- Checking spot prices for current region...')
@@ -909,7 +937,8 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
                                 'Exceeded retry count ({}) for spot instance. Spot instance request status code: {}.'
                                 .format(num_rep, status),
                                 ec2_client=ec2,
-                                kill_instance_id_on_fail=ins_id)
+                                kill_instance_id_on_fail=ins_id,
+                                kube_client=kube_client)
                 sleep(time_rep)
                 continue
             ins_ip = instance_reservation['PrivateIpAddress']
@@ -1094,7 +1123,9 @@ def main():
         else:
             ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': BOTO3_RETRY_COUNT}))
 
-
+        # Setup kubernetes client
+        api = pykube.HTTPClient(pykube.KubeConfig.from_file("~/.kube/config"))
+        api.session.verify = False
 
         # Redefine default instance image if cloud metadata has specific rules for instance type
         allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_img)
@@ -1112,12 +1143,9 @@ def main():
             api_url = os.environ["API"]
             api_token = os.environ["API_TOKEN"]
             ins_id, ins_ip = run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot,
-                                        num_rep, run_id, time_rep, kube_ip, kubeadm_token)
+                                        num_rep, run_id, time_rep, kube_ip, kubeadm_token, api)
 
-        check_instance(ec2, ins_id, run_id, num_rep, time_rep)
-
-        api = pykube.HTTPClient(pykube.KubeConfig.from_file("~/.kube/config"))
-        api.session.verify = False
+        check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
 
         nodename = verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api)
         label_node(nodename, run_id, api, cluster_name, cluster_role, aws_region)
