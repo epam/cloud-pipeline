@@ -78,6 +78,8 @@ public class C {
         ANOTHER_TESTING_TOOL_NAME = conf.getProperty("e2e.ui.another.testing.tool");
         ANOTHER_GROUP = conf.getProperty("e2e.ui.another.group");
         PLATFORM_NAME = conf.getProperty("e2e.ui.platform.name");
+        ANONYMOUS_NAME = conf.getProperty("e2e.ui.anonymous.name");
+        ANONYMOUS_TOKEN = conf.getProperty("e2e.ui.anonymous.token");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -134,4 +136,7 @@ public class C {
     public static final String STORAGE_NAME_PREFIX;
     public static final String SEARCH_PREFIX;
     public static final String PLATFORM_NAME;
+
+    public static final String ANONYMOUS_NAME;
+    public static final String ANONYMOUS_TOKEN;
 }

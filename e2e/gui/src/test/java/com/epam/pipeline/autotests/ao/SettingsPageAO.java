@@ -75,7 +75,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
     public CliAO switchToCLI() {
         click(CLI_TAB);
-        return new CliAO();
+        return new CliAO(parentAO);
     }
 
     public SystemEventsAO switchToSystemEvents() {
@@ -109,7 +109,27 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         return parentAO;
     }
 
-    private class CliAO {
+    public static class CliAO extends SettingsPageAO {
+        public final Map<Primitive, SelenideElement> elements = initialiseElements(
+                super.elements(),
+                entry(PIPE_CLI, context().find(byCssSelector(format(".//td[contains(., '%s')]", "Pipe CLI")))),
+                entry(GIT_CLI, context().find(byCssSelector(format(".//td[contains(., '%s')]", "Git CLI")))),
+                entry(GIT_COMMAND, context().find(byCssSelector(format(".//td[contains(., '%s')]", "Git CLI"))))
+        );
+
+        public CliAO(final PipelinesLibraryAO parent) {
+            super(parent);
+        }
+
+        public CliAO switchGitCLI() {
+            click(GIT_CLI);
+            return this;
+        }
+
+        public CliAO ensureCodeHasText(final String text) {
+            ensure(GIT_COMMAND, matchesText(text));
+            return this;
+        }
     }
 
     public class SystemEventsAO extends SettingsPageAO {
@@ -611,7 +631,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public GroupsTabAO deleteGroupIfPresent(String group) {
                 sleep(2, SECONDS);
-                searchGroupBySubstring(group);
                 performIf(context().$$(byText(group)).filterBy(visible).first().exists(), t -> deleteGroup(group));
                 return this;
             }

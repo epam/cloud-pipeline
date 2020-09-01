@@ -102,7 +102,7 @@ public class RunToolsInSandBoxTest
                 .show(getLastRunId())
                 .clickEndpoint()
                 .sleep(10, SECONDS)
-                .validateEndpointPage();
+                .validateEndpointPage(C.LOGIN);
     }
 
     @Test(dependsOnMethods = {"validatePipelineIsLaunchedForToolInSandbox"})

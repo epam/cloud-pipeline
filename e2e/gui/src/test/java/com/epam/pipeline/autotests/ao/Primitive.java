@@ -259,5 +259,11 @@ public enum Primitive {
     CONTAINER_LOGS,
     BLOCK,
     UNBLOCK,
-    APPLY
+    APPLY,
+    PIPE_CLI,
+    GIT_CLI,
+    GIT_COMMAND,
+    SHARE_WITH,
+    ADD_USER,
+    ADD_GROUP
 }

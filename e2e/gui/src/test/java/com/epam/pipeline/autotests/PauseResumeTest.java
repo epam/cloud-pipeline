@@ -305,7 +305,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .waitForEndpointLink()
                         .sleep(C.ENDPOINT_INITIALIZATION_TIMEOUT, MILLISECONDS)
                         .inAnotherTab(nodeTab ->
-                                checkNodePage(() -> new ToolPageAO(endpoint).validateEndpointPage(), endpoint)
+                                checkNodePage(() -> new ToolPageAO(endpoint).validateEndpointPage(C.LOGIN), endpoint)
                         )
                 );
     }
