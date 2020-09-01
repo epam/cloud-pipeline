@@ -269,14 +269,29 @@ def block_device(ins_hdd, kms_encyr_key_id, name="/dev/sdb"):
     return block_device_spec
 
 
-def resource_tags():
+def resource_tags(cloud_region):
     tags = []
+    region_tags = get_cloud_config_section(cloud_region, "tags")
     config_regions, config_tags = load_cloud_config()
-    if config_tags is None:
+    merged_tags = merge_tags(region_tags, config_tags)
+    if merged_tags is None:
         return tags
-    for key, value in config_tags.iteritems():
+    for key, value in merged_tags.iteritems():
         tags.append({"Key": key, "Value": value})
     return tags
+
+
+def merge_tags(region_tags, global_tags):
+    if region_tags is None:
+        return global_tags
+    if global_tags is None:
+        return region_tags
+    merged = {}
+    for key, value in global_tags.iteritems():
+        merged[key] = value
+    for key, value in region_tags.iteritems():
+        merged[key] = value
+    return merged
 
 
 def run_id_tag(run_id):
@@ -286,9 +301,9 @@ def run_id_tag(run_id):
     }]
 
 
-def get_tags(run_id):
+def get_tags(run_id, cloud_region):
     tags = run_id_tag(run_id)
-    res_tags = resource_tags()
+    res_tags = resource_tags(cloud_region)
     if res_tags:
         tags.extend(res_tags)
     return tags
@@ -342,7 +357,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
             TagSpecifications=[
                 {
                     'ResourceType': 'instance',
-                    "Tags": get_tags(run_id)
+                    "Tags": get_tags(run_id, aws_region)
                 }
             ],
             **additional_args
@@ -373,7 +388,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                                 kill_instance_id_on_fail=ins_id)
     pipe_log('Instance created. ID: {}, IP: {}\n-'.format(ins_id, ins_ip))
 
-    ebs_tags = resource_tags()
+    ebs_tags = resource_tags(aws_region)
     if ebs_tags:
         instance_description = ec2.describe_instances(InstanceIds=[ins_id])['Reservations'][0]['Instances'][0]
         volumes = instance_description['BlockDeviceMappings']
@@ -915,10 +930,10 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
             ins_ip = instance_reservation['PrivateIpAddress']
             ec2.create_tags(
                 Resources=[ins_id],
-                Tags=get_tags(run_id),
+                Tags=get_tags(run_id, aws_region),
             )
 
-            ebs_tags = resource_tags()
+            ebs_tags = resource_tags(aws_region)
             if ebs_tags:
                 volumes = instance_reservation['BlockDeviceMappings']
                 for volume in volumes:
@@ -950,7 +965,7 @@ def wait_for_fulfilment(status):
            or status == 'pending-fulfillment' or status == 'fulfilled'
 
 
-def check_spot_request_exists(ec2, num_rep, run_id, time_rep):
+def check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region):
     pipe_log('Checking if spot request for RunID {} already exists...'.format(run_id))
     for interation in range(0, 5):
         spot_req = get_spot_req_by_run_id(ec2, run_id)
@@ -975,7 +990,7 @@ def check_spot_request_exists(ec2, num_rep, run_id, time_rep):
                         exit_if_spot_unavailable(run_id, status)
                         return '', ''
                 if  instance_is_active(ec2, spot_req['InstanceId']):
-                    return tag_and_get_instance(ec2, spot_req, run_id)
+                    return tag_and_get_instance(ec2, spot_req, run_id, aws_region)
         sleep(5)
     pipe_log('No spot request for RunID {} found\n-'.format(run_id))
     return '', ''
@@ -990,7 +1005,7 @@ def get_spot_req_by_run_id(ec2, run_id):
     return None
 
 
-def tag_and_get_instance(ec2, spot_req, run_id):
+def tag_and_get_instance(ec2, spot_req, run_id, aws_region):
     ins_id = spot_req['InstanceId']
     pipe_log('Setting \"Name={}\" tag for instance {}'.format(run_id, ins_id))
     instance = ec2.describe_instances(InstanceIds=[ins_id])
@@ -998,7 +1013,7 @@ def tag_and_get_instance(ec2, spot_req, run_id):
     if not tag_name_is_present(instance):  # create tag name if not presents
         ec2.create_tags(
             Resources=[ins_id],
-            Tags=get_tags(run_id),
+            Tags=get_tags(run_id, aws_region),
         )
         pipe_log('Tag ({}) created for instance ({})\n-'.format(run_id, ins_id))
     else:
@@ -1106,7 +1121,7 @@ def main():
 
         ins_id, ins_ip = verify_run_id(ec2, run_id)
         if not ins_id:
-            ins_id, ins_ip = check_spot_request_exists(ec2, num_rep, run_id, time_rep)
+            ins_id, ins_ip = check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region)
 
         if not ins_id:
             api_url = os.environ["API"]
