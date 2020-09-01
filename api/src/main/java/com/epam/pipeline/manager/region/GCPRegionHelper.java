@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,15 +24,23 @@ import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class GCPRegionHelper implements CloudRegionHelper<GCPRegion, AbstractCloudRegionCredentials> {
 
     private final MessageHelper messageHelper;
@@ -75,5 +83,21 @@ public class GCPRegionHelper implements CloudRegionHelper<GCPRegion, AbstractClo
     @Override
     public CloudProvider getProvider() {
         return CloudProvider.GCP;
+    }
+
+    @Override
+    public String serializeCredentials(final GCPRegion region, final AbstractCloudRegionCredentials credentials) {
+        final String authFile = region.getAuthFile();
+        if (authFile != null) {
+            try {
+                final String fileContent = Files.lines(Paths.get(authFile), StandardCharsets.UTF_8)
+                    .map(String::trim)
+                    .collect(Collectors.joining(StringUtils.EMPTY));
+                return Base64.encodeBase64String(fileContent.getBytes());
+            } catch (IOException e) {
+                log.error(e.getMessage());
+            }
+        }
+        return null;
     }
 }

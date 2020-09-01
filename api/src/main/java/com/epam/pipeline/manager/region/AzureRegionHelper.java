@@ -120,6 +120,7 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
         return oldCredentials;
     }
 
+    @Override
     public String serializeCredentials(AzureRegion region, AzureRegionCredentials credentials) {
         final HashMap<String, String> creds = new HashMap<>();
         creds.put(STORAGE_ACCOUNT, region.getStorageAccount());

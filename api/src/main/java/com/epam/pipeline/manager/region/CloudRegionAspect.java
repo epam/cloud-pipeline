@@ -18,11 +18,10 @@ package com.epam.pipeline.manager.region;
 
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
-import com.epam.pipeline.entity.region.AzureRegion;
-import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.utils.Base64Utils;
+import com.epam.pipeline.utils.CommonUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
@@ -32,6 +31,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -40,31 +41,26 @@ public class CloudRegionAspect {
 
     public static final String CP_REGION_CREDS_SECRET = "cp-region-creds-secret";
     private final KubernetesManager kubernetesManager;
-    private final AzureRegionHelper azureRegionHelper;
+    private final Map<CloudProvider, CloudRegionHelper> cloudHelpers;
 
     @Autowired
-    public CloudRegionAspect(final KubernetesManager kubernetesManager, final AzureRegionHelper azureRegionHelper) {
+    public CloudRegionAspect(final KubernetesManager kubernetesManager, final List<CloudRegionHelper> helpers) {
         this.kubernetesManager = kubernetesManager;
-        this.azureRegionHelper = azureRegionHelper;
+        this.cloudHelpers = CommonUtils.groupByCloudProvider(helpers);
     }
 
     @After("execution(* com.epam.pipeline.dao.region.CloudRegionDao.create(..)) && args(region, credentials)")
     public void updateCloudRegionCreds(final JoinPoint joinPoint, final AbstractCloudRegion region,
                                        final AbstractCloudRegionCredentials credentials) {
-        if (!region.getProvider().equals(CloudProvider.AZURE)) {
-            return;
-        }
         if (!kubernetesManager.doesSecretExist(CP_REGION_CREDS_SECRET)) {
             log.warn("Secret: " + CP_REGION_CREDS_SECRET + " doesn't exist!");
             return;
         }
-        final AzureRegion azureRegion = (AzureRegion) region;
-        final AzureRegionCredentials azureRegionCredentials = (AzureRegionCredentials) credentials;
+        final CloudRegionHelper cloudRegionHelper = cloudHelpers.get(region.getProvider());
         log.debug("Update Kube secret with new cred value for region with id: {}", region.getId());
         kubernetesManager.updateSecret(CP_REGION_CREDS_SECRET,
-                Collections.singletonMap(
-                        azureRegion.getId().toString(),
-                        azureRegionHelper.serializeCredentials(azureRegion, azureRegionCredentials)),
+                Collections.singletonMap(region.getId().toString(),
+                                         cloudRegionHelper.serializeCredentials(region, credentials)),
                 Collections.emptyMap()
         );
     }
