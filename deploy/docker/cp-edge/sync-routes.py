@@ -440,17 +440,35 @@ else:
         print('EDGE service port: ' + str(edge_service_port))
         print('EDGE service ip: ' + edge_service_external_ip)
 
-# From each pod with "job-type=Service"  we shall take:
+# From each pod with a container, which has endpoints ("job-type=Service" or container's environment
+# has a parameter from SYSTEM_ENDPOINTS) we shall take:
 # -- PodIP
 # -- PodID
 # -- N entries by a template
 # --- svc-port-N
 # --- svc-path-N
-pods = Pod.objects(kube_api).filter(selector={'job-type': 'Service'})\
-                            .filter(field_selector={"status.phase": "Running"})
+
+def load_pods_for_runs_with_endpoints():
+        pods_with_endpoints = []
+        all_pipeline_pods = Pod.objects(kube_api).filter(selector={'type': 'pipeline'})\
+                                                 .filter(field_selector={"status.phase": "Running"})
+        for pod in all_pipeline_pods.response['items']:
+                labels = pod['metadata']['labels']
+                if 'job-type' in labels and labels['job-type'] == 'Service':
+                        pods_with_endpoints.append(pod)
+                        continue
+                pipeline_env_parameters = pod['spec']['containers'][0]['env']
+                matched_sys_endpoints = filter(lambda env_var: env_var['name'] in SYSTEM_ENDPOINTS.keys()
+                                                               and env_var['value'] == 'true',
+                                               pipeline_env_parameters)
+                if len(matched_sys_endpoints) > 0:
+                        pods_with_endpoints.append(pod)
+        return pods_with_endpoints
+
+pods_with_endpoints = load_pods_for_runs_with_endpoints()
 
 services_list = {}
-for pod_spec in pods.response['items']:
+for pod_spec in pods_with_endpoints:
         pod_id = pod_spec['metadata']['name']
         pod_ip = pod_spec['status']['podIP']
         pod_run_id = pod_spec['metadata']['labels']['runid']
