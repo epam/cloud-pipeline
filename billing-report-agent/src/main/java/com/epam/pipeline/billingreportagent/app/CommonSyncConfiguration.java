@@ -33,7 +33,6 @@ import com.epam.pipeline.billingreportagent.service.impl.converter.PriceLoadingM
 import com.epam.pipeline.billingreportagent.service.impl.converter.StoragePricingService;
 import com.epam.pipeline.billingreportagent.service.impl.converter.StorageToBillingRequestConverter;
 import com.epam.pipeline.billingreportagent.service.impl.loader.CloudRegionLoader;
-import com.epam.pipeline.billingreportagent.service.impl.loader.CloudRegionLoader;
 import com.epam.pipeline.billingreportagent.service.impl.synchronizer.PipelineRunSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.synchronizer.StorageSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.loader.PipelineRunLoader;
@@ -171,11 +170,10 @@ public class CommonSyncConfiguration {
     public StorageSynchronizer gsSynchronizer(final StorageLoader loader,
                                               final ElasticIndexService indexService,
                                               final ElasticsearchServiceClient elasticsearchClient,
-                                              final CloudRegionLoader cloudRegionLoader,
-                                              final @Value("${kube.namespace:default}") String kubeNamespace) {
+                                              final CloudRegionLoader cloudRegionLoader) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.GS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
-                new StoragePricingService(new GcpStoragePriceListLoader(cloudRegionLoader, kubeNamespace));
+                new StoragePricingService(new GcpStoragePriceListLoader(cloudRegionLoader));
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
                 storageIndexName,

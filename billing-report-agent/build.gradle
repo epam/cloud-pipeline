@@ -80,10 +80,6 @@ dependencies {
     implementation group: "io.springfox", name: "springfox-swagger2", version: swaggerVersion
     implementation group: "io.springfox", name: "springfox-swagger-ui", version: swaggerVersion
 
-    // Kubernetes
-    implementation group: "io.fabric8", name: "kubernetes-client", version: kubernetesClientVersion
-    implementation group: "io.fabric8", name: "kubernetes-model", version: kubernetesModelVersion
-
     //Tests
     implementation group: "org.springframework.boot", name: "spring-boot-starter-test", version: springBootVersion
     testImplementation group: "org.projectlombok", name: "lombok", version: lombokVersion
