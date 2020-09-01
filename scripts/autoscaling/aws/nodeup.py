@@ -712,7 +712,7 @@ def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
                                     kill_instance_id_on_fail=ins_id,
                                     kube_client=api)
             sleep(time_rep)
-        pipe_log('Instance {} successfully registred in cluster with name {}\n-'.format(ins_id, nodename))
+        pipe_log('Instance {} successfully registred in cluster with name {}\n-'.format(ins_id, ret_namenode))
     return ret_namenode
 
 
