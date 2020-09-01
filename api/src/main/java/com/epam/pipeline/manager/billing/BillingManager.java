@@ -40,6 +40,8 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -51,10 +53,13 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.tophits.ParsedTopHits;
+import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.ParsedSimpleValue;
 import org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders;
 import org.elasticsearch.search.aggregations.pipeline.bucketmetrics.sum.SumBucketPipelineAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortOrder;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -72,6 +77,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -89,6 +95,7 @@ public class BillingManager {
     private static final String STORAGE_GROUPING_AGG = "storage_buckets";
     private static final String SINGLE_STORAGE_USAGE_AGG = "usage_storage";
     private static final String TOTAL_STORAGE_USAGE_AGG = "usage_storages";
+    private static final String LAST_STORAGE_USAGE_VALUE = "usage_storages_last";
     private static final String STORAGE_USAGE_FIELD = "usage_bytes";
     private static final String RUN_ID_FIELD = "run_id";
     private static final String STORAGE_ID_FIELD = "storage_id";
@@ -99,6 +106,7 @@ public class BillingManager {
     private static final String HISTOGRAM_AGGREGATION_NAME = "hist_agg";
     private static final String ES_MONTHLY_DATE_REGEXP = "%d-%02d-*";
     private static final String ES_BILLABLE_RESOURCE_WILDCARD = "*";
+    private static final String BUCKET_DOCUMENTS = "bucketDocs";
 
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
@@ -110,6 +118,7 @@ public class BillingManager {
     private final SumAggregationBuilder costAggregation;
     private final SumAggregationBuilder runUsageAggregation;
     private final TermsAggregationBuilder storageUsageGroupingAggregation;
+    private final TopHitsAggregationBuilder lastByDateDocAggregation;
     private final SumBucketPipelineAggregationBuilder storageUsageTotalAggregation;
     private final TermsAggregationBuilder uniqueRunsAggregation;
     private final Map<BillingGrouping, EntityBillingDetailsLoader> billingDetailsLoaders;
@@ -148,6 +157,9 @@ public class BillingManager {
         this.storageUsageGroupingAggregation = AggregationBuilders
             .terms(STORAGE_GROUPING_AGG).field(STORAGE_ID_FIELD).size(Integer.MAX_VALUE)
             .subAggregation(AggregationBuilders.avg(SINGLE_STORAGE_USAGE_AGG).field(STORAGE_USAGE_FIELD));
+        this.lastByDateDocAggregation = AggregationBuilders.topHits(BUCKET_DOCUMENTS)
+            .size(1)
+            .sort(BILLING_DATE_FIELD, SortOrder.DESC);
         this.storageUsageTotalAggregation = PipelineAggregatorBuilders
             .sumBucket(TOTAL_STORAGE_USAGE_AGG, String.format("%s.%s", STORAGE_GROUPING_AGG, SINGLE_STORAGE_USAGE_AGG));
         this.uniqueRunsAggregation = AggregationBuilders.terms(UNIQUE_RUNS).field(RUN_ID_FIELD).size(Integer.MAX_VALUE);
@@ -281,6 +293,7 @@ public class BillingManager {
             }
             if (grouping.storageUsageDetailsRequired()) {
                 fieldAgg.subAggregation(storageUsageGroupingAggregation);
+                fieldAgg.subAggregation(lastByDateDocAggregation);
                 fieldAgg.subAggregation(storageUsageTotalAggregation);
             }
             searchSource.aggregation(fieldAgg);
@@ -408,6 +421,16 @@ public class BillingManager {
                 final ParsedSimpleValue totalStorageUsage = aggregations.get(TOTAL_STORAGE_USAGE_AGG);
                 final long storageUsageVal = new Double(totalStorageUsage.value()).longValue();
                 groupingInfo.put(TOTAL_STORAGE_USAGE_AGG, Long.toString(storageUsageVal));
+                final ParsedTopHits hits = aggregations.get(BUCKET_DOCUMENTS);
+                final String lastStorageUsageValue = Optional.of(hits.getHits())
+                    .map(SearchHits::getHits)
+                    .filter(storageDocs -> storageDocs.length > 0)
+                    .map(storageDocs -> storageDocs[0])
+                    .map(SearchHit::getSourceAsMap)
+                    .map(source -> source.get(STORAGE_USAGE_FIELD))
+                    .map(Object::toString)
+                    .orElse("0");
+                groupingInfo.put(LAST_STORAGE_USAGE_VALUE, lastStorageUsageValue);
             }
             if (detailsLoader != null) {
                 try {
