@@ -15,22 +15,17 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.codeborne.selenide.Condition;
-import com.epam.pipeline.autotests.ao.Primitive;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import static com.codeborne.selenide.Condition.not;
-import static com.codeborne.selenide.Condition.visible;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 
-public class RoleBasedAccessControl
+public class RoleBasedAccessControlTest
         extends AbstractSeveralPipelineRunningTest
         implements Authorization, Tools {
 
@@ -82,7 +77,10 @@ public class RoleBasedAccessControl
     @TestCase({"EPMCMBIBPC-3017"})
     public void provideAdminRightsToTheUser() {
         loginAs(user);
-        checkSettingsTabs(not(visible));
+        navigationMenu()
+                .settings()
+                .ensureNotVisible(SYSTEM_EVENTS_TAB, USER_MANAGEMENT_TAB,
+                        EMAIL_NOTIFICATIONS_TAB, PREFERENCES_TAB, CLOUD_REGIONS_TAB);
         logout();
         loginAs(admin);
         navigationMenu()
@@ -95,7 +93,10 @@ public class RoleBasedAccessControl
                 .ok();
         logout();
         loginAs(user);
-        checkSettingsTabs(visible);
+        navigationMenu()
+                .settings()
+                .ensureVisible(SYSTEM_EVENTS_TAB, USER_MANAGEMENT_TAB,
+                        EMAIL_NOTIFICATIONS_TAB, PREFERENCES_TAB, CLOUD_REGIONS_TAB);
     }
 
     @Test(dependsOnMethods = {"provideAdminRightsToTheUser"})
@@ -112,16 +113,9 @@ public class RoleBasedAccessControl
                 .ok();
         logout();
         loginAs(user);
-        checkSettingsTabs(not(visible));
-    }
-
-    private void checkSettingsTabs(Condition condition) {
         navigationMenu()
                 .settings()
-                .ensure(SYSTEM_EVENTS_TAB, condition)
-                .ensure(USER_MANAGEMENT_TAB, condition)
-                .ensure(EMAIL_NOTIFICATIONS_TAB, condition)
-                .ensure(PREFERENCES_TAB, condition)
-                .ensure(CLOUD_REGIONS_TAB, condition);
+                .ensureNotVisible(SYSTEM_EVENTS_TAB, USER_MANAGEMENT_TAB,
+                        EMAIL_NOTIFICATIONS_TAB, PREFERENCES_TAB, CLOUD_REGIONS_TAB);
     }
 }
