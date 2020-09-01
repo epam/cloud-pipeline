@@ -16,8 +16,12 @@
 
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
+import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
+import com.epam.pipeline.billingreportagent.service.impl.KubernetesManager;
+import com.epam.pipeline.billingreportagent.service.impl.loader.CloudRegionLoader;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.region.GCPRegion;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -27,9 +31,13 @@ import com.google.api.services.cloudbilling.model.ListSkusResponse;
 import com.google.api.services.cloudbilling.model.Service;
 import com.google.api.services.cloudbilling.model.Sku;
 import com.google.api.services.cloudbilling.model.TierRate;
+import io.fabric8.kubernetes.api.model.Secret;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Base64;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.security.GeneralSecurityException;
@@ -37,6 +45,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -44,35 +53,77 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GcpStoragePriceListLoader implements StoragePriceListLoader{
 
+    public static final String CP_REGION_CREDS_SECRET_NAME = "cp-region-creds-secret";
     private static final String GCP_STORAGE_SERVICES_FAMILY = "Cloud Storage";
     private static final List<String> BILLING_SCOPES =
             Collections.singletonList("https://www.googleapis.com/auth/cloud-platform");
     private static final List<String> SUPPORTED_STORAGE = Arrays.asList("RegionalStorage", "MultiRegionalStorage");
+    private final CloudRegionLoader cloudRegionLoader;
+    private final String kubeNamespace;
+
+    public GcpStoragePriceListLoader(final CloudRegionLoader cloudRegionLoader, final String kubeNamespace) {
+        this.cloudRegionLoader = cloudRegionLoader;
+        this.kubeNamespace = kubeNamespace;
+    }
 
     @Override
     public Map<String, StoragePricing> loadFullPriceList() throws IOException, GeneralSecurityException {
-        final GoogleCredential credentials = GoogleCredential.getApplicationDefault();
-        final Cloudbilling cloudBilling = new Cloudbilling.Builder(GoogleNetHttpTransport.newTrustedTransport(),
-                JacksonFactory.getDefaultInstance(), credentials.createScoped(BILLING_SCOPES))
+        final GoogleCredential googleCredential = cloudRegionLoader.loadAllEntities().stream()
+            .map(EntityContainer::getEntity)
+            .filter(region -> CloudProvider.GCP.equals(region.getProvider()))
+            .map(GCPRegion.class::cast)
+            .filter(region -> region.getAuthFile() != null)
+            .findAny()
+            .map(this::getCredentialsForRegion)
+            .orElse(null);
+        return loadPriceListWithCredentials(googleCredential != null
+                                            ? googleCredential
+                                            : GoogleCredential.getApplicationDefault());
+    }
+
+    private GoogleCredential getCredentialsForRegion(final GCPRegion region) {
+        final Secret secret = KubernetesManager.getKubernetesClient().secrets()
+            .inNamespace(kubeNamespace)
+            .withName(CP_REGION_CREDS_SECRET_NAME)
+            .get();
+        final String regionSecret = Optional.ofNullable(secret)
+            .map(Secret::getData)
+            .map(regionMap -> regionMap.get(region.getId().toString()))
+            .orElse(null);
+        if (regionSecret != null) {
+            try (final InputStream is = new ByteArrayInputStream(Base64.decodeBase64(regionSecret))) {
+                return GoogleCredential.fromStream(is);
+            } catch (IOException e) {
+                log.error(e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    private Map<String, StoragePricing> loadPriceListWithCredentials(final GoogleCredential credentials)
+        throws IOException, GeneralSecurityException {
+            final Cloudbilling cloudBilling =
+                new Cloudbilling.Builder(GoogleNetHttpTransport.newTrustedTransport(),
+                                         JacksonFactory.getDefaultInstance(), credentials.createScoped(BILLING_SCOPES))
                 .setApplicationName("Cloud Pipeline Billing Agent")
                 .build();
-        final ListServicesResponse services = cloudBilling.services().list().execute();
-        final Service cloudStorageService = services.getServices().stream()
-            .filter(service -> service.getDisplayName().equals(GCP_STORAGE_SERVICES_FAMILY))
-            .findAny()
-            .orElseThrow(() -> new IllegalStateException("No services received from GCP!"));
+            final ListServicesResponse services = cloudBilling.services().list().execute();
+            final Service cloudStorageService = services.getServices().stream()
+                .filter(service -> service.getDisplayName().equals(GCP_STORAGE_SERVICES_FAMILY))
+                .findAny()
+                .orElseThrow(() -> new IllegalStateException("No services received from GCP!"));
 
-        final ListSkusResponse skuResponse = cloudBilling.services()
-            .skus()
-            .list(cloudStorageService.getName())
-            .execute();
+            final ListSkusResponse skuResponse = cloudBilling.services()
+                .skus()
+                .list(cloudStorageService.getName())
+                .execute();
 
-        return skuResponse.getSkus().stream()
-            .filter(sku -> SUPPORTED_STORAGE.contains(sku.getCategory().getResourceGroup()))
-            .map(this::convertSku)
-            .map(Map::entrySet)
-            .flatMap(Set::stream)
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            return skuResponse.getSkus().stream()
+                .filter(sku -> SUPPORTED_STORAGE.contains(sku.getCategory().getResourceGroup()))
+                .map(this::convertSku)
+                .map(Map::entrySet)
+                .flatMap(Set::stream)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private Map<String, StoragePricing> convertSku(final Sku sku) {
