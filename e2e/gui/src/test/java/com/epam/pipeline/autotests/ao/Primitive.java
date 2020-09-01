@@ -259,5 +259,8 @@ public enum Primitive {
     CONTAINER_LOGS,
     BLOCK,
     UNBLOCK,
-    APPLY
+    APPLY,
+    EMAIL_NOTIFICATIONS_TAB,
+    CLOUD_REGIONS_TAB,
+    EXPORT_USERS
 }
