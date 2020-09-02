@@ -28,6 +28,7 @@ import {getSpotTypeName} from '../../../../special/spot-instance-names';
 export const CP_CAP_SGE = 'CP_CAP_SGE';
 export const CP_CAP_SPARK = 'CP_CAP_SPARK';
 export const CP_CAP_SLURM = 'CP_CAP_SLURM';
+export const CP_CAP_KUBE = 'CP_CAP_KUBE';
 export const CP_CAP_AUTOSCALE = 'CP_CAP_AUTOSCALE';
 export const CP_CAP_AUTOSCALE_WORKERS = 'CP_CAP_AUTOSCALE_WORKERS';
 export const CP_CAP_AUTOSCALE_HYBRID = 'CP_CAP_AUTOSCALE_HYBRID';
@@ -69,6 +70,10 @@ export function slurmEnabled (parameters) {
   return booleanParameterIsSetToValue(parameters, CP_CAP_SLURM);
 }
 
+export function kubeEnabled (parameters) {
+  return booleanParameterIsSetToValue(parameters, CP_CAP_KUBE);
+}
+
 export const AUTO_SCALE_PRICE_TYPES = {
   master: 'master',
   spot: 'spot',
@@ -103,6 +108,7 @@ export function getSkippedSystemParametersList (controller) {
       CP_CAP_SGE,
       CP_CAP_SPARK,
       CP_CAP_SLURM,
+      CP_CAP_KUBE,
       CP_CAP_AUTOSCALE,
       CP_CAP_AUTOSCALE_WORKERS,
       CP_CAP_AUTOSCALE_HYBRID,
@@ -124,6 +130,7 @@ export function setClusterParameterValue (form, sectionName, configuration) {
     gridEngineEnabled,
     sparkEnabled,
     slurmEnabled,
+    kubeEnabled,
     hybridAutoScaledClusterEnabled,
     autoScaledPriceType
   } = configuration;
@@ -152,6 +159,10 @@ export function setClusterParameterValue (form, sectionName, configuration) {
       value.value = `${slurmEnabled}`;
       modified = true;
     }
+    if (value.name === CP_CAP_KUBE) {
+      value.value = `${kubeEnabled}`;
+      modified = true;
+    }
     if (value.name === CP_CAP_AUTOSCALE_PRICE_TYPE && autoScaledPriceType) {
       value.value = `${autoScaledPriceType}`;
       modified = true;
@@ -178,6 +189,7 @@ export function setSingleNodeMode (controller, callback) {
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
+    kubeEnabled: false,
     autoScaledPriceType: undefined,
     hybridAutoScaledClusterEnabled: false
   }, callback);
@@ -191,6 +203,7 @@ export function setFixedClusterMode (controller, callback) {
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
+    kubeEnabled: false,
     autoScaledPriceType: undefined,
     hybridAutoScaledClusterEnabled: false,
     nodesCount: Math.max(1,
@@ -210,6 +223,7 @@ export function setAutoScaledMode (controller, callback) {
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
+    kubeEnabled: false,
     autoScaledPriceType: undefined,
     hybridAutoScaledClusterEnabled: false,
     maxNodesCount: Math.max(1,
@@ -259,8 +273,11 @@ class ConfigureClusterDialog extends React.Component {
       if (ctrl.state.sparkEnabled) {
         clusterName = `Apache Spark ${lowerCasedString('Cluster', lowerCased)}`;
       }
-      if (ctrl.state.slurmEnabled) { // todo ask
+      if (ctrl.state.slurmEnabled) {
         clusterName = `Slurm ${lowerCasedString('Cluster', lowerCased)}`;
+      }
+      if (ctrl.state.kubeEnabled) {
+        clusterName = `Kubernetes ${lowerCasedString('Cluster', lowerCased)}`;
       }
       if (!isNaN(ctrl.state.nodesCount)) {
         return `${clusterName} (${plural(ctrl.state.nodesCount, 'child node')})`;
@@ -289,6 +306,7 @@ class ConfigureClusterDialog extends React.Component {
     gridEngineEnabled: PropTypes.bool,
     sparkEnabled: PropTypes.bool,
     slurmEnabled: PropTypes.bool,
+    kubeEnabled: PropTypes.bool,
     autoScaledPriceType: PropTypes.string,
     hybridAutoScaledClusterEnabled: PropTypes.bool,
     nodesCount: PropTypes.number,
@@ -305,6 +323,7 @@ class ConfigureClusterDialog extends React.Component {
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
+    kubeEnabled: false,
     hybridAutoScaledClusterEnabled: false,
     autoScaledPriceType: undefined,
     nodesCount: 0,
@@ -318,7 +337,10 @@ class ConfigureClusterDialog extends React.Component {
   @computed
   get selectedClusterType () {
     if (this.state.launchCluster) {
-      return this.state.autoScaledCluster && !this.state.sparkEnabled && !this.state.slurmEnabled
+      return this.state.autoScaledCluster &&
+      !this.state.sparkEnabled &&
+      !this.state.slurmEnabled &&
+      !this.state.kubeEnabled
         ? CLUSTER_TYPE.autoScaledCluster
         : CLUSTER_TYPE.fixedCluster;
     } else {
@@ -386,6 +408,7 @@ class ConfigureClusterDialog extends React.Component {
       gridEngineEnabled: e.target.checked,
       sparkEnabled: false,
       slurmEnabled: false,
+      kubeEnabled: false,
       hybridAutoScaledClusterEnabled: false
     });
   };
@@ -395,6 +418,7 @@ class ConfigureClusterDialog extends React.Component {
       gridEngineEnabled: false,
       sparkEnabled: e.target.checked,
       slurmEnabled: false,
+      kubeEnabled: false,
       hybridAutoScaledClusterEnabled: false
     });
   };
@@ -404,6 +428,17 @@ class ConfigureClusterDialog extends React.Component {
       gridEngineEnabled: false,
       sparkEnabled: false,
       slurmEnabled: e.target.checked,
+      kubeEnabled: false,
+      hybridAutoScaledClusterEnabled: false
+    });
+  };
+
+  onChangeEnableKube = (e) => {
+    this.setState({
+      gridEngineEnabled: false,
+      sparkEnabled: false,
+      slurmEnabled: false,
+      kubeEnabled: e.target.checked,
       hybridAutoScaledClusterEnabled: false
     });
   };
@@ -413,6 +448,7 @@ class ConfigureClusterDialog extends React.Component {
       gridEngineEnabled: false,
       sparkEnabled: false,
       slurmEnabled: false,
+      kubeEnabled: false,
       hybridAutoScaledClusterEnabled: e.target.checked
     });
   };
@@ -456,6 +492,15 @@ class ConfigureClusterDialog extends React.Component {
           Enable Slurm
         </Checkbox>
         {renderTooltip(LaunchClusterTooltip.cluster.enableSlurm)}
+      </Row>,
+      <Row key="enable kube" type="flex" align="middle" style={{marginTop: 5}}>
+        <Checkbox
+          style={{marginLeft: LEFT_MARGIN}}
+          checked={this.state.kubeEnabled}
+          onChange={this.onChangeEnableKube}>
+          Enable Kubernetes
+        </Checkbox>
+        {renderTooltip(LaunchClusterTooltip.cluster.enableKube)}
       </Row>
     ].filter(r => !!r);
   };
@@ -601,13 +646,14 @@ class ConfigureClusterDialog extends React.Component {
         hybridAutoScaledClusterEnabled: this.state.hybridAutoScaledClusterEnabled,
         sparkEnabled: this.state.sparkEnabled,
         slurmEnabled: this.state.slurmEnabled,
+        kubeEnabled: this.state.kubeEnabled,
         autoScaledPriceType: this.state.autoScaledPriceType
       });
     }
   };
 
   render () {
-    const {sparkEnabled, slurmEnabled} = this.state;
+    const {sparkEnabled, slurmEnabled, kubeEnabled} = this.state;
     return (
       <Modal
         title={
@@ -628,7 +674,7 @@ class ConfigureClusterDialog extends React.Component {
                 <Radio.Button value={CLUSTER_TYPE.singleNode}>Single node</Radio.Button>
                 <Radio.Button value={CLUSTER_TYPE.fixedCluster}>Cluster</Radio.Button>
                 <Radio.Button
-                  disabled={sparkEnabled || slurmEnabled}
+                  disabled={sparkEnabled || slurmEnabled || kubeEnabled}
                   value={CLUSTER_TYPE.autoScaledCluster}
                 >
                   Auto-scaled cluster
@@ -735,6 +781,7 @@ class ConfigureClusterDialog extends React.Component {
         gridEngineEnabled: nextProps.gridEngineEnabled,
         sparkEnabled: nextProps.sparkEnabled,
         slurmEnabled: nextProps.slurmEnabled,
+        kubeEnabled: nextProps.kubeEnabled,
         autoScaledPriceType: nextProps.autoScaledPriceType,
         hybridAutoScaledClusterEnabled: nextProps.hybridAutoScaledClusterEnabled,
         setDefaultNodesCount: nextProps.nodesCount > 0,

@@ -71,6 +71,7 @@ import {
   CP_CAP_SGE,
   CP_CAP_SPARK,
   CP_CAP_SLURM,
+  CP_CAP_KUBE,
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
@@ -81,6 +82,7 @@ import {
   gridEngineEnabled,
   sparkEnabled,
   slurmEnabled,
+  kubeEnabled,
   setClusterParameterValue,
   getAutoScaledPriceTypeValue
 } from './utilities/launch-cluster';
@@ -225,6 +227,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
+    kubeEnabled: false,
     autoScaledPriceType: undefined,
     nodesCount: 0,
     maxNodesCount: 0,
@@ -779,6 +782,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
     const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
+    const kubeEnabledValue = kubeEnabled(this.props.parameters.parameters);
     const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.props.parameters.parameters);
     if (keepPipeline) {
       this.setState({
@@ -796,6 +800,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
         slurmEnabled: slurmEnabledValue,
+        kubeEnabled: kubeEnabledValue,
         autoScaledPriceType: autoScaledPriceTypeValue,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
@@ -846,6 +851,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
         slurmEnabled: slurmEnabledValue,
+        kubeEnabled: kubeEnabledValue,
         autoScaledPriceType: autoScaledPriceTypeValue,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
@@ -1027,6 +1033,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           value: true
         };
       }
+      if (this.state.launchCluster && this.state.kubeEnabled) {
+        payload[PARAMETERS][CP_CAP_KUBE] = {
+          type: 'boolean',
+          value: true
+        };
+      }
     }
     if (this.props.detached && this.state.pipeline && this.state.version) {
       payload.pipelineId = this.state.pipeline.id;
@@ -1200,6 +1212,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: true
       };
     }
+    if (this.state.launchCluster && this.state.kubeEnabled) {
+      payload.params[CP_CAP_KUBE] = {
+        type: 'boolean',
+        value: true
+      };
+    }
     if (!payload.isSpot &&
       !this.state.launchCluster &&
       this.state.scheduleRules &&
@@ -1341,6 +1359,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
     const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
+    const kubeEnabledValue = kubeEnabled(this.props.parameters.parameters);
     const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.props.parameters.parameters);
     let state = {
       launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
@@ -1349,6 +1368,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       gridEngineEnabled: gridEngineEnabledValue,
       sparkEnabled: sparkEnabledValue,
       slurmEnabled: slurmEnabledValue,
+      kubeEnabled: kubeEnabledValue,
       autoScaledPriceType: autoScaledPriceTypeValue,
       nodesCount: +this.props.parameters.node_count,
       maxNodesCount: this.props.parameters.parameters &&
@@ -3175,6 +3195,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       gridEngineEnabled,
       sparkEnabled,
       slurmEnabled,
+      kubeEnabled,
       autoScaledPriceType
     } = configuration;
     this.setState({
@@ -3184,6 +3205,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       gridEngineEnabled,
       sparkEnabled,
       slurmEnabled,
+      kubeEnabled,
       nodesCount,
       maxNodesCount,
       autoScaledPriceType
@@ -4387,6 +4409,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       gridEngineEnabled={this.state.gridEngineEnabled}
                       sparkEnabled={this.state.sparkEnabled}
                       slurmEnabled={this.state.slurmEnabled}
+                      kubeEnabled={this.state.kubeEnabled}
                       nodesCount={this.state.nodesCount}
                       maxNodesCount={this.state.maxNodesCount || 1}
                       onClose={this.closeConfigureClusterDialog}
