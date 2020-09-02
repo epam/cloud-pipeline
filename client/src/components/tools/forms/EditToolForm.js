@@ -47,6 +47,7 @@ import {
   CP_CAP_SGE,
   CP_CAP_SPARK,
   CP_CAP_SLURM,
+  CP_CAP_KUBE,
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
@@ -57,6 +58,7 @@ import {
   gridEngineEnabled,
   sparkEnabled,
   slurmEnabled,
+  kubeEnabled,
   getAutoScaledPriceTypeValue
 } from '../../pipelines/launch/form/utilities/launch-cluster';
 import AWSRegionTag from '../../special/AWSRegionTag';
@@ -134,6 +136,7 @@ export default class EditToolForm extends React.Component {
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
+    kubeEnabled: false,
     launchCluster: false
   };
 
@@ -243,6 +246,13 @@ export default class EditToolForm extends React.Component {
           if (this.state.launchCluster && this.state.slurmEnabled) {
             params.push({
               name: CP_CAP_SLURM,
+              type: 'boolean',
+              value: true
+            });
+          }
+          if (this.state.launchCluster && this.state.kubeEnabled) {
+            params.push({
+              name: CP_CAP_KUBE,
               type: 'boolean',
               value: true
             });
@@ -389,6 +399,7 @@ export default class EditToolForm extends React.Component {
         state.gridEngineEnabled = props.configuration && gridEngineEnabled(props.configuration.parameters);
         state.sparkEnabled = props.configuration && sparkEnabled(props.configuration.parameters);
         state.slurmEnabled = props.configuration && slurmEnabled(props.configuration.parameters);
+        state.kubeEnabled = props.configuration && kubeEnabled(props.configuration.parameters);
         state.autoScaledPriceType = props.configuration &&
           getAutoScaledPriceTypeValue(props.configuration.parameters);
         state.launchCluster = state.nodesCount > 0 || state.autoScaledCluster;
@@ -682,6 +693,8 @@ export default class EditToolForm extends React.Component {
       sparkEnabled(this.props.configuration.parameters);
     const slurmEnabledValue = this.props.configuration &&
       slurmEnabled(this.props.configuration.parameters);
+    const kubeEnabledValue = this.props.configuration &&
+      kubeEnabled(this.props.configuration.parameters);
     const autoScaledPriceTypeValue = this.props.configuration &&
       getAutoScaledPriceTypeValue(this.props.configuration.parameters);
     const launchCluster = nodesCount > 0 || autoScaledCluster;
@@ -700,6 +713,7 @@ export default class EditToolForm extends React.Component {
       !!gridEngineEnabledValue !== !!this.state.gridEngineEnabled ||
       !!sparkEnabledValue !== !!this.state.sparkEnabled ||
       !!slurmEnabledValue !== !!this.state.slurmEnabled ||
+      !!kubeEnabledValue !== !!this.state.kubeEnabled ||
       autoScaledPriceTypeValue !== this.state.autoScaledPriceType ||
       (this.state.launchCluster && nodesCount !== this.state.nodesCount) ||
       (this.state.launchCluster && this.state.autoScaledCluster && maxNodesCount !== this.state.maxNodesCount) ||
@@ -748,6 +762,7 @@ export default class EditToolForm extends React.Component {
       gridEngineEnabled,
       sparkEnabled,
       slurmEnabled,
+      kubeEnabled,
       autoScaledPriceType
     } = configuration;
     this.setState({
@@ -759,6 +774,7 @@ export default class EditToolForm extends React.Component {
       gridEngineEnabled,
       sparkEnabled,
       slurmEnabled,
+      kubeEnabled,
       autoScaledPriceType
     }, () => {
       this.closeConfigureClusterDialog();
@@ -1153,6 +1169,7 @@ export default class EditToolForm extends React.Component {
                 gridEngineEnabled={this.state.gridEngineEnabled}
                 sparkEnabled={this.state.sparkEnabled}
                 slurmEnabled={this.state.slurmEnabled}
+                kubeEnabled={this.state.kubeEnabled}
                 nodesCount={this.state.nodesCount}
                 maxNodesCount={+this.state.maxNodesCount || 1}
                 onClose={this.closeConfigureClusterDialog}
