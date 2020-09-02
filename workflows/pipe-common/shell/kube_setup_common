@@ -1,0 +1,163 @@
+#!/bin/bash
+
+# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#############################
+# Kube RPMs download command
+#############################
+# cat <<EOF >/etc/yum.repos.d/kubernetes.repo
+# [kubernetes]
+# name=Kubernetes
+# baseurl=http://yum.kubernetes.io/repos/kubernetes-el7-x86_64
+# enabled=1
+# gpgcheck=1
+# repo_gpgcheck=1
+# gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+#        https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+# EOF
+# yum -q makecache -y --enablerepo kubernetes --nogpg
+# yum install --downloadonly \
+#             --downloaddir=/root/kube_dist/other \
+#             gettext \
+#             kubeadm-1.15.4-0.x86_64 \
+#             kubectl-1.15.4-0.x86_64 \
+#             kubelet-1.15.4-0.x86_64 \
+#             cpp-4.8.5-39.el7.x86_64 \
+#             gcc-4.8.5-39.el7.x86_64 \
+#             libgcc-4.8.5-39.el7.x86_64 \
+#             glibc-2.17-307.el7.1.x86_64 \
+#             glibc-common-2.17-307.el7.1.x86_64 \
+#             libgcc-4.8.5-39.el7.x86_64
+
+##########################################
+# Kube system pods images download command
+##########################################
+# docker pull calico/node:v3.14.1 && \
+# docker save calico/node:v3.14.1 -o calico-node-v3.14.1.tar && \
+# docker pull calico/pod2daemon-flexvol:v3.14.1 && \
+# docker save calico/pod2daemon-flexvol:v3.14.1 -o calico-pod2daemon-flexvol-v3.14.1.tar && \
+# docker pull calico/cni:v3.14.1 && \
+# docker save calico/cni:v3.14.1 -o calico-cni-v3.14.1.tar && \
+# docker pull calico/kube-controllers:v3.14.1 && \
+# docker save calico/kube-controllers:v3.14.1 -o calico-kube-controllers-v3.14.1.tar && \
+# docker pull k8s.gcr.io/kube-proxy:v1.15.4 && \
+# docker save k8s.gcr.io/kube-proxy:v1.15.4 -o k8s.gcr.io-kube-proxy-v1.15.4.tar && \
+# docker pull k8s.gcr.io/kube-apiserver:v1.15.4 && \
+# docker save k8s.gcr.io/kube-apiserver:v1.15.4 -o k8s.gcr.io-kube-apiserver-v1.15.4.tar && \
+# docker pull k8s.gcr.io/kube-controller-manager:v1.15.4 && \
+# docker save k8s.gcr.io/kube-controller-manager:v1.15.4 -o k8s.gcr.io-kube-controller-manager-v1.15.4.tar && \
+# docker pull k8s.gcr.io/kube-scheduler:v1.15.4 && \
+# docker save k8s.gcr.io/kube-scheduler:v1.15.4 -o k8s.gcr.io-kube-scheduler-v1.15.4.tar && \
+# docker pull quay.io/coreos/flannel:v0.11.0 && \
+# docker save quay.io/coreos/flannel:v0.11.0 -o quay.io-coreos-flannel-v0.11.0.tar && \
+# docker pull k8s.gcr.io/etcd:3.3.10 && \
+# docker save k8s.gcr.io/etcd:3.3.10 -o k8s.gcr.io-etcd-3.3.10.tar && \
+# docker pull k8s.gcr.io/k8s-dns-sidecar:1.14.13 && \
+# docker save k8s.gcr.io/k8s-dns-sidecar:1.14.13 -o k8s.gcr.io-k8s-dns-sidecar-1.14.13.tar && \
+# docker pull k8s.gcr.io/k8s-dns-kube-dns:1.14.13 && \
+# docker save k8s.gcr.io/k8s-dns-kube-dns:1.14.13 -o k8s.gcr.io-k8s-dns-kube-dns-1.14.13.tar && \
+# docker pull k8s.gcr.io/k8s-dns-dnsmasq-nanny:1.14.13 && \
+# docker save k8s.gcr.io/k8s-dns-dnsmasq-nanny:1.14.13 -o k8s.gcr.io-k8s-dns-dnsmasq-nanny-1.14.13.tar && \
+# docker pull k8s.gcr.io/heapster-amd64:v1.5.4 && \
+# docker save k8s.gcr.io/heapster-amd64:v1.5.4 -o k8s.gcr.io-heapster-amd64-v1.5.4.tar && \
+# docker pull k8s.gcr.io/pause:3.1 && \
+# docker save k8s.gcr.io/pause:3.1 -o k8s.gcr.io-pause-3.1.tar && \
+# docker pull k8s.gcr.io/cluster-proportional-autoscaler-amd64:1.1.1 && \
+# docker save k8s.gcr.io/cluster-proportional-autoscaler-amd64:1.1.1 -o k8s.gcr.io-cluster-proportional-autoscaler-amd64-1.1.1.tar
+
+############################
+# Input parameters
+############################
+_kube_common_setup_task_name="$1"
+_kube_install_log="$2"
+
+############################
+# Common functions
+############################
+function download_distr() {
+    local _distr_url="$1"
+    local _distr_dir="$2"
+    local _distr_file=$_distr_dir/${RANDOM}.tgz
+    wget --timeout=10 \
+        --waitretry=1 \
+        --tries=10 \
+        -q \
+        "$_distr_url" \
+        -O $_distr_file &> $_kube_install_log
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "[ERROR] Cannot download distribution tarball from $_distr_dir" "$_kube_common_setup_task_name"
+        return 1
+    fi
+    tar -zxf $_distr_file -C $_distr_dir &> $_kube_install_log
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "[ERROR] Cannot unpack a tarball at $_distr_file" "$_kube_common_setup_task_name"
+        return 1
+    fi
+}
+
+# FIXME: add DEB support as well
+_pkg_mngr=$(which_pkg_manager)
+if [ "$_pkg_mngr" == "yum" ]; then
+    _pkg_type="rpm"
+else
+    pipe_log_fail "[ERROR] Only RPM-based Linux distibutions are supported for the kubernetes installation" "$_kube_common_setup_task_name"
+    exit 1
+fi
+
+export CP_CAP_KUBE_VERSION="${CP_CAP_KUBE_VERSION:-1.15.4}"
+export CP_CAP_KUBE_DISTR_PREFIX="${CP_CAP_KUBE_DISTR_PREFIX:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube}"
+export CP_CAP_KUBE_PACKAGES_DISTR_URL="${CP_CAP_KUBE_PACKAGES_DISTR_URL:-$CP_CAP_KUBE_DISTR_PREFIX/$CP_CAP_KUBE_VERSION/$_pkg_type/kube-$CP_CAP_KUBE_VERSION.tgz}"
+export CP_CAP_KUBE_SYSTEM_PODS_DISTR="${CP_CAP_KUBE_SYSTEM_PODS_DISTR:-$CP_CAP_KUBE_DISTR_PREFIX/$CP_CAP_KUBE_VERSION/docker/kube-dockers-$CP_CAP_KUBE_VERSION.tgz}"
+
+pipe_log_info "- Package manager: $_pkg_type\n \
+              - Kube version: $CP_CAP_KUBE_VERSION\n \
+              - Kube packages URL: $CP_CAP_KUBE_PACKAGES_DISTR_URL\n \
+              - Kube dockers URL: $CP_CAP_KUBE_SYSTEM_PODS_DISTR" "$_kube_common_setup_task_name"
+
+pipe_log_info "Getting system docker images" "$_kube_common_setup_task_name"
+
+############################################################
+# Install the kubernetes dockers (API/Scheduler/Network/etc)
+############################################################
+_docker_distr_dir=$(mktemp -d)
+download_distr "$CP_CAP_KUBE_SYSTEM_PODS_DISTR" "$_docker_distr_dir" || exit 1
+for _docker_tar in $_docker_distr_dir/kube-dockers/*.tar; do
+    docker load -i $_docker_tar &> $_kube_install_log
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "[ERROR] Cannot load the docker image from the tarball at $_docker_tar" "$_kube_common_setup_task_name"
+        exit 1
+    fi
+    pipe_log_info "$_docker_tar has been loaded" "$_kube_common_setup_task_name"
+done
+rm -rf $_docker_distr_dir
+
+pipe_log_info "All system docker images are loaded" "$_kube_common_setup_task_name"
+
+######################################
+# Install kubelet and management tools
+######################################
+pipe_log_info "Getting kubernetes packages" "$_kube_common_setup_task_name"
+
+_packages_distr_dir=$(mktemp -d)
+download_distr "$CP_CAP_KUBE_PACKAGES_DISTR_URL" "$_packages_distr_dir" || exit 1
+
+yum localinstall -y $_packages_distr_dir/kube/*.rpm &> $_kube_install_log
+if [ $? -ne 0 ]; then
+    pipe_log_fail "[ERROR] Cannot install kubernetes packages from $_packages_distr_dir" "$_kube_common_setup_task_name"
+    exit 1
+fi
+rm -rf $_packages_distr_dir
+
+pipe_log_info "All kubernetes packages are installed" "$_kube_common_setup_task_name"

@@ -172,7 +172,8 @@ function cp_cap_publish {
       _MASTER_CAP_INIT_PATH="$CP_CAP_SCRIPTS_DIR/master"
       _WORKER_CAP_INIT_PATH="$CP_CAP_SCRIPTS_DIR/worker"
 
-      if check_cp_cap "CP_CAP_DIND_CONTAINER"
+      # We force DIND capability if the CP_CAP_KUBE is specified
+      if check_cp_cap "CP_CAP_DIND_CONTAINER" || check_cp_cap "CP_CAP_KUBE"
       then
             echo "set -e" >> $_MASTER_CAP_INIT_PATH
             echo "set -e" >> $_WORKER_CAP_INIT_PATH
@@ -240,6 +241,24 @@ function cp_cap_publish {
             
             sed -i "/$_SPARK_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_SPARK_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
+      fi
+
+      if check_cp_cap "CP_CAP_KUBE"
+      then
+            echo "set -e" >> $_MASTER_CAP_INIT_PATH
+            echo "set -e" >> $_WORKER_CAP_INIT_PATH
+
+            _KUBE_MASTER_INIT="kube_setup_master"
+            _KUBE_WORKER_INIT="kube_setup_worker"
+            echo "Requested Kubernetes capability, setting init scripts:"
+            echo "--> Master: $_KUBE_MASTER_INIT"
+            echo "--> Worker: $_KUBE_WORKER_INIT"
+
+            sed -i "/$_KUBE_MASTER_INIT/d" $_MASTER_CAP_INIT_PATH
+            echo "$_KUBE_MASTER_INIT" >> $_MASTER_CAP_INIT_PATH
+            
+            sed -i "/$_KUBE_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
+            echo "$_KUBE_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
       fi
 }
 
@@ -549,6 +568,13 @@ function list_storage_mounts() {
     echo $(df -T | awk 'index($2, "fuse")' | awk '{ print $7 }' | grep "^$_MOUNT_ROOT")
 }
 
+function add_self_to_no_proxy() {
+      local _self_hostname=$(hostname)
+      # -I option prints all the IPs of the current machine, which are separated by a whitespace
+      # The whitespace is then replaced with a comma
+      local _self_ips=$(hostname -I)
+      export no_proxy="${no_proxy},${_self_hostname},${_self_ips// /,}"
+}
 ######################################################
 
 
@@ -851,6 +877,9 @@ eval "$_CP_ENV_ULIMIT"
 # default 0002 - will result into 775 (dir) and 664 (file) permissions
 _CP_ENV_UMASK="umask ${CP_CAP_ENV_UMASK:-0002}"
 eval "$_CP_ENV_UMASK"
+
+# Current jobs hostname and IPs shall be added to the no_proxy, otherwise any http request to "self" will fail
+add_self_to_no_proxy
 
 echo "------"
 echo
@@ -1449,7 +1478,10 @@ fi
 echo "Setup Systemd"
 echo "-"
 
-if [ "$CP_CAP_SYSTEMD_CONTAINER" == "true" ] && check_installed "systemctl" && [ "$CP_OS" == "centos" ]; then
+# Force SystemD capability if the Kubernetes is requested
+if ( check_cp_cap "CP_CAP_SYSTEMD_CONTAINER" || check_cp_cap "CP_CAP_KUBE" ) \
+    && check_installed "systemctl" && \
+    [ "$CP_OS" == "centos" ]; then
       _CONTAINER_DOCKER_ENV_EXPORTING="export container=docker"
       _IGNORING_CHROOT_ENV_EXPORTING="export SYSTEMD_IGNORE_CHROOT=1"
       _REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND='(cd /lib/systemd/system/sysinit.target.wants/; \

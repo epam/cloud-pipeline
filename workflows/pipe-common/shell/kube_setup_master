@@ -1,0 +1,299 @@
+#!/bin/bash
+
+# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#############################
+# Kube RPMs download command
+#############################
+# cat <<EOF >/etc/yum.repos.d/kubernetes.repo
+# [kubernetes]
+# name=Kubernetes
+# baseurl=http://yum.kubernetes.io/repos/kubernetes-el7-x86_64
+# enabled=1
+# gpgcheck=1
+# repo_gpgcheck=1
+# gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+#        https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+# EOF
+# yum -q makecache -y --enablerepo kubernetes --nogpg
+# yum install --downloadonly \
+#             --downloaddir=/root/kube_dist/other \
+#             gettext \
+#             kubeadm-1.15.4-0.x86_64 \
+#             kubectl-1.15.4-0.x86_64 \
+#             kubelet-1.15.4-0.x86_64 \
+#             cpp-4.8.5-39.el7.x86_64 \
+#             gcc-4.8.5-39.el7.x86_64 \
+#             libgcc-4.8.5-39.el7.x86_64 \
+#             glibc-2.17-307.el7.1.x86_64 \
+#             glibc-common-2.17-307.el7.1.x86_64 \
+#             libgcc-4.8.5-39.el7.x86_64
+
+##########################################
+# Kube system pods images download command
+##########################################
+# docker pull calico/node:v3.14.1 && \
+# docker save calico/node:v3.14.1 -o calico-node-v3.14.1.tar && \
+# docker pull calico/pod2daemon-flexvol:v3.14.1 && \
+# docker save calico/pod2daemon-flexvol:v3.14.1 -o calico-pod2daemon-flexvol-v3.14.1.tar && \
+# docker pull calico/cni:v3.14.1 && \
+# docker save calico/cni:v3.14.1 -o calico-cni-v3.14.1.tar && \
+# docker pull calico/kube-controllers:v3.14.1 && \
+# docker save calico/kube-controllers:v3.14.1 -o calico-kube-controllers-v3.14.1.tar && \
+# docker pull k8s.gcr.io/kube-proxy:v1.15.4 && \
+# docker save k8s.gcr.io/kube-proxy:v1.15.4 -o k8s.gcr.io-kube-proxy-v1.15.4.tar && \
+# docker pull k8s.gcr.io/kube-apiserver:v1.15.4 && \
+# docker save k8s.gcr.io/kube-apiserver:v1.15.4 -o k8s.gcr.io-kube-apiserver-v1.15.4.tar && \
+# docker pull k8s.gcr.io/kube-controller-manager:v1.15.4 && \
+# docker save k8s.gcr.io/kube-controller-manager:v1.15.4 -o k8s.gcr.io-kube-controller-manager-v1.15.4.tar && \
+# docker pull k8s.gcr.io/kube-scheduler:v1.15.4 && \
+# docker save k8s.gcr.io/kube-scheduler:v1.15.4 -o k8s.gcr.io-kube-scheduler-v1.15.4.tar && \
+# docker pull quay.io/coreos/flannel:v0.11.0 && \
+# docker save quay.io/coreos/flannel:v0.11.0 -o quay.io-coreos-flannel-v0.11.0.tar && \
+# docker pull k8s.gcr.io/etcd:3.3.10 && \
+# docker save k8s.gcr.io/etcd:3.3.10 -o k8s.gcr.io-etcd-3.3.10.tar && \
+# docker pull k8s.gcr.io/k8s-dns-sidecar:1.14.13 && \
+# docker save k8s.gcr.io/k8s-dns-sidecar:1.14.13 -o k8s.gcr.io-k8s-dns-sidecar-1.14.13.tar && \
+# docker pull k8s.gcr.io/k8s-dns-kube-dns:1.14.13 && \
+# docker save k8s.gcr.io/k8s-dns-kube-dns:1.14.13 -o k8s.gcr.io-k8s-dns-kube-dns-1.14.13.tar && \
+# docker pull k8s.gcr.io/k8s-dns-dnsmasq-nanny:1.14.13 && \
+# docker save k8s.gcr.io/k8s-dns-dnsmasq-nanny:1.14.13 -o k8s.gcr.io-k8s-dns-dnsmasq-nanny-1.14.13.tar && \
+# docker pull k8s.gcr.io/heapster-amd64:v1.5.4 && \
+# docker save k8s.gcr.io/heapster-amd64:v1.5.4 -o k8s.gcr.io-heapster-amd64-v1.5.4.tar && \
+# docker pull k8s.gcr.io/pause:3.1 && \
+# docker save k8s.gcr.io/pause:3.1 -o k8s.gcr.io-pause-3.1.tar && \
+# docker pull k8s.gcr.io/cluster-proportional-autoscaler-amd64:1.1.1 && \
+# docker save k8s.gcr.io/cluster-proportional-autoscaler-amd64:1.1.1 -o k8s.gcr.io-cluster-proportional-autoscaler-amd64-1.1.1.tar
+
+KUBE_MASTER_SETUP_TASK="KubeMasterSetup"
+KUBE_MASTER_SETUP_TASK_WORKERS="KubeMasterSetupWorkers"
+
+############################
+# Common functions
+############################
+function wait_for_pod_ready() {
+    local _pod_name="$1"
+    local _try_count="$2"
+
+    for i in $(seq 1 $_try_count); do
+        local _all_ready_system_pods=$(kubectl get po -n kube-system \
+                                                -o custom-columns=NAME:.metadata.name,TYPES:.status.conditions[*].type | \
+                                        grep Ready | \
+                                        cut -f1 -d' ')
+        if grep -q "$_pod_name" <<< "$_all_ready_system_pods"; then
+            return 0
+        fi
+        sleep 5
+    done
+    return 1
+}
+
+function get_kube_workers_count() {
+    local _all_worker_nodes=$(kubectl get node --selector='!node-role.kubernetes.io/master' --no-headers 2>/dev/null)
+    if [ -z "$_all_worker_nodes" ]; then
+        echo 0
+        return
+    fi
+
+    local _ready_worker_nodes_count=0
+    while IFS= read -r _current_worker_node_info; do
+        _current_worker_node_info_fields=($(echo "$_current_worker_node_info"))
+        if (( ${#_current_worker_node_info_fields[@]} < 2 )); then
+            continue
+        fi
+        if [ ${_current_worker_node_info_fields[1]} == "Ready" ]; then
+            _ready_worker_nodes_count=$(( $_ready_worker_nodes_count + 1 ))
+        fi
+    done <<< "$_all_worker_nodes"
+    echo $_ready_worker_nodes_count
+}
+
+############################
+# Preflight check
+############################
+pipe_log_info "Running preflight checks" "$KUBE_MASTER_SETUP_TASK"
+
+if [ "$CP_CAP_DIND_CONTAINER" != "true" ] || [ "$CP_CAP_SYSTEMD_CONTAINER" != "true" ]; then
+    pipe_log_fail "[ERROR] Both CP_CAP_DIND_CONTAINER and CP_CAP_SYSTEMD_CONTAINER capabilities shall be enabled to install Kubernetes cluster" "$KUBE_MASTER_SETUP_TASK"
+    exit 1
+fi
+
+pipe_log_info "Everything looks OK" "$KUBE_MASTER_SETUP_TASK"
+
+############################
+# Global configuration setup
+############################
+pipe_log_info "Starting kubernetes setup" "$KUBE_MASTER_SETUP_TASK"
+
+export CP_CAP_KUBE_PODS_CIDR="${CP_CAP_KUBE_PODS_CIDR:-172.16.0.0/18}" # Default 16382 IPs:  172.16.0.1 - 172.16.63.254
+export CP_CAP_KUBE_SVC_CIDR="${CP_CAP_KUBE_SVC_CIDR:-172.16.64.0/22}"  # Default 254 IPs:    172.16.64.1 - 172.16.67.254 
+export CP_CAP_KUBE_DOMAIN="${CP_CAP_KUBE_DOMAIN:-$(hostname).cloud-pipeline}"
+export CP_CAP_KUBE_CNI_CONFIG="${CP_CAP_KUBE_CNI_CONFIG:-https://raw.githubusercontent.com/epam/cloud-pipeline/6d210f2dd2f376737f97269385ae6a192f0a521c/deploy/contents/k8s/kube-system/canal.yaml}"
+export CP_CAP_KUBE_INSTALL_LOG="${CP_CAP_KUBE_INSTALL_LOG:-/var/log/kube-install/install.log}"
+export CP_CAP_KUBE_MASTER_EXEC_WAIT_ATTEMPTS="${CP_CAP_KUBE_MASTER_EXEC_WAIT_ATTEMPTS:-60}"
+export CP_CAP_KUBE_MASTER_EXEC_WAIT_SEC="${CP_CAP_KUBE_MASTER_EXEC_WAIT_SEC:-10}"
+mkdir -p $(dirname $CP_CAP_KUBE_INSTALL_LOG)
+
+pipe_log_info "- Install log: $CP_CAP_KUBE_INSTALL_LOG\n \
+              - Kube pods CIDR: $CP_CAP_KUBE_PODS_CIDR\n \
+              - Kube services CIDR: $CP_CAP_KUBE_SVC_CIDR\n \
+              - Kube domain: $CP_CAP_KUBE_DOMAIN\n \
+              - Kube CNI config URL: $CP_CAP_KUBE_CNI_CONFIG" "$KUBE_MASTER_SETUP_TASK"
+
+# Remove /usr/cpbin from the PATH, so the kubelet will use the "real" docker binary
+export PATH=$(sed "s|$CP_USR_BIN||g" <<< "$PATH")
+
+######################################
+# Install the common software packages
+######################################
+kube_setup_common "$KUBE_MASTER_SETUP_TASK" "$CP_CAP_KUBE_INSTALL_LOG"
+
+######################################
+# Kubelet configuration
+######################################
+modprobe br_netfilter
+cat <<EOF >/etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+EOF
+sysctl --system
+
+_KUBE_DROPIN_PATH="/etc/sysconfig/kubelet"
+echo "KUBELET_EXTRA_ARGS=--fail-swap-on=false" > $_KUBE_DROPIN_PATH
+chmod +x $_KUBE_DROPIN_PATH
+
+systemctl daemon-reload
+systemctl enable kubelet
+systemctl start kubelet
+
+# Unset http proxies, as the kube control plane pods will be confused by that
+bkp_http_proxy="$http_proxy"
+bkp_https_proxy="$https_proxy"
+bkp_no_proxy="$no_proxy"
+if [ "$CP_KUBE_KEEP_KUBEADM_PROXIES" != "1" ]; then
+  unset http_proxy https_proxy no_proxy
+fi
+
+######################################
+# Start the kube master
+######################################
+pipe_log_info "Starting kubernetes master initialization" "$KUBE_MASTER_SETUP_TASK"
+
+_kubeadm_config_file=/tmp/${RANDOM}.yaml
+cat > $_kubeadm_config_file <<EOF
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: ClusterConfiguration
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+dns:
+  type: kube-dns
+
+kubernetesVersion: v1.15.4
+networking:
+  dnsDomain: $CP_CAP_KUBE_DOMAIN
+  serviceSubnet: $CP_CAP_KUBE_SVC_CIDR
+  podSubnet: $CP_CAP_KUBE_PODS_CIDR
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+port: 10250
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: InitConfiguration
+bootstrapTokens:
+  - groups:
+    ttl: 0s
+EOF
+
+kubeadm init --config $_kubeadm_config_file --ignore-preflight-errors=all
+
+# Restore the proxy values, so the downstream tasks will be able to download their assets
+export http_proxy="$bkp_http_proxy"
+export https_proxy="$bkp_https_proxy"
+export no_proxy="$bkp_no_proxy"
+
+# Configure root/OWNER kubectl access
+mkdir -p $HOME/.kube
+\cp /etc/kubernetes/admin.conf $HOME/.kube/config
+
+if [ "$OWNER" ]; then
+    /home/$OWNER/.kube
+    \cp /etc/kubernetes/admin.conf /home/$OWNER/.kube/config
+fi
+
+# Wait for the system pods to come up
+pipe_log_info "Waiting for the control plain pods to start" "$KUBE_MASTER_SETUP_TASK"
+_system_pods_to_wait="kube-apiserver- kube-controller-manager- etcd- kube-scheduler-"
+for _system_pod in $_system_pods_to_wait; do
+    wait_for_pod_ready "$_system_pod" 20
+    if [ $? -eq 0 ]; then
+        pipe_log_info "$_system_pod is ready" "$KUBE_MASTER_SETUP_TASK"
+    else
+        pipe_log_fail "[ERROR] $_system_pod was not able to start in a reasonable time" "$KUBE_MASTER_SETUP_TASK"
+        exit 1
+    fi
+done
+
+rm -f $_kubeadm_config_file
+pipe_log_info "Kubernetes master has been started" "$KUBE_MASTER_SETUP_TASK"
+
+##############################
+# Configure CNI and networking
+##############################
+pipe_log_info "Applying CNI configuration" "$KUBE_MASTER_SETUP_TASK"
+
+_cni_config_file=/tmp/${RANDOM}.yaml
+wget -q "$CP_CAP_KUBE_CNI_CONFIG" -O $_cni_config_file
+if [ $? -ne 0 ]; then
+    pipe_log_fail "[ERROR] Cannot download CNI config from $CP_CAP_KUBE_CNI_CONFIG" "$KUBE_MASTER_SETUP_TASK"
+    exit 1
+fi
+export CP_KUBE_FLANNEL_CIDR=$CP_CAP_KUBE_PODS_CIDR
+envsubst '${CP_KUBE_FLANNEL_CIDR}' < $_cni_config_file | kubectl apply -f -
+rm -f $_cni_config_file
+
+pipe_log_info "Waiting for the overlay networking to setup" "$KUBE_MASTER_SETUP_TASK"
+wait_for_pod_ready "calico-kube-controllers-" 20
+if [ $? -eq 0 ]; then
+    pipe_log_info "CNI is configured" "$KUBE_MASTER_SETUP_TASK"
+else
+    pipe_log_fail "[ERROR] calico-kube-controllers was not able to start in a reasonable time" "$KUBE_MASTER_SETUP_TASK"
+    exit 1
+fi
+
+pipe_log_success "Kubernetes master is started" "$KUBE_MASTER_SETUP_TASK"
+
+#############################################################
+# Wait for worker nodes to initiate and connect to the master
+#############################################################
+if [ -z "$node_count" ] || (( "$node_count" == 0 )); then
+    pipe_log_success "Worker nodes count is not defined. Won't wait for them" "$KUBE_MASTER_SETUP_TASK_WORKERS"
+else
+    _current_workers_count=$(get_kube_workers_count)
+    while [ "$node_count" -gt "$_current_workers_count" ]; do
+        pipe_log_info "Waiting for workers to connect. $_current_workers_count out of $node_count are ready" "$KUBE_MASTER_SETUP_TASK_WORKERS"
+        sleep $CP_CAP_KUBE_MASTER_EXEC_WAIT_SEC
+        _current_workers_count=$(get_kube_workers_count)
+        CP_CAP_KUBE_MASTER_EXEC_WAIT_ATTEMPTS=$(( CP_CAP_KUBE_MASTER_EXEC_WAIT_ATTEMPTS-1 ))
+
+        if (( $CP_CAP_KUBE_MASTER_EXEC_WAIT_ATTEMPTS <= 0 )); then
+            pipe_log_success "NOT all worker nodes are connected. But we are giving up waiting as threshold has been reached" "$KUBE_MASTER_SETUP_TASK_WORKERS"
+            exit 0
+        fi
+    done
+    pipe_log_success "All worker nodes are connected" "$KUBE_MASTER_SETUP_TASK_WORKERS"
+fi
