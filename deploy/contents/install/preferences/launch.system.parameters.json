@@ -56,6 +56,12 @@
         "defaultValue": "2.4.3"
     },
     {
+        "name": "CP_CAP_KUBE",
+        "type": "boolean",
+        "description": "Enables Kubernetes for a current run (1.15.4)",
+        "defaultValue": "true"
+    },
+    {
         "name": "CP_S3_FUSE_TYPE",
         "type": "string",
         "description": "Allows to select which FUSE implementation to use for S3 buckets mounting. Allowed values are: goofys and s3fs",

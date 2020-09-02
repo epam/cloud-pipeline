@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+_kube_master_name="$1"
+_kube_worker_setup_task="KubeWorkerSetup"
+
+pipe_log_info "Starting Kube worker setup" "$_kube_worker_setup_task"
+
+#################################
+# Get the kube master information
+#################################
+# Name/IP
+_kube_master_info_result=$(eval "${CP_PYTHON2_PATH} ${COMMON_REPO_DIR}/scripts/cluster_wait_for_master.py --master-id ${parent_id} --task-name KubeMasterSetup")
+_kube_master_await_result=$?
+_kube_master_info=($_kube_master_info_result)
+_kube_master_ip=${_kube_master_info[-1]}
+_kube_master_name=${_kube_master_info[-2]}
+
+if [ "$_kube_master_await_result" -ne 0 ]; then
+    pipe_log_fail "Failed to install Kubernetes worker. Unable to get master information" "$_kube_worker_setup_task"
+    exit 1
+fi
+
+pipe_log_info "Master info received: $_kube_master_name : $_kube_master_ip" "$_kube_worker_setup_task"
+
+# Kubeadm config
+CP_CAP_KUBE_MASTER_TOKEN=$(ssh $_kube_master_ip "set -o pipefail; http_proxy= https_proxy= kubeadm token list | tail -n 1 | cut -f1 -d' '")
+if [ $? -ne 0 ]; then
+    pipe_log_fail "Cannot get the kubeadm authentication token from the master" "$_kube_worker_setup_task"
+    exit 1
+fi
+
+pipe_log_info "Kubeadm token received: $CP_CAP_KUBE_MASTER_TOKEN" "$_kube_worker_setup_task"
+
+export CP_CAP_KUBE_MASTER_API_PORT="${CP_CAP_KUBE_MASTER_API_PORT:-6443}"
+export CP_CAP_KUBE_INSTALL_LOG="${CP_CAP_KUBE_INSTALL_LOG:-/var/log/kube-install/install.log}"
+mkdir -p $(dirname $CP_CAP_KUBE_INSTALL_LOG)
+
+# Remove /usr/cpbin from the PATH, so the kubelet will use the "real" docker binary
+export PATH=$(sed "s|$CP_USR_BIN||g" <<< "$PATH")
+
+######################################
+# Install the common software packages
+######################################
+kube_setup_common "$_kube_worker_setup_task" "$CP_CAP_KUBE_INSTALL_LOG"
+
+######################################
+# Kubelet configuration
+######################################
+modprobe br_netfilter
+cat <<EOF >/etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+EOF
+sysctl --system
+
+_KUBE_DROPIN_PATH="/etc/sysconfig/kubelet"
+echo "KUBELET_EXTRA_ARGS=--fail-swap-on=false" > $_KUBE_DROPIN_PATH
+chmod +x $_KUBE_DROPIN_PATH
+
+systemctl daemon-reload
+systemctl enable kubelet
+
+# Removing the proxies to connect to the master directly
+unset http_proxy https_proxy no_proxy
+
+kubeadm join --token $CP_CAP_KUBE_MASTER_TOKEN $_kube_master_ip:$CP_CAP_KUBE_MASTER_API_PORT --discovery-token-unsafe-skip-ca-verification --ignore-preflight-errors all
+if [ $? -ne 0 ]; then
+    pipe_log_fail "Cannot join the kubernetes cluster at $_kube_master_ip:$CP_CAP_KUBE_MASTER_API_PORT using token $CP_CAP_KUBE_MASTER_TOKEN" "$_kube_worker_setup_task"
+    exit 1
+fi
+
+pipe_log_success "Worker node is attached to the kubernetes cluster" "$KUBE_MASTER_SETUP_TASK_WORKERS"
