@@ -26,6 +26,7 @@ import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.Cookie;
 import org.testng.annotations.Test;
 
+import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.refresh;
 import static com.codeborne.selenide.Selenide.screenshot;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
@@ -91,7 +92,7 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
         );
         sleep(1, MINUTES);
         logout();
-        Utils.restartBrowser(endpoint);
+        open(endpoint);
         sleep(2, SECONDS);
         Cookie cookie = new Cookie("HttpAuthorization", C.ANONYMOUS_TOKEN);
         WebDriverRunner.getWebDriver().manage().addCookie(cookie);
