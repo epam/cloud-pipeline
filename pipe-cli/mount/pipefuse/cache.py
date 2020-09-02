@@ -24,6 +24,9 @@ from fsclient import File, FileSystemClientDecorator
 import fuseutils
 
 
+_ANY_ERROR = BaseException
+
+
 class ListingCache:
 
     def __init__(self, cache):
@@ -178,27 +181,53 @@ class CachingFileSystemClient(FileSystemClientDecorator):
         return self._ls_as_dict(path, depth).values()
 
     def upload(self, buf, path):
-        self._inner.upload(buf, path)
-        self._cache.invalidate_parent_cache(path)
+        try:
+            self._inner.upload(buf, path)
+        except _ANY_ERROR:
+            self._cache.invalidate_parent_cache(path)
+        else:
+            self._cache.invalidate_parent_cache(path)
 
     def delete(self, path):
-        self._inner.delete(path)
-        self._cache.remove_from_parent_cache(path)
+        try:
+            self._inner.delete(path)
+        except _ANY_ERROR:
+            self._cache.invalidate_parent_cache(path)
+        else:
+            self._cache.remove_from_parent_cache(path)
 
     def mv(self, old_path, path):
-        self._inner.mv(old_path, path)
-        self._cache.remove_from_parent_cache(old_path)
-        self._cache.invalidate_parent_cache(path)
+        try:
+            self._inner.mv(old_path, path)
+        except _ANY_ERROR:
+            self._cache.invalidate_parent_cache(old_path)
+            self._cache.invalidate_parent_cache(path)
+        else:
+            self._cache.remove_from_parent_cache(old_path)
+            self._cache.invalidate_parent_cache(path)
 
     def mkdir(self, path):
-        self._inner.mkdir(path)
-        self._cache.invalidate_parent_cache(path)
+        try:
+            self._inner.mkdir(path)
+        except _ANY_ERROR:
+            self._cache.invalidate_parent_cache(path)
+        else:
+            self._cache.invalidate_parent_cache(path)
 
     def rmdir(self, path):
-        self._inner.rmdir(path)
-        self._cache.remove_from_parent_cache(path)
-        self._cache.invalidate_cache_recursively(path)
+        try:
+            self._inner.rmdir(path)
+        except _ANY_ERROR:
+            self._cache.invalidate_parent_cache(path)
+            self._cache.invalidate_cache_recursively(path)
+        else:
+            self._cache.remove_from_parent_cache(path)
+            self._cache.invalidate_cache_recursively(path)
 
     def flush(self, fh, path):
-        self._inner.flush(fh, path)
-        self._cache.invalidate_parent_cache(path)
+        try:
+            self._inner.flush(fh, path)
+        except _ANY_ERROR:
+            self._cache.invalidate_parent_cache(path)
+        else:
+            self._cache.invalidate_parent_cache(path)

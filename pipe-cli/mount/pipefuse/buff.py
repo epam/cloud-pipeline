@@ -19,6 +19,9 @@ from fsclient import FileSystemClientDecorator
 from fuseutils import MB
 
 
+_ANY_ERROR = BaseException
+
+
 class _FileBuffer(object):
 
     def __init__(self, offset, capacity):
@@ -129,22 +132,28 @@ class BufferedFileSystemClient(FileSystemClientDecorator):
         return attrs
 
     def download_range(self, fh, buf, path, offset=0, length=0):
-        buf_key = fh, path
-        file_buf = self._read_file_buffs.get(buf_key)
-        if not file_buf:
-            file_size = self._inner.attrs(path).size
-            if not file_size or offset >= file_size:
-                return
-            file_buf = self._new_read_buf(fh, path, file_size, offset, length)
-            self._read_file_buffs[buf_key] = file_buf
-        if not file_buf.suits(offset, length):
-            if file_buf.offset < file_buf.capacity:
-                file_buf.append(self._read_ahead(fh, path, file_buf.offset, length))
-                file_buf.shrink()
-            if not file_buf.suits(offset, length) and offset < file_buf.capacity:
-                file_buf = self._new_read_buf(fh, path, file_buf.capacity, offset, length)
+        try:
+            buf_key = fh, path
+            file_buf = self._read_file_buffs.get(buf_key)
+            if not file_buf:
+                file_size = self._inner.attrs(path).size
+                if not file_size or offset >= file_size:
+                    return
+                file_buf = self._new_read_buf(fh, path, file_size, offset, length)
                 self._read_file_buffs[buf_key] = file_buf
-        buf.write(file_buf.view(offset, length))
+            if not file_buf.suits(offset, length):
+                if file_buf.offset < file_buf.capacity:
+                    file_buf.append(self._read_ahead(fh, path, file_buf.offset, length))
+                    file_buf.shrink()
+                if not file_buf.suits(offset, length) and offset < file_buf.capacity:
+                    file_buf = self._new_read_buf(fh, path, file_buf.capacity, offset, length)
+                    self._read_file_buffs[buf_key] = file_buf
+            buf.write(file_buf.view(offset, length))
+        except _ANY_ERROR:
+            logging.exception('Downloading has failed for %d:%s. '
+                              'Removing read buffer.' % (fh, path))
+            self._remove_read_buf(fh, path)
+            raise
 
     def _new_read_buf(self, fh, path, file_size, offset, length):
         file_buf = _ReadBuffer(offset, file_size)
@@ -159,24 +168,30 @@ class BufferedFileSystemClient(FileSystemClientDecorator):
             return read_ahead_buf.getvalue()
 
     def upload_range(self, fh, buf, path, offset=0):
-        file_buf = self._write_file_buffs.get(path)
-        if not file_buf:
-            file_buf = self._new_write_buf(self._capacity, offset)
-            self._write_file_buffs[path] = file_buf
-        if file_buf.suits(offset):
-            file_buf.append(buf)
-        else:
-            logging.info('Upload buffer is not sequential for %d:%s. Buffer will be cleared.' % (fh, path))
-            self._flush_write_buf(fh, path)
-            old_file_buf = self._remove_write_buf(fh, path)
-            file_buf = self._new_write_buf(self._capacity, offset, buf, old_file_buf)
-            self._write_file_buffs[path] = file_buf
-        if file_buf.is_full():
-            logging.info('Upload buffer is full for %d:%s. Buffer will be cleared.' % (fh, path))
-            self._flush_write_buf(fh, path)
+        try:
+            file_buf = self._write_file_buffs.get(path)
+            if not file_buf:
+                file_buf = self._new_write_buf(self._capacity, offset)
+                self._write_file_buffs[path] = file_buf
+            if file_buf.suits(offset):
+                file_buf.append(buf)
+            else:
+                logging.info('Upload buffer is not sequential for %d:%s. Buffer will be cleared.' % (fh, path))
+                self._flush_write_buf(fh, path)
+                old_file_buf = self._remove_write_buf(fh, path)
+                file_buf = self._new_write_buf(self._capacity, offset, buf, old_file_buf)
+                self._write_file_buffs[path] = file_buf
+            if file_buf.is_full():
+                logging.info('Upload buffer is full for %d:%s. Buffer will be cleared.' % (fh, path))
+                self._flush_write_buf(fh, path)
+                self._remove_write_buf(fh, path)
+                file_buf = self._new_write_buf(self._capacity, file_buf.offset, buf=None, old_write_buf=file_buf)
+                self._write_file_buffs[path] = file_buf
+        except _ANY_ERROR:
+            logging.exception('Uploading has failed for %d:%s. '
+                              'Removing write buffer.' % (fh, path))
             self._remove_write_buf(fh, path)
-            file_buf = self._new_write_buf(self._capacity, file_buf.offset, buf=None, old_write_buf=file_buf)
-            self._write_file_buffs[path] = file_buf
+            raise
 
     def _new_write_buf(self, capacity, offset, buf=None, old_write_buf=None):
         write_buf = _WriteBuffer(offset, capacity, inherited_size=old_write_buf.inherited_size if old_write_buf else 0)
@@ -185,11 +200,18 @@ class BufferedFileSystemClient(FileSystemClientDecorator):
         return write_buf
 
     def flush(self, fh, path):
-        logging.info('Flushing buffers for %d:%s' % (fh, path))
-        self._flush_write_buf(fh, path)
-        self._inner.flush(fh, path)
-        self._remove_read_buf(fh, path)
-        self._remove_write_buf(fh, path)
+        try:
+            logging.info('Flushing buffers for %d:%s' % (fh, path))
+            self._flush_write_buf(fh, path)
+            self._inner.flush(fh, path)
+            self._remove_read_buf(fh, path)
+            self._remove_write_buf(fh, path)
+        except _ANY_ERROR:
+            logging.exception('Flushing has failed for %d:%s. '
+                              'Removing read and write buffers.' % (fh, path))
+            self._remove_read_buf(fh, path)
+            self._remove_write_buf(fh, path)
+            raise
 
     def _remove_read_buf(self, fh, path):
         return self._read_file_buffs.pop((fh, path), None)
