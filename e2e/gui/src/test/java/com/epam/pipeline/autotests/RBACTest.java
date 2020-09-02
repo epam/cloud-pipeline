@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.ao.ShellAO;
 import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
@@ -22,8 +23,10 @@ import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.openqa.selenium.Cookie;
 import org.testng.annotations.Test;
 
+import static com.codeborne.selenide.Selenide.open;
 import static java.lang.String.format;
 
 public class RBACTest extends AbstractSeveralPipelineRunningTest implements Authorization {
@@ -33,7 +36,7 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
     private final String testingTool = C.TESTING_TOOL_NAME;
     private final String toolEndpoint = testingTool.substring(testingTool.lastIndexOf("/") + 1);
 
-    @Test
+    @Test(enabled = false)
     @TestCase(value = "EPMCMBIBPC-3014")
     public void authenticationInPlatform() {
         logout();
@@ -83,10 +86,11 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
                         .validateShareLink("role_anonymous_user")
         );
         logout();
-        ShellAO.open(endpoint).also(() -> {
-            final Account idpAccount = new Account(C.ANONYMOUS_NAME, C.ANONYMOUS_TOKEN);
-            loginAs(idpAccount);
-            new ToolPageAO(endpoint).validateEndpointPage(C.ANONYMOUS_NAME).closeTab();
-        });
+        Cookie cookie = new Cookie("HttpAuthorization", C.ANONYMOUS_TOKEN);
+        WebDriverRunner.getWebDriver().manage().addCookie(cookie);
+        open(endpoint);
+        new ToolPageAO(endpoint).validateEndpointPage(C.ANONYMOUS_NAME).closeTab();
+        Utils.restartBrowser(C.ROOT_ADDRESS);
+        loginAs(admin);
     }
 }
