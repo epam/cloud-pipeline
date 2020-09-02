@@ -92,16 +92,11 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
         );
         sleep(1, MINUTES);
         logout();
-//        WebDriverRunner.getWebDriver().quit();
-//        open(endpoint);
-//        sleep(3, SECONDS);
-        Cookie cookie = new Cookie("HttpAuthorization", C.ANONYMOUS_TOKEN);
-        WebDriverRunner.getWebDriver().manage().addCookie(cookie);
-        sleep(1, MINUTES);
-        open(endpoint);
-        sleep(3, SECONDS);
+        final Account anonymousAccount = new Account(C.ANONYMOUS_NAME, C.ANONYMOUS_TOKEN);
+        loginAs(anonymousAccount);
+        sleep(2, SECONDS);
         screenshot("Endpoint_page");
-        new ToolPageAO(endpoint).validateEndpointPage(C.ANONYMOUS_NAME).closeTab();
+        ShellAO.open(endpoint).assertPageContains(C.ANONYMOUS_NAME).close();
         Utils.restartBrowser(C.ROOT_ADDRESS);
         loginAs(admin);
     }
