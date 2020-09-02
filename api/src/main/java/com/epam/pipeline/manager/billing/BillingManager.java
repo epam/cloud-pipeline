@@ -62,6 +62,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInter
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.bucket.histogram.ParsedDateHistogram;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.StringTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
@@ -90,6 +91,7 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjuster;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -447,14 +449,18 @@ public class BillingManager {
         if (grouping != null) {
             final String groupingField = grouping.getCorrespondingField();
             final ParsedStringTerms terms = allAggregations.get(groupingField);
-            return terms.getBuckets().stream().map(bucket -> {
-                final Aggregations aggregations = bucket.getAggregations();
-                return getCostAggregation(from, to,
-                                          grouping,
-                                          (String) bucket.getKey(),
-                                          aggregations,
-                                          isLoadDetails);
-            })
+            return Optional.ofNullable(terms)
+                .map(ParsedTerms::getBuckets)
+                .map(Collection::stream)
+                .orElse(Stream.empty())
+                .map(bucket -> {
+                    final Aggregations aggregations = bucket.getAggregations();
+                    return getCostAggregation(from, to,
+                                              grouping,
+                                              (String) bucket.getKey(),
+                                              aggregations,
+                                              isLoadDetails);
+                })
                 .collect(Collectors.toList());
         } else {
             return CollectionUtils.isEmpty(allAggregations.asList())
