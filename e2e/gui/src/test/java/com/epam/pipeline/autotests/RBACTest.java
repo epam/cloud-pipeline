@@ -51,9 +51,8 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
     @Test
     @TestCase(value = "EPMCMBIBPC-3015")
     public void failedAuthentication() {
-        logout();
         Utils.restartBrowser(C.ROOT_ADDRESS);
-        final Account wrongAccount = new Account(C.LOGIN, String.format("%s###", C.PASSWORD));
+        final Account wrongAccount = new Account(C.LOGIN, String.format("123%s", C.PASSWORD));
         loginAs(wrongAccount);
         if ("true".equals(C.AUTH_TOKEN)) {
             validateErrorPage("type=Unauthorized, status=401");
@@ -87,6 +86,7 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
                         .validateShareLink("role_anonymous_user")
         );
         logout();
+        open(endpoint);
         Cookie cookie = new Cookie("HttpAuthorization", C.ANONYMOUS_TOKEN);
         WebDriverRunner.getWebDriver().manage().addCookie(cookie);
         open(endpoint);
