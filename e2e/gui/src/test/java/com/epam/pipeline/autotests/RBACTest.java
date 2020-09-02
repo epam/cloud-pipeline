@@ -83,7 +83,7 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
         logout();
         Utils.restartBrowser(endpoint);
         new ShellAO().assertPageContains("type=Unauthorized, status=401").close();
-        Utils.restartBrowser(C.ROOT_ADDRESS);
+        open(C.ROOT_ADDRESS);
         loginAs(admin);
         runsMenu()
                 .log(getLastRunId(), log -> log
@@ -92,12 +92,11 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
         );
         sleep(1, MINUTES);
         logout();
-        WebDriverRunner.getWebDriver().quit();
-        open(endpoint);
-        sleep(3, SECONDS);
+//        WebDriverRunner.getWebDriver().quit();
+//        open(endpoint);
+//        sleep(3, SECONDS);
         Cookie cookie = new Cookie("HttpAuthorization", C.ANONYMOUS_TOKEN);
         WebDriverRunner.getWebDriver().manage().addCookie(cookie);
-        System.out.println(C.ANONYMOUS_TOKEN);
         sleep(1, MINUTES);
         open(endpoint);
         sleep(3, SECONDS);
