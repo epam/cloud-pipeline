@@ -387,4 +387,10 @@
             <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>
         </classes>
     </test>
+
+    <test name="RBACTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.RBACTest"/>
+        </classes>
+    </test>
 </suite>

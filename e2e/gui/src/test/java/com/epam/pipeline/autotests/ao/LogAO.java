@@ -491,15 +491,16 @@ public class LogAO implements AccessObject<LogAO> {
 
     public static class ShareWith implements AccessObject<ShareWith> {
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
-                entry(ADD_USER, context().find(byCssSelector(".anticon-user-add"))),
-                entry(ADD_GROUP, context().find(byCssSelector(".anticon-usergroup-add"))),
+                entry(ADD_USER, context().find(byCssSelector(".anticon-user-add")).closest("button")),
+                entry(ADD_GROUP, context().find(byCssSelector(".anticon-usergroup-add")).closest("button")),
                 entry(OK, context().find(button("OK")))
         );
 
         public void addGroupToShare(final String groupName) {
             click(ADD_GROUP);
-            setValue(context().find(byClassName("ant-select-search__field")), groupName);
-            click(button("OK"));
+            setValue(context().find(byClassName("ant-select-search__field")), groupName).enter();
+            click(byXpath("//*[contains(@aria-labelledby, 'rcDialogTitle1') and " +
+                    ".//*[contains(@class, 'ant-modal-footer')]]//button[. =  'OK']"));
             click(OK);
         }
 

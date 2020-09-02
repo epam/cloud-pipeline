@@ -112,9 +112,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     public static class CliAO extends SettingsPageAO {
         public final Map<Primitive, SelenideElement> elements = initialiseElements(
                 super.elements(),
-                entry(PIPE_CLI, context().find(byCssSelector(format(".//td[contains(., '%s')]", "Pipe CLI")))),
-                entry(GIT_CLI, context().find(byCssSelector(format(".//td[contains(., '%s')]", "Git CLI")))),
-                entry(GIT_COMMAND, context().find(byCssSelector(format(".//td[contains(., '%s')]", "Git CLI"))))
+                entry(PIPE_CLI, context().findAll("tr").find(text("Pipe CLI"))),
+                entry(GIT_CLI, context().findAll("tr").find(text("Git CLI"))),
+                entry(GIT_COMMAND, context().find(byCssSelector(".tyles__md-preview")))
         );
 
         public CliAO(final PipelinesLibraryAO parent) {
@@ -129,6 +129,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public CliAO ensureCodeHasText(final String text) {
             ensure(GIT_COMMAND, matchesText(text));
             return this;
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
         }
     }
 
