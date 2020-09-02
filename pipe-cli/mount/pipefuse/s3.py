@@ -327,7 +327,9 @@ class S3Client(FileSystemClient):
         source_path = self.build_full_path(path)
         mpu = self._mpus.get(source_path, None)
         try:
-            if not mpu:
+            if mpu:
+                mpu.upload_part(buf, offset)
+            else:
                 file_size = self.attrs(path).size
                 buf_size = len(buf)
                 if buf_size < self._SINGLE_UPLOAD_SIZE \
@@ -341,8 +343,6 @@ class S3Client(FileSystemClient):
                     self._mpus[source_path] = mpu
                     mpu.initiate()
                     mpu.upload_part(buf, offset)
-            else:
-                mpu.upload_part(buf, offset)
         except UnmanageableMultipartUploadException:
             if mpu:
                 try:
@@ -355,16 +355,19 @@ class S3Client(FileSystemClient):
                     mpu.initiate()
                     mpu.upload_part(buf, offset)
                 except _ANY_ERROR:
-                    if mpu:
-                        mpu.abort()
-                        del self._mpus[source_path]
+                    logging.exception('Reinitialized multipart upload has failed for %d:%s. '
+                                      'Attempting to abort the multipart upload.' % (fh, path))
+                    del self._mpus[source_path]
+                    mpu.abort()
                     raise
             else:
                 raise
         except _ANY_ERROR:
             if mpu:
-                mpu.abort()
+                logging.exception('Multipart upload has failed for %d:%s. '
+                                  'Attempting to abort the multipart upload.' % (fh, path))
                 del self._mpus[source_path]
+                mpu.abort()
             raise
 
     def _new_mpu(self, source_path, file_size, offset):
