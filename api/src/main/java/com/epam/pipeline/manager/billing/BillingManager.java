@@ -362,7 +362,8 @@ public class BillingManager {
         final Response response =
             lowLevelClient.performRequest(HttpPost.METHOD_NAME, searchEndpoint, parameters, httpEntity);
         final XContentParser parser = JsonXContent.jsonXContent
-            .createParser(new NamedXContentRegistry(requiredGroupingAggregationsEntries), EntityUtils.toString(response.getEntity()));
+            .createParser(new NamedXContentRegistry(requiredGroupingAggregationsEntries),
+                          EntityUtils.toString(response.getEntity()));
         return SearchResponse.fromXContent(parser);
     }
 
@@ -482,14 +483,17 @@ public class BillingManager {
             .cost(costVal);
         final Map<String, String> groupingInfo = new HashMap<>();
         final EntityBillingDetailsLoader detailsLoader = billingDetailsLoaders.get(grouping);
+        final Map<String, String> entityDetails = new HashMap<>();
         if (grouping != null) {
             if (detailsLoader == null) {
                 groupingInfo.put(grouping.toString(), groupValue);
             } else {
-                groupingInfo.put(grouping.name(), detailsLoader.loadName(groupValue));
+                entityDetails.putAll(detailsLoader.loadInformation(groupValue, loadDetails));
+                groupingInfo.put(grouping.name(), entityDetails.remove(EntityBillingDetailsLoader.NAME));
             }
         }
         if (loadDetails) {
+            groupingInfo.putAll(entityDetails);
             if (grouping.runUsageDetailsRequired()) {
                 final ParsedSum usageAggResult = aggregations.get(RUN_USAGE_AGG);
                 final long usageVal = new Double(usageAggResult.getValue()).longValue();
@@ -511,15 +515,6 @@ public class BillingManager {
                     .map(Object::toString)
                     .orElse("0");
                 groupingInfo.put(LAST_STORAGE_USAGE_VALUE, lastStorageUsageValue);
-            }
-            if (detailsLoader != null) {
-                try {
-                    groupingInfo.putAll(detailsLoader.loadDetails(groupValue));
-                } catch (RuntimeException e) {
-                    log.info(messageHelper.getMessage(MessageConstants.INFO_BILLING_ENTITY_FOR_DETAILS_NOT_FOUND,
-                                                      groupValue, grouping));
-                    groupingInfo.putAll(detailsLoader.getEmptyDetails());
-                }
             }
         }
         builder.groupingInfo(groupingInfo);

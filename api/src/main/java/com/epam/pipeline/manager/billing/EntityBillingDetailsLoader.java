@@ -23,14 +23,16 @@ import java.util.Map;
 public interface EntityBillingDetailsLoader {
 
     String OWNER = "owner";
+    String NAME = "name";
 
     BillingGrouping getGrouping();
 
-    default String loadName(final String entityIdentifier) {
-        return entityIdentifier;
-    }
-
-    Map<String, String> loadDetails(String entityIdentifier);
+    /**
+     * Build a map of details for given entity. Always contains a value for {@linkplain #NAME} property
+     * @param entityIdentifier id of entity to build information
+     * @return entity's details
+     */
+    Map<String, String> loadInformation(String entityIdentifier, boolean loadDetails);
 
     Map<String, String> getEmptyDetails();
 
