@@ -271,23 +271,11 @@ def append_system_endpoints(tool_endpoints, run_details):
         if not tool_endpoints:
                 tool_endpoints = []
         system_endpoints_params = SYSTEM_ENDPOINTS.keys()
-        tool_endpoints_dict = {}
-        for endpoint in tool_endpoints:
-                endpoint_obj = json.loads(endpoint)
-                if endpoint_obj \
-                        and 'name' in endpoint_obj \
-                        and endpoint_obj['name'] \
-                        and 'nginx' in endpoint_obj \
-                        and endpoint_obj['nginx'] \
-                        and 'port' in endpoint_obj['nginx'] \
-                        and endpoint_obj['nginx']['port']:
-                                tool_endpoints_dict[endpoint_obj['name']] = endpoint_obj['nginx']['port']
+        modified_endpoints_count = 0
         if run_details and "pipelineRunParameters" in run_details:
                 # Get a list of endpoints from SYSTEM_ENDPOINTS which match the run's parameters (param name and a value)
                 system_endpoints_matched = [SYSTEM_ENDPOINTS[x["name"]] for x in run_details["pipelineRunParameters"]
                                                 if x["name"] in system_endpoints_params
-                                                   and (SYSTEM_ENDPOINTS[x["name"]]["friendly_name"] not in tool_endpoints_dict
-                                                        or tool_endpoints_dict[SYSTEM_ENDPOINTS[x["name"]]["friendly_name"]] != SYSTEM_ENDPOINTS[x["name"]]['endpoint'])
                                                    and x["value"] == SYSTEM_ENDPOINTS[x["name"]]["value"]
                                                    and "endpoint" in SYSTEM_ENDPOINTS[x["name"]]
                                                    and SYSTEM_ENDPOINTS[x["name"]]["endpoint"]]
@@ -298,16 +286,48 @@ def append_system_endpoints(tool_endpoints, run_details):
                         current_tool_endpoint = json.loads(tool_endpoints[0])
                         current_tool_endpoint["isDefault"] = "true"
                         tool_endpoints[0] = json.dumps(current_tool_endpoint)
-
                 # Append system endpoints to the existing list
                 for system_endpoint in system_endpoints_matched:
-                        tool_endpoint = { "nginx": { "port": system_endpoint["endpoint"] }, "isDefault": "false" }
+                        tool_endpoint = { "nginx": { "port": system_endpoint["endpoint"] }}
+                        system_endpoint_port = system_endpoint["endpoint"]
+                        system_endpoint_name = None
                         if "friendly_name" in system_endpoint:
                                 tool_endpoint["name"] = system_endpoint["friendly_name"]
+                                system_endpoint_name = system_endpoint["friendly_name"]
                         if "endpoint_num" in system_endpoint and system_endpoint["endpoint_num"]:
                                 tool_endpoint["endpoint_num"] = system_endpoint["endpoint_num"]
+                        modified_tool_endpoints, modified_count, isDefaultEndpoint = \
+                                remove_from_tool_endpoints_if_fully_matches(system_endpoint_name,
+                                                                            system_endpoint_port, tool_endpoints)
+                        tool_endpoint["isDefault"] = str(isDefaultEndpoint).lower()
+                        if modified_count != 0:
+                                tool_endpoints = modified_tool_endpoints
+                                modified_endpoints_count += modified_count
                         tool_endpoints.append(json.dumps(tool_endpoint))
-        return tool_endpoints
+        return tool_endpoints, modified_endpoints_count
+
+
+def remove_from_tool_endpoints_if_fully_matches(endpoint_name, endpoint_port, tool_endpoints):
+        tools_endpoints_wo_matches = []
+        endpoints_modified = 0
+        isModifiedDefault = False
+        for endpoint in tool_endpoints:
+                tool_endpoint_obj = json.loads(endpoint)
+                if tool_endpoint_obj \
+                        and endpoint_name \
+                        and 'name' in tool_endpoint_obj \
+                        and tool_endpoint_obj['name'] \
+                        and tool_endpoint_obj['name'].lower() == endpoint_name.lower() \
+                        and 'nginx' in tool_endpoint_obj \
+                        and tool_endpoint_obj['nginx'] \
+                        and 'port' in tool_endpoint_obj['nginx'] \
+                        and tool_endpoint_obj['nginx']['port'] == endpoint_port:
+                        endpoints_modified += 1
+                        if 'isDefault' in tool_endpoint_obj and tool_endpoint_obj['isDefault']:
+                                isModifiedDefault = isModifiedDefault | tool_endpoint_obj['isDefault']
+                else:
+                        tools_endpoints_wo_matches.append(endpoint)
+        return tools_endpoints_wo_matches, endpoints_modified, isModifiedDefault
 
 def get_service_list(pod_id, pod_run_id, pod_ip):
         service_list = {}
@@ -350,10 +370,13 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                         endpoints_data = []
                 tool_endpoints_count = len(endpoints_data)
                 print('{} endpoints are set for the tool {} via settings'.format(tool_endpoints_count, docker_image))
-                endpoints_data = append_system_endpoints(endpoints_data, run_info)
+                endpoints_data, modified_endpoints = append_system_endpoints(endpoints_data, run_info)
                 additional_system_endpoints_count = len(endpoints_data) - tool_endpoints_count
                 print('{} additional system endpoints are set for the tool {} via run parameters'
                       .format(additional_system_endpoints_count, docker_image))
+                if modified_endpoints != 0:
+                        print('{} endpoints are overridden by a system ones for the tool {} via run parameters'
+                              .format(modified_endpoints, docker_image))
                 if endpoints_data:
                         endpoints_count = len(endpoints_data)
                         for i in range(endpoints_count):
@@ -479,7 +502,7 @@ for pod_spec in pods_with_endpoints:
 
         services_list.update(get_service_list(pod_id, pod_run_id, pod_ip))
 
-print('Found ' + str(len(services_list)) + ' running PODs with job-type: Service')
+print('Found ' + str(len(services_list)) + ' running PODs for interactive runs')
 
 routes_kube = set([x for x in services_list])
 
