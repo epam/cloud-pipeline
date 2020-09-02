@@ -484,6 +484,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         .pressEnter();
             }
 
+            public UsersTabAO exportUsers() {
+                click(EXPORT_USERS);
+                return this;
+            }
+
             public UserEntry searchUserEntry(String login) {
                 searchUser(login);
                 SelenideElement entry = getUser(login).shouldBe(visible);
