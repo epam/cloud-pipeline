@@ -179,9 +179,9 @@ class CachingFileSystemClient(FileSystemClientDecorator):
             if parent_listing:
                 file = self._find_in_listing(parent_listing, file_name)
                 if file:
-                    logging.info('Using cached attributes for %s' % path)
+                    logging.info('Attributes found for %s' % path)
                     return file
-        return self._find_in_listing(self._uncached_ls_as_dict(parent_path), file_name)
+            logging.info('Attributes not found for %s' % path)
 
     def _find_in_listing(self, listing, file_name):
         return listing.get(file_name, None)
