@@ -15,19 +15,15 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.ao.ShellAO;
-import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
-import org.openqa.selenium.Cookie;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Selenide.open;
-import static com.codeborne.selenide.Selenide.refresh;
 import static com.codeborne.selenide.Selenide.screenshot;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
@@ -64,6 +60,8 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
             return;
         }
         validateErrorPage("Incorrect user name or password");
+        logout();
+        loginAs(admin);
     }
 
     @Test
@@ -96,7 +94,8 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
         loginAs(anonymousAccount);
         sleep(2, SECONDS);
         screenshot("Endpoint_page");
-        ShellAO.open(endpoint).assertPageContains(C.ANONYMOUS_NAME).close();
+        open(endpoint);
+        new ShellAO().assertPageContains(C.ANONYMOUS_NAME);
         Utils.restartBrowser(C.ROOT_ADDRESS);
         loginAs(admin);
     }
