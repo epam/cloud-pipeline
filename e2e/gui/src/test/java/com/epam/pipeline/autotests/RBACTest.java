@@ -92,7 +92,8 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
         );
         sleep(1, MINUTES);
         logout();
-        Utils.restartBrowser(endpoint);
+        WebDriverRunner.getWebDriver().quit();
+        open(endpoint);
         sleep(3, SECONDS);
         Cookie cookie = new Cookie("HttpAuthorization", C.ANONYMOUS_TOKEN);
         WebDriverRunner.getWebDriver().manage().addCookie(cookie);
