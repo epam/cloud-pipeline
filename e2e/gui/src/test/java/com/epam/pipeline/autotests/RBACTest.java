@@ -57,10 +57,10 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
         loginAs(wrongAccount);
         if ("true".equals(C.AUTH_TOKEN)) {
             validateErrorPage("type=Unauthorized, status=401");
-            return;
+            logout();
+        } else {
+            validateErrorPage("Incorrect user name or password");
         }
-        validateErrorPage("Incorrect user name or password");
-        logout();
         loginAs(admin);
     }
 
