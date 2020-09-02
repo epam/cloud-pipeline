@@ -21,6 +21,7 @@ import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
+import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
 
 import static java.lang.String.format;
@@ -72,10 +73,9 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .waitForInitializeNode(getLastRunId())
                 .clickEndpoint()
                 .getEndpoint();
-        logout();
-        ShellAO.open(endpoint)
-                .assertPageContains("type=Unauthorized, status=401")
-                .close();
+        Utils.restartBrowser(endpoint);
+        new ShellAO().assertPageContains("type=Unauthorized, status=401").close();
+        Utils.restartBrowser(C.ROOT_ADDRESS);
         loginAs(admin);
         runsMenu()
                 .log(getLastRunId(), log -> log
