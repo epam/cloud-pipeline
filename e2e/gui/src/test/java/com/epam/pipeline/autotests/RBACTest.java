@@ -52,6 +52,7 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
     @TestCase(value = "EPMCMBIBPC-3015")
     public void failedAuthentication() {
         logout();
+        Utils.restartBrowser(C.ROOT_ADDRESS);
         final Account wrongAccount = new Account(C.LOGIN, String.format("%s###", C.PASSWORD));
         loginAs(wrongAccount);
         if ("true".equals(C.AUTH_TOKEN)) {
@@ -73,9 +74,9 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
                 .launchTool(this, toolEndpoint)
                 .show(getLastRunId())
-                .waitForInitializeNode(getLastRunId())
-                .clickEndpoint()
-                .getEndpoint();
+                .waitEndpoint()
+                .attr("href");
+        logout();
         Utils.restartBrowser(endpoint);
         new ShellAO().assertPageContains("type=Unauthorized, status=401").close();
         Utils.restartBrowser(C.ROOT_ADDRESS);
