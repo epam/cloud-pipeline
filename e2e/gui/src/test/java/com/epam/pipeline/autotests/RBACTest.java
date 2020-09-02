@@ -27,7 +27,9 @@ import org.openqa.selenium.Cookie;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Selenide.open;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class RBACTest extends AbstractSeveralPipelineRunningTest implements Authorization {
 
@@ -85,6 +87,7 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
                         .shareWithGroup("ROLE_ANONYMOUS_USER")
                         .validateShareLink("role_anonymous_user")
         );
+        sleep(1, MINUTES);
         logout();
         open(endpoint);
         Cookie cookie = new Cookie("HttpAuthorization", C.ANONYMOUS_TOKEN);
