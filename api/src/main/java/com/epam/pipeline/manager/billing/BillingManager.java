@@ -266,8 +266,11 @@ public class BillingManager {
 
         try {
             final SearchResponse searchResponse = elasticsearchClient.search(searchRequest);
-            final ParsedDateHistogram histogram = searchResponse.getAggregations().get(HISTOGRAM_AGGREGATION_NAME);
-            return parseHistogram(interval, histogram);
+            return Optional.ofNullable(searchResponse.getAggregations())
+                .map(aggs -> aggs.get(HISTOGRAM_AGGREGATION_NAME))
+                .map(ParsedDateHistogram.class::cast)
+                .map(histogram -> parseHistogram(interval, histogram))
+                .orElse(Collections.emptyList());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
