@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.codeborne.selenide.Selenide;
 import com.epam.pipeline.autotests.ao.ShellAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -57,7 +58,8 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
         loginAs(wrongAccount);
         if ("true".equals(C.AUTH_TOKEN)) {
             validateErrorPage("type=Unauthorized, status=401");
-            logout();
+            Selenide.clearBrowserCookies();
+            sleep(1, SECONDS);
         } else {
             validateErrorPage("Incorrect user name or password");
         }
@@ -93,8 +95,8 @@ public class RBACTest extends AbstractSeveralPipelineRunningTest implements Auth
         final Account anonymousAccount = new Account(C.ANONYMOUS_NAME, C.ANONYMOUS_TOKEN);
         loginAs(anonymousAccount);
         sleep(2, SECONDS);
-        screenshot("Endpoint_page");
         open(endpoint);
+        screenshot("Endpoint_page");
         new ShellAO().assertPageContains(C.ANONYMOUS_NAME);
         Utils.restartBrowser(C.ROOT_ADDRESS);
         loginAs(admin);
