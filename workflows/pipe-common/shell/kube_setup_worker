@@ -84,4 +84,4 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-pipe_log_success "Worker node is attached to the kubernetes cluster" "$KUBE_MASTER_SETUP_TASK_WORKERS"
+pipe_log_success "Worker node is attached to the kubernetes cluster" "$_kube_worker_setup_task"
