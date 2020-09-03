@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.CollectionCondition;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
@@ -24,10 +25,12 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static com.codeborne.selenide.CollectionCondition.empty;
 import static com.codeborne.selenide.CollectionCondition.*;
@@ -35,6 +38,7 @@ import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
+import static com.epam.pipeline.autotests.ao.Primitive.RUN;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.utils.C.COMPLETION_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
@@ -167,6 +171,32 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
+    public RunsMenuAO validateColumnName(String...heads) {
+        List<String> columns = context().find(byClassName("ant-table-thead")).$$("th")
+                .stream()
+                .map(SelenideElement::text)
+                .collect(Collectors.toList());
+        Arrays.stream(heads).forEach(head->assertTrue(columns.contains(head),
+                String.format("Column head %s isn't found",head)));
+        return this;
+    }
+
+    public RunsMenuAO validateAllRunsHaveButton(String button) {
+        allRuns().forEach(row -> row.$(byText(button)).shouldBe(visible));
+        return this;
+    }
+
+    public RunsMenuAO validateAllRunsHaveCost() {
+        allRuns().forEach(row -> row.$(byClassName("ob-estimated-price-info__info")).shouldBe(visible)
+        .shouldHave(text("Cost:")));
+        return this;
+    }
+
+    public RunsMenuAO validateRowsCount(CollectionCondition condition) {
+        allRuns().shouldHave(condition);
+        return this;
+    }
+
     public RunsMenuAO validateStoppedStatus(String runId) {
         $("tbody")
                 .find(withText(runId))
@@ -209,6 +239,14 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
+    public RunsMenuAO assertLatestPipelineHasRunID(String runId) {
+        $("tbody")
+                .find("tr")
+                .find(byClassName(HeaderColumn.RUN.cssClass))
+                .shouldHave(text(runId));
+        return this;
+    }
+
     public RunsMenuAO validateOnlyMyPipelines() {
         $(byClassName("ant-table-tbody"))
                 .should(exist)
@@ -219,7 +257,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO validatePipelineOwner(String id, String owner) {
-        assertTrue($(byClassName(format("run-%s", id))).text().contains(owner));
+        $(byClassName(format("run-%s", id))).shouldHave(text(owner));
         return this;
     }
 
@@ -356,5 +394,48 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return Collections.emptyMap();
+    }
+
+    public RunsMenuAO filterBy(HeaderColumn header, String ip) {
+        SelenideElement createdHeaderButton = $$("th").findBy(cssClass(header.cssClass));
+        createdHeaderButton.find(byAttribute("title", "Filter menu")).click();
+        switch (header) {
+            case PIPELINE:
+                $$("input").findBy(attribute("placeholder", "Filter"))
+                        .setValue(ip);
+                $(byXpath(format(".//span[.='%s']/preceding-sibling::span[@class='ant-checkbox']", ip)))
+                        .click();
+                break;
+            default:
+                throw new RuntimeException("Could be filtered only by Label of Address");
+        }
+        $$(byText("OK")).find(visible).click();
+        return this;
+    }
+
+    public RunsMenuAO resetFiltering(HeaderColumn header) {
+        SelenideElement createdHeaderButton = $$("th").findBy(cssClass(header.cssClass));
+        createdHeaderButton.find(byAttribute("title", "Filter menu")).click();
+
+        $$(byText("Clear")).find(visible).click();
+        return this;
+    }
+
+    public enum HeaderColumn {
+        RUN("run-table__run-row-name"),
+        PARENT_RUN("run-table__run-row-parent-run"),
+        PIPELINE("run-table__run-row-pipeline"),
+        DOCKER_IMAGE("run-table__run-row-docker-image"),
+        STARTED("run-table__run-row-started"),
+        COMPLETED("run-table__run-row-completed"),
+        ELAPSED("run-table__run-row-elapsed-time"),
+        OWNER("run-table__run-row-owner");
+
+        private String cssClass;
+
+        HeaderColumn(String cssClass) {
+            this.cssClass = cssClass;
+        }
+
     }
 }
