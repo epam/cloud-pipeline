@@ -28,7 +28,7 @@ class _FileBuffer(object):
         self._offset = offset
         self._current_offset = self._offset
         self._capacity = capacity
-        self._buffs = []
+        self._buf = bytearray()
 
     @property
     def offset(self):
@@ -43,7 +43,7 @@ class _FileBuffer(object):
         return self._capacity
 
     def append(self, buf):
-        self._buffs.append(buf)
+        self._buf += buf
         self._current_offset += len(buf)
 
 
@@ -57,51 +57,37 @@ class _WriteBuffer(_FileBuffer):
     def inherited_size(self):
         return max(self._current_offset, self._inherited_size)
 
+    def suits(self, offset):
+        return offset == self._current_offset
+
     def is_full(self):
         return self.size >= self.capacity
 
     def collect(self):
-        collected_buf_size = self.size
-        collected_buf = bytearray(collected_buf_size)
-        current_offset = 0
-        for current_buf in self._buffs:
-            current_buf_size = len(current_buf)
-            collected_buf[current_offset:current_offset + current_buf_size] = current_buf
-            current_offset += current_buf_size
-        return collected_buf, self._offset
-
-    def suits(self, offset):
-        return offset == self._current_offset
+        return self._buf, self._offset
 
 
 class _ReadBuffer(_FileBuffer):
 
-    def view(self, offset, length):
-        start = offset
-        end = min(start + length, self._capacity)
-        second_buf_shift = len(self._buffs[0])
-        gap = self._offset + second_buf_shift
-        relative_start = start - self._offset
-        relative_end = end - self._offset
-        if end <= gap:
-            return self._buffs[0][relative_start:relative_end]
-        elif start >= gap:
-            relative_start = relative_start - second_buf_shift
-            relative_end = relative_end - second_buf_shift
-            return self._buffs[1][relative_start:relative_end]
-        else:
-            relative_gap = gap - self._offset
-            return self._buffs[0][relative_start:relative_gap] \
-                   + self._buffs[1][relative_gap - second_buf_shift:relative_end - second_buf_shift]
+    def __init__(self, offset, capacity, shrink_size):
+        super(_ReadBuffer, self).__init__(offset, capacity)
+        self._shrink_size = shrink_size
+
+    def shrink(self):
+        if self.size > self._shrink_size:
+            self._buf = self._buf[self._shrink_size:]
+            self._offset += self._shrink_size
 
     def suits(self, offset, length):
         return self._offset <= offset <= self._current_offset and \
                (offset + length <= self._current_offset or self._current_offset == self._capacity)
 
-    def shrink(self):
-        if len(self._buffs) > 2:
-            old_first_buf = self._buffs.pop(0)
-            self._offset += len(old_first_buf)
+    def view(self, offset, length):
+        start = offset
+        end = min(start + length, self._capacity)
+        relative_start = start - self._offset
+        relative_end = end - self._offset
+        return self._buf[relative_start:relative_end]
 
 
 class BufferedFileSystemClient(FileSystemClientDecorator):
@@ -156,7 +142,7 @@ class BufferedFileSystemClient(FileSystemClientDecorator):
             raise
 
     def _new_read_buf(self, fh, path, file_size, offset, length):
-        file_buf = _ReadBuffer(offset, file_size)
+        file_buf = _ReadBuffer(offset, file_size, self._READ_AHEAD_SIZE * 2)
         file_buf.append(self._read_ahead(fh, path, offset, length))
         return file_buf
 
