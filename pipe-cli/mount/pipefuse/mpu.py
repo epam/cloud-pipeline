@@ -429,8 +429,11 @@ class AppendOptimizedCompositeMultipartCopyUpload(MultipartUploadDecorator):
     def complete(self):
         prefix_copy_part = self._extract_prefix()
         if prefix_copy_part:
-            self._adjust_first_uploaded_part(self._copy_parts[-1].end)
-            self._upload_copy_part(prefix_copy_part)
+            first_uploaded_part_adjusted = self._adjust_first_uploaded_part(self._copy_parts[-1].end)
+            if first_uploaded_part_adjusted:
+                self._upload_copy_part(prefix_copy_part)
+            else:
+                self._upload_parts(self._copy_parts)
         else:
             self._upload_parts(self._copy_parts)
         self._mpu.complete()
@@ -451,9 +454,15 @@ class AppendOptimizedCompositeMultipartCopyUpload(MultipartUploadDecorator):
         diff_offset = self._original_size - prefix_end
         if diff_offset > 0:
             part_path = self._mpu.composite_part_path(self._first_chunk)
-            self._mpu.upload_part(self._download(part_path, diff_offset, self._chunk_size),
-                                  offset=self._first_chunk_offset, part_number=self._first_chunk,
-                                  part_path=part_path)
+            original_part = self._download(self.path, self._first_chunk_offset, self._chunk_size)
+            uploaded_part = self._download(part_path, 0, self._chunk_size)
+            if original_part[:diff_offset] == uploaded_part[:diff_offset]:
+                self._mpu.upload_part(uploaded_part[diff_offset:],
+                                      offset=self._first_chunk_offset, part_number=self._first_chunk,
+                                      part_path=part_path)
+            else:
+                return False
+        return True
 
     def _upload_copy_part(self, copy_part):
         self._mpu.upload_copy_part(copy_part.start, copy_part.end, offset=copy_part.offset,
