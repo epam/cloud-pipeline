@@ -16,10 +16,13 @@
 
 package com.epam.pipeline.manager.billing;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -30,6 +33,8 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
+@Slf4j
 public class ToolBillingDetailsLoader implements EntityBillingDetailsLoader {
 
     @Value("${billing.empty.report.value:unknown}")
@@ -38,16 +43,28 @@ public class ToolBillingDetailsLoader implements EntityBillingDetailsLoader {
     @Autowired
     private final ToolManager toolManager;
 
+    @Autowired
+    private final MessageHelper messageHelper;
+
     @Override
     public BillingGrouping getGrouping() {
         return BillingGrouping.TOOL;
     }
 
     @Override
-    public Map<String, String> loadDetails(final String entityIdentifier) {
+    public Map<String, String> loadInformation(final String entityIdentifier, final boolean loadDetails) {
         final Map<String, String> details = new HashMap<>();
-        final Tool tool = toolManager.loadByNameOrId(entityIdentifier);
-        details.put(OWNER, tool.getOwner());
+        details.put(NAME, entityIdentifier);
+        if (loadDetails) {
+            try {
+                final Tool tool = toolManager.loadByNameOrId(entityIdentifier);
+                details.put(OWNER, tool.getOwner());
+            } catch (RuntimeException e) {
+                log.info(messageHelper.getMessage(MessageConstants.INFO_BILLING_ENTITY_FOR_DETAILS_NOT_FOUND,
+                                                  entityIdentifier, getGrouping()));
+                details.putAll(getEmptyDetails());
+            }
+        }
         return details;
     }
 
