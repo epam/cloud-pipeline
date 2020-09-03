@@ -328,8 +328,10 @@ public class BillingManager {
             }
             if (grouping.storageUsageDetailsRequired()) {
                 fieldAgg.subAggregation(storageUsageGroupingAggregation);
-                fieldAgg.subAggregation(lastByDateDocAggregation);
                 fieldAgg.subAggregation(storageUsageTotalAggregation);
+                if (BillingGrouping.STORAGE.equals(grouping)) {
+                    fieldAgg.subAggregation(lastByDateDocAggregation);
+                }
             }
             searchSource.aggregation(fieldAgg);
         }
@@ -505,16 +507,18 @@ public class BillingManager {
                 final ParsedSimpleValue totalStorageUsage = aggregations.get(TOTAL_STORAGE_USAGE_AGG);
                 final long storageUsageVal = new Double(totalStorageUsage.value()).longValue();
                 groupingInfo.put(TOTAL_STORAGE_USAGE_AGG, Long.toString(storageUsageVal));
-                final ParsedTopHits hits = aggregations.get(BUCKET_DOCUMENTS);
-                final String lastStorageUsageValue = Optional.of(hits.getHits())
-                    .map(SearchHits::getHits)
-                    .filter(storageDocs -> storageDocs.length > 0)
-                    .map(storageDocs -> storageDocs[0])
-                    .map(SearchHit::getSourceAsMap)
-                    .map(source -> source.get(STORAGE_USAGE_FIELD))
-                    .map(Object::toString)
-                    .orElse("0");
-                groupingInfo.put(LAST_STORAGE_USAGE_VALUE, lastStorageUsageValue);
+                if (BillingGrouping.STORAGE.equals(grouping)) {
+                    final ParsedTopHits hits = aggregations.get(BUCKET_DOCUMENTS);
+                    final String lastStorageUsageValue = Optional.of(hits.getHits())
+                        .map(SearchHits::getHits)
+                        .filter(storageDocs -> storageDocs.length > 0)
+                        .map(storageDocs -> storageDocs[0])
+                        .map(SearchHit::getSourceAsMap)
+                        .map(source -> source.get(STORAGE_USAGE_FIELD))
+                        .map(Object::toString)
+                        .orElse("0");
+                    groupingInfo.put(LAST_STORAGE_USAGE_VALUE, lastStorageUsageValue);
+                }
             }
         }
         builder.groupingInfo(groupingInfo);
