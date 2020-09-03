@@ -168,7 +168,7 @@ mkdir -p $HOME/.kube
 \cp /etc/kubernetes/admin.conf $HOME/.kube/config
 
 if [ "$OWNER" ]; then
-    /home/$OWNER/.kube
+    mkdir -p /home/$OWNER/.kube
     \cp /etc/kubernetes/admin.conf /home/$OWNER/.kube/config
 fi
 

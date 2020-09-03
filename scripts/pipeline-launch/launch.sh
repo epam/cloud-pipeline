@@ -1508,6 +1508,11 @@ if ( check_cp_cap "CP_CAP_SYSTEMD_CONTAINER" || check_cp_cap "CP_CAP_KUBE" ) \
       eval "$_IGNORING_CHROOT_ENV_EXPORTING"
       eval "$_REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND"
       /usr/lib/systemd/systemd --system &
+      
+      # This directory does not exist by default
+      # If it is missing - systemctl will throw "Failed to get D-Bus connection: Operation not permitted"
+      # See: https://serverfault.com/a/925694
+      mkdir /run/systemd/system
 else
     echo "Systemd is not requested, skipping installation"
 fi
