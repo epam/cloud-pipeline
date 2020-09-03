@@ -34,6 +34,10 @@ export class GetGroupedStorages extends BaseBillingRequest {
             ? 0
             : Math.floor(+(i.groupingInfo.usage_storages) / GB * 100) / 100.0,
           ...i,
+          usageLast: isNaN(i.groupingInfo.usage_storages_last)
+            ? 0
+            : Math.floor(+(i.groupingInfo.usage_storages_last) / GB * 100) / 100.0,
+          ...i,
           billingCenter: emptyIfUnknown(i.groupingInfo.billing_center),
           storageType: emptyIfUnknown(i.groupingInfo.storage_type)
         };

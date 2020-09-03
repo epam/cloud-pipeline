@@ -16,5 +16,6 @@
 
 export default {
   summary: 'summary',
-  storages: 'storages'
+  storages: 'storages',
+  storagesTable: 'storages-table'
 };

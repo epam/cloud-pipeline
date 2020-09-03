@@ -137,8 +137,14 @@ function renderTable ({storages, discounts: discountsFn, height}) {
     },
     {
       key: 'volume',
-      title: 'Volume (GB)',
+      title: 'Avg. Vol. (GB)',
       dataIndex: 'usage',
+      render: (value) => value ? numberFormatter(value) : null
+    },
+    {
+      key: 'volume current',
+      title: 'Cur. Vol. (GB)',
+      dataIndex: 'usageLast',
       render: (value) => value ? numberFormatter(value) : null
     },
     {
@@ -278,7 +284,12 @@ class StorageReports extends React.Component {
             },
             {
               key: 'usage',
-              title: 'Volume',
+              title: 'Average Volume (GB)',
+              formatter: numberFormatter
+            },
+            {
+              key: 'usageLast',
+              title: 'Current Volume (GB)',
               formatter: numberFormatter
             },
             {
@@ -369,7 +380,7 @@ class StorageReports extends React.Component {
                               discounts={storageDiscounts}
                               title={this.getTitle()}
                               top={tablePageSize}
-                              style={{height: height / 2.0 - costsUsageSelectorHeight}}
+                              style={{height: height - costsUsageSelectorHeight}}
                               dataSample={
                                 StorageFilters[this.state.dataSampleKey].dataSample
                               }
@@ -382,12 +393,22 @@ class StorageReports extends React.Component {
                                   : numberFormatter
                               }
                             />
-                            <RenderTable
-                              storages={storagesTable}
-                              discounts={storageDiscounts}
-                              height={height / 2.0 - costsUsageSelectorHeight}
-                            />
                           </div>
+                        )
+                      }
+                    </ResizableContainer>
+                  </Layout.Panel>
+                </div>
+                <div key={StorageReportLayout.Panels.storagesTable}>
+                  <Layout.Panel>
+                    <ResizableContainer style={{width: '100%', height: '100%'}}>
+                      {
+                        ({height}) => (
+                          <RenderTable
+                            storages={storagesTable}
+                            discounts={storageDiscounts}
+                            height={height}
+                          />
                         )
                       }
                     </ResizableContainer>

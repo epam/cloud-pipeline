@@ -17,6 +17,7 @@
 import Panels from './panels';
 
 export default {
-  [Panels.summary]: {w: 2, h: 1},
-  [Panels.storages]: {w: 4, h: 1}
+  [Panels.summary]: {w: 5, h: 1},
+  [Panels.storages]: {w: 7, h: 1},
+  [Panels.storagesTable]: {w: 4, h: 1}
 };
