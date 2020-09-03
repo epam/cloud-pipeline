@@ -373,7 +373,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
 
   getPipelinesFilter = () => {
     const parameter = 'pipelineIds';
-    if (this.props.pipelines && this.props.pipelines.length > 1) {
+    if (this.props.pipelines && this.props.pipelines.length > 0) {
       const clear = () => {
         this.state[parameter].value = [];
         this.state[parameter].searchString = null;
