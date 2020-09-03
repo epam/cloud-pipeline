@@ -85,7 +85,6 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     @Test
     @TestCase(value = "EPMCMBIBPC-3014")
     public void authenticationInPlatform() {
-        logout();
         loginAs(admin);
         navigationMenu()
                 .library();
