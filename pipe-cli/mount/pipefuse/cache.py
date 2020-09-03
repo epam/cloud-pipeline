@@ -193,7 +193,7 @@ class CachingFileSystemClient(FileSystemClientDecorator):
         if listing:
             logging.info('Cached listing found for %s' % path)
         else:
-            logging.info('Cached listing not found for %s.' % path)
+            logging.info('Cached listing not found for %s' % path)
             listing = self._uncached_ls_as_dict(path, depth)
         return listing
 
