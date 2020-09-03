@@ -39,7 +39,9 @@ class ListingCache:
         self._delimiter = '/'
 
     def get(self, path):
-        return self._cache.get(path, None)
+        listing = self._cache.get(path, None)
+        if listing:
+            return dict(listing)
 
     def set(self, path, listing):
         self._cache[path] = listing
@@ -53,14 +55,14 @@ class ListingCache:
     def _add_to_parent_cache(self, path, item):
         logging.info('Adding to parent cache for %s' % path)
         parent_path, _ = fuseutils.split_path(path)
-        parent_listing = self.get(parent_path)
+        parent_listing = self._cache.get(parent_path, None)
         if parent_listing:
             parent_listing[fuseutils.without_prefix(path, parent_path)] = item
 
     def _remove_from_parent_cache(self, path):
         logging.info('Removing from parent cache for %s' % path)
         parent_path, _ = fuseutils.split_path(path)
-        parent_listing = self.get(parent_path)
+        parent_listing = self._cache.get(parent_path, None)
         if parent_listing:
             return parent_listing.pop(fuseutils.without_prefix(path, parent_path), None)
 
@@ -81,7 +83,7 @@ class ListingCache:
         logging.info('Moving from parent cache %s to %s' % (old_path, path))
         cached_item = self._remove_from_parent_cache(old_path)
         parent_path, _ = fuseutils.split_path(path)
-        parent_listing = self.get(parent_path)
+        parent_listing = self._cache.get(parent_path, None)
         if cached_item and parent_listing:
             relative_name = fuseutils.without_prefix(path, parent_path)
             parent_listing[relative_name] = cached_item._replace(name=relative_name)
