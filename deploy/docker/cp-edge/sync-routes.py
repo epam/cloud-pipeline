@@ -271,7 +271,7 @@ def append_system_endpoints(tool_endpoints, run_details):
         if not tool_endpoints:
                 tool_endpoints = []
         system_endpoints_params = SYSTEM_ENDPOINTS.keys()
-        modified_endpoints_count = 0
+        overridden_endpoints_count = 0
         if run_details and "pipelineRunParameters" in run_details:
                 # Get a list of endpoints from SYSTEM_ENDPOINTS which match the run's parameters (param name and a value)
                 system_endpoints_matched = [SYSTEM_ENDPOINTS[x["name"]] for x in run_details["pipelineRunParameters"]
@@ -296,21 +296,21 @@ def append_system_endpoints(tool_endpoints, run_details):
                                 system_endpoint_name = system_endpoint["friendly_name"]
                         if "endpoint_num" in system_endpoint and system_endpoint["endpoint_num"]:
                                 tool_endpoint["endpoint_num"] = system_endpoint["endpoint_num"]
-                        modified_tool_endpoints, modified_count, isDefaultEndpoint = \
+                        non_matching_with_system_tool_endpoints, is_default_endpoint = \
                                 remove_from_tool_endpoints_if_fully_matches(system_endpoint_name,
                                                                             system_endpoint_port, tool_endpoints)
-                        tool_endpoint["isDefault"] = str(isDefaultEndpoint).lower()
-                        if modified_count != 0:
-                                tool_endpoints = modified_tool_endpoints
-                                modified_endpoints_count += modified_count
+                        removed_endpoints_count = len(tool_endpoints) - len(non_matching_with_system_tool_endpoints)
+                        tool_endpoint["isDefault"] = str(is_default_endpoint).lower()
+                        if removed_endpoints_count != 0:
+                                tool_endpoints = non_matching_with_system_tool_endpoints
+                                overridden_endpoints_count += removed_endpoints_count
                         tool_endpoints.append(json.dumps(tool_endpoint))
-        return tool_endpoints, modified_endpoints_count
+        return tool_endpoints, overridden_endpoints_count
 
 
 def remove_from_tool_endpoints_if_fully_matches(endpoint_name, endpoint_port, tool_endpoints):
-        tools_endpoints_wo_matches = []
-        endpoints_modified = 0
-        isModifiedDefault = False
+        non_matching_tool_endpoints = []
+        is_default_endpoint = False
         for endpoint in tool_endpoints:
                 tool_endpoint_obj = json.loads(endpoint)
                 if tool_endpoint_obj \
@@ -322,12 +322,11 @@ def remove_from_tool_endpoints_if_fully_matches(endpoint_name, endpoint_port, to
                         and tool_endpoint_obj['nginx'] \
                         and 'port' in tool_endpoint_obj['nginx'] \
                         and tool_endpoint_obj['nginx']['port'] == endpoint_port:
-                        endpoints_modified += 1
                         if 'isDefault' in tool_endpoint_obj and tool_endpoint_obj['isDefault']:
-                                isModifiedDefault = isModifiedDefault | tool_endpoint_obj['isDefault']
+                                is_default_endpoint = is_default_endpoint | tool_endpoint_obj['isDefault']
                 else:
-                        tools_endpoints_wo_matches.append(endpoint)
-        return tools_endpoints_wo_matches, endpoints_modified, isModifiedDefault
+                        non_matching_tool_endpoints.append(endpoint)
+        return non_matching_tool_endpoints, is_default_endpoint
 
 def get_service_list(pod_id, pod_run_id, pod_ip):
         service_list = {}
@@ -370,13 +369,13 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                         endpoints_data = []
                 tool_endpoints_count = len(endpoints_data)
                 print('{} endpoints are set for the tool {} via settings'.format(tool_endpoints_count, docker_image))
-                endpoints_data, modified_endpoints = append_system_endpoints(endpoints_data, run_info)
+                endpoints_data, overridden_endpoints_count = append_system_endpoints(endpoints_data, run_info)
                 additional_system_endpoints_count = len(endpoints_data) - tool_endpoints_count
                 print('{} additional system endpoints are set for the tool {} via run parameters'
                       .format(additional_system_endpoints_count, docker_image))
-                if modified_endpoints != 0:
+                if overridden_endpoints_count != 0:
                         print('{} endpoints are overridden by a system ones for the tool {} via run parameters'
-                              .format(modified_endpoints, docker_image))
+                              .format(overridden_endpoints_count, docker_image))
                 if endpoints_data:
                         endpoints_count = len(endpoints_data)
                         for i in range(endpoints_count):
@@ -480,12 +479,19 @@ def load_pods_for_runs_with_endpoints():
                 if 'job-type' in labels and labels['job-type'] == 'Service':
                         pods_with_endpoints.append(pod)
                         continue
-                pipeline_env_parameters = pod['spec']['containers'][0]['env']
-                matched_sys_endpoints = filter(lambda env_var: env_var['name'] in SYSTEM_ENDPOINTS.keys()
-                                                               and env_var['value'] == 'true',
-                                               pipeline_env_parameters)
-                if len(matched_sys_endpoints) > 0:
-                        pods_with_endpoints.append(pod)
+                if 'spec' in pod \
+                        and pod['spec'] \
+                        and 'containers' in pod['spec'] \
+                        and pod['spec']['containers'] \
+                        and len(pod['spec']['containers']) > 0 \
+                        and 'env' in pod['spec']['containers'][0] \
+                        and pod['spec']['containers'][0]['env']:
+                        pipeline_env_parameters = pod['spec']['containers'][0]['env']
+                        matched_sys_endpoints = filter(lambda env_var: env_var['name'] in SYSTEM_ENDPOINTS.keys()
+                                                                       and env_var['value'] == 'true',
+                                                       pipeline_env_parameters)
+                        if len(matched_sys_endpoints) > 0:
+                                pods_with_endpoints.append(pod)
         return pods_with_endpoints
 
 pods_with_endpoints = load_pods_for_runs_with_endpoints()
