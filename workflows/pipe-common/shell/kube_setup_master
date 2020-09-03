@@ -14,69 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#############################
-# Kube RPMs download command
-#############################
-# cat <<EOF >/etc/yum.repos.d/kubernetes.repo
-# [kubernetes]
-# name=Kubernetes
-# baseurl=http://yum.kubernetes.io/repos/kubernetes-el7-x86_64
-# enabled=1
-# gpgcheck=1
-# repo_gpgcheck=1
-# gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
-#        https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-# EOF
-# yum -q makecache -y --enablerepo kubernetes --nogpg
-# yum install --downloadonly \
-#             --downloaddir=/root/kube_dist/other \
-#             gettext \
-#             kubeadm-1.15.4-0.x86_64 \
-#             kubectl-1.15.4-0.x86_64 \
-#             kubelet-1.15.4-0.x86_64 \
-#             cpp-4.8.5-39.el7.x86_64 \
-#             gcc-4.8.5-39.el7.x86_64 \
-#             libgcc-4.8.5-39.el7.x86_64 \
-#             glibc-2.17-307.el7.1.x86_64 \
-#             glibc-common-2.17-307.el7.1.x86_64 \
-#             libgcc-4.8.5-39.el7.x86_64
-
-##########################################
-# Kube system pods images download command
-##########################################
-# docker pull calico/node:v3.14.1 && \
-# docker save calico/node:v3.14.1 -o calico-node-v3.14.1.tar && \
-# docker pull calico/pod2daemon-flexvol:v3.14.1 && \
-# docker save calico/pod2daemon-flexvol:v3.14.1 -o calico-pod2daemon-flexvol-v3.14.1.tar && \
-# docker pull calico/cni:v3.14.1 && \
-# docker save calico/cni:v3.14.1 -o calico-cni-v3.14.1.tar && \
-# docker pull calico/kube-controllers:v3.14.1 && \
-# docker save calico/kube-controllers:v3.14.1 -o calico-kube-controllers-v3.14.1.tar && \
-# docker pull k8s.gcr.io/kube-proxy:v1.15.4 && \
-# docker save k8s.gcr.io/kube-proxy:v1.15.4 -o k8s.gcr.io-kube-proxy-v1.15.4.tar && \
-# docker pull k8s.gcr.io/kube-apiserver:v1.15.4 && \
-# docker save k8s.gcr.io/kube-apiserver:v1.15.4 -o k8s.gcr.io-kube-apiserver-v1.15.4.tar && \
-# docker pull k8s.gcr.io/kube-controller-manager:v1.15.4 && \
-# docker save k8s.gcr.io/kube-controller-manager:v1.15.4 -o k8s.gcr.io-kube-controller-manager-v1.15.4.tar && \
-# docker pull k8s.gcr.io/kube-scheduler:v1.15.4 && \
-# docker save k8s.gcr.io/kube-scheduler:v1.15.4 -o k8s.gcr.io-kube-scheduler-v1.15.4.tar && \
-# docker pull quay.io/coreos/flannel:v0.11.0 && \
-# docker save quay.io/coreos/flannel:v0.11.0 -o quay.io-coreos-flannel-v0.11.0.tar && \
-# docker pull k8s.gcr.io/etcd:3.3.10 && \
-# docker save k8s.gcr.io/etcd:3.3.10 -o k8s.gcr.io-etcd-3.3.10.tar && \
-# docker pull k8s.gcr.io/k8s-dns-sidecar:1.14.13 && \
-# docker save k8s.gcr.io/k8s-dns-sidecar:1.14.13 -o k8s.gcr.io-k8s-dns-sidecar-1.14.13.tar && \
-# docker pull k8s.gcr.io/k8s-dns-kube-dns:1.14.13 && \
-# docker save k8s.gcr.io/k8s-dns-kube-dns:1.14.13 -o k8s.gcr.io-k8s-dns-kube-dns-1.14.13.tar && \
-# docker pull k8s.gcr.io/k8s-dns-dnsmasq-nanny:1.14.13 && \
-# docker save k8s.gcr.io/k8s-dns-dnsmasq-nanny:1.14.13 -o k8s.gcr.io-k8s-dns-dnsmasq-nanny-1.14.13.tar && \
-# docker pull k8s.gcr.io/heapster-amd64:v1.5.4 && \
-# docker save k8s.gcr.io/heapster-amd64:v1.5.4 -o k8s.gcr.io-heapster-amd64-v1.5.4.tar && \
-# docker pull k8s.gcr.io/pause:3.1 && \
-# docker save k8s.gcr.io/pause:3.1 -o k8s.gcr.io-pause-3.1.tar && \
-# docker pull k8s.gcr.io/cluster-proportional-autoscaler-amd64:1.1.1 && \
-# docker save k8s.gcr.io/cluster-proportional-autoscaler-amd64:1.1.1 -o k8s.gcr.io-cluster-proportional-autoscaler-amd64-1.1.1.tar
-
 KUBE_MASTER_SETUP_TASK="KubeMasterSetup"
 KUBE_MASTER_SETUP_TASK_WORKERS="KubeMasterSetupWorkers"
 
@@ -147,10 +84,10 @@ export CP_CAP_KUBE_MASTER_EXEC_WAIT_SEC="${CP_CAP_KUBE_MASTER_EXEC_WAIT_SEC:-10}
 mkdir -p $(dirname $CP_CAP_KUBE_INSTALL_LOG)
 
 pipe_log_info "- Install log: $CP_CAP_KUBE_INSTALL_LOG\n \
-              - Kube pods CIDR: $CP_CAP_KUBE_PODS_CIDR\n \
-              - Kube services CIDR: $CP_CAP_KUBE_SVC_CIDR\n \
-              - Kube domain: $CP_CAP_KUBE_DOMAIN\n \
-              - Kube CNI config URL: $CP_CAP_KUBE_CNI_CONFIG" "$KUBE_MASTER_SETUP_TASK"
+- Kube pods CIDR: $CP_CAP_KUBE_PODS_CIDR\n \
+- Kube services CIDR: $CP_CAP_KUBE_SVC_CIDR\n \
+- Kube domain: $CP_CAP_KUBE_DOMAIN\n \
+- Kube CNI config URL: $CP_CAP_KUBE_CNI_CONFIG" "$KUBE_MASTER_SETUP_TASK"
 
 # Remove /usr/cpbin from the PATH, so the kubelet will use the "real" docker binary
 export PATH=$(sed "s|$CP_USR_BIN||g" <<< "$PATH")

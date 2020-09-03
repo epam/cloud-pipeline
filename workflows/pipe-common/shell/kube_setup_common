@@ -122,9 +122,9 @@ export CP_CAP_KUBE_PACKAGES_DISTR_URL="${CP_CAP_KUBE_PACKAGES_DISTR_URL:-$CP_CAP
 export CP_CAP_KUBE_SYSTEM_PODS_DISTR="${CP_CAP_KUBE_SYSTEM_PODS_DISTR:-$CP_CAP_KUBE_DISTR_PREFIX/$CP_CAP_KUBE_VERSION/docker/kube-dockers-$CP_CAP_KUBE_VERSION.tgz}"
 
 pipe_log_info "- Package manager: $_pkg_type\n \
-              - Kube version: $CP_CAP_KUBE_VERSION\n \
-              - Kube packages URL: $CP_CAP_KUBE_PACKAGES_DISTR_URL\n \
-              - Kube dockers URL: $CP_CAP_KUBE_SYSTEM_PODS_DISTR" "$_kube_common_setup_task_name"
+- Kube version: $CP_CAP_KUBE_VERSION\n \
+- Kube packages URL: $CP_CAP_KUBE_PACKAGES_DISTR_URL\n \
+- Kube dockers URL: $CP_CAP_KUBE_SYSTEM_PODS_DISTR" "$_kube_common_setup_task_name"
 
 pipe_log_info "Getting system docker images" "$_kube_common_setup_task_name"
 
