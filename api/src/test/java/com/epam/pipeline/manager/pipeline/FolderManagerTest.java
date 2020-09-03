@@ -163,8 +163,7 @@ public class FolderManagerTest extends AbstractSpringTest {
         subFolder = new Folder();
         subFolder.setName(TEST_NAME_1);
         MockitoAnnotations.initMocks(this);
-        when(gitManagerMock.getPipelineRevisions(any(Pipeline.class),
-                any(Long.class))).thenReturn(Collections.emptyList());
+        when(gitManagerMock.getPipelineRevisions(any(Pipeline.class))).thenReturn(Collections.emptyList());
         pipelineManager.setGitManager(gitManagerMock);
     }
 

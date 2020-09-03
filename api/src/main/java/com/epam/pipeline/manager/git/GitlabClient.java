@@ -264,7 +264,7 @@ public class GitlabClient {
         return execute(gitLabApi.getCommit(projectId, commitId, null));
     }
 
-    public List<GitTagEntry> getRepositoryRevisions(Long pageSize) throws GitClientException {
+    public List<GitTagEntry> getRepositoryRevisions() throws GitClientException {
         String projectId = makeProjectId(namespace, projectName);
         return execute(gitLabApi.getRevisions(projectId, null, null));
     }

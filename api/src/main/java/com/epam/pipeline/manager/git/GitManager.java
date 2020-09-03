@@ -256,10 +256,10 @@ public class GitManager {
         return Date.from(localDateTime.toInstant(ZoneOffset.UTC));
     }
 
-    public List<Revision> getPipelineRevisions(Pipeline pipeline, Long pageSize)
+    public List<Revision> getPipelineRevisions(Pipeline pipeline)
             throws GitClientException {
         GitlabClient client = this.getGitlabClientForPipeline(pipeline);
-        List<Revision> tags = client.getRepositoryRevisions(pageSize).stream()
+        List<Revision> tags = client.getRepositoryRevisions().stream()
                 .map(i -> new Revision(i.getName(), i.getMessage(),
                         parseGitDate(i.getCommit().getAuthoredDate()), i.getCommit().getId(),
                         i.getCommit().getAuthorName(), i.getCommit().getAuthorEmail()))
