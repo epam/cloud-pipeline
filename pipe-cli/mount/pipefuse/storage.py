@@ -29,7 +29,7 @@ class StorageLowLevelFileSystemClient(FileSystemClient):
         pass
 
     @abstractmethod
-    def new_mpu(self, source_path, file_size, download):
+    def new_mpu(self, path, file_size, download, mv):
         pass
 
 
@@ -106,7 +106,9 @@ class StorageHighLevelFileSystemClient(FileSystemClientDecorator):
                     self._upload_single_range(fh, buf, source_path, offset, file_size)
                 else:
                     logging.info('Using multipart upload approach for %d:%s' % (fh, path))
-                    mpu = self._new_mpu(source_path, file_size)
+                    mpu = self._inner.new_mpu(source_path, file_size,
+                                              download=self._generate_region_download_function(),
+                                              mv=self._generate_move_file_function())
                     self._mpus[path] = mpu
                     mpu.initiate()
                     mpu.upload_part(buf, offset)
@@ -117,7 +119,9 @@ class StorageHighLevelFileSystemClient(FileSystemClientDecorator):
                                       'Attempting to reinitialize the multipart upload.' % (fh, path))
                     mpu.complete()
                     file_size = self.attrs(path).size
-                    mpu = self._new_mpu(source_path, file_size, offset)
+                    mpu = self._inner.new_mpu(source_path, file_size,
+                                              download=self._generate_region_download_function(),
+                                              mv=self._generate_move_file_function())
                     self._mpus[source_path] = mpu
                     mpu.initiate()
                     mpu.upload_part(buf, offset)
@@ -144,6 +148,11 @@ class StorageHighLevelFileSystemClient(FileSystemClientDecorator):
                 return buf.getvalue()
         return download
 
+    def _generate_move_file_function(self):
+        def mv(old_path, new_path):
+            self._mvfile(old_path, new_path)
+        return mv
+
     def _upload_single_range(self, fh, buf, path, offset, file_size):
         if file_size:
             with io.BytesIO() as original_buf:
@@ -154,10 +163,8 @@ class StorageHighLevelFileSystemClient(FileSystemClientDecorator):
         modified_bytes = bytearray(max(offset + len(buf), len(original_bytes)))
         modified_bytes[0: len(original_bytes)] = original_bytes
         modified_bytes[offset: offset + len(buf)] = buf
-        with io.BytesIO(modified_bytes) as body:
-            logging.info('Uploading range %d-%d for %s' % (offset, offset + len(buf), path))
-            self._s3.put_object(Bucket=self.bucket, Key=path, Body=body,
-                                ACL='bucket-owner-full-control')
+        logging.info('Uploading range %d-%d for %s' % (offset, offset + len(buf), path))
+        self.upload(modified_bytes, path)
 
     def flush(self, fh, path):
         mpu = self._mpus.get(path, None)

@@ -333,7 +333,7 @@ class OutOfBoundsSplittingMultipartCopyUpload(SplittingMultipartCopyUpload):
         super(OutOfBoundsSplittingMultipartCopyUpload, self).__init__(mpu, min_part_size, max_part_size)
         self._original_size = original_size
 
-    def upload_copy_part(self, start, end, offset=None, part_number=None):
+    def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None, keep=False):
         if self._original_size < end:
             super(OutOfBoundsSplittingMultipartCopyUpload, self).upload_copy_part(start, end, offset, part_number)
         else:
@@ -342,7 +342,7 @@ class OutOfBoundsSplittingMultipartCopyUpload(SplittingMultipartCopyUpload):
 
 class OutOfBoundsFillingMultipartCopyUpload(MultipartUploadDecorator):
 
-    def __init__(self, mpu, original_size, download_func):
+    def __init__(self, mpu, original_size, download):
         """
         Out of bounds filling multipart copy upload.
 
@@ -350,14 +350,14 @@ class OutOfBoundsFillingMultipartCopyUpload(MultipartUploadDecorator):
 
         :param mpu: Wrapping multipart upload.
         :param original_size: Destination file original size.
-        :param download_func: Function that retrieves content from the original file by its offset and length.
+        :param download: Function that retrieves content from the original file by its offset and length.
         """
         super(OutOfBoundsFillingMultipartCopyUpload, self).__init__(mpu)
         self._mpu = mpu
         self._original_size = original_size
-        self._download_func = download_func
+        self._download = download
 
-    def upload_copy_part(self, start, end, offset=None, part_number=None):
+    def upload_copy_part(self, start, end, offset=None, part_number=None, part_path=None, keep=False):
         if self._original_size <= start:
             logging.debug('Filling out of bounds copy upload part %s whole %d-%d for %s'
                           % (part_number, start, end, self.path))
@@ -365,7 +365,7 @@ class OutOfBoundsFillingMultipartCopyUpload(MultipartUploadDecorator):
         elif start < self._original_size < end:
             logging.debug('Filling out of bounds copy upload part %s region %d-%d with nulls for %s'
                           % (part_number, self._original_size, end, self.path))
-            original_buf = self._download_func(start, self._original_size - start)
+            original_buf = self._download(self.path, start, self._original_size - start)
             modified_buf = bytearray(end - start)
             modified_buf[0:len(original_buf)] = original_buf
             self._mpu.upload_part(modified_buf, offset, part_number)

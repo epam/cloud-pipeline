@@ -28,8 +28,8 @@ import fuseutils
 from fsclient import File
 from fuseutils import MB, GB
 from mpu import MultipartUpload, SplittingMultipartCopyUpload, ChunkedMultipartUpload, \
-    TruncatingMultipartCopyUpload, OutOfBoundsFillingMultipartCopyUpload, \
-    OutOfBoundsSplittingMultipartCopyUpload
+    TruncatingMultipartCopyUpload, OutOfBoundsSplittingMultipartCopyUpload, \
+    OutOfBoundsFillingMultipartCopyUpload
 from storage import StorageLowLevelFileSystemClient
 
 _ANY_ERROR = Exception
@@ -258,15 +258,13 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
         for chunk in iter(lambda: response.read(1 * MB), b''):
             buf.write(chunk)
 
-    def new_mpu(self, source_path, file_size, download):
-        mpu = S3MultipartUpload(source_path, self.bucket, self._s3)
-        mpu = OutOfBoundsFillingMultipartCopyUpload(mpu, original_size=file_size,
-                                                    download_func=download)
+    def new_mpu(self, path, file_size, download, mv):
+        mpu = S3MultipartUpload(path, self.bucket, self._s3)
+        mpu = OutOfBoundsFillingMultipartCopyUpload(mpu, original_size=file_size, download=download)
         mpu = SplittingMultipartCopyUpload(mpu, min_part_size=self._min_part_size, max_part_size=self._max_part_size)
         mpu = OutOfBoundsSplittingMultipartCopyUpload(mpu, original_size=file_size,
                                                       min_part_size=self._min_part_size, max_part_size=self._chunk_size)
-        mpu = ChunkedMultipartUpload(mpu, original_size=file_size,
-                                     download=download,
+        mpu = ChunkedMultipartUpload(mpu, original_size=file_size, download=download,
                                      chunk_size=self._chunk_size, min_chunk=self._min_chunk, max_chunk=self._max_chunk)
         return mpu
 

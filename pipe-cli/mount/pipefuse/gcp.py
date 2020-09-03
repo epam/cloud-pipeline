@@ -14,18 +14,19 @@ import fuseutils
 from fsclient import File
 from fuseutils import MB, TB
 from mpu import MultipartUpload, ChunkedMultipartUpload, SplittingMultipartCopyUpload, \
-    CompositeMultipartUpload, AppendOptimizedCompositeMultipartCopyUpload
+    CompositeMultipartUpload, AppendOptimizedCompositeMultipartCopyUpload, OutOfBoundsSplittingMultipartCopyUpload, \
+    OutOfBoundsFillingMultipartCopyUpload
 from storage import StorageLowLevelFileSystemClient
 
 
 class GCPMultipartUpload(MultipartUpload):
 
-    def __init__(self, bucket, path, gcp):
+    def __init__(self, path, bucket, gcp):
         """
         GCP composite object multipart upload.
 
-        :param bucket: Destination bucket name.
         :param path: Destination bucket relative path.
+        :param bucket: Destination bucket name.
         :param gcp: CGP client.
         """
         self._bucket = bucket
@@ -168,9 +169,10 @@ class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
         return name if recursive else fuseutils.get_item_name(name, prefix=prefix)
 
     def upload(self, buf, path):
-        bucket_object = self._gcp.bucket(self.bucket)
-        blob = bucket_object.blob(path)
-        blob.upload_from_string(str(buf or ''))
+        with io.BytesIO(bytearray(buf)) as body:
+            bucket_object = self._gcp.bucket(self.bucket)
+            blob = bucket_object.blob(path)
+            blob.upload_from_file(body)
 
     def delete(self, path):
         bucket_object = self._gcp.bucket(self.bucket)
@@ -188,15 +190,17 @@ class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
         source_blob = source_bucket.blob(path)
         source_blob.download_to_file(buf, start=offset, end=offset + length - 1)
 
-    def new_mpu(self, source_path, file_size, download):
-        mpu = CompositeMultipartUpload(self.bucket, path=source_path,
-                                       new_mpu=lambda path: GCPMultipartUpload(self.bucket, path, self._gcp),
-                                       mv=lambda old_path, path: self.mv(old_path, path),
+    def new_mpu(self, path, file_size, download, mv):
+        def new_composing_mpu(path):
+            return GCPMultipartUpload(path, self.bucket, self._gcp)
+        mpu = CompositeMultipartUpload(self.bucket, path=path, new_mpu=new_composing_mpu, mv=mv,
                                        max_composite_parts=self._max_composite_parts)
         mpu = AppendOptimizedCompositeMultipartCopyUpload(mpu, original_size=file_size, chunk_size=self._chunk_size,
                                                           download=download)
+        mpu = OutOfBoundsFillingMultipartCopyUpload(mpu, original_size=file_size, download=download)
         mpu = SplittingMultipartCopyUpload(mpu, min_part_size=self._min_part_size, max_part_size=self._max_part_size)
-        mpu = ChunkedMultipartUpload(mpu, original_size=file_size,
-                                     download=download,
+        mpu = OutOfBoundsSplittingMultipartCopyUpload(mpu, original_size=file_size,
+                                                      min_part_size=self._min_part_size, max_part_size=self._chunk_size)
+        mpu = ChunkedMultipartUpload(mpu, original_size=file_size, download=download,
                                      chunk_size=self._chunk_size, min_chunk=self._min_chunk, max_chunk=self._max_chunk)
         return mpu
