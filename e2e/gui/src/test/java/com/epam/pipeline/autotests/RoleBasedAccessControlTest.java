@@ -80,16 +80,13 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         loginAs(admin);
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase(value = "EPMCMBIBPC-3014")
     public void authenticationInPlatform() {
         logout();
         loginAs(admin);
         navigationMenu()
-                .settings()
-                .switchToCLI()
-                .switchGitCLI()
-                .ensureCodeHasText(format("git config --global user.name \"%s\"", admin.login));
+                .library();
     }
 
     @Test
@@ -158,7 +155,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 .addRoleOrGroup(roleAdmin)
                 .ok();
         logout();
-        loginAs(user);
+        loginWithToken(C.ANOTHER_ADMIN_TOKEN);
         navigationMenu()
                 .settings()
                 .ensureVisible(SYSTEM_EVENTS_TAB, USER_MANAGEMENT_TAB,
@@ -204,10 +201,10 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 .blockUser(user.login.toUpperCase())
                 .ok();
         logout();
-        loginAs(user);
+        loginWithToken(C.ANOTHER_BLOCKED_TOKEN);
         validateWhileErrorPageMessage();
         loginBack();
-        loginAs(user);
+        loginWithToken(C.ANOTHER_BLOCKED_TOKEN);
         validateWhileErrorPageMessage();
         loginBack();
         loginAs(admin);
@@ -240,9 +237,8 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         List<String> readFileLines = Files.readAllLines(Paths.get(localFilePath));
 
         assertTrue(readFileLines.size() >= 2);
-        assertStringContainsList(readFileLines.get(0), "id", "userName", "Email", "FirstName",
-                "LastName", "Name", "registrationDate UTC", "firstLoginDate UTC", "roles", "groups", "blocked",
-                "defaultStorageId", "defaultStoragePath");
+        assertStringContainsList(readFileLines.get(0), "id", "userName", "registrationDate UTC",
+                "firstLoginDate UTC", "roles", "groups", "blocked", "defaultStorageId", "defaultStoragePath");
         assertStringContainsList(readFileLines.toString(), format(",%s,", admin.login.toUpperCase()),
                 format(",%s,", user.login.toUpperCase()));
     }
@@ -289,5 +285,14 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         validateErrorPage("to request the access");
         validateErrorPage(format("login back to the %s",C.PLATFORM_NAME));
         validateErrorPage("if you already own an account");
+    }
+
+    private void loginWithToken(final String token) {
+        if ("false".equals(C.AUTH_TOKEN)) {
+            loginAs(user);
+            return;
+        }
+        final Account userWithToken = new Account(user.login, token);
+        loginAs(userWithToken);
     }
 }
