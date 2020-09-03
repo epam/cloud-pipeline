@@ -102,7 +102,8 @@ public class RunsTest
     @Test(dependsOnMethods = {"platformUsageInfo"})
     @TestCase({"EPMCMBIBPC-3170"})
     public void platformUsagePipelines() {
-        runsMenu()
+        navigationMenu()
+                .runs()
                 .completedRuns()
                 .filterBy(PIPELINE, pipeline)
                 .validateRowsCount(size(1))
@@ -114,7 +115,8 @@ public class RunsTest
     @Test(dependsOnMethods = {"platformUsageInfo"})
     @TestCase({"EPMCMBIBPC-3171"})
     public void platformUsageTools() {
-        runsMenu()
+        navigationMenu()
+                .runs()
                 .completedRuns()
                 .filterBy(DOCKER_IMAGE, nameWithoutGroup(tool))
                 .validateRowsCount(sizeGreaterThanOrEqual(1))

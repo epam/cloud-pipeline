@@ -401,10 +401,14 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         createdHeaderButton.find(byAttribute("title", "Filter menu")).click();
         switch (header) {
             case PIPELINE:
-                $$("input").findBy(attribute("placeholder", "Filter"))
-                        .setValue(ip);
+                inputFilterValue(ip);
                 $(byXpath(format(".//span[.='%s']/preceding-sibling::span[@class='ant-checkbox']", ip)))
                         .click();
+                break;
+            case DOCKER_IMAGE:
+                inputFilterValue(ip);
+                $(byXpath(format(".//span[.='%s']", ip))).parent()
+                        .$(byXpath("preceding-sibling::span[@class='ant-checkbox']")).click();
                 break;
             default:
                 throw new RuntimeException("Could be filtered only by Label of Address");
@@ -419,6 +423,12 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
         $$(byText("Clear")).find(visible).click();
         return this;
+    }
+
+    private void inputFilterValue(String value) {
+        $(byClassName("run-table__filter-popover-container"))
+                .$$("input").findBy(attribute("placeholder", "Filter"))
+                .setValue(value);
     }
 
     public enum HeaderColumn {
