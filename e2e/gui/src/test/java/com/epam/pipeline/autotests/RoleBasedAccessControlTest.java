@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.codeborne.selenide.Selenide.open;
@@ -45,6 +46,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.USER_MANAGEMENT_TAB;
 import static com.epam.pipeline.autotests.utils.Utils.assertStringContainsList;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertTrue;
@@ -96,11 +98,11 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         final Account wrongAccount = new Account(C.LOGIN, String.format("123%s", C.PASSWORD));
         loginAs(wrongAccount);
         if ("true".equals(C.AUTH_TOKEN)) {
-            validateErrorPage("type=Unauthorized, status=401");
+            validateErrorPage(singletonList("type=Unauthorized, status=401"));
             Selenide.clearBrowserCookies();
             sleep(1, SECONDS);
         } else {
-            validateErrorPage("Incorrect user name or password");
+            validateErrorPage(singletonList("Incorrect user name or password"));
         }
         loginAs(admin);
     }
@@ -185,37 +187,40 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     @Test
     @TestCase({"EPMCMBIBPC-3016"})
     public void blockUnblockUser() {
-        loginAs(user);
-        tools()
-                .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
-                .setDefaultLaunchOptions()
-                .launchTool(this, Utils.nameWithoutGroup(testingTool));
-        logout();
-        loginAs(admin);
-        navigationMenu()
-                .settings()
-                .switchToUserManagement()
-                .switchToUsers()
-                .searchUserEntry(user.login.toUpperCase())
-                .edit()
-                .blockUser(user.login.toUpperCase())
-                .ok();
-        logout();
-        loginWithToken(C.ANOTHER_BLOCKED_TOKEN);
-        validateWhileErrorPageMessage();
-        loginBack();
-        loginWithToken(C.ANOTHER_BLOCKED_TOKEN);
-        validateWhileErrorPageMessage();
-        loginBack();
-        loginAs(admin);
-        navigationMenu()
-                .settings()
-                .switchToUserManagement()
-                .switchToUsers()
-                .searchUserEntry(user.login.toUpperCase())
-                .edit()
-                .unblockUser(user.login.toUpperCase())
-                .ok();
+        try {
+            loginAs(user);
+            tools()
+                    .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                    .setDefaultLaunchOptions()
+                    .launchTool(this, Utils.nameWithoutGroup(testingTool));
+            logout();
+            loginAs(admin);
+            navigationMenu()
+                    .settings()
+                    .switchToUserManagement()
+                    .switchToUsers()
+                    .searchUserEntry(user.login.toUpperCase())
+                    .edit()
+                    .blockUser(user.login.toUpperCase())
+                    .ok();
+            logout();
+            loginWithToken(C.ANOTHER_BLOCKED_TOKEN);
+            validateWhileErrorPageMessage();
+            loginBack();
+            loginWithToken(C.ANOTHER_BLOCKED_TOKEN);
+            validateWhileErrorPageMessage();
+        } finally {
+            loginBack();
+            loginAs(admin);
+            navigationMenu()
+                    .settings()
+                    .switchToUserManagement()
+                    .switchToUsers()
+                    .searchUserEntry(user.login.toUpperCase())
+                    .edit()
+                    .unblockUser(user.login.toUpperCase())
+                    .ok();
+        }
         logout();
         loginAs(user);
         runsMenu()
@@ -280,11 +285,13 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     }
 
     private void validateWhileErrorPageMessage() {
-        validateErrorPage("Please contact");
-        validateErrorPage(format("%s support team",C.PLATFORM_NAME));
-        validateErrorPage("to request the access");
-        validateErrorPage(format("login back to the %s",C.PLATFORM_NAME));
-        validateErrorPage("if you already own an account");
+        validateErrorPage(Arrays.asList(
+                "Please contact",
+                format("%s support team", C.PLATFORM_NAME),
+                "to request the access",
+                format("login back to the %s", C.PLATFORM_NAME),
+                "if you already own an account")
+        );
     }
 
     private void loginWithToken(final String token) {

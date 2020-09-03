@@ -30,6 +30,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.Collections;
 import java.util.NoSuchElementException;
 
 import static com.codeborne.selenide.Selenide.open;
@@ -108,7 +109,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                     .ok();
             logout();
             loginAs(userWithoutCompletedRuns);
-            validateErrorPage(format("%s was not able to authorize you", C.PLATFORM_NAME));
+            validateErrorPage(Collections.singletonList(format("%s was not able to authorize you", C.PLATFORM_NAME)));
             loginBack();
             loginAs(admin);
             navigationMenu()
