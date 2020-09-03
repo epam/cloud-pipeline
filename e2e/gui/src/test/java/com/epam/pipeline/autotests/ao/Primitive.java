@@ -265,5 +265,8 @@ public enum Primitive {
     GIT_COMMAND,
     SHARE_WITH,
     ADD_USER,
-    ADD_GROUP
+    ADD_GROUP,
+    EMAIL_NOTIFICATIONS_TAB,
+    CLOUD_REGIONS_TAB,
+    EXPORT_USERS
 }

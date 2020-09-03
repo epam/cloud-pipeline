@@ -388,9 +388,9 @@
         </classes>
     </test>
 
-    <test name="RBACTest">
+    <test name="RoleBasedAccessControlTest">
         <classes>
-            <class name="com.epam.pipeline.autotests.RBACTest"/>
+            <class name="com.epam.pipeline.autotests.RoleBasedAccessControlTest"/>
         </classes>
     </test>
 </suite>

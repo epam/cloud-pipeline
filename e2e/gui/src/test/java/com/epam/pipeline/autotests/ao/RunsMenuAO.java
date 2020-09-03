@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.utils.C.COMPLETION_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.elementWithText;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -138,7 +139,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
             System.out.println("[WARN] retrying click run logs");
             if (trys++ > 5) {
                 Selenide.screenshot(GET_LOGS_ERROR);
-                throw new RuntimeException(String.format("Could not get run logs (screenshot: %s.png)", GET_LOGS_ERROR));
+                throw new RuntimeException(format("Could not get run logs (screenshot: %s.png)", GET_LOGS_ERROR));
             }
 
             show(runId);
@@ -216,6 +217,11 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
+    public RunsMenuAO validatePipelineOwner(String id, String owner) {
+        $(byClassName(format("run-%s", id))).shouldHave(matchText(owner));
+        return this;
+    }
+
     public RunsMenuAO validateOnlyUsersPipelines(String username) {
         $(byClassName("ant-table-tbody"))
                 .should(exist)
@@ -281,7 +287,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO shouldContainRun(String pipelineName, String runId) {
-        return validatePipelineIsPresent(String.format("%s-%s", pipelineName, runId));
+        return validatePipelineIsPresent(format("%s-%s", pipelineName, runId));
     }
 
     public RunsMenuAO viewAvailableActiveRuns() {
@@ -298,7 +304,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO pause(final String runId, final String pipelineName) {
         $("#run-" + runId + "-pause-button").shouldBe(visible).click();
         new ConfirmationPopupAO<>(this)
-                .ensureTitleContains(String.format("Do you want to pause %s", pipelineName))
+                .ensureTitleContains(format("Do you want to pause %s", pipelineName))
                 .sleep(1, SECONDS)
                 .click(button("PAUSE"));
         return this;
@@ -312,7 +318,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO resume(final String runId, final String pipelineName) {
         $("#run-" + runId + "-resume-button").shouldBe(visible).click();
         new ConfirmationPopupAO<>(this)
-                .ensureTitleContains(String.format("Do you want to resume %s", pipelineName))
+                .ensureTitleContains(format("Do you want to resume %s", pipelineName))
                 .sleep(1, SECONDS)
                 .click(button("RESUME"));
         return this;
@@ -338,7 +344,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
             if (new LogAO().logMessages().filter(l -> l.contains("Started initialization of new calculation node"))
                     .count() > 2 || attempts == 0) {
                 screenshot("failed_node_for_run_" + runId);
-                throw new IllegalArgumentException(String.format("Node for %s run was not initialized", runId));
+                throw new IllegalArgumentException(format("Node for %s run was not initialized", runId));
             }
             sleep(1, MINUTES);
             attempts--;
