@@ -16,10 +16,13 @@
 
 package com.epam.pipeline.manager.billing;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -30,6 +33,8 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
+@Slf4j
 public class PipelineBillingDetailsLoader implements EntityBillingDetailsLoader {
 
     @Value("${billing.empty.report.value:unknown}")
@@ -38,25 +43,31 @@ public class PipelineBillingDetailsLoader implements EntityBillingDetailsLoader 
     @Autowired
     private final PipelineManager pipelineManager;
 
+    @Autowired
+    private final MessageHelper messageHelper;
+
     @Override
     public BillingGrouping getGrouping() {
         return BillingGrouping.PIPELINE;
     }
 
     @Override
-    public String loadName(final String entityIdentifier) {
-        try {
-            return pipelineManager.loadByNameOrId(entityIdentifier).getName();
-        } catch (IllegalArgumentException e) {
-            return entityIdentifier;
-        }
-    }
-
-    @Override
-    public Map<String, String> loadDetails(final String entityIdentifier) {
+    public Map<String, String> loadInformation(final String entityIdentifier, final boolean loadDetails) {
         final Map<String, String> details = new HashMap<>();
-        final Pipeline pipeline = pipelineManager.loadByNameOrId(entityIdentifier);
-        details.put(OWNER, pipeline.getOwner());
+        try {
+            final Pipeline pipeline = pipelineManager.loadByNameOrId(entityIdentifier);
+            details.put(NAME, pipeline.getName());
+            if (loadDetails) {
+                details.put(OWNER, pipeline.getOwner());
+            }
+        } catch (RuntimeException e) {
+            log.info(messageHelper.getMessage(MessageConstants.INFO_BILLING_ENTITY_FOR_DETAILS_NOT_FOUND,
+                                              entityIdentifier, getGrouping()));
+            details.put(NAME, entityIdentifier);
+            if (loadDetails) {
+                details.putAll(getEmptyDetails());
+            }
+        }
         return details;
     }
 
