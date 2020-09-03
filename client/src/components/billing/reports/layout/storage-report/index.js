@@ -23,7 +23,7 @@ const GridStyles = buildGridStyle({top: 0, maxLayoutColumns: 4});
 
 const Layout = buildLayout({
   defaultState,
-  storage: 'panelsLayout-Billing-Storages',
+  storage: 'panelsLayout-Billing-Storages-Report',
   defaultSizes,
   panelNeighbors: [],
   gridStyle: GridStyles
