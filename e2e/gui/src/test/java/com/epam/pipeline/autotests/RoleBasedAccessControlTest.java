@@ -184,7 +184,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                         EMAIL_NOTIFICATIONS_TAB, PREFERENCES_TAB, CLOUD_REGIONS_TAB);
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-3016"})
     public void blockUnblockUser() {
         try {
