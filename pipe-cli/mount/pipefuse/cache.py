@@ -56,14 +56,14 @@ class ListingCache:
         logging.info('Adding to parent cache for %s' % path)
         parent_path, _ = fuseutils.split_path(path)
         parent_listing = self._cache.get(parent_path, None)
-        if parent_listing:
+        if parent_listing is not None:
             parent_listing[fuseutils.without_prefix(path, parent_path)] = item
 
     def _remove_from_parent_cache(self, path):
         logging.info('Removing from parent cache for %s' % path)
         parent_path, _ = fuseutils.split_path(path)
         parent_listing = self._cache.get(parent_path, None)
-        if parent_listing:
+        if parent_listing is not None:
             return parent_listing.pop(fuseutils.without_prefix(path, parent_path), None)
 
     def invalidate_parent_cache(self, path):
@@ -84,7 +84,7 @@ class ListingCache:
         cached_item = self._remove_from_parent_cache(old_path)
         parent_path, _ = fuseutils.split_path(path)
         parent_listing = self._cache.get(parent_path, None)
-        if cached_item and parent_listing:
+        if cached_item and parent_listing is not None:
             relative_name = fuseutils.without_prefix(path, parent_path)
             parent_listing[relative_name] = cached_item._replace(name=relative_name)
         else:
