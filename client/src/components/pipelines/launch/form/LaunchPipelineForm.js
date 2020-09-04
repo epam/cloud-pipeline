@@ -966,7 +966,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               required: `${parameter.required || false}`.toLowerCase() === 'true',
               description: parameter.description,
               enum: parameter.initialEnumeration,
-              visible: parameter.visible
+              visible: parameter.visible,
+              validation: parameter.validation
             };
           }
         }
@@ -997,7 +998,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               required: `${parameter.required || false}`.toLowerCase() === 'true',
               description: parameter.description,
               enum: parameter.initialEnumeration,
-              visible: parameter.visible
+              visible: parameter.visible,
+              validation: parameter.validation
             };
           }
         }
@@ -1155,7 +1157,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               : (parameter.value || ''),
             required: `${parameter.required || false}`.toLowerCase() === 'true',
             enum: parameter.initialEnumeration,
-            visible: parameter.visible
+            visible: parameter.visible,
+            validation: parameter.validation
           };
         }
       }
@@ -1186,7 +1189,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             required: `${parameter.required || false}`.toLowerCase() === 'true',
             description: parameter.description,
             enum: parameter.initialEnumeration,
-            visible: parameter.visible
+            visible: parameter.visible,
+            validation: parameter.validation
           };
         }
       }
@@ -1648,6 +1652,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           let enumeration;
           let initialEnumeration;
           let visible;
+          let validation;
           const parameter = this.props.parameters.parameters[key];
           if (parameter.value !== undefined ||
             parameter.type !== undefined ||
@@ -1666,6 +1671,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             description = parameter.description;
             initialEnumeration = parameter.enum;
             visible = parameter.visible;
+            validation = parameter.validation;
             enumeration = parameterUtilities.parseEnumeration({enumeration});
             if (type.toLowerCase() === 'boolean') {
               value = getBooleanValue(value);
@@ -1684,6 +1690,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               enumeration,
               initialEnumeration,
               visible,
+              validation,
               description,
               value: value,
               required: required,
@@ -2619,6 +2626,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const initialEnumeration = parameter ? parameter.initialEnumeration : undefined;
           let description = parameter ? parameter.description : undefined;
           let visible = parameter ? parameter.visible : undefined;
+          let validation = parameter ? parameter.validation : undefined;
           const parameterIsVisible = parameterUtilities.isVisible(parameter, normalizedParameters);
           const systemParameter = this.getSystemParameter(parameter);
           const parameterHint = systemParameter ? systemParameter.description : description;
@@ -2720,6 +2728,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.visible`,
                     {initialValue: visible}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.validation`,
+                    {initialValue: validation}
                   )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
                 }
               </FormItem>
