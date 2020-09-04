@@ -171,11 +171,13 @@ class StorageHighLevelFileSystemClient(FileSystemClientDecorator):
         if mpu:
             try:
                 mpu.complete()
+                del self._mpus[path]
             except _ANY_ERROR:
+                logging.exception('Multipart upload flushing has failed for %d:%s. '
+                                  'Attempting to abort the multipart upload.' % (fh, path))
+                del self._mpus[path]
                 mpu.abort()
                 raise
-            finally:
-                del self._mpus[path]
 
     def truncate(self, fh, path, length):
         source_path = path.lstrip(self._delimiter)
