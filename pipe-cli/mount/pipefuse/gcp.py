@@ -7,7 +7,8 @@ from datetime import datetime
 import pytz
 from google.auth import _helpers
 from google.auth.transport.requests import AuthorizedSession
-from google.cloud.storage import Client
+from google.cloud.storage import Bucket, Blob, Client
+from google.cloud.exceptions import GoogleCloudError
 from google.oauth2.credentials import Credentials
 
 import fuseutils
@@ -17,6 +18,12 @@ from mpu import MultipartUpload, ChunkedMultipartUpload, SplittingMultipartCopyU
     CompositeMultipartUpload, AppendOptimizedCompositeMultipartCopyUpload, OutOfBoundsSplittingMultipartCopyUpload, \
     OutOfBoundsFillingMultipartCopyUpload
 from storage import StorageLowLevelFileSystemClient
+
+
+class TruncatedExponentialBackoffException(RuntimeError):
+
+    def __init__(self, *args):
+        super(TruncatedExponentialBackoffException, self).__init__(*args)
 
 
 class GCPMultipartUpload(MultipartUpload):
@@ -95,6 +102,96 @@ class _RefreshingCredentials(Credentials):
         headers['authorization'] = 'Bearer {}'.format(_helpers.from_bytes(self.temporary_credentials.session_token))
 
 
+def retryable(func):
+    """
+    Decorator function which implements truncated exponential backoff for request rate issues.
+    https://cloud.google.com/storage/docs/request-rate
+    https://cloud.google.com/storage/docs/exponential-backoff
+
+    Should be removed once the corresponding issue is resolved.
+    https://github.com/googleapis/python-storage/issues/108
+    """
+    def wrapper(*args, **kwargs):
+        iteration = 0
+        max_iteration = 5
+        while iteration < max_iteration:
+            try:
+                return func(*args, **kwargs)
+            except GoogleCloudError as e:
+                if e.code and (e.code == 429 or 500 <= e.code < 600):
+                    timeout = 2 ** iteration
+                    iteration += 1
+                    logging.exception('Retryable error occurred during %s operation. '
+                                      'Attempting to use truncated exponential backoff with timeout of %s seconds.'
+                                      % (func.__name__, timeout))
+                    time.sleep(timeout)
+                else:
+                    logging.exception('Non retryable error occurred during %s operation. '
+                                      'Retrying won\'t be performed.' % func.__name__)
+                    raise
+        else:
+            raise TruncatedExponentialBackoffException('All %s attempts to retry %s operation have failed.'
+                                                       % (func.__name__, iteration))
+
+    return wrapper
+
+
+class _RetryableBlob(Blob):
+    """
+    Google cloud storage blob that supports retrying.
+
+    Should be removed once the corresponding issue is resolved.
+    https://github.com/googleapis/python-storage/issues/108
+    """
+
+    @retryable
+    def exists(self, *args, **kwargs):
+        return super(_RetryableBlob, self).exists(*args, **kwargs)
+
+    @retryable
+    def delete(self, *args, **kwargs):
+        return super(_RetryableBlob, self).delete(*args, **kwargs)
+
+    @retryable
+    def upload_from_file(self, *args, **kwargs):
+        super(_RetryableBlob, self).upload_from_file(*args, **kwargs)
+
+    @retryable
+    def compose(self, *args, **kwargs):
+        super(_RetryableBlob, self).compose(*args, **kwargs)
+
+    @retryable
+    def download_to_file(self, *args, **kwargs):
+        super(_RetryableBlob, self).download_to_file(*args, **kwargs)
+
+
+class _RetryableBucket(Bucket):
+    """
+    Google cloud storage bucket that supports retrying.
+
+    Should be removed once the corresponding issue is resolved.
+    https://github.com/googleapis/python-storage/issues/108
+    """
+
+    @retryable
+    def list_blobs(self, *args, **kwargs):
+        return super(_RetryableBucket, self).list_blobs(*args, **kwargs)
+
+    @retryable
+    def copy_blob(self, *args, **kwargs):
+        return super(_RetryableBucket, self).copy_blob(*args, **kwargs)
+
+    def blob(self, blob_name, chunk_size=None, encryption_key=None, kms_key_name=None, generation=None):
+        return _RetryableBlob(
+            name=blob_name,
+            bucket=self,
+            chunk_size=chunk_size,
+            encryption_key=encryption_key,
+            kms_key_name=kms_key_name,
+            generation=generation,
+        )
+
+
 class _RefreshingClient(Client):
     MAX_REFRESH_ATTEMPTS = sys.maxint
 
@@ -102,6 +199,9 @@ class _RefreshingClient(Client):
         credentials = _RefreshingCredentials(refresh)
         session = AuthorizedSession(credentials, max_refresh_attempts=self.MAX_REFRESH_ATTEMPTS)
         super(_RefreshingClient, self).__init__(project=credentials.temporary_credentials.secret_key, _http=session)
+
+    def bucket(self, bucket_name, user_project=None):
+        return _RetryableBucket(client=self, name=bucket_name, user_project=user_project)
 
 
 class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
