@@ -9,6 +9,7 @@
     "start:win32": "node scripts/correct-axios-configuration.js && set DEV_MODE=true && electron-forge start",
     "package": "node scripts/correct-axios-configuration.js && electron-forge package",
     "package:linux": "node scripts/correct-axios-configuration.js && electron-forge package --platform=linux",
+    "package:macos": "node scripts/correct-axios-configuration.js && electron-forge package --platform=darwin",
     "package:win32": "node scripts/correct-axios-configuration.js && electron-forge package --arch=ia32,x64 --platform=win32",
     "make": "node scripts/correct-axios-configuration.js && electron-forge make",
     "publish": "node scripts/correct-axios-configuration.js && electron-forge publish",
