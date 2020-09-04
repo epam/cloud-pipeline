@@ -506,7 +506,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .openSearchResultItemWithText(testRunID_2668)
                 .clickOnEndpointLink()
                 .sleep(3, SECONDS)
-                .validateEndpointPage(C.LOGIN)
+                .validateEndpointPage(LOGIN)
                 .closeTab();
     }
 

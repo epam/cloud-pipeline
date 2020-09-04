@@ -203,10 +203,10 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                     .blockUser(user.login.toUpperCase())
                     .ok();
             logout();
-            loginWithToken(C.ANOTHER_BLOCKED_TOKEN);
+            loginAs(user);
             validateWhileErrorPageMessage();
             loginBack();
-            loginWithToken(C.ANOTHER_BLOCKED_TOKEN);
+            loginAs(user);
             validateWhileErrorPageMessage();
         } finally {
             loginBack();
