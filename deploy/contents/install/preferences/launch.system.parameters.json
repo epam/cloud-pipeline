@@ -58,7 +58,7 @@
     {
         "name": "CP_CAP_KUBE",
         "type": "boolean",
-        "description": "Enables Kubernetes for a current run (1.15.4)",
+        "description": "Enables Kubernetes for a current run (1.15.4), supported for Centos only",
         "defaultValue": "true"
     },
     {
@@ -219,7 +219,7 @@
     {
         "name": "CP_CAP_SYSTEMD_CONTAINER",
         "type": "boolean",
-        "description": "Enable systemd for a current run if it meets requirements",
+        "description": "Enable systemd for a current run (supported for Centos only)",
         "defaultValue": "true",
         "passToWorkers": true
     },
