@@ -285,7 +285,8 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     private void validateWhileErrorPageMessage() {
         if ("true".equals(C.AUTH_TOKEN)) {
             validateErrorPage(singletonList("User is blocked!"));
-            logout();
+            Selenide.clearBrowserCookies();
+            sleep(1, SECONDS);
             return;
         }
         validateErrorPage(Arrays.asList(
