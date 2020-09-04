@@ -72,6 +72,8 @@ import {
   CP_CAP_SPARK,
   CP_CAP_SLURM,
   CP_CAP_KUBE,
+  CP_CAP_DIND_CONTAINER,
+  CP_CAP_SYSTEMD_CONTAINER,
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
@@ -84,7 +86,7 @@ import {
   slurmEnabled,
   kubeEnabled,
   setClusterParameterValue,
-  getAutoScaledPriceTypeValue
+  getAutoScaledPriceTypeValue,
 } from './utilities/launch-cluster';
 import checkModifiedState from './utilities/launch-form-modified-state';
 import {
@@ -1038,6 +1040,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           type: 'boolean',
           value: true
         };
+        payload[PARAMETERS][CP_CAP_DIND_CONTAINER] = {
+          type: 'boolean',
+          value: true
+        };
+        payload[PARAMETERS][CP_CAP_SYSTEMD_CONTAINER] = {
+          type: 'boolean',
+          value: true
+        };
       }
     }
     if (this.props.detached && this.state.pipeline && this.state.version) {
@@ -1214,6 +1224,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     if (this.state.launchCluster && this.state.kubeEnabled) {
       payload.params[CP_CAP_KUBE] = {
+        type: 'boolean',
+        value: true
+      };
+      payload.params[CP_CAP_DIND_CONTAINER] = {
+        type: 'boolean',
+        value: true
+      };
+      payload.params[CP_CAP_SYSTEMD_CONTAINER] = {
         type: 'boolean',
         value: true
       };
