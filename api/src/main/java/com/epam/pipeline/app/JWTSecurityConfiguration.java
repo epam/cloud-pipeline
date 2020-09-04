@@ -17,6 +17,7 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.jwt.JwtAuthenticationProvider;
 import com.epam.pipeline.security.jwt.JwtFilterAuthenticationFilter;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
@@ -70,6 +71,9 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Autowired
     private SAMLEntryPoint samlEntryPoint;
 
+    @Autowired
+    private UserAccessService userAccessService;
+
     protected String getPublicKey() {
         return publicKey;
     }
@@ -112,11 +116,11 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     }
 
     @Bean protected JwtAuthenticationProvider jwtAuthenticationProvider() {
-        return new JwtAuthenticationProvider(jwtTokenVerifier());
+        return new JwtAuthenticationProvider(jwtTokenVerifier(), userAccessService);
     }
 
     protected JwtFilterAuthenticationFilter getJwtAuthenticationFilter() {
-        return new JwtFilterAuthenticationFilter(jwtTokenVerifier());
+        return new JwtFilterAuthenticationFilter(jwtTokenVerifier(), userAccessService);
     }
 
     protected RequestMatcher getFullRequestMatcher() {

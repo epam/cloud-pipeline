@@ -19,13 +19,13 @@ package com.epam.pipeline.security.saml;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.user.DefaultRoles;
-import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.UserContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -36,8 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.LockedException;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.saml.SAMLCredential;
 import org.springframework.security.saml.userdetails.SAMLUserDetailsService;
@@ -89,6 +87,9 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
     @Autowired
     private GrantPermissionManager permissionManager;
 
+    @Autowired
+    private UserAccessService accessService;
+
     @Override
     public UserContext loadUserBySAML(SAMLCredential credential) {
         final String userName = credential.getNameID().getValue().toUpperCase();
@@ -97,11 +98,11 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
         final UserContext userContext = Optional.ofNullable(userManager.loadUserByName(userName))
             .map(loadedUser -> processRegisteredUser(userName, groups, attributes, loadedUser))
             .orElseGet(() -> processNewUser(userName, groups, attributes));
-        validateGroupsBlockingStatus(userContext.getAuthorities(), userName);
+        accessService.validateUserGroupsBlockStatus(userContext.toPipelineUser());
         if (hasBlockedStatusAttribute(credential)) {
             Optional.ofNullable(userContext.getUserId())
                     .ifPresent(id -> userManager.updateUserBlockingStatus(id, true));
-            throwUserIsBlocked(userName);
+            accessService.throwUserIsBlocked(userName);
         }
         LOGGER.info("Successfully authenticate user: " + userContext.getUsername());
         return userContext;
@@ -110,10 +111,8 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
     private UserContext processRegisteredUser(final String userName, final List<String> groups,
                                               final Map<String, String> attributes, final PipelineUser loadedUser) {
         LOGGER.debug("Found user by name {}", userName);
-        if (loadedUser.isBlocked()) {
-            throwUserIsBlocked(userName);
-        }
         loadedUser.setUserName(userName);
+        accessService.validateUserBlockStatus(loadedUser);
         final List<Long> roles = loadedUser.getRoles().stream().map(Role::getId).collect(Collectors.toList());
         if (loadedUser.getFirstLoginDate() == null) {
             userManager.updateUserFirstLoginDate(loadedUser.getId(), DateUtils.nowUTC());
@@ -181,26 +180,6 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
         userContext.setGroups(groups);
         userContext.setRoles(Collections.singletonList(DefaultRoles.ROLE_ANONYMOUS_USER.getRole()));
         return userContext;
-    }
-
-    private void validateGroupsBlockingStatus(final List<GrantedAuthority> authorities, final String userName) {
-        final List<String> groups = ListUtils.emptyIfNull(authorities)
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .distinct()
-                .collect(Collectors.toList());
-        final boolean isValidGroupList = ListUtils.emptyIfNull(userManager.loadGroupBlockingStatus(groups))
-                .stream()
-                .noneMatch(GroupStatus::isBlocked);
-        if (!isValidGroupList) {
-            LOGGER.info("Authentication failed! User {} is blocked due to one of his groups is blocked!", userName);
-            throw new LockedException("User is blocked!");
-        }
-    }
-
-    private void throwUserIsBlocked(final String userName) {
-        LOGGER.info("Authentication failed! User {} is blocked!", userName);
-        throw new LockedException("User is blocked!");
     }
 
     private boolean hasBlockedStatusAttribute(final SAMLCredential credential) {
