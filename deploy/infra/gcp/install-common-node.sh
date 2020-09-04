@@ -56,21 +56,15 @@ fi
 # Get the kube docker images, required by the kubelet
 # This is needed, as we don't want to rely on the external repos
 systemctl start docker && \
-wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/calico-node-v3.14.1.tar" -O /tmp/calico-node-v3.14.1.tar && \
-docker load -i /tmp/calico-node-v3.14.1.tar && \
-wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/calico-pod2daemon-flexvol-v3.14.1.tar" -O /tmp/calico-pod2daemon-flexvol-v3.14.1.tar && \
-docker load -i /tmp/calico-pod2daemon-flexvol-v3.14.1.tar && \
-wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/calico-cni-v3.14.1.tar" -O /tmp/calico-cni-v3.14.1.tar && \
-docker load -i /tmp/calico-cni-v3.14.1.tar && \
-wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O /tmp/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
-docker load -i /tmp/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
-wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/quay.io-coreos-flannel-v0.11.0.tar" -O /tmp/quay.io-coreos-flannel-v0.11.0.tar && \
-docker load -i /tmp/quay.io-coreos-flannel-v0.11.0.tar && \
-wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/k8s.gcr.io-pause-3.1.tar" -O /tmp/k8s.gcr.io-pause-3.1.tar && \
-docker load -i /tmp/k8s.gcr.io-pause-3.1.tar
+mkdir -p /opt/docker-system-images && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/calico-node-v3.14.1.tar" -O /opt/docker-system-images/calico-node-v3.14.1.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/calico-pod2daemon-flexvol-v3.14.1.tar" -O /opt/docker-system-images/calico-pod2daemon-flexvol-v3.14.1.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/calico-cni-v3.14.1.tar" -O /opt/docker-system-images/calico-cni-v3.14.1.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O /opt/docker-system-images/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/quay.io-coreos-flannel-v0.11.0.tar" -O /opt/docker-system-images/quay.io-coreos-flannel-v0.11.0.tar && \
+wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/k8s.gcr.io-pause-3.1.tar" -O /opt/docker-system-images/k8s.gcr.io-pause-3.1.tar
 
-systemctl stop docker && \
-rm -rf /tmp/*
+systemctl stop docker
 
 # Install kubelet
 cat <<EOF >/etc/yum.repos.d/kubernetes.repo
@@ -111,3 +105,11 @@ sed -i '/GRUB_DEFAULT=/c\GRUB_DEFAULT=0' /etc/default/grub && \
 grub2-mkconfig -o /boot/grub2/grub.cfg
 grep 'menuentry ' /boot/grub2/grub.cfg | cut -f 2 -d "'" | nl -v 0
 grub2-set-default 'CentOS Linux (5.7.7-1.el7.elrepo.x86_64) 7 (Core)'
+
+# Make image public
+# GCP_IMG_NAME=cloudpipeline-image-common-us-$VERSION-$COMMIT_SHA
+# GCP_PRJ_NAME=epm-...
+# gcloud compute images add-iam-policy-binding $GCP_IMG_NAME \
+#     --member='allAuthenticatedUsers' \
+#     --role='roles/compute.imageUser' \
+#     --project $GCP_PRJ_NAME
