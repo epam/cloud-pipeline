@@ -27,6 +27,7 @@ import org.openqa.selenium.WebElement;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -60,6 +61,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             entry(USER_MANAGEMENT_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'User management')]"))),
             entry(PREFERENCES_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Preferences')]"))),
             entry(SYSTEM_LOGS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'System Logs')]"))),
+            entry(EMAIL_NOTIFICATIONS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Email notifications')]"))),
+            entry(CLOUD_REGIONS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Cloud regions')]"))),
             entry(OK, context().find(byId("settings-form-ok-button")))
     );
 
@@ -75,7 +78,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
     public CliAO switchToCLI() {
         click(CLI_TAB);
-        return new CliAO();
+        return new CliAO(parentAO);
     }
 
     public SystemEventsAO switchToSystemEvents() {
@@ -109,7 +112,32 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         return parentAO;
     }
 
-    private class CliAO {
+    public static class CliAO extends SettingsPageAO {
+        public final Map<Primitive, SelenideElement> elements = initialiseElements(
+                super.elements(),
+                entry(PIPE_CLI, context().findAll("tr").find(text("Pipe CLI"))),
+                entry(GIT_CLI, context().findAll("tr").find(text("Git CLI"))),
+                entry(GIT_COMMAND, context().find(byCssSelector(".tyles__md-preview")))
+        );
+
+        public CliAO(final PipelinesLibraryAO parent) {
+            super(parent);
+        }
+
+        public CliAO switchGitCLI() {
+            click(GIT_CLI);
+            return this;
+        }
+
+        public CliAO ensureCodeHasText(final String text) {
+            ensure(GIT_COMMAND, matchesText(text));
+            return this;
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
+        }
     }
 
     public class SystemEventsAO extends SettingsPageAO {
@@ -419,7 +447,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     entry(TABLE, context().find(byClassName("ant-tabs-tabpane-active"))
                             .find(byClassName("ant-table-content"))),
                     entry(SEARCH, context().find(byClassName("ant-input-search"))),
-                    entry(CREATE_USER, context().find(button("Create user")))
+                    entry(CREATE_USER, context().find(button("Create user"))),
+                    entry(EXPORT_USERS, context().find(button("Export users")))
             );
 
             public UsersTabAO(PipelinesLibraryAO parentAO) {
@@ -464,6 +493,59 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public UsersTabAO pressEnter() {
                 actions().sendKeys(Keys.ENTER).perform();
+                return this;
+            }
+
+            public UsersTabAO setSearchName(String name) {
+                actions().sendKeys(name).perform();
+                return this;
+            }
+
+            public UsersTabAO searchUser(String name) {
+                sleep(1, SECONDS);
+                return clickSearch()
+                        .setSearchName(name)
+                        .pressEnter();
+            }
+
+            public UsersTabAO exportUsers() {
+                click(EXPORT_USERS);
+                return this;
+            }
+
+            public UserEntry searchUserEntry(String login) {
+                searchUser(login);
+                SelenideElement entry = getUser(login).shouldBe(visible);
+                return new UserEntry(this, login, entry);
+            }
+
+            public UsersTabAO checkUserExist(String name) {
+                searchUser(name).sleep(1, SECONDS);
+                assertTrue(getUser(name.toUpperCase()).isDisplayed(), format("User %s isn't found in list", name));
+                return this;
+            }
+
+            public UsersTabAO checkUserRoles(String name, String...roles) {
+                 List<String> roleLabels = getUser(name.toUpperCase())
+                         .find(byClassName("user-management-form__roles-column"))
+                         .findAll(byXpath(".//span"))
+                         .stream()
+                         .map(SelenideElement::text)
+                         .collect(toList());
+                Arrays.stream(roles).forEach(role -> assertTrue(roleLabels.contains(role),
+                        format("Role label %s isn't found in '%s'", role, roleLabels)));
+                return this;
+            }
+
+            public UsersTabAO deleteUser(String name) {
+                return new UserEntry(this, name.toUpperCase(), getUser(name.toUpperCase()).shouldBe(visible))
+                            .edit()
+                            .deleteUser(name);
+            }
+
+            public UsersTabAO checkUserTabIsEmpty() {
+                sleep(1, SECONDS);
+                $(byText("No data")).shouldBe(visible, exist);
                 return this;
             }
 
@@ -611,7 +693,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public GroupsTabAO deleteGroupIfPresent(String group) {
                 sleep(2, SECONDS);
-                searchGroupBySubstring(group);
                 performIf(context().$$(byText(group)).filterBy(visible).first().exists(), t -> deleteGroup(group));
                 return this;
             }

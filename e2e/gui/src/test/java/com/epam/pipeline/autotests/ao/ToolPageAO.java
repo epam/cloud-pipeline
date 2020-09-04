@@ -63,8 +63,8 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
         return this;
     }
 
-    public ToolPageAO validateEndpointPage() {
-        $(byId("owner")).should(appear).shouldHave(text(C.LOGIN));
+    public ToolPageAO validateEndpointPage(final String owner) {
+        $(byId("owner")).should(appear).shouldHave(text(owner));
         return this;
     }
 

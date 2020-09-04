@@ -24,6 +24,7 @@ import com.epam.pipeline.autotests.utils.Permission;
 import org.openqa.selenium.Cookie;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.enabled;
@@ -135,8 +136,8 @@ public interface Authorization extends Navigation {
         return login.replaceAll("_", " ").split("@")[0];
     }
 
-    default void validateErrorPage(final String message) {
-        $(withText(message)).should(appear);
+    default void validateErrorPage(final List<String> messages) {
+        messages.forEach(message -> $(withText(message)).should(appear));
     }
 
     default void loginBack() {

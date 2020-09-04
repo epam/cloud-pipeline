@@ -59,7 +59,9 @@ public class LogAO implements AccessObject<LogAO> {
             entry(ENDPOINT, $(withText("Endpoint")).closest("tr").find("a")),
             entry(INSTANCE, context().find(byXpath("//*[.//*[text()[contains(.,'Instance')]] and contains(@class, 'ant-collapse')]"))),
             entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]"))),
-            entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find("a"))
+            entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find("a")),
+            entry(SHARE_WITH, $(withText("Share with:")).closest("tr").find("a"))
+
     );
 
     public LogAO waitForCompletion() {
@@ -221,6 +223,17 @@ public class LogAO implements AccessObject<LogAO> {
 
     public String getNestedRunID(int childNum) {
         return $(withText("Nested runs:")).closest("tr").find(byXpath(String.format("td/a[%s]/b", childNum))).getText();
+    }
+
+    public LogAO shareWithGroup(final String groupName) {
+        click(SHARE_WITH);
+        new ShareWith().addGroupToShare(groupName);
+        return this;
+    }
+
+    public LogAO validateShareLink(final String link) {
+        get(SHARE_WITH).shouldHave(text(link));
+        return this;
     }
 
     public LogAO validateException(final String exception) {
@@ -473,6 +486,27 @@ public class LogAO implements AccessObject<LogAO> {
                     return iconClass;
                 }
             };
+        }
+    }
+
+    public static class ShareWith implements AccessObject<ShareWith> {
+        private final Map<Primitive, SelenideElement> elements = initialiseElements(
+                entry(ADD_USER, context().find(byCssSelector(".anticon-user-add")).closest("button")),
+                entry(ADD_GROUP, context().find(byCssSelector(".anticon-usergroup-add")).closest("button")),
+                entry(OK, context().find(button("OK")))
+        );
+
+        public void addGroupToShare(final String groupName) {
+            click(ADD_GROUP);
+            setValue(context().find(byClassName("ant-select-search__field")), groupName).enter();
+            click(byXpath("//*[contains(@aria-labelledby, 'rcDialogTitle1') and " +
+                    ".//*[contains(@class, 'ant-modal-footer')]]//button[. =  'OK']"));
+            click(OK);
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
         }
     }
 }

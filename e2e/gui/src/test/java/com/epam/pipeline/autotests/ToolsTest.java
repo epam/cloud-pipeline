@@ -283,7 +283,7 @@ public class ToolsTest
         );
     }
 
-    @Test(dependsOnMethods = {"toolVersionsTab"})
+    @Test(priority = 1)
     @TestCase({"EPMCMBIBPC-429"})
     public void toolExecutionParameters() {
         tools()
