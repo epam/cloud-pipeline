@@ -91,6 +91,9 @@ const ENABLE_KUBE_TOOLTIP = (
     <Row>
       This checkbox is a convenience option for the <b>"CP_CAP_KUBE=true"</b> parameter.
     </Row>
+    <Row>
+      This also enables <b>"CP_CAP_DIND_CONTAINER"</b> and <b>"CP_CAP_SYSTEMD_CONTAINER"</b> parameters.
+    </Row>
   </div>
 );
 const AUTOSCALED_CLUSTER_UP_TO_TOOLTIP = (

@@ -48,6 +48,8 @@ import {
   CP_CAP_SPARK,
   CP_CAP_SLURM,
   CP_CAP_KUBE,
+  CP_CAP_DIND_CONTAINER,
+  CP_CAP_SYSTEMD_CONTAINER,
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
@@ -253,6 +255,16 @@ export default class EditToolForm extends React.Component {
           if (this.state.launchCluster && this.state.kubeEnabled) {
             params.push({
               name: CP_CAP_KUBE,
+              type: 'boolean',
+              value: true
+            });
+            params.push({
+              name: CP_CAP_DIND_CONTAINER,
+              type: 'boolean',
+              value: true
+            });
+            params.push({
+              name: CP_CAP_SYSTEMD_CONTAINER,
               type: 'boolean',
               value: true
             });
