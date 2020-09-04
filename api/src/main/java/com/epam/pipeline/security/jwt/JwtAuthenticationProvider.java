@@ -18,17 +18,17 @@ package com.epam.pipeline.security.jwt;
 
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
+import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.UserContext;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 
+@RequiredArgsConstructor
 public class JwtAuthenticationProvider implements AuthenticationProvider {
-    private JwtTokenVerifier tokenVerifier;
-
-    public JwtAuthenticationProvider(JwtTokenVerifier tokenVerifier) {
-        this.tokenVerifier = tokenVerifier;
-    }
+    private final JwtTokenVerifier tokenVerifier;
+    private final UserAccessService accessService;
 
     @Override
     public Authentication authenticate(Authentication authentication) {
@@ -44,7 +44,7 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
         }
 
         UserContext context = new UserContext(jwtRawToken, claims);
-
+        accessService.validateUserBlockStatus(context.getUsername());
         return new JwtAuthenticationToken(context, context.getAuthorities());
     }
 
