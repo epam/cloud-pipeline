@@ -884,12 +884,12 @@ public class GitManager {
                                    final String defaultNamespace) {
         try {
             final GitlabClient gitlabClient = getDefaultGitlabClient();
-            gitlabClient.forkProject(projectName, defaultNamespace, tmpGroupName);
+            forkProject(gitlabClient, projectName, defaultNamespace, tmpGroupName);
             LOGGER.debug("The project '{}' was forked to temporary namespace '{}'", projectName, tmpGroupName);
 
             gitlabClient.updateProjectName(projectName, newProjectName, tmpGroupName);
 
-            final GitProject resultProject = gitlabClient.forkProject(newProjectName, tmpGroupName, defaultNamespace);
+            final GitProject resultProject = forkProject(gitlabClient, newProjectName, tmpGroupName, defaultNamespace);
             LOGGER.debug("The project '{}' was forked to default namespace '{}'", newProjectName, defaultNamespace);
             return resultProject;
         } catch (Exception e) {
@@ -912,6 +912,57 @@ public class GitManager {
             return getDefaultGitlabClient().deleteGroup(groupName);
         } catch (GitClientException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
+
+    private GitProject forkProject(final GitlabClient gitlabClient,
+                                   final String projectName,
+                                   final String sourceNamespace,
+                                   final String destinationNamespace) throws GitClientException {
+        final Integer timeout = preferenceManager.getPreference(SystemPreferences.GIT_FORK_WAIT_TIMEOUT);
+        final Integer retryCount = preferenceManager.getPreference(SystemPreferences.GIT_FORK_RETRY_COUNT);
+
+        final List<GitTagEntry> sourceTags = gitlabClient.getRepositoryRevisions(sourceNamespace, projectName);
+        final GitProject resultProject = gitlabClient.forkProject(projectName, sourceNamespace, destinationNamespace);
+        for (int i = 0; i < retryCount; i++) {
+            if (forkedProjectInitialized(gitlabClient, projectName, sourceNamespace, destinationNamespace,
+                    sourceTags)) {
+                return resultProject;
+            }
+            waitTimeout(timeout);
+        }
+        throw new IllegalArgumentException("Cannot fork project correctly.");
+    }
+
+    private boolean forkedProjectInitialized(final GitlabClient gitlabClient,
+                                             final String projectName,
+                                             final String sourceNamespace,
+                                             final String destinationNamespace,
+                                             final List<GitTagEntry> sourceTags) {
+        try {
+            if (!gitlabClient.projectExists(destinationNamespace, projectName)) {
+                LOGGER.debug("The project '{}' was forked but still not exists", projectName);
+                return false;
+            }
+            final List<GitTagEntry> destinationTags = gitlabClient
+                    .getRepositoryRevisions(destinationNamespace, projectName);
+            if (sourceTags.size() != destinationTags.size()) {
+                LOGGER.debug("The projects tag sizes are different (source namespace - '{}', " +
+                        "destination namespace - '{}')", sourceNamespace, destinationNamespace);
+                return false;
+            }
+            return true;
+        } catch (GitClientException e) {
+            LOGGER.debug("An error occurred during fork project initialization. ", e);
+            return false;
+        }
+    }
+
+    private void waitTimeout(final Integer waitTime) {
+        try {
+            Thread.sleep(waitTime);
+        } catch (InterruptedException e) {
+            throw new IllegalArgumentException(e);
         }
     }
 }
