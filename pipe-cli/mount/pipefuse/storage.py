@@ -92,7 +92,7 @@ class StorageHighLevelFileSystemClient(FileSystemClientDecorator):
 
     def upload_range(self, fh, buf, path, offset=0):
         source_path = path.lstrip(self._delimiter)
-        mpu = self._mpus.get(source_path, None)
+        mpu = self._mpus.get(path, None)
         try:
             if mpu:
                 mpu.upload_part(buf, offset)
@@ -122,13 +122,13 @@ class StorageHighLevelFileSystemClient(FileSystemClientDecorator):
                     mpu = self._inner.new_mpu(source_path, file_size,
                                               download=self._generate_region_download_function(),
                                               mv=self._generate_move_file_function())
-                    self._mpus[source_path] = mpu
+                    self._mpus[path] = mpu
                     mpu.initiate()
                     mpu.upload_part(buf, offset)
                 except _ANY_ERROR:
                     logging.exception('Reinitialized multipart upload has failed for %d:%s. '
                                       'Attempting to abort the multipart upload.' % (fh, path))
-                    del self._mpus[source_path]
+                    del self._mpus[path]
                     mpu.abort()
                     raise
             else:

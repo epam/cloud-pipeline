@@ -186,6 +186,7 @@ class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
         source_blob.delete()
 
     def download_range(self, fh, buf, path, offset=0, length=0):
+        logging.info('Downloading range %d-%d for %s' % (offset, offset + length, path))
         source_bucket = self._gcp.bucket(self.bucket)
         source_blob = source_bucket.blob(path)
         source_blob.download_to_file(buf, start=offset, end=offset + length - 1)
