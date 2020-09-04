@@ -34,6 +34,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static com.codeborne.selenide.Selenide.open;
@@ -205,11 +206,9 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
             logout();
             loginAs(user);
             validateWhileErrorPageMessage();
-            loginBack();
             loginAs(user);
             validateWhileErrorPageMessage();
         } finally {
-            loginBack();
             loginAs(admin);
             navigationMenu()
                     .settings()
@@ -284,6 +283,11 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     }
 
     private void validateWhileErrorPageMessage() {
+        if ("true".equals(C.AUTH_TOKEN)) {
+            validateErrorPage(Collections.singletonList("User is blocked!"));
+            logout();
+            return;
+        }
         validateErrorPage(Arrays.asList(
                 "Please contact",
                 format("%s support team", C.PLATFORM_NAME),
@@ -291,6 +295,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 format("login back to the %s", C.PLATFORM_NAME),
                 "if you already own an account")
         );
+        loginBack();
     }
 
     private void loginWithToken(final String token) {
