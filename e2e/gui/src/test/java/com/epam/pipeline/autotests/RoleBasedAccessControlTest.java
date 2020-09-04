@@ -94,7 +94,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     @TestCase(value = "EPMCMBIBPC-3015")
     public void failedAuthentication() {
         Utils.restartBrowser(C.ROOT_ADDRESS);
-        final Account wrongAccount = new Account(C.LOGIN, String.format("123%s", C.PASSWORD));
+        final Account wrongAccount = new Account(C.LOGIN, format("123%s", C.PASSWORD));
         loginAs(wrongAccount);
         if ("true".equals(C.AUTH_TOKEN)) {
             validateErrorPage(singletonList("type=Unauthorized, status=401"));
@@ -183,7 +183,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                         EMAIL_NOTIFICATIONS_TAB, PREFERENCES_TAB, CLOUD_REGIONS_TAB);
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase({"EPMCMBIBPC-3016"})
     public void blockUnblockUser() {
         try {

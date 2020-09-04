@@ -522,8 +522,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public UsersTabAO checkUserExist(String name) {
                 searchUser(name).sleep(1, SECONDS);
-                assertTrue(getUser(name.toUpperCase()).isDisplayed(),
-                        String.format("User %s isn't found in list", name));
+                assertTrue(getUser(name.toUpperCase()).isDisplayed(), format("User %s isn't found in list", name));
                 return this;
             }
 
@@ -533,9 +532,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                          .findAll(byXpath(".//span"))
                          .stream()
                          .map(SelenideElement::text)
-                         .collect(Collectors.toList());
+                         .collect(toList());
                 Arrays.stream(roles).forEach(role -> assertTrue(roleLabels.contains(role),
-                        String.format("Role label %s isn't found in '%s'", role, roleLabels)));
+                        format("Role label %s isn't found in '%s'", role, roleLabels)));
                 return this;
             }
 

@@ -20,6 +20,7 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ex.ElementNotFound;
 import com.epam.pipeline.autotests.utils.C;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
@@ -30,7 +31,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static com.codeborne.selenide.CollectionCondition.empty;
 import static com.codeborne.selenide.CollectionCondition.*;
@@ -143,7 +143,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
             System.out.println("[WARN] retrying click run logs");
             if (trys++ > 5) {
                 Selenide.screenshot(GET_LOGS_ERROR);
-                throw new RuntimeException(format("Could not get run logs (screenshot: %s.png)", GET_LOGS_ERROR));
+                throw new ElementNotFound(format("Could not get run logs (screenshot: %s.png)", GET_LOGS_ERROR), exist);
             }
 
             show(runId);
@@ -174,7 +174,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         List<String> columns = context().find(byClassName("ant-table-thead")).$$("th")
                 .stream()
                 .map(SelenideElement::text)
-                .collect(Collectors.toList());
+                .collect(toList());
         Arrays.stream(heads).forEach(head -> assertTrue(columns.contains(head),
                 format("Column head %s isn't found",head)));
         return this;
@@ -411,7 +411,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
                         .$(byXpath("preceding-sibling::span[@class='ant-checkbox']")).click();
                 break;
             default:
-                throw new RuntimeException("Could be filtered only by Label of Address");
+                throw new IllegalArgumentException("Could be filtered only by Label of Address");
         }
         $$(byText("OK")).find(visible).click();
         return this;

@@ -469,7 +469,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .waitForEndpointLink()
                 .clickOnEndpointLink()
                 .sleep(3, SECONDS)
-                .validateEndpointPage(C.LOGIN)
+                .validateEndpointPage(LOGIN)
                 .closeTab();
         LogAO logAO = new LogAO();
         String endpointLink = logAO.getEndpointLink();
