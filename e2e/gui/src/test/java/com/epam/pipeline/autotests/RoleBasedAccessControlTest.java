@@ -284,7 +284,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
 
     private void validateWhileErrorPageMessage() {
         if ("true".equals(C.AUTH_TOKEN)) {
-            validateErrorPage(Collections.singletonList("User is blocked!"));
+            validateErrorPage(singletonList("User is blocked!"));
             logout();
             return;
         }

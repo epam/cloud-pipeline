@@ -80,7 +80,6 @@ public class C {
         PLATFORM_NAME = conf.getProperty("e2e.ui.platform.name");
         ANONYMOUS_NAME = conf.getProperty("e2e.ui.anonymous.name");
         ANONYMOUS_TOKEN = conf.getProperty("e2e.ui.anonymous.token");
-        ANOTHER_BLOCKED_TOKEN = conf.getProperty("e2e.ui.another.blocked.token");
         ANOTHER_ADMIN_TOKEN = conf.getProperty("e2e.ui.another.admin.token");
     }
 
@@ -141,6 +140,5 @@ public class C {
 
     public static final String ANONYMOUS_NAME;
     public static final String ANONYMOUS_TOKEN;
-    public static final String ANOTHER_BLOCKED_TOKEN;
     public static final String ANOTHER_ADMIN_TOKEN;
 }
