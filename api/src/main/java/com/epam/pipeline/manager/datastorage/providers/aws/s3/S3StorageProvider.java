@@ -50,6 +50,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -64,6 +65,7 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     private final AuthManager authManager;
@@ -86,8 +88,13 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
             s3Helper.createS3Bucket(datastoragePath.getRoot());
         }
         if (StringUtils.hasText(prefix)) {
-            s3Helper.createFile(datastoragePath.getRoot(), ProviderUtils.withTrailingDelimiter(prefix),
-                    new byte[]{}, authManager.getAuthorizedUser());
+            try {
+                s3Helper.createFile(datastoragePath.getRoot(), ProviderUtils.withTrailingDelimiter(prefix),
+                        new byte[]{}, authManager.getAuthorizedUser());
+            } catch (DataStorageException e) {
+                log.debug("Failed to create file {}.", prefix);
+                log.debug(e.getMessage(), e);
+            }
         }
         return storage.getPath();
     }
