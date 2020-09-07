@@ -725,7 +725,7 @@ def terminate_instance(ec2_client, instance_id, spot_request_id=None, kube_clien
     try:
         if spot_request_id:
             pipe_log('Cancel Spot request ({})'.format(spot_request_id))
-            ec2_client.cancel_spot_instance_requests(request_ids=[spot_request_id])
+            ec2_client.cancel_spot_instance_requests(SpotInstanceRequestIds=[spot_request_id])
 
         response = ec2_client.terminate_instances(
             InstanceIds=[
