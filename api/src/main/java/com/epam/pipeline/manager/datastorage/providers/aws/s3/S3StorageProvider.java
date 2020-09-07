@@ -257,9 +257,14 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
             return false;
         }
         if (!dataStorage.isSensitive() && StringUtils.hasText(datastoragePath.getPath())) {
-            s3Helper.createFile(datastoragePath.getRoot(),
+            try {
+                s3Helper.createFile(datastoragePath.getRoot(),
                     ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
                     new byte[]{}, authManager.getAuthorizedUser());
+            } catch (DataStorageException e) {
+                log.debug("Failed to create file {}.", datastoragePath.getPath());
+                log.debug(e.getMessage(), e);
+            }
         }
         return true;
     }
