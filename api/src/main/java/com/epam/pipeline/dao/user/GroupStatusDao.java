@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ public class GroupStatusDao extends NamedParameterJdbcDaoSupport {
     private String upsertGroupStatusQuery;
     private String loadGroupsBlockedStatusQuery;
     private String deleteGroupStatusQuery;
+    private String loadAllGroupsStatusesQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public GroupStatus upsertGroupBlockingStatusQuery(final GroupStatus groupStatus) {
@@ -50,6 +51,9 @@ public class GroupStatusDao extends NamedParameterJdbcDaoSupport {
         getJdbcTemplate().update(deleteGroupStatusQuery, groupName);
     }
 
+    public List<GroupStatus> loadAllGroupsBlockingStatuses() {
+        return getJdbcTemplate().query(loadAllGroupsStatusesQuery, GroupParameters.getRowMapper());
+    }
 
     enum GroupParameters {
         GROUP_NAME,
@@ -88,5 +92,10 @@ public class GroupStatusDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setDeleteGroupStatusQuery(final String deleteGroupStatusQuery) {
         this.deleteGroupStatusQuery = deleteGroupStatusQuery;
+    }
+
+    @Required
+    public void setLoadAllGroupsStatusesQuery(final String loadAllGroupsStatusesQuery) {
+        this.loadAllGroupsStatusesQuery = loadAllGroupsStatusesQuery;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Transactional
 public class GroupStatusDaoTest extends AbstractSpringTest {
 
     private static final String TEST_GROUP_1 = "test_group_1";
+    private static final String TEST_GROUP_2 = "test_group_2";
 
     @Autowired
     private GroupStatusDao groupStatusDao;
@@ -51,6 +54,21 @@ public class GroupStatusDaoTest extends AbstractSpringTest {
 
         groupStatusDao.deleteGroupBlockingStatus(TEST_GROUP_1);
         Assert.assertNull(loadGroupStatus(TEST_GROUP_1));
+    }
+
+    @Test
+    public void testGroupStatusLoadAll() {
+        final GroupStatus groupStatus1 = new GroupStatus(TEST_GROUP_1, false);
+        final GroupStatus groupStatus2 = new GroupStatus(TEST_GROUP_2, false);
+        groupStatusDao.upsertGroupBlockingStatusQuery(groupStatus1);
+        groupStatusDao.upsertGroupBlockingStatusQuery(groupStatus2);
+        final Map<String, Boolean> loadedStatuses = groupStatusDao.loadAllGroupsBlockingStatuses()
+            .stream()
+            .collect(Collectors.toMap(GroupStatus::getGroupName, GroupStatus::isBlocked));
+        Assert.assertEquals(2, loadedStatuses.size());
+        Assert.assertEquals(groupStatus1.isBlocked(), loadedStatuses.get(groupStatus1.getGroupName()));
+        Assert.assertEquals(groupStatus2.isBlocked(), loadedStatuses.get(groupStatus2.getGroupName()));
+
     }
 
     private GroupStatus loadGroupStatus(final String groupName) {

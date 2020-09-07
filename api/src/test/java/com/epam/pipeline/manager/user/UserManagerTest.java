@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ *  * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ public class UserManagerTest extends AbstractSpringTest {
     private static final String BODY = "Body";
     private static final List<Long> DEFAULT_USER_ROLES = Collections.singletonList(2L);
     private static final String TEST_GROUP_NAME_1 = "test_group_1";
+    private static final String TEST_GROUP_NAME_2 = "test_group_2";
     private static final List<String> DEFAULT_USER_GROUPS = Collections.singletonList(TEST_GROUP_NAME_1);
     private static final Map<String, String> DEFAULT_USER_ATTRIBUTE = Collections.emptyMap();
     private static final String ROLE_USER = "ROLE_USER";
@@ -232,6 +233,19 @@ public class UserManagerTest extends AbstractSpringTest {
         Assert.assertFalse(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
         userManager.deleteGroupBlockingStatus(TEST_GROUP_NAME_1);
         Assert.assertNull(getGroupStatus(TEST_GROUP_NAME_1));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void loadAllGroupsStatuses() {
+        userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false);
+        userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_2, true);
+        final Map<String, Boolean> groupsStatuses = userManager.loadAllGroupsBlockingStatuses()
+            .stream()
+            .collect(Collectors.toMap(GroupStatus::getGroupName, GroupStatus::isBlocked));
+        Assert.assertEquals(2, groupsStatuses.size());
+        Assert.assertFalse(groupsStatuses.get(TEST_GROUP_NAME_1));
+        Assert.assertTrue(groupsStatuses.get(TEST_GROUP_NAME_2));
     }
 
     @Test

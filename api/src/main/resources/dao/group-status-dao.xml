@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -50,6 +50,16 @@
                 <![CDATA[
                     DELETE FROM pipeline.group_status
                     WHERE group_name = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllGroupsStatusesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        group_name,
+                        blocked as group_blocked_status
+                    FROM  pipeline.group_status
                 ]]>
             </value>
         </property>
