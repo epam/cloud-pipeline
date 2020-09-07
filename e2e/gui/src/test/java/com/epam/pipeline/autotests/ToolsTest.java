@@ -283,7 +283,7 @@ public class ToolsTest
         );
     }
 
-    @Test(priority = 1)
+    @Test
     @TestCase({"EPMCMBIBPC-429"})
     public void toolExecutionParameters() {
         tools()

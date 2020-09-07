@@ -24,7 +24,7 @@ STAND_NAME=$(grep -i "e2e.ui.root.address=https://" /$USER_HOME_DIR/e2e/gui/defa
 
 if [ "$_RECORDING" == "true" ]; then
     /tmp/vnc2flv-20100207/tools/flvrec.py -o "${STAND_NAME}_${CURRENT_DATE}.flv" -P "${PASSWORD_FILE}" localhost:1 & \
-    /gradlew clean test
+    ./gradlew clean test
 else
     ./gradlew clean test
 fi
