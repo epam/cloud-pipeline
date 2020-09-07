@@ -130,6 +130,14 @@ function prepare_environment {
     return 0
 }
 
+function check_docker {
+    if ! check_installed "docker"; then
+        yum install -q -y wget
+    fi
+    docker info > /dev/null 2>&1
+    return $?
+}
+
 parse_options "$@"
 if [ $? -ne 0 ]; then
   print_err "Unable to setup sync configuration, exiting"
@@ -151,3 +159,19 @@ if [ ! -z "$CP_SYNC_USERS" ] ; then
         print_ok "Users synchronization is finished"
     fi
 fi
+
+if [ ! -z "$CP_SYNC_TOOLS" ] ; then
+    check_docker
+    if [ $? -ne 0 ]; then
+        print_err "Docker is not available, tool sync is not possible, exiting"
+        exit 1
+    fi
+    print_ok "Start tool synchronization from '$CP_ENV_SYNC_SRC_URL' to '$CP_ENV_SYNC_TARGET_URL'"
+    python sync_tools.py $CP_ENV_SYNC_SRC_URL $CP_ENV_SYNC_SRC_TOKEN $CP_ENV_SYNC_TARGET_URL $CP_ENV_SYNC_TARGET_TOKEN
+    if [ $? -ne 0 ]; then
+        print_err "Errors during tools sync"
+    else
+        print_ok "Tools synchronization is finished"
+    fi
+fi
+

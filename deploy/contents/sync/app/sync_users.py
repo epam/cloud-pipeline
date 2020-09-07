@@ -12,130 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import os
-import requests
 import sys
-import urllib3
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-API_GET_ALL_USERS = 'users'
-API_CREATE_USER = 'user'
-API_BLOCK_USER = 'user/{user_id}/block'
-API_SET_GROUP_BLOCK_STATUS = 'group/{group_name}/block'
-API_GET_ALL_BLOCK_STATUSES = 'groups/block'
-
-API_GET_ALL_ROLES = 'role/loadAll'
-API_CREATE_ROLE = 'role/create'
-API_ASSIGN_ROLE_TO_USER = 'role/{role_id}/assign'
-
-API_METADATA_LOAD = 'metadata/load'
-API_METADATA_UPDATE = 'metadata/update'
+from api.users_api import UserSyncAPI
 
 metadata_keys_to_ignore = os.getenv('CP_SYNC_USERS_METADATA_SKIP_KEYS', '').split(',')
-
-
-class API(object):
-    def __init__(self, api_host_url, access_key):
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        self.api = api_host_url + '/pipeline/restapi'
-        self.__headers__ = {'Content-Type': 'application/json',
-                            'Authorization': 'Bearer {}'.format(access_key)}
-
-    def get_url_for_method(self, method):
-        return '{}/{}'.format(self.api.strip('/'), method)
-
-    def get_headers(self):
-        return self.__headers__
-
-    def call(self, method, data=None, params=None, http_method=None, error_message=None):
-        url = '{}/{}'.format(self.api.strip('/'), method)
-        if not http_method:
-            if data:
-                response = requests.post(url, data, headers=self.__headers__, verify=False)
-            else:
-                response = requests.get(url, headers=self.__headers__, verify=False)
-        else:
-            if http_method.lower() == 'get':
-                response = requests.get(url, headers=self.__headers__, params=params, verify=False)
-            elif http_method.lower() == 'put':
-                response = requests.put(url, data, headers=self.__headers__, params=params, verify=False)
-            elif http_method.lower() == 'post':
-                response = requests.post(url, data, headers=self.__headers__, params=params, verify=False)
-            elif http_method.lower() == 'delete':
-                if data:
-                    response = requests.delete(url, data=data, headers=self.__headers__, verify=False)
-                else:
-                    response = requests.delete(url, headers=self.__headers__, verify=False)
-            else:
-                if data:
-                    response = requests.post(url, data, headers=self.__headers__, verify=False)
-                else:
-                    response = requests.get(url, headers=self.__headers__, verify=False)
-        response_data = json.loads(response.text)
-        message_text = error_message if error_message else 'Failed to fetch data from server'
-        if 'status' not in response_data:
-            raise RuntimeError('{}. Server responded with status: {}.'
-                               .format(message_text, str(response_data.status_code)))
-        if response_data['status'] != 'OK':
-            raise RuntimeError('{}. Server responded with message: {}'.format(message_text, response_data['message']))
-        else:
-            return response_data
-
-    def update_group_blocking_status(self, group_name, status=True):
-        data = self.call(API_SET_GROUP_BLOCK_STATUS.format(group_name=group_name),
-                         params={'blockStatus': str(status).lower()}, http_method='POST')
-        return data['payload']
-
-    def load_all_roles(self):
-        data = self.call(API_GET_ALL_ROLES, http_method='GET')
-        roles = data['payload']
-        if not roles:
-            roles = []
-        return roles
-
-    def create_role(self, role_name, is_user_default):
-        data = self.call(API_CREATE_ROLE, params={'roleName': role_name, 'userDefault': is_user_default},
-                         http_method='POST')
-        return data['payload']
-
-    def load_all_users(self):
-        data = self.call(API_GET_ALL_USERS, http_method='GET')
-        users = data['payload']
-        if not users:
-            users = []
-        return users
-
-    def create_user(self, name, roles_ids):
-        data = self.call(API_CREATE_USER, data=json.dumps({'userName': name, 'roleIds': roles_ids}), http_method='POST')
-        return data['payload']
-
-    def get_available_groups_blocking(self):
-        data = self.call(API_GET_ALL_BLOCK_STATUSES, http_method='GET')
-        blocking_statuses = data['payload']
-        if not blocking_statuses:
-            blocking_statuses = []
-        return {status['groupName']: status['blocked'] for status in blocking_statuses}
-
-    def set_user_blocking(self, user_id, status):
-        self.call(API_BLOCK_USER.format(user_id=user_id), params={'blockStatus': status}, http_method='POST')
-
-    def assign_users_to_roles(self, role_id, user_ids):
-        self.call(API_ASSIGN_ROLE_TO_USER.format(role_id=role_id), params={'userIds': user_ids}, http_method='POST')
-
-    def load_entities_metadata(self, entities_ids, entity_class):
-        data = []
-        for entity_id in entities_ids:
-            data.append({'entityId': entity_id, 'entityClass': entity_class})
-        response = self.call(API_METADATA_LOAD, data=json.dumps(data), http_method='POST')
-        if response['payload']:
-            return response['payload']
-        else:
-            return []
-
-    def upload_metadata(self, metadata_entity):
-        self.call(API_METADATA_UPDATE, data=json.dumps(metadata_entity), http_method='POST')
 
 
 def sync_roles(api_source, api_target):
@@ -240,9 +122,9 @@ def sync_metadata_for_entity_class(api_source, api_target, ids_mapping, entity_c
                 api_target.upload_metadata(metadata_entity)
 
 
-def sync_users_routine(api_host_url_a, api_token_a, api_host_url_b, api_token_b):
-    api_source = API(api_host_url_a, api_token_a)
-    api_target = API(api_host_url_b, api_token_b)
+def sync_users_routine(api_url_a, api_token_a, api_url_b, api_token_b):
+    api_source = UserSyncAPI(api_url_a, api_token_a)
+    api_target = UserSyncAPI(api_url_b, api_token_b)
     print('\n===Start roles sync===')
     roles_mapping, roles_ids_mapping = sync_roles(api_source, api_target)
     print('===Roles sync is finished===')
