@@ -572,8 +572,12 @@ function add_self_to_no_proxy() {
       local _self_hostname=$(hostname)
       # -I option prints all the IPs of the current machine, which are separated by a whitespace
       # The whitespace is then replaced with a comma
-      local _self_ips=$(hostname -I)
-      export no_proxy="${no_proxy},${_self_hostname},${_self_ips// /,}"
+      # Notes:
+      # -- hostname -I: prints the addresses with the trailing whitespace, so "echo" it to remove any leading/trailing spaces
+      # -- Also "sed" is used to remove trailing comma, as this breakes "pipe storage ls/cp/etc."
+      local _self_ips=$(echo $(hostname -I))
+      local _new_no_proxy="${no_proxy},${_self_hostname},${_self_ips// /,}"
+      export no_proxy=$(echo $_new_no_proxy | sed 's/,$//g')
 }
 ######################################################
 
