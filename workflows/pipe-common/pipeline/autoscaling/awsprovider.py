@@ -604,7 +604,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                 instance = self.ec2.describe_instances(InstanceIds=[kill_instance_id_on_fail])['Reservations'][0]['Instances'][0]
                 if instance["SpotInstanceRequestId"]:
                     utils.pipe_log('Cancel Spot request ({})'.format(instance["SpotInstanceRequestId"]))
-                    self.ec2.cancel_spot_instance_requests(request_ids=[instance["SpotInstanceRequestId"]])
+                    self.ec2.cancel_spot_instance_requests(SpotInstanceRequestIds=[instance["SpotInstanceRequestId"]])
 
                 utils.pipe_log('[ERROR] Operation timed out and an instance {} will be terminated\n'
                          'See more details below'.format(kill_instance_id_on_fail))
