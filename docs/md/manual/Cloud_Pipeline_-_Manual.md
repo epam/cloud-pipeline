@@ -158,4 +158,4 @@ Get details about costs management concept.
 Get details about the Pipeline objects concept in Cloud Pipeline environment.
 
 [Appendix F. Сomparison of using different FS storage types](Appendix_F/Appendix_F._Сomparison_of_using_different_FS_storages_(FSx_for_Lustre_vs_EFS_in_AWS).md)  
-Get details about the comparison of using different FS storage types (**FSx for Lustre** vs **EFS** in `AWS`) in Cloud Pipeline environment.
+Get details about the comparison of using different FS storage types (**FSx** for `Lustre` / **EFS** in `AWS` / **BTRFS** on `EBS` / **LizardFS** on `EBS`) in Cloud Pipeline environment.
