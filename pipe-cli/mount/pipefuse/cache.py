@@ -57,7 +57,8 @@ class ListingCache:
         parent_path, _ = fuseutils.split_path(path)
         parent_listing = self._cache.get(parent_path, None)
         if parent_listing is not None:
-            parent_listing[fuseutils.without_prefix(path, parent_path)] = item
+            relative_name = fuseutils.without_prefix(path, parent_path)
+            parent_listing[relative_name] = item._replace(name=relative_name)
 
     def _remove_from_parent_cache(self, path):
         logging.info('Removing from parent cache for %s' % path)
@@ -82,11 +83,8 @@ class ListingCache:
     def move_from_parent_cache(self, old_path, path):
         logging.info('Moving from parent cache %s to %s' % (old_path, path))
         cached_item = self._remove_from_parent_cache(old_path)
-        parent_path, _ = fuseutils.split_path(path)
-        parent_listing = self._cache.get(parent_path, None)
-        if cached_item and parent_listing is not None:
-            relative_name = fuseutils.without_prefix(path, parent_path)
-            parent_listing[relative_name] = cached_item._replace(name=relative_name)
+        if cached_item:
+            self._add_to_parent_cache(path, cached_item)
         else:
             logging.info('Moving from parent cache %s to %s was not successful. '
                          'Invalidating both parent caches.' % (old_path, path))
