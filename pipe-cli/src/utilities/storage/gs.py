@@ -17,10 +17,12 @@ import copy
 import hashlib
 import os
 import socket
+from abc import abstractmethod, ABCMeta
 from datetime import datetime, timedelta
 
 from requests import RequestException
 from requests.adapters import HTTPAdapter
+from s3transfer import TransferConfig, MultipartUploader, OSUtils
 from urllib3.connection import VerifiedHTTPSConnection
 
 try:
@@ -59,6 +61,8 @@ from src.utilities.storage.common import AbstractRestoreManager, AbstractListing
     AbstractDeleteManager, AbstractTransferManager
 
 
+KB = 1024
+MB = KB * KB
 CP_CLI_DOWNLOAD_BUFFERING_SIZE = 'CP_CLI_DOWNLOAD_BUFFERING_SIZE'
 CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS = 'CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS'
 
@@ -80,6 +84,92 @@ class GsProgressPercentage(ProgressPercentage):
             return None
         progress = GsProgressPercentage(source_key, size)
         return lambda current: progress(current)
+
+
+class S3TransferUploadClient:
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def create_multipart_upload(self, Bucket, Key, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def abort_multipart_upload(self, Bucket, Key, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def complete_multipart_upload(self, Bucket, Key, UploadId, MultipartUpload, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def upload_part(self, Bucket, Key, UploadId, PartNumber, Body, *args, **kwargs):
+        pass
+
+
+class GCPCompositeUploadClient(S3TransferUploadClient):
+
+    def __init__(self, bucket, path, client):
+        self._bucket = bucket
+        self._path = path
+        self._gcp = client
+        self._bucket_object = self._gcp.bucket(self._bucket)
+        self._blob_object = self._bucket_object.blob(self._path)
+        self._parts = {}
+        self._max_composite_parts = 32
+
+    def create_multipart_upload(self, Bucket, Key, *args, **kwargs):
+        return {'UploadId': self._path}
+
+    def upload_part(self, Bucket, Key, UploadId, PartNumber, Body, *args, **kwargs):
+        body = Body
+        part_number = PartNumber
+        part_path = self._part_path(part_number)
+        part_blob = self._bucket_object.blob(part_path)
+        part_blob.upload_from_file(body)
+        self._parts[part_number] = part_blob
+        return {'ETag': part_path}
+
+    def complete_multipart_upload(self, Bucket, Key, UploadId, MultipartUpload, *args, **kwargs):
+        remaining_parts = list(self._parts[part_number] for part_number in sorted(self._parts.keys()))
+        composed_part = None
+        last_part_number = 0
+        while remaining_parts:
+            if composed_part:
+                merging_parts = remaining_parts[:self._max_composite_parts - 1]
+                last_part_number += len(merging_parts)
+                composed_part = self._merge([composed_part] + merging_parts, last_part_number)
+                remaining_parts = remaining_parts[self._max_composite_parts - 1:]
+            else:
+                merging_parts = remaining_parts[:self._max_composite_parts]
+                last_part_number += len(merging_parts)
+                composed_part = self._merge(merging_parts, last_part_number)
+                remaining_parts = remaining_parts[self._max_composite_parts:]
+        source_blob = self._bucket_object.blob(composed_part.name)
+        self._bucket_object.copy_blob(source_blob, self._bucket_object, self._path)
+        source_blob.delete()
+
+    def _merge(self, parts, last_part_number):
+        merged_part_path = self._merged_part_path(last_part_number)
+        merged_blob = self._bucket_object.blob(merged_part_path)
+        merged_blob.compose(parts)
+        for part_blob in parts:
+            part_blob.delete()
+        return merged_blob
+
+    def _part_path(self, part_number):
+        return '%s_%s.tmp/%d' % (self._path, self._hashed_path(), part_number)
+
+    def _merged_part_path(self, last_part_number):
+        return '%s_%s.tmp/1:%d' % (self._path, self._hashed_path(), last_part_number)
+
+    def _hashed_path(self):
+        return str(abs(hash(self._path)))
+
+    def abort_multipart_upload(self, Bucket, Key, *args, **kwargs):
+        for part_number in sorted(self._parts.keys()):
+            blob = self._parts[part_number]
+            if blob.exists():
+                blob.delete()
 
 
 class _OutputStreamMixin(object):
@@ -564,8 +654,8 @@ class GsUploadManager(GsManager, AbstractTransferManager):
         else:
             source_key = source_wrapper.path
         destination_key = StorageOperations.normalize_path(destination_wrapper, relative_path)
+        local_size = StorageOperations.get_local_file_size(source_key)
         if skip_existing:
-            local_size = StorageOperations.get_local_file_size(source_key)
             remote_size = destination_wrapper.get_list_manager().get_file_size(destination_key)
             if remote_size is not None and local_size == remote_size:
                 if not quiet:
@@ -575,7 +665,18 @@ class GsUploadManager(GsManager, AbstractTransferManager):
         bucket = self.client.bucket(destination_wrapper.bucket.path)
         blob = self._progress_blob(bucket, destination_key, progress_callback, size)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
-        blob.upload_from_filename(source_key)
+        transfer_config = TransferConfig()
+        if local_size > transfer_config.multipart_threshold:
+            # For big files uploading in google cloud storages composite uploads are used
+            # in conjunction with s3transfer library which originally manages parallel uploading
+            # in boto3 for AWS.
+            upload_client = GCPCompositeUploadClient(destination_wrapper.bucket.path, destination_key, self.client)
+            uploader = MultipartUploader(client=upload_client, config=TransferConfig(), osutil=OSUtils())
+            uploader.upload_file(filename=source_key, bucket=destination_wrapper.bucket.path, key=destination_key,
+                                 callback=None, extra_args={})
+            blob.patch()
+        else:
+            blob.upload_from_filename(source_key)
         if progress_callback is not None:
             progress_callback(size)
         if clean:
