@@ -403,6 +403,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     this.dockerImage = currentDockerImage || this.getDefaultValue('docker_image');
     this.rebuildLaunchCommand();
+    this.props.form.validateFields();
+  };
+
+  forceValidation = () => {
+    this.props.form.validateFields(undefined, {force: true, first: true}, () => {});
   };
 
   rebuildLaunchCommand = () => {
@@ -1671,7 +1676,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             description = parameter.description;
             initialEnumeration = parameter.enum;
             visible = parameter.visible;
-            validation = parameter.validation;
+            validation = parameter.validation || [{
+              throw: 'p1 == \'human\'',
+              message: 'No human please'
+            }];
             enumeration = parameterUtilities.parseEnumeration({enumeration});
             if (type.toLowerCase() === 'boolean') {
               value = getBooleanValue(value);
@@ -1703,8 +1711,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return parameters;
   };
 
-  renderStringParameter = (sectionName, {key, value, required, readOnly}, system, visible) => {
+  renderStringParameter = (
+    sectionName,
+    {key, value, required, readOnly, validator},
+    system,
+    visible,
+  ) => {
     const rules = [];
+    if (validator) {
+      rules.push({validator});
+    }
     if (visible && (required || system)) {
       rules.push({
         required: true,
@@ -1746,11 +1762,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderSelectionParameter = (
     sectionName,
-    {key, value, required, readOnly, enumeration, description},
+    {key, value, required, readOnly, enumeration, description, validator},
     system = false,
     parameters
   ) => {
     const rules = [];
+    if (validator) {
+      rules.push({validator});
+    }
     if (required || system) {
       rules.push({
         required: true,
@@ -1772,7 +1791,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             <Select
               disabled={(this.props.readOnly && !this.props.canExecute) || readOnly}
               placeholder="Value"
-              className={styles.parameterValue}>
+              className={styles.parameterValue}
+            >
               {
                 enumeration
                   .filter(e => e.isVisible(parameters))
@@ -1789,13 +1809,21 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
-  renderBooleanParameter = (sectionName, {key, value, readOnly}) => {
+  renderBooleanParameter = (
+    sectionName,
+    {key, value, readOnly, validator}
+  ) => {
+    const rules = [];
+    if (validator) {
+      rules.push({validator});
+    }
     return (
       <FormItem className={styles.formItemRow}>
         {
           this.getSectionFieldDecorator(sectionName)(`params.${key}.value`,
             {
-              initialValue: value
+              initialValue: value,
+              rules
             }
           )(
             <BooleanParameterInput
@@ -1826,7 +1854,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       showOnlyFolderInBucketBrowser: false
     });
   };
-  renderPathParameter = (sectionName, {key, value, required, readOnly}, type, system, visible) => {
+  renderPathParameter = (
+    sectionName,
+    {key, value, required, readOnly, validator},
+    type,
+    system,
+    visible,
+  ) => {
     let icon;
     switch (type) {
       case 'input': icon = 'download'; break;
@@ -1835,6 +1869,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       default: icon = 'folder'; break;
     }
     const rules = [];
+    if (validator) {
+      rules.push({validator});
+    }
     if (visible && (required || system)) {
       rules.push({
         required: true,
@@ -2627,6 +2664,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           let description = parameter ? parameter.description : undefined;
           let visible = parameter ? parameter.visible : undefined;
           let validation = parameter ? parameter.validation : undefined;
+          const validator = validation
+            ? (rule, value, callback) => {
+              const formParameters = this.getSectionValue(sectionName) ||
+                this.buildDefaultParameters(isSystemParametersSection);
+              const modifiedParameters = {
+                ...parameterUtilities.normalizeParameters(formParameters)
+              };
+              console.log('validate', name, value);
+              if (modifiedParameters.hasOwnProperty(name)) {
+                modifiedParameters[name].value = value;
+              }
+              callback(parameterUtilities.validate(parameter, modifiedParameters));
+            }
+            : undefined;
           const parameterIsVisible = parameterUtilities.isVisible(parameter, normalizedParameters);
           const systemParameter = this.getSystemParameter(parameter);
           const parameterHint = systemParameter ? systemParameter.description : description;
@@ -2640,7 +2691,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             case 'common':
               formItem = this.renderPathParameter(
                 sectionName,
-                {key, value, required, readOnly, description},
+                {key, value, required, readOnly, description, validator},
                 type,
                 isSystemParametersSection,
                 parameterIsVisible
@@ -2649,21 +2700,21 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             case 'boolean':
               formItem = this.renderBooleanParameter(
                 sectionName,
-                {key, value, readOnly, description}
+                {key, value, readOnly, description, validator}
               );
               break;
             default:
               if (enumeration) {
                 formItem = this.renderSelectionParameter(
                   sectionName,
-                  {key, value, required, readOnly, enumeration, description},
+                  {key, value, required, readOnly, enumeration, description, validator},
                   isSystemParametersSection,
                   normalizedParameters
                 );
               } else {
                 formItem = this.renderStringParameter(
                   sectionName,
-                  {key, value, required, readOnly, description},
+                  {key, value, required, readOnly, description, validator},
                   isSystemParametersSection,
                   parameterIsVisible
                 );
