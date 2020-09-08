@@ -494,7 +494,7 @@
     <a class="current" href="./">Appendix F. Сomparison of using different FS storage types</a>
     <ul class="subnav">
             
-    <li class="toctree-l3"><a href="#omparison-of-using-different-fs-storage-types-fsx-for-lustre-vs-efs-in-aws">Сomparison of using different FS storage types (FSx for Lustre vs EFS in AWS)</a></li>
+    <li class="toctree-l3"><a href="#omparison-of-using-different-fs-storage-types-in-cloud-pipeline-environment">Сomparison of using different FS storage types in Cloud Pipeline environment</a></li>
     
         <ul>
         
@@ -598,7 +598,7 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="omparison-of-using-different-fs-storage-types-fsx-for-lustre-vs-efs-in-aws">Сomparison of using different FS storage types (FSx for Lustre vs EFS in AWS)</h1>
+                <h1 id="omparison-of-using-different-fs-storage-types-in-cloud-pipeline-environment">Сomparison of using different FS storage types in Cloud Pipeline environment</h1>
 <ul>
 <li><a href="#performance-comparison">Performance</a><ul>
 <li><a href="#synthetic-data-experiment">Synthetic data experiment</a></li>
@@ -608,8 +608,21 @@
 <li><a href="#costs">Costs</a></li>
 </ul>
 <h2 id="performance-comparison">Performance comparison</h2>
-<p>A performance comparison of <strong>FSx for Lustre</strong> and <strong>EFS</strong> in AWS was conducted against synthetic and real data.<br />
-All experiments were carried out on <code>c5.2xlarge</code> (<strong>8</strong> CPU, <strong>16</strong> RAM) AWS instance.</p>
+<p>The performance was measured for different <code>AWS</code> file systems are using in Cloud Pipeline:</p>
+<ul>
+<li>filesystems are managed by <code>S3</code><ul>
+<li><strong>EFS in AWS</strong></li>
+<li><strong>FSx for Lustre</strong></li>
+</ul>
+</li>
+<li>local filesystems<ul>
+<li><strong>BTRFS on EBS</strong></li>
+<li><strong>LizardFS on EBS</strong></li>
+</ul>
+</li>
+</ul>
+<p>A performance comparison of Cloud Pipeline storages was conducted against synthetic and real data.<br />
+All experiments were carried out on <code>c5.2xlarge</code> (<strong>8</strong> CPU, <strong>16</strong> RAM) <code>AWS</code> instance.</p>
 <h3 id="synthetic-data-experiment">Synthetic data experiment</h3>
 <p>In this experiment we have generated two types of data:</p>
 <ul>
@@ -673,6 +686,20 @@ done
 <td>real 12m37.380s <br/> user 1m54.744s <br/> sys 5m13.759s</td>
 <td>real 20m40.877s <br/> user 0m44.095s <br/> sys 9m4.877s</td>
 </tr>
+<tr>
+<td><strong>BTRFS on EBS</strong></td>
+<td>real 11m9.866s <br/> user 0m0.032s <br/> sys 11m7.813s</td>
+<td>real 7m0.032s <br/> user 0m53.303s <br/> sys 3m47.549s</td>
+<td>real 6m48.540s <br/> user 0m47.254s <br/> sys 6m6.036s</td>
+<td>real 6m26.190s <br/> user 2m1.610s <br/> sys 1m25.726s</td>
+</tr>
+<tr>
+<td><strong>LizardFS on EBS</strong></td>
+<td>real 13m4.352s <br/> user 0m0.008s <br/> sys 10m57.101s</td>
+<td>real 7m54.142s <br/> user 0m53.089s <br/> sys 3m51.089s</td>
+<td>real 16m39.980s <br/> user 2m11.618s <br/> sys 6m35.383s</td>
+<td>real 10m3.791s <br/> user 2m18.924s <br/> sys 1m28.035s</td>
+</tr>
 </tbody>
 </table>
 <h4 id="4-threads">4 threads</h4>
@@ -700,6 +727,20 @@ done
 <td>real 20m45.156s <br/> user 0m59.189s <br/> sys 19m26.054s</td>
 <td>real 25m38.531s <br/> user 0m21.820s <br/> sys 16m59.318s</td>
 <td>real 24m58.620s <br/> user 2m11.449s <br/> sys 11m57.240s</td>
+</tr>
+<tr>
+<td><strong>BTRFS on EBS</strong></td>
+<td>real 38m50.438s <br/> user 0m0.028s <br/> sys 38m45.451s</td>
+<td>real 27m55.173s <br/> user 0m52.903s <br/> sys 4m26.061s</td>
+<td>real 20m54.831s <br/> user 0m20.394s <br/> sys 20m34.926s</td>
+<td>real 12m50.153s <br/> user 2m5.149s <br/> sys 1m18.555s</td>
+</tr>
+<tr>
+<td><strong>LizardFS on EBS</strong></td>
+<td>real 48m47.367s <br/> user 0m0.020s <br/> sys 40m17.341s</td>
+<td>real 32m21.257s <br/> user 0m57.588s <br/> sys 5m32.215s</td>
+<td>real 28m12.707s <br/> user 1m30.504s <br/> sys 12m40.881s</td>
+<td>real 15m31.591s <br/> user 2m21.772s <br/> sys 2m31.211s</td>
 </tr>
 </tbody>
 </table>
@@ -729,9 +770,24 @@ done
 <td>real 50m42.845s <br/> user 0m23.462s <br/> sys 35m12.511s</td>
 <td>real 30m53.199s <br/> user 0m54.020s <br/> sys 14m42.712s</td>
 </tr>
+<tr>
+<td><strong>BTRFS on EBS</strong></td>
+<td>real 87m48.066s <br/> user 0m0.016s <br/> sys 86m15.610s</td>
+<td>real 39m59.167s <br/> user 0m50.900s <br/> sys 4m25.582s</td>
+<td>real 44m36.847s <br/> user 0m24.491s <br/> sys 43m11.719s</td>
+<td>real 17m12.744s <br/> user 2m14.324s <br/> sys 1m50.667s</td>
+</tr>
+<tr>
+<td><strong>LizardFS on EBS</strong></td>
+<td>real 97m25.045s <br/> user 0m0.007s <br/> sys 73m32.042s</td>
+<td>real 39m59.167s <br/> user 0m50.900s <br/> sys 4m25.582s</td>
+<td>real 50m25.868s <br/> user 0m58.079s <br/> sys 19m12.443s</td>
+<td>real 27m50.506s <br/> user 2m26.704s <br/> sys 3m9.926s</td>
+</tr>
 </tbody>
 </table>
-<p>As we can see from the presented results, Amazon <strong>FSx for Lustre</strong> is several times faster (from 1.3 to 3.2 times for read mode and from 1.3 to 4 times for write mode) than Amazon <strong>EFS</strong>.</p>
+<p>As we can see from the presented results, <code>Amazon</code> <strong>FSx for Lustre</strong> is several times faster (from 1.3 to 3.2 times for read mode and from 1.3 to 4 times for write mode) than <code>Amazon</code> <strong>EFS</strong>.
+As expected, the local systems performed better than <strong>FSx for Lustre</strong> or <strong>EFS</strong> generally. But it should be noted, that the <strong>FSx for Lustre</strong> was comparable to local systems in some cases.</p>
 <h3 id="real-data-experiment">Real data experiment</h3>
 <p>The <strong><code>cellranger count</code></strong> pipeline was used to conduct an experiment with real data.<br />
 The input data:</p>
@@ -760,12 +816,22 @@ The input data:</p>
 <td><strong>LUSTRE</strong></td>
 <td>real 189m23.586s <br/> user 434m6.950s <br/> sys 13m2.902s</td>
 </tr>
+<tr>
+<td><strong>BTRFS on EBS</strong></td>
+<td>real 187m23.048s <br/> user 413m32.666s <br/> sys 12m30.285s</td>
+</tr>
+<tr>
+<td><strong>LizardFS on EBS</strong></td>
+<td>real 189m8.210s <br/> user 412m6.558s <br/> sys 14m18.429s</td>
+</tr>
 </tbody>
 </table>
-<p>In this case, Amazon <strong>FSx for Lustre</strong> was faster Amazon <strong>EFS</strong> just to ~ 9%.</p>
+<p>The best result was shown by the <strong>BTRFS on EBS</strong> local system.<br />
+However, it can be said that <strong>BTRFS on EBS</strong>, <strong>LizardFS on EBS</strong>, and <strong>FSx for Lustre</strong> are showed the comparable time.
+<code>Amazon</code> <strong>FSx for Lustre</strong> was faster <code>Amazon</code> <strong>EFS</strong> just to ~ 9%.</p>
 <h2 id="costs">Costs</h2>
-<p>Cost calculations have been performed in according to Amazon pricing at the time of this document.<br />
-For the experiments were used the <strong>Lustre</strong> and <strong>EFS</strong> storages that were created in the <strong><code>US East</code></strong> (N.Virginia) region with similar features:</p>
+<p>Cost calculations have been performed in according to <code>Amazon</code> pricing at the time of this document.<br />
+For the experiments were used the storages that were created in the <strong><code>US East</code></strong> (N.Virginia) region with similar features:</p>
 <table>
 <thead>
 <tr>
@@ -785,9 +851,19 @@ For the experiments were used the <strong>Lustre</strong> and <strong>EFS</stron
 <td>SSD: 1.2 TiB Capacity</td>
 <td>50 MB/s/TiB baseline, up to 1.3 GB/s/TiB burst</td>
 </tr>
+<tr>
+<td><strong>BTRFS on EBS</strong></td>
+<td>SSD: 1.2 TiB Capacity</td>
+<td>Max Throughput/Instance - 4,750 MB/s</td>
+</tr>
+<tr>
+<td><strong>LizardFS on EBS</strong></td>
+<td>SSD: 1.2 TiB Capacity</td>
+<td>Max Throughput/Instance - 4,750 MB/s</td>
+</tr>
 </tbody>
 </table>
-<p>The total charge for the month of usage for <strong>FSx for Lustre</strong> and <strong>EFS Standard Storage</strong> is calculated in different ways:</p>
+<p>The total charge for the month of usage for various storages is calculated in different ways:</p>
 <ul>
 <li><strong>EFS</strong></li>
 </ul>
@@ -806,7 +882,17 @@ For the experiments were used the <strong>Lustre</strong> and <strong>EFS</stron
 <li>1228 GB x $0.000194 GB-hour x 720 hours = <strong>$171,5</strong> (<strong>FSx for Lustre</strong> monthly cost)</li>
 </ol>
 </blockquote>
-<p>As seen from the calculation, <strong>EFS</strong> monthly cost is more expensive than Amazon <strong>FSx for Lustre</strong> monthly cost in 1.8 times for similar features storage at the time of this document.</p>
+<ul>
+<li><strong>BTRFS on EBS</strong> and <strong>LizardFS on EBS</strong></li>
+</ul>
+<blockquote>
+<ol>
+<li>(1228 GB x $0.10 GB-month * 86400 seconds (for 24 hours)) / (86,400 seconds/day * 30 day-month) = <strong>$4</strong> (for the volume)</li>
+</ol>
+</blockquote>
+<p>As seen from the calculation, the most beneficial is to use <strong>BTRFS on EBS</strong> and <strong>LizardFS on EBS</strong> local systems.<br />
+However, this is not suitable for long term storage. In this case, <strong>EFS</strong> monthly cost is more expensive than <code>Amazon</code>
+<strong>FSx for Lustre</strong> monthly cost in 1.8 times for similar features storage at the time of this document.</p>
               
             </div>
           </div>
