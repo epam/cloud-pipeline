@@ -113,7 +113,7 @@ class Configuration extends React.Component {
             <span className="label">
               Password:
             </span>
-            <Input
+            <Input.Password
               className="input"
               value={password}
               onChange={this.onSettingChanged('password')}

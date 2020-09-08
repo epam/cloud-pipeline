@@ -23,7 +23,7 @@ function readLocalConfiguration(root) {
       const buffer = fs.readFileSync(path.resolve(root, 'webdav.config'));
       const json = JSON.parse(buffer.toString());
       if (Object.keys(json).length > 0) {
-        return Object.assign({certificates}, json);
+        return Object.assign({certificates, ignoreCertificateErrors: true}, json);
       }
     }
     return undefined;
