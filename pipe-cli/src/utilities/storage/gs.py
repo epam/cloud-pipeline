@@ -108,7 +108,7 @@ class S3TransferUploadClient:
 
 class GCPCompositeUploadClient(S3TransferUploadClient):
 
-    def __init__(self, bucket, path, client):
+    def __init__(self, bucket, path, client, progress_callback):
         self._bucket = bucket
         self._path = path
         self._gcp = client
@@ -116,17 +116,17 @@ class GCPCompositeUploadClient(S3TransferUploadClient):
         self._blob_object = self._bucket_object.blob(self._path)
         self._parts = {}
         self._max_composite_parts = 32
+        self._progress_callback = progress_callback
 
     def create_multipart_upload(self, Bucket, Key, *args, **kwargs):
         return {'UploadId': self._path}
 
     def upload_part(self, Bucket, Key, UploadId, PartNumber, Body, *args, **kwargs):
-        body = Body
-        part_number = PartNumber
-        part_path = self._part_path(part_number)
+        part_path = self._part_path(PartNumber)
         part_blob = self._bucket_object.blob(part_path)
-        part_blob.upload_from_file(body)
-        self._parts[part_number] = part_blob
+        part_blob.upload_from_file(Body)
+        self._progress_callback(part_blob.size)
+        self._parts[PartNumber] = part_blob
         return {'ETag': part_path}
 
     def complete_multipart_upload(self, Bucket, Key, UploadId, MultipartUpload, *args, **kwargs):
@@ -654,8 +654,8 @@ class GsUploadManager(GsManager, AbstractTransferManager):
         else:
             source_key = source_wrapper.path
         destination_key = StorageOperations.normalize_path(destination_wrapper, relative_path)
-        local_size = StorageOperations.get_local_file_size(source_key)
         if skip_existing:
+            local_size = StorageOperations.get_local_file_size(source_key)
             remote_size = destination_wrapper.get_list_manager().get_file_size(destination_key)
             if remote_size is not None and local_size == remote_size:
                 if not quiet:
@@ -666,19 +666,20 @@ class GsUploadManager(GsManager, AbstractTransferManager):
         blob = self._progress_blob(bucket, destination_key, progress_callback, size)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
         transfer_config = TransferConfig()
-        if local_size > transfer_config.multipart_threshold:
+        if size > transfer_config.multipart_threshold:
             # For big files uploading in google cloud storages composite uploads are used
             # in conjunction with s3transfer library which originally manages parallel uploading
             # in boto3 for AWS.
-            upload_client = GCPCompositeUploadClient(destination_wrapper.bucket.path, destination_key, self.client)
+            upload_client = GCPCompositeUploadClient(destination_wrapper.bucket.path, destination_key, self.client,
+                                                     ProgressPercentage(relative_path, size))
             uploader = MultipartUploader(client=upload_client, config=TransferConfig(), osutil=OSUtils())
             uploader.upload_file(filename=source_key, bucket=destination_wrapper.bucket.path, key=destination_key,
                                  callback=None, extra_args={})
             blob.patch()
         else:
             blob.upload_from_filename(source_key)
-        if progress_callback is not None:
-            progress_callback(size)
+            if progress_callback is not None:
+                progress_callback(size)
         if clean:
             source_wrapper.delete_item(source_key)
 
