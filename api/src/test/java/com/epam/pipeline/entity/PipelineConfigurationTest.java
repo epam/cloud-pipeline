@@ -16,16 +16,18 @@
 
 package com.epam.pipeline.entity;
 
+import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.epam.pipeline.config.JsonMapper;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+
+import static org.junit.Assert.*;
 
 public class PipelineConfigurationTest {
 
@@ -45,7 +47,8 @@ public class PipelineConfigurationTest {
                         "\"enum\" : [\"v1\", \"v2\"]" +
                     "}," +
                     "\"instance_size\" : {" +
-                        "\"type\" : \"string\"" +
+                        "\"type\" : \"string\"," +
+                        "\"validation\": [{\"throw\":\"a == a\", \"message\": \"error\"}]" +
                     "}," +
                     "\"instance_disk\" : \"200\"" +
                 "}" +
@@ -67,11 +70,11 @@ public class PipelineConfigurationTest {
 
     @Test
     public void parsingConfigurationJsonTest() throws IOException {
-        PipelineConfiguration pipelineConfiguration = mapper.readValue(
+        final PipelineConfiguration pipelineConfiguration = mapper.readValue(
                 WITH_TYPE_OF_PARAMS_JSON, PipelineConfiguration.class
         );
 
-        Assert.assertTrue(
+        assertTrue(
                 pipelineConfiguration
                         .getParameters()
                         .values()
@@ -79,20 +82,23 @@ public class PipelineConfigurationTest {
                         .allMatch(v -> v.getType() != null)
         );
 
-        Assert.assertEquals(STRING_TYPE, pipelineConfiguration.getParameters().get("main_file").getType());
-        Assert.assertEquals(true, pipelineConfiguration.getParameters().get("main_file").isRequired());
+        final PipeConfValueVO mainFile = pipelineConfiguration.getParameters().get("main_file");
+        assertEquals(STRING_TYPE, mainFile.getType());
+        assertTrue(mainFile.isRequired());
 
-        Assert.assertEquals(CLASS_TYPE, pipelineConfiguration.getParameters().get("main_class").getType());
-        Assert.assertEquals(false, pipelineConfiguration.getParameters().get("main_class").isRequired());
+        final PipeConfValueVO mainClass = pipelineConfiguration.getParameters().get("main_class");
+        assertEquals(CLASS_TYPE, mainClass.getType());
+        assertFalse(mainClass.isRequired());
 
-        Assert.assertEquals(STRING_TYPE, pipelineConfiguration.getParameters().get("instance_size").getType());
-        Assert.assertEquals(false, pipelineConfiguration.getParameters().get("instance_size").isRequired());
-        Assert.assertEquals(EMPTY, pipelineConfiguration.getParameters().get("instance_size").getValue());
+        final PipeConfValueVO instanceSize = pipelineConfiguration.getParameters().get("instance_size");
+        assertEquals(STRING_TYPE, instanceSize.getType());
+        assertFalse(instanceSize.isRequired());
+        assertEquals(EMPTY, instanceSize.getValue());
+        assertEquals(1, instanceSize.getValidation().size());
 
-        Assert.assertEquals(STRING_TYPE, pipelineConfiguration.getParameters().get("instance_disk").getType());
-        Assert.assertEquals(false, pipelineConfiguration.getParameters().get("instance_disk").isRequired());
-        Assert.assertEquals(EXP_INSTANCE_DISK, pipelineConfiguration.getParameters().get("instance_disk").getValue());
-
+        final PipeConfValueVO instanceDisk = pipelineConfiguration.getParameters().get("instance_disk");
+        assertEquals(STRING_TYPE, instanceDisk.getType());
+        assertFalse(instanceDisk.isRequired());
+        assertEquals(EXP_INSTANCE_DISK, instanceDisk.getValue());
     }
-
 }

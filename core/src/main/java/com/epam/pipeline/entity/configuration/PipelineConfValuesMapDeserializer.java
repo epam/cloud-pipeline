@@ -43,6 +43,7 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
     private static final String ENUM_FIELD = "enum";
     private static final String DESCRIPTION_FIELD = "description";
     private static final String VISIBLE_FIELD = "visible";
+    private static final String VALIDATION_FIELD = "validation";
     private static final  NullNode NULL_NODE = NullNode.getInstance();
     private final ObjectMapper mapper;
 
@@ -86,6 +87,11 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
                 if (hasValue(visible)) {
                     parameter.setVisible(visible.asText());
                 }
+                final JsonNode validation = child.get(VALIDATION_FIELD);
+                if (hasValue(validation) && validation.isArray()) {
+                    parameter.setValidation(mapper.readValue(validation.traverse(),
+                            new TypeReference<List<Map<String, String>>>(){}));
+                }
             }
             parameters.put(name, parameter);
         }
@@ -100,7 +106,7 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
                 if (arrayItem.isObject()) {
                     try {
                         availableValues.add(mapper.readValue(arrayItem.traverse(),
-                                new TypeReference<Map<String,String>>(){}));
+                                new TypeReference<Map<String, String>>(){}));
                     } catch (IOException e) {
                         log.error(e.getMessage(), e);
                     }
