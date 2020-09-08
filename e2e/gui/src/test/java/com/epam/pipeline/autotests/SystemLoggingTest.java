@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ShellAO;
@@ -38,6 +39,7 @@ import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -109,8 +111,14 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                     .ok();
             logout();
             loginAs(userWithoutCompletedRuns);
-            validateErrorPage(Collections.singletonList(format("%s was not able to authorize you", C.PLATFORM_NAME)));
-            loginBack();
+            if ("false".equals(C.AUTH_TOKEN)) {
+                validateErrorPage(Collections.singletonList(format("%s was not able to authorize you", C.PLATFORM_NAME)));
+                loginBack();
+            } else {
+                validateErrorPage(Collections.singletonList("User is blocked!"));
+                Selenide.clearBrowserCookies();
+                sleep(1, SECONDS);
+            }
             loginAs(admin);
             navigationMenu()
                     .settings()
