@@ -11,6 +11,10 @@
   padding: 0 2px;
 }
 
+.layout .header {
+  text-align: right;
+}
+
 .layout .footer {
   max-height: 200px;
   overflow: auto;

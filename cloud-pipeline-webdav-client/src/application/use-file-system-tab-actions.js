@@ -112,6 +112,10 @@ function useFileSystemTabActions (leftTab, rightTab) {
       sources
     );
   }, [onCommand, rightTab, leftTab]);
+  const reInitialize = useCallback(() => {
+    rightTab.onInitialize();
+    leftTab.onInitialize();
+  }, [rightTab, leftTab]);
   return {
     operations,
     leftTabActive: active === LEFT_TAB_ID,
@@ -127,6 +131,7 @@ function useFileSystemTabActions (leftTab, rightTab) {
     onLeftFSCommand,
     onRightFSCommand,
     onDropCommand,
+    reInitialize,
   };
 }
 

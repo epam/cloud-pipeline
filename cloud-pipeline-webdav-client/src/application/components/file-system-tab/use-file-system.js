@@ -11,6 +11,7 @@ function init(type) {
     error: undefined,
     pending: true,
     refreshRequest: 0,
+    initializeRequest: 0,
     selection: [],
     lastSelectionIndex: -1,
   };
@@ -50,6 +51,7 @@ function reducer (state, action) {
       lastSelectionIndex: -1,
     };
     case 'refresh': return {...state, refreshRequest: state.refreshRequest + 1};
+    case 'initialize': return {...state, initializeRequest: state.initializeRequest + 1};
     case 'reset': return init(state.type);
   }
   return state;
@@ -67,8 +69,10 @@ function useFileSystem (type) {
     selection,
     lastSelectionIndex,
     refreshRequest,
+    initializeRequest,
   } = state;
   const onRefresh = () => dispatch({type: 'refresh'});
+  const onInitialize = () => dispatch({type: 'initialize'});
   const setPath = useCallback((arg) => {
     dispatch({type: 'set-path', path: arg});
   }, [dispatch]);
@@ -95,6 +99,7 @@ function useFileSystem (type) {
   }, [
     type,
     dispatch,
+    initializeRequest,
   ]);
   useEffect(() => {
     if (fileSystem) {
@@ -126,7 +131,9 @@ function useFileSystem (type) {
     lastSelectionIndex,
     setLastSelectionIndex,
     refreshRequest,
+    initializeRequest,
     onRefresh,
+    onInitialize,
     setPath,
   };
 }

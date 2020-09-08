@@ -89,6 +89,7 @@ typings/
 out/
 
 webdav.dev.config
+*.dev.config
 
 certs/
 
