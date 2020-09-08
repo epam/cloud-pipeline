@@ -1,6 +1,9 @@
-import React, {useState} from 'react';
-import {Layout} from 'antd';
+import React, {useCallback, useState} from 'react';
+import {Button, Layout} from 'antd';
+import {SettingOutlined} from '@ant-design/icons';
+import electron from 'electron';
 import FileSystemTab from './components/file-system-tab';
+import Configuration from './components/configuration';
 import Operations, {OPERATION_HEIGHT} from './operations';
 import useFileSystem from './components/file-system-tab/use-file-system';
 import useFileSystemTabActions from './use-file-system-tab-actions';
@@ -23,12 +26,46 @@ function Application() {
     onLeftFSCommand,
     onRightFSCommand,
     onDropCommand,
+    reInitialize,
   } = useFileSystemTabActions(leftTab, rightTab);
+  const cfg = electron.remote.getGlobal('webdavClient');
+  const {config: webdavClientConfig = {}} = cfg || {};
+  const [
+    configurationTabVisible,
+    setConfigurationTabVisible,
+  ] = useState(
+    !webdavClientConfig.server ||
+    !webdavClientConfig.username ||
+    !webdavClientConfig.password
+  );
+  const onOpenConfigurationTab = useCallback(() => {
+    setConfigurationTabVisible(true);
+  }, [setConfigurationTabVisible]);
+  const onCloseConfigurationTab = useCallback((modified) => {
+    setConfigurationTabVisible(false);
+    if (modified) {
+      reInitialize();
+    }
+  }, [setConfigurationTabVisible, reInitialize]);
   const [dragging, setDragging] = useState(undefined);
   const activeOperations = operations.filter(o => !o.finished);
   return (
     <Layout className="layout">
+      <Layout.Header
+        className="header"
+      >
+        <Button
+          size="small"
+          onClick={onOpenConfigurationTab}
+        >
+          <SettingOutlined />
+        </Button>
+      </Layout.Header>
       <Layout.Content className="content">
+        <Configuration
+          visible={configurationTabVisible}
+          onClose={onCloseConfigurationTab}
+        />
         <FileSystemTab
           active={leftTabActive}
           error={leftTab.error}

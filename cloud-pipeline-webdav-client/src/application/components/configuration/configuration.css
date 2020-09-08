@@ -1,0 +1,19 @@
+.configuration {
+
+}
+
+.configuration .row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 5px;
+}
+
+.configuration .row .label {
+  font-weight: bold;
+  width: 150px;
+}
+
+.configuration .fow .input {
+  flex: 1;
+}

@@ -7,6 +7,11 @@ class LocalFileSystem extends FileSystem {
   constructor(root) {
     super(root || path.parse(__dirname).root);
   }
+
+  reInitialize() {
+    return super.reInitialize(this.root);
+  }
+
   getDirectoryContents(directory) {
     return new Promise((resolve, reject) => {
       const directoryCorrected = directory || '';
