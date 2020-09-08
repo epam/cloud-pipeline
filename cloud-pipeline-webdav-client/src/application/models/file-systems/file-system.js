@@ -10,6 +10,13 @@ class FileSystem {
     this.separator = path.sep;
     this.rootName = root === this.separator ? 'Root' : root;
   }
+
+  reInitialize(root) {
+    this.root = root;
+    this.separator = path.sep;
+    this.rootName = root === this.separator ? 'Root' : root;
+    return Promise.resolve();
+  }
   initialize () {
     return Promise.resolve();
   }

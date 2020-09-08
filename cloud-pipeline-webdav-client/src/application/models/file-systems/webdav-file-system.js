@@ -28,6 +28,36 @@ class WebdavFileSystem extends FileSystem {
     this.rootName = 'WebDav Root';
     this.separator = '/';
   }
+  reInitialize() {
+    return new Promise((resolve, reject) => {
+      let cfg;
+      if (electron.remote === undefined) {
+        cfg = global.webdavClient;
+      } else {
+        cfg = electron.remote.getGlobal('webdavClient');
+      }
+      const {config: webdavClientConfig} = cfg || {};
+      const {
+        server,
+        username,
+        password,
+        certificates,
+        ignoreCertificateErrors,
+      } = webdavClientConfig || {};
+      super.reInitialize(server)
+        .then(() => {
+          this.username = username;
+          this.password = password;
+          this.certificates = certificates;
+          this.ignoreCertificateErrors = ignoreCertificateErrors;
+          this.rootName = 'WebDav Root';
+          this.separator = '/';
+          this.initialize()
+            .then(resolve)
+            .catch(reject);
+        });
+    });
+  }
   initialize() {
     if (!this.root) {
       return Promise.reject('Webdav server url not specified');
