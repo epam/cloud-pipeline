@@ -666,12 +666,10 @@ class GsUploadManager(GsManager, AbstractTransferManager):
         bucket = self.client.bucket(destination_wrapper.bucket.path)
         blob = self._progress_blob(bucket, destination_key, progress_callback, size)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
-        multipart_threshold = int(os.getenv('CP_CLI_GCP_MULTIPART_THRESHOLD') or 8 * MB)
-        multipart_chunksize = int(os.getenv('CP_CLI_GCP_MULTIPART_CHUNKSIZE') or 8 * MB)
-        max_concurrency = int(os.getenv('CP_CLI_GCP_MAX_CONCURRENCY') or 10)
-        transfer_config = TransferConfig(multipart_threshold=multipart_threshold,
-                                         multipart_chunksize=multipart_chunksize,
-                                         max_concurrency=max_concurrency)
+        transfer_config = self._build_transfer_config(size,
+                                                      multipart_threshold=os.getenv('CP_CLI_GCP_MULTIPART_THRESHOLD'),
+                                                      multipart_chunksize=os.getenv('CP_CLI_GCP_MULTIPART_CHUNKSIZE'),
+                                                      max_concurrency=os.getenv('CP_CLI_GCP_MAX_CONCURRENCY'))
         if size > transfer_config.multipart_threshold:
             # For big files uploading in google cloud storages composite uploads are used
             # in conjunction with s3transfer library which originally manages parallel uploading
@@ -689,6 +687,24 @@ class GsUploadManager(GsManager, AbstractTransferManager):
                 progress_callback(size)
         if clean:
             source_wrapper.delete_item(source_key)
+
+    def _build_transfer_config(self, size, multipart_threshold=None, multipart_chunksize=None, max_concurrency=None):
+        if not multipart_threshold or not multipart_chunksize:
+            multipart_threshold = 150 * MB
+            num_components = max(min(self._safely_divided(size, multipart_threshold), 32), 2)
+            multipart_chunksize = self._safely_divided(size, num_components)
+        if not max_concurrency:
+            max_concurrency = 10
+        transfer_config = TransferConfig(multipart_threshold=int(multipart_threshold),
+                                         multipart_chunksize=int(multipart_chunksize),
+                                         max_concurrency=int(max_concurrency))
+        return transfer_config
+
+    def _safely_divided(self, a, b):
+        r = a // b
+        if (a % b) != 0:
+            r += 1
+        return r
 
 
 class _SourceUrlIO:
