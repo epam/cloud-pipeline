@@ -125,7 +125,8 @@ class GCPCompositeUploadClient(S3TransferUploadClient):
         part_path = self._part_path(PartNumber)
         part_blob = self._bucket_object.blob(part_path)
         part_blob.upload_from_file(Body)
-        self._progress_callback(part_blob.size)
+        if self._progress_callback:
+            self._progress_callback(part_blob.size)
         self._parts[PartNumber] = part_blob
         return {'ETag': part_path}
 
@@ -670,8 +671,9 @@ class GsUploadManager(GsManager, AbstractTransferManager):
             # For big files uploading in google cloud storages composite uploads are used
             # in conjunction with s3transfer library which originally manages parallel uploading
             # in boto3 for AWS.
+            progress_callback = ProgressPercentage(relative_path, size) if progress_callback else None
             upload_client = GCPCompositeUploadClient(destination_wrapper.bucket.path, destination_key, self.client,
-                                                     ProgressPercentage(relative_path, size))
+                                                     progress_callback)
             uploader = MultipartUploader(client=upload_client, config=TransferConfig(), osutil=OSUtils())
             uploader.upload_file(filename=source_key, bucket=destination_wrapper.bucket.path, key=destination_key,
                                  callback=None, extra_args={})
