@@ -46,6 +46,7 @@ const DRIVE_KEY = 'drive';
 
 const DRIVE_MAPPING_URL_PREFERENCE = 'base.dav.auth.url';
 const DRIVE_MAPPING_KEY = 'ui.pipe.drive.mapping';
+const FILE_BROWSER_KEY = 'ui.pipe.file.browser.app';
 
 function processBashScript (script) {
   let command = hljs.highlight('bash', script).value;
@@ -90,6 +91,11 @@ export default class CLIForm extends React.Component {
   @computed
   get pipeDriveMapping () {
     return this.props.preferences.getPreferenceValue(DRIVE_MAPPING_KEY) || '{}';
+  }
+
+  @computed
+  get fileBrowserApp () {
+    return this.props.preferences.getPreferenceValue(FILE_BROWSER_KEY) || '{}';
   }
 
   @computed
@@ -384,43 +390,59 @@ export default class CLIForm extends React.Component {
     }
 
     let content;
+    let fileBrowserContent;
     let driveMapping = {};
+    let fileBrowserApp = {};
     try {
       driveMapping = JSON.parse(this.pipeDriveMapping);
     } catch (___) {}
+    try {
+      fileBrowserApp = JSON.parse(this.fileBrowserApp);
+    } catch (___) {}
     const filterUnique = (o, i, a) => a.indexOf(o) === i;
-    const operationSystems = ['Windows', ...Object.keys(driveMapping)].filter(filterUnique);
+    const operationSystems = [
+      'Windows',
+      ...Object.keys(driveMapping),
+      ...Object.keys(fileBrowserApp)
+    ].filter(filterUnique);
     let defaultOS = 'Windows';
     if (operationSystems.map(o => o.toLowerCase()).indexOf(getOS().toLowerCase()) >= 0) {
       defaultOS = getOS();
     }
     const operationSystem = this.state.driveMappingOS || defaultOS;
 
-    if (driveMapping[operationSystem]) {
-      let code = this.props.preferences.replacePlaceholders(driveMapping[operationSystem]);
-      if (code.indexOf('{user.jwt.token}') >= 0) {
-        code = code.replace(new RegExp('{user.jwt.token}', 'g'), this.state.driveMapping.accessKey || '');
-        if (!this.state.driveMapping.accessKey) {
-          (async () => {
-            const duration = this.props.preferences.getPreferenceValue('launch.jwt.token.expiration') || 60 * 60 * 24; // 1 day
-            const request = new UserToken(duration);
-            await request.fetch();
-            if (!request.error) {
-              const driveMapping = this.state.driveMapping;
-              driveMapping.accessKey = request.value.token;
-              this.setState({driveMapping});
-            }
-          })();
-        } else {
-          code = code.replace(new RegExp('{user.jwt.token}', 'g'), this.state.driveMapping.accessKey || '');
+    const driveMappingConfig = driveMapping[operationSystem];
+    const fileBrowserConfig = fileBrowserApp[operationSystem];
+
+    if (!this.state.driveMapping.accessKey) {
+      (async () => {
+        const duration = this.props.preferences
+          .getPreferenceValue('launch.jwt.token.expiration') ||
+          60 * 60 * 24; // 1 day
+        const request = new UserToken(duration);
+        await request.fetch();
+        if (!request.error) {
+          const driveMappingState = this.state.driveMapping;
+          driveMappingState.accessKey = request.value.token;
+          this.setState({driveMapping: driveMappingState});
         }
+      })();
+    }
+
+    const loadCode = (config, id) => {
+      let code = this.props.preferences.replacePlaceholders(config);
+      if (code.indexOf('{user.jwt.token}') >= 0) {
+        code = code.replace(
+          new RegExp('{user.jwt.token}', 'g'),
+          this.state.driveMapping.accessKey || ''
+        );
       }
       if (code) {
-        content = (
+        return (
           <Row type="flex" className={styles.mdPreview}>
             <pre style={{width: '100%', fontSize: 'smaller'}}>
               <code
-                id="cli-configure-command-text-area"
+                id={id}
                 dangerouslySetInnerHTML={{
                   __html: processBashScript(this.props.preferences.replacePlaceholders(code))
                 }} />
@@ -428,14 +450,21 @@ export default class CLIForm extends React.Component {
           </Row>
         );
       } else {
-        content = (
+        return (
           <Row type="flex" className={styles.mdPreview}>
             <Icon type="loading" />
           </Row>
         );
       }
-    } else {
+    };
+
+    if (driveMappingConfig) {
+      content = loadCode(driveMappingConfig, 'drive-mapping-configure-command');
+    } else if (/^windows$/i.test(operationSystem)) {
       content = <DriveMappingWindowsForm />;
+    }
+    if (fileBrowserConfig) {
+      fileBrowserContent = loadCode(fileBrowserConfig, 'file-browser-configure-command');
     }
 
     return [
@@ -456,10 +485,27 @@ export default class CLIForm extends React.Component {
           }
         </Select>
       </Row>,
-      <Row key="drive-mapping-content">
-        {content}
-      </Row>
-    ];
+      content && (
+        <Row key="drive-mapping-header" style={{margin: '10px 0'}}>
+          <b style={{fontSize: 'larger'}}>Drive Mapping</b>
+        </Row>
+      ),
+      content && (
+        <Row key="drive-mapping-content">
+          {content}
+        </Row>
+      ),
+      fileBrowserContent && (
+        <Row key="file-browser-application-header" style={{margin: '10px 0'}}>
+          <b style={{fontSize: 'larger'}}>File Browser Application</b>
+        </Row>
+      ),
+      fileBrowserContent && (
+        <Row key="file-browser-application">
+          {fileBrowserContent}
+        </Row>
+      )
+    ].filter(Boolean);
   };
 
   selectTab = ({key}) => {
@@ -489,7 +535,7 @@ export default class CLIForm extends React.Component {
     if (this.driveMappintAuthUrl) {
       tabs.push({
         key: DRIVE_KEY,
-        title: 'Drive mapping'
+        title: 'File System Access'
       });
     }
     return tabs;
