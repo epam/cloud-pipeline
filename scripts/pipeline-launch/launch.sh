@@ -1325,9 +1325,10 @@ echo "-"
 ######################################################
 
 export CP_ENV_FILE_TO_SOURCE="/etc/cp_env.sh"
+export CP_USER_ENV_FILE_TO_SOURCE="/etc/cp_env_user.sh"
 
-#clean all previous saved envs. f.i. if container was committed
-rm -f $CP_ENV_FILE_TO_SOURCE
+# Clean all previous saved envs, e.g. if container was committed
+rm -f $CP_ENV_FILE_TO_SOURCE $CP_USER_ENV_FILE_TO_SOURCE
 
 for var in $(compgen -e)
 do
@@ -1350,6 +1351,13 @@ do
       fi
 	echo "export $var=$_var_value" >> $CP_ENV_FILE_TO_SOURCE
 done
+
+# Read attributes from the user profile and append them to the global env file
+env_setup_user_profile "$CP_USER_ENV_FILE_TO_SOURCE"
+if [ $? -eq 0 ]; then
+      source "$CP_ENV_FILE_TO_SOURCE"
+      cat "$CP_USER_ENV_FILE_TO_SOURCE" >> $CP_ENV_FILE_TO_SOURCE
+fi
 
 _CP_ENV_SOURCE_COMMAND="source $CP_ENV_FILE_TO_SOURCE"
 _CP_ENV_SUDO_ALIAS="alias sudo='sudo -E'"
