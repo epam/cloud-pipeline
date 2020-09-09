@@ -666,7 +666,12 @@ class GsUploadManager(GsManager, AbstractTransferManager):
         bucket = self.client.bucket(destination_wrapper.bucket.path)
         blob = self._progress_blob(bucket, destination_key, progress_callback, size)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
-        transfer_config = TransferConfig()
+        multipart_threshold = int(os.getenv('CP_CLI_GCP_MULTIPART_THRESHOLD') or 8 * MB)
+        multipart_chunksize = int(os.getenv('CP_CLI_GCP_MULTIPART_CHUNKSIZE') or 8 * MB)
+        max_concurrency = int(os.getenv('CP_CLI_GCP_MAX_CONCURRENCY') or 10)
+        transfer_config = TransferConfig(multipart_threshold=multipart_threshold,
+                                         multipart_chunksize=multipart_chunksize,
+                                         max_concurrency=max_concurrency)
         if size > transfer_config.multipart_threshold:
             # For big files uploading in google cloud storages composite uploads are used
             # in conjunction with s3transfer library which originally manages parallel uploading
