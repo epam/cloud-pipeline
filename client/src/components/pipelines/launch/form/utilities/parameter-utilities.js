@@ -124,7 +124,7 @@ function buildValidationFn (element) {
     return () => '';
   }
   const {validation} = element;
-  if (Array.isArray(validation)) {
+  if (Array.isArray(validation) || isObservableArray(validation)) {
     return validation.map(buildValidationRuleFn);
   }
   return [buildValidationRuleFn(validation)];
