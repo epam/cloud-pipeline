@@ -142,7 +142,8 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
             "/launch.sh", "/PipelineCLI.tar.gz",
             "/pipe-common.tar.gz", "/commit-run-scripts/**", "/pipe",
             "/fsbrowser.tar.gz", "/error", "/error/**", "/pipe.zip", "/pipe.tar.gz",
-            "/pipe-el6", "/pipe-el6.tar.gz"
+            "/pipe-el6", "/pipe-el6.tar.gz",
+            "/webdav-linux.tar.gz", "/webdav-win32.zip", "/webdav-win64.zip"
         };
     }
 
