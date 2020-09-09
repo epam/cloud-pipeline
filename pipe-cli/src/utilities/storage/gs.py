@@ -679,7 +679,7 @@ class GsUploadManager(GsManager, AbstractTransferManager):
             progress_callback = ProgressPercentage(relative_path, size) if progress_callback else None
             upload_client = GCPCompositeUploadClient(destination_wrapper.bucket.path, destination_key, self.client,
                                                      progress_callback)
-            uploader = MultipartUploader(client=upload_client, config=TransferConfig(), osutil=OSUtils())
+            uploader = MultipartUploader(client=upload_client, config=transfer_config, osutil=OSUtils())
             uploader.upload_file(filename=source_key, bucket=destination_wrapper.bucket.path, key=destination_key,
                                  callback=None, extra_args={})
             blob.patch()
