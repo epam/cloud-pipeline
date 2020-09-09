@@ -403,11 +403,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     this.dockerImage = currentDockerImage || this.getDefaultValue('docker_image');
     this.rebuildLaunchCommand();
-    this.props.form.validateFields();
-  };
-
-  forceValidation = () => {
-    this.props.form.validateFields(undefined, {force: true, first: true}, () => {});
+    if (this.forceValidation) {
+      this.forceValidation = false;
+      this.props.form.validateFields(undefined, {force: true}, () => {});
+    } else {
+      this.props.form.validateFields();
+    }
   };
 
   rebuildLaunchCommand = () => {
@@ -664,6 +665,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           if (result) {
             this.reset();
             this.prepare();
+            this.forceValidation = true;
             this.formFieldsChanged();
           }
         }
@@ -841,7 +843,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         fireCloudOutputs: {},
         fireCloudInputsErrors: {},
         fireCloudOutputsErrors: {}
-      }, this.formFieldsChanged);
+      }, () => {
+        this.forceValidation = true;
+        this.formFieldsChanged();
+      });
     } else {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
@@ -899,7 +904,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         fireCloudInputsErrors: {},
         fireCloudOutputsErrors: {},
         autoPause: true
-      }, this.formFieldsChanged);
+      }, () => {
+        this.forceValidation = true;
+        this.formFieldsChanged();
+      });
     }
   };
 
@@ -1676,10 +1684,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             description = parameter.description;
             initialEnumeration = parameter.enum;
             visible = parameter.visible;
-            validation = parameter.validation || [{
-              throw: 'p1 == \'human\'',
-              message: 'No human please'
-            }];
+            validation = parameter.validation;
             enumeration = parameterUtilities.parseEnumeration({enumeration});
             if (type.toLowerCase() === 'boolean') {
               value = getBooleanValue(value);
@@ -1736,7 +1741,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           this.getSectionFieldDecorator(sectionName)(`params.${key}.value`,
             {
               rules: rules,
-              initialValue: value
+              initialValue: value,
+              onChange: () => { this.forceValidation = true; }
             })(
             this.props.isDetachedConfiguration
               ? <AutoCompleteForParameter
@@ -1785,7 +1791,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           this.getSectionFieldDecorator(sectionName)(`params.${key}.value`,
             {
               rules: rules,
-              initialValue: value
+              initialValue: value,
+              onChange: () => { this.forceValidation = true; }
             }
           )(
             <Select
@@ -1823,7 +1830,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           this.getSectionFieldDecorator(sectionName)(`params.${key}.value`,
             {
               initialValue: value,
-              rules
+              rules,
+              onChange: () => { this.forceValidation = true; }
             }
           )(
             <BooleanParameterInput
@@ -1901,7 +1909,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         {
           this.getSectionFieldDecorator(sectionName)(`params.${key}.value`, {
             rules: rules,
-            initialValue: value
+            initialValue: value,
+            onChange: () => { this.forceValidation = true; }
           })(
             this.props.isDetachedConfiguration
               ? <AutoCompleteForParameter
@@ -2671,7 +2680,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               const modifiedParameters = {
                 ...parameterUtilities.normalizeParameters(formParameters)
               };
-              console.log('validate', name, value);
               if (modifiedParameters.hasOwnProperty(name)) {
                 modifiedParameters[name].value = value;
               }
