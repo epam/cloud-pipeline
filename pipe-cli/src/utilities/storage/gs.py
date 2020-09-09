@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import base64
 import copy
-import hashlib
+import io
 import os
 import socket
 from abc import abstractmethod, ABCMeta
@@ -22,7 +21,7 @@ from datetime import datetime, timedelta
 
 from requests import RequestException
 from requests.adapters import HTTPAdapter
-from s3transfer import TransferConfig, MultipartUploader, OSUtils
+from s3transfer import TransferConfig, MultipartUploader, OSUtils, MultipartDownloader
 from urllib3.connection import VerifiedHTTPSConnection
 
 try:
@@ -65,6 +64,9 @@ KB = 1024
 MB = KB * KB
 CP_CLI_DOWNLOAD_BUFFERING_SIZE = 'CP_CLI_DOWNLOAD_BUFFERING_SIZE'
 CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS = 'CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS'
+CP_CLI_GCP_MULTIPART_THRESHOLD = 'CP_CLI_GCP_MULTIPART_THRESHOLD'
+CP_CLI_GCP_MULTIPART_CHUNKSIZE = 'CP_CLI_GCP_MULTIPART_CHUNKSIZE'
+CP_CLI_GCP_MAX_CONCURRENCY = 'CP_CLI_GCP_MAX_CONCURRENCY'
 
 
 class GsProgressPercentage(ProgressPercentage):
@@ -106,7 +108,15 @@ class S3TransferUploadClient:
         pass
 
 
-class GCPCompositeUploadClient(S3TransferUploadClient):
+class S3TransferDownloadClient:
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def get_object(self, Bucket, Key, Range, *args, **kwargs):
+        pass
+
+
+class GsCompositeUploadClient(S3TransferUploadClient):
 
     def __init__(self, bucket, path, client, progress_callback):
         self._bucket = bucket
@@ -173,6 +183,25 @@ class GCPCompositeUploadClient(S3TransferUploadClient):
                 blob.delete()
 
 
+class GsRangeDownloadClient(S3TransferDownloadClient):
+
+    def __init__(self, bucket, path, client):
+        self._bucket = bucket
+        self._path = path
+        self._gcp = client
+        self._bucket_object = self._gcp.bucket(self._bucket)
+        self._blob_object = self._bucket_object.blob(path)
+
+    def get_object(self, Bucket, Key, Range, *args, **kwargs):
+        start, end = Range.split('=')[1].split('-')
+        start = int(start)
+        end = int(end) if end else None
+        buf = io.BytesIO()
+        self._blob_object.download_to_file(buf, start=start, end=end)
+        buf.seek(0)
+        return {'Body': buf}
+
+
 class _OutputStreamMixin(object):
 
     def __init__(self, stream):
@@ -214,38 +243,14 @@ class _ProgressOutputStream(_OutputStreamMixin):
                 self._progress_callback(self._bytes_transferred)
 
 
-class _CheckSumOutputStream(_OutputStreamMixin):
-
-    def __init__(self, stream):
-        """
-        Output stream wrapper that collects md5 hash for the writing data. Once all the data is written
-        the resulting checksum can be validated.
-
-        :param stream: Wrapping stream.
-        """
-        super(_CheckSumOutputStream, self).__init__(stream)
-        self._md5_hash = hashlib.md5()
-
-    def write(self, data):
-        self._stream.write(data)
-        self._md5_hash.update(data)
-
-    def validate_checksum(self, expected_md5_hash):
-        actual_md5_hash = base64.b64encode(self._md5_hash.digest())
-        actual_md5_hash = actual_md5_hash.decode(u'utf-8')
-        if actual_md5_hash != expected_md5_hash:
-            raise RuntimeError('Checksum mismatch after the resuming download.')
-
-
 class _ResumableDownloadProgressMixin(Blob):
     """
-    Blob download mixin that checks downloading progress, validates downloading checksum and resumes the download in
-    case of any low-level error.
+    Blob download mixin that resumes the downloading in case of any low-level error.
     """
 
     def _do_download(self, transport, file_obj, download_url, headers, start=None, end=None):
-        stream = _CheckSumOutputStream(_ProgressOutputStream(file_obj, progress_callback=self._progress_callback,
-                                                             progress_chunk_size=self._progress_chunk_size))
+        stream = _ProgressOutputStream(file_obj, progress_callback=self._progress_callback,
+                                       progress_chunk_size=self._progress_chunk_size)
         remaining_attempts = self._attempts
         while stream.bytes_transferred < self._size and remaining_attempts:
             try:
@@ -262,7 +267,6 @@ class _ResumableDownloadProgressMixin(Blob):
                                        'Original error: %s.'
                                        % (self._attempts, CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS, str(e)))
         self.reload()
-        stream.validate_checksum(self.md5_hash)
 
 
 class _UploadProgressMixin(Blob):
@@ -627,11 +631,29 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
             blob = bucket.blob(source_key)
         else:
             blob = self._progress_blob(bucket, source_key, progress_callback, size)
-        self._download_to_file(blob, destination_key)
+        transfer_config = self._get_download_config()
+        if size > transfer_config.multipart_threshold:
+            download_client = GsRangeDownloadClient(source_wrapper.bucket.path, destination_key, self.client)
+            downloader = MultipartDownloader(client=download_client, config=transfer_config, osutil=OSUtils())
+            downloader.download_file(bucket=source_wrapper.bucket.path, key=source_key, filename=destination_key,
+                                     object_size=size, extra_args={}, callback=None)
+        else:
+            self._download_to_file(blob, destination_key)
         if progress_callback is not None:
             progress_callback(size)
         if clean:
             blob.delete()
+
+    def _get_download_config(self):
+        transfer_config = TransferConfig(multipart_threshold=200 * MB,
+                                         multipart_chunksize=200 * MB)
+        if os.getenv(CP_CLI_GCP_MULTIPART_THRESHOLD):
+            transfer_config.multipart_threshold = int(os.getenv(CP_CLI_GCP_MULTIPART_THRESHOLD))
+        if os.getenv(CP_CLI_GCP_MULTIPART_CHUNKSIZE):
+            transfer_config.multipart_chunksize = int(os.getenv(CP_CLI_GCP_MULTIPART_CHUNKSIZE))
+        if os.getenv(CP_CLI_GCP_MAX_CONCURRENCY):
+            transfer_config.max_concurrency = int(os.getenv(CP_CLI_GCP_MAX_CONCURRENCY))
+        return transfer_config
 
     def _download_to_file(self, blob, destination_key):
         try:
@@ -666,17 +688,14 @@ class GsUploadManager(GsManager, AbstractTransferManager):
         bucket = self.client.bucket(destination_wrapper.bucket.path)
         blob = self._progress_blob(bucket, destination_key, progress_callback, size)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
-        transfer_config = self._build_transfer_config(size,
-                                                      multipart_threshold=os.getenv('CP_CLI_GCP_MULTIPART_THRESHOLD'),
-                                                      multipart_chunksize=os.getenv('CP_CLI_GCP_MULTIPART_CHUNKSIZE'),
-                                                      max_concurrency=os.getenv('CP_CLI_GCP_MAX_CONCURRENCY'))
+        transfer_config = self._get_upload_config(size)
         if size > transfer_config.multipart_threshold:
             # For big files uploading in google cloud storages composite uploads are used
             # in conjunction with s3transfer library which originally manages parallel uploading
             # in boto3 for AWS.
             progress_callback = ProgressPercentage(relative_path, size) if progress_callback else None
-            upload_client = GCPCompositeUploadClient(destination_wrapper.bucket.path, destination_key, self.client,
-                                                     progress_callback)
+            upload_client = GsCompositeUploadClient(destination_wrapper.bucket.path, destination_key, self.client,
+                                                    progress_callback)
             uploader = MultipartUploader(client=upload_client, config=transfer_config, osutil=OSUtils())
             uploader.upload_file(filename=source_key, bucket=destination_wrapper.bucket.path, key=destination_key,
                                  callback=None, extra_args={})
@@ -688,17 +707,24 @@ class GsUploadManager(GsManager, AbstractTransferManager):
         if clean:
             source_wrapper.delete_item(source_key)
 
-    def _build_transfer_config(self, size, multipart_threshold=None, multipart_chunksize=None, max_concurrency=None):
-        if not multipart_threshold or not multipart_chunksize:
-            multipart_threshold = 150 * MB
-            num_components = max(min(self._safely_divided(size, multipart_threshold), 32), 2)
-            multipart_chunksize = self._safely_divided(size, num_components)
-        if not max_concurrency:
-            max_concurrency = 10
-        transfer_config = TransferConfig(multipart_threshold=int(multipart_threshold),
-                                         multipart_chunksize=int(multipart_chunksize),
-                                         max_concurrency=int(max_concurrency))
+    def _get_upload_config(self, size):
+        multipart_threshold, multipart_chunksize = self._get_adjusted_parameters(size,
+                                                                                 multipart_threshold=150 * MB,
+                                                                                 max_parts=32)
+        transfer_config = TransferConfig(multipart_threshold=multipart_threshold,
+                                         multipart_chunksize=multipart_chunksize)
+        if os.getenv(CP_CLI_GCP_MULTIPART_THRESHOLD):
+            transfer_config.multipart_threshold = int(os.getenv(CP_CLI_GCP_MULTIPART_THRESHOLD))
+        if os.getenv(CP_CLI_GCP_MULTIPART_CHUNKSIZE):
+            transfer_config.multipart_chunksize = int(os.getenv(CP_CLI_GCP_MULTIPART_CHUNKSIZE))
+        if os.getenv(CP_CLI_GCP_MAX_CONCURRENCY):
+            transfer_config.max_concurrency = int(os.getenv(CP_CLI_GCP_MAX_CONCURRENCY))
         return transfer_config
+
+    def _get_adjusted_parameters(self, size, multipart_threshold, max_parts):
+        chunks_number = max(min(self._safely_divided(size, multipart_threshold), max_parts), 2)
+        multipart_chunksize = self._safely_divided(size, chunks_number)
+        return multipart_threshold, multipart_chunksize
 
     def _safely_divided(self, a, b):
         r = a // b
