@@ -67,6 +67,31 @@ function isVisible (parameter, normalizedParameters) {
   return buildVisibilityFn(parameter)(normalizedParameters);
 }
 
+function validate (parameter, normalizedParameters) {
+  const validations = buildValidationFn(parameter);
+  const [firstError] = validations.map(f => f(normalizedParameters)).filter(Boolean);
+  return firstError;
+}
+
+function mapKey (normalizedParameters) {
+  return (key) => {
+    if (
+      normalizedParameters.hasOwnProperty(key) &&
+      normalizedParameters[key].value !== undefined
+    ) {
+      const value = normalizedParameters[key].value;
+      if (value === 'true' || value === 'false' || (!isNaN(value) && +value === value)) {
+        return `${value}`;
+      }
+      if (typeof value === 'string') {
+        return `"${value.replace(/"/g, '\\"')}"`;
+      }
+      return `${value}`;
+    }
+    return 'undefined';
+  };
+}
+
 function buildVisibilityFn (element) {
   if (
     !element ||
@@ -79,28 +104,53 @@ function buildVisibilityFn (element) {
   return (normalizedParameters) => {
     const keys = Object.keys(normalizedParameters || {});
     const fnStr = `function visibility(${keys.join(', ')}) {return ${element.visible};}`;
-    const mapKey = (key) => {
-      if (
-        normalizedParameters.hasOwnProperty(key) &&
-        normalizedParameters[key].value !== undefined
-      ) {
-        const value = normalizedParameters[key].value;
-        if (value === 'true' || value === 'false' || (!isNaN(value) && +value === value)) {
-          return `${value}`;
-        }
-        if (typeof value === 'string') {
-          return `"${value.replace(/"/g, '\\"')}"`;
-        }
-        return `${value}`;
-      }
-      return 'undefined';
-    };
-    const fnExecutionStr = `visibility(${keys.map(mapKey).join(', ')})`;
+    const fnExecutionStr = `visibility(${keys.map(mapKey(normalizedParameters)).join(', ')})`;
     try {
       // eslint-disable-next-line no-eval
       return eval(`"use strict"; ${fnStr};${fnExecutionStr}`);
     } catch (_) {
       return true;
+    }
+  };
+}
+
+function buildValidationFn (element) {
+  if (
+    !element ||
+    !element.hasOwnProperty('validation') ||
+    element.validation === undefined ||
+    element.validation === null
+  ) {
+    return () => '';
+  }
+  const {validation} = element;
+  if (Array.isArray(validation) || isObservableArray(validation)) {
+    return validation.map(buildValidationRuleFn);
+  }
+  return [buildValidationRuleFn(validation)];
+}
+
+function buildValidationRuleFn (validationRule) {
+  if (
+    validationRule === undefined ||
+    validationRule === null
+  ) {
+    return () => '';
+  }
+  const {
+    message = 'Validation error',
+    throw: rule = 'false'
+  } = validationRule;
+  return (normalizedParameters) => {
+    const validationFunc = `if (${rule}) {return "${message}";} return undefined;`;
+    const keys = Object.keys(normalizedParameters || {});
+    const fnStr = `function validation(${keys.join(', ')}) {${validationFunc}}`;
+    const fnExecutionStr = `validation(${keys.map(mapKey(normalizedParameters)).join(', ')})`;
+    try {
+      // eslint-disable-next-line no-eval
+      return eval(`"use strict"; ${fnStr};${fnExecutionStr}`);
+    } catch (_) {
+      return '';
     }
   };
 }
@@ -217,6 +267,7 @@ function correctFormFieldValues (parameters) {
 export {
   correctFormFieldValues,
   isVisible,
+  validate,
   normalizeParameters,
   parseEnumeration
 };
