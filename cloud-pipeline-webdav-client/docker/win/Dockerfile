@@ -15,9 +15,13 @@
 FROM node:14.9.0-stretch
 RUN dpkg --add-architecture i386
 RUN apt-get -yq update \
-  && apt-get -yq install software-properties-common apt-transport-https zip
+  && apt-get -yq install software-properties-common=0.96.20.2-1+deb9u1 apt-transport-https=1.4.10 zip=3.0-11+b1 \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 RUN wget -nc https://dl.winehq.org/wine-builds/winehq.key \
   && apt-key add winehq.key \
   && apt-add-repository https://dl.winehq.org/wine-builds/debian/ \
   && apt-get -yq update \
-  && apt-get -yq install --install-recommends winehq-stable
+  && apt-get -yq install --install-recommends winehq-stable=5.0.2~stretch \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
