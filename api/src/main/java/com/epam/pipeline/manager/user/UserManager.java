@@ -246,6 +246,10 @@ public class UserManager {
         return groupStatus;
     }
 
+    public List<GroupStatus> loadAllGroupsBlockingStatuses() {
+        return groupStatusDao.loadAllGroupsBlockingStatuses();
+    }
+
     private GroupStatus loadGroupBlockingStatus(final String groupName) {
         return loadGroupBlockingStatus(Collections.singletonList(groupName)).stream()
                 .findFirst()
