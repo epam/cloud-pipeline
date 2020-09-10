@@ -43,6 +43,7 @@ import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
+import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.utils.UtilsManager;
 import com.epam.pipeline.security.acl.AclPermissionFactory;
@@ -165,6 +166,9 @@ public class AclTestConfiguration {
 
     @MockBean
     public BillingManager billingManager;
+
+    @MockBean
+    public RoleManager roleManager;
 
     @Bean
     public PermissionFactory permissionFactory() {

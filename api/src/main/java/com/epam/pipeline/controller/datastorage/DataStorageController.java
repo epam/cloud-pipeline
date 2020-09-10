@@ -687,8 +687,9 @@ public class DataStorageController extends AbstractRestController {
     public Result<EntityWithPermissionVO> getStoragePermissions(
             @RequestParam final Integer page,
             @RequestParam final Integer pageSize,
-            @RequestParam(required = false) final Integer filterMask) {
-        return Result.success(dataStorageApiService.getStoragePermission(page, pageSize, filterMask));
+            @RequestParam(required = false) final Integer filterMask,
+            @RequestParam(defaultValue = FALSE) final boolean includeAdmins) {
+        return Result.success(dataStorageApiService.getStoragePermission(page, pageSize, filterMask, includeAdmins));
     }
 
     @PostMapping(value = "/datastorage/path/size")
