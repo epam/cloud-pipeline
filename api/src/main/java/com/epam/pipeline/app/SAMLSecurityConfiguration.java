@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.security.saml.OptionalSAMLLogoutFilter;
 import com.epam.pipeline.security.saml.SAMLContexProviderCustomSingKey;
 import com.epam.pipeline.utils.URLUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.velocity.app.VelocityEngine;
 import org.opensaml.saml2.metadata.provider.FilesystemMetadataProvider;
@@ -139,6 +140,9 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("${api.security.anonymous.urls:/restapi/route}")
     private String[] anonymousResources;
 
+    @Value("#{'${api.security.public.urls}'.split(',')}")
+    private List<String> excludeScripts;
+
     @Autowired
     private SAMLUserDetailsService samlUserDetailsService;
 
@@ -167,12 +171,12 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     }
 
     public String[] getUnsecuredResources() {
-        return new String[] {
-            "/saml/web/**", "/launch.sh", "/PipelineCLI.tar.gz",
-            "/pipe-common.tar.gz", "/commit-run-scripts/**", "/restapi/**", "/pipe",
-            "/fsbrowser.tar.gz", "/error", "/error/**", "/pipe.zip", "/pipe.tar.gz",
-            "/pipe-el6", "/pipe-el6.tar.gz"
-        };
+        final List<String> excludePaths = Arrays.asList(
+                "/saml/web/**",
+                "/restapi/**",
+                "/error",
+                "/error/**");
+        return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
     }
 
     public String[] getSecuredResourcesRoot() {
