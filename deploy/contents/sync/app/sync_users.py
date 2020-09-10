@@ -83,7 +83,7 @@ class API(object):
 
     def update_group_blocking_status(self, group_name, status=True):
         data = self.call(API_SET_GROUP_BLOCK_STATUS.format(group_name=group_name),
-                         params={'blockStatus': str(status).lower()})
+                         params={'blockStatus': str(status).lower()}, http_method='POST')
         return data['payload']
 
     def load_all_roles(self):
