@@ -22,6 +22,7 @@ import com.epam.pipeline.security.jwt.JwtAuthenticationProvider;
 import com.epam.pipeline.security.jwt.JwtFilterAuthenticationFilter;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import com.epam.pipeline.security.jwt.RestAuthenticationEntryPoint;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -44,6 +45,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 
@@ -64,6 +66,9 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     
     @Value("${api.security.anonymous.urls:/restapi/route}")
     private String[] anonymousResources;
+
+    @Value("#{'${static.common.scripts.exclude}'.split(',')}")
+    private List<String> excludeScripts;
 
     @Autowired
     private SAMLAuthenticationProvider samlAuthenticationProvider;
@@ -132,19 +137,16 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     }
 
     protected String[] getUnsecuredResources() {
-        return new String[] {
-            "/restapi/dockerRegistry/oauth",
-            "/restapi/swagger-resources/**",
-            "/restapi/swagger-ui.html",
-            "/restapi/webjars/springfox-swagger-ui/**",
-            "/restapi/v2/api-docs/**",
-            "/restapi/proxy/**",
-            "/launch.sh", "/PipelineCLI.tar.gz",
-            "/pipe-common.tar.gz", "/commit-run-scripts/**", "/pipe",
-            "/fsbrowser.tar.gz", "/error", "/error/**", "/pipe.zip", "/pipe.tar.gz",
-            "/pipe-el6", "/pipe-el6.tar.gz",
-            "/webdav-linux.tar.gz", "/webdav-win32.zip", "/webdav-win64.zip"
-        };
+        final List<String> excludePaths = Arrays.asList(
+                "/restapi/dockerRegistry/oauth",
+                "/restapi/swagger-resources/**",
+                "/restapi/swagger-ui.html",
+                "/restapi/webjars/springfox-swagger-ui/**",
+                "/restapi/v2/api-docs/**",
+                "/restapi/proxy/**",
+                "/error",
+                "/error/**");
+        return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
     }
 
     public String[] getAnonymousResources() {
