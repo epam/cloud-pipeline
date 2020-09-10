@@ -146,10 +146,10 @@ def sync_roles(api_source, api_target):
             print('Role [{}] doesn\'t exist in the target deployment, try creating it'.format(role_name))
             new_role = api_target.create_role(role_name, src_role['userDefault'])
             if not new_role:
-                print('  Error creating role in the target deployment, it will be skipped!'.format(role_name))
+                print('  Error creating role [{}] in the target deployment, it will be skipped!'.format(role_name))
                 continue
             else:
-                print('  Role created in the target deployment successfully!'.format(role_name))
+                print('  Role [{}] created in the target deployment successfully!'.format(role_name))
                 new_role['blocked'] = False
                 roles_dict[new_role['name']] = new_role
         else:
@@ -211,7 +211,7 @@ def sync_users(api_source, api_target, roles_mapping):
             print('User [{}] doesn\'t exist in the target deployment, try creating it'.format(username))
             existing_user = create_new_user_in_target(api_target, roles_mapping, user)
             existing_user['blocked'] = False
-            print('  User created in the target deployment successfully!'.format(username))
+            print('  User [{}] created in the target deployment successfully!'.format(username))
         user_ids_mapping[user['id']] = existing_user['id']
         if user['blocked'] != existing_user['blocked']:
             print('Update blocking status for user [{}] in the target deployment to `{}`'
