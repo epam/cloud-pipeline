@@ -235,5 +235,12 @@
         "description": "Enable singularity for a current run",
         "defaultValue": "true",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_TZ",
+        "type": "string",
+        "description": "Overwrites standard UTC timezone on pipeline run node",
+        "defaultValue": "/usr/share/zoneinfo/UTC",
+        "passToWorkers": true
     }
 ]
