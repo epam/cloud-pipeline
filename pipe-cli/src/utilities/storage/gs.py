@@ -45,6 +45,7 @@ import click
 from google.auth import _helpers
 from google.auth.transport.requests import AuthorizedSession
 from google.cloud.storage import Client, Blob
+from google.cloud.storage.blob import _get_encryption_headers, _raise_from_invalid_response
 from google.oauth2.credentials import Credentials
 from google import resumable_media
 from google.resumable_media import DataCorruption
@@ -185,21 +186,18 @@ class GsCompositeUploadClient(S3TransferUploadClient):
 
 class GsRangeDownloadClient(S3TransferDownloadClient):
 
-    def __init__(self, bucket, path, client):
+    def __init__(self, bucket, path, client, blob_object):
         self._bucket = bucket
         self._path = path
         self._gcp = client
-        self._bucket_object = self._gcp.bucket(self._bucket)
-        self._blob_object = self._bucket_object.blob(path)
+        self._blob_object = blob_object if blob_object else self._blob_object
 
     def get_object(self, Bucket, Key, Range, *args, **kwargs):
         start, end = Range.split('=')[1].split('-')
         start = int(start)
         end = int(end) if end else None
-        buf = io.BytesIO()
-        self._blob_object.download_to_file(buf, start=start, end=end)
-        buf.seek(0)
-        return {'Body': buf}
+        stream = self._blob_object._get_read_stream(start=start, end=end)
+        return {'Body': stream}
 
 
 class _OutputStreamMixin(object):
@@ -247,6 +245,31 @@ class _ResumableDownloadProgressMixin(Blob):
     """
     Blob download mixin that resumes the downloading in case of any low-level error.
     """
+
+    def _get_read_stream(self, start=None, end=None):
+        download_url = self._get_download_url()
+        headers = _get_encryption_headers(self._encryption_key)
+        headers["accept-encoding"] = "gzip"
+
+        transport = self._get_transport(None)
+        try:
+            download = Download(
+                download_url, stream=42, headers=headers,
+                start=start, end=end
+            )
+            download._write_to_stream = lambda x: x
+            response = download.consume(transport)
+            body_iter = response.iter_content(
+                chunk_size=1024 * 16, decode_unicode=False)
+            class ReadStream:
+
+                def read(self, size, *args, **kwargs):
+                    return body_iter.next()
+
+            return ReadStream()
+        except resumable_media.InvalidResponse as exc:
+            _raise_from_invalid_response(exc)
+
 
     def _do_download(self, transport, file_obj, download_url, headers, start=None, end=None):
         stream = _ProgressOutputStream(file_obj, progress_callback=self._progress_callback,
@@ -633,14 +656,16 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
             blob = self._progress_blob(bucket, source_key, progress_callback, size)
         transfer_config = self._get_download_config()
         if size > transfer_config.multipart_threshold:
-            download_client = GsRangeDownloadClient(source_wrapper.bucket.path, destination_key, self.client)
+            download_client = GsRangeDownloadClient(source_wrapper.bucket.path, destination_key, self.client,
+                                                    blob_object=blob)
             downloader = MultipartDownloader(client=download_client, config=transfer_config, osutil=OSUtils())
             downloader.download_file(bucket=source_wrapper.bucket.path, key=source_key, filename=destination_key,
-                                     object_size=size, extra_args={}, callback=None)
+                                     object_size=size, extra_args={},
+                                     callback=ProgressPercentage(source_key, size) if progress_callback else None)
         else:
             self._download_to_file(blob, destination_key)
-        if progress_callback is not None:
-            progress_callback(size)
+            if progress_callback is not None:
+                progress_callback(size)
         if clean:
             blob.delete()
 
