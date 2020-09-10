@@ -54,6 +54,11 @@ mv pipe-cli/dist/win/pipe.zip $API_STATIC_PATH/
 # Untar fsbrowser and move it to the pipeline.jar static assets
 mv fsbrowser-* $API_STATIC_PATH/fsbrowser.tar.gz
 
+# Move webdav client distributions to the pipeline.jar static assets
+mv webdav-linux.tar.gz $API_STATIC_PATH/webdav-linux.tar.gz
+mv webdav-win32.zip $API_STATIC_PATH/webdav-win32.zip
+mv webdav-win64.zip $API_STATIC_PATH/webdav-win64.zip
+
 # Create distribution tgz
 cd ..
 ./gradlew distTar   -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} \
@@ -64,6 +69,8 @@ cd ..
                     -x pipe-cli:buildLinux \
                     -x pipe-cli:buildWin \
                     -x fs-browser:build \
+                    -x cloud-pipeline-webdav-client:buildLinux \
+                    -x cloud-pipeline-webdav-client:buildWin \
                     -Pfast \
                     --no-daemon
 

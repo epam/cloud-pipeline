@@ -21,7 +21,8 @@ task buildUI(type: NpmTask) {
   dependsOn npmInstall
   doFirst {
     delete fileTree("$rootDir/api/src/main/resources/static/") {
-      exclude ('launch.sh', 'config.json', '*.tar.gz', 'pipe', 'pipe.zip', 'pipe.tar.gz', 'fsbrowser.tar.gz')
+      exclude ('launch.sh', 'config.json', '*.tar.gz', 'pipe', 'pipe.zip', 'pipe.tar.gz', 'fsbrowser.tar.gz',
+        'webdav-linux.tar.gz', 'webdav-win32.zip', 'webdav-win64.zip')
     }
   }
   args = ['run', 'build']

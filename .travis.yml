@@ -79,7 +79,26 @@ jobs:
         - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release fs-browser:build --no-daemon
       after_success:
         - aws s3 mv fs-browser/dist/fsbrowser-*.tar.gz s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
-       
+
+    - stage: "Build"
+      name: "Build Webdav client for Linux"
+      install: true
+      language: java
+      script:
+        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release cloud-pipeline-webdav-client:buildLinux --no-daemon
+      after_success:
+        - aws s3 mv cloud-pipeline-webdav-client/out/webdav-linux.tar.gz s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
+
+    - stage: "Build"
+      name: "Build Webdav client for Windows"
+      install: true
+      language: java
+      script:
+        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release cloud-pipeline-webdav-client:buildWin --no-daemon
+      after_success:
+        - aws s3 mv cloud-pipeline-webdav-client/out/webdav-win32.zip s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
+        - aws s3 mv cloud-pipeline-webdav-client/out/webdav-win64.zip s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
+
     - stage: "Deploy"
       name: "Pack jars and deploy"
       install:
