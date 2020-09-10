@@ -18,6 +18,15 @@ import logging
 import requests
 
 
+class CloudType:
+
+    S3 = 'S3'
+    GS = 'GS'
+
+    def __init__(self):
+        pass
+
+
 class TemporaryCredentials:
 
     def __init__(self):
@@ -47,6 +56,7 @@ class DataStorage:
         self.mask = None
         self.sensitive = False
         self.ro = False
+        self.type = None
 
     @classmethod
     def load(cls, json):
@@ -54,6 +64,7 @@ class DataStorage:
         instance.id = json['id']
         instance.mask = json['mask']
         instance.sensitive = json['sensitive']
+        instance.type = json['type']
         return instance
 
     def is_read_allowed(self):
