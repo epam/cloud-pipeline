@@ -24,6 +24,9 @@ from fsclient import File, FileSystemClientDecorator
 import fuseutils
 
 
+_ANY_ERROR = BaseException
+
+
 class ListingCache:
 
     def __init__(self, cache):
@@ -36,17 +39,33 @@ class ListingCache:
         self._delimiter = '/'
 
     def get(self, path):
-        return self._cache.get(path, None)
+        listing = self._cache.get(path, None)
+        if listing:
+            return dict(listing)
 
     def set(self, path, listing):
         self._cache[path] = listing
 
-    def remove_from_parent_cache(self, path):
-        logging.info('Invalidating parent cache partially for %s' % path)
+    def replace_in_parent_cache(self, path, item=None):
+        if item:
+            self._add_to_parent_cache(path, item)
+        else:
+            self._remove_from_parent_cache(path)
+
+    def _add_to_parent_cache(self, path, item):
+        logging.info('Adding to parent cache for %s' % path)
         parent_path, _ = fuseutils.split_path(path)
-        parent_listing = self.get(parent_path)
-        if parent_listing:
-            parent_listing.pop(fuseutils.without_prefix(path, parent_path), None)
+        parent_listing = self._cache.get(parent_path, None)
+        if parent_listing is not None:
+            relative_name = fuseutils.without_prefix(path, parent_path)
+            parent_listing[relative_name] = item._replace(name=relative_name)
+
+    def _remove_from_parent_cache(self, path):
+        logging.info('Removing from parent cache for %s' % path)
+        parent_path, _ = fuseutils.split_path(path)
+        parent_listing = self._cache.get(parent_path, None)
+        if parent_listing is not None:
+            return parent_listing.pop(fuseutils.without_prefix(path, parent_path), None)
 
     def invalidate_parent_cache(self, path):
         parent_path, _ = fuseutils.split_path(path)
@@ -60,6 +79,17 @@ class ListingCache:
     def invalidate_cache(self, path):
         logging.info('Invalidating cache for %s' % path)
         self._cache.pop(path, None)
+
+    def move_from_parent_cache(self, old_path, path):
+        logging.info('Moving from parent cache %s to %s' % (old_path, path))
+        cached_item = self._remove_from_parent_cache(old_path)
+        if cached_item:
+            self._add_to_parent_cache(path, cached_item)
+        else:
+            logging.info('Moving from parent cache %s to %s was not successful. '
+                         'Invalidating both parent caches.' % (old_path, path))
+            self.invalidate_parent_cache(old_path)
+            self.invalidate_parent_cache(path)
 
     def _is_relative(self, cache_path, path):
         if cache_path.startswith(path):
@@ -100,8 +130,8 @@ class ThreadSafeListingCache:
         self._inner.set(path, listing)
 
     @synchronized
-    def remove_from_parent_cache(self, path):
-        self._inner.remove_from_parent_cache(path)
+    def replace_in_parent_cache(self, path, item=None):
+        return self._inner.replace_in_parent_cache(path, item)
 
     @synchronized
     def invalidate_parent_cache(self, path):
@@ -110,6 +140,10 @@ class ThreadSafeListingCache:
     @synchronized
     def invalidate_cache_recursively(self, path):
         self._inner.invalidate_cache_recursively(path)
+
+    @synchronized
+    def move_from_parent_cache(self, old_path, path):
+        self._inner.move_from_parent_cache(old_path, path)
 
     @synchronized
     def invalidate_cache(self, path):
@@ -145,9 +179,9 @@ class CachingFileSystemClient(FileSystemClientDecorator):
             if parent_listing:
                 file = self._find_in_listing(parent_listing, file_name)
                 if file:
-                    logging.info('Using cached attributes for %s' % path)
+                    logging.info('Attributes found for %s' % path)
                     return file
-        return self._find_in_listing(self._uncached_ls_as_dict(parent_path), file_name)
+            logging.info('Attributes not found for %s' % path)
 
     def _find_in_listing(self, listing, file_name):
         return listing.get(file_name, None)
@@ -155,8 +189,9 @@ class CachingFileSystemClient(FileSystemClientDecorator):
     def _ls_as_dict(self, path, depth=1):
         listing = self._cache.get(path)
         if listing:
-            logging.info('Using cached listing for %s' % path)
+            logging.info('Cached listing found for %s' % path)
         else:
+            logging.info('Cached listing not found for %s' % path)
             listing = self._uncached_ls_as_dict(path, depth)
         return listing
 
@@ -178,27 +213,60 @@ class CachingFileSystemClient(FileSystemClientDecorator):
         return self._ls_as_dict(path, depth).values()
 
     def upload(self, buf, path):
-        self._inner.upload(buf, path)
-        self._cache.invalidate_parent_cache(path)
+        try:
+            self._inner.upload(buf, path)
+            self._cache.replace_in_parent_cache(path, self._inner.attrs(path))
+        except _ANY_ERROR:
+            logging.exception('Standalone uploading has failed for %s' % path)
+            self._cache.invalidate_parent_cache(path)
+            raise
 
     def delete(self, path):
-        self._inner.delete(path)
-        self._cache.remove_from_parent_cache(path)
+        try:
+            self._inner.delete(path)
+            self._cache.replace_in_parent_cache(path)
+        except _ANY_ERROR:
+            logging.exception('Deleting has failed for %s' % path)
+            self._cache.invalidate_parent_cache(path)
+            raise
 
     def mv(self, old_path, path):
-        self._inner.mv(old_path, path)
-        self._cache.remove_from_parent_cache(old_path)
-        self._cache.invalidate_parent_cache(path)
+        try:
+            self._inner.mv(old_path, path)
+            self._cache.move_from_parent_cache(old_path, path)
+            self._cache.invalidate_cache_recursively(old_path)
+        except _ANY_ERROR:
+            logging.exception('Moving from %s to %s has failed' % (old_path, path))
+            self._cache.invalidate_parent_cache(old_path)
+            self._cache.invalidate_cache_recursively(old_path)
+            self._cache.invalidate_parent_cache(path)
+            raise
 
     def mkdir(self, path):
-        self._inner.mkdir(path)
-        self._cache.invalidate_parent_cache(path)
+        try:
+            self._inner.mkdir(path)
+            self._cache.replace_in_parent_cache(path, self._inner.attrs(path))
+        except _ANY_ERROR:
+            logging.exception('Mkdir has failed for %s' % path)
+            self._cache.invalidate_parent_cache(path)
+            raise
 
     def rmdir(self, path):
-        self._inner.rmdir(path)
-        self._cache.remove_from_parent_cache(path)
-        self._cache.invalidate_cache_recursively(path)
+        try:
+            self._inner.rmdir(path)
+            self._cache.replace_in_parent_cache(path)
+            self._cache.invalidate_cache_recursively(path)
+        except _ANY_ERROR:
+            logging.exception('Rmdir has failed for %s' % path)
+            self._cache.invalidate_parent_cache(path)
+            self._cache.invalidate_cache_recursively(path)
+            raise
 
     def flush(self, fh, path):
-        self._inner.flush(fh, path)
-        self._cache.invalidate_parent_cache(path)
+        try:
+            self._inner.flush(fh, path)
+            self._cache.replace_in_parent_cache(path, self._inner.attrs(path))
+        except _ANY_ERROR:
+            logging.exception('Flushing has failed for %s' % path)
+            self._cache.invalidate_parent_cache(path)
+            raise
