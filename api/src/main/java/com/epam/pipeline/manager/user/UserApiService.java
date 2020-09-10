@@ -88,6 +88,11 @@ public class UserApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY)
+    public List<GroupStatus> loadAllGroupsBlockingStatuses() {
+        return userManager.loadAllGroupsBlockingStatuses();
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
     public PipelineUser loadUser(Long id) {
         return userManager.loadUserById(id);
     }
