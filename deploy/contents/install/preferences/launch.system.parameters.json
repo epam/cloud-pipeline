@@ -64,7 +64,7 @@
     {
         "name": "CP_S3_FUSE_TYPE",
         "type": "string",
-        "description": "Allows to select which FUSE implementation to use for S3 buckets mounting. Allowed values are: goofys and s3fs",
+        "description": "Allows to select which FUSE implementation to use for S3 buckets mounting. Allowed values are: goofys, s3fs and pipefuse",
         "defaultValue": "goofys",
         "passToWorkers": true
     },
@@ -88,6 +88,31 @@
         "description": "Applied to goofys FUSE. How long to cache name -> file/dir mappings in directory. Set this to 0 if you are experiencing issues with files consistency",
         "defaultValue": "1m0s",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_GCS_FUSE_TYPE",
+        "type": "string",
+        "description": "Allows to select which FUSE implementation to use for GCS buckets mounting. Allowed values are: gcsfuse and pipefuse",
+        "defaultValue": "gcsfuse",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_PIPE_FUSE_PERSIST_LOGS",
+        "type": "boolean",
+        "description": "Enables pipefuse logging persistence for a current run",
+        "defaultValue": true
+    },
+    {
+        "name": "CP_PIPE_FUSE_DEBUG_LIBFUSE",
+        "type": "boolean",
+        "description": "Enables pipefuse low level logging for a current run",
+        "defaultValue": false
+    },
+    {
+        "name": "CP_PIPE_FUSE_LOGGING_LEVEL",
+        "type": "string",
+        "description": "Declares pipefuse logging level (CRITICAL, ERROR, WARN, INFO or DEBUG)",
+        "defaultValue": "ERROR"
     },
     {
         "name": "CP_CAP_SGE_MASTER_CORES",
