@@ -96,7 +96,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     public void init() {
         Observable<List<InstanceType>> instanceTypesObservable = instanceOfferManager.getAllInstanceTypesObservable();
         instanceTypesObservable
-                .subscribe(instanceTypes -> core.setInstanceTypeMap(
+                .subscribe(instanceTypes -> core.updateInstanceMap(
                         instanceTypes.stream().collect(
                                 Collectors.toMap(InstanceType::getName, t -> t, (t1, t2) -> t1))));
         scheduleFixedDelaySecured(core::monitorResourceUsage, SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD,
@@ -411,10 +411,6 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     NotificationType.IDLE_RUN_PAUSED);
         }
 
-        private void setInstanceTypeMap(final Map<String, InstanceType> instanceTypeMap) {
-            this.instanceTypeMap = instanceTypeMap;
-        }
-
         private void processServerlessRuns() {
             final List<StopServerlessRun> activeServerlessRuns = ListUtils.emptyIfNull(
                     stopServerlessRunManager.loadActiveServerlessRuns());
@@ -432,6 +428,11 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             return Objects.nonNull(run.getStopAfter())
                     ? run.getStopAfter()
                     : preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_STOP_TIMEOUT).longValue();
+        }
+
+        public void updateInstanceMap(Map<String, InstanceType> types) {
+            instanceTypeMap.clear();
+            instanceTypeMap.putAll(types);
         }
     }
 }
