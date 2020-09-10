@@ -40,9 +40,11 @@ GCP_SCHEME = 'gs://'
 FUSE_GOOFYS_ID = 'goofys'
 FUSE_S3FS_ID = 's3fs'
 FUSE_PIPE_ID = 'pipefuse'
+FUSE_GCSFUSE_ID = 'gcsfuse'
 FUSE_NA_ID = None
 AZURE_PROVIDER = 'AZURE'
 S3_PROVIDER = 'S3'
+
 
 class PermissionHelper:
 
@@ -410,8 +412,8 @@ class S3Mounter(StorageMounter):
 
 
 class GCPMounter(StorageMounter):
-    available = False
     credentials = None
+    fuse_type = FUSE_NA_ID
     fuse_tmp = '/tmp'
 
     @staticmethod
@@ -424,12 +426,24 @@ class GCPMounter(StorageMounter):
 
     @staticmethod
     def check_or_install(task_name):
-        AzureMounter.available = StorageMounter.execute_and_check_command('install_gcsfuse')
-        GCPMounter.available = True
+        GCPMounter.fuse_type = GCPMounter._check_or_install(task_name)
+
+    @staticmethod
+    def _check_or_install(task_name):
+        fuse_type = os.getenv('CP_GCS_FUSE_TYPE', FUSE_GCSFUSE_ID)
+        if fuse_type == FUSE_GCSFUSE_ID:
+            fuse_installed = StorageMounter.execute_and_check_command('install_gcsfuse', task_name=task_name)
+            return FUSE_GCSFUSE_ID if fuse_installed else FUSE_NA_ID
+        elif fuse_type == FUSE_PIPE_ID:
+            return FUSE_PIPE_ID
+        else:
+            Logger.warn("FUSE {fuse_type} type is not defined for GSC fuse".format(fuse_type=fuse_type),
+                        task_name=task_name)
+            return FUSE_NA_ID
 
     @staticmethod
     def is_available():
-        return GCPMounter.available
+        return GCPMounter.fuse_type is not None
 
     @staticmethod
     def init_tmp_dir(tmp_dir, task_name):
@@ -441,12 +455,12 @@ class GCPMounter(StorageMounter):
         super(GCPMounter, self).mount(mount_root, task_name)
 
     def build_mount_params(self, mount_point):
+        mount_timeout = os.getenv('CP_PIPE_FUSE_TIMEOUT', 500)
         gcp_creds_content, _ = self._get_credentials(self.storage)
-        if not gcp_creds_content:
-            print("GCP credentials is not available, GCP file storage won't be mounted")
-            return {}
-
-        creds_named_pipe_path = "<(echo \'{gcp_creds_content}\')".format(gcp_creds_content=gcp_creds_content)
+        if gcp_creds_content:
+            creds_named_pipe_path = "<(echo \'{gcp_creds_content}\')".format(gcp_creds_content=gcp_creds_content)
+        else:
+            creds_named_pipe_path = None
         mask = '0774'
         permissions = 'rw'
         if not PermissionHelper.is_storage_writable(self.storage) or PermissionHelper.is_run_sensitive():
@@ -458,19 +472,30 @@ class GCPMounter(StorageMounter):
                 'mask': mask,
                 'permissions': permissions,
                 'tmp_dir': self.fuse_tmp,
-                'credentials': creds_named_pipe_path
+                'credentials': creds_named_pipe_path,
+                'mount_timeout': mount_timeout
                 }
 
     def build_mount_command(self, params):
-        if not params:
-            return ""
-        return 'nohup gcsfuse --foreground -o {permissions} -o allow_other --key-file {credentials} --temp-dir {tmp_dir} ' \
-               '--dir-mode {mask} --file-mode {mask} --implicit-dirs {path} {mount} > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
+        if not params['credentials'] or params['fuse_type'] == FUSE_PIPE_ID:
+            persist_logs = os.getenv('CP_PIPE_FUSE_PERSIST_LOGS', 'false').lower() == 'true'
+            debug_libfuse = os.getenv('CP_PIPE_FUSE_DEBUG_LIBFUSE', 'false').lower() == 'true'
+            logging_level = os.getenv('CP_PIPE_FUSE_LOGGING_LEVEL')
+            if logging_level:
+                params['logging_level'] = logging_level
+            return ('pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} '
+                    + ('-l /var/log/fuse_{storage_id}.log ' if persist_logs else '')
+                    + ('-v {logging_level} ' if logging_level else '')
+                    + ('-o allow_other,debug ' if debug_libfuse else '-o allow_other ')
+                    ).format(**params)
+        else:
+            return 'nohup gcsfuse --foreground -o {permissions} -o allow_other --key-file {credentials} --temp-dir {tmp_dir} ' \
+                   '--dir-mode {mask} --file-mode {mask} --implicit-dirs {path} {mount} > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
 
     def _get_credentials(self, storage):
         account_region = os.getenv('CP_ACCOUNT_REGION_{}'.format(storage.region_id))
         account_cred_file_content = os.getenv('CP_CREDENTIALS_FILE_CONTENT_{}'.format(storage.region_id))
-        if not account_cred_file_content or not account_region:
+        if not account_region:
             raise RuntimeError('Account information wasn\'t found in the environment for account with id={}.'
                                .format(storage.region_id))
         return account_cred_file_content, account_region
