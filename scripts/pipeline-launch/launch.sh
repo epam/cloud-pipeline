@@ -625,6 +625,20 @@ fi
 
 
 ######################################################
+# Change Time Zone if configured
+######################################################
+
+echo "Cheking if timezone should be overwritten."
+if [ ! -z "$CP_TZ" ] && [ -f "$CP_TZ" ]; then
+  echo "CP_TZ variable set, and file exists, time zone will be changed to: $CP_TZ"
+  unlink /etc/localtime
+  ln -s "$CP_TZ" /etc/localtime
+else
+  echo "CP_TZ variable is not set, or that file doesn't exist, time zone will not be changed."
+fi
+
+
+######################################################
 # Install runtime dependencies
 ######################################################
 
