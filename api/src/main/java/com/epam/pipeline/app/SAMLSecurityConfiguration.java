@@ -140,7 +140,7 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("${api.security.anonymous.urls:/restapi/route}")
     private String[] anonymousResources;
 
-    @Value("#{'${static.common.scripts.exclude}'.split(',')}")
+    @Value("#{'${api.security.public.urls}'.split(',')}")
     private List<String> excludeScripts;
 
     @Autowired
