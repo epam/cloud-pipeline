@@ -37,9 +37,9 @@ metadata_keys_to_ignore = os.getenv('CP_SYNC_USERS_METADATA_SKIP_KEYS', '').spli
 
 
 class API(object):
-    def __init__(self, api_path, access_key):
+    def __init__(self, api_host_url, access_key):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        self.api = api_path
+        self.api = api_host_url + '/pipeline/restapi'
         self.__headers__ = {'Content-Type': 'application/json',
                             'Authorization': 'Bearer {}'.format(access_key)}
 
@@ -235,9 +235,9 @@ def sync_metadata_for_entity_class(api_source, api_target, ids_mapping, entity_c
                 api_target.upload_metadata(metadata_entity)
 
 
-def sync_users_routine(api_url_a, api_token_a, api_url_b, api_token_b):
-    api_source = API(api_url_a, api_token_a)
-    api_target = API(api_url_b, api_token_b)
+def sync_users_routine(api_host_url_a, api_token_a, api_host_url_b, api_token_b):
+    api_source = API(api_host_url_a, api_token_a)
+    api_target = API(api_host_url_b, api_token_b)
     print('\n===Start roles sync===')
     roles_mapping, roles_ids_mapping = sync_roles(api_source, api_target)
     print('===Roles sync is finished===')
@@ -262,8 +262,8 @@ if __name__ == '__main__':
     if len(sys.argv[1:]) != 4:
         raise RuntimeError('Invalid count of an arguments for sync process!')
     else:
-        source_api_url = sys.argv[1]
+        source_api_host_url = sys.argv[1]
         source_api_token = sys.argv[2]
-        target_api_url = sys.argv[3]
+        target_api_host_url = sys.argv[3]
         target_api_token = sys.argv[4]
-        sync_users_routine(source_api_url, source_api_token, target_api_url, target_api_token)
+        sync_users_routine(source_api_host_url, source_api_token, target_api_host_url, target_api_token)

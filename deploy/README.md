@@ -200,9 +200,9 @@ Environment variables for controlling execution flow:
 ~/.pipe/pipectl   sync \
 # Pipectl sync options
                 --users \                       # enables users/groups synchronization
-                --source-url {url_a} \          # URL of `source` environment's API 
+                --source-url {url_a} \          # URL of `source` environment's API host
                 --source-token {token_a} \      # JWT token to access `source` environment
-                --target-url {url_b} \          # URL of `destination` environment's API
+                --target-url {url_b} \          # URL of `destination` environment's API host
                 --target-token {token_b}        # JWT token to access `destination` environment
             
 ```
