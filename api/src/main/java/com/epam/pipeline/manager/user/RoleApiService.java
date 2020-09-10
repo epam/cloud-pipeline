@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.OR_USER_READER;
 
 @Service
 public class RoleApiService {
@@ -34,7 +35,7 @@ public class RoleApiService {
     @Autowired
     private RoleManager roleManager;
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
     public Collection<Role> loadRolesWithUsers() {
         return roleManager.loadAllRoles(true);
     }
@@ -43,7 +44,7 @@ public class RoleApiService {
         return roleManager.loadAllRoles(false);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
     public Role loadRole(Long id) {
         return roleManager.loadRoleWithUsers(id);
     }

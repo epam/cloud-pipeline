@@ -32,6 +32,7 @@ import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
+import static com.epam.pipeline.security.acl.AclExpressions.OR_USER_READER;
 
 @Service
 public class UserApiService {
@@ -92,7 +93,7 @@ public class UserApiService {
         return userManager.loadUserById(id);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
     public PipelineUser loadUserByName(final String name) {
         return userManager.loadUserByName(name);
     }
@@ -107,12 +108,12 @@ public class UserApiService {
         return userManager.updateUser(id, roles);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
     public List<PipelineUser> loadUsers() {
         return new ArrayList<>(userManager.loadAllUsers());
     }
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER + OR_USER_READER)
     public List<UserInfo> loadUsersInfo() {
         return userManager.loadUsersInfo();
     }
@@ -167,7 +168,7 @@ public class UserApiService {
         return userManager.findUsers(prefix);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
     public byte[] exportUsers(final PipelineUserExportVO attr) {
         return userManager.exportUsers(attr);
     }

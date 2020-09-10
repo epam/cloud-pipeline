@@ -22,6 +22,8 @@ public final class AclExpressions {
 
     public static final String ADMIN_ONLY = "hasRole('ADMIN')";
 
+    public static final String OR_USER_READER = OR + "hasRole('USER_READER')";
+
     public static final String PIPELINE_ID_READ =
             "hasRole('ADMIN') OR hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Pipeline', 'READ')";
 
