@@ -472,6 +472,7 @@ class GCPMounter(StorageMounter):
                 'path': self.get_path(),
                 'mask': mask,
                 'permissions': permissions,
+                'fuse_type': self.fuse_type,
                 'tmp_dir': self.fuse_tmp,
                 'credentials': creds_named_pipe_path,
                 'mount_timeout': mount_timeout
