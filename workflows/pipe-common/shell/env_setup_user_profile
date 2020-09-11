@@ -70,6 +70,8 @@ for _ATTRIBUTE_NAME in $_OWNER_ATTRIBUTES_NAMES; do
 
     if [ -z "$CP_OWNER_ATTRIBUTES_WHITELIST" ] || \
         ( [ "$CP_OWNER_ATTRIBUTES_WHITELIST" ] && [[ " $CP_OWNER_ATTRIBUTES_WHITELIST " == *" ${_ATTRIBUTE_NAME} "* ]] ); then
+        # Escape double quotes with a backslash
+        _ATTRIBUTE_ENV_VALUE=$(echo "$_ATTRIBUTE_ENV_VALUE" | sed -E ':a;N;$!ba;s/\r{0,1}\n/\\n/g' | sed 's/"/\\"/g')
         echo "export ${_ATTRIBUTE_ENV_NAME}=\"${_ATTRIBUTE_ENV_VALUE}\"" >> "$_OWNER_ATTRIBUTES_ENV_FILE"
     else
         echo "[WARN] Variable $_ATTRIBUTE_ENV_NAME is not in the whitelist, skipping it"

@@ -1355,7 +1355,7 @@ done
 # Read attributes from the user profile and append them to the global env file
 env_setup_user_profile "$CP_USER_ENV_FILE_TO_SOURCE"
 if [ $? -eq 0 ]; then
-      source "$CP_ENV_FILE_TO_SOURCE"
+      source "$CP_USER_ENV_FILE_TO_SOURCE"
       cat "$CP_USER_ENV_FILE_TO_SOURCE" >> $CP_ENV_FILE_TO_SOURCE
 fi
 
