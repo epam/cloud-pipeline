@@ -259,14 +259,8 @@ class _ResumableDownloadProgressMixin(Blob):
             )
             download._write_to_stream = lambda x: x
             response = download.consume(transport)
-            body_iter = response.iter_content(
-                chunk_size=1024 * 16, decode_unicode=False)
-            class ReadStream:
-
-                def read(self, size, *args, **kwargs):
-                    return body_iter.next()
-
-            return ReadStream()
+            body_iter = response.iter_content(chunk_size=1024 * 1024, decode_unicode=False)
+            return io.BufferedReader(IterStream(body_iter), buffer_size=1024 * 1024)
         except resumable_media.InvalidResponse as exc:
             _raise_from_invalid_response(exc)
 
@@ -290,6 +284,25 @@ class _ResumableDownloadProgressMixin(Blob):
                                        'Original error: %s.'
                                        % (self._attempts, CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS, str(e)))
         self.reload()
+
+
+class IterStream(io.RawIOBase):
+
+    def __init__(self, iterable):
+        self._leftover = None
+        self._iterable = iterable
+
+    def readable(self):
+        return True
+
+    def readinto(self, b):
+        try:
+            chunk = self._leftover or next(self._iterable)
+            output, self._leftover = chunk[:len(b)], chunk[len(b):]
+            b[:len(output)] = output
+            return len(output)
+        except StopIteration:
+            return 0
 
 
 class _UploadProgressMixin(Blob):
@@ -629,7 +642,7 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
         self._buffering = int(os.environ.get(CP_CLI_DOWNLOAD_BUFFERING_SIZE) or buffering)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), skip_existing=False, lock=False):
+                 size=None, tags=(), skip_existing=False, lock=None):
         if path:
             source_key = path
         else:
