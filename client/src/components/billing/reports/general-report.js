@@ -30,6 +30,7 @@ import Filters, {RUNNER_SEPARATOR, REGION_SEPARATOR} from './filters';
 import {
   GetBillingData,
   GetGroupedBillingCenters,
+  GetGroupedUsers,
   GetGroupedBillingCentersWithPrevious,
   GetGroupedResourcesWithPrevious
 } from '../../../models/billing';
@@ -59,8 +60,6 @@ function injection (stores, props) {
   const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
   const cloudRegionId = regionQ && regionQ.length ? regionQ.split(REGION_SEPARATOR) : undefined;
   const periodInfo = getPeriod(period, range);
-  const prevPeriodInfo = getPeriod(period, periodInfo.before);
-  const prevPrevPeriodInfo = getPeriod(period, prevPeriodInfo.before);
   const filters = {
     group,
     user,
@@ -87,36 +86,26 @@ function injection (stores, props) {
     );
     billingCentersStorageTableRequest.fetch();
   }
-  const export1ComputeCsvRequest = new GetGroupedBillingCenters(
+  const exportComputeCsvRequest = new GetGroupedBillingCenters(
     {...periodInfo, resourceType: 'COMPUTE'},
     false
   );
-  const export2ComputeCsvRequest = new GetGroupedBillingCenters(
-    {...prevPeriodInfo, resourceType: 'COMPUTE'},
-    false
-  );
-  const export3ComputeCsvRequest = new GetGroupedBillingCenters(
-    {...prevPrevPeriodInfo, resourceType: 'COMPUTE'},
-    false
-  );
-  const export1StorageCsvRequest = new GetGroupedBillingCenters(
+  const exportStorageCsvRequest = new GetGroupedBillingCenters(
     {...periodInfo, resourceType: 'STORAGE'},
     false
   );
-  const export2StorageCsvRequest = new GetGroupedBillingCenters(
-    {...prevPeriodInfo, resourceType: 'STORAGE'},
+  const exportComputeByUsersCsvRequest = new GetGroupedUsers(
+    {...periodInfo, resourceType: 'COMPUTE'},
     false
   );
-  const export3StorageCsvRequest = new GetGroupedBillingCenters(
-    {...prevPrevPeriodInfo, resourceType: 'STORAGE'},
+  const exportStorageByUsersCsvRequest = new GetGroupedUsers(
+    {...periodInfo, resourceType: 'STORAGE'},
     false
   );
-  export1ComputeCsvRequest.fetch();
-  export2ComputeCsvRequest.fetch();
-  export3ComputeCsvRequest.fetch();
-  export1StorageCsvRequest.fetch();
-  export2StorageCsvRequest.fetch();
-  export3StorageCsvRequest.fetch();
+  exportComputeCsvRequest.fetch();
+  exportStorageCsvRequest.fetch();
+  exportComputeByUsersCsvRequest.fetch();
+  exportStorageByUsersCsvRequest.fetch();
   const resources = new GetGroupedResourcesWithPrevious(filters);
   resources.fetch();
   const summaryCompute = new GetBillingData(
@@ -143,17 +132,12 @@ function injection (stores, props) {
     billingCentersComputeTableRequest,
     billingCentersStorageTableRequest,
     resources,
-    export1ComputeCsvRequest,
-    export1StorageCsvRequest,
     exportCsvRequest: [
-      period === Period.custom
-        ? undefined
-        : [export3ComputeCsvRequest, export3StorageCsvRequest],
-      period === Period.custom
-        ? undefined
-        : [export2ComputeCsvRequest, export2StorageCsvRequest],
-      [export1ComputeCsvRequest, export1StorageCsvRequest]
-    ].filter(Boolean)
+      [exportComputeCsvRequest, exportStorageCsvRequest]
+    ],
+    exportByUsersCsvRequest: [
+      [exportComputeByUsersCsvRequest, exportStorageByUsersCsvRequest]
+    ]
   };
 }
 
@@ -248,7 +232,8 @@ function UserReport ({
   summaryCompute,
   summaryStorages,
   filters,
-  exportCsvRequest
+  exportCsvRequest,
+  exportByUsersCsvRequest
 }) {
   const onResourcesSelect = navigation.wrapNavigation(
     navigation.resourcesNavigation,
@@ -461,7 +446,8 @@ function GroupReport ({
   summaryCompute,
   summaryStorages,
   filters,
-  exportCsvRequest
+  exportCsvRequest,
+  exportByUsersCsvRequest
 }) {
   const billingCenterName = (group || []).join(' ');
   const title = `${billingCenterName} user's spendings`;
@@ -628,7 +614,8 @@ function GeneralReport ({
   summaryCompute,
   summaryStorages,
   filters,
-  exportCsvRequest
+  exportCsvRequest,
+  exportByUsersCsvRequest
 }) {
   const onResourcesSelect = navigation.wrapNavigation(
     navigation.resourcesNavigation,

@@ -19,6 +19,7 @@ export {default as billingCentersComposer} from './billing-centers-composer';
 export {default as summaryComposer} from './summary-composer';
 export {default as tableComposer} from './table-composer';
 export {default as discountsComposer} from './discounts-composer';
+export {default as usersComposers} from './users-composer';
 
 function buildCascadeComposers (composers = [], discounts = {}) {
   function build (index = 0) {
