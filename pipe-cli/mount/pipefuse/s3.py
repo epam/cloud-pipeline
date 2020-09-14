@@ -120,7 +120,7 @@ class S3MultipartUpload(MultipartUpload):
 
 class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
 
-    def __init__(self, bucket, pipe, chunk_size):
+    def __init__(self, bucket, pipe, chunk_size, storage_path):
         """
         AWS S3 storage low level file system client operations.
 
@@ -132,7 +132,7 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
         self._delimiter = '/'
         self._is_read_only = False
         self.bucket = bucket
-        self._s3 = self._generate_s3_client(bucket, pipe)
+        self._s3 = self._generate_s3_client(storage_path, pipe)
         self._chunk_size = chunk_size
         self._min_chunk = 1
         self._max_chunk = 10000

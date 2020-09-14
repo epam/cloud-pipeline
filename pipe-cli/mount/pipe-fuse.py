@@ -90,9 +90,10 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
         bucket_object = pipe.get_storage(bucket_name)
         bucket_type = bucket_object.type
         if bucket_type == CloudType.S3:
-            client = S3StorageLowLevelClient(bucket_name, pipe=pipe, chunk_size=chunk_size)
+            client = S3StorageLowLevelClient(bucket_name, pipe=pipe, chunk_size=chunk_size, storage_path=bucket)
         elif bucket_type == CloudType.GS:
-            client = GoogleStorageLowLevelFileSystemClient(bucket_name, pipe=pipe, chunk_size=chunk_size)
+            client = GoogleStorageLowLevelFileSystemClient(bucket_name, pipe=pipe, chunk_size=chunk_size,
+                                                           storage_path=bucket)
         else:
             raise RuntimeError('Cloud storage type %s is not supported.' % bucket_object.type)
         client = StorageHighLevelFileSystemClient(client)

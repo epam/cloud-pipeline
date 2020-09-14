@@ -206,7 +206,7 @@ class _RefreshingClient(Client):
 
 class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
 
-    def __init__(self, bucket, pipe, chunk_size):
+    def __init__(self, bucket, pipe, chunk_size, storage_path):
         """
         Google storage low level file system client operations.
 
@@ -218,7 +218,7 @@ class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
         self._delimiter = '/'
         self._is_read_only = False
         self.bucket = bucket
-        self._gcp = self._generate_gcp(pipe)
+        self._gcp = self._generate_gcp(pipe, storage_path)
         self._chunk_size = chunk_size
         self._max_size = 5 * TB
         self._min_chunk = 1
@@ -227,8 +227,8 @@ class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
         self._max_part_size = 500 * MB
         self._max_composite_parts = 32
 
-    def _generate_gcp(self, pipe):
-        bucket_object = pipe.get_storage(self.bucket)
+    def _generate_gcp(self, pipe, storage_path):
+        bucket_object = pipe.get_storage(storage_path)
         self._is_read_only = not bucket_object.is_write_allowed()
         return _RefreshingClient(lambda: pipe.get_temporary_credentials(bucket_object))
 
