@@ -56,7 +56,6 @@ mv fsbrowser-* $API_STATIC_PATH/fsbrowser.tar.gz
 
 # Move webdav client distributions to the pipeline.jar static assets
 mv webdav-linux.tar.gz $API_STATIC_PATH/webdav-linux.tar.gz
-mv webdav-win32.zip $API_STATIC_PATH/webdav-win32.zip
 mv webdav-win64.zip $API_STATIC_PATH/webdav-win64.zip
 
 # Create distribution tgz

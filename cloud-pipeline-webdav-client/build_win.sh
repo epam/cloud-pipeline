@@ -34,7 +34,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-zip -r -q  /webdav/out/webdav-win32.zip /webdav/out/cloud-pipeline-webdav-client-win32-ia32/
 zip -r -q /webdav/out/webdav-win64.zip /webdav/out/cloud-pipeline-webdav-client-win32-x64/
 
 chmod -R 777 /webdav/out
