@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import PreferenceLoad from '../../../../models/preferences/PreferenceLoad';
 import {Preferences} from './configuration';
-import {Input, InputNumber} from 'antd';
+import {Icon, Input, InputNumber, Select, Popover} from 'antd';
 import styles from './preference-control.css';
 
 function wrapValue (value) {
@@ -102,6 +102,28 @@ class PreferenceControl extends React.Component {
     }
   };
 
+  renderHint = (preference) => {
+    if (!preference || !preference.hint) {
+      return null;
+    }
+    return (
+      <Popover
+        content={preference.hint}
+        placement="left"
+      >
+        <Icon
+          style={{
+            marginLeft: 5,
+            marginRight: 10,
+            fontSize: 'larger',
+            cursor: 'pointer'
+          }}
+          type="question-circle"
+        />
+      </Popover>
+    );
+  };
+
   renderStringControl = (preference) => {
     if (!preference) {
       return null;
@@ -123,6 +145,41 @@ class PreferenceControl extends React.Component {
           value={value}
           onChange={onValueChange}
         />
+        {this.renderHint(preference)}
+      </div>
+    );
+  };
+
+  renderEnumControl = (preference) => {
+    if (!preference) {
+      return null;
+    }
+    const {value, pending} = this.state;
+    const onValueChange = (e) => {
+      this.setState({
+        value: e
+      }, this.onChange);
+    };
+    return (
+      <div className={styles.controlRow}>
+        <span className={styles.label}>
+          {preference.name}
+        </span>
+        <Select
+          disabled={pending}
+          className={styles.control}
+          value={value}
+          onChange={onValueChange}
+        >
+          {
+            (preference.enum || []).map(o => (
+              <Select.Option key={o} value={o}>
+                {o}
+              </Select.Option>
+            ))
+          }
+        </Select>
+        {this.renderHint(preference)}
       </div>
     );
   };
@@ -150,6 +207,7 @@ class PreferenceControl extends React.Component {
           max={preference.max}
           onChange={onValueChange}
         />
+        {this.renderHint(preference)}
       </div>
     );
   };
@@ -162,6 +220,7 @@ class PreferenceControl extends React.Component {
     if (preference) {
       switch (preference.type) {
         case 'number': control = this.renderNumberControl(preference); break;
+        case 'enum': control = this.renderEnumControl(preference); break;
         case 'string':
         default:
           control = this.renderStringControl(preference); break;

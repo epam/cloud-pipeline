@@ -48,7 +48,12 @@ const SystemDiskConsumeThresholdPreference = {
   type: 'number',
   min: 0,
   max: 100,
-  name: 'Threshold of disk consume (%)'
+  name: 'Threshold of disk consumption (%)',
+  hint: (
+    <div>
+      Threshold of disk consumption (%)
+    </div>
+  )
 };
 
 const SystemMemoryConsumeThresholdPreference = {
@@ -56,21 +61,36 @@ const SystemMemoryConsumeThresholdPreference = {
   type: 'number',
   min: 0,
   max: 100,
-  name: 'Threshold of memory consume (%)'
+  name: 'Threshold of memory consumption (%)',
+  hint: (
+    <div>
+      Threshold of memory consumption (%)
+    </div>
+  )
 };
 
 const SystemMaxIdleTimeoutMinutesPreference = {
   preference: 'system.max.idle.timeout.minutes',
   type: 'number',
   min: 0,
-  name: 'Max duration of idle (min)'
+  name: 'Max duration of idle (min)',
+  hint: (
+    <div>
+      Max duration of idle (min)
+    </div>
+  )
 };
 
 const SystemIdleActionTimeoutMinutesPreference = {
   preference: 'system.idle.action.timeout.minutes',
   type: 'number',
   min: 0,
-  name: 'Resend/action delay (min)'
+  name: 'Resend/action delay (min)',
+  hint: (
+    <div>
+      Resend/action delay (min)
+    </div>
+  )
 };
 
 const SystemIdleCPUThresholdPreference = {
@@ -78,13 +98,24 @@ const SystemIdleCPUThresholdPreference = {
   type: 'number',
   min: 0,
   max: 100,
-  name: 'CPU idle threshold (%)'
+  name: 'CPU idle threshold (%)',
+  hint: (
+    <div>
+      CPU idle threshold (%)
+    </div>
+  )
 };
 
 const SystemIdleActionPreference = {
   preference: 'system.idle.action',
-  type: 'string',
-  name: 'Action'
+  type: 'enum',
+  name: 'Action',
+  enum: ['NOTIFY', 'PAUSE', 'PAUSE_OR_STOP', 'STOP'],
+  hint: (
+    <div>
+      Action
+    </div>
+  )
 };
 
 const Preferences = [
