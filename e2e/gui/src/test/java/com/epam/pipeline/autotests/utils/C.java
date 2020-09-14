@@ -81,6 +81,9 @@ public class C {
         ANONYMOUS_NAME = conf.getProperty("e2e.ui.anonymous.name");
         ANONYMOUS_TOKEN = conf.getProperty("e2e.ui.anonymous.token");
         ANOTHER_ADMIN_TOKEN = conf.getProperty("e2e.ui.another.admin.token");
+        DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES = conf.getProperty("e2e.ui.default.cluster.allowed.instance.types");
+        CLUSTER_ALLOWED_MASKS = conf.getProperty("e2e.ui.cluster.allowed.masks");
+        DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES = conf.getProperty("e2e.ui.default.cluster.allowed.price.types");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -131,6 +134,9 @@ public class C {
     public static final String CLOUD_PROVIDER;
     public static final String ANOTHER_INSTANCE;
     public static final String DEFAULT_INSTANCE_FAMILY_NAME;
+    public static final String DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES;
+    public static final String CLUSTER_ALLOWED_MASKS;
+    public static final String DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES;
 
     public static final String SPOT_PRICE_NAME;
     public static final String AUTH_TOKEN;

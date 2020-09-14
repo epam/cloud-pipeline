@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.SettingsPageAO.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
@@ -36,6 +37,7 @@ import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Primitive.SHOW_METADATA;
+import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
 import static com.epam.pipeline.autotests.ao.Profile.execEnvironmentTab;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.attributesMenu;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.showInstanceManagement;
@@ -46,6 +48,7 @@ import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
 import com.epam.pipeline.autotests.ao.ToolDescription.InstanceManagementSectionAO;
 
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -61,6 +64,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     private final String pipeline = "restrictionTestPipeline" + Utils.randomSuffix();
     private final String secondPipeline = "restrictionTestPipeline" + Utils.randomSuffix();
     private final String configuration = "restrictionTestConfiguration" + Utils.randomSuffix();
+    private final String configuration1 = "restrictionTestConfiguration" + Utils.randomSuffix();
     private final String secondConfiguration = "restrictionTestConfiguration" + Utils.randomSuffix();
     private final String customDisk = "22";
     private final String configurationName = "customConfig";
@@ -68,9 +72,16 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     private final String instanceTypesMask = "Allowed instance types mask";
     private final String toolInstanceTypesMask = "Allowed tool instance types mask";
     private final String onDemandPrice = "On demand";
-    private final String allowedPriceTypes="Allowedpricetypes";
+    private final String clusterAllowedPrice = "on_demand";
+    private final String allowedPriceTypes="Allowed price types";
     private final String spotPriceName=C.SPOT_PRICE_NAME;
-    private final String defaultClusterAllowedInstanceTypes ="m5.*,c5.*,r5.*,p2.*";
+    private final String defaultClusterAllowedInstanceTypes = C.DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES;
+    private final String defaultClusterAllowedPriceTypes = C.DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES;
+    private final String clusterAllowedMasks = C.CLUSTER_ALLOWED_MASKS;
+    private final String clusterAllowedInstanceTypes = "cluster.allowed.instance.types";
+    private final String clusterAllowedPriceTypes = "cluster.allowed.price.types";
+    private final String clusterAllowedInstanceTypesDocker = "cluster.allowed.instance.types.docker";
+
 
     @BeforeClass
     public void initialLogout() {
@@ -207,33 +218,78 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(priority = 2, dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
-    @TestCase({"EPMCMBIBPC-2644"})
-    public void validationOfInstanceTypesRestrictionsSystemSettings() {
+    @Test(priority = 40, dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
+    @TestCase({"EPMCMBIBPC-2646"})
+    public void validationOfInstanceTypesRestrictionsHierarchy() {
         try {
+            String[] masks = clusterAllowedMasks.split(",");
             loginAs(admin);
-            navigationMenu()
-                    .settings()
-                    .switchToPreferences()
-                    .switchToCluster()
-                    .setClusterAllowedInstanceTypes(format("%s.*", instanceFamilyName))
-                    .save();
+            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s*", masks[0]));
+            setMaskForRole(testRole, instanceTypesMask, format("%s*", masks[1]));
+            setMaskForUser(user.login, instanceTypesMask, format("%s*", masks[2]));
+            setMaskForUser(user.login, toolInstanceTypesMask, format("%s*", masks[3]));
             logout();
-            validationOfInstanceTypesRestrictions();
+            loginAs(user);
+            library()
+                    .cd(folder)
+                    .clickOnDraftVersion(pipeline)
+                    .configurationTab()
+                    .editConfiguration(configurationName, profile ->
+                            profile
+                                    .expandTab(EXEC_ENVIRONMENT)
+                                    .ensure(INSTANCE_TYPE, empty)
+                                    .checkValueIsInDropDown(INSTANCE_TYPE, masks[2])
+                    )
+                    .click(CODE_TAB)
+                    .exitFromConfigurationWithoutSaved();
+            library()
+                    .cd(folder)
+                    .configurationWithin(configuration, configuration ->
+                            configuration
+                                    .expandTabs(execEnvironmentTab)
+                                    .sleep(4, SECONDS)
+                                    .ensure(DISK, value(customDisk))
+                                    .ensure(DOCKER_IMAGE, value(defaultGroup), value(testingTool))
+                                    .ensure(INSTANCE_TYPE, empty)
+                                    .checkValueIsInDropDown(INSTANCE_TYPE, masks[3])
+                    )
+                    .exitFromConfigurationWithoutSaved();
+            tools()
+                    .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                    .sleep(1, SECONDS)
+                    .checkValueIsInDropDown(INSTANCE_TYPE, masks[3]);
         } finally {
             logout();
             loginAs(admin);
-            navigationMenu()
-                    .settings()
-                    .switchToPreferences()
-                    .switchToCluster()
-                    .setClusterAllowedInstanceTypes(defaultClusterAllowedInstanceTypes)
-                    .save();
+            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, defaultClusterAllowedInstanceTypes);
+            setMaskForRole(testRole, instanceTypesMask, "");
+            setMaskForUser(user.login, instanceTypesMask, "");
+            setMaskForUser(user.login, toolInstanceTypesMask, "");
+        }
+    }
+
+    @Test(priority = 40, dependsOnMethods = {"validationOfInstanceTypesRestrictionsHierarchy"})
+    @TestCase({"EPMCMBIBPC-2647"})
+    public void validationOfToolsInstanceTypesRestrictionsHierarchy() {
+        try {
+            String[] masks = clusterAllowedMasks.split(",");
+            loginAs(admin);
+            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s*", masks[0]));
+            setMaskForUser(user.login, instanceTypesMask, format("%s*", masks[2]));
+            setMaskForUser(user.login, toolInstanceTypesMask, format("%s*", masks[3]));
+            logout();
+            validationOfToolsInstanceTypesRestrictionsOverInstanceManagement();
+        } finally {
+            logout();
+            loginAs(admin);
+            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, defaultClusterAllowedInstanceTypes);
+            setMaskForUser(user.login, instanceTypesMask, "");
+            setMaskForUser(user.login, toolInstanceTypesMask, "");
         }
     }
 
     @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
-    @Test(priority = 10)
+    @Test(priority = 2)
     @TestCase({"EPMCMBIBPC-2650"})
     public void validationOfPriceTypesRestrictionsOverInstanceManagement() {
         try {
@@ -271,7 +327,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(priority = 20)
+    @Test(priority = 2)
     @TestCase({"EPMCMBIBPC-2641"})
     public void validationOfToolsInstanceTypesRestrictionsOverUserManagement() {
         try {
@@ -290,7 +346,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(priority = 20)
+    @Test(priority = 2)
     @TestCase({"EPMCMBIBPC-2643"})
     public void validationOfToolsInstanceTypesRestrictionsForUserGroup() {
         try {
@@ -309,7 +365,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(priority = 20)
+    @Test(priority = 2)
     @TestCase({"EPMCMBIBPC-2642"})
     public void validationOfToolsInstanceTypesRestrictionsOverInstanceManagement() {
         try {
@@ -344,17 +400,12 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(priority = 20)
+    @Test(priority = 2)
     @TestCase({"EPMCMBIBPC-2645"})
     public void validationOfToolsInstanceTypesRestrictionsSystemSettings() {
         try {
             loginAs(admin);
-            navigationMenu()
-                    .settings()
-                    .switchToPreferences()
-                    .switchToCluster()
-                    .setClusterAllowedInstanceTypesDocker(format("%s.*", instanceFamilyName))
-                    .save();
+            setClusterAllowedStringPreference(clusterAllowedInstanceTypesDocker, format("%s.*", instanceFamilyName));
             logout();
             loginAs(user);
             tools()
@@ -364,22 +415,89 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         } finally {
             logout();
             loginAs(admin);
-            navigationMenu()
-                    .settings()
-                    .switchToPreferences()
-                    .switchToCluster()
-                    .setClusterAllowedInstanceTypesDocker(defaultClusterAllowedInstanceTypes)
-                    .save();
+            setClusterAllowedStringPreference(clusterAllowedInstanceTypesDocker,
+                    defaultClusterAllowedInstanceTypes);
         }
     }
 
-    private void setMaskForUser(String user, String mask, String value) {
-        navigationMenu()
+    @CloudProviderOnly(values={Cloud.AWS,Cloud.GCP})
+    @Test(priority=2,dependsOnMethods={"preparationForValidationOfInstanceTypesRestrictions"})
+    @TestCase({"EPMCMBIBPC-2648"})
+    public void validationOfPriceTypesRestrictionsOverUserManagement() {
+        try {
+            loginAs(admin);
+            openEditUserTab(user.login)
+                    .setAllowedPriceType(onDemandPrice)
+                    .ok();
+            logout();
+            loginAs(user);
+            validationOfPriceTypesRestrictions();
+        } finally {
+            logout();
+            loginAs(admin);
+            openEditUserTab(user.login)
+                    .clearAllowedPriceTypeField()
+                    .ok();
+        }
+    }
+
+    @CloudProviderOnly(values={Cloud.AWS,Cloud.GCP})
+    @Test(priority=2,dependsOnMethods={"preparationForValidationOfInstanceTypesRestrictions"})
+    @TestCase({"EPMCMBIBPC-2649"})
+    public void validationOfPriceTypesRestrictionsForUserGroup() {
+        try {
+            loginAs(admin);
+            navigationMenu()
+                    .settings()
+                    .switchToUserManagement()
+                    .switchToRoles()
+                    .editRole(testRole)
+                    .setAllowedPriceType(onDemandPrice)
+                    .ok();
+            logout();
+            loginAs(user);
+            validationOfPriceTypesRestrictions();
+        } finally {
+            logout();
+            loginAs(admin);
+            navigationMenu()
+                    .settings()
+                    .switchToUserManagement()
+                    .switchToRoles()
+                    .editRole(testRole)
+                    .clearAllowedPriceTypeField()
+                    .ok();
+        }
+    }
+
+    @CloudProviderOnly(values={Cloud.AWS,Cloud.GCP})
+    @Test(priority=2,dependsOnMethods={"preparationForValidationOfInstanceTypesRestrictions"})
+    @TestCase({"EPMCMBIBPC-2651"})
+    public void validationOfPriceTypesRestrictionsSystemSettings() {
+        try {
+            loginAs(admin);
+            setClusterAllowedStringPreference(clusterAllowedPriceTypes, clusterAllowedPrice);
+            logout();
+            loginAs(user);
+            validationOfPriceTypesRestrictions();
+        } finally {
+            logout();
+            loginAs(admin);
+            setClusterAllowedStringPreference(clusterAllowedPriceTypes, defaultClusterAllowedPriceTypes);
+        }
+    }
+
+    private EditUserPopup openEditUserTab(String user) {
+        return navigationMenu()
                 .settings()
                 .switchToUserManagement()
                 .switchToUsers()
                 .searchForUserEntry(user)
-                .edit()
+                .edit();
+    }
+
+    private void setMaskForUser(String user, String mask, String value) {
+        openEditUserTab(user)
                 .addAllowedLaunchOptions(mask, value)
                 .ok();
     }
@@ -392,6 +510,16 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .editRole(role)
                 .addAllowedLaunchOptions(mask, value)
                 .ok();
+    }
+
+    private void setClusterAllowedStringPreference(String pref, String value) {
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .switchToCluster()
+                .setClusterAllowedStringPreference(pref, value)
+                .save();
+        sleep(10, SECONDS);
     }
 
     private void validationOfInstanceTypesRestrictions() {
@@ -420,5 +548,26 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                 .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
                 )
                 .exitFromConfigurationWithoutSaved();
+    }
+
+    private void validationOfPriceTypesRestrictions() {
+        library()
+                .cd(folder)
+                .clickOnDraftVersion(pipeline)
+                .configurationTab()
+                .editConfiguration(configurationName,profile->
+                        profile
+                                .expandTab(ADVANCED_PANEL)
+                                .checkValueIsInDropDown(PRICE_TYPE, "On-demand"));
+        library()
+                .cd(folder)
+                .configurationWithin(configuration, configuration ->
+                        configuration
+                                .expandTabs(advancedTab)
+                                .checkValueIsInDropDown(PRICE_TYPE, "On-demand"));
+        tools()
+                .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .checkValueIsInDropDown(PRICE_TYPE, "On-demand");
     }
 }

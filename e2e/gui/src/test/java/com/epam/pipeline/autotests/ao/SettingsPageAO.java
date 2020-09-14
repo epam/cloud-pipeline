@@ -588,7 +588,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             entry(OK, context().find(By.id("close-edit-user-form"))),
                             entry(BLOCK, context().$(button("BLOCK"))),
                             entry(UNBLOCK, context().$(button("UNBLOCK"))),
-                            entry(DELETE, context().$(byId("delete-user-button")))
+                            entry(DELETE, context().$(byId("delete-user-button"))),
+                            entry(PRICE_TYPE, context().find(byXpath(
+                                    format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
                     );
 
                     public EditUserPopup(UsersTabAO parentAO) {
@@ -660,6 +662,24 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
                     public EditUserPopup addAllowedLaunchOptions(final String option, final String mask) {
                         SettingsPageAO.this.addAllowedLaunchOptions(option, mask);
+                        return this;
+                    }
+
+                    public EditUserPopup setAllowedPriceType(final String priceType) {
+                        click(PRICE_TYPE);
+                        context().find(byClassName("ant-select-dropdown")).find(byText(priceType))
+                                .shouldBe(visible)
+                                .click();
+                        return this;
+                    }
+
+                    public EditUserPopup clearAllowedPriceTypeField() {
+                        ensureVisible(PRICE_TYPE);
+                        SelenideElement type = context().$(byClassName("ant-select-selection__choice__remove"));
+                        while (type.isDisplayed()) {
+                            type.click();
+                            sleep(1, SECONDS);
+                        }
                         return this;
                     }
                 }
@@ -807,7 +827,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     implements AccessObject<EditRolePopup> {
                 private final RolesTabAO parentAO;
                 public final Map<Primitive, SelenideElement> elements = initialiseElements(
-                        entry(OK, context().find(By.id("close-edit-user-form")))
+                        entry(OK, context().find(By.id("close-edit-user-form"))),
+                        entry(PRICE_TYPE, context().find(byXpath(
+                                format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
                 );
 
                 public EditRolePopup(final RolesTabAO parentAO) {
@@ -828,6 +850,25 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
                 public EditRolePopup addAllowedLaunchOptions(String option, String mask) {
                     SettingsPageAO.this.addAllowedLaunchOptions(option, mask);
+                    return this;
+                }
+
+                public EditRolePopup setAllowedPriceType(final String priceType) {
+                    click(PRICE_TYPE);
+                    context().find(byClassName("ant-select-dropdown")).find(byText(priceType))
+                            .shouldBe(visible)
+                            .click();
+                    return this;
+                }
+
+                public EditRolePopup clearAllowedPriceTypeField() {
+                    ensureVisible(PRICE_TYPE);
+                    SelenideElement type = context().$(byClassName("ant-select-selection__choice__remove"));
+                    while (type.isDisplayed()) {
+                        type.click();
+                        sleep(1, SECONDS);
+                    }
+                    click(byText("Allowed price types"));
                     return this;
                 }
             }
@@ -874,10 +915,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public class ClusterTabAO extends PreferencesAO {
 
-            private final By clusterAllowedInstanceTypes = getByClusterField("cluster.allowed.instance.types");
-            private final By clusterAllowedPriceTypes = getByClusterField("cluster.allowed.price.types");
-            private final By clusterAllowedInstanceTypesDocker = getByClusterField("cluster.allowed.instance.types.docker");
-
             ClusterTabAO(final PipelinesLibraryAO parentAO) {
                 super(parentAO);
             }
@@ -907,16 +944,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return $(clusterHddExtraMulti()).getValue();
             }
 
-            public PreferencesAO setClusterAllowedInstanceTypes(String value) {
-                return setClusterValue(clusterAllowedInstanceTypes, value);
-            }
-
-            public PreferencesAO setClusterAllowedInstanceTypesDocker(String value) {
-                return setClusterValue(clusterAllowedInstanceTypesDocker, value);
-            }
-
-            public PreferencesAO setClusterAllowedPriceTypes(String value) {
-                return setClusterValue(clusterAllowedPriceTypes, value);
+            public PreferencesAO setClusterAllowedStringPreference(String mask, String value) {
+                return setClusterValue(mask, value);
             }
 
             private By getByClusterField(final String variable) {
@@ -932,7 +961,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 };
             }
 
-            private ClusterTabAO setClusterValue(final By clusterVariable, final String value) {
+            private ClusterTabAO setClusterValue(final String clusterPref, final String value) {
+                By clusterVariable = getByClusterField(clusterPref);
                 click(clusterVariable);
                 clear(clusterVariable);
                 setValue(clusterVariable, value);
