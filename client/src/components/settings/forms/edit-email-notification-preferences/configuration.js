@@ -51,7 +51,21 @@ const SystemDiskConsumeThresholdPreference = {
   name: 'Threshold of disk consumption (%)',
   hint: (
     <div>
-      Threshold of disk consumption (%)
+      <b>Specifies disk threshold (in %)</b> above which the notification will be sent<br />
+      and the corresponding run will be marked by the
+      <span
+        style={{
+          color: '#ae1726',
+          border: '1px solid #ae1726',
+          padding: '2px 5px',
+          borderRadius: 5,
+          margin: 3,
+          lineHeight: 1
+        }}
+      >
+        PRESSURE
+      </span>
+      label.
     </div>
   )
 };
@@ -64,7 +78,21 @@ const SystemMemoryConsumeThresholdPreference = {
   name: 'Threshold of memory consumption (%)',
   hint: (
     <div>
-      Threshold of memory consumption (%)
+      <b>Specifies memory threshold (in %)</b> above which the notification will be sent<br />
+      and the corresponding run will be marked by the
+      <span
+        style={{
+          color: '#ae1726',
+          border: '1px solid #ae1726',
+          padding: '2px 5px',
+          borderRadius: 5,
+          margin: 3,
+          lineHeight: 1
+        }}
+      >
+        PRESSURE
+      </span>
+      label.
     </div>
   )
 };
@@ -76,7 +104,23 @@ const SystemMaxIdleTimeoutMinutesPreference = {
   name: 'Max duration of idle (min)',
   hint: (
     <div>
-      Max duration of idle (min)
+      <b>Specifies a duration in minutes.</b><br />
+      This is a period during which the <i>idle</i> state of the run is not being checked.<br />
+      After this period, the System starts to verify CPU utilization of the running node<br />
+      and mark the run by the
+      <span
+        style={{
+          color: '#f79e2c',
+          border: '1px solid #f79e2c',
+          padding: '2px 5px',
+          borderRadius: 5,
+          margin: 3,
+          lineHeight: 1
+        }}
+      >
+        IDLE
+      </span>
+      label when the utilization is low.
     </div>
   )
 };
@@ -88,7 +132,11 @@ const SystemIdleActionTimeoutMinutesPreference = {
   name: 'Resend/action delay (min)',
   hint: (
     <div>
-      Resend/action delay (min)
+      <b>Specifies a duration in minutes.</b><br />
+      This duration starts after the <b>"Max duration of idle (min)"</b> is over.<br />
+      This is a delay before the configured action of the <i>idle</i> run will be performed.<br />
+      {/* eslint-disable-next-line max-len */}
+      In case when the configured action is <b>NOTIFY</b>, this is a delay between repeated notifications.
     </div>
   )
 };
@@ -101,7 +149,9 @@ const SystemIdleCPUThresholdPreference = {
   name: 'CPU idle threshold (%)',
   hint: (
     <div>
-      CPU idle threshold (%)
+      <b>Specifies percentage of the CPU utilization</b>, below which an action with the
+      <i style={{margin: 3}}>idle</i>
+      run will be performed.
     </div>
   )
 };
@@ -113,7 +163,8 @@ const SystemIdleActionPreference = {
   enum: ['NOTIFY', 'PAUSE', 'PAUSE_OR_STOP', 'STOP'],
   hint: (
     <div>
-      Action
+      Sets the <b>action</b> to perform with the instance with low CPU utilization
+      (below the configured threshold).
     </div>
   )
 };
