@@ -46,7 +46,7 @@ class Synchronization(object):
             return user_ids is None or len(user_ids) == 0 or len([u for u in user_ids if u.lower() == user_name]) > 0
 
         def validate_storage(test_storage, share_mounts):
-            if not test_storage.is_nfs() and test_storage.type != 'AZ':
+            if not test_storage.is_nfs() and test_storage.type != 'AZ' and test_storage.type != 'S3' and test_storage.type != 'GCP':
                 return None
             server_name = None
             storage_path = None
@@ -70,8 +70,8 @@ class Synchronization(object):
                 if storage_path.startswith('/'):
                     storage_path = storage_path[1:]
                 storage_link_destination = os.path.join(self.__config__.nfs_root, server_name, storage_path)
-            elif test_storage.type == 'AZ':
-                storage_link_destination = os.path.join(self.__config__.nfs_root, "AZ", test_storage.name)
+            elif test_storage.type == 'AZ' or test_storage.type == 'S3' or test_storage.type == "GCP":
+                storage_link_destination = os.path.join(self.__config__.nfs_root, test_storage.type, test_storage.name)
 
             if not os.path.exists(storage_link_destination):
                 print 'Storage mount not found at path: {}'.format(storage_link_destination)

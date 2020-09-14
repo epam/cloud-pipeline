@@ -195,20 +195,17 @@ while IFS='|' read -r id name path type region_id; do
      echo
      echo "[INFO] Staring processing: $mount_root (id: ${id}, name: ${name}, region: ${region_id} type: ${type}, path: ${path})"
 
-     if [ ${type} -ne "AZ" ]; then
-        echo "[ERROR] Storage with id: ${id} and path: ${path} is not a AZ storage, skipping."
-        continue
+     if [[ "${type}" == "AZ" ]]; then
+         mount_root_srv_dir="${_MOUNT_ROOT}/AZ/${name}"
+     elif [[ "${type}" == "S3" ]]; then
+         mount_root_srv_dir="${_MOUNT_ROOT}/S3/${name}"
+     elif [[ "${type}" == "GCP" ]]; then
+         mount_root_srv_dir="${_MOUNT_ROOT}/GCP/${name}"
+     else
+         echo "[INFO] Storage with id: ${id} and path: ${path} is not a AZ/GCP/S3 storage, skipping."
+         continue
      fi
 
-     region_cred_file="/root/.cloud/regioncreds/${region_id}"
-     if [ ! -f ${region_cred_file} ]; then
-        echo "[ERROR] Cred file for Azure region ${region_id}, not found!"
-        continue
-     fi
-     storage_account=$(cat ${region_cred_file} | jq -r .storage_account)
-     storage_key=$(cat ${region_cred_file} | jq -r .storage_key)
-
-     mount_root_srv_dir="${_MOUNT_ROOT}/AZ/${name}"
      if mountpoint -q "$mount_root_srv_dir"; then
         echo "[DONE] $mount_root_srv_dir is already mounted, skipping"
         mounted_dirs+=($(remove_trailing_slashes "$mount_root_srv_dir"))
@@ -216,11 +213,32 @@ while IFS='|' read -r id name path type region_id; do
      fi
 
      mkdir -p ${mount_root_srv_dir}
-     mkdir -p /mnt/blobfusetmp/${path}
-     export AZURE_STORAGE_ACCOUNT="${storage_account}"
-     export AZURE_STORAGE_ACCESS_KEY="${storage_key}"
-     blobfuse ${mount_root_srv_dir} --container-name=${path} --tmp-path=/mnt/blobfusetmp/${path}
-     if [ $? -ne 0 ]; then
+
+     if [[ "${type}" == "AZ" ]]; then
+         CP_TMP_DIR_PATH="/mnt/blobfusetmp/${path}"
+         mkdir -p "$CP_TMP_DIR_PATH"
+         region_cred_file="/root/.cloud/regioncreds/${region_id}"
+         if [[ ! -f ${region_cred_file} ]]; then
+            echo "[ERROR] Cred file for Azure region ${region_id}, not found!"
+            continue
+         fi
+         storage_account=$(cat ${region_cred_file} | jq -r .storage_account)
+         storage_key=$(cat ${region_cred_file} | jq -r .storage_key)
+         export AZURE_STORAGE_ACCOUNT="${storage_account}"
+         export AZURE_STORAGE_ACCESS_KEY="${storage_key}"
+         blobfuse ${mount_root_srv_dir} --container-name=${path} --tmp-path=$CP_TMP_DIR_PATH
+         mount_result=$?
+     elif [[ "${type}" == "S3" ]] || [[ "${type}" == "GCP" ]]; then
+         pipe storage mount ${mount_root_srv_dir} -b ${path} -t --mode 775 -w ${CP_PIPE_FUSE_TIMEOUT:-500} -o allow_other -l /var/log/fuse_${id}.log
+         mount_result=$?
+     else
+         echo "[ERROR] Storage with id: ${id} and path: ${path} is not a AZ/GCP/S3 storage, skipping."
+         continue
+     fi
+
+
+
+     if [[ $mount_result -ne 0 ]]; then
         echo "[ERROR] Unable to mount $mount_root to $mount_root_srv_dir (id: ${id}, type: ${type}), skipping"
         continue
      fi
