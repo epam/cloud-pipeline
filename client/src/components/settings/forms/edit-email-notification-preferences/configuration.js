@@ -169,13 +169,37 @@ const SystemIdleActionPreference = {
   )
 };
 
+const SystemMaxLongPausedTimeoutMinutesPreference = {
+  preference: 'system.max.long.paused.timeout.minutes',
+  type: 'number',
+  min: 0,
+  name: 'Max duration of pause (min)'
+};
+
+const SystemLongPausedActionTimeoutMinutesPreference = {
+  preference: 'system.long.paused.action.timeout.minutes',
+  type: 'number',
+  min: 0,
+  name: 'Action delay (min)'
+};
+
+const SystemLongPausedActionPreference = {
+  preference: 'system.long.paused.action',
+  type: 'enum',
+  name: 'Action',
+  enum: ['NOTIFY', 'STOP']
+};
+
 const Preferences = [
   SystemDiskConsumeThresholdPreference,
   SystemMemoryConsumeThresholdPreference,
   SystemMaxIdleTimeoutMinutesPreference,
   SystemIdleActionTimeoutMinutesPreference,
   SystemIdleCPUThresholdPreference,
-  SystemIdleActionPreference
+  SystemIdleActionPreference,
+  SystemMaxLongPausedTimeoutMinutesPreference,
+  SystemLongPausedActionTimeoutMinutesPreference,
+  SystemLongPausedActionPreference
 ];
 
 const NotificationPreferences = {
@@ -201,7 +225,11 @@ const NotificationPreferences = {
     SystemIdleCPUThresholdPreference.preference,
     SystemIdleActionPreference.preference
   ],
-  [LongPausedType]: []
+  [LongPausedType]: [
+    SystemMaxLongPausedTimeoutMinutesPreference.preference,
+    SystemLongPausedActionTimeoutMinutesPreference.preference,
+    SystemLongPausedActionPreference.preference
+  ]
 };
 
 export {
