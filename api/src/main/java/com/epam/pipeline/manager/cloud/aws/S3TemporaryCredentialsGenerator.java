@@ -46,8 +46,12 @@ import java.util.Optional;
 public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGenerator<S3bucketDataStorage> {
 
     private static final String GET_OBJECT_ACTION = "s3:GetObject";
+    private static final String GET_OBJECT_ACL_ACTION = "s3:GetObjectAcl";
     private static final String GET_VERSION_ACTION = "s3:GetObjectVersion";
+    private static final String GET_VERSION_ACL_ACTION = "s3:GetObjectVersionAcl";
     private static final String PUT_OBJECT_ACTION = "s3:PutObject";
+    private static final String PUT_OBJECT_ACL_ACTION = "s3:PutObjectAcl";
+    private static final String PUT_OBJECT_VERSION_ACL_ACTION = "s3:PutObjectVersionAcl";
     private static final String DELETE_OBJECT_ACTION = "s3:DeleteObject";
     private static final String DELETE_VERSION_ACTION = "s3:DeleteObjectVersion";
     private static final String LIST_OBJECTS_ACTION = "s3:ListBucket";
@@ -150,19 +154,23 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
         final ArrayNode actions = statement.putArray(ACTION);
         if (action.isRead()) {
             actions.add(GET_OBJECT_ACTION);
+            actions.add(GET_OBJECT_ACL_ACTION);
             actions.add(GET_OBJECT_TAGGING_ACTION);
             if (action.isReadVersion()) {
                 actions.add(GET_VERSION_ACTION);
+                actions.add(GET_VERSION_ACL_ACTION);
                 actions.add(GET_OBJECT_VERSION_TAGGING_ACTION);
             }
         }
         if (action.isWrite()) {
             actions.add(PUT_OBJECT_ACTION);
+            actions.add(PUT_OBJECT_ACL_ACTION);
             actions.add(DELETE_OBJECT_ACTION);
             actions.add(PUT_OBJECT_TAGGING_ACTION);
             actions.add(DELETE_OBJECT_TAGGING_ACTION);
             if (action.isWriteVersion()) {
                 actions.add(DELETE_VERSION_ACTION);
+                actions.add(PUT_OBJECT_VERSION_ACL_ACTION);
                 actions.add(PUT_OBJECT_VERSION_TAGGING_ACTION);
                 actions.add(DELETE_OBJECT_VERSION_TAGGING_ACTION);
             }
