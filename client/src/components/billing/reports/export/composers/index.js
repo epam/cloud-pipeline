@@ -21,13 +21,13 @@ export {default as tableComposer} from './table-composer';
 export {default as discountsComposer} from './discounts-composer';
 export {default as usersComposers} from './users-composer';
 
-function buildCascadeComposers (composers = [], discounts = {}) {
+function buildCascadeComposers (composers = [], discounts = {}, ...exportOptions) {
   function build (index = 0) {
     if (index < composers.length) {
       const next = build(index + 1);
       const {composer, options = []} = composers[index];
       return (csv) => new Promise((resolve, reject) => {
-        composer(csv, discounts, ...options)
+        composer(csv, discounts, exportOptions, ...options)
           .then(() => {
             next(csv)
               .then(resolve)

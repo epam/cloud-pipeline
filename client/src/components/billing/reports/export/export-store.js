@@ -49,8 +49,8 @@ class ExportStore {
     }
   }
 
-  doCsvExport = (title) => {
-    const promises = this.listeners.map(listener => listener.getExportData());
+  doCsvExport = (title, ...options) => {
+    const promises = this.listeners.map(listener => listener.getExportData(...options));
     Promise.all(promises)
       .then((sheets) => {
         sheets.forEach((sheet, index) => {
@@ -64,7 +64,7 @@ class ExportStore {
       });
   };
 
-  doImageExport = (title) => {
+  doImageExport = (title, ...options) => {
     const hide = message.loading('Creating an image...', 0);
     setTimeout(() => {
       const listeners = this.imageListeners.sort((a, b) => {
@@ -72,7 +72,7 @@ class ExportStore {
         const {order: bOrder} = b.props;
         return aOrder - bOrder;
       });
-      const promises = listeners.map(listener => listener.getExportData());
+      const promises = listeners.map(listener => listener.getExportData(...options));
       Promise.all(promises)
         .then((canvases) => {
           const filtered = canvases.filter(Boolean);

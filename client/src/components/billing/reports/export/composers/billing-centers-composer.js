@@ -16,8 +16,13 @@
 
 import {minutesToHours} from '../../../../../models/billing/utils';
 import {Range} from '../../periods';
+import ExportFormats from '../export-formats';
 
-function compose (csv, discounts, resources) {
+function compose (csv, discounts, exportOptions, resources) {
+  const [{format}] = exportOptions;
+  if (format !== ExportFormats.csvCostCenters) {
+    return Promise.resolve();
+  }
   return new Promise((resolve, reject) => {
     if (
       !resources ||

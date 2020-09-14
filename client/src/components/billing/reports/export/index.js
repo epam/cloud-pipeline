@@ -22,15 +22,13 @@ import ExportConsumer from './export-consumer';
 import ExportImageConsumer from './export-image-consumer';
 import exportStore from './export-store';
 import * as ExportComposers from './composers';
-
-const ExportFormat = {
-  csv: 'csv',
-  image: 'image'
-};
+import ExportFormat from './export-formats';
 
 const ExportFormatName = {
   [ExportFormat.csv]: 'As CSV',
-  [ExportFormat.image]: 'As Image'
+  [ExportFormat.image]: 'As Image',
+  [ExportFormat.csvCostCenters]: 'As CSV (Cost centers)',
+  [ExportFormat.csvUsers]: 'As CSV (Users)'
 };
 
 class ExportReports extends React.Component {
@@ -49,11 +47,13 @@ class ExportReports extends React.Component {
     const title = typeof documentName === 'function' ? documentName() : documentName;
     switch (format) {
       case ExportFormat.image:
-        exportStore.doImageExport(title);
+        exportStore.doImageExport(title, {format});
         break;
       default:
       case ExportFormat.csv:
-        exportStore.doCsvExport(title);
+      case ExportFormat.csvCostCenters:
+      case ExportFormat.csvUsers:
+        exportStore.doCsvExport(title, {format});
         break;
     }
   };
@@ -95,7 +95,12 @@ class ExportReports extends React.Component {
 ExportReports.propTypes = {
   className: PropTypes.string,
   documentName: PropTypes.oneOfType([PropTypes.func, PropTypes.string]),
-  formats: PropTypes.arrayOf(PropTypes.oneOf([ExportFormat.csv, ExportFormat.image]))
+  formats: PropTypes.arrayOf(PropTypes.oneOf([
+    ExportFormat.csv,
+    ExportFormat.csvCostCenters,
+    ExportFormat.csvUsers,
+    ExportFormat.image
+  ]))
 };
 
 ExportReports.defaultProps = {

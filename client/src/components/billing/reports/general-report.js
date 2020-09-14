@@ -239,19 +239,28 @@ function UserReport ({
     navigation.resourcesNavigation,
     filters
   );
-  const composers = [
+  const composers = (discounts) => ([
     {
       composer: ExportComposers.billingCentersComposer,
-      options: [exportCsvRequest]
+      options: [exportCsvRequest, discounts]
+    },
+    {
+      composer: ExportComposers.usersComposers,
+      options: [exportByUsersCsvRequest, discounts]
     }
-  ];
+  ]);
   return (
     <Discounts.Consumer>
       {
         (computeDiscounts, storageDiscounts, computeDiscountValue, storageDiscountValue) => (
           <Export.Consumer
             className={styles.chartsContainer}
-            composers={composers}
+            composers={composers({
+              compute: computeDiscounts,
+              storage: storageDiscounts,
+              computeValue: computeDiscountValue,
+              storageValue: storageDiscountValue
+            })}
           >
             <Layout
               layout={GeneralReportLayout.Layout}
@@ -498,6 +507,10 @@ function GroupReport ({
     {
       composer: ExportComposers.billingCentersComposer,
       options: [exportCsvRequest, discounts]
+    },
+    {
+      composer: ExportComposers.usersComposers,
+      options: [exportByUsersCsvRequest, discounts]
     }
   ];
   return (
@@ -630,19 +643,11 @@ function GeneralReport ({
     {
       composer: ExportComposers.billingCentersComposer,
       options: [exportCsvRequest, discounts]
+    },
+    {
+      composer: ExportComposers.usersComposers,
+      options: [exportByUsersCsvRequest, discounts]
     }
-    // {
-    //   composer: ExportComposers.summaryComposer,
-    //   options: [summary]
-    // },
-    // {
-    //   composer: ExportComposers.resourcesComposer,
-    //   options: [resources]
-    // },
-    // {
-    //   composer: ExportComposers.defaultComposer,
-    //   options: [billingCentersRequest]
-    // }
   ];
   return (
     <Discounts.Consumer>
