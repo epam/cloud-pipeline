@@ -23,10 +23,12 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -368,6 +370,35 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
                 });
     }
 
+    /**
+     * Creates notifications for long paused runs.
+     * @param pausedRuns the list of the {@link PipelineRun} objects that in paused state
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void notifyLongPausedRuns(final List<PipelineRun> pausedRuns) {
+        final List<PipelineRun> longPausedRuns = createNotificationsForLongPausedRuns(pausedRuns,
+                NotificationType.LONG_PAUSED);
+
+        if (CollectionUtils.isEmpty(longPausedRuns)) {
+            return;
+        }
+
+        final List<Long> runIds = longPausedRuns.stream()
+                .map(PipelineRun::getId)
+                .collect(Collectors.toList());
+        monitoringNotificationDao.updateNotificationTimestamp(runIds, NotificationType.LONG_PAUSED);
+    }
+
+    /**
+     * Creates notifications for long paused runs that shall be stopped.
+     * @param pausedRuns the list of the {@link PipelineRun} objects that in paused state
+     * @return the list of the {@link PipelineRun} objects that in long paused state
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public List<PipelineRun> notifyLongPausedRunsBeforeStop(final List<PipelineRun> pausedRuns) {
+        return createNotificationsForLongPausedRuns(pausedRuns, NotificationType.LONG_PAUSED_STOPPED);
+    }
+
     private boolean isRunStuckInStatus(final NotificationSettings settings,
                                        final LocalDateTime now,
                                        final Long threshold,
@@ -450,6 +481,16 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
 
     }
 
+    private Map<String, PipelineUser> getPipelinesOwnersFromRuns(final List<PipelineRun> runs) {
+        return userManager
+                .loadUsersByNames(runs.stream()
+                        .map(AbstractSecuredEntity::getOwner)
+                        .collect(Collectors.toList())
+                ).stream()
+                .collect(Collectors.toMap(PipelineUser::getUserName, Function.identity()));
+
+    }
+
     private List<Long> getCCUsers(final NotificationSettings idleRunSettings) {
         final List<Long> ccUserIds = getKeepInformedUserIds(idleRunSettings);
 
@@ -499,5 +540,48 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         final PipelineUser user = userManager.loadUserByName(username);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, username));
         return user;
+    }
+
+    private NotificationMessage buildMessageForLongPausedRun(final PipelineRun run, final List<Long> ccUsers,
+                                                             final NotificationSettings settings,
+                                                             final Map<String, PipelineUser> pipelineOwners) {
+        LOGGER.debug("Sending long paused run notification for run {}.", run.getId());
+        final NotificationMessage message = new NotificationMessage();
+        if (settings.isKeepInformedOwner()) {
+            message.setToUserId(pipelineOwners.getOrDefault(run.getOwner(), new PipelineUser()).getId());
+        }
+        message.setCopyUserIds(ccUsers);
+        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        message.setTemplateParameters(PipelineRunMapper.map(run, settings.getThreshold()));
+        return message;
+    }
+
+    private List<PipelineRun> createNotificationsForLongPausedRuns(final List<PipelineRun> pausedRuns,
+                                                                   final NotificationType notificationType) {
+        final NotificationSettings settings = notificationSettingsManager.load(notificationType);
+
+        if (settings == null || !settings.isEnabled() || settings.getTemplateId() == 0) {
+            LOGGER.info("No template configured for long paused status notifications or it was disabled!");
+            return Collections.emptyList();
+        }
+
+        final LocalDateTime now = DateUtils.nowUTC();
+        final Long threshold = settings.getThreshold();
+        if (threshold == null || threshold <= 0) {
+            LOGGER.debug("Threshold is not specified for notification type '{}'", notificationType.name());
+            return Collections.emptyList();
+        }
+
+        final List<Long> ccUsers = getCCUsers(settings);
+        final List<PipelineRun> filtered = pausedRuns.stream()
+                .filter(run -> isRunStuckInStatus(settings, now, threshold, run))
+                .collect(Collectors.toList());
+        final Map<String, PipelineUser> pipelineOwners = getPipelinesOwnersFromRuns(filtered);
+        final List<NotificationMessage> messages = filtered.stream()
+                .map(run -> buildMessageForLongPausedRun(run, ccUsers, settings, pipelineOwners))
+                .collect(Collectors.toList());
+        monitoringNotificationDao.createMonitoringNotifications(messages);
+
+        return filtered;
     }
 }
