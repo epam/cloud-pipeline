@@ -48,3 +48,14 @@
   text-overflow: ellipsis;
   overflow: hidden;
 }
+
+.element-size {
+  font-size: smaller;
+}
+
+.element-changed {
+  margin-left: 5px;
+  width: 150px;
+  font-size: smaller;
+  text-align: right;
+}

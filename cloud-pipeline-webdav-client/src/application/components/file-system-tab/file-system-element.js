@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 import {FolderOutlined, FileOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import './file-system-element.css';
+import displaySize from './display-size';
+import displayDate from './display-date';
 
 function FileSystemElement (
   {
@@ -95,6 +97,12 @@ function FileSystemElement (
       <div className="element-name-container">
         <span className="element-name">{element.name}</span>
       </div>
+      <span className="element-size">
+        {displaySize(element.size) || '\u00A0'}
+      </span>
+      <span className="element-changed">
+        {displayDate(element.changed) || '\u00A0'}
+      </span>
     </div>
   );
 }

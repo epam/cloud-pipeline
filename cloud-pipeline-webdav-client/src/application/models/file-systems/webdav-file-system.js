@@ -106,13 +106,18 @@ class WebdavFileSystem extends FileSystem {
             )
               .concat(
                 contents
-                  .map(item => ({
-                    name: item.basename,
-                    path: item.filename,
-                    isDirectory: /^directory$/i.test(item.type),
-                    isFile: /^file/i.test(item.type),
-                    isSymbolicLink: false
-                  }))
+                  .map(item => {
+                    const isDirectory = /^directory$/i.test(item.type);
+                    return {
+                      name: item.basename,
+                      path: item.filename,
+                      isDirectory,
+                      isFile: /^file/i.test(item.type),
+                      isSymbolicLink: false,
+                      size: isDirectory ? undefined : +(item.size),
+                      changed: item.lastmod
+                    };
+                  })
                   .sort(utilities.sorters.nameSorter)
                   .sort(utilities.sorters.elementTypeSorter)
               )

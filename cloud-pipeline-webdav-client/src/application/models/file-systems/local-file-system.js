@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import moment from 'moment-timezone';
 import FileSystem from './file-system';
 import * as utilities from './utilities';
 
@@ -36,13 +37,25 @@ class LocalFileSystem extends FileSystem {
             )
               .concat(
                 results
-                  .map(item => ({
-                    name: item.name,
-                    path: path.resolve(absolutePath, item.name),
-                    isDirectory: item.isDirectory(),
-                    isFile: item.isFile(),
-                    isSymbolicLink: item.isSymbolicLink()
-                  }))
+                  .map(item => {
+                    let size;
+                    let changed;
+                    const isDirectory = item.isDirectory();
+                    if (!isDirectory) {
+                      const stat = fs.statSync(path.resolve(absolutePath, item.name));
+                      size = +(stat.size);
+                      changed = moment(stat.ctime)
+                    }
+                    return {
+                      name: item.name,
+                      path: path.resolve(absolutePath, item.name),
+                      isDirectory,
+                      isFile: item.isFile(),
+                      isSymbolicLink: item.isSymbolicLink(),
+                      size,
+                      changed
+                    };
+                  })
                   .sort(utilities.sorters.nameSorter)
                   .sort(utilities.sorters.elementTypeSorter)
               )
