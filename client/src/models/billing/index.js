@@ -34,11 +34,13 @@ import {
 import {GetGroupedInstances, GetGroupedInstancesWithPrevious} from './get-grouped-instances';
 import {GetGroupedPipelines, GetGroupedPipelinesWithPrevious} from './get-grouped-pipelines-data';
 import {GetGroupedTools, GetGroupedToolsWithPrevious} from './get-grouped-tools-data';
+import {GetGroupedUsers} from './get-grouped-users';
 
 export {
   quotas,
   FetchBillingCenters,
   GetBillingData,
+  GetGroupedUsers,
   GetGroupedBillingCenters,
   GetGroupedBillingCentersWithPrevious,
   GetGroupedResources,

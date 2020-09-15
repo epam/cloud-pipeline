@@ -16,7 +16,16 @@
  *
  */
 
-function compose (csv, discounts, request, title, columns, nameColumn, filterOptions) {
+function compose (
+  csv,
+  discounts,
+  exportOptions,
+  request,
+  title,
+  columns,
+  nameColumn,
+  filterOptions
+) {
   return new Promise((resolve, reject) => {
     if (!request.loaded) {
       reject(new Error('Data is not available'));

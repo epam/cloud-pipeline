@@ -16,7 +16,7 @@
  *
  */
 
-function compose (csv, discounts) {
+function compose (csv, discounts, exportOptions) {
   return new Promise((resolve) => {
     const {
       computeValue = 0,

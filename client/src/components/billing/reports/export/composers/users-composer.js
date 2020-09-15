@@ -7,20 +7,21 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
 
 import {minutesToHours} from '../../../../../models/billing/utils';
 import {Range} from '../../periods';
 import ExportFormats from '../export-formats';
+import {getUserDisplayInfo} from '../../utilities';
 
-function compose (csv, discounts, exportOptions, resources) {
+function compose (csv, discounts, exportOptions, resources, usersRequest, preferences) {
   const [{format}] = exportOptions;
-  if (format !== ExportFormats.csvCostCenters) {
+  if (format !== ExportFormats.csvUsers) {
     return Promise.resolve();
   }
   return new Promise((resolve, reject) => {
@@ -29,7 +30,7 @@ function compose (csv, discounts, exportOptions, resources) {
       resources.length === 0 ||
       resources.filter(r => r.filter(rr => !rr.loaded).length > 0).length > 0
     ) {
-      reject(new Error('Billing centers data is not available'));
+      reject(new Error('Users data is not available'));
     } else {
       const {
         compute: computeFn = o => o,
@@ -37,15 +38,15 @@ function compose (csv, discounts, exportOptions, resources) {
         computeValue = 0,
         storageValue = 0
       } = discounts || {};
-      const centers = [];
+      const users = [];
       for (let r = 0; r < resources.length; r++) {
         const resource = resources[r];
         for (let s = 0; s < resource.length; s++) {
           const {value = {}} = resource[s];
-          const currentCenters = Object.keys(value);
-          for (let c = 0; c < currentCenters.length; c++) {
-            if (centers.indexOf(currentCenters[c]) === -1) {
-              centers.push(currentCenters[c]);
+          const currentUsers = Object.keys(value);
+          for (let c = 0; c < currentUsers.length; c++) {
+            if (users.indexOf(currentUsers[c]) === -1) {
+              users.push(currentUsers[c]);
             }
           }
         }
@@ -60,14 +61,14 @@ function compose (csv, discounts, exportOptions, resources) {
       );
       const periodsRow = csv.addRow('', true);
       const titleRow = csv.addRow('', true);
-      const centersRows = {};
-      for (let c = 0; c < centers.length; c++) {
-        centersRows[centers[c]] = csv.addRow(centers[c]);
+      const usersRows = {};
+      for (let c = 0; c < users.length; c++) {
+        usersRows[users[c]] = csv.addRow(getUserDisplayInfo(users[c], usersRequest, preferences));
       }
       const grandTotalRow = csv.addRow('Grand total', true);
       const columns = {};
       for (let i = 0; i < resources.length; i++) {
-        columns[i] = csv.addColumns('', '', '', '');
+        columns[i] = csv.addColumns('', '', '', '', '');
       }
       const round = a => Math.round(a * 100.0) / 100.0;
       csv.setCellValueByIndex(
@@ -93,21 +94,26 @@ function compose (csv, discounts, exportOptions, resources) {
         csv.setCellValueByIndex(
           titleRow,
           columns[i][0],
-          'Sum of runs'
+          'Billing center'
         );
         csv.setCellValueByIndex(
           titleRow,
           columns[i][1],
-          'Sum of hours'
+          'Sum of runs'
         );
         csv.setCellValueByIndex(
           titleRow,
           columns[i][2],
-          'Sum of runs costs'
+          'Sum of hours'
         );
         csv.setCellValueByIndex(
           titleRow,
           columns[i][3],
+          'Sum of runs costs'
+        );
+        csv.setCellValueByIndex(
+          titleRow,
+          columns[i][4],
           'Sum of storage costs'
         );
       }
@@ -135,19 +141,22 @@ function compose (csv, discounts, exportOptions, resources) {
           return undefined;
         };
         const getComputeGroupingInfo = getGroupingInfo(compute);
+        const getStorageGroupingInfo = getGroupingInfo(storage);
         const getComputeInfo = getInfo(compute);
         const getStorageInfo = getInfo(storage);
         let sumOfRuns = 0;
         let sumOfHours = 0;
         let sumOfRunsCosts = 0;
         let sumOfStorageCosts = 0;
-        for (let c = 0; c < centers.length; c++) {
-          const center = centers[c];
-          const runsValue = getComputeGroupingInfo(center, 'runs');
-          const runCostsValue = getComputeInfo(center, 'value');
-          const storageCostsValue = getStorageInfo(center, 'value');
+        for (let c = 0; c < users.length; c++) {
+          const user = users[c];
+          const billingCenter = getComputeGroupingInfo(user, 'billing_center') ||
+            getStorageGroupingInfo(user, 'billing_center');
+          const runsValue = getComputeGroupingInfo(user, 'runs');
+          const runCostsValue = getComputeInfo(user, 'value');
+          const storageCostsValue = getStorageInfo(user, 'value');
           const runs = (!runsValue || isNaN(runsValue)) ? 0 : +runsValue;
-          const hours = minutesToHours(getComputeGroupingInfo(center, 'usage_runs'));
+          const hours = minutesToHours(getComputeGroupingInfo(user, 'usage_runs'));
           const runsCosts = (!runCostsValue || isNaN(runCostsValue))
             ? 0
             : computeFn(+runCostsValue);
@@ -159,44 +168,49 @@ function compose (csv, discounts, exportOptions, resources) {
           sumOfRunsCosts += runsCosts;
           sumOfStorageCosts += storageCosts;
           csv.setCellValueByIndex(
-            centersRows[center],
+            usersRows[user],
             columns[i][0],
+            billingCenter
+          );
+          csv.setCellValueByIndex(
+            usersRows[user],
+            columns[i][1],
             runs
           );
           csv.setCellValueByIndex(
-            centersRows[center],
-            columns[i][1],
+            usersRows[user],
+            columns[i][2],
             hours
           );
           csv.setCellValueByIndex(
-            centersRows[center],
-            columns[i][2],
+            usersRows[user],
+            columns[i][3],
             runsCosts
           );
           csv.setCellValueByIndex(
-            centersRows[center],
-            columns[i][3],
+            usersRows[user],
+            columns[i][4],
             storageCosts
           );
         }
         csv.setCellValueByIndex(
           grandTotalRow,
-          columns[i][0],
+          columns[i][1],
           sumOfRuns
         );
         csv.setCellValueByIndex(
           grandTotalRow,
-          columns[i][1],
+          columns[i][2],
           round(sumOfHours)
         );
         csv.setCellValueByIndex(
           grandTotalRow,
-          columns[i][2],
+          columns[i][3],
           round(sumOfRunsCosts)
         );
         csv.setCellValueByIndex(
           grandTotalRow,
-          columns[i][3],
+          columns[i][4],
           round(sumOfStorageCosts)
         );
       }

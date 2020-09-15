@@ -30,6 +30,7 @@ import Filters, {RUNNER_SEPARATOR, REGION_SEPARATOR} from './filters';
 import {
   GetBillingData,
   GetGroupedBillingCenters,
+  GetGroupedUsers,
   GetGroupedBillingCentersWithPrevious,
   GetGroupedResourcesWithPrevious
 } from '../../../models/billing';
@@ -55,12 +56,13 @@ function injection (stores, props) {
     range,
     region: regionQ
   } = location.query;
+  const {users, preferences} = stores;
+  users.fetchIfNeededOrWait();
+  preferences.fetchIfNeededOrWait();
   const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
   const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
   const cloudRegionId = regionQ && regionQ.length ? regionQ.split(REGION_SEPARATOR) : undefined;
   const periodInfo = getPeriod(period, range);
-  const prevPeriodInfo = getPeriod(period, periodInfo.before);
-  const prevPrevPeriodInfo = getPeriod(period, prevPeriodInfo.before);
   const filters = {
     group,
     user,
@@ -87,36 +89,26 @@ function injection (stores, props) {
     );
     billingCentersStorageTableRequest.fetch();
   }
-  const export1ComputeCsvRequest = new GetGroupedBillingCenters(
+  const exportComputeCsvRequest = new GetGroupedBillingCenters(
     {...periodInfo, resourceType: 'COMPUTE'},
     false
   );
-  const export2ComputeCsvRequest = new GetGroupedBillingCenters(
-    {...prevPeriodInfo, resourceType: 'COMPUTE'},
-    false
-  );
-  const export3ComputeCsvRequest = new GetGroupedBillingCenters(
-    {...prevPrevPeriodInfo, resourceType: 'COMPUTE'},
-    false
-  );
-  const export1StorageCsvRequest = new GetGroupedBillingCenters(
+  const exportStorageCsvRequest = new GetGroupedBillingCenters(
     {...periodInfo, resourceType: 'STORAGE'},
     false
   );
-  const export2StorageCsvRequest = new GetGroupedBillingCenters(
-    {...prevPeriodInfo, resourceType: 'STORAGE'},
+  const exportComputeByUsersCsvRequest = new GetGroupedUsers(
+    {...periodInfo, resourceType: 'COMPUTE'},
     false
   );
-  const export3StorageCsvRequest = new GetGroupedBillingCenters(
-    {...prevPrevPeriodInfo, resourceType: 'STORAGE'},
+  const exportStorageByUsersCsvRequest = new GetGroupedUsers(
+    {...periodInfo, resourceType: 'STORAGE'},
     false
   );
-  export1ComputeCsvRequest.fetch();
-  export2ComputeCsvRequest.fetch();
-  export3ComputeCsvRequest.fetch();
-  export1StorageCsvRequest.fetch();
-  export2StorageCsvRequest.fetch();
-  export3StorageCsvRequest.fetch();
+  exportComputeCsvRequest.fetch();
+  exportStorageCsvRequest.fetch();
+  exportComputeByUsersCsvRequest.fetch();
+  exportStorageByUsersCsvRequest.fetch();
   const resources = new GetGroupedResourcesWithPrevious(filters);
   resources.fetch();
   const summaryCompute = new GetBillingData(
@@ -143,17 +135,14 @@ function injection (stores, props) {
     billingCentersComputeTableRequest,
     billingCentersStorageTableRequest,
     resources,
-    export1ComputeCsvRequest,
-    export1StorageCsvRequest,
     exportCsvRequest: [
-      period === Period.custom
-        ? undefined
-        : [export3ComputeCsvRequest, export3StorageCsvRequest],
-      period === Period.custom
-        ? undefined
-        : [export2ComputeCsvRequest, export2StorageCsvRequest],
-      [export1ComputeCsvRequest, export1StorageCsvRequest]
-    ].filter(Boolean)
+      [exportComputeCsvRequest, exportStorageCsvRequest]
+    ],
+    exportByUsersCsvRequest: [
+      [exportComputeByUsersCsvRequest, exportStorageByUsersCsvRequest]
+    ],
+    users,
+    preferences
   };
 }
 
@@ -248,7 +237,10 @@ function UserReport ({
   summaryCompute,
   summaryStorages,
   filters,
-  exportCsvRequest
+  exportCsvRequest,
+  exportByUsersCsvRequest,
+  users,
+  preferences
 }) {
   const onResourcesSelect = navigation.wrapNavigation(
     navigation.resourcesNavigation,
@@ -257,13 +249,17 @@ function UserReport ({
   const composers = [
     {
       composer: ExportComposers.billingCentersComposer,
-      options: [exportCsvRequest]
+      options: [exportCsvRequest, users, preferences]
+    },
+    {
+      composer: ExportComposers.usersComposers,
+      options: [exportByUsersCsvRequest, users, preferences]
     }
   ];
   return (
     <Discounts.Consumer>
       {
-        (computeDiscounts, storageDiscounts, computeDiscountValue, storageDiscountValue) => (
+        (computeDiscounts, storageDiscounts) => (
           <Export.Consumer
             className={styles.chartsContainer}
             composers={composers}
@@ -461,7 +457,10 @@ function GroupReport ({
   summaryCompute,
   summaryStorages,
   filters,
-  exportCsvRequest
+  exportCsvRequest,
+  exportByUsersCsvRequest,
+  users,
+  preferences
 }) {
   const billingCenterName = (group || []).join(' ');
   const title = `${billingCenterName} user's spendings`;
@@ -508,26 +507,23 @@ function GroupReport ({
   const onUserSelect = roleModel.isManager.billing({props})
     ? navigation.wrapNavigation(navigation.usersNavigation, filters)
     : undefined;
-  const composers = (discounts) => [
+  const composers = [
     {
       composer: ExportComposers.billingCentersComposer,
-      options: [exportCsvRequest, discounts]
+      options: [exportCsvRequest, users, preferences]
+    },
+    {
+      composer: ExportComposers.usersComposers,
+      options: [exportByUsersCsvRequest, users, preferences]
     }
   ];
   return (
     <Discounts.Consumer>
       {
-        (computeDiscounts, storageDiscounts, computeDiscountValue, storageDiscountValue) => (
+        (computeDiscounts, storageDiscounts) => (
           <Export.Consumer
             className={styles.chartsContainer}
-            composers={
-              composers({
-                compute: computeDiscounts,
-                storage: storageDiscounts,
-                computeValue: computeDiscountValue,
-                storageValue: storageDiscountValue
-              })
-            }
+            composers={composers}
           >
             <Layout
               layout={GeneralReportLayout.Layout}
@@ -628,7 +624,10 @@ function GeneralReport ({
   summaryCompute,
   summaryStorages,
   filters,
-  exportCsvRequest
+  exportCsvRequest,
+  exportByUsersCsvRequest,
+  users,
+  preferences
 }) {
   const onResourcesSelect = navigation.wrapNavigation(
     navigation.resourcesNavigation,
@@ -639,38 +638,23 @@ function GeneralReport ({
   const onBillingCenterSelect = isBillingManager
     ? navigation.wrapNavigation(navigation.billingCentersNavigation, filters)
     : undefined;
-  const composers = (discounts) => [
+  const composers = [
     {
       composer: ExportComposers.billingCentersComposer,
-      options: [exportCsvRequest, discounts]
+      options: [exportCsvRequest, users, preferences]
+    },
+    {
+      composer: ExportComposers.usersComposers,
+      options: [exportByUsersCsvRequest, users, preferences]
     }
-    // {
-    //   composer: ExportComposers.summaryComposer,
-    //   options: [summary]
-    // },
-    // {
-    //   composer: ExportComposers.resourcesComposer,
-    //   options: [resources]
-    // },
-    // {
-    //   composer: ExportComposers.defaultComposer,
-    //   options: [billingCentersRequest]
-    // }
   ];
   return (
     <Discounts.Consumer>
       {
-        (computeDiscounts, storageDiscounts, computeDiscountValue, storageDiscountValue) => (
+        (computeDiscounts, storageDiscounts) => (
           <Export.Consumer
             className={styles.chartsContainer}
-            composers={
-              composers({
-                compute: computeDiscounts,
-                storage: storageDiscounts,
-                computeValue: computeDiscountValue,
-                storageValue: storageDiscountValue
-              })
-            }
+            composers={composers}
           >
             <Layout
               layout={GeneralReportLayout.Layout}
@@ -772,7 +756,7 @@ function DefaultReport (props) {
   return GeneralReport(props);
 }
 
-export default inject('billingCenters')(
+export default inject('billingCenters', 'users', 'preferences')(
   inject(injection)(
     Filters.attach(
       roleModel.authenticationInfo(
