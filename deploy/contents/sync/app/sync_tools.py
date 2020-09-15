@@ -20,6 +20,7 @@ import sys
 from api.users_api import UserSyncAPI
 from api.tool_api import ReadOnlyToolSyncAPI, ToolSyncAPI
 from sync_users import sync_metadata_for_entity_class
+from multiprocessing.pool import ThreadPool
 
 ALLOWED_PRICE_TYPES = 'cluster.allowed.price.types'
 INSTANCE_TYPES = 'cluster.allowed.instance.types'
@@ -33,6 +34,7 @@ DOCKER_PUSH_CMD = 'docker push {image}'
 DOCKER_REMOVE_IMAGE_CMD = 'docker rmi {images_list}'
 
 metadata_keys_to_ignore = os.getenv('CP_SYNC_TOOLS_METADATA_SKIP_KEYS', '').split(',')
+tool_image_transfer_pool_size = os.getenv('CP_SYNC_TOOLS_TRANSFER_POOL_SIZE', 1)
 tool_properties_to_override = ['locked', 'cpu', 'ram', 'instanceType',
                                'disk', 'description', 'shortDescription',
                                'defaultCommand', 'allowSensitive']
@@ -285,12 +287,14 @@ class ToolSynchronizer(object):
                     print('Logged into [{}]'.format(registry_url))
                 authenticated_registries.append(registry_url)
 
+        tool_transfer_pool = ThreadPool(tool_image_transfer_pool_size)
         for tool in self.source_tools_dict.values():
             if 'link' in tool and tool['link']:
                 symlinks.append(tool)
             else:
-                # TODO perform images' transfer in parallel
-                self.transfer_tool(tool)
+                tool_transfer_pool.apply_async(self.transfer_tool, [tool])
+        tool_transfer_pool.close()
+        tool_transfer_pool.join()
         print('Syncing symlinks')
         for symlink in symlinks:
             self.create_symlink_in_target(symlink)
