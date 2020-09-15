@@ -25,7 +25,7 @@ class WebdavFileSystem extends FileSystem {
     this.password = password;
     this.certificates = certificates;
     this.ignoreCertificateErrors = ignoreCertificateErrors;
-    this.rootName = 'WebDav Root';
+    this.rootName = 'Cloud Data Root';
     this.separator = '/';
   }
   reInitialize() {
@@ -50,7 +50,7 @@ class WebdavFileSystem extends FileSystem {
           this.password = password;
           this.certificates = certificates;
           this.ignoreCertificateErrors = ignoreCertificateErrors;
-          this.rootName = 'WebDav Root';
+          this.rootName = 'Cloud Data Root';
           this.separator = '/';
           this.initialize()
             .then(resolve)
@@ -60,7 +60,7 @@ class WebdavFileSystem extends FileSystem {
   }
   initialize() {
     if (!this.root) {
-      return Promise.reject('Webdav server url not specified');
+      return Promise.reject('Cloud Data server url not specified');
     }
     return new Promise((resolve, reject) => {
       const options = {
@@ -86,7 +86,7 @@ class WebdavFileSystem extends FileSystem {
     return new Promise((resolve, reject) => {
       const directoryCorrected = directory || '';
       if (!this.webdavClient) {
-        reject('WebDav client was not initialized');
+        reject('Cloud Data client was not initialized');
       }
       const parentDirectory = this.joinPath(...this.parsePath(directoryCorrected).slice(0, -1));
       this.webdavClient.getDirectoryContents(directoryCorrected)
@@ -150,7 +150,7 @@ class WebdavFileSystem extends FileSystem {
       return Promise.reject('Path not specified');
     }
     if (!this.webdavClient) {
-      return Promise.reject('WebDav client was not initialized');
+      return Promise.reject('Cloud Data client was not initialized');
     }
     return new Promise((resolve, reject) => {
       const pathCorrected = path.endsWith('/') ? path.substr(0, path.length - 1) : path;
@@ -194,7 +194,7 @@ class WebdavFileSystem extends FileSystem {
     };
     return new Promise((resolve, reject) => {
       if (!this.webdavClient) {
-        reject('WebDav client was not initialized');
+        reject('Cloud Data client was not initialized');
       }
       this.webdavClient.getDirectoryContents(item || '')
         .then(contents => {
@@ -214,7 +214,7 @@ class WebdavFileSystem extends FileSystem {
   getContentsStream(path) {
     return new Promise((resolve, reject) => {
       if (!this.webdavClient) {
-        reject('WebDav client was not initialized');
+        reject('Cloud Data client was not initialized');
       }
       const pathCorrected = path || '';
       this.webdavClient.stat(pathCorrected)
@@ -228,7 +228,7 @@ class WebdavFileSystem extends FileSystem {
   copy(stream, destinationPath, callback, size) {
     return new Promise((resolve, reject) => {
       if (!this.webdavClient) {
-        reject('WebDav client was not initialized');
+        reject('Cloud Data client was not initialized');
       } else {
         const parentDirectory = this.joinPath(...this.parsePath(destinationPath).slice(0, -1));
         const createDirectorySafe = async () => {
@@ -252,7 +252,7 @@ class WebdavFileSystem extends FileSystem {
   remove(path) {
     return new Promise((resolve, reject) => {
       if (!this.webdavClient) {
-        reject('WebDav client was not initialized');
+        reject('Cloud Data client was not initialized');
       }
       this.isDirectory(path)
         .then((isDirectory) => this.webdavClient.deleteFile(isDirectory ? path.concat('/') : path))
@@ -263,7 +263,7 @@ class WebdavFileSystem extends FileSystem {
   createDirectory(name) {
     return new Promise((resolve, reject) => {
       if (!this.webdavClient) {
-        reject('WebDav client was not initialized');
+        reject('Cloud Data client was not initialized');
       }
       this.webdavClient.createDirectory(name)
         .then(() => resolve())
