@@ -87,7 +87,7 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
         path_chunks = bucket.rstrip('/').split('/')
         bucket_name = path_chunks[0]
         root_path = '/'.join(path_chunks[1:])
-        bucket_object = pipe.get_storage(bucket_name)
+        bucket_object = pipe.get_storage(bucket)
         bucket_type = bucket_object.type
         if bucket_type == CloudType.S3:
             client = S3StorageLowLevelClient(bucket_name, pipe=pipe, chunk_size=chunk_size, storage_path=bucket)
