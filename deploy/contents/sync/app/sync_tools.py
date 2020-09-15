@@ -371,6 +371,7 @@ class ToolSynchronizer(object):
             images.append(src_image)
             images.append(target_image)
         print_info_message('Images are transferred for tool [{}], removing them'.format(image_name))
+        delete_images(images)
 
     @staticmethod
     def extract_group_from_tool_name(tool_name):
