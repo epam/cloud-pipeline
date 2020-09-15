@@ -10,7 +10,7 @@ module.exports = {
     {
       "name": "@electron-forge/maker-squirrel",
       "config": {
-        "name": "cloud_pipeline_webdav_client"
+        "name": "cloud_data"
       }
     },
     {
@@ -31,7 +31,7 @@ module.exports = {
     {
       "name": "@electron-forge/maker-dmg",
       "config": {
-        "name": "Webdav Client",
+        "name": "Cloud Data",
         "icon": iconPath
       }
     },

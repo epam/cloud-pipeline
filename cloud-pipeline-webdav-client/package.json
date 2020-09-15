@@ -1,8 +1,8 @@
 {
-  "name": "cloud-pipeline-webdav-client",
-  "productName": "cloud-pipeline-webdav-client",
+  "name": "cloud-data",
+  "productName": "cloud-data",
   "version": "1.0.0",
-  "description": "Cloud Pipeline Webdav Client",
+  "description": "Cloud Data",
   "main": ".webpack/main",
   "scripts": {
     "start": "node scripts/correct-axios-configuration.js && DEV_MODE=true electron-forge start",
