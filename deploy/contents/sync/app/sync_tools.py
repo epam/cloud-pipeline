@@ -21,6 +21,8 @@ from api.users_api import UserSyncAPI
 from api.tool_api import ReadOnlyToolSyncAPI, ToolSyncAPI
 from sync_users import sync_metadata_for_entity_class
 
+ALLOWED_PRICE_TYPES = 'cluster.allowed.price.types'
+INSTANCE_TYPES = 'cluster.allowed.instance.types'
 IMAGE_FULL_NAME_PATTERN = '{registry_url}/{image_name}:{tag}'
 DEFAULT_REGISTRY_PATH_PREFIX = 'cp-docker-registry.default.svc.cluster.local:'
 DOCKER_LOG_IN_REGISTRY_CMD = 'docker login {server} -u {username} -p "{token}"'
@@ -79,6 +81,8 @@ class ToolSynchronizer(object):
         self.target_default_registry_url = None
         self.source_groups_dict = None
         self.source_tools_dict = None
+        self.allowed_instance_types = []
+        self.allowed_instance_price_types = []
 
     def transfer_tool(self, tool):
         registry_id = tool['registryId']
@@ -99,7 +103,7 @@ class ToolSynchronizer(object):
                                       versions=versions.keys(),
                                       source_registry_url=self.source_registries_dict[registry_id],
                                       target_registry_url=self.target_default_registry_url)
-            # TODO verify instanceType, that will be transferred
+            self.load_allowed_instances_parameters()
             target_tool = self.transfer_description(tool=tool)
             self.transfer_settings(versions, image_name, target_tool['id'])
             self.tool_ids_mapping[tool_id] = target_tool['id']
@@ -108,6 +112,13 @@ class ToolSynchronizer(object):
                 self.transfer_icon(tool['id'], target_tool['id'])
             print('Versions\' settings for [{}] are synchronized'.format(image_name))
 
+    def load_allowed_instances_parameters(self):
+        instance_info = self.api_target.load_allowed_instances_info()
+        if INSTANCE_TYPES in instance_info and instance_info[INSTANCE_TYPES]:
+            self.allowed_instance_types = [instance_type['name'] for instance_type in instance_info[INSTANCE_TYPES]]
+        if ALLOWED_PRICE_TYPES in instance_info and instance_info[ALLOWED_PRICE_TYPES]:
+            self.allowed_instance_price_types = instance_info[ALLOWED_PRICE_TYPES]
+
     def transfer_icon(self, src_tool_id, target_tool_id):
         content = self.api_source.load_icon(src_tool_id)
         icon_filename = 'icon_{}.png'.format(target_tool_id)
@@ -115,6 +126,15 @@ class ToolSynchronizer(object):
             f.write(content)
         self.api_target.upload_icon(target_tool_id)
         os.remove(icon_filename)
+
+    def verify_tool_instance_type(self, tool_description):
+        if 'instanceType' in tool_description and tool_description['instanceType']:
+            instance_type = tool_description['instanceType']
+            if instance_type not in self.allowed_instance_types:
+                print('[{}] instance type for [{}] is not allowed in the target environment, reset this value'
+                      .format(instance_type, tool_description['image']))
+                tool_description['instanceType'] = None
+        return tool_description
 
     def transfer_description(self, tool):
         image_name = tool['image']
@@ -132,17 +152,46 @@ class ToolSynchronizer(object):
             tool_copy['hasIcon'] = False
             tool_copy['iconId'] = None
             tool_copy['instanceType'] = None
+            tool_copy = self.verify_tool_instance_type(tool_copy)
             target_tool = self.api_target.create_tool(tool=tool_copy)
         else:
             for field in tool_properties_to_override:
                 if field in tool_copy and tool_copy[field]:
                     target_tool[field] = tool_copy[field]
+            target_tool = self.verify_tool_instance_type(target_tool)
             target_tool = self.api_target.update_tool(target_tool)
         return target_tool
 
+    def verify_tool_settings(self, settings, name):
+        for entry in settings:
+            if 'configuration' in entry and entry['configuration']:
+                configuration = entry['configuration']
+                if 'instance_size' in configuration and configuration['instance_size']:
+                    instance_type = configuration['instance_size']
+                    if instance_type not in self.allowed_instance_types:
+                        print('[{}] instance type from [{}] is not allowed in the target environment, reset this value'
+                              .format(instance_type, name))
+                        configuration['instance_size'] = None
+                if 'is_spot' in configuration and configuration['is_spot'] is not None:
+                    is_spot = configuration['is_spot']
+                    if len(self.allowed_instance_price_types) > 0:
+                        if is_spot is True and 'spot' not in self.allowed_instance_price_types:
+                            print('Spot instances are not allowed in the target environment, set [on_demand] for [{}]'
+                                  .format(name))
+                            configuration['is_spot'] = False
+                        if is_spot is False and 'on_demand' not in self.allowed_instance_price_types:
+                            print('On-demand instances are not allowed in the target environment, set [spot] for [{}]'
+                                  .format(name))
+                            configuration['is_spot'] = True
+                    else:
+                        configuration['is_spot'] = None
+        return settings
+
     def transfer_settings(self, versions_dict, image_name, target_tool_id):
         for version, settings in versions_dict.items():
-            print('Transferring settings [{}:{}]'.format(image_name, version))
+            full_name = '{}:{}'.format(image_name, version)
+            print('Transferring settings [{}]'.format(full_name))
+            settings = self.verify_tool_settings(settings, full_name)
             self.api_target.put_tool_settings(target_tool_id, version, settings)
 
     def sync_tools_routine(self):

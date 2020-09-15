@@ -23,6 +23,7 @@ API_TOOL_REGISTER = 'tool/register'
 API_TOOL_SYMLINK = 'tool/symlink'
 API_TOOL_SETTINGS = 'tool/{tool_id}/settings'
 API_TOOL_ICON = 'tool/{tool_id}/icon'
+API_ALLOWED_INSTANCE_INFO = 'cluster/instance/allowed'
 
 
 class ReadOnlyToolSyncAPI(API):
@@ -56,6 +57,13 @@ class ReadOnlyToolSyncAPI(API):
 
     def load_icon(self, tool_id):
         return self.call(API_TOOL_ICON.format(tool_id=tool_id), http_method='GET')
+
+    def load_allowed_instances_info(self):
+        response = self.call(API_ALLOWED_INSTANCE_INFO, http_method='GET')
+        instance_info = {}
+        if 'payload' in response and response['payload']:
+            instance_info = response['payload']
+        return instance_info
 
 
 class ToolSyncAPI(ReadOnlyToolSyncAPI):
