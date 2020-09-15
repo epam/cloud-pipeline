@@ -80,10 +80,7 @@ class API(object):
         for entity_id in entities_ids:
             data.append({'entityId': entity_id, 'entityClass': entity_class})
         response = self.call(API_METADATA_LOAD, data=json.dumps(data), http_method='POST')
-        if 'payload' in response and response['payload']:
-            return response['payload']
-        else:
-            return []
+        return self.parse_response(response, default_value=[])
 
     def upload_metadata(self, metadata_entity):
         self.call(API_METADATA_UPDATE, data=json.dumps(metadata_entity), http_method='POST')
@@ -91,3 +88,10 @@ class API(object):
     @staticmethod
     def to_json(obj):
         return json.dumps(obj)
+
+    @staticmethod
+    def parse_response(response, default_value=None):
+        value = default_value
+        if 'payload' in response and response['payload']:
+            value = response['payload']
+        return value

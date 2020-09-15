@@ -31,18 +31,14 @@ class ReadOnlyToolSyncAPI(API):
         super(ReadOnlyToolSyncAPI, self).__init__(api_path, access_key)
 
     def load_registries_hierarchy(self):
-        data = self.call(API_GET_FULL_REGISTRIES_HIERARCHY, http_method='GET')
-        registries = []
-        if 'payload' in data and data['payload']:
-            registries = data['payload']
-        return registries
+        response = self.call(API_GET_FULL_REGISTRIES_HIERARCHY, http_method='GET')
+        return self.parse_response(response=response, default_value=[])
 
     def search_tool_by_name(self, image_name):
         tool = None
         try:
             response = self.call(API_TOOL_SEARCH, params={"image": image_name}, http_method='GET')
-            if 'payload' in response and response['payload']:
-                tool = response['payload']
+            tool = self.parse_response(response=response)
         except RuntimeError as e:
             print('Tool [{image_name}] is not found.'.format(image_name=image_name))
         return tool
@@ -50,20 +46,14 @@ class ReadOnlyToolSyncAPI(API):
     def load_tool_settings(self, tool_id, tool_version=None):
         response = self.call(API_TOOL_SETTINGS.format(tool_id=tool_id), params={'version': tool_version},
                              http_method='GET')
-        tool_settings = []
-        if 'payload' in response and response['payload']:
-            tool_settings = response['payload']
-        return tool_settings
+        return self.parse_response(response=response, default_value=[])
 
     def load_icon(self, tool_id):
         return self.call(API_TOOL_ICON.format(tool_id=tool_id), http_method='GET')
 
     def load_allowed_instances_info(self):
         response = self.call(API_ALLOWED_INSTANCE_INFO, http_method='GET')
-        instance_info = {}
-        if 'payload' in response and response['payload']:
-            instance_info = response['payload']
-        return instance_info
+        return self.parse_response(response=response, default_value={})
 
 
 class ToolSyncAPI(ReadOnlyToolSyncAPI):
@@ -72,10 +62,7 @@ class ToolSyncAPI(ReadOnlyToolSyncAPI):
 
     def create_tool_group(self, tool_group):
         response = self.call(API_TOOL_GROUP, data=API.to_json(tool_group), http_method='POST')
-        registered_group = None
-        if 'payload' in response and response['payload']:
-            registered_group = response['payload']
-        return registered_group
+        return self.parse_response(response=response)
 
     def put_tool_settings(self, tool_id, version, settings):
         return self.call(API_TOOL_SETTINGS.format(tool_id=tool_id), params={'version': version},
@@ -95,14 +82,8 @@ class ToolSyncAPI(ReadOnlyToolSyncAPI):
 
     def update_tool(self, tool):
         response = self.call(API_TOOL_UPDATE, data=API.to_json(tool), http_method='POST')
-        updated_tool = None
-        if 'payload' in response and response['payload']:
-            updated_tool = response['payload']
-        return updated_tool
+        return self.parse_response(response=response)
 
     def create_tool(self, tool):
         response = self.call(API_TOOL_REGISTER, data=API.to_json(tool), http_method='POST')
-        new_tool = None
-        if 'payload' in response and response['payload']:
-            new_tool = response['payload']
-        return new_tool
+        return self.parse_response(response=response)
