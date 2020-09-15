@@ -14,10 +14,14 @@
 
 import json
 import requests
+import time
 import urllib3
+from requests import ConnectionError
 
 API_METADATA_LOAD = 'metadata/load'
 API_METADATA_UPDATE = 'metadata/update'
+API_CALL_RETRIES_COUNT = 10
+API_CALL_RETRIES_TIMEOUT_SEC = 60.0
 
 
 class API(object):
@@ -34,6 +38,17 @@ class API(object):
         return self.__headers__
 
     def call(self, method, data=None, params=None, http_method=None, error_message=None, files=None):
+        retries = API_CALL_RETRIES_COUNT
+        while retries > 0:
+            try:
+                return self.call_plain(method, data, params, http_method, error_message, files)
+            except ConnectionError:
+                retries -= 1
+                print('{} is unreachable, waiting for a timeout and trying again'.format(self.api))
+                time.sleep(API_CALL_RETRIES_TIMEOUT_SEC)
+        raise RuntimeError('{} is unreachable and retries count exceeded!'.format(self.api))
+
+    def call_plain(self, method, data, params, http_method, error_message, files):
         url = '{}/{}'.format(self.api.strip('/'), method)
         if not http_method:
             if data:
