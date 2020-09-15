@@ -83,6 +83,7 @@ class ToolSynchronizer(object):
         self.source_tools_dict = None
         self.allowed_instance_types = []
         self.allowed_instance_price_types = []
+        self.default_instance_type = None
 
     def transfer_tool(self, tool):
         registry_id = tool['registryId']
@@ -116,6 +117,9 @@ class ToolSynchronizer(object):
         instance_info = self.api_target.load_allowed_instances_info()
         if INSTANCE_TYPES in instance_info and instance_info[INSTANCE_TYPES]:
             self.allowed_instance_types = [instance_type['name'] for instance_type in instance_info[INSTANCE_TYPES]]
+            compact_instance = min(instance_info[INSTANCE_TYPES], key=lambda x: x['vcpu'])
+            if compact_instance and 'name' in compact_instance and compact_instance['name']:
+                self.default_instance_type = compact_instance['name']
         if ALLOWED_PRICE_TYPES in instance_info and instance_info[ALLOWED_PRICE_TYPES]:
             self.allowed_instance_price_types = instance_info[ALLOWED_PRICE_TYPES]
 
@@ -133,7 +137,7 @@ class ToolSynchronizer(object):
             if instance_type not in self.allowed_instance_types:
                 print('[{}] instance type for [{}] is not allowed in the target environment, reset this value'
                       .format(instance_type, tool_description['image']))
-                tool_description['instanceType'] = None
+                tool_description['instanceType'] = self.default_instance_type
         return tool_description
 
     def transfer_description(self, tool):
@@ -169,9 +173,9 @@ class ToolSynchronizer(object):
                 if 'instance_size' in configuration and configuration['instance_size']:
                     instance_type = configuration['instance_size']
                     if instance_type not in self.allowed_instance_types:
-                        print('[{}] instance type from [{}] is not allowed in the target environment, reset this value'
+                        print('[{}] instance type from [{}] is not allowed in the target environment, set default value'
                               .format(instance_type, name))
-                        configuration['instance_size'] = None
+                        configuration['instance_size'] = self.default_instance_type
                 if 'is_spot' in configuration and configuration['is_spot'] is not None:
                     is_spot = configuration['is_spot']
                     if len(self.allowed_instance_price_types) > 0:
