@@ -27,7 +27,7 @@ import ExportFormat from './export-formats';
 const ExportFormatName = {
   [ExportFormat.csv]: 'As CSV',
   [ExportFormat.image]: 'As Image',
-  [ExportFormat.csvCostCenters]: 'As CSV (Cost centers)',
+  [ExportFormat.csvCostCenters]: 'As CSV (Billing centers)',
   [ExportFormat.csvUsers]: 'As CSV (Users)'
 };
 

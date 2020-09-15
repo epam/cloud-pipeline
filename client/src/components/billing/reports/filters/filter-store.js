@@ -109,18 +109,25 @@ class Filter {
       dates = `${start.format('YYYY-MM-DD')} - ${endStrict.format('YYYY-MM-DD')}`;
     }
     let runner;
-    if (this.runner && this.runner.type === RunnerType.user && users && users.loaded) {
-      const userList = (users.value || [])
-        .filter(({id}) => (this.runner.id || [])
-          .filter((rId) => `${id}` === `${rId}`).length > 0
-        );
-      if (userList.length > 0) {
-        runner = userList.map(u => u.userName).join(' ');
-      } else {
-        runner = `user ${this.runner.id.map(i => `#${i}`).join(' ')}`;
+    if (!/^general$/i.test(this.report)) {
+      if (
+        this.runner &&
+        this.runner.type === RunnerType.user &&
+        users &&
+        users.loaded
+      ) {
+        const userList = (users.value || [])
+          .filter(({id}) => (this.runner.id || [])
+            .filter((rId) => `${id}` === `${rId}`).length > 0
+          );
+        if (userList.length > 0) {
+          runner = userList.map(u => u.userName).join(' ');
+        } else {
+          runner = `user ${this.runner.id.map(i => `#${i}`).join(' ')}`;
+        }
+      } else if (this.runner) {
+        runner = `${this.runner.type} ${this.runner.id.join(' ')}`;
       }
-    } else if (this.runner) {
-      runner = `${this.runner.type} ${this.runner.id.join(' ')}`;
     }
     return [
       title,
