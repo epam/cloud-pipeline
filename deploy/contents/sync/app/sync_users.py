@@ -16,6 +16,7 @@ import os
 import sys
 
 from api.users_api import UserSyncAPI
+from print_utils import print_info_message, print_warn_message
 
 metadata_keys_to_ignore = os.getenv('CP_SYNC_USERS_METADATA_SKIP_KEYS', '').split(',')
 
@@ -27,22 +28,23 @@ def sync_roles(api_source, api_target):
     for src_role in roles_a:
         role_name = src_role['name']
         if role_name not in roles_dict:
-            print('Role [{}] doesn\'t exist in the target deployment, try creating it'.format(role_name))
+            print_info_message('Role [{}] doesn\'t exist in the target deployment, try creating it'.format(role_name))
             new_role = api_target.create_role(role_name, src_role['userDefault'])
             if not new_role:
-                print('  Error creating role [{}] in the target deployment, it will be skipped!'.format(role_name))
+                print_warn_message('Error creating role [{}] in the target deployment, it will be skipped!'
+                                   .format(role_name))
                 continue
             else:
-                print('  Role [{}] created in the target deployment successfully!'.format(role_name))
+                print_info_message('Role [{}] created in the target deployment successfully!'.format(role_name))
                 new_role['blocked'] = False
                 roles_dict[new_role['name']] = new_role
         else:
-            print('Role [{}] exists in the target deployment already'.format(role_name))
+            print_info_message('Role [{}] exists in the target deployment already'.format(role_name))
         required_blocking_status = src_role['blocked']
         current_target_blocking_status = roles_dict[role_name]['blocked']
         if required_blocking_status != current_target_blocking_status:
-            print('Update blocking status for role [{}] in the target deployment to `{}`'
-                  .format(role_name, required_blocking_status))
+            print_info_message('Update blocking status for role [{}] in the target deployment to `{}`'
+                               .format(role_name, required_blocking_status))
             api_target.update_group_blocking_status(role_name, required_blocking_status)
     name_to_id_mapping = {role_name: role_obj['id'] for role_name, role_obj in roles_dict.items()}
     roles_ids_mapping = {role['id']: roles_dict[role['name']]['id'] for role in roles_a}
@@ -56,15 +58,15 @@ def sync_groups_statuses(api_source, api_target):
         if group_name not in groups_blocking_b:
             if blocking_status:
                 if ' ' in group_name:
-                    print('Group name [{}] is invalid, skipping'.format(group_name))
+                    print_warn_message('Group name [{}] is invalid, skipping'.format(group_name))
                     continue
-                print('Missed blocking status for a group [{}]'.format(group_name))
+                print_info_message('Missed blocking status for a group [{}]'.format(group_name))
                 api_target.update_group_blocking_status(group_name, blocking_status)
         else:
             current_target_blocking_status = groups_blocking_b[group_name]
             if blocking_status != current_target_blocking_status:
-                print('Update blocking status for group [{}] in the target deployment to `{}`'
-                      .format(group_name, blocking_status))
+                print_info_message('Update blocking status for group [{}] in the target deployment to `{}`'
+                                   .format(group_name, blocking_status))
             api_target.update_group_blocking_status(group_name, blocking_status)
 
 
@@ -84,7 +86,7 @@ def sync_users(api_source, api_target, roles_mapping):
     for user in users_a:
         username = user['userName']
         if username in target_users_dict:
-            print('User [{}] exists in the target deployment already'.format(username))
+            print_info_message('User [{}] exists in the target deployment already'.format(username))
             existing_user = target_users_dict[username]
             source_user_roles = [role['name'] for role in user['roles']]
             existing_user_roles = [role['name'] for role in existing_user['roles']]
@@ -95,17 +97,17 @@ def sync_users(api_source, api_target, roles_mapping):
                     else:
                         roles_to_assign[role].append(existing_user['id'])
         else:
-            print('User [{}] doesn\'t exist in the target deployment, try creating it'.format(username))
+            print_info_message('User [{}] doesn\'t exist in the target deployment, try creating it'.format(username))
             existing_user = create_new_user_in_target(api_target, roles_mapping, user)
             existing_user['blocked'] = False
-            print('  User [{}] created in the target deployment successfully!'.format(username))
+            print_info_message('User [{}] created in the target deployment successfully!'.format(username))
         user_ids_mapping[user['id']] = existing_user['id']
         if user['blocked'] != existing_user['blocked']:
-            print('Update blocking status for user [{}] in the target deployment to `{}`'
-                  .format(username, user['blocked']))
+            print_info_message('Update blocking status for user [{}] in the target deployment to `{}`'
+                               .format(username, user['blocked']))
             api_target.set_user_blocking(existing_user['id'], user['blocked'])
     for role_name, users_ids in roles_to_assign.items():
-        print('Syncing {} users for [{}] role'.format(len(users_ids), role_name))
+        print_info_message('Syncing {} users for [{}] role'.format(len(users_ids), role_name))
         api_target.assign_users_to_roles(roles_mapping[role_name], users_ids)
     return user_ids_mapping
 
@@ -125,24 +127,24 @@ def sync_metadata_for_entity_class(api_source, api_target, ids_mapping, entity_c
 def sync_users_routine(api_url_a, api_token_a, api_url_b, api_token_b):
     api_source = UserSyncAPI(api_url_a, api_token_a)
     api_target = UserSyncAPI(api_url_b, api_token_b)
-    print('\n===Start roles sync===')
+    print_info_message('===Start roles sync===')
     roles_mapping, roles_ids_mapping = sync_roles(api_source, api_target)
-    print('===Roles sync is finished===')
+    print_info_message('===Roles sync is finished===')
 
-    print('\n===Start groups\' blocking statuses sync===')
+    print_info_message('===Start groups\' blocking statuses sync===')
     sync_groups_statuses(api_source, api_target)
-    print('===Groups\' blocking statuses sync is finished===')
+    print_info_message('===Groups\' blocking statuses sync is finished===')
 
-    print('\n===Start users sync===')
+    print_info_message('===Start users sync===')
     user_ids_mapping = sync_users(api_source, api_target, roles_mapping)
-    print('===Users sync is finished===')
+    print_info_message('===Users sync is finished===')
 
-    print('\n===Start metadata sync===')
-    print('  Syncing users\' metadata')
+    print_info_message('===Start metadata sync===')
+    print_info_message('Syncing users\' metadata')
     sync_metadata_for_entity_class(api_source, api_target, ids_mapping=user_ids_mapping, entity_class='PIPELINE_USER')
-    print('  Syncing roles\' metadata')
+    print_info_message('Syncing roles\' metadata')
     sync_metadata_for_entity_class(api_source, api_target, ids_mapping=roles_ids_mapping, entity_class='ROLE')
-    print('===Metadata sync is finished===')
+    print_info_message('===Metadata sync is finished===')
 
 
 if __name__ == '__main__':
