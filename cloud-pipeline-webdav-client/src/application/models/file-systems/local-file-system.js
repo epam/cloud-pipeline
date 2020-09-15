@@ -5,7 +5,7 @@ import * as utilities from './utilities';
 
 class LocalFileSystem extends FileSystem {
   constructor(root) {
-    super(root || path.parse(__dirname).root);
+    super(root || require('os').homedir());
   }
 
   reInitialize() {
