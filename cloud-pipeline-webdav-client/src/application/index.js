@@ -8,6 +8,7 @@ import Operations, {OPERATION_HEIGHT} from './operations';
 import useFileSystem from './components/file-system-tab/use-file-system';
 import useFileSystemTabActions from './use-file-system-tab-actions';
 import Tabs from './file-system-tabs';
+import useTokenExpirationWarning from './components/utilities/use-token-expiration-warning';
 import './application.css';
 
 function Application() {
@@ -49,6 +50,10 @@ function Application() {
   }, [setConfigurationTabVisible, reInitialize]);
   const [dragging, setDragging] = useState(undefined);
   const activeOperations = operations.filter(o => !o.finished);
+  useTokenExpirationWarning(
+    leftTab.initializeRequest,
+    rightTab.initializeRequest
+  );
   return (
     <Layout className="layout">
       <Layout.Header
