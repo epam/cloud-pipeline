@@ -33,6 +33,10 @@ DOCKER_PULL_CMD = 'docker pull {image}'
 DOCKER_TAG_CMD = 'docker tag {source_image} {target_image}'
 DOCKER_PUSH_CMD = 'docker push {image}'
 DOCKER_REMOVE_IMAGE_CMD = 'docker rmi {images_list}'
+MEMORY = 'memory'
+CPU = 'vcpu'
+GPU = 'gpu'
+MEM_DIFFERENCE_TOLERANCE = 0.2
 
 metadata_keys_to_ignore = os.getenv('CP_SYNC_TOOLS_METADATA_SKIP_KEYS', '').split(',')
 tool_image_transfer_pool_size = os.getenv('CP_SYNC_TOOLS_TRANSFER_POOL_SIZE', 1)
@@ -84,7 +88,8 @@ class ToolSynchronizer(object):
         self.target_default_registry_url = None
         self.source_groups_dict = None
         self.source_tools_dict = None
-        self.allowed_instance_types = []
+        self.target_allowed_instance_types = {}
+        self.source_allowed_instance_types = {}
         self.allowed_instance_price_types = []
         self.default_instance_type = None
 
@@ -116,15 +121,37 @@ class ToolSynchronizer(object):
                 self.transfer_icon(tool['id'], target_tool['id'])
             print_info_message('Versions\' settings for [{}] are synchronized'.format(image_name))
 
+    def search_corresponding_instance_type(self, source_environment_instance_type):
+        if source_environment_instance_type in self.source_allowed_instance_types:
+            instance_type_details = self.source_allowed_instance_types[source_environment_instance_type]
+            gpu_size = instance_type_details[GPU]
+            cpu_size = instance_type_details[CPU]
+            mem_size = instance_type_details[MEMORY]
+            for instance_type, details in self.target_allowed_instance_types.items():
+                target_gpu_size = details[GPU]
+                target_cpu_size = details[CPU]
+                target_mem_size = details[MEMORY]
+                if gpu_size == target_gpu_size \
+                        and cpu_size == target_cpu_size \
+                        and abs(mem_size - target_mem_size) / max(mem_size, target_mem_size) < MEM_DIFFERENCE_TOLERANCE:
+                    return instance_type
+        return self.default_instance_type
+
     def load_allowed_instances_parameters(self):
-        instance_info = self.api_target.load_allowed_instances_info()
-        if INSTANCE_TYPES in instance_info and instance_info[INSTANCE_TYPES]:
-            self.allowed_instance_types = [instance_type['name'] for instance_type in instance_info[INSTANCE_TYPES]]
-            compact_instance = min(instance_info[INSTANCE_TYPES], key=lambda x: x['vcpu'])
+        source_instance_info = self.api_source.load_allowed_instances_info()
+        if INSTANCE_TYPES in source_instance_info and source_instance_info[INSTANCE_TYPES]:
+            self.source_allowed_instance_types = \
+                {instance_type['name']: instance_type for instance_type in source_instance_info[INSTANCE_TYPES]}
+
+        target_instance_info = self.api_target.load_allowed_instances_info()
+        if INSTANCE_TYPES in target_instance_info and target_instance_info[INSTANCE_TYPES]:
+            self.target_allowed_instance_types = \
+                {instance_type['name']: instance_type for instance_type in target_instance_info[INSTANCE_TYPES]}
+            compact_instance = min(self.target_allowed_instance_types.values(), key=lambda x: x['vcpu'])
             if compact_instance and 'name' in compact_instance and compact_instance['name']:
                 self.default_instance_type = compact_instance['name']
-        if ALLOWED_PRICE_TYPES in instance_info and instance_info[ALLOWED_PRICE_TYPES]:
-            self.allowed_instance_price_types = instance_info[ALLOWED_PRICE_TYPES]
+        if ALLOWED_PRICE_TYPES in target_instance_info and target_instance_info[ALLOWED_PRICE_TYPES]:
+            self.allowed_instance_price_types = target_instance_info[ALLOWED_PRICE_TYPES]
 
     def transfer_icon(self, src_tool_id, target_tool_id):
         content = self.api_source.load_icon(src_tool_id)
@@ -137,10 +164,13 @@ class ToolSynchronizer(object):
     def verify_tool_instance_type(self, tool_description):
         if 'instanceType' in tool_description and tool_description['instanceType']:
             instance_type = tool_description['instanceType']
-            if instance_type not in self.allowed_instance_types:
-                print_warn_message('[{}] instance type for [{}] is not allowed in the target environment, '
-                                   'reset this value'.format(instance_type, tool_description['image']))
-                tool_description['instanceType'] = self.default_instance_type
+            if instance_type not in self.target_allowed_instance_types:
+                corresponding_instance_type = self.search_corresponding_instance_type(instance_type)
+                print_warn_message('[{}] instance type for [{}] is not presented in the target environment, '
+                                   'override this value with [{}]'.format(instance_type,
+                                                                          tool_description['image'],
+                                                                          corresponding_instance_type))
+                tool_description['instanceType'] = corresponding_instance_type
         return tool_description
 
     def transfer_description(self, tool):
@@ -175,10 +205,13 @@ class ToolSynchronizer(object):
                 configuration = entry['configuration']
                 if 'instance_size' in configuration and configuration['instance_size']:
                     instance_type = configuration['instance_size']
-                    if instance_type not in self.allowed_instance_types:
-                        print_info_message('[{}] instance type from [{}] is not allowed in the target environment, '
-                                           'set default value'.format(instance_type, name))
-                        configuration['instance_size'] = self.default_instance_type
+                    if instance_type not in self.target_allowed_instance_types:
+                        corresponding_instance_type = self.search_corresponding_instance_type(instance_type)
+                        print_info_message('[{}] instance type for [{}] is not presented in the target environment, '
+                                           'override this value with [{}]'.format(instance_type,
+                                                                                  name,
+                                                                                  corresponding_instance_type))
+                        configuration['instance_size'] = corresponding_instance_type
                 if 'is_spot' in configuration and configuration['is_spot'] is not None:
                     is_spot = configuration['is_spot']
                     if len(self.allowed_instance_price_types) > 0:
