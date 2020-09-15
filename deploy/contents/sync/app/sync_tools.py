@@ -37,7 +37,7 @@ metadata_keys_to_ignore = os.getenv('CP_SYNC_TOOLS_METADATA_SKIP_KEYS', '').spli
 tool_image_transfer_pool_size = os.getenv('CP_SYNC_TOOLS_TRANSFER_POOL_SIZE', 1)
 tool_properties_to_override = ['locked', 'cpu', 'ram', 'instanceType',
                                'disk', 'description', 'shortDescription',
-                               'defaultCommand', 'allowSensitive']
+                               'defaultCommand', 'allowSensitive', 'endpoints']
 
 
 def execute_shell_cmd(cmd, return_output=False):
