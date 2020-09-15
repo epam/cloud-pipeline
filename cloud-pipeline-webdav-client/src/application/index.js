@@ -2,6 +2,7 @@ import React, {useCallback, useState} from 'react';
 import {Button, Layout} from 'antd';
 import {SettingOutlined} from '@ant-design/icons';
 import electron from 'electron';
+import SplitPane from 'react-split-pane';
 import FileSystemTab from './components/file-system-tab';
 import Configuration from './components/configuration';
 import Operations, {OPERATION_HEIGHT} from './operations';
@@ -71,48 +72,72 @@ function Application() {
           visible={configurationTabVisible}
           onClose={onCloseConfigurationTab}
         />
-        <FileSystemTab
-          active={leftTabActive}
-          error={leftTab.error}
-          becomeActive={setLeftTabActive}
-          contents={leftTab.contents}
-          pending={leftTab.pending}
-          path={leftTab.path}
-          setPath={setLeftPath}
-          selection={leftTab.selection}
-          setSelection={leftTab.setSelection}
-          lastSelectionIndex={leftTab.lastSelectionIndex}
-          setLastSelectionIndex={leftTab.setLastSelectionIndex}
-          onRefresh={leftTab.onRefresh}
-          className="file-system-tab"
-          fileSystem={leftTab.fileSystem}
-          oppositeFileSystemReady={leftTabReady}
-          onCommand={onLeftFSCommand}
-          dragging={leftTab.fileSystem && dragging === leftTab.fileSystem.identifier}
-          setDragging={setDragging}
-          onDropCommand={onDropCommand}
-        />
-        <FileSystemTab
-          active={rightTabActive}
-          error={rightTab.error}
-          becomeActive={setRightTabActive}
-          contents={rightTab.contents}
-          pending={rightTab.pending}
-          path={rightTab.path}
-          setPath={setRightPath}
-          selection={rightTab.selection}
-          setSelection={rightTab.setSelection}
-          lastSelectionIndex={rightTab.lastSelectionIndex}
-          setLastSelectionIndex={rightTab.setLastSelectionIndex}
-          onRefresh={rightTab.onRefresh}
-          className="file-system-tab"
-          fileSystem={rightTab.fileSystem}
-          oppositeFileSystemReady={rightTabReady}
-          onCommand={onRightFSCommand}
-          dragging={rightTab.fileSystem && dragging === rightTab.fileSystem.identifier}
-          setDragging={setDragging}
-          onDropCommand={onDropCommand}
-        />
+        <SplitPane
+          minSize={200}
+          defaultSize="50%"
+          style={{
+            height: '100%',
+            position: 'initial',
+            flex: 'unset',
+            width: '100%'
+          }}
+          pane2Style={{
+            overflow: 'auto'
+          }}
+          resizerStyle={{
+            background: '#ddd',
+            zIndex: 1,
+            width: 5,
+            cursor: 'col-resize'
+          }}
+        >
+          <div className="pane-container">
+            <FileSystemTab
+              active={leftTabActive}
+              error={leftTab.error}
+              becomeActive={setLeftTabActive}
+              contents={leftTab.contents}
+              pending={leftTab.pending}
+              path={leftTab.path}
+              setPath={setLeftPath}
+              selection={leftTab.selection}
+              setSelection={leftTab.setSelection}
+              lastSelectionIndex={leftTab.lastSelectionIndex}
+              setLastSelectionIndex={leftTab.setLastSelectionIndex}
+              onRefresh={leftTab.onRefresh}
+              className="file-system-tab"
+              fileSystem={leftTab.fileSystem}
+              oppositeFileSystemReady={leftTabReady}
+              onCommand={onLeftFSCommand}
+              dragging={leftTab.fileSystem && dragging === leftTab.fileSystem.identifier}
+              setDragging={setDragging}
+              onDropCommand={onDropCommand}
+            />
+          </div>
+          <div className="pane-container">
+            <FileSystemTab
+              active={rightTabActive}
+              error={rightTab.error}
+              becomeActive={setRightTabActive}
+              contents={rightTab.contents}
+              pending={rightTab.pending}
+              path={rightTab.path}
+              setPath={setRightPath}
+              selection={rightTab.selection}
+              setSelection={rightTab.setSelection}
+              lastSelectionIndex={rightTab.lastSelectionIndex}
+              setLastSelectionIndex={rightTab.setLastSelectionIndex}
+              onRefresh={rightTab.onRefresh}
+              className="file-system-tab"
+              fileSystem={rightTab.fileSystem}
+              oppositeFileSystemReady={rightTabReady}
+              onCommand={onRightFSCommand}
+              dragging={rightTab.fileSystem && dragging === rightTab.fileSystem.identifier}
+              setDragging={setDragging}
+              onDropCommand={onDropCommand}
+            />
+          </div>
+        </SplitPane>
         <div id="drag-and-drop" className="drag-and-drop">{'\u00A0'}</div>
       </Layout.Content>
       <Layout.Footer
