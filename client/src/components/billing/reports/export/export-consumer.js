@@ -31,9 +31,9 @@ class ExportConsumer extends React.Component {
     exportStore.detach(this);
   }
 
-  getExportData = () => {
+  getExportData = (...options) => {
     const {composers, discounts} = this.props;
-    const compose = buildCascadeComposers(composers, discounts);
+    const compose = buildCascadeComposers(composers, discounts, ...options);
     const csv = new CSV();
     return new Promise((resolve, reject) => {
       compose(csv)

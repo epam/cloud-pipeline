@@ -43,7 +43,7 @@ function getDateRanges (filters) {
   return [];
 }
 
-function compose (csv, discounts, request) {
+function compose (csv, discounts, exportOptions, request) {
   return new Promise((resolve, reject) => {
     if (!request.loaded) {
       reject(new Error('Summary data is not available'));
