@@ -4,13 +4,12 @@ const https = require('https');
 const URL = require('url');
 
 function getAppVersion() {
-  const versionFile = path.join(__dirname, 'VERSION');
-  console.log(versionFile);
-  if (fs.existsSync(versionFile)) {
-    const version = fs.readFileSync(versionFile).toString();
-    console.log(version);
-    return version;
-  }
+  try {
+    const versionFile = path.join(__dirname, 'VERSION');
+    if (fs.existsSync(versionFile)) {
+      return fs.readFileSync(versionFile).toString();
+    }
+  } catch (_) {}
   return undefined;
 }
 
