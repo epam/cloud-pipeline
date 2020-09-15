@@ -3,6 +3,17 @@ const path = require('path');
 const https = require('https');
 const URL = require('url');
 
+function getAppVersion() {
+  const versionFile = path.join(__dirname, 'VERSION');
+  console.log(versionFile);
+  if (fs.existsSync(versionFile)) {
+    const version = fs.readFileSync(versionFile).toString();
+    console.log(version);
+    return version;
+  }
+  return undefined;
+}
+
 function readCertificates (root) {
   const certificates = []
   const certificatesDir = path.resolve(root, 'certs');
@@ -112,5 +123,7 @@ module.exports = async function () {
   const localConfiguration = readLocalConfiguration(path.join(require('os').homedir(), '.pipe-webdav-client'));
   const predefinedConfiguration = readLocalConfiguration(__dirname);
   const globalConfig = await readGlobalConfiguration();
-  return localConfiguration || predefinedConfiguration || globalConfig || {};
+  const config =  localConfiguration || predefinedConfiguration || globalConfig || {};
+  config.version = getAppVersion();
+  return config;
 }
