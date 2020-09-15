@@ -27,7 +27,7 @@ cat >$_BUILD_SCRIPT_NAME <<'EOL'
 cd /webdav
 
 npm install
-npm run package:win32
+npm run package:win64
 
 if [ $? -ne 0 ]; then
     echo "Unable to build UI for Windows"
