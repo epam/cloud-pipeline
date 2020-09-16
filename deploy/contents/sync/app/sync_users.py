@@ -59,6 +59,8 @@ class API(object):
         else:
             if http_method.lower() == 'get':
                 response = requests.get(url, headers=self.__headers__, params=params, verify=False)
+            elif http_method.lower() == 'put':
+                response = requests.put(url, data, headers=self.__headers__, params=params, verify=False)
             elif http_method.lower() == 'post':
                 response = requests.post(url, data, headers=self.__headers__, params=params, verify=False)
             elif http_method.lower() == 'delete':
@@ -117,10 +119,10 @@ class API(object):
         return {status['groupName']: status['blocked'] for status in blocking_statuses}
 
     def set_user_blocking(self, user_id, status):
-        self.call(API_BLOCK_USER.format(user_id), params={'blockStatus': status}, http_method='GET')
+        self.call(API_BLOCK_USER.format(user_id=user_id), params={'blockStatus': status}, http_method='POST')
 
     def assign_users_to_roles(self, role_id, user_ids):
-        self.call(API_ASSIGN_ROLE_TO_USER.format(role_id=role_id), params={'userIds': user_ids})
+        self.call(API_ASSIGN_ROLE_TO_USER.format(role_id=role_id), params={'userIds': user_ids}, http_method='POST')
 
     def load_entities_metadata(self, entities_ids, entity_class):
         data = []
@@ -171,6 +173,9 @@ def sync_groups_statuses(api_source, api_target):
     for group_name, blocking_status in groups_blocking_a.items():
         if group_name not in groups_blocking_b:
             if blocking_status:
+                if ' ' in group_name:
+                    print('Group name [{}] is invalid, skipping'.format(group_name))
+                    continue
                 print('Missed blocking status for a group [{}]'.format(group_name))
                 api_target.update_group_blocking_status(group_name, blocking_status)
         else:
