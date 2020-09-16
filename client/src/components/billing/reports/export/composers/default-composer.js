@@ -38,7 +38,7 @@ function getExtraFields (configuration) {
   }));
 }
 
-function compose (csv, discounts, request, extra) {
+function compose (csv, discounts, exportOptions, request, extra) {
   return new Promise((resolve, reject) => {
     if (!request.loaded) {
       reject(new Error('Billing centers data is not available'));

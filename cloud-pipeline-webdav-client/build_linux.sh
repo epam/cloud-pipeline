@@ -20,11 +20,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-_BUILD_SCRIPT_NAME=/tmp/build_webdav_linux_$(date +%s).sh
+_BUILD_SCRIPT_NAME=/tmp/build_cloud_data_linux_$(date +%s).sh
 
 cat >$_BUILD_SCRIPT_NAME <<'EOL'
 
-cd /webdav
+cd /cloud-data
 
 npm install
 npm run package:linux
@@ -34,22 +34,23 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-tar -zcf /webdav/out/webdav-linux.tar.gz \
-        -C /webdav/out/ \
-        cloud-pipeline-webdav-client-linux-x64
+tar -zcf /cloud-data/out/cloud-data-linux.tar.gz \
+        -C /cloud-data/out/ \
+        cloud-data-linux-x64
 
-chmod -R 777 /webdav/out
+chmod -R 777 /cloud-data/out
 
 EOL
 
 docker run -i --rm \
-           -v $WEBDAV_SOURCES_DIR:/webdav \
+           -v $CP_CLOUD_DATA_SOURCES_DIR:/cloud-data \
            -v $_BUILD_SCRIPT_NAME:$_BUILD_SCRIPT_NAME \
+           --env CLOUD_DATA_APP_VERSION=$CLOUD_DATA_APP_VERSION \
            $CP_NODE_DOCKER \
            bash $_BUILD_SCRIPT_NAME
 
 if [ $? -ne 0 ]; then
-    echo "An error occurred during webdav linux build"
+    echo "An error occurred during Cloud Data linux build"
     rm -f $_BUILD_SCRIPT_NAME
     exit 1
 fi

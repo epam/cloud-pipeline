@@ -20,11 +20,11 @@ if [ $? -ne 0 ]; then
     docker build docker/win -t $CP_NODE_WINE_DOCKER
 fi
 
-_BUILD_SCRIPT_NAME=/tmp/build_webdav_win32_$(date +%s).sh
+_BUILD_SCRIPT_NAME=/tmp/build_cloud-data_win_$(date +%s).sh
 
 cat >$_BUILD_SCRIPT_NAME <<'EOL'
 
-cd /webdav
+cd /cloud-data
 
 npm install
 npm run package:win64
@@ -34,20 +34,21 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-zip -r -q /webdav/out/webdav-win64.zip /webdav/out/cloud-pipeline-webdav-client-win32-x64/
+zip -r -q /cloud-data/out/cloud-data-win64.zip /cloud-data/out/cloud-data-win32-x64/
 
-chmod -R 777 /webdav/out
+chmod -R 777 /cloud-data/out
 
 EOL
 
 docker run -i --rm \
-           -v $WEBDAV_SOURCES_DIR:/webdav \
+           -v $CP_CLOUD_DATA_SOURCES_DIR:/cloud-data \
            -v $_BUILD_SCRIPT_NAME:$_BUILD_SCRIPT_NAME \
+           --env CLOUD_DATA_APP_VERSION=$CLOUD_DATA_APP_VERSION \
            $CP_NODE_WINE_DOCKER \
            bash $_BUILD_SCRIPT_NAME
 
 if [ $? -ne 0 ]; then
-    echo "An error occurred during webdav windows build"
+    echo "An error occurred during Cloud Data windows build"
     rm -f $_BUILD_SCRIPT_NAME
     exit 1
 fi

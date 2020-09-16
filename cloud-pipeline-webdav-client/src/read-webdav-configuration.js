@@ -3,6 +3,16 @@ const path = require('path');
 const https = require('https');
 const URL = require('url');
 
+function getAppVersion() {
+  try {
+    const versionFile = path.join(__dirname, 'VERSION');
+    if (fs.existsSync(versionFile)) {
+      return fs.readFileSync(versionFile).toString();
+    }
+  } catch (_) {}
+  return undefined;
+}
+
 function readCertificates (root) {
   const certificates = []
   const certificatesDir = path.resolve(root, 'certs');
@@ -32,11 +42,14 @@ function readLocalConfiguration(root) {
   }
 }
 
+const REQUEST_TIMEOUT_SECONDS = 10;
+
 function apiGetRequest(api, accessKey, endpoint) {
   return new Promise((resolve, reject) => {
     const url = URL.resolve(api, endpoint);
     https.get(url, {
       method: 'GET',
+      timeout: REQUEST_TIMEOUT_SECONDS * 1000,
       rejectUnauthorized: false,
       headers: {
         "Authorization": `Bearer ${accessKey}`,
@@ -62,8 +75,11 @@ function apiGetRequest(api, accessKey, endpoint) {
         }
       });
     })
-      .on('error', () => {
-        resolve(null);
+      .on('error', (e) => {
+        reject(new Error(`Request error: ${e.toString()}`));
+      })
+      .on('timeout', () => {
+        reject(new Error(`Request ${url} timeout`));
       });
   });
 }
@@ -112,5 +128,7 @@ module.exports = async function () {
   const localConfiguration = readLocalConfiguration(path.join(require('os').homedir(), '.pipe-webdav-client'));
   const predefinedConfiguration = readLocalConfiguration(__dirname);
   const globalConfig = await readGlobalConfiguration();
-  return localConfiguration || predefinedConfiguration || globalConfig || {};
+  const config =  localConfiguration || predefinedConfiguration || globalConfig || {};
+  config.version = getAppVersion();
+  return config;
 }

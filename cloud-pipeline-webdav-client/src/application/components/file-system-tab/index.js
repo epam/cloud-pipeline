@@ -1,4 +1,8 @@
-import React, {useCallback, useState} from 'react';
+import React, {
+  useCallback,
+  useLayoutEffect,
+  useState,
+} from 'react';
 import PropTypes from 'prop-types';
 import {
   Alert,
@@ -7,16 +11,35 @@ import {
   Divider,
   Spin,
 } from 'antd';
+import {CaretUpOutlined, CaretDownOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
-import FileSystemElement from './file-system-element';
+import SplitPanel, {useSplitPanel}  from '../utilities/split-panel';
+import FileSystemElement, {getElementIdentifier} from './file-system-element';
 import PathNavigation from './path-navigation';
-import CreateDirectoryDialog from './create-directory-dialog';
-import showConfirmationDialog from './show-confirmation-dialog';
-import {Commands} from '../../models/commands';
+import {SortingProperty, PropertySorters} from './sorting';
 import './file-system-tab.css';
+import './file-system-element.css';
+
+function SortingIcon ({sorting, property}) {
+  const index = PropertySorters[property].indexOf(sorting);
+  if (index === -1) {
+    return (
+      <span>{'\u00A0'}</span>
+    );
+  }
+  if (index === 0) {
+    return (
+      <CaretDownOutlined />
+    );
+  }
+  return (
+    <CaretUpOutlined />
+  );
+}
 
 function FileSystemTab (
   {
+    identifier,
     fileSystem,
     active,
     becomeActive,
@@ -26,21 +49,28 @@ function FileSystemTab (
     path,
     setPath,
     selection,
-    setSelection,
-    lastSelectionIndex,
-    setLastSelectionIndex,
+    selectItem,
     onRefresh,
     className,
     oppositeFileSystemReady,
-    onCommand,
+    copyAllowed,
+    moveAllowed,
+    removeAllowed,
+    onRemove,
+    onCopy,
+    onMove,
+    onCreateDirectory,
     dragging,
     setDragging,
     onDropCommand,
+    sorting,
+    setSorting,
+    lastSelectionIndex,
   }
 ) {
+  const [columnSizes, onSetColumnSizes] = useSplitPanel([undefined, 100, 150]);
   const [hovered, setHovered] = useState(undefined);
   const [dropTarget, setDropTarget] = useState(undefined);
-  const [createDirectoryDialogVisible, setCreateDirectoryDialogVisible] = useState(false);
   const becomeActiveCallback = useCallback(() => {
     if (!active) {
       becomeActive();
@@ -65,44 +95,9 @@ function FileSystemTab (
   }, [becomeActiveCallback, setHovered, setPath]);
   const onSelect = useCallback((element, ctrlKey, shiftKey) => {
     const {path: selectedPath} = element;
-    const currentSelectionIndex = contents.indexOf(element);
-    if (currentSelectionIndex === -1) {
-      return;
-    }
-    if (shiftKey && lastSelectionIndex >= 0) {
-      const range = {
-        from: Math.min(currentSelectionIndex, lastSelectionIndex),
-        to: Math.max(currentSelectionIndex, lastSelectionIndex),
-      }
-      const selectItemIfNotSelectedYet = (itemIndex) => {
-        const idx = selection.indexOf(contents[itemIndex].path);
-        if (idx === -1) {
-          selection.push(contents[itemIndex].path);
-        }
-      }
-      for (let i = range.from; i <= range.to; i++) {
-        selectItemIfNotSelectedYet(i);
-      }
-      setSelection(selection);
-      setLastSelectionIndex(currentSelectionIndex);
-    } else {
-      const index = selection.indexOf(selectedPath);
-      if (index === -1) {
-        if (ctrlKey) {
-          setSelection([...selection, selectedPath]);
-        } else {
-          setSelection([selectedPath]);
-        }
-      } else if (ctrlKey) {
-        selection.splice(index, 1)
-        setSelection(selection);
-      } else {
-        setSelection([selectedPath]);
-      }
-      setLastSelectionIndex(currentSelectionIndex);
-    }
+    selectItem(selectedPath, {ctrlKey, shiftKey});
     becomeActiveCallback();
-  }, [becomeActiveCallback, selection, setSelection, lastSelectionIndex, setLastSelectionIndex]);
+  }, [becomeActiveCallback, selectItem,]);
   const onDragStart = useCallback((event, element) => {
     if (element && !element.isBackLink && fileSystem) {
       const {path: elementPath} = element;
@@ -111,7 +106,7 @@ function FileSystemTab (
       if (selected) {
         itemsToDrag = selection.slice();
       } else {
-        setSelection([elementPath]);
+        selectItem(elementPath);
         itemsToDrag = [elementPath];
       }
       const data = [fileSystem.identifier, ...itemsToDrag].join('|');
@@ -129,7 +124,7 @@ function FileSystemTab (
     } else {
       event.preventDefault();
     }
-  }, [becomeActiveCallback, fileSystem, selection, setSelection, setDraggingCallback]);
+  }, [becomeActiveCallback, fileSystem, selection, selectItem, setDraggingCallback]);
   const onDragOver = useCallback((event, element) => {
     const data = event.dataTransfer.getData('text/plain');
     const [identifier, ...sources] = (data || '').split('|');
@@ -203,43 +198,45 @@ function FileSystemTab (
   const onDropParent = useCallback((event) => {
     onDropEvent(event, path);
   }, [onDropEvent]);
-  const onCreateDirectoryRequest = useCallback(() => {
-    setCreateDirectoryDialogVisible(true);
-  }, [setCreateDirectoryDialogVisible]);
-  const onCancelCreateDirectory = useCallback(() => {
-    setCreateDirectoryDialogVisible(false);
-  }, [setCreateDirectoryDialogVisible]);
-  const onCreateDirectory = useCallback((directoryName) => {
-    onCommand && onCommand(Commands.createDirectory, fileSystem.joinPath(path, directoryName));
-    setSelection([]);
-    setCreateDirectoryDialogVisible(false);
-  }, [onCommand, path, setSelection, setCreateDirectoryDialogVisible]);
-  const onCopy = useCallback(() => {
-    onCommand && onCommand(Commands.copy, path, selection);
-    setSelection([]);
-  }, [onCommand, path, selection, setSelection]);
-  const onMove = useCallback(() => {
-    onCommand && onCommand(Commands.move, path, selection);
-    setSelection([]);
-  }, [onCommand, path, selection, setSelection]);
-  const onDelete = useCallback(() => {
-    const description = selection.length > 1 ? `${selection.length} items` : selection[0];
-    showConfirmationDialog(`Are you sure you want to delete ${description}?`)
-      .then(confirmed => {
-        if (confirmed) {
-          onCommand && onCommand(Commands.delete, path, selection);
-          setSelection([]);
-          setCreateDirectoryDialogVisible(false);
+  const onNameClicked = useCallback((e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    setSorting(SortingProperty.name);
+    return false;
+  }, [setSorting]);
+  const onSizeClicked = useCallback((e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    setSorting(SortingProperty.size);
+    return false;
+  }, [setSorting]);
+  const onChangedClicked = useCallback((e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    setSorting(SortingProperty.changed);
+    return false;
+  }, [setSorting]);
+  useLayoutEffect(() => {
+    if (lastSelectionIndex >= 0) {
+      const item = contents[lastSelectionIndex];
+      if (item) {
+        const element = document.getElementById(getElementIdentifier(identifier, item));
+        if (element) {
+          element.scrollIntoView({
+            behavior: 'auto',
+            block: 'nearest',
+            inline: 'start',
+          });
         }
-      });
-  }, [
-    onCommand,
-    path,
-    selection,
-    setSelection,
-    showConfirmationDialog,
-    setCreateDirectoryDialogVisible,
-  ]);
+      }
+    }
+  }, [lastSelectionIndex, contents])
   let content;
   if (pending) {
     content = (
@@ -263,6 +260,7 @@ function FileSystemTab (
         {
           contents.map((item, index) => (
             <FileSystemElement
+              tabIdentifier={identifier}
               key={item.path}
               element={item}
               onHover={onHover}
@@ -275,6 +273,7 @@ function FileSystemTab (
               hovered={hovered === item.path}
               selected={selection.indexOf(item.path) >= 0}
               dropTargetHovered={dragging && dropTarget === item.path}
+              columnSizes={columnSizes}
             />
           ))
         }
@@ -301,33 +300,34 @@ function FileSystemTab (
             <Button
               disabled={!!error}
               type="primary"
-              onClick={onCreateDirectoryRequest}
+              onClick={onCreateDirectory}
             >
-              Create directory
+              Create directory (F7)
             </Button>
             <Divider type="vertical" />
             <Button
-              disabled={!!error || !oppositeFileSystemReady || selection.length === 0}
+              disabled={!!error || !oppositeFileSystemReady || !copyAllowed}
               onClick={onCopy}
             >
-              Copy
+              Copy (F5)
             </Button>
             <Button
-              disabled={!!error || !oppositeFileSystemReady || selection.length === 0}
+              disabled={!!error || !oppositeFileSystemReady || !moveAllowed}
               onClick={onMove}
             >
-              Move
+              Move (F6)
             </Button>
             <Divider type="vertical" />
             <Button
-              disabled={!!error || selection.length === 0} type="danger"
-              onClick={onDelete}
+              disabled={!!error || !removeAllowed}
+              type="danger"
+              onClick={onRemove}
             >
-              Delete
+              Delete (F8)
             </Button>
             <Divider type="vertical" />
             <Button disabled={pending} onClick={onRefresh}>
-              Reload
+              Reload (F2)
             </Button>
           </ConfigProvider>
         </div>
@@ -336,18 +336,54 @@ function FileSystemTab (
           path={path}
           fileSystem={fileSystem}
         />
-        {content}
-        <CreateDirectoryDialog
-          visible={createDirectoryDialogVisible}
-          onClose={onCancelCreateDirectory}
-          onCreate={onCreateDirectory}
-        />
+        <div className="directory-contents-container">
+          <SplitPanel
+            className="directory-contents-header"
+            sizes={columnSizes}
+            onChange={onSetColumnSizes}
+            main
+            fadeOnResize
+          >
+            <div
+              className="element-header"
+              onClick={onNameClicked}
+            >
+              <span>Name</span>
+              <SortingIcon
+                sorting={sorting}
+                property={SortingProperty.name}
+              />
+            </div>
+            <div
+              className="element-header"
+              onClick={onSizeClicked}
+            >
+              <span>Size</span>
+              <SortingIcon
+                sorting={sorting}
+                property={SortingProperty.size}
+              />
+            </div>
+            <div
+              className="element-header"
+              onClick={onChangedClicked}
+            >
+              <span>Modified</span>
+              <SortingIcon
+                sorting={sorting}
+                property={SortingProperty.changed}
+              />
+            </div>
+          </SplitPanel>
+          {content}
+        </div>
       </div>
     </div>
   );
 }
 
 FileSystemTab.propTypes = {
+  identifier: PropTypes.string,
   fileSystem: PropTypes.object,
   active: PropTypes.bool,
   becomeActive: PropTypes.func,
@@ -357,16 +393,24 @@ FileSystemTab.propTypes = {
   path: PropTypes.string,
   setPath: PropTypes.func,
   selection: PropTypes.array,
-  setSelection: PropTypes.func,
+  selectItem: PropTypes.func,
   lastSelectionIndex: PropTypes.number,
   setLastSelectionIndex: PropTypes.func,
   onRefresh: PropTypes.func,
   className: PropTypes.string,
   oppositeFileSystemReady: PropTypes.bool,
-  onCommand: PropTypes.func,
+  copyAllowed: PropTypes.bool,
+  moveAllowed: PropTypes.bool,
+  removeAllowed: PropTypes.bool,
+  onRemove: PropTypes.func,
+  onCopy: PropTypes.func,
+  onMove: PropTypes.func,
+  onCreateDirectory: PropTypes.func,
   dragging: PropTypes.bool,
   setDragging: PropTypes.func,
   onDropCommand: PropTypes.func,
+  sorting: PropTypes.string,
+  setSorting: PropTypes.func,
 };
 
-export default FileSystemTab;
+export default React.memo(FileSystemTab);

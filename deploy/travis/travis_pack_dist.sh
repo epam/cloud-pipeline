@@ -54,9 +54,9 @@ mv pipe-cli/dist/win/pipe.zip $API_STATIC_PATH/
 # Untar fsbrowser and move it to the pipeline.jar static assets
 mv fsbrowser-* $API_STATIC_PATH/fsbrowser.tar.gz
 
-# Move webdav client distributions to the pipeline.jar static assets
-mv webdav-linux.tar.gz $API_STATIC_PATH/webdav-linux.tar.gz
-mv webdav-win64.zip $API_STATIC_PATH/webdav-win64.zip
+# Move cloud-data client distributions to the pipeline.jar static assets
+mv cloud-data-linux.tar.gz $API_STATIC_PATH/cloud-data-linux.tar.gz
+mv cloud-data-win64.zip $API_STATIC_PATH/cloud-data-win64.zip
 
 # Create distribution tgz
 cd ..

@@ -1,8 +1,8 @@
 {
-  "name": "cloud-pipeline-webdav-client",
-  "productName": "cloud-pipeline-webdav-client",
+  "name": "cloud-data",
+  "productName": "cloud-data",
   "version": "1.0.0",
-  "description": "Cloud Pipeline Webdav Client",
+  "description": "Cloud Data",
   "main": ".webpack/main",
   "scripts": {
     "start": "node scripts/correct-axios-configuration.js && DEV_MODE=true electron-forge start",
@@ -49,6 +49,7 @@
     "axios": "^0.19.2",
     "classnames": "^2.2.6",
     "electron-squirrel-startup": "^1.0.0",
+    "moment-timezone": "^0.5.31",
     "prop-types": "^15.7.2",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",

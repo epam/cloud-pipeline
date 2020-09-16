@@ -1,12 +1,35 @@
 .element {
   line-height: 30px;
   height: 30px;
-  border-bottom: 1px solid #fafafa;
   color: rgba(0, 0, 0, 0.65);
   cursor: pointer;
   display: flex;
-  width: 100%;
+  margin-left: 1px;
+}
+
+.element .column {
+  display: flex;
   align-items: center;
+  flex: auto;
+  border-right: 2px solid #ddd;
+  padding: 2px;
+}
+
+.element .column:last-child {
+  border: none;
+}
+
+.element-header {
+  background-color: #fafafa;
+  line-height: 30px;
+  height: 30px;
+  border-bottom: 1px solid #fafafa;
+  color: rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+  padding: 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .element:nth-child(even) {
@@ -36,7 +59,7 @@
   background-color: rgba(34, 130, 191, 0.25);
 }
 
-.element-name-container {
+.element-name-container, .no-wrap-container {
   min-width: 0;
   flex: 1;
   white-space: nowrap;
@@ -45,6 +68,20 @@
 }
 
 .element-name {
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.element-size {
+  font-size: smaller;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.element-changed {
+  margin-left: 5px;
+  width: 150px;
+  font-size: smaller;
   text-overflow: ellipsis;
   overflow: hidden;
 }

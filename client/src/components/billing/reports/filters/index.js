@@ -60,6 +60,9 @@ class Filters extends React.Component {
       return null;
     }
     const {children, users} = this.props;
+    const exportFormats = /^general$/i.test(this.filterStore.report)
+      ? [ExportFormat.csvCostCenters, ExportFormat.csvUsers, ExportFormat.image]
+      : [ExportFormat.csv, ExportFormat.image];
     return (
       <div className={styles.container}>
         <div className={styles.reportFilter}>
@@ -101,7 +104,7 @@ class Filters extends React.Component {
               <ExportReports
                 className={styles.exportReportsButton}
                 documentName={() => this.filterStore.getDescription({users})}
-                formats={[ExportFormat.csv, ExportFormat.image]}
+                formats={exportFormats}
               />
             </div>
           </div>
