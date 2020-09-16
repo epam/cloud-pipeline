@@ -34,7 +34,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-zip -r -q /cloud-data/out/cloud-data-win64.zip /cloud-data/out/cloud-data-win32-x64/
+cd out
+
+zip -r -q /cloud-data/out/cloud-data-win64.zip cloud-data-win32-x64/
 
 chmod -R 777 /cloud-data/out
 
