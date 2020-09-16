@@ -15,6 +15,7 @@
 
 NOMACHINE_INSTALL_TASK="NoMachineInitialization"
 NOMACHINE_VERSION="${CP_CAP_NM_DEFAULT_VERSION:-6.5.6_9}"
+OS_VERSION=$(. /etc/os-release;echo $ID-${VERSION_ID//.})
 
 # Check if required proxy settings are correct
 export CP_NM_PROXY_HOST="${CP_NM_PROXY_HOST:-$(echo $CP_CAP_NM_PROXY_HOST)}"
@@ -51,18 +52,15 @@ EOM
 EOM
 
     read -r -d '' NOMACHINE_INSTALL_CMD <<- EOM
-    yum -y install epel-release && \
-    yum update -y && \
     yum install -y  lsof \
-                    python \
                     wget && \
-    yum --enablerepo=epel -y -x gnome-keyring --skip-broken install @xfce-desktop && \
-    yum -y groups install "Fonts" && \
-    yum erase -y *power* *screensaver* && \
-    yum clean all && \
+    wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/xfce4-$OS_VERSION.tar.gz" -O xfcedesktop.tar.gz && \
+    mkdir -p xfcedesktop && \
+    tar -xzvf xfcedesktop.tar.gz -C xfcedesktop && \
+    yum install -y --nogpgcheck xfcedesktop/*.rpm && \
+    rm -rf xfcedesktop* && \
     rm -f /etc/xdg/autostart/xfce-polkit* && \
     /bin/dbus-uuidgen > /etc/machine-id && \
-    yum install -y xfce4-xkb-plugin && \
     wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine_${NOMACHINE_VERSION}_x86_64.rpm" -O nomachine.rpm && \
     yum install -y nomachine.rpm && \
     rm -f nomachine.rpm && \
