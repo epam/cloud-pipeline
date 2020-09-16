@@ -24,9 +24,23 @@
   justify-content: space-around;
 }
 
+.directory-contents-container {
+  overflow: auto;
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.directory-contents-container .directory-contents-header {
+  border-bottom: 1px solid #ddd;
+}
+
 .directory-contents {
   overflow: auto;
   flex: 1;
+  position: relative;
 }
 
 .file-system-tab-header {

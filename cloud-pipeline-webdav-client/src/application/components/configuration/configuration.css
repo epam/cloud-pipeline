@@ -17,3 +17,11 @@
 .configuration .fow .input {
   flex: 1;
 }
+
+.configuration .app-version {
+  margin-top: 15px;
+  padding: 5px;
+  border-top: 1px solid #ccc;
+  color: #999;
+  font-size: smaller;
+}
