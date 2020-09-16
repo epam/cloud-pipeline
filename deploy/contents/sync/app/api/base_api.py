@@ -58,6 +58,8 @@ class API(object):
         else:
             if http_method.lower() == 'get':
                 response = requests.get(url, headers=self.__headers__, params=params, verify=False)
+            elif http_method.lower() == 'put':
+                response = requests.put(url, data, headers=self.__headers__, params=params, verify=False, files=files)
             elif http_method.lower() == 'post':
                 headers = {}
                 if files:

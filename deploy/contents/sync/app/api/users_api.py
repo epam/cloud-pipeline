@@ -63,12 +63,13 @@ class UserSyncAPI(API):
         return {status['groupName']: status['blocked'] for status in blocking_statuses}
 
     def set_user_blocking(self, user_id, status):
-        self.call(API_BLOCK_USER.format(user_id), params={'blockStatus': status}, http_method='GET')
+        self.call(API_BLOCK_USER.format(user_id=user_id), params={'blockStatus': status}, http_method='PUT')
 
     def assign_users_to_roles(self, role_id, user_ids):
-        self.call(API_ASSIGN_ROLE_TO_USER.format(role_id=role_id), params={'userIds': user_ids})
+        self.call(API_ASSIGN_ROLE_TO_USER.format(role_id=role_id), params={'userIds': user_ids}, http_method='POST')
 
     def update_group_blocking_status(self, group_name, status=True):
         response = self.call(API_SET_GROUP_BLOCK_STATUS.format(group_name=group_name),
-                             params={'blockStatus': str(status).lower()})
+                             params={'blockStatus': str(status).lower()},
+                             http_method='POST')
         return self.parse_response(response=response)
