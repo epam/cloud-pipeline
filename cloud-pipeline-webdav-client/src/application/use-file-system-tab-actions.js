@@ -203,12 +203,14 @@ function useFileSystemTabActions (leftTab, rightTab) {
     rightTab?.activeSelection,
     rightTab?.contents,
   ]);
+  const [hotKeysBlocked, setHotKeysBlocked] = useState(false);
   const onTabRemoveCommand = useCallback((path, contents, selection, onTabCommand) => {
     return new Promise((resolve) => {
       if (selection.length > 0) {
         const description = selection.length > 1
           ? `${selection.length} items`
           : selection[0];
+        setHotKeysBlocked(true);
         showConfirmationDialog(`Are you sure you want to delete ${description}?`)
           .then(confirmed => {
             if (confirmed) {
@@ -218,6 +220,7 @@ function useFileSystemTabActions (leftTab, rightTab) {
                 selection
               );
             }
+            setHotKeysBlocked(false);
             resolve();
           });
       }
@@ -294,7 +297,8 @@ function useFileSystemTabActions (leftTab, rightTab) {
   ] = useState(null);
   const onCancelCreateDirectory = useCallback(() => {
     setCreateDirectoryHandler(null);
-  }, [setCreateDirectoryHandler]);
+    setHotKeysBlocked(false);
+  }, [setCreateDirectoryHandler, setHotKeysBlocked]);
 
   const onCreateDirectoryCommand = useCallback((
     tabCommand,
@@ -337,9 +341,11 @@ function useFileSystemTabActions (leftTab, rightTab) {
   ]);
 
   const onCreateDirectoryLeftRequest = useCallback(() => {
+    setHotKeysBlocked(true);
     setCreateDirectoryHandler(() => onCreateDirectoryLeft);
   }, [onCreateDirectoryLeft, setCreateDirectoryHandler]);
   const onCreateDirectoryRightRequest = useCallback(() => {
+    setHotKeysBlocked(true);
     setCreateDirectoryHandler(() => onCreateDirectoryRight);
   }, [onCreateDirectoryRight, setCreateDirectoryHandler]);
   const onCreateDirectoryRequest = useCallback(() => {
@@ -383,7 +389,8 @@ function useFileSystemTabActions (leftTab, rightTab) {
       onCreateDirectoryLeft: onCreateDirectoryLeftRequest,
       onCreateDirectoryRight: onCreateDirectoryRightRequest,
       onCancelCreateDirectory,
-    }
+    },
+    hotKeysBlocked
   };
 }
 

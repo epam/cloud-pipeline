@@ -1,6 +1,6 @@
 import {useCallback, useEffect} from 'react';
 
-export default function useHotKeys (callbacks) {
+export default function useHotKeys (callbacks, blocked) {
   const {
     changeTab,
     clearSelection,
@@ -13,6 +13,9 @@ export default function useHotKeys (callbacks) {
     createDirectory,
   } = callbacks || {};
   const keyPress = useCallback((event) => {
+    if (blocked) {
+      return true;
+    }
     let handled = false;
     if (event.code === 'Tab') {
       changeTab();
@@ -61,6 +64,7 @@ export default function useHotKeys (callbacks) {
     remove,
     refresh,
     createDirectory,
+    blocked,
   ]);
   useEffect(() => {
     document.addEventListener('keydown', keyPress);

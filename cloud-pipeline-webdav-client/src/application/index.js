@@ -44,6 +44,7 @@ function Application() {
     onDropCommand,
     reInitialize,
     createDirectory,
+    hotKeysBlocked,
   } = useFileSystemTabActions(leftTab, rightTab);
   const {
     createDirectoryHandler,
@@ -78,16 +79,18 @@ function Application() {
     rightTab.initializeRequest
   );
   useHotKeys({
-    changeTab,
-    clearSelection,
-    moveCursor,
-    moveToSelection,
-    refresh,
-    copy,
-    move,
-    remove,
-    createDirectory: onCreateDirectoryRequest
-  });
+      changeTab,
+      clearSelection,
+      moveCursor,
+      moveToSelection,
+      refresh,
+      copy,
+      move,
+      remove,
+      createDirectory: onCreateDirectoryRequest
+    },
+    hotKeysBlocked
+  );
   const [sizes, setPanelSizes] = useSplitPanel([undefined, undefined]);
   return (
     <Layout className="layout">

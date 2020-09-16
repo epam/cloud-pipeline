@@ -39,6 +39,7 @@ function CreateDirectoryDialog({visible, onClose, onCreate}) {
         value={directoryName}
         onChange={e => setDirectoryName(e.target.value)}
         placeholder="Directory name"
+        onPressEnter={() => onCreate && onCreate(directoryName)}
       />
     </Modal>
   );
