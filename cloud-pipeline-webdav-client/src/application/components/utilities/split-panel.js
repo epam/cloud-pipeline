@@ -9,6 +9,7 @@ import classNames from 'classnames';
 import './split-panel.css';
 
 const PANEL_PADDING = 2;
+const RESIZER_SIZE = 2;
 const MINIMUM_SIZE = 50;
 
 function extractPercent (value) {
@@ -49,7 +50,7 @@ function SplitPanel(
     style,
     sizes: panelSizes,
     onChange: setPanelSizes,
-    resizer: resizerSize = 2,
+    resizer: resizerSize = RESIZER_SIZE,
     resizerStyle,
     main = true,
     fadeOnResize = false,
@@ -217,5 +218,5 @@ function SplitPanel(
   );
 }
 
-export {useSplitPanel};
+export {useSplitPanel, RESIZER_SIZE, PANEL_PADDING};
 export default SplitPanel;
