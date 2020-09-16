@@ -27,15 +27,16 @@ cat >$_BUILD_SCRIPT_NAME <<'EOL'
 cd /cloud-data
 
 npm install
-npm run package:win32
+npm run package:win64
 
 if [ $? -ne 0 ]; then
     echo "Unable to build UI for Windows"
     exit 1
 fi
 
-zip -r -q /cloud-data/out/cloud-data-win32.zip /cloud-data/out/cloud-data-win32-ia32/
-zip -r -q /cloud-data/out/cloud-data-win64.zip /cloud-data/out/cloud-data-win32-x64/
+cd out
+
+zip -r -q /cloud-data/out/cloud-data-win64.zip cloud-data-win32-x64/
 
 chmod -R 777 /cloud-data/out
 
