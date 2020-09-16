@@ -34,14 +34,23 @@ import org.springframework.util.CollectionUtils;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class TransferServiceImpl implements TransferService {
     private final TaskService taskService;
     private final DataUploaderProviderManager dataUploaderProviderManager;
     private final SecurityService securityService;
-    @Value("${dts.username.transformation}")
     private final UsernameTransformation usernameTransformation;
+
+    public TransferServiceImpl(final TaskService taskService,
+                               final DataUploaderProviderManager dataUploaderProviderManager,
+                               final SecurityService securityService,
+                               @Value("${dts.username.transformation}")
+                               final UsernameTransformation usernameTransformation) {
+        this.taskService = taskService;
+        this.dataUploaderProviderManager = dataUploaderProviderManager;
+        this.securityService = securityService;
+        this.usernameTransformation = usernameTransformation;
+    }
 
     @Override
     public TransferTask runTransferTask(@NonNull StorageItem source, @NonNull StorageItem destination,

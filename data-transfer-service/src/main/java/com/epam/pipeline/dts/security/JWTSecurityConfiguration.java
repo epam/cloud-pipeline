@@ -22,6 +22,7 @@ import com.epam.pipeline.dts.security.service.JwtTokenVerifier;
 import com.epam.pipeline.dts.security.service.RestAuthenticationEntryPoint;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -35,6 +36,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 @EnableWebSecurity
+@ComponentScan
 public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Value("${jwt.public.key}")
