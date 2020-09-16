@@ -27,6 +27,7 @@ ALLOWED_PRICE_TYPES = 'cluster.allowed.price.types'
 INSTANCE_TYPES = 'cluster.allowed.instance.types'
 IMAGE_FULL_NAME_PATTERN = '{registry_url}/{image_name}:{tag}'
 DEFAULT_REGISTRY_PATH_PREFIX = 'cp-docker-registry.default.svc.cluster.local:'
+DOCKER_CERTS_DIR = '/etc/docker/certs.d'
 DOCKER_LOG_IN_REGISTRY_CMD = 'docker login {server} -u {username} -p "{token}"'
 DOCKER_LOG_OUT_REGISTRY_CMD = 'docker logout {server}'
 DOCKER_PULL_CMD = 'docker pull {image}'
@@ -294,12 +295,38 @@ class ToolSynchronizer(object):
             else:
                 self.source_tools_dict[tool_name] = detailed_tool
 
+    def pull_certificate_for_registry(self, registry_url, registry_id, from_source=True):
+        if from_source is True:
+            api = self.api_source
+        else:
+            api = self.api_target
+        certificate = api.load_registry_certificate(registry_id)
+        if self.create_dir_if_not_exists(DOCKER_CERTS_DIR) is False:
+            print_warn_message('Unable to create Docker registries certs dir!')
+            return
+        registry_cert_folder = '{}/{}'.format(DOCKER_CERTS_DIR, registry_url)
+        if self.create_dir_if_not_exists(registry_cert_folder) is False:
+            print_warn_message('Unable to create certs dir for [{}] registry!'.format(registry_url))
+            return
+        with open('{}/ca.crt'.format(registry_cert_folder), 'w') as cert_file:
+            cert_file.write(certificate)
+
+    def create_dir_if_not_exists(self, dirname):
+        if os.path.exists(dirname) is False:
+            try:
+                os.mkdir(dirname)
+            except OSError:
+                return False
+        return True
+
     def sync_tools(self, source_deployment_tree):
         self.load_source_tools_details()
         print_info_message('{} tools to be synced'.format(len(self.source_tools_dict)))
         symlinks = []
         authenticated_registries = []
         if self.target_default_registry['pipelineAuth'] is True:
+            self.pull_certificate_for_registry(self.target_default_registry_url, self.target_default_registry['id'],
+                                               from_source=False)
             op_code, _ = self.log_in_registry(self.target_default_registry_url, username=self.target_current_user,
                                               access_token=self.target_access_key)
             if op_code != 0:
@@ -313,6 +340,7 @@ class ToolSynchronizer(object):
             registry_url = self.extract_registry_url(registry)
             self.source_registries_dict[registry['id']] = registry_url
             if registry['pipelineAuth'] is True:
+                self.pull_certificate_for_registry(registry_url, registry['id'])
                 op_code, output = self.log_in_registry(registry_url, username=self.source_current_user,
                                                        access_token=self.source_access_key)
                 if op_code != 0:

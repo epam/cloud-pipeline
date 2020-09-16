@@ -15,6 +15,7 @@
 from base_api import API
 
 API_GET_FULL_REGISTRIES_HIERARCHY = 'dockerRegistry/loadTree'
+API_REGISTRY_CERTIFICATE = 'dockerRegistry/{registry_id}/cert'
 API_TOOL_GROUP = 'toolGroup'
 API_TOOL_DELETE = 'tool/delete'
 API_TOOL_SEARCH = 'tool/load'
@@ -54,6 +55,9 @@ class ReadOnlyToolSyncAPI(API):
     def load_allowed_instances_info(self):
         response = self.call(API_ALLOWED_INSTANCE_INFO, http_method='GET')
         return self.parse_response(response=response, default_value={})
+
+    def load_registry_certificate(self, registry_id):
+        return self.call(API_REGISTRY_CERTIFICATE.format(registry_id=registry_id), http_method='GET')
 
 
 class ToolSyncAPI(ReadOnlyToolSyncAPI):
