@@ -35,12 +35,14 @@
 
 .directory-contents-container .directory-contents-header {
   border-bottom: 1px solid #ddd;
+  padding-right: 20px;
 }
 
 .directory-contents {
-  overflow: auto;
+  overflow: scroll;
   flex: 1;
   position: relative;
+  padding-right: 20px;
 }
 
 .file-system-tab-header {
