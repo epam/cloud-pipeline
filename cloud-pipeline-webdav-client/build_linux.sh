@@ -45,6 +45,7 @@ EOL
 docker run -i --rm \
            -v $CP_CLOUD_DATA_SOURCES_DIR:/cloud-data \
            -v $_BUILD_SCRIPT_NAME:$_BUILD_SCRIPT_NAME \
+           --env CLOUD_DATA_APP_VERSION=$CLOUD_DATA_APP_VERSION \
            $CP_NODE_DOCKER \
            bash $_BUILD_SCRIPT_NAME
 

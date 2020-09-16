@@ -56,7 +56,7 @@ mv fsbrowser-* $API_STATIC_PATH/fsbrowser.tar.gz
 
 # Move cloud-data client distributions to the pipeline.jar static assets
 mv cloud-data-linux.tar.gz $API_STATIC_PATH/cloud-data-linux.tar.gz
-mv cloud-data-win64.zip $API_STATIC_PATH/cloud-data-win32.zip
+mv cloud-data-win32.zip $API_STATIC_PATH/cloud-data-win32.zip
 mv cloud-data-win64.zip $API_STATIC_PATH/cloud-data-win64.zip
 
 # Create distribution tgz
