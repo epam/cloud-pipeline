@@ -35,7 +35,7 @@
 
 .directory-contents-container .directory-contents-header {
   border-bottom: 1px solid #ddd;
-  padding-right: 20px;
+  margin-right: 12px;
 }
 
 .directory-contents {
@@ -45,7 +45,19 @@
 }
 
 .directory-contents::-webkit-scrollbar {
-  width: 20px;
+  width: 12px;
+}
+
+.directory-contents::-webkit-scrollbar-track {
+  background: #fafafa;
+}
+
+.directory-contents::-webkit-scrollbar-thumb {
+  background: #aaa;
+}
+
+.directory-contents::-webkit-scrollbar-thumb:hover {
+  background: #999;
 }
 
 .file-system-tab-header {
