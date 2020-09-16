@@ -4,15 +4,14 @@
   color: rgba(0, 0, 0, 0.65);
   cursor: pointer;
   display: flex;
-  margin-left: 1px;
 }
 
 .element .column {
   display: flex;
   align-items: center;
   flex: auto;
-  border-right: 2px solid #ddd;
-  padding: 2px;
+  position: relative;
+  overflow: initial;
 }
 
 .element .column:last-child {

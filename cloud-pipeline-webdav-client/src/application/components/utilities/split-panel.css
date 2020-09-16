@@ -7,6 +7,7 @@
 .split-panel > .panel {
   display: inline-block;
   position: relative;
+  flex: auto;
 }
 
 .split-panel > .panel > .split-panel-overlay {
@@ -23,6 +24,7 @@
   background-color: rgba(0, 0, 0, 0.05);
 }
 
+.split-panel-fake-resizer,
 .split-panel .panel .resizer {
   position: absolute;
   top: 0;
@@ -31,6 +33,7 @@
   z-index: 1;
 }
 
+.split-panel-fake-resizer .border,
 .split-panel .panel .resizer .border {
   height: 100%;
   border-right: 1px solid #ddd;

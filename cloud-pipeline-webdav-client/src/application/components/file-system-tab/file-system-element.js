@@ -2,9 +2,11 @@ import React, {useCallback, useEffect, useState} from 'react';
 import PropTypes from 'prop-types';
 import {FolderFilled, FileOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
-import './file-system-element.css';
 import displaySize from './display-size';
 import displayDate from './display-date';
+import {PANEL_PADDING, RESIZER_SIZE} from '../utilities/split-panel';
+import './file-system-element.css';
+import '../utilities/split-panel.css';
 
 function FileSystemElementIcon ({element}) {
   const Icon = element.isDirectory ? FolderFilled : FileOutlined;
@@ -32,6 +34,7 @@ function FileSystemElement (
     onDragOver,
     onDrop,
     columnSizes,
+    resizerSize = RESIZER_SIZE
   },
 ) {
   const [elementIsHovered, setElementIsHovered] = useState(false);
@@ -109,28 +112,67 @@ function FileSystemElement (
       <div
         className="column"
         style={{
-          width: (columnSizes || [])[0] || 0
+          width: (columnSizes || [])[0] || 0,
+          padding: PANEL_PADDING
         }}
       >
         <FileSystemElementIcon element={element} />
         <div className="element-name-container">
           <span className="element-name">{element.name}</span>
         </div>
+        <div
+          className="split-panel-fake-resizer"
+          style={{
+            cursor: 'initial',
+            width: resizerSize + 4,
+            right: -(resizerSize / 2.0 + 2)
+          }}
+        >
+          <div
+            className="border"
+            style={{
+              width: 2,
+              borderWidth: resizerSize
+            }}
+          >
+            {'\u00A0'}
+          </div>
+        </div>
       </div>
       <div
         className="column no-wrap-container"
         style={{
-          width: (columnSizes || [])[1] || 0
+          width: (columnSizes || [])[1] || 0,
+          padding: PANEL_PADDING
         }}
       >
         <span className="element-size">
           {displaySize(element.size) || '\u00A0'}
         </span>
+        <div
+          className="split-panel-fake-resizer"
+          style={{
+            cursor: 'initial',
+            width: resizerSize + 4,
+            right: -(resizerSize / 2.0 + 2)
+          }}
+        >
+          <div
+            className="border"
+            style={{
+              width: 2,
+              borderWidth: resizerSize
+            }}
+          >
+            {'\u00A0'}
+          </div>
+        </div>
       </div>
       <div
         className="column no-wrap-container"
         style={{
-          width: (columnSizes || [])[2] || 0
+          width: (columnSizes || [])[2] || 0,
+          padding: PANEL_PADDING
         }}
       >
         <span className="element-changed">
