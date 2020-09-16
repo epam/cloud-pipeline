@@ -2,7 +2,7 @@ import React, {useCallback, useState} from 'react';
 import {Button, Layout} from 'antd';
 import {SettingOutlined} from '@ant-design/icons';
 import electron from 'electron';
-import SplitPane from 'react-split-pane';
+import SplitPanel, {useSplitPanel} from './components/utilities/split-panel';
 import FileSystemTab from './components/file-system-tab';
 import Configuration from './components/configuration';
 import Operations, {OPERATION_HEIGHT} from './operations';
@@ -55,6 +55,7 @@ function Application() {
     leftTab.initializeRequest,
     rightTab.initializeRequest
   );
+  const [sizes, setPanelSizes] = useSplitPanel([undefined, undefined]);
   return (
     <Layout className="layout">
       <Layout.Header
@@ -72,24 +73,14 @@ function Application() {
           visible={configurationTabVisible}
           onClose={onCloseConfigurationTab}
         />
-        <SplitPane
-          minSize={200}
-          defaultSize="50%"
-          style={{
-            height: '100%',
-            position: 'initial',
-            flex: 'unset',
-            width: '100%'
-          }}
-          pane2Style={{
-            overflow: 'auto'
-          }}
+        <SplitPanel
+          style={{height: '100%'}}
+          resizer={8}
           resizerStyle={{
-            background: '#ddd',
-            zIndex: 1,
-            width: 5,
-            cursor: 'col-resize'
+            borderColor: '#ddd',
           }}
+          sizes={sizes}
+          onChange={setPanelSizes}
         >
           <div className="pane-container">
             <FileSystemTab
@@ -112,6 +103,8 @@ function Application() {
               dragging={leftTab.fileSystem && dragging === leftTab.fileSystem.identifier}
               setDragging={setDragging}
               onDropCommand={onDropCommand}
+              sorting={leftTab.sorting}
+              setSorting={leftTab.setSorting}
             />
           </div>
           <div className="pane-container">
@@ -135,9 +128,11 @@ function Application() {
               dragging={rightTab.fileSystem && dragging === rightTab.fileSystem.identifier}
               setDragging={setDragging}
               onDropCommand={onDropCommand}
+              sorting={rightTab.sorting}
+              setSorting={rightTab.setSorting}
             />
           </div>
-        </SplitPane>
+        </SplitPanel>
         <div id="drag-and-drop" className="drag-and-drop">{'\u00A0'}</div>
       </Layout.Content>
       <Layout.Footer

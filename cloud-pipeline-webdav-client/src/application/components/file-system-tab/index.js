@@ -7,13 +7,34 @@ import {
   Divider,
   Spin,
 } from 'antd';
+import {CaretUpOutlined, CaretDownOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
+import SplitPanel, {useSplitPanel}  from '../utilities/split-panel';
 import FileSystemElement from './file-system-element';
 import PathNavigation from './path-navigation';
 import CreateDirectoryDialog from './create-directory-dialog';
 import showConfirmationDialog from './show-confirmation-dialog';
 import {Commands} from '../../models/commands';
+import {SortingProperty, PropertySorters} from './sorting';
 import './file-system-tab.css';
+import './file-system-element.css';
+
+function SortingIcon ({sorting, property}) {
+  const index = PropertySorters[property].indexOf(sorting);
+  if (index === -1) {
+    return (
+      <span>{'\u00A0'}</span>
+    );
+  }
+  if (index === 0) {
+    return (
+      <CaretDownOutlined />
+    );
+  }
+  return (
+    <CaretUpOutlined />
+  );
+}
 
 function FileSystemTab (
   {
@@ -36,8 +57,11 @@ function FileSystemTab (
     dragging,
     setDragging,
     onDropCommand,
+    sorting,
+    setSorting,
   }
 ) {
+  const [columnSizes, onSetColumnSizes] = useSplitPanel([undefined, 100, 150]);
   const [hovered, setHovered] = useState(undefined);
   const [dropTarget, setDropTarget] = useState(undefined);
   const [createDirectoryDialogVisible, setCreateDirectoryDialogVisible] = useState(false);
@@ -240,6 +264,30 @@ function FileSystemTab (
     showConfirmationDialog,
     setCreateDirectoryDialogVisible,
   ]);
+  const onNameClicked = useCallback((e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    setSorting(SortingProperty.name);
+    return false;
+  }, [setSorting]);
+  const onSizeClicked = useCallback((e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    setSorting(SortingProperty.size);
+    return false;
+  }, [setSorting]);
+  const onChangedClicked = useCallback((e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    setSorting(SortingProperty.changed);
+    return false;
+  }, [setSorting]);
   let content;
   if (pending) {
     content = (
@@ -275,6 +323,7 @@ function FileSystemTab (
               hovered={hovered === item.path}
               selected={selection.indexOf(item.path) >= 0}
               dropTargetHovered={dragging && dropTarget === item.path}
+              columnSizes={columnSizes}
             />
           ))
         }
@@ -336,7 +385,47 @@ function FileSystemTab (
           path={path}
           fileSystem={fileSystem}
         />
-        {content}
+        <div className="directory-contents-container">
+          <SplitPanel
+            className="directory-contents-header"
+            sizes={columnSizes}
+            onChange={onSetColumnSizes}
+            main
+            fadeOnResize
+          >
+            <div
+              className="element-header"
+              onClick={onNameClicked}
+            >
+              <span>Name</span>
+              <SortingIcon
+                sorting={sorting}
+                property={SortingProperty.name}
+              />
+            </div>
+            <div
+              className="element-header"
+              onClick={onSizeClicked}
+            >
+              <span>Size</span>
+              <SortingIcon
+                sorting={sorting}
+                property={SortingProperty.size}
+              />
+            </div>
+            <div
+              className="element-header"
+              onClick={onChangedClicked}
+            >
+              <span>Modified</span>
+              <SortingIcon
+                sorting={sorting}
+                property={SortingProperty.changed}
+              />
+            </div>
+          </SplitPanel>
+          {content}
+        </div>
         <CreateDirectoryDialog
           visible={createDirectoryDialogVisible}
           onClose={onCancelCreateDirectory}
@@ -367,6 +456,8 @@ FileSystemTab.propTypes = {
   dragging: PropTypes.bool,
   setDragging: PropTypes.func,
   onDropCommand: PropTypes.func,
+  sorting: PropTypes.string,
+  setSorting: PropTypes.func,
 };
 
-export default FileSystemTab;
+export default React.memo(FileSystemTab);

@@ -1,10 +1,17 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import PropTypes from 'prop-types';
-import {FolderOutlined, FileOutlined} from '@ant-design/icons';
+import {FolderFilled, FileOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import './file-system-element.css';
 import displaySize from './display-size';
 import displayDate from './display-date';
+
+function FileSystemElementIcon ({element}) {
+  const Icon = element.isDirectory ? FolderFilled : FileOutlined;
+  return (
+    <Icon className="icon" />
+  );
+}
 
 function FileSystemElement (
   {
@@ -19,6 +26,7 @@ function FileSystemElement (
     onDragStart,
     onDragOver,
     onDrop,
+    columnSizes,
   },
 ) {
   const [elementIsHovered, setElementIsHovered] = useState(false);
@@ -66,7 +74,6 @@ function FileSystemElement (
   if (!element) {
     return null;
   }
-  const Icon = element.isDirectory ? FolderOutlined : FileOutlined;
   return (
     <div
       className={
@@ -93,16 +100,37 @@ function FileSystemElement (
       onDragLeave={onDragLeaveEvent}
       onDrop={onDropEvent}
     >
-      <Icon className="icon" />
-      <div className="element-name-container">
-        <span className="element-name">{element.name}</span>
+      <div
+        className="column"
+        style={{
+          width: (columnSizes || [])[0] || 0
+        }}
+      >
+        <FileSystemElementIcon element={element} />
+        <div className="element-name-container">
+          <span className="element-name">{element.name}</span>
+        </div>
       </div>
-      <span className="element-size">
-        {displaySize(element.size) || '\u00A0'}
-      </span>
-      <span className="element-changed">
-        {displayDate(element.changed) || '\u00A0'}
-      </span>
+      <div
+        className="column no-wrap-container"
+        style={{
+          width: (columnSizes || [])[1] || 0
+        }}
+      >
+        <span className="element-size">
+          {displaySize(element.size) || '\u00A0'}
+        </span>
+      </div>
+      <div
+        className="column no-wrap-container"
+        style={{
+          width: (columnSizes || [])[2] || 0
+        }}
+      >
+        <span className="element-changed">
+          {displayDate(element.changed) || '\u00A0'}
+        </span>
+      </div>
     </div>
   );
 }
@@ -119,6 +147,8 @@ FileSystemElement.propTypes = {
   hovered: PropTypes.bool,
   selected: PropTypes.bool,
   dropTargetHovered: PropTypes.bool,
+  columnSizes: PropTypes.array
 }
 
+export {FileSystemElementIcon}
 export default React.memo(FileSystemElement);

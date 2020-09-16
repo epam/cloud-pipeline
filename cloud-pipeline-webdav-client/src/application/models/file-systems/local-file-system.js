@@ -56,8 +56,6 @@ class LocalFileSystem extends FileSystem {
                       changed
                     };
                   })
-                  .sort(utilities.sorters.nameSorter)
-                  .sort(utilities.sorters.elementTypeSorter)
               )
           );
         })

@@ -91,7 +91,12 @@ function useFileSystemTabActions (leftTab, rightTab) {
       rightTab.path,
       ...args
     );
-  }, [onCommand, rightTab, leftTab]);
+  }, [
+    onCommand,
+    (rightTab || {}).fileSystem,
+    (rightTab || {}).path,
+    (leftTab || {}).fileSystem
+  ]);
   const onRightFSCommand = useCallback((...args) => {
     onCommand(
       rightTab.fileSystem,
@@ -99,7 +104,12 @@ function useFileSystemTabActions (leftTab, rightTab) {
       leftTab.path,
       ...args
     );
-  }, [onCommand, rightTab, leftTab]);
+  }, [
+    onCommand,
+    (leftTab || {}).fileSystem,
+    (leftTab || {}).path,
+    (rightTab || {}).fileSystem
+  ]);
   const onDropCommand = useCallback((dropFS, dropTarget, sourceFSIdentifier, ...sources) => {
     const [sourceFS] = [leftTab.fileSystem, rightTab.fileSystem]
       .filter(fs => fs.identifier === sourceFSIdentifier);
@@ -111,11 +121,11 @@ function useFileSystemTabActions (leftTab, rightTab) {
       undefined,
       sources
     );
-  }, [onCommand, rightTab, leftTab]);
+  }, [onCommand, (rightTab || {}).fileSystem, (leftTab || {}).fileSystem]);
   const reInitialize = useCallback(() => {
     rightTab.onInitialize();
     leftTab.onInitialize();
-  }, [rightTab, leftTab]);
+  }, [(rightTab || {}).onInitialize, (leftTab || {}).onInitialize]);
   return {
     operations,
     leftTabActive: active === LEFT_TAB_ID,

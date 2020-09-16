@@ -42,11 +42,14 @@ function readLocalConfiguration(root) {
   }
 }
 
+const REQUEST_TIMEOUT_SECONDS = 10;
+
 function apiGetRequest(api, accessKey, endpoint) {
   return new Promise((resolve, reject) => {
     const url = URL.resolve(api, endpoint);
     https.get(url, {
       method: 'GET',
+      timeout: REQUEST_TIMEOUT_SECONDS * 1000,
       rejectUnauthorized: false,
       headers: {
         "Authorization": `Bearer ${accessKey}`,
@@ -72,8 +75,11 @@ function apiGetRequest(api, accessKey, endpoint) {
         }
       });
     })
-      .on('error', () => {
-        resolve(null);
+      .on('error', (e) => {
+        reject(new Error(`Request error: ${e.toString()}`));
+      })
+      .on('timeout', () => {
+        reject(new Error(`Request ${url} timeout`));
       });
   });
 }

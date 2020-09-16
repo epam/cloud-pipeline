@@ -1,5 +1,6 @@
-import {useCallback, useEffect, useReducer, useState} from 'react';
-import {initializeFileSystem} from "../../models/file-systems";
+import {useCallback, useEffect, useReducer} from 'react';
+import {initializeFileSystem} from '../../models/file-systems';
+import {Sorting, sort, nextSorter} from './sorting';
 
 function init(type) {
   return {
@@ -14,6 +15,7 @@ function init(type) {
     initializeRequest: 0,
     selection: [],
     lastSelectionIndex: -1,
+    sorting: Sorting.nameAsc,
   };
 }
 
@@ -21,6 +23,14 @@ function reducer (state, action) {
   switch (action.type) {
     case 'set-ready': return {...state, ready: action.ready};
     case 'set-file-system': return {...state, fileSystem: action.fileSystem};
+    case 'set-sorting': {
+      const nextSorting = nextSorter(state.sorting, action.property);
+      return {
+        ...state,
+        sorting: nextSorting,
+        contents: sort(nextSorting, state.contents),
+      };
+    }
     case 'set-path': return {
       ...state,
       path: action.path,
@@ -30,7 +40,7 @@ function reducer (state, action) {
     };
     case 'set-contents': return {
       ...state,
-      contents: (action.contents || []).slice(),
+      contents: sort(state.sorting, action.contents),
       error: undefined,
       selection: [],
       lastSelectionIndex: -1,
@@ -70,9 +80,17 @@ function useFileSystem (type) {
     lastSelectionIndex,
     refreshRequest,
     initializeRequest,
+    sorting,
   } = state;
-  const onRefresh = () => dispatch({type: 'refresh'});
-  const onInitialize = () => dispatch({type: 'initialize'});
+  const onRefresh = useCallback(() => {
+    dispatch({type: 'refresh'});
+  }, [dispatch]);
+  const onInitialize = useCallback(() => {
+    dispatch({type: 'initialize'});
+  }, [dispatch]);
+  const setSorting = useCallback((property) => {
+    dispatch({type: 'set-sorting', property});
+  }, [dispatch]);
   const setPath = useCallback((arg) => {
     dispatch({type: 'set-path', path: arg});
   }, [dispatch]);
@@ -135,6 +153,8 @@ function useFileSystem (type) {
     onRefresh,
     onInitialize,
     setPath,
+    sorting,
+    setSorting,
   };
 }
 

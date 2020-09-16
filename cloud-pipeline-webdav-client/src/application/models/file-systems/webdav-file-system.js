@@ -1,6 +1,7 @@
 import {createClient} from 'webdav';
 import electron from 'electron';
 import https from 'https';
+import moment from 'moment-timezone';
 import FileSystem from './file-system';
 import * as utilities from './utilities';
 
@@ -115,11 +116,9 @@ class WebdavFileSystem extends FileSystem {
                       isFile: /^file/i.test(item.type),
                       isSymbolicLink: false,
                       size: isDirectory ? undefined : +(item.size),
-                      changed: item.lastmod
+                      changed: moment(item.lastmod)
                     };
                   })
-                  .sort(utilities.sorters.nameSorter)
-                  .sort(utilities.sorters.elementTypeSorter)
               )
           );
         })
