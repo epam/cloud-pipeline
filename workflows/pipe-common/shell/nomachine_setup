@@ -53,9 +53,7 @@ EOM
     read -r -d '' NOMACHINE_INSTALL_CMD <<- EOM
     yum -y install epel-release && \
     yum update -y && \
-    yum install -y  gcc \
-                    gcc-c++ \
-                    lsof \
+    yum install -y  lsof \
                     python \
                     wget && \
     yum --enablerepo=epel -y -x gnome-keyring --skip-broken install @xfce-desktop && \
@@ -104,8 +102,7 @@ EOM
     locale-gen en_US && \
     dpkg-reconfigure --frontend=noninteractive locales && \
     update-locale LANG=$LANG && \
-    apt-get install -y  g++ \
-                        lsof \
+    apt-get install -y  lsof \
                         python \
                         wget \
                         xfce4 \
@@ -138,8 +135,7 @@ fi
     mkdir -p nomachine-common/ /etc/nomachine/ && \
     tar -C nomachine-common/ -zxvf nomachine-common.tar.gz && \
     mv nomachine-common/create_chrome_launcher.sh /tmp/ && \
-    g++ nomachine-common/scramble_alg.cpp -o /usr/local/bin/scramble && \
-    rm -f nomachine-common/scramble.cpp && \
+    mv nomachine-common/scramble /usr/local/bin/ && \
     cp -r nomachine-common/* /etc/nomachine/ && \
     rm -f /etc/nomachine/xfce/.config/xfce4/panel/xkb-plugin-${XKB_PLUGIN_ID}.rc && \
     mv /etc/nomachine/xfce/.config/xfce4/panel/xkb-plugin.rc /etc/nomachine/xfce/.config/xfce4/panel/xkb-plugin-${XKB_PLUGIN_ID}.rc && \
