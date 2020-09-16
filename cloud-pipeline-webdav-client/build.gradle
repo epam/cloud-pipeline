@@ -16,7 +16,6 @@
 
 task clean(type: Delete) {
   delete("$rootDir/api/src/main/resources/static/cloud-data-linux.tar.gz")
-  delete("$rootDir/api/src/main/resources/static/cloud-data-win32.zip")
   delete("$rootDir/api/src/main/resources/static/cloud-data-win64.zip")
   delete("$project.rootDir/cloud-pipeline-webdav-client/out/")
 }
@@ -40,17 +39,12 @@ task buildLinux(type: Exec) {
 task buildWin(type: Exec) {
   group = 'build'
   doFirst {
-    delete("$rootDir/api/src/main/resources/static/cloud-data-win32.zip")
     delete("$rootDir/api/src/main/resources/static/cloud-data-win64.zip")
   }
   environment "CP_CLOUD_DATA_SOURCES_DIR": "$project.rootDir/cloud-pipeline-webdav-client/"
   environment "CLOUD_DATA_APP_VERSION": "$version"
   commandLine "bash", "$project.rootDir/cloud-pipeline-webdav-client/build_win.sh"
   doLast {
-    copy {
-      from("$project.rootDir/cloud-pipeline-webdav-client/out/cloud-data-win32.zip")
-      into("$project.rootDir/api/src/main/resources/static/")
-    }
     copy {
       from("$project.rootDir/cloud-pipeline-webdav-client/out/cloud-data-win64.zip")
       into("$project.rootDir/api/src/main/resources/static/")
