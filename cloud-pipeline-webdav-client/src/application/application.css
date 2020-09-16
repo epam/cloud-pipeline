@@ -20,6 +20,11 @@
   overflow: auto;
 }
 
+.pane-container {
+  height: 100%;
+  padding: 0 3px;
+}
+
 .layout .content {
   border: 1px solid #ddd;
   border-left: none;
@@ -28,11 +33,10 @@
 }
 
 .file-system-tab {
-  display: inline-block;
-  width: 50%;
-  height: 100%;
   padding: 2px;
   border-right: 1px solid #ddd;
+  overflow: auto;
+  height: 100%;
 }
 
 .file-system-tab:last-child {

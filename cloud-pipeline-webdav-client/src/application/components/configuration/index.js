@@ -12,6 +12,7 @@ class Configuration extends React.Component {
     username: undefined,
     ignoreCertificateErrors: false,
     modified: false,
+    version: undefined
   };
   componentDidMount() {
     this.updateSettings();
@@ -32,7 +33,8 @@ class Configuration extends React.Component {
       username: webdavClientConfig.username,
       ignoreCertificateErrors: webdavClientConfig.ignoreCertificateErrors,
       modified: false,
-    })
+      version: webdavClientConfig.version,
+    });
   };
 
   onSettingChanged = (settingName) => (e) => {
@@ -65,12 +67,12 @@ class Configuration extends React.Component {
   render () {
     const {
       visible,
-      onClose,
     } = this.props;
     const {
       server,
       username,
       password,
+      version,
     } = this.state;
     return (
       <Modal
@@ -129,6 +131,13 @@ class Configuration extends React.Component {
               Ignore certificate errors (re-launch is required)
             </Checkbox>
           </div>
+          {
+            version && (
+              <div className="app-version">
+                Cloud Data App Version: <b>{version}</b>
+              </div>
+            )
+          }
         </div>
       </Modal>
     );
