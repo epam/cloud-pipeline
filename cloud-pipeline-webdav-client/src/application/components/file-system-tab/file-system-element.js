@@ -13,8 +13,13 @@ function FileSystemElementIcon ({element}) {
   );
 }
 
+function getElementIdentifier(tabIdentifier, element) {
+  return `${tabIdentifier}-${element.path.replace(/[\/\\]/g, '-')}`;
+}
+
 function FileSystemElement (
   {
+    tabIdentifier,
     element,
     onHover,
     onUnHover,
@@ -76,6 +81,7 @@ function FileSystemElement (
   }
   return (
     <div
+      id={getElementIdentifier(tabIdentifier, element)}
       className={
         classNames(
           'element',
@@ -136,6 +142,7 @@ function FileSystemElement (
 }
 
 FileSystemElement.propTypes = {
+  tabIdentifier: PropTypes.string,
   element: PropTypes.object,
   onHover: PropTypes.func,
   onUnHover: PropTypes.func,
@@ -150,5 +157,5 @@ FileSystemElement.propTypes = {
   columnSizes: PropTypes.array
 }
 
-export {FileSystemElementIcon}
+export {getElementIdentifier}
 export default React.memo(FileSystemElement);

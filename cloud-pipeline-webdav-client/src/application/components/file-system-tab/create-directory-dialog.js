@@ -35,6 +35,7 @@ function CreateDirectoryDialog({visible, onClose, onCreate}) {
       )}
     >
       <Input
+        autoFocus
         value={directoryName}
         onChange={e => setDirectoryName(e.target.value)}
         placeholder="Directory name"

@@ -6,7 +6,7 @@ import * as utilities from './utilities';
 
 class LocalFileSystem extends FileSystem {
   constructor(root) {
-    super(root || require('os').homedir());
+    super(root || path.parse(__dirname).root);
   }
 
   reInitialize() {
@@ -41,14 +41,15 @@ class LocalFileSystem extends FileSystem {
                     let size;
                     let changed;
                     const isDirectory = item.isDirectory();
-                    if (!isDirectory) {
-                      const stat = fs.statSync(path.resolve(absolutePath, item.name));
+                    const fullPath = path.resolve(absolutePath, item.name);
+                    if (!isDirectory && fs.existsSync(fullPath)) {
+                      const stat = fs.statSync(fullPath);
                       size = +(stat.size);
                       changed = moment(stat.ctime)
                     }
                     return {
                       name: item.name,
-                      path: path.resolve(absolutePath, item.name),
+                      path: fullPath,
                       isDirectory,
                       isFile: item.isFile(),
                       isSymbolicLink: item.isSymbolicLink(),

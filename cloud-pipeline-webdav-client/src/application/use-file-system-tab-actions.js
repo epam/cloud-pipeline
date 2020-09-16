@@ -1,6 +1,7 @@
-import {useCallback, useReducer} from 'react';
+import {useCallback, useReducer, useState} from 'react';
 import submit from './models/commands/submit-command';
 import commands from './models/commands/commands';
+import showConfirmationDialog from './components/file-system-tab/show-confirmation-dialog';
 
 const LEFT_TAB_ID = 0;
 const RIGHT_TAB_ID = 1;
@@ -93,9 +94,9 @@ function useFileSystemTabActions (leftTab, rightTab) {
     );
   }, [
     onCommand,
-    (rightTab || {}).fileSystem,
-    (rightTab || {}).path,
-    (leftTab || {}).fileSystem
+    rightTab?.fileSystem,
+    rightTab?.path,
+    leftTab?.fileSystem
   ]);
   const onRightFSCommand = useCallback((...args) => {
     onCommand(
@@ -106,9 +107,9 @@ function useFileSystemTabActions (leftTab, rightTab) {
     );
   }, [
     onCommand,
-    (leftTab || {}).fileSystem,
-    (leftTab || {}).path,
-    (rightTab || {}).fileSystem
+    leftTab?.fileSystem,
+    leftTab?.path,
+    rightTab?.fileSystem
   ]);
   const onDropCommand = useCallback((dropFS, dropTarget, sourceFSIdentifier, ...sources) => {
     const [sourceFS] = [leftTab.fileSystem, rightTab.fileSystem]
@@ -121,11 +122,233 @@ function useFileSystemTabActions (leftTab, rightTab) {
       undefined,
       sources
     );
-  }, [onCommand, (rightTab || {}).fileSystem, (leftTab || {}).fileSystem]);
+  }, [onCommand, rightTab?.fileSystem, leftTab?.fileSystem]);
   const reInitialize = useCallback(() => {
     rightTab.onInitialize();
     leftTab.onInitialize();
-  }, [(rightTab || {}).onInitialize, (leftTab || {}).onInitialize]);
+  }, [rightTab?.onInitialize, leftTab?.onInitialize]);
+  const changeTab = useCallback(() => {
+    if (active === LEFT_TAB_ID) {
+      setRightTabActive();
+    } else {
+      setLeftTabActive();
+    }
+  }, [setLeftTabActive, setRightTabActive, active]);
+  const clearSelection = useCallback(() => {
+    if (active === LEFT_TAB_ID) {
+      leftTab?.clearSelection();
+    } else {
+      rightTab?.clearSelection();
+    }
+  }, [leftTab?.clearSelection, rightTab?.clearSelection, active]);
+  const moveCursor = useCallback((down, modifiers) => {
+    if (active === LEFT_TAB_ID) {
+      leftTab?.moveCursor(down, modifiers);
+    } else {
+      rightTab?.moveCursor(down, modifiers);
+    }
+  }, [leftTab?.moveCursor, rightTab?.moveCursor, active]);
+  const moveToSelection = useCallback(() => {
+    if (active === LEFT_TAB_ID) {
+      leftTab?.moveToSelection();
+    } else {
+      rightTab?.moveToSelection();
+    }
+  }, [leftTab?.moveToSelection, rightTab?.moveToSelection, active]);
+  const onCopyLeft = useCallback(() => {
+    onLeftFSCommand(
+      commands.copy,
+      leftTab?.path,
+      leftTab?.activeSelection,
+    )
+  }, [
+    onLeftFSCommand,
+    leftTab?.path,
+    leftTab?.activeSelection,
+    leftTab?.contents,
+  ]);
+  const onCopyRight = useCallback(() => {
+    onRightFSCommand(
+      commands.copy,
+      rightTab?.path,
+      rightTab?.activeSelection,
+    )
+  }, [
+    onRightFSCommand,
+    rightTab?.path,
+    rightTab?.activeSelection,
+    rightTab?.contents,
+  ]);
+  const onMoveLeft = useCallback(() => {
+    onLeftFSCommand(
+      commands.move,
+      leftTab?.path,
+      leftTab?.activeSelection,
+    )
+  }, [
+    onLeftFSCommand,
+    leftTab?.path,
+    leftTab?.activeSelection,
+    leftTab?.contents,
+  ]);
+  const onMoveRight = useCallback(() => {
+    onRightFSCommand(
+      commands.move,
+      rightTab?.path,
+      rightTab?.activeSelection,
+    )
+  }, [
+    onRightFSCommand,
+    rightTab?.path,
+    rightTab?.activeSelection,
+    rightTab?.contents,
+  ]);
+  const onTabRemoveCommand = useCallback((path, contents, selection, onTabCommand) => {
+    return new Promise((resolve) => {
+      if (selection.length > 0) {
+        const description = selection.length > 1
+          ? `${selection.length} items`
+          : selection[0];
+        showConfirmationDialog(`Are you sure you want to delete ${description}?`)
+          .then(confirmed => {
+            if (confirmed) {
+              onTabCommand && onTabCommand(
+                commands.delete,
+                path,
+                selection
+              );
+            }
+            resolve();
+          });
+      }
+    });
+  }, []);
+  const onRemoveLeft = useCallback(() => {
+    onTabRemoveCommand(
+      leftTab?.path,
+      leftTab?.contents,
+      leftTab?.activeSelection,
+      onLeftFSCommand,
+    )
+      .then(() => {
+        leftTab?.clearSelection();
+      });
+  }, [
+    onTabRemoveCommand,
+    leftTab?.path,
+    leftTab?.contents,
+    leftTab?.activeSelection,
+    leftTab?.clearSelection,
+    onLeftFSCommand,
+  ]);
+  const onRemoveRight = useCallback(() => {
+    onTabRemoveCommand(
+      rightTab?.path,
+      rightTab?.contents,
+      rightTab?.activeSelection,
+      onRightFSCommand,
+    )
+      .then(() => {
+        rightTab?.clearSelection();
+      });
+  }, [
+    onTabRemoveCommand,
+    rightTab?.path,
+    rightTab?.contents,
+    rightTab?.activeSelection,
+    rightTab?.clearSelection,
+    onRightFSCommand,
+  ]);
+  const refresh = useCallback(() => {
+    if (active === LEFT_TAB_ID) {
+      leftTab?.onRefresh();
+    } else {
+      rightTab?.onRefresh();
+    }
+  }, [leftTab?.onRefresh, rightTab?.onRefresh, active]);
+  const copy = useCallback(() => {
+    if (active === LEFT_TAB_ID) {
+      onCopyLeft();
+    } else {
+      onCopyRight();
+    }
+  }, [onCopyLeft, onCopyRight, active]);
+  const move = useCallback(() => {
+    if (active === LEFT_TAB_ID) {
+      onMoveLeft();
+    } else {
+      onMoveRight();
+    }
+  }, [onMoveLeft, onMoveRight, active]);
+  const remove = useCallback(() => {
+    if (active === LEFT_TAB_ID) {
+      onRemoveLeft();
+    } else {
+      onRemoveRight();
+    }
+  }, [onRemoveLeft, onRemoveRight, active]);
+
+  const [
+    createDirectoryHandler,
+    setCreateDirectoryHandler
+  ] = useState(null);
+  const onCancelCreateDirectory = useCallback(() => {
+    setCreateDirectoryHandler(null);
+  }, [setCreateDirectoryHandler]);
+
+  const onCreateDirectoryCommand = useCallback((
+    tabCommand,
+    fileSystem,
+    path,
+    tabClearSelection,
+    directoryName
+  ) => {
+    tabCommand(commands.createDirectory, fileSystem.joinPath(path, directoryName));
+    tabClearSelection();
+    onCancelCreateDirectory();
+  }, [onCancelCreateDirectory]);
+  const onCreateDirectoryLeft = useCallback((directory) => {
+    onCreateDirectoryCommand(
+      onLeftFSCommand,
+      leftTab?.fileSystem,
+      leftTab?.path,
+      leftTab?.clearSelection,
+      directory
+    )
+  }, [
+    onLeftFSCommand,
+    leftTab?.fileSystem,
+    leftTab?.path,
+    leftTab?.clearSelection,
+  ]);
+  const onCreateDirectoryRight = useCallback((directory) => {
+    onCreateDirectoryCommand(
+      onRightFSCommand,
+      rightTab?.fileSystem,
+      rightTab?.path,
+      rightTab?.clearSelection,
+      directory
+    )
+  }, [
+    onRightFSCommand,
+    rightTab?.fileSystem,
+    rightTab?.path,
+    rightTab?.clearSelection,
+  ]);
+
+  const onCreateDirectoryLeftRequest = useCallback(() => {
+    setCreateDirectoryHandler(() => onCreateDirectoryLeft);
+  }, [onCreateDirectoryLeft, setCreateDirectoryHandler]);
+  const onCreateDirectoryRightRequest = useCallback(() => {
+    setCreateDirectoryHandler(() => onCreateDirectoryRight);
+  }, [onCreateDirectoryRight, setCreateDirectoryHandler]);
+  const onCreateDirectoryRequest = useCallback(() => {
+    if (active === LEFT_TAB_ID) {
+      onCreateDirectoryLeftRequest();
+    } else {
+      onCreateDirectoryRightRequest();
+    }
+  }, [active, onCreateDirectoryLeftRequest, onCreateDirectoryRightRequest]);
   return {
     operations,
     leftTabActive: active === LEFT_TAB_ID,
@@ -138,10 +361,29 @@ function useFileSystemTabActions (leftTab, rightTab) {
     setRightPath: rightTab.setPath,
     setLeftTabActive,
     setRightTabActive,
-    onLeftFSCommand,
-    onRightFSCommand,
     onDropCommand,
     reInitialize,
+    changeTab,
+    clearSelection,
+    moveCursor,
+    moveToSelection,
+    copy,
+    onCopyLeft,
+    onCopyRight,
+    move,
+    onMoveLeft,
+    onMoveRight,
+    remove,
+    onRemoveLeft,
+    onRemoveRight,
+    refresh,
+    createDirectory: {
+      createDirectoryHandler,
+      onCreateDirectoryRequest,
+      onCreateDirectoryLeft: onCreateDirectoryLeftRequest,
+      onCreateDirectoryRight: onCreateDirectoryRightRequest,
+      onCancelCreateDirectory,
+    }
   };
 }
 
