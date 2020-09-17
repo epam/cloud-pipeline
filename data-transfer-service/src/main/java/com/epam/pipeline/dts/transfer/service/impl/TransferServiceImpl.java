@@ -35,28 +35,16 @@ import java.util.List;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class TransferServiceImpl implements TransferService {
     private final TaskService taskService;
     private final DataUploaderProviderManager dataUploaderProviderManager;
     private final SecurityService securityService;
-    private final UsernameTransformation usernameTransformation;
-
-    public TransferServiceImpl(final TaskService taskService,
-                               final DataUploaderProviderManager dataUploaderProviderManager,
-                               final SecurityService securityService,
-                               @Value("${dts.username.transformation}")
-                               final UsernameTransformation usernameTransformation) {
-        this.taskService = taskService;
-        this.dataUploaderProviderManager = dataUploaderProviderManager;
-        this.securityService = securityService;
-        this.usernameTransformation = usernameTransformation;
-    }
 
     @Override
     public TransferTask runTransferTask(@NonNull StorageItem source, @NonNull StorageItem destination,
                                         List<String> included) {
-        String authorizedUser = securityService.getAuthorizedUser();
-        String transferUser = usernameTransformation.apply(authorizedUser);
+        String transferUser = securityService.getLocalUser();
         TransferTask transferTask = taskService.createTask(source, destination, included, transferUser);
         taskService.updateStatus(transferTask.getId(), TaskStatus.RUNNING);
         dataUploaderProviderManager.transferData(transferTask);

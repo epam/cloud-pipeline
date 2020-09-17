@@ -20,6 +20,7 @@ import com.epam.pipeline.cmd.CmdExecutor;
 import com.epam.pipeline.cmd.EnvironmentCmdExecutor;
 import com.epam.pipeline.cmd.PlainCmdExecutor;
 import com.epam.pipeline.cmd.QsubCmdExecutor;
+import com.epam.pipeline.cmd.ImpersonatingCmdExecutor;
 import com.epam.pipeline.dts.transfer.service.CmdExecutorsProvider;
 
 import java.util.Map;
@@ -28,6 +29,11 @@ public class CmdExecutorsProviderImpl implements CmdExecutorsProvider {
     @Override
     public CmdExecutor getCmdExecutor() {
         return new PlainCmdExecutor();
+    }
+
+    @Override
+    public CmdExecutor getImpersonatingCmdExecutor(final CmdExecutor cmdExecutor) {
+        return new ImpersonatingCmdExecutor(cmdExecutor);
     }
 
     @Override

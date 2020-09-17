@@ -20,6 +20,9 @@ import com.epam.pipeline.dts.security.service.JwtAuthenticationProvider;
 import com.epam.pipeline.dts.security.service.JwtFilterAuthenticationFilter;
 import com.epam.pipeline.dts.security.service.JwtTokenVerifier;
 import com.epam.pipeline.dts.security.service.RestAuthenticationEntryPoint;
+import com.epam.pipeline.dts.security.service.SecurityService;
+import com.epam.pipeline.dts.security.service.impl.SecurityServiceImpl;
+import com.epam.pipeline.dts.transfer.model.UsernameTransformation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -95,5 +98,11 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
             "/restapi/webjars/springfox-swagger-ui/**",
             "/restapi/v2/api-docs/**"
         };
+    }
+
+    @Bean
+    public SecurityService securityService(@Value("${dts.username.transformation}")
+                                            final UsernameTransformation usernameTransformation) {
+        return new SecurityServiceImpl(usernameTransformation);
     }
 }

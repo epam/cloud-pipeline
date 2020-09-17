@@ -28,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 public class PlainCmdExecutor implements CmdExecutor {
 
     private static final String DEFAULT_SHELL = "bash";
-    private static final String PERMISSION_DENIED = "Permission denied";
 
     @Override
     public String executeCommand(final String command,
@@ -50,11 +49,6 @@ public class PlainCmdExecutor implements CmdExecutor {
             errReader.join();
             if (exitCode != 0) {
                 final String errorMessage = errors.toString();
-                if (errorMessage.trim().endsWith(PERMISSION_DENIED)) {
-                    log.error("Permission denied to execute command '{}' under requested `{}` user, "
-                              + "trying to execute with default one.", command, username);
-                    return executeCommand(command, environmentVariables, workDir);
-                }
                 log.error("Command '{}' err output: {}.", command, errorMessage);
                 throw new CmdExecutionException(command, errorMessage);
             }
@@ -68,23 +62,15 @@ public class PlainCmdExecutor implements CmdExecutor {
     public Process launchCommand(final String command, final Map<String, String> environmentVariables,
                                  final File workDir, final String username) {
         try {
-            String[] userCmd = {"su", "-c", command, "-", username};
-            String[] plainCmd = {DEFAULT_SHELL, "-c", command};
-            String[] cmd = (username != null)
-                           ? userCmd
-                           : plainCmd;
-            if (environmentVariables.isEmpty()) {
-                return Runtime.getRuntime().exec(cmd, null, workDir);
-            } else {
-                final Map<String, String> currentProcessEnvVars = System.getenv();
-                final Map<String, String> mergedEnvVars = new HashMap<>();
-                mergedEnvVars.putAll(currentProcessEnvVars);
+            final String[] cmd = {DEFAULT_SHELL, "-c", command};
+            final Map<String, String> mergedEnvVars = new HashMap<>(System.getenv());
+            if (!environmentVariables.isEmpty()) {
                 mergedEnvVars.putAll(environmentVariables);
-                final String[] envp = mergedEnvVars.entrySet().stream()
-                        .map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue()))
-                        .toArray(String[]::new);
-                return Runtime.getRuntime().exec(cmd, envp, workDir);
             }
+            final String[] envp = mergedEnvVars.entrySet().stream()
+                    .map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue()))
+                    .toArray(String[]::new);
+            return Runtime.getRuntime().exec(cmd, envp, workDir);
         } catch (IOException e) {
             throw new CmdExecutionException(command, e);
         }

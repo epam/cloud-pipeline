@@ -42,16 +42,24 @@ public class PipelineCliProviderImpl implements PipelineCliProvider {
 
     @Override
     public PipelineCLI getPipelineCLI(final String api, final String apiToken) {
-        final CmdExecutor cmdExecutor = retrieveAuthenticatedCmdExecutor(api, apiToken);
+        final CmdExecutor cmdExecutor =
+                authenticated(api, apiToken,
+                        impersonating(
+                                cmdExecutor()));
         return new PipelineCLIImpl(pipelineCliExecutable, pipeCpSuffix, forceUpload, retryCount, cmdExecutor);
     }
 
-    private CmdExecutor retrieveAuthenticatedCmdExecutor(final String api, final String apiToken) {
-        final CmdExecutor cmdExecutor = retrieveCmdExecutor();
+    private CmdExecutor authenticated(final String api,
+                                      final String apiToken,
+                                      final CmdExecutor cmdExecutor) {
         return cmdExecutorsProvider.getEnvironmentCmdExecutor(cmdExecutor, credentialsParameters(api, apiToken));
     }
 
-    private CmdExecutor retrieveCmdExecutor() {
+    private CmdExecutor impersonating(final CmdExecutor cmdExecutor) {
+        return cmdExecutorsProvider.getImpersonatingCmdExecutor(cmdExecutor);
+    }
+
+    private CmdExecutor cmdExecutor() {
         final CmdExecutor cmdExecutor = cmdExecutorsProvider.getCmdExecutor();
         return isGridUploadEnabled
             ? cmdExecutorsProvider.getQsubCmdExecutor(cmdExecutor, qsubTemplate)

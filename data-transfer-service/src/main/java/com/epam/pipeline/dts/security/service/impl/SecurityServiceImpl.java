@@ -18,19 +18,20 @@ package com.epam.pipeline.dts.security.service.impl;
 
 import com.epam.pipeline.dts.security.exception.SecurityServiceException;
 import com.epam.pipeline.dts.security.service.SecurityService;
+import com.epam.pipeline.dts.transfer.model.UsernameTransformation;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
 @RequiredArgsConstructor
-@Service
 public class SecurityServiceImpl implements SecurityService {
     
+    private final UsernameTransformation usernameTransformation;
+
     @Override
     public String getAuthorizedUser() {
         return Optional.of(SecurityContextHolder.getContext())
@@ -38,5 +39,10 @@ public class SecurityServiceImpl implements SecurityService {
                 .map(Authentication::getName)
                 .filter(StringUtils::isNotBlank)
                 .orElseThrow(() -> new SecurityServiceException("Authorized user name is missing."));
+    }
+
+    @Override
+    public String getLocalUser() {
+        return usernameTransformation.apply(getAuthorizedUser());
     }
 }
