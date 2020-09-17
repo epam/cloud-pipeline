@@ -36,7 +36,7 @@ public class RunMountService {
 
     public DataStorageWithShareMount getSharedFSStorage() {
         return Optional.ofNullable(
-                preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME))
+                preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_RUN_SHARED_STORAGE_NAME))
                 .map(storageManager::loadByPathOrId)
                 .map(storage -> Optional.ofNullable(storage.getFileShareMountId())
                         .map(fileShareId ->
