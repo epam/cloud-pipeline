@@ -715,4 +715,17 @@ public class DataStorageController extends AbstractRestController {
                                                 @RequestParam(required = false) final String path) {
         return Result.success(dataStorageApiService.getStorageUsage(id, path));
     }
+
+    @GetMapping(value = "/datastorage/sharedStorage")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns storage to be used as shared folder of a Pipeline Run.",
+            notes = "Returns storage to be used as shared folder of a Pipeline Run.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<DataStorageWithShareMount> getSharedFSStorage() {
+        return Result.success(dataStorageApiService.getSharedFSStorage());
+    }
 }

@@ -45,8 +45,8 @@ import com.epam.pipeline.manager.security.acl.AclMaskDelegateList;
 import com.epam.pipeline.manager.security.acl.AclMaskList;
 import com.epam.pipeline.security.acl.AclExpressions;
 import com.epam.pipeline.security.acl.AclPermission;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -67,22 +67,15 @@ import static com.epam.pipeline.security.acl.AclExpressions.STORAGE_ID_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.STORAGE_ID_WRITE;
 
 @Service
+@RequiredArgsConstructor
 public class DataStorageApiService {
 
-    @Autowired
-    private DataStorageManager dataStorageManager;
-
-    @Autowired
-    private DataStorageRuleManager dataStorageRuleManager;
-
-    @Autowired
-    private GrantPermissionManager grantPermissionManager;
-
-    @Autowired
-    private MessageHelper messageHelper;
-
-    @Autowired
-    private TemporaryCredentialsManager temporaryCredentialsManager;
+    private final DataStorageManager dataStorageManager;
+    private final DataStorageRuleManager dataStorageRuleManager;
+    private final GrantPermissionManager grantPermissionManager;
+    private final MessageHelper messageHelper;
+    private final TemporaryCredentialsManager temporaryCredentialsManager;
+    private final RunMountService runMountService;
 
     @PostFilter("hasRole('ADMIN') OR hasPermission(filterObject, 'READ')")
     @AclMaskList
@@ -341,5 +334,9 @@ public class DataStorageApiService {
     @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermissionByName(#id, 'READ')")
     public StorageUsage getStorageUsage(final String id, final String path) {
         return dataStorageManager.getStorageUsage(id, path);
+    }
+    @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
+    public DataStorageWithShareMount getSharedFSStorage() {
+        return runMountService.getSharedFSStorage();
     }
 }
