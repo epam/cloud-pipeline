@@ -351,7 +351,7 @@ public class PipelineManager implements SecuredEntityManager {
     private void setCurrentVersion(Pipeline pipeline) {
         try {
             pipeline.setRepositoryError(null);
-            List<Revision> revisions = gitManager.getPipelineRevisions(pipeline, 1L);
+            List<Revision> revisions = gitManager.getPipelineRevisions(pipeline);
             if (revisions != null && !revisions.isEmpty()) {
                 pipeline.setCurrentVersion(revisions.get(0));
             }

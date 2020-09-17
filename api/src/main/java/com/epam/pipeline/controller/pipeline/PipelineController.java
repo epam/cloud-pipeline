@@ -234,7 +234,7 @@ public class PipelineController extends AbstractRestController {
             })
     public Result<List<Revision>> loadVersionsByPipeline(@PathVariable(value = ID) final Long id)
             throws GitClientException {
-        return Result.success(pipelineApiService.loadAllVersionFromGit(id, null));
+        return Result.success(pipelineApiService.loadAllVersionFromGit(id));
     }
 
 

@@ -123,7 +123,7 @@ public class PipelineManagerTest {
         pipelineVO.setName(REPOSITORY_NAME);
         pipelineVO.setRepository(REPOSITORY_HTTPS);
         pipelineVO.setRepositoryToken(REPOSITORY_TOKEN);
-        when(gitManager.getPipelineRevisions(any(), any())).thenThrow(new IllegalArgumentException(REPOSITORY_NAME));
+        when(gitManager.getPipelineRevisions(any())).thenThrow(new IllegalArgumentException(REPOSITORY_NAME));
 
         pipelineManager.create(pipelineVO);
 
@@ -136,7 +136,7 @@ public class PipelineManagerTest {
         pipelineVO.setName(REPOSITORY_NAME);
         pipelineVO.setRepository(REPOSITORY_HTTPS);
         pipelineVO.setRepositoryToken(REPOSITORY_TOKEN);
-        when(gitManager.getPipelineRevisions(any(), any())).thenThrow(new IllegalArgumentException(REPOSITORY_NAME));
+        when(gitManager.getPipelineRevisions(any())).thenThrow(new IllegalArgumentException(REPOSITORY_NAME));
 
         final Pipeline pipeline = pipelineManager.create(pipelineVO);
 
@@ -150,7 +150,7 @@ public class PipelineManagerTest {
         pipelineVO.setName(REPOSITORY_NAME);
         pipelineVO.setRepository(REPOSITORY_HTTPS);
         pipelineVO.setRepositoryToken(REPOSITORY_TOKEN);
-        when(gitManager.getPipelineRevisions(any(), any())).thenReturn(Collections.emptyList());
+        when(gitManager.getPipelineRevisions(any())).thenReturn(Collections.emptyList());
 
         pipelineManager.create(pipelineVO);
 
@@ -163,7 +163,7 @@ public class PipelineManagerTest {
         pipelineVO.setName(REPOSITORY_NAME);
         pipelineVO.setRepository(REPOSITORY_HTTPS);
         pipelineVO.setRepositoryToken(REPOSITORY_TOKEN);
-        when(gitManager.getPipelineRevisions(any(), any())).thenReturn(Collections.emptyList());
+        when(gitManager.getPipelineRevisions(any())).thenReturn(Collections.emptyList());
 
         final Pipeline pipeline = pipelineManager.create(pipelineVO);
 

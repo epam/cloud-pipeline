@@ -212,6 +212,10 @@ public class SystemPreferences {
             "git.repository.indexing.enabled", true, GIT_GROUP, pass);
     public static final StringPreference GIT_REPOSITORY_HOOK_URL = new StringPreference(
             "git.repository.hook.url", null, GIT_GROUP, PreferenceValidators.isValidUrl);
+    public static final IntPreference GIT_FORK_WAIT_TIMEOUT = new IntPreference("git.fork.wait.timeout", 500,
+            GIT_GROUP, isGreaterThan(0));
+    public static final IntPreference GIT_FORK_RETRY_COUNT = new IntPreference("git.fork.retry.count", 5,
+            GIT_GROUP, isGreaterThan(0));
 
     // DOCKER_SECURITY_GROUP
     /**

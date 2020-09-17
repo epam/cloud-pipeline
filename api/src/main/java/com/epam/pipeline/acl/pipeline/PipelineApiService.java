@@ -150,8 +150,8 @@ public class PipelineApiService {
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
-    public List<Revision> loadAllVersionFromGit(Long id, Long pageSize) throws GitClientException {
-        return versionManager.loadAllVersionFromGit(id, pageSize);
+    public List<Revision> loadAllVersionFromGit(Long id) throws GitClientException {
+        return versionManager.loadAllVersionFromGit(id);
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
