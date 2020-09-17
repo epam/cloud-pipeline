@@ -30,14 +30,21 @@ fi
 install_nfs_client
 
 # Get Storage
-_MOUNT_STORAGE_JSON=$(curl -k -s --fail --header "Authorization: Bearer $API_TOKEN" $API/datastorage/mountStorage?run_id=$RUN_ID)
+_MOUNT_STORAGE_JSON=$(curl -k -s --fail --header "Authorization: Bearer $API_TOKEN" $API/datastorage/runMount?run_id=$RUN_ID)
 _STORAGE_TYPE=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload | storageType')
-
+_STORAGE_PATH=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload | storagePath')
+_MOUNT_OPTIONS=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload | mountOptions')
 
 if [ "$_STORAGE_TYPE" == "nfs" ]; then
-    MOUNT_CMD="mkdir -p ${MOUNT_DIR} && rm -rf ${MOUNT_DIR}/* && mount ${NFS_IP}:/ ${SHARED_PATH} -t nfs4 -o actimeo=${CP_CAP_NFS_ACTIMEO}",nfsvers=4.1
-elif [ "$_STORAGE_TYPE == "lustre"]; then
-
+    _MOUNT_PROTOCOL="nfs"
+elif [ "$_STORAGE_TYPE == "LUSTRE"]; then
+    _MOUNT_PROTOCOL="lustre"
+else
+    pipe_log_fail "Unsupported storage type $_STORAGE_TYPE for shared file system" "$FS_SETUP_TASK"
+    exit 1
 fi
+
+mkdir -p ${MOUNT_DIR} && rm -rf ${MOUNT_DIR}/* && mount -t ${_MOUNT_PROTOCOL} ${_STORAGE_PATH} ${MOUNT_DIR}" ${_MOUNT_OPTIONS}
+
 
 
