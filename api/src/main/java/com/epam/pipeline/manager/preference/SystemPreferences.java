@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
+import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.search.SearchDocumentType;
@@ -539,6 +540,12 @@ public class SystemPreferences {
     // TODO: rewrite to an EnumPreference?
     public static final StringPreference SYSTEM_IDLE_ACTION = new StringPreference("system.idle.action",
                                    IdleRunAction.NOTIFY.name(), SYSTEM_GROUP, PreferenceValidators.isValidIdleAction);
+    /**
+     * Controls which action will be performed after action threshold for long paused runs.
+     * Can take values from {@link LongPausedRunAction} only.
+     */
+    public static final StringPreference SYSTEM_LONG_PAUSED_ACTION = new StringPreference("system.long.paused.action",
+            LongPausedRunAction.NOTIFY.name(), SYSTEM_GROUP, PreferenceValidators.isValidLongPauseRunAction);
     /**
      * Controls how long resource monitoring stats are being kept, in days
      */

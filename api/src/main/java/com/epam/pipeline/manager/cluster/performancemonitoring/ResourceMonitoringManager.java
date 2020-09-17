@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
@@ -152,6 +153,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             processOverloadedRuns(runs);
             processPausingResumingRuns();
             processServerlessRuns();
+            processLongPausedRuns();
         }
 
         private void processPausingResumingRuns() {
@@ -433,6 +435,31 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         public void updateInstanceMap(Map<String, InstanceType> types) {
             instanceTypeMap.clear();
             instanceTypeMap.putAll(types);
+        }
+
+        private void processLongPausedRuns() {
+            final LongPausedRunAction action = LongPausedRunAction.valueOf(preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_LONG_PAUSED_ACTION));
+
+            final List<PipelineRun> pausedRuns = pipelineRunManager
+                    .loadRunsByStatuses(Collections.singletonList(TaskStatus.PAUSED)).stream()
+                    .map(run -> pipelineRunManager.loadPipelineRunWithStatuses(run.getId()))
+                    .collect(Collectors.toList());
+
+            processLongPausedRuns(pausedRuns, action);
+        }
+
+        private void processLongPausedRuns(final List<PipelineRun> pausedRuns, final LongPausedRunAction action) {
+            if (CollectionUtils.isEmpty(pausedRuns)) {
+                return;
+            }
+
+            if (LongPausedRunAction.STOP.equals(action)) {
+                ListUtils.emptyIfNull(notificationManager.notifyLongPausedRunsBeforeStop(pausedRuns))
+                        .forEach(run -> pipelineRunManager.terminateRun(run.getId()));
+            } else {
+                notificationManager.notifyLongPausedRuns(pausedRuns);
+            }
         }
     }
 }

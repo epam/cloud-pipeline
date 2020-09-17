@@ -21,6 +21,7 @@ import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
+import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -178,6 +179,8 @@ public class ResourceMonitoringManagerTest {
                 .thenReturn(IdleRunAction.NOTIFY.name());
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_STOP_TIMEOUT))
                 .thenReturn(TEST_MAX_IDLE_MONITORING_TIMEOUT);
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION))
+                .thenReturn(LongPausedRunAction.NOTIFY.name());
         when(stopServerlessRunManager.loadActiveServerlessRuns()).thenReturn(Collections.emptyList());
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
@@ -266,8 +269,8 @@ public class ResourceMonitoringManagerTest {
         highConsumingRun.setTags(stubTagMap);
 
         mockStats = new HashMap<>();
-        mockStats.put(okayRun.getInstance().getNodeName(), TEST_OK_RUN_CPU_LOAD); // in milicores, equals 80% of core load, per 2 cores,
-                                                                    // should be = 40% load
+        // in milicores, equals 80% of core load, per 2 cores, should be = 40% load
+        mockStats.put(okayRun.getInstance().getNodeName(), TEST_OK_RUN_CPU_LOAD);
         mockStats.put(idleSpotRun.getInstance().getNodeName(), TEST_IDLE_SPOT_RUN_CPU_LOAD);
         mockStats.put(idleOnDemandRun.getInstance().getNodeName(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD);
         mockStats.put(autoscaleMasterRun.getInstance().getNodeName(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD);
