@@ -77,6 +77,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     private final String spotPriceName=C.SPOT_PRICE_NAME;
     private final String defaultClusterAllowedInstanceTypes = C.DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES;
     private final String defaultClusterAllowedPriceTypes = C.DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES;
+    private final String clusterAllowedPriceTypesValue = C.CLUSTER_ALLOWED_PRICE_TYPES_VALUE;
     private final String clusterAllowedMasks = C.CLUSTER_ALLOWED_MASKS;
     private final String clusterAllowedInstanceTypes = "cluster.allowed.instance.types";
     private final String clusterAllowedPriceTypes = "cluster.allowed.price.types";
@@ -101,7 +102,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         logout();
     }
 
-    @Test(priority = 1)
+    @Test
     @TestCase({"EPMCMBIBPC-2637"})
     public void preparationForValidationOfInstanceTypesRestrictions() {
             loginAs(admin);
@@ -152,7 +153,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     .ensure(INSTANCE_TYPE, text(defaultInstanceType)));
     }
 
-    @Test(priority = 2, dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
+    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2638"})
     public void validationOfInstanceTypesRestrictionsExistingObjects() {
         try {
@@ -167,7 +168,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(priority = 2, dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
+    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2639"})
     public void validationOfInstanceTypesRestrictionsCreatingObjects() {
         try {
@@ -203,7 +204,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(priority = 2, dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
+    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2640"})
     public void validationOfInstanceTypesRestrictionsForUserGroup() {
         try {
@@ -218,7 +219,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(priority = 40, dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
+    @Test(priority = 10, dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2646"})
     public void validationOfInstanceTypesRestrictionsHierarchy() {
         try {
@@ -268,7 +269,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(priority = 40, dependsOnMethods = {"validationOfInstanceTypesRestrictionsHierarchy"})
+    @Test(priority = 10, dependsOnMethods = {"validationOfInstanceTypesRestrictionsHierarchy"})
     @TestCase({"EPMCMBIBPC-2647"})
     public void validationOfToolsInstanceTypesRestrictionsHierarchy() {
         try {
@@ -289,7 +290,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     }
 
     @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
-    @Test(priority = 2)
+    @Test
     @TestCase({"EPMCMBIBPC-2650"})
     public void validationOfPriceTypesRestrictionsOverInstanceManagement() {
         try {
@@ -327,7 +328,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(priority = 2)
+    @Test
     @TestCase({"EPMCMBIBPC-2641"})
     public void validationOfToolsInstanceTypesRestrictionsOverUserManagement() {
         try {
@@ -346,7 +347,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(priority = 2)
+    @Test
     @TestCase({"EPMCMBIBPC-2643"})
     public void validationOfToolsInstanceTypesRestrictionsForUserGroup() {
         try {
@@ -365,7 +366,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(priority = 2)
+    @Test
     @TestCase({"EPMCMBIBPC-2642"})
     public void validationOfToolsInstanceTypesRestrictionsOverInstanceManagement() {
         try {
@@ -400,7 +401,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(priority = 2)
+    @Test
     @TestCase({"EPMCMBIBPC-2645"})
     public void validationOfToolsInstanceTypesRestrictionsSystemSettings() {
         try {
@@ -421,7 +422,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     }
 
     @CloudProviderOnly(values={Cloud.AWS,Cloud.GCP})
-    @Test(priority=2,dependsOnMethods={"preparationForValidationOfInstanceTypesRestrictions"})
+    @Test(dependsOnMethods={"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2648"})
     public void validationOfPriceTypesRestrictionsOverUserManagement() {
         try {
@@ -431,7 +432,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                     .ok();
             logout();
             loginAs(user);
-            validationOfPriceTypesRestrictions();
+            validationOfPriceTypesRestrictions("On-demand", "On-demand", "On-demand");
         } finally {
             logout();
             loginAs(admin);
@@ -442,7 +443,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     }
 
     @CloudProviderOnly(values={Cloud.AWS,Cloud.GCP})
-    @Test(priority=2,dependsOnMethods={"preparationForValidationOfInstanceTypesRestrictions"})
+    @Test(dependsOnMethods={"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2649"})
     public void validationOfPriceTypesRestrictionsForUserGroup() {
         try {
@@ -456,7 +457,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                     .ok();
             logout();
             loginAs(user);
-            validationOfPriceTypesRestrictions();
+            validationOfPriceTypesRestrictions("On-demand", "On-demand", "On-demand");
         } finally {
             logout();
             loginAs(admin);
@@ -471,7 +472,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     }
 
     @CloudProviderOnly(values={Cloud.AWS,Cloud.GCP})
-    @Test(priority=2,dependsOnMethods={"preparationForValidationOfInstanceTypesRestrictions"})
+    @Test(dependsOnMethods={"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2651"})
     public void validationOfPriceTypesRestrictionsSystemSettings() {
         try {
@@ -479,11 +480,48 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
             setClusterAllowedStringPreference(clusterAllowedPriceTypes, clusterAllowedPrice);
             logout();
             loginAs(user);
-            validationOfPriceTypesRestrictions();
+            validationOfPriceTypesRestrictions("On-demand", "On-demand", "On-demand");
         } finally {
             logout();
             loginAs(admin);
             setClusterAllowedStringPreference(clusterAllowedPriceTypes, defaultClusterAllowedPriceTypes);
+        }
+    }
+
+    @CloudProviderOnly(values={Cloud.AWS,Cloud.GCP})
+    @Test(dependsOnMethods={"preparationForValidationOfInstanceTypesRestrictions"})
+    @TestCase({"EPMCMBIBPC-2652"})
+    public void validationOfPriceTypesRestrictionsHierarchy() {
+        try {
+            loginAs(admin);
+            setClusterAllowedStringPreference(clusterAllowedPriceTypes, clusterAllowedPriceTypesValue);
+            openEditUserTab(user.login)
+                    .setAllowedPriceType(onDemandPrice)
+                    .ok();
+            tools()
+                    .performWithin(defaultRegistry,defaultGroup,testingTool,tool->
+                            tool.showInstanceManagement(instanceManagement->
+                                    instanceManagement
+                                            .clearAllowedPriceTypeField()
+                                            .setPriceType(spotPriceName)
+                                            .clickApply()
+                                            .sleep(2,SECONDS)));
+            logout();
+            loginAs(user);
+            validationOfPriceTypesRestrictions("On-demand", "On-demand", "On-demand");
+        } finally {
+            logout();
+            loginAs(admin);
+            setClusterAllowedStringPreference(clusterAllowedPriceTypes, defaultClusterAllowedPriceTypes);
+            openEditUserTab(user.login)
+                    .clearAllowedPriceTypeField()
+                    .ok();
+            tools()
+                    .performWithin(defaultRegistry,defaultGroup,testingTool,tool->
+                            tool.showInstanceManagement(instanceManagement->
+                                    instanceManagement
+                                            .clearAllowedPriceTypeField()
+                                            .sleep(2,SECONDS)));
         }
     }
 
@@ -550,7 +588,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .exitFromConfigurationWithoutSaved();
     }
 
-    private void validationOfPriceTypesRestrictions() {
+    private void validationOfPriceTypesRestrictions(String pipelinePriceTypes, String configurationPriceTypes, String toolPriceTypes) {
         library()
                 .cd(folder)
                 .clickOnDraftVersion(pipeline)
@@ -558,16 +596,16 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .editConfiguration(configurationName,profile->
                         profile
                                 .expandTab(ADVANCED_PANEL)
-                                .checkValueIsInDropDown(PRICE_TYPE, "On-demand"));
+                                .checkValueIsInDropDown(PRICE_TYPE, pipelinePriceTypes));
         library()
                 .cd(folder)
                 .configurationWithin(configuration, configuration ->
                         configuration
                                 .expandTabs(advancedTab)
-                                .checkValueIsInDropDown(PRICE_TYPE, "On-demand"));
+                                .checkValueIsInDropDown(PRICE_TYPE, configurationPriceTypes));
         tools()
                 .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
                 .expandTab(ADVANCED_PANEL)
-                .checkValueIsInDropDown(PRICE_TYPE, "On-demand");
+                .checkValueIsInDropDown(PRICE_TYPE, toolPriceTypes);
     }
 }

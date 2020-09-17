@@ -858,6 +858,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     context().find(byClassName("ant-select-dropdown")).find(byText(priceType))
                             .shouldBe(visible)
                             .click();
+                    click(byText("Allowed price types"));
                     return this;
                 }
 
