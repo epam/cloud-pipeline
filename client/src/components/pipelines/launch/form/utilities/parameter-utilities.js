@@ -264,7 +264,14 @@ function correctFormFieldValues (parameters) {
   return modified;
 }
 
+function booleanParameterIsSetToValue (parameters, parameter, value = true) {
+  return !!parameters &&
+    parameters.hasOwnProperty(parameter) &&
+    `${parameters[parameter].value}` === `${value}`;
+}
+
 export {
+  booleanParameterIsSetToValue,
   correctFormFieldValues,
   isVisible,
   validate,

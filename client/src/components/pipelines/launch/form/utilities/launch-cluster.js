@@ -24,6 +24,7 @@ import {
   renderTooltip
 } from './launch-cluster-tooltips';
 import {getSpotTypeName} from '../../../../special/spot-instance-names';
+import {booleanParameterIsSetToValue} from './parameter-utilities';
 
 export const CP_CAP_SGE = 'CP_CAP_SGE';
 export const CP_CAP_SPARK = 'CP_CAP_SPARK';
@@ -44,12 +45,6 @@ const PARAMETER_TITLE_STYLE = {
   width: PARAMETER_TITLE_WIDTH,
   marginRight: PARAMETER_TITLE_RIGHT_MARGIN
 };
-
-function booleanParameterIsSetToValue (parameters, parameter, value = true) {
-  return !!parameters &&
-    parameters.hasOwnProperty(parameter) &&
-    `${parameters[parameter].value}` === `${value}`;
-}
 
 export function autoScaledClusterEnabled (parameters) {
   return booleanParameterIsSetToValue(parameters, CP_CAP_SGE) &&

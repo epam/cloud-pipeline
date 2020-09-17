@@ -30,6 +30,12 @@ import {
   kubeEnabled
 } from './launch-cluster';
 import {LIMIT_MOUNTS_PARAMETER} from '../LimitMountsInput';
+import {
+  dinDEnabled,
+  noMachineEnabled,
+  singularityEnabled,
+  systemDEnabled
+} from './additional-run-preference';
 
 function modified (form, parameters, formName, parametersName, defaultValue) {
   return `${form.getFieldValue(formName) || defaultValue}` !==
@@ -212,6 +218,15 @@ function parametersCheck (form, parameters, state) {
     check(initialValue, formValue);
 }
 
+function runCapabilitiesCheck (state, parameters) {
+  const dinD = dinDEnabled(parameters.parameters);
+  const singularity = singularityEnabled(parameters.parameters);
+  const systemD = systemDEnabled(parameters.parameters);
+  const noMachine = noMachineEnabled(parameters.parameters);
+  return dinD !== state.dinD || singularity !== state.singularity ||
+    systemD !== state.systemD || noMachine !== state.noMachine;
+}
+
 export default function (props, state, options) {
   const {form, parameters} = props;
   const {
@@ -258,5 +273,7 @@ export default function (props, state, options) {
     // cmd template check
     cmdTemplateCheck(state, parameters, options) ||
     // check general parameters
-    parametersCheck(form, parameters);
+    parametersCheck(form, parameters) ||
+    // check additional run capabilities
+    runCapabilitiesCheck(state, parameters);
 }
