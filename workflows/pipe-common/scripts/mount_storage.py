@@ -575,31 +575,9 @@ class NFSMounter(StorageMounter):
                 mount_options = file_mode_options
             else:
                 mount_options += ',' + file_mode_options
-
-        transition_mount = False
-        if self.share_mount.mount_type == "LUSTRE" and params['path'] != self.share_mount.mount_root:
-            lustre_root = self.share_mount.mount_root
-            hidden_lustre_root_mount = '/mnt/.{}'.format(os.path.basename(lustre_root))
-            if self.create_directory(hidden_lustre_root_mount, 'Hidden lustre root [{0}] creation'.format(lustre_root)):
-                transition_mount = True
-                root_mount_options = ''
-                bind_mount_options = ''
-                if mount_options:
-                    root_mount_options = mount_options.strip().split(',')
-                    if READ_ONLY_MOUNT_OPT in root_mount_options:
-                        root_mount_options.remove(READ_ONLY_MOUNT_OPT)
-                        bind_mount_options = '-o ' + READ_ONLY_MOUNT_OPT
-                    root_mount_options = ','.join(root_mount_options)
-                    if root_mount_options:
-                        root_mount_options = '-o {}'.format(root_mount_options)
-                path_in_hidden_root = params['path'].replace(lustre_root, hidden_lustre_root_mount)
-                command += ' {0} {1} {2} && mount --bind {3} {4} {5}'\
-                    .format(root_mount_options, lustre_root, hidden_lustre_root_mount,
-                            bind_mount_options, path_in_hidden_root, params['mount'])
-        if not transition_mount:
-            if mount_options:
-                command += ' -o {}'.format(mount_options)
-            command += ' {path} {mount}'.format(**params)
+        if mount_options:
+            command += ' -o {}'.format(mount_options)
+        command += ' {path} {mount}'.format(**params)
         if PermissionHelper.is_storage_writable(self.storage):
             command += ' && chmod {permission} {mount}'.format(permission=permission, **params)
         return command
