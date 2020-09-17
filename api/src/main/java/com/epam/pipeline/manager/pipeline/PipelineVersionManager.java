@@ -86,9 +86,9 @@ public class PipelineVersionManager {
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
-    public List<Revision> loadAllVersionFromGit(Long id, Long pageSize) throws GitClientException {
+    public List<Revision> loadAllVersionFromGit(Long id) throws GitClientException {
         Pipeline pipeline = pipelineManager.load(id);
-        return gitManager.getPipelineRevisions(pipeline, pageSize);
+        return gitManager.getPipelineRevisions(pipeline);
     }
 
     public TaskGraphVO getWorkflowGraph(Long id, String version) {

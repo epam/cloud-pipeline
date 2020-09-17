@@ -218,7 +218,7 @@ public class GitlabClient {
                                 indexingEnabled, hookUrl);
     }
 
-    public boolean projectExists(String name) throws GitClientException {
+    public boolean projectExists(final String namespace, final String name) throws GitClientException {
         try {
             String projectId = makeProjectId(namespace, GitUtils.convertPipeNameToProject(name));
             Response<GitProject> response = gitLabApi.getProject(projectId).execute();
@@ -226,6 +226,10 @@ public class GitlabClient {
         } catch (IOException e) {
             throw new GitClientException(e.getMessage(), e);
         }
+    }
+
+    public boolean projectExists(final String name) throws GitClientException {
+        return projectExists(namespace, name);
     }
 
     public GitProject getProject() throws GitClientException {
@@ -264,9 +268,14 @@ public class GitlabClient {
         return execute(gitLabApi.getCommit(projectId, commitId, null));
     }
 
-    public List<GitTagEntry> getRepositoryRevisions(Long pageSize) throws GitClientException {
-        String projectId = makeProjectId(namespace, projectName);
+    public List<GitTagEntry> getRepositoryRevisions(final String namespace, final String projectName)
+            throws GitClientException {
+        final String projectId = makeProjectId(namespace, projectName);
         return execute(gitLabApi.getRevisions(projectId, null, null));
+    }
+
+    public List<GitTagEntry> getRepositoryRevisions() throws GitClientException {
+        return getRepositoryRevisions(namespace, projectName);
     }
 
     public GitTagEntry createRepositoryRevision(String name, String ref, String message, String releaseDescription)
