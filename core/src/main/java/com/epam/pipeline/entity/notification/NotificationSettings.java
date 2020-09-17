@@ -96,7 +96,11 @@ public class NotificationSettings {
         IDLE_RUN_PAUSED(7, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, Collections.emptyList(), true, NotificationGroup.IDLE_RUN),
         IDLE_RUN_STOPPED(8, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, Collections.emptyList(), true, NotificationGroup.IDLE_RUN),
         HIGH_CONSUMED_RESOURCES(9, MISSING_TIME_THRESHOLD, 600L, Collections.emptyList(), true, NotificationGroup.RESOURCE_CONSUMING),
-        LONG_STATUS(10, 3600L, 600L, Collections.emptyList(), true, NotificationGroup.LONG_STATUS);
+        LONG_STATUS(10, 3600L, 600L, Collections.emptyList(), true, NotificationGroup.LONG_STATUS),
+        LONG_PAUSED(11, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, Collections.emptyList(), true,
+                NotificationGroup.LONG_PAUSED),
+        LONG_PAUSED_STOPPED(12, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, Collections.emptyList(), true,
+                NotificationGroup.LONG_PAUSED);
 
         private static final Map<Long, NotificationType> BY_ID;
 
@@ -157,6 +161,7 @@ public class NotificationSettings {
         PIPELINE_RUN_STATUS,
         IDLE_RUN,
         RESOURCE_CONSUMING,
-        LONG_STATUS
+        LONG_STATUS,
+        LONG_PAUSED
     }
 }

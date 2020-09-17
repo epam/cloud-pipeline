@@ -610,6 +610,13 @@ public class PipelineRunManager {
         return run;
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun loadPipelineRunWithStatuses(final Long id) {
+        final PipelineRun run = loadPipelineRun(id);
+        run.setRunStatuses(runStatusManager.loadRunStatus(id));
+        return run;
+    }
+
     /**
      * Method that will return all active runs for which current users is owner or is listed in run sids - a list of
      * identities (user names or groups) that have access to run

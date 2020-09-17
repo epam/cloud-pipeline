@@ -25,6 +25,7 @@ import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.kms.model.KeyListEntry;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
+import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -250,6 +251,9 @@ public final class PreferenceValidators {
 
     public static final BiPredicate<String, Map<String, Preference>> isValidIdleAction =
         (pref, ignored) -> IdleRunAction.contains(pref);
+
+    public static final BiPredicate<String, Map<String, Preference>> isValidLongPauseRunAction =
+            (pref, ignored) -> LongPausedRunAction.contains(pref);
 
     private PreferenceValidators() {
         // No-op
