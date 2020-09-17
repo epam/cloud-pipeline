@@ -18,7 +18,6 @@ package com.epam.pipeline.app;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import springfox.documentation.builders.PathSelectors;
@@ -33,7 +32,6 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 import javax.servlet.ServletContext;
 
 @Configuration
-@ComponentScan(basePackages = {"com.epam.pipeline.controller"})
 @EnableWebMvc
 @EnableSwagger2
 public class RestConfiguration {
