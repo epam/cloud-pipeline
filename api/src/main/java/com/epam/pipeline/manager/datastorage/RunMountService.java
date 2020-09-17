@@ -17,32 +17,65 @@ package com.epam.pipeline.manager.datastorage;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemActionTypes;
+import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
+import com.epam.pipeline.entity.datastorage.*;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
+import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class RunMountService {
 
+    public static final String DEFAULT_PATTERN = "${RUN_ID}";
     private final PreferenceManager preferenceManager;
     private final DataStorageManager storageManager;
     private final MessageHelper messageHelper;
     private final FileShareMountManager fileShareMountManager;
+    private final PipelineRunManager pipelineRunManager;
 
-    public DataStorageWithShareMount getSharedFSStorage() {
-        return Optional.ofNullable(
+    public StorageMountPath getSharedFSSPathForRun(final Long runId, final boolean createFolder) {
+        final AbstractDataStorage storage = Optional.ofNullable(
                 preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_RUN_SHARED_STORAGE_NAME))
                 .map(storageManager::loadByPathOrId)
-                .map(storage -> Optional.ofNullable(storage.getFileShareMountId())
-                        .map(fileShareId ->
-                                new DataStorageWithShareMount(storage, fileShareMountManager.load(fileShareId)))
-                        .orElse(new DataStorageWithShareMount(storage, null)))
                 .orElseThrow(() -> new IllegalArgumentException(
                         messageHelper.getMessage(MessageConstants.ERROR_SHARED_STORAGE_IS_NOT_CONFIGURED)));
+        final FileShareMount mount = Optional.ofNullable(storage.getFileShareMountId())
+                .map(fileShareMountManager::load)
+                .orElse(null);
+        final String runPath = buildMountPath(runId);
+        if (createFolder) {
+            storageManager.updateDataStorageItems(storage.getId(),
+                    Collections.singletonList(buildUpdateRequest(runPath)));
+        }
+        return new StorageMountPath(ProviderUtils.mergePaths(storage.getPath(), runPath), storage, mount);
+    }
+
+    private UpdateDataStorageItemVO buildUpdateRequest(final String path) {
+        final UpdateDataStorageItemVO item = new UpdateDataStorageItemVO();
+        item.setAction(UpdateDataStorageItemActionTypes.Create);
+        item.setPath(path);
+        item.setType(DataStorageItemType.Folder);
+        return item;
+    }
+
+    private String buildMountPath(final Long runId) {
+        final String folderPattern = Optional.ofNullable(
+                preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_RUN_SHARED_FOLDER_PATTERN))
+                .orElse(DEFAULT_PATTERN);
+        final PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId);
+        final List<PipelineRunParameter> resolved = pipelineRunManager.replaceParametersWithEnvVars(
+                Collections.singletonList(new PipelineRunParameter("path", folderPattern)), pipelineRun.getEnvVars());
+        return resolved.get(0).getResolvedValue();
     }
 }
