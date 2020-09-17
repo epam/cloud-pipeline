@@ -94,14 +94,13 @@ EOM
 EOM
 
     read -r -d '' NOMACHINE_INSTALL_CMD <<- EOM
-    apt-get update -y && \
-    apt-get install -y locales && \
+    apt-get install -y --no-upgrade locales && \
     locale-gen en_US.UTF-8 && \
     locale-gen en_US && \
     dpkg-reconfigure --frontend=noninteractive locales && \
     update-locale LANG=$LANG && \
-    apt-get install -y  lsof \
-                        python \
+    apt-get install -y --no-upgrade \
+                        lsof \
                         wget \
                         xfce4 \
                         xfce4-xkb-plugin && \
