@@ -488,7 +488,6 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
                         .collect(Collectors.toList())
                 ).stream()
                 .collect(Collectors.toMap(PipelineUser::getUserName, Function.identity()));
-
     }
 
     private List<Long> getCCUsers(final NotificationSettings idleRunSettings) {
