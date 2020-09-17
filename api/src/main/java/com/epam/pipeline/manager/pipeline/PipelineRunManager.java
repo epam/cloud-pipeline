@@ -1317,7 +1317,7 @@ public class PipelineRunManager {
         }
     }
 
-    List<PipelineRunParameter> replaceParametersWithEnvVars(List<PipelineRunParameter> params,
+    public List<PipelineRunParameter> replaceParametersWithEnvVars(List<PipelineRunParameter> params,
                                                             Map<String, String> envVars) {
         if (CollectionUtils.isEmpty(params) || MapUtils.isEmpty(envVars)) {
             return params;

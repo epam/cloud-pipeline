@@ -24,20 +24,7 @@ import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
-import com.epam.pipeline.entity.datastorage.ContentDisposition;
-import com.epam.pipeline.entity.datastorage.DataStorageAction;
-import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
-import com.epam.pipeline.entity.datastorage.DataStorageException;
-import com.epam.pipeline.entity.datastorage.DataStorageFile;
-import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
-import com.epam.pipeline.entity.datastorage.DataStorageListing;
-import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
-import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
-import com.epam.pipeline.entity.datastorage.PathDescription;
-import com.epam.pipeline.entity.datastorage.StorageUsage;
-import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.manager.datastorage.DataStorageApiService;
 import io.swagger.annotations.Api;
@@ -716,6 +703,19 @@ public class DataStorageController extends AbstractRestController {
         return Result.success(dataStorageApiService.getStorageUsage(id, path));
     }
 
+    @PostMapping(value = "/datastorage/sharedStorage")
+    @ResponseBody
+    @ApiOperation(
+            value = "Creates and returns storage to be used as shared folder of a Pipeline Run.",
+            notes = "Creates and returns storage to be used as shared folder of a Pipeline Run.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<StorageMountPath> createSharedFSSPathForRun(@RequestParam final Long runId) {
+        return Result.success(dataStorageApiService.getSharedFSSPathForRun(runId, true));
+    }
+
     @GetMapping(value = "/datastorage/sharedStorage")
     @ResponseBody
     @ApiOperation(
@@ -725,7 +725,7 @@ public class DataStorageController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<DataStorageWithShareMount> getSharedFSStorage() {
-        return Result.success(dataStorageApiService.getSharedFSStorage());
+    public Result<StorageMountPath> getSharedFSSPathForRun(@RequestParam final Long runId) {
+        return Result.success(dataStorageApiService.getSharedFSSPathForRun(runId, false));
     }
 }
