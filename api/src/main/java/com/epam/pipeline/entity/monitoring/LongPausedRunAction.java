@@ -20,14 +20,25 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Describes actions, that can be taken if a run is paused for a long time. This action type is controlled by
+ * {@code SystemPreferences.SYSTEM_LONG_PAUSED_ACTION}
+ */
 public enum LongPausedRunAction {
-    NOTIFY, STOP;
-
-    public static boolean contains(String value) {
-        return VALUE_SET.contains(value);
-    }
+    /**
+     * Notify users periodically
+     */
+    NOTIFY,
+    /**
+     * Notify users once and stop the run
+     */
+    STOP;
 
     private static final Set<String> VALUE_SET = Arrays.stream(LongPausedRunAction.values())
             .map(Enum::name)
             .collect(Collectors.toSet());
+
+    public static boolean contains(final String value) {
+        return VALUE_SET.contains(value);
+    }
 }
