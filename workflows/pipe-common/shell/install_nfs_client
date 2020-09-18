@@ -29,14 +29,16 @@ then
     OS_VERSION_ID=$(. /etc/os-release;echo $VERSION_ID)
     LUSTRE_VERSION=$([ $OS_VERSION_ID -eq 6 ] && echo "2.10.8-1" || echo "2.12.5-1")
     LUSTRE_VERSION="$LUSTRE_VERSION.el$OS_VERSION_ID.x86_64"
-    LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.rpm"
-    LUSTRE_KMOD_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/kmod-lustre-client-$LUSTRE_VERSION.rpm"
+    LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
     read -r -d '' INSTALL_LUSTRE_CMD <<- EOM
-      yum install -y -q wget &&
-      wget -q $LUSTRE_KMOD_URL -O kmod-lustre-client.rpm &&
-      wget -q $LUSTRE_CLIENT_URL -O lustre-client.rpm &&
-      rpm -i --nodeps --quiet kmod-lustre-client.rpm lustre-client.rpm &&
-      rm -f *lustre-client.rpm
+      yum install -y -q wget yum-utils &&
+      wget -q $LUSTRE_CLIENT_URL -O lustre-client.tar.gz &&
+      mkdir -p lustre-client &&
+      tar -xzvf lustre-client.tar.gz -C lustre-client/ &&
+      rpm -i --justdb --quiet --force lustre-client/dependencies/*.rpm &&
+      rpm -i --nodeps --quiet lustre-client/*.rpm &&
+      package-cleanup --cleandupes -y &&
+      rm -rf lustre-client*
 EOM
 else
     CHECK_NFS_SMB_CMD="dpkg -l | grep nfs-common && dpkg -l | grep cifs-utils"
