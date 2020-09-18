@@ -32,7 +32,7 @@ export default class AdditionalRunPreference extends React.Component {
     const {preference, readOnly, value} = this.props;
 
     return (
-      <Row type="flex" style={{flex: 1}}>
+      <Row>
         <Checkbox
           disabled={readOnly}
           onChange={this.onChange}

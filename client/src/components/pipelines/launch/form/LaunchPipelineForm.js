@@ -465,11 +465,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <FormItem
         className={getFormItemClassName(styles.formItem, 'runCapabilities')}
-        {...this.formItemLayout}
+        {...this.leftFormItemLayout}
         label="Run capabilities"
         hasFeedback
       >
-        <Row type="flex" style={{flex: 1}}>
+        <Row style={{flex: 1}}>
           <AdditionalRunPreference
             preference="DinD"
             value={dinD}
@@ -4753,7 +4753,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       )
                     }
                     {this.renderFormItemRow(this.renderCoresFormItem)}
-                    {this.renderFormItemRow(this.renderAdditionalRunCapabilities)}
                   </div>
                 </div>
                 <div
@@ -4792,6 +4791,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {this.renderStopAfterFormItem()}
               {this.renderLimitMountsFormItem()}
               {this.renderCmdTemplateFormItem()}
+              {this.renderAdditionalRunCapabilities()}
               {this.renderParameters(true)}
             </Collapse.Panel>
             <Collapse.Panel

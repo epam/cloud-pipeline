@@ -63,9 +63,15 @@ import {
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
-  CP_CAP_AUTOSCALE_PRICE_TYPE
+  CP_CAP_AUTOSCALE_PRICE_TYPE,
+  CP_CAP_SINGULARITY,
+  CP_CAP_DESKTOP_NM
 } from '../../pipelines/launch/form/utilities/parameters';
 import AWSRegionTag from '../../special/AWSRegionTag';
+import AdditionalRunPreference, {
+  dinDEnabled, noMachineEnabled,
+  singularityEnabled, systemDEnabled
+} from '../../pipelines/launch/form/utilities/additional-run-preference';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -141,7 +147,11 @@ export default class EditToolForm extends React.Component {
     sparkEnabled: false,
     slurmEnabled: false,
     kubeEnabled: false,
-    launchCluster: false
+    launchCluster: false,
+    dinD: false,
+    singularity: false,
+    systemD: false,
+    noMachine: false
   };
 
   @observable defaultLimitMounts;
@@ -267,6 +277,34 @@ export default class EditToolForm extends React.Component {
             });
             params.push({
               name: CP_CAP_SYSTEMD_CONTAINER,
+              type: 'boolean',
+              value: true
+            });
+          }
+          if (this.state.dinD && !this.state.kubeEnabled) {
+            params.push({
+              name: CP_CAP_DIND_CONTAINER,
+              type: 'boolean',
+              value: true
+            });
+          }
+          if (this.state.systemD && !this.state.kubeEnabled) {
+            params.push({
+              name: CP_CAP_SYSTEMD_CONTAINER,
+              type: 'boolean',
+              value: true
+            });
+          }
+          if (this.state.singularity) {
+            params.push({
+              name: CP_CAP_SINGULARITY,
+              type: 'boolean',
+              value: true
+            });
+          }
+          if (this.state.noMachine) {
+            params.push({
+              name: CP_CAP_DESKTOP_NM,
               type: 'boolean',
               value: true
             });
@@ -417,6 +455,10 @@ export default class EditToolForm extends React.Component {
         state.autoScaledPriceType = props.configuration &&
           getAutoScaledPriceTypeValue(props.configuration.parameters);
         state.launchCluster = state.nodesCount > 0 || state.autoScaledCluster;
+        state.dinD = dinDEnabled(props.configuration.parameters);
+        state.singularity = singularityEnabled(props.configuration.parameters);
+        state.systemD = systemDEnabled(props.configuration.parameters);
+        state.noMachine = noMachineEnabled(props.configuration.parameters);
         this.defaultCommand = props.configuration && props.configuration.cmd_template
           ? props.configuration.cmd_template
           : this.defaultCommand;
@@ -712,6 +754,15 @@ export default class EditToolForm extends React.Component {
     const autoScaledPriceTypeValue = this.props.configuration &&
       getAutoScaledPriceTypeValue(this.props.configuration.parameters);
     const launchCluster = nodesCount > 0 || autoScaledCluster;
+    const additionalCapabilitiesChanged = () => {
+      const dinD = dinDEnabled(this.props.configuration.parameters);
+      const singularity = singularityEnabled(this.props.configuration.parameters);
+      const systemD = systemDEnabled(this.props.configuration.parameters);
+      const noMachine = noMachineEnabled(this.props.configuration.parameters);
+      return dinD !== this.state.dinD || singularity !== this.state.singularity ||
+        systemD !== this.state.systemD || noMachine !== this.state.noMachine;
+    };
+
     return configurationFormFieldChanged('is_spot') ||
       configurationFormFieldChanged('instance_size', 'instanceType') ||
       configurationFormFieldChanged('instance_disk', 'disk') ||
@@ -731,7 +782,7 @@ export default class EditToolForm extends React.Component {
       autoScaledPriceTypeValue !== this.state.autoScaledPriceType ||
       (this.state.launchCluster && nodesCount !== this.state.nodesCount) ||
       (this.state.launchCluster && this.state.autoScaledCluster && maxNodesCount !== this.state.maxNodesCount) ||
-      limitMountsFieldChanged() || cloudRegionFieldChanged();
+      limitMountsFieldChanged() || cloudRegionFieldChanged() || additionalCapabilitiesChanged();
   };
 
   initializeEndpointsControl = (control) => {
@@ -960,6 +1011,22 @@ export default class EditToolForm extends React.Component {
         onCancel: cancel
       });
     }
+  };
+
+  onDinDChanged = (dinD = false) => {
+    this.setState({dinD});
+  };
+
+  onSingularityChanged = (singularity = false) => {
+    this.setState({singularity});
+  };
+
+  onSystemDChanged = (systemD = false) => {
+    this.setState({systemD});
+  };
+
+  onNoMachineChanged = (noMachine = false) => {
+    this.setState({noMachine});
   };
 
   renderExecutionEnvironment = () => {
@@ -1202,6 +1269,33 @@ export default class EditToolForm extends React.Component {
                     lineWrapping={true}
                     defaultCode={this.defaultCommand}
                   />
+                </Col>
+              </Row>
+              <Row style={{marginBottom: 10}}>
+                <Col xs={24} sm={6} className={styles.toolSettingsTitle}>Run capabilities:</Col>
+                <Col xs={24} sm={12}>
+                  <Row>
+                    <AdditionalRunPreference
+                      preference="DinD"
+                      value={this.state.dinD}
+                      onChange={this.onDinDChanged}
+                    />
+                    <AdditionalRunPreference
+                      preference="Singularity"
+                      value={this.state.singularity}
+                      onChange={this.onSingularityChanged}
+                    />
+                    <AdditionalRunPreference
+                      preference="SystemD"
+                      value={this.state.systemD}
+                      onChange={this.onSystemDChanged}
+                    />
+                    <AdditionalRunPreference
+                      preference="NoMachine"
+                      value={this.state.noMachine}
+                      onChange={this.onNoMachineChanged}
+                    />
+                  </Row>
                 </Col>
               </Row>
             </Col>
