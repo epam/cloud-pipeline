@@ -26,7 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -40,7 +39,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ImpersonatingCmdExecutor implements CmdExecutor {
     
-    private static final String PERMISSION_DENIED = "permission denied";
     private static final String BASH_TEMPLATE = "bash %s";
     private static final String IMPERSONATING_TEMPLATE = "echo \"%s %s\" | sudo su - %s";
     private static final String ENVIRONMENT_VARIABLE_TEMPLATE = "%s='%s'";
@@ -62,11 +60,6 @@ public class ImpersonatingCmdExecutor implements CmdExecutor {
             Files.write(commandScript, Collections.singleton(impersonating(command, environmentVariables, username)));
             return cmdExecutor.executeCommand(bash(commandScript), environmentVariables, workDir);
         } catch (CmdExecutionException | IOException e) {
-            if (isPermissionDenied(e)) {
-                log.error("Permission denied on original command '{}' execution with substituted user '{}'. "
-                        + "Trying to execute the command with default user.", command, username);
-                return cmdExecutor.executeCommand(command, environmentVariables, workDir);
-            }
             throw new CmdExecutionException(String.format(
                     "Original command '%s' execution with substituted user '%s' went bad", command, username
             ), e);
@@ -111,12 +104,5 @@ public class ImpersonatingCmdExecutor implements CmdExecutor {
 
     private String bash(final Path commandScript) {
         return String.format(BASH_TEMPLATE, commandScript.toAbsolutePath().toString());
-    }
-
-    private Boolean isPermissionDenied(final Exception e) {
-        return Optional.ofNullable(e.getMessage())
-                .map(String::toLowerCase)
-                .map(message -> message.contains(PERMISSION_DENIED))
-                .orElse(false);
     }
 }

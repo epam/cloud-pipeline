@@ -40,8 +40,8 @@ import java.util.stream.Collectors;
 @Builder
 public class PipelineCLIImpl implements PipelineCLI {
 
-    private static final String PIPE_CP_TEMPLATE = "%s storage cp %s %s %s";
-    private static final String PIPE_LS_TEMPLATE = "%s storage ls %s -l";
+    private static final String PIPE_CP_TEMPLATE = "%s storage cp '%s' '%s' %s";
+    private static final String PIPE_LS_TEMPLATE = "%s storage ls '%s' -l";
     private static final String SPACE = " ";
     private static final String FOLDER = "Folder";
     private static final String SEPARATOR = "/";
@@ -152,14 +152,14 @@ public class PipelineCLIImpl implements PipelineCLI {
                 .map(column -> headerLine.indexOf(column.name))
                 .collect(Collectors.toList());
 
-            final RemoteFileDescription remoteFileDescription = new RemoteFileDescription();
+            RemoteFileDescription remoteFileDescription = new RemoteFileDescription();
             for (int i = 0; i < columnIndexes.size(); i++) {
                 final int cellBeginIndex = columnIndexes.get(i);
                 final int cellEndIndex = i < columnIndexes.size() - 1
                     ? columnIndexes.get(i + 1)
                     : headerLine.length();
                 final String cellValue = fileLine.substring(cellBeginIndex, cellEndIndex).trim();
-                columns[i].append(remoteFileDescription, cellValue);
+                remoteFileDescription = columns[i].append(remoteFileDescription, cellValue);
             }
             return remoteFileDescription;
         };
@@ -190,7 +190,7 @@ public class PipelineCLIImpl implements PipelineCLI {
         TYPE("Type", RemoteFileDescription::withType),
         LABELS("Labels", RemoteFileDescription::withLabels),
         MODIFIED("Modified", RemoteFileDescription::withModified),
-        SIZE("Size", (file, value) -> file.withSize(StringUtils.isBlank(value) ? 0L : Long.valueOf(value))),
+        SIZE("Size", (file, value) -> file.withSize(StringUtils.isBlank(value) ? 0L : Long.parseLong(value))),
         NAME("Name", RemoteFileDescription::withName);
 
         final String name;
@@ -202,9 +202,9 @@ public class PipelineCLIImpl implements PipelineCLI {
             this.appender = appender;
         }
 
-        void append(final RemoteFileDescription remoteFileDescription,
-                    final String value) {
-            appender.apply(remoteFileDescription, value);
+        public RemoteFileDescription append(final RemoteFileDescription remoteFileDescription,
+                                            final String value) {
+            return appender.apply(remoteFileDescription, value);
         }
     }
 
