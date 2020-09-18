@@ -165,7 +165,9 @@ export default class EditEmailNotification extends React.Component {
     }
     const renderThresholdAndDelay = this.props.template.type === 'LONG_INIT' ||
       this.props.template.type === 'LONG_RUNNING' ||
-      this.props.template.type === 'LONG_STATUS';
+      this.props.template.type === 'LONG_STATUS' ||
+      this.props.template.type === 'LONG_PAUSED' ||
+      this.props.template.type === 'LONG_PAUSED_STOPPED';
     const renderStatusesToInform = this.props.template.type === 'PIPELINE_RUN_STATUS';
     const {getFieldDecorator, resetFields} = this.props.form;
     return (
