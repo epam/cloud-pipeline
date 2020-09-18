@@ -455,7 +455,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             }
 
             if (LongPausedRunAction.STOP.equals(action)) {
-                ListUtils.emptyIfNull(notificationManager.notifyLongPausedRunsBeforeStop(pausedRuns))
+                ListUtils.emptyIfNull(notificationManager.notifyLongPausedRunsBeforeStop(pausedRuns.stream()
+                        .filter(run -> !run.isNonPause())
+                        .collect(Collectors.toList())))
                         .forEach(run -> pipelineRunManager.terminateRun(run.getId()));
             } else {
                 notificationManager.notifyLongPausedRuns(pausedRuns);

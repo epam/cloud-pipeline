@@ -1,0 +1,8 @@
+{
+  "keepInformedAdmins":true,
+  "keepInformedOwner":true,
+  "enabled":true,
+  "resendDelay": -1,
+  "threshold": -1,
+  "subject":"Job #$templateParameters[\"id\"] has been paused for a long time and will be terminated"
+}
