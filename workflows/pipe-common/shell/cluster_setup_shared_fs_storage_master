@@ -35,7 +35,7 @@ if [ $? -ne 0 ]; then
     pipe_log_fail "Failed to setup shared storage FS on master node" "$FS_SETUP_TASK"
     exit 1
 else
-    pipe_log_info "Successfully mounted shared storage FS to master node" "$FS_SETUP_TASK"
+    pipe_log_success "Successfully mounted shared storage FS to master node" "$FS_SETUP_TASK"
 fi
 
 
