@@ -43,7 +43,7 @@ public class EnvironmentCmdExecutorTest {
 
         envCmdExecutor.executeCommand(COMMAND);
 
-        verify(innerExecutor).executeCommand(eq(COMMAND), eq(Collections.emptyMap()), eq(null));
+        verify(innerExecutor).executeCommand(eq(COMMAND), eq(Collections.emptyMap()), eq(null), eq(null));
     }
 
     @Test
@@ -63,7 +63,7 @@ public class EnvironmentCmdExecutorTest {
 
         envCmdExecutor.executeCommand(COMMAND, givenEnvVars);
 
-        verify(innerExecutor).executeCommand(eq(COMMAND), eq(mergedEnvVars), eq(null));
+        verify(innerExecutor).executeCommand(eq(COMMAND), eq(mergedEnvVars), eq(null), eq(null));
     }
 
     @Test
@@ -78,6 +78,7 @@ public class EnvironmentCmdExecutorTest {
 
         envCmdExecutor.executeCommand(COMMAND, givenEnvVars);
 
-        verify(innerExecutor).executeCommand(eq(COMMAND), argThat(map -> map.get("b").equals("given")), eq(null));
+        verify(innerExecutor).executeCommand(eq(COMMAND), 
+                argThat(map -> map.get("b").equals("given")), eq(null), eq(null));
     }
 }

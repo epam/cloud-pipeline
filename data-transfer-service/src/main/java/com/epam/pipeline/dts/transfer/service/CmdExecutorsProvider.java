@@ -22,7 +22,7 @@ import java.util.Map;
 
 public interface CmdExecutorsProvider {
     CmdExecutor getCmdExecutor();
-    CmdExecutor getImpersonatingCmdExecutor(CmdExecutor cmdExecutor);
     CmdExecutor getQsubCmdExecutor(CmdExecutor cmdExecutor, String qsubTemplate);
+    CmdExecutor getImpersonatingCmdExecutor(CmdExecutor cmdExecutor);
     CmdExecutor getEnvironmentCmdExecutor(CmdExecutor cmdExecutor, Map<String, String> envVars);
 }

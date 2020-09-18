@@ -75,13 +75,6 @@ public class S3DataUploaderTest extends AbstractTransferTest {
     }
 
     @Test
-    void transferShouldFailIfLocalSourceFileDoesNotExist() {
-        final TransferTask transferTask = taskOf(nonExistingLocalItem(), s3Item());
-
-        assertThrows(RuntimeException.class, () -> dataUploader.transfer(transferTask));
-    }
-
-    @Test
     void transferShouldNotFailIfLocalDestinationFileDoesNotExist() {
         final TransferTask transferTask = taskOf(s3Item(), nonExistingLocalItem());
 
@@ -109,7 +102,7 @@ public class S3DataUploaderTest extends AbstractTransferTest {
 
         dataUploader.transfer(taskOf(source, destination));
 
-        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), isNull());
+        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), any(), isNull());
     }
 
     @Test

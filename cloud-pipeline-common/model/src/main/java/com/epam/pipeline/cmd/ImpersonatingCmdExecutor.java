@@ -62,8 +62,7 @@ public class ImpersonatingCmdExecutor implements CmdExecutor {
             return cmdExecutor.executeCommand(bash(commandScript), environmentVariables, workDir);
         } catch (CmdExecutionException | IOException e) {
             throw new CmdExecutionException(String.format(
-                    "Original command '%s' execution with substituted user '%s' went bad", command, username
-            ), e);
+                    "Original command '%s' execution with substituted user '%s' went bad", command, username), e);
         } finally {
             Optional.ofNullable(commandScript)
                     .map(Path::toFile)

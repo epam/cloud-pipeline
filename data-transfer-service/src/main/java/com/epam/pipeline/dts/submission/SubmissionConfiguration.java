@@ -18,7 +18,6 @@ package com.epam.pipeline.dts.submission;
 
 import com.epam.pipeline.cmd.CmdExecutor;
 import com.epam.pipeline.cmd.PlainCmdExecutor;
-import com.epam.pipeline.cmd.ImpersonatingCmdExecutor;
 import com.epam.pipeline.dts.configuration.CommonConfiguration;
 import com.epam.pipeline.dts.security.JWTSecurityConfiguration;
 import com.epam.pipeline.dts.submission.configuration.SubmissionRestConfiguration;

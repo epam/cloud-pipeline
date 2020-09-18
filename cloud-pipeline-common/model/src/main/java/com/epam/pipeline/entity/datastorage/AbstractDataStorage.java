@@ -86,8 +86,12 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
     public AbstractDataStorage() {
     }
 
-    public AbstractDataStorage(final Long id, final String name,
-                               final String path, final DataStorageType type, final StoragePolicy policy, String mountPoint) {
+    public AbstractDataStorage(final Long id,
+                               final String name,
+                               final String path,
+                               final DataStorageType type,
+                               final StoragePolicy policy,
+                               final String mountPoint) {
         super(id, name);
         this.path = path;
         this.type = type;

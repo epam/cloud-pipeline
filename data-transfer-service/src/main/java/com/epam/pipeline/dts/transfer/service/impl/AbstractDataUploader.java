@@ -30,6 +30,7 @@ public abstract class AbstractDataUploader implements DataUploader {
         final StorageItem source = transferTask.getSource();
         final StorageItem destination = transferTask.getDestination();
         if (source.getType() == StorageType.LOCAL) {
+            checkStoragePath(destination.getPath());
             upload(source, destination, transferTask.getIncluded(), transferTask.getUser());
         } else {
             checkStoragePath(source.getPath());

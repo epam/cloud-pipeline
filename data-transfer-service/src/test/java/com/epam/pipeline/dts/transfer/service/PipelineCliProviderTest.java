@@ -46,6 +46,7 @@ public class PipelineCliProviderTest {
         final CmdExecutor cmdExecutor = mock(CmdExecutor.class);
         when(cmdExecutorsProvider.getCmdExecutor()).thenReturn(cmdExecutor);
         when(cmdExecutorsProvider.getQsubCmdExecutor(notNull(), any())).thenReturn(cmdExecutor);
+        when(cmdExecutorsProvider.getImpersonatingCmdExecutor(any())).thenReturn(cmdExecutor);
         when(cmdExecutorsProvider.getEnvironmentCmdExecutor(notNull(), any())).thenReturn(cmdExecutor);
     }
 
