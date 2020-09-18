@@ -43,7 +43,7 @@ import {
   RunConfirmation
 } from '../../../runs/actions';
 import {autoScaledClusterEnabled} from '../../../pipelines/launch/form/utilities/launch-cluster';
-import {LIMIT_MOUNTS_PARAMETER} from '../../../pipelines/launch/form/LimitMountsInput';
+import {CP_CAP_LIMIT_MOUNTS} from '../../../pipelines/launch/form/utilities/parameters';
 import CardsPanel from './components/CardsPanel';
 import {getDisplayOnlyFavourites} from '../utils/favourites';
 import styles from './Panel.css';
@@ -207,9 +207,9 @@ export default class PersonalToolsPanel extends React.Component {
         payload.params = {};
       }
       if (this.state.runToolInfo.limitMounts.value) {
-        payload.params[LIMIT_MOUNTS_PARAMETER] = this.state.runToolInfo.limitMounts;
-      } else if (payload.params[LIMIT_MOUNTS_PARAMETER]) {
-        delete payload.params[LIMIT_MOUNTS_PARAMETER];
+        payload.params[CP_CAP_LIMIT_MOUNTS] = this.state.runToolInfo.limitMounts;
+      } else if (payload.params[CP_CAP_LIMIT_MOUNTS]) {
+        delete payload.params[CP_CAP_LIMIT_MOUNTS];
       }
     }
     if (await run(this)(payload, false)) {
@@ -728,8 +728,8 @@ export default class PersonalToolsPanel extends React.Component {
                 }
                 limitMounts={
                   this.state.runToolInfo.payload.params &&
-                  this.state.runToolInfo.payload.params[LIMIT_MOUNTS_PARAMETER]
-                    ? this.state.runToolInfo.payload.params[LIMIT_MOUNTS_PARAMETER].value
+                  this.state.runToolInfo.payload.params[CP_CAP_LIMIT_MOUNTS]
+                    ? this.state.runToolInfo.payload.params[CP_CAP_LIMIT_MOUNTS].value
                     : undefined
                 }
                 onChangeLimitMounts={this.onChangeLimitMounts}

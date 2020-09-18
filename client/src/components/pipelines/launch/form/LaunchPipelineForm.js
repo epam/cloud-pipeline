@@ -46,7 +46,7 @@ import CodeEditor from '../../../special/CodeEditor';
 import JobEstimatedPriceInfo from '../../../special/job-estimated-price-info';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import AutoCompleteForParameter from '../../../special/AutoCompleteForParameter';
-import {LIMIT_MOUNTS_PARAMETER, LimitMountsInput} from './LimitMountsInput';
+import {LimitMountsInput} from './LimitMountsInput';
 
 import PipelineRunEstimatedPrice from '../../../../models/pipelines/PipelineRunEstimatedPrice';
 import FolderProject from '../../../../models/folders/FolderProject';
@@ -68,16 +68,6 @@ import DTSClusterInfo from '../../../../models/dts/DTSClusterInfo';
 import {
   autoScaledClusterEnabled,
   hybridAutoScaledClusterEnabled,
-  CP_CAP_SGE,
-  CP_CAP_SPARK,
-  CP_CAP_SLURM,
-  CP_CAP_KUBE,
-  CP_CAP_DIND_CONTAINER,
-  CP_CAP_SYSTEMD_CONTAINER,
-  CP_CAP_AUTOSCALE,
-  CP_CAP_AUTOSCALE_WORKERS,
-  CP_CAP_AUTOSCALE_HYBRID,
-  CP_CAP_AUTOSCALE_PRICE_TYPE,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState,
@@ -86,7 +76,7 @@ import {
   slurmEnabled,
   kubeEnabled,
   setClusterParameterValue,
-  getAutoScaledPriceTypeValue,
+  getAutoScaledPriceTypeValue
 } from './utilities/launch-cluster';
 import checkModifiedState from './utilities/launch-form-modified-state';
 import {
@@ -109,11 +99,24 @@ import {
 import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSettings';
 import ServerlessAPIButton from '../../../special/serverless-api-button';
 import AdditionalRunPreference, {
-  CP_CAP_DESKTOP_NM,
-  CP_CAP_SINGULARITY,
   dinDEnabled, noMachineEnabled,
   singularityEnabled, systemDEnabled
 } from './utilities/additional-run-preference';
+import {
+  CP_CAP_LIMIT_MOUNTS,
+  CP_CAP_SGE,
+  CP_CAP_SPARK,
+  CP_CAP_SLURM,
+  CP_CAP_KUBE,
+  CP_CAP_DIND_CONTAINER,
+  CP_CAP_SYSTEMD_CONTAINER,
+  CP_CAP_DESKTOP_NM,
+  CP_CAP_SINGULARITY,
+  CP_CAP_AUTOSCALE,
+  CP_CAP_AUTOSCALE_WORKERS,
+  CP_CAP_AUTOSCALE_HYBRID,
+  CP_CAP_AUTOSCALE_PRICE_TYPE
+} from './utilities/parameters';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -1059,7 +1062,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
       }
       if (values[ADVANCED].limitMounts) {
-        payload[PARAMETERS][LIMIT_MOUNTS_PARAMETER] = {
+        payload[PARAMETERS][CP_CAP_LIMIT_MOUNTS] = {
           type: 'string',
           required: false,
           value: values[ADVANCED].limitMounts
@@ -1274,7 +1277,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       }
     }
     if (values[ADVANCED].limitMounts) {
-      payload.params[LIMIT_MOUNTS_PARAMETER] = {
+      payload.params[CP_CAP_LIMIT_MOUNTS] = {
         type: 'string',
         required: false,
         value: values[ADVANCED].limitMounts
@@ -1778,7 +1781,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           if (this.isSystemParameter({name: key}) !== system) {
             continue;
           }
-          if ([LIMIT_MOUNTS_PARAMETER, ...getSkippedSystemParametersList()].indexOf(key) >= 0) {
+          if ([CP_CAP_LIMIT_MOUNTS, ...getSkippedSystemParametersList()].indexOf(key) >= 0) {
             continue;
           }
           this.parameterIndexIdentifier[parameterIndexIdentifierKey] =
@@ -2536,7 +2539,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       callback('Name is reserved for system parameter');
     } else if (value &&
       [
-        LIMIT_MOUNTS_PARAMETER,
+        CP_CAP_LIMIT_MOUNTS,
         ...getSkippedSystemParametersList()
       ].indexOf(value.toUpperCase()) >= 0) {
       // eslint-disable-next-line
@@ -2708,7 +2711,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               notToShow={[
                 ...notToShowSystemParametersFn(PARAMETERS, false),
                 ...notToShowSystemParametersFn(SYSTEM_PARAMETERS, true),
-                LIMIT_MOUNTS_PARAMETER, ...getSkippedSystemParametersList(this)]
+                CP_CAP_LIMIT_MOUNTS, ...getSkippedSystemParametersList(this)]
               }
             />
           </Row>
@@ -3889,8 +3892,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   renderLimitMountsFormItem = () => {
     const getDefaultValue = () => {
       if (this.props.parameters.parameters &&
-        this.props.parameters.parameters[LIMIT_MOUNTS_PARAMETER]) {
-        return this.props.parameters.parameters[LIMIT_MOUNTS_PARAMETER].value;
+        this.props.parameters.parameters[CP_CAP_LIMIT_MOUNTS]) {
+        return this.props.parameters.parameters[CP_CAP_LIMIT_MOUNTS].value;
       }
       return null;
     };

@@ -25,18 +25,16 @@ import {
 } from './launch-cluster-tooltips';
 import {getSpotTypeName} from '../../../../special/spot-instance-names';
 import {booleanParameterIsSetToValue} from './parameter-utilities';
-
-export const CP_CAP_SGE = 'CP_CAP_SGE';
-export const CP_CAP_SPARK = 'CP_CAP_SPARK';
-export const CP_CAP_SLURM = 'CP_CAP_SLURM';
-export const CP_CAP_KUBE = 'CP_CAP_KUBE';
-export const CP_CAP_AUTOSCALE = 'CP_CAP_AUTOSCALE';
-export const CP_CAP_AUTOSCALE_WORKERS = 'CP_CAP_AUTOSCALE_WORKERS';
-export const CP_CAP_AUTOSCALE_HYBRID = 'CP_CAP_AUTOSCALE_HYBRID';
-export const CP_CAP_AUTOSCALE_PRICE_TYPE = 'CP_CAP_AUTOSCALE_PRICE_TYPE';
-
-export const CP_CAP_DIND_CONTAINER = 'CP_CAP_DIND_CONTAINER';
-export const CP_CAP_SYSTEMD_CONTAINER = 'CP_CAP_SYSTEMD_CONTAINER';
+import {
+  CP_CAP_SGE,
+  CP_CAP_SPARK,
+  CP_CAP_SLURM,
+  CP_CAP_KUBE,
+  CP_CAP_AUTOSCALE,
+  CP_CAP_AUTOSCALE_WORKERS,
+  CP_CAP_AUTOSCALE_HYBRID,
+  CP_CAP_AUTOSCALE_PRICE_TYPE
+} from './parameters';
 
 const PARAMETER_TITLE_WIDTH = 110;
 const PARAMETER_TITLE_RIGHT_MARGIN = 5;

@@ -38,22 +38,11 @@ import EditToolFormParameters from './EditToolFormParameters';
 import styles from '../Tools.css';
 import {names} from '../../../models/utils/ContextualPreference';
 import {
-  LIMIT_MOUNTS_PARAMETER,
   LimitMountsInput
 } from '../../pipelines/launch/form/LimitMountsInput';
 import {
   autoScaledClusterEnabled,
   hybridAutoScaledClusterEnabled,
-  CP_CAP_SGE,
-  CP_CAP_SPARK,
-  CP_CAP_SLURM,
-  CP_CAP_KUBE,
-  CP_CAP_DIND_CONTAINER,
-  CP_CAP_SYSTEMD_CONTAINER,
-  CP_CAP_AUTOSCALE,
-  CP_CAP_AUTOSCALE_WORKERS,
-  CP_CAP_AUTOSCALE_HYBRID,
-  CP_CAP_AUTOSCALE_PRICE_TYPE,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState,
@@ -63,6 +52,19 @@ import {
   kubeEnabled,
   getAutoScaledPriceTypeValue
 } from '../../pipelines/launch/form/utilities/launch-cluster';
+import {
+  CP_CAP_LIMIT_MOUNTS,
+  CP_CAP_SGE,
+  CP_CAP_SPARK,
+  CP_CAP_SLURM,
+  CP_CAP_KUBE,
+  CP_CAP_DIND_CONTAINER,
+  CP_CAP_SYSTEMD_CONTAINER,
+  CP_CAP_AUTOSCALE,
+  CP_CAP_AUTOSCALE_WORKERS,
+  CP_CAP_AUTOSCALE_HYBRID,
+  CP_CAP_AUTOSCALE_PRICE_TYPE
+} from '../../pipelines/launch/form/utilities/parameters';
 import AWSRegionTag from '../../special/AWSRegionTag';
 
 const Panels = {
@@ -196,7 +198,7 @@ export default class EditToolForm extends React.Component {
           params.push(...this.toolFormParameters.getValues(), ...this.toolFormSystemParameters.getValues());
           if (values.limitMounts) {
             params.push({
-              name: LIMIT_MOUNTS_PARAMETER,
+              name: CP_CAP_LIMIT_MOUNTS,
               value: values.limitMounts
             });
           }
@@ -424,8 +426,8 @@ export default class EditToolForm extends React.Component {
               getSystemParameterDisabledState(this, key)) {
               continue;
             }
-            if (key === LIMIT_MOUNTS_PARAMETER) {
-              this.defaultLimitMounts = props.configuration.parameters[LIMIT_MOUNTS_PARAMETER].value;
+            if (key === CP_CAP_LIMIT_MOUNTS) {
+              this.defaultLimitMounts = props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value;
               continue;
             }
             if (this.props.runDefaultParameters.loaded &&

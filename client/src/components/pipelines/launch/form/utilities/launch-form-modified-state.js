@@ -22,14 +22,16 @@ import {
 import {
   autoScaledClusterEnabled,
   hybridAutoScaledClusterEnabled,
-  CP_CAP_AUTOSCALE_WORKERS,
   getSkippedSystemParametersList,
   gridEngineEnabled,
   sparkEnabled,
   slurmEnabled,
   kubeEnabled
 } from './launch-cluster';
-import {LIMIT_MOUNTS_PARAMETER} from '../LimitMountsInput';
+import {
+  CP_CAP_AUTOSCALE_WORKERS,
+  CP_CAP_LIMIT_MOUNTS
+} from './parameters';
 import {
   dinDEnabled,
   noMachineEnabled,
@@ -143,8 +145,8 @@ function autoPauseCheck (form, state) {
 
 function limitMountsCheck (form, parameters) {
   const getDefaultValue = () => {
-    if (parameters.parameters && parameters.parameters[LIMIT_MOUNTS_PARAMETER]) {
-      return parameters.parameters[LIMIT_MOUNTS_PARAMETER].value;
+    if (parameters.parameters && parameters.parameters[CP_CAP_LIMIT_MOUNTS]) {
+      return parameters.parameters[CP_CAP_LIMIT_MOUNTS].value;
     }
     return null;
   };
@@ -198,7 +200,7 @@ function parametersCheck (form, parameters, state) {
   }
   const initialValue = Object.keys(parameters.parameters || {})
     .filter(key => [
-      LIMIT_MOUNTS_PARAMETER,
+      CP_CAP_LIMIT_MOUNTS,
       ...getSkippedSystemParametersList({state})
     ].indexOf(key) === -1)
     .map(key => ({key, value: parameters.parameters[key].value || ''}))
