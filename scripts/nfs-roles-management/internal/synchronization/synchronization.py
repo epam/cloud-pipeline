@@ -46,35 +46,40 @@ class Synchronization(object):
             return user_ids is None or len(user_ids) == 0 or len([u for u in user_ids if u.lower() == user_name]) > 0
 
         def validate_storage(test_storage, share_mounts):
-            if not test_storage.is_nfs():
+            if not test_storage.is_nfs() and test_storage.type != 'AZ':
                 return None
             server_name = None
             storage_path = None
-            try:
-                if test_storage.path.lower().startswith('nfs://'):
-                    if share_mounts[test_storage.share_mount_id].mount_type == "SMB":
-                        search = re.search('([^\/]+)\/(.+)' ,test_storage.path[len('nfs://'):])
-                        (server_name, storage_path) = search.group(1), search.group(2)
-                    else:
-                        (server_name, storage_path) = test_storage.path[len('nfs://'):].split(':')
-            except ValueError:
-                pass
-            except AttributeError:
-                pass
-            if server_name is None or storage_path is None:
-                print 'Wrong storage path: {}'.format(test_storage.path)
-                return None
-            storage_path = re.sub('\/[\/]+', '/', storage_path)
-            if storage_path.startswith('/'):
-                storage_path = storage_path[1:]
-            storage_link_destination = os.path.join(self.__config__.nfs_root, server_name, storage_path)
+            storage_link_destination = None
+            if test_storage.is_nfs():
+                try:
+                    if test_storage.path.lower().startswith('nfs://'):
+                        if share_mounts[test_storage.share_mount_id].mount_type == "SMB":
+                            search = re.search('([^\/]+)\/(.+)' ,test_storage.path[len('nfs://'):])
+                            (server_name, storage_path) = search.group(1), search.group(2)
+                        else:
+                            (server_name, storage_path) = test_storage.path[len('nfs://'):].split(':')
+                except ValueError:
+                    pass
+                except AttributeError:
+                    pass
+                if server_name is None or storage_path is None:
+                    print 'Wrong storage path: {}'.format(test_storage.path)
+                    return None
+                storage_path = re.sub('\/[\/]+', '/', storage_path)
+                if storage_path.startswith('/'):
+                    storage_path = storage_path[1:]
+                storage_link_destination = os.path.join(self.__config__.nfs_root, server_name, storage_path)
+            elif test_storage.type == 'AZ':
+                storage_link_destination = os.path.join(self.__config__.nfs_root, "AZ", test_storage.name)
+
             if not os.path.exists(storage_link_destination):
                 print 'Storage mount not found at path: {}'.format(storage_link_destination)
                 return None
             return storage_link_destination
 
         try:
-            print 'Fetching NFS storages...'
+            print 'Fetching storages...'
             self.__storages__ = []
             self.__users__ = []
             share_mounts = self.list_share_mounts()
