@@ -29,22 +29,14 @@ fi
 # Install NFS clients
 install_nfs_client
 
-# Get Storage
-_MOUNT_STORAGE_JSON=$(curl -k -s --fail --header "Authorization: Bearer $API_TOKEN" $API/datastorage/runMount?run_id=$RUN_ID)
-_STORAGE_TYPE=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload | storageType')
-_STORAGE_PATH=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload | storagePath')
-_MOUNT_OPTIONS=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload | mountOptions')
+mount_shared_storage_fs "$MOUNT_DIR" "$RUN_ID" POST
 
-if [ "$_STORAGE_TYPE" == "nfs" ]; then
-    _MOUNT_PROTOCOL="nfs"
-elif [ "$_STORAGE_TYPE == "LUSTRE"]; then
-    _MOUNT_PROTOCOL="lustre"
-else
-    pipe_log_fail "Unsupported storage type $_STORAGE_TYPE for shared file system" "$FS_SETUP_TASK"
+if [ $? -ne 0 ]; then
+    pipe_log_fail "Failed to setup shared storage FS on master node" "$FS_SETUP_TASK"
     exit 1
+else
+    pipe_log_info "Successfully mounted shared storage FS to master node" "$FS_SETUP_TASK"
 fi
-
-mkdir -p ${MOUNT_DIR} && rm -rf ${MOUNT_DIR}/* && mount -t ${_MOUNT_PROTOCOL} ${_STORAGE_PATH} ${MOUNT_DIR}" ${_MOUNT_OPTIONS}
 
 
 

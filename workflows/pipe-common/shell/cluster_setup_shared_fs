@@ -20,7 +20,7 @@ CP_CAP_SHARE_FS_TYPE="${CP_CAP_SHARE_FS_TYPE:-lfs}"
 
 if [ "$CP_CAP_SHARE_FS_TYPE" == "nfs" ]; then
     cluster_setup_shared_fs_nfs_master "$SHARED_FOLDER" "$PUBLISH_SHARED_FOLDER"
-elif [ "CP_CAP_SHARE_FS_TYPE" == "external"]; then
+elif [ "$CP_CAP_SHARE_FS_TYPE" == "external" ]; then
    cluster_setup_shared_fs_storage_master "$SHARED_FOLDER"
 elif [ "$CP_CAP_SHARE_FS_TYPE" == "lfs" ]; then
     cluster_setup_shared_fs_lfs_master
