@@ -16,14 +16,17 @@
 
 package com.epam.pipeline.controller.log;
 
+import com.epam.pipeline.app.JWTSecurityConfiguration;
+import com.epam.pipeline.app.SAMLSecurityConfiguration;
 import com.epam.pipeline.controller.AbstractControllerTest;
+import com.epam.pipeline.controller.ControllerTestBeans;
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.manager.log.LogApiService;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,7 +37,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = LogController.class)
-@Import(LogController.class)
+@ContextConfiguration(classes = {
+        ControllerTestBeans.class,
+        JWTSecurityConfiguration.class,
+        SAMLSecurityConfiguration.class})
 public class LogControllerTest extends AbstractControllerTest {
 
     @MockBean
