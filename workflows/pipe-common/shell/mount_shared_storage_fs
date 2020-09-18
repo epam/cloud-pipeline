@@ -25,6 +25,11 @@ _STORAGE_PATH=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload.path')
 _MOUNT_TYPE=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload.mount.mountType')
 _MOUNT_OPTIONS=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload.storage.mountOptions')
 
+if [ $_STORAGE_PATH == "null" ] || [ $_MOUNT_TYPE == "null" ]; then
+    pipe_log_fail "Failed to get storage for shared file system" "$FS_SETUP_TASK"
+    exit 1
+fi
+
 pipe_log_info "Storage $_STORAGE_PATH with type $_MOUNT_TYPE will be used as shared FS" "$FS_SETUP_TASK"
 
 if [ $_MOUNT_OPTIONS == "null" ]; then
