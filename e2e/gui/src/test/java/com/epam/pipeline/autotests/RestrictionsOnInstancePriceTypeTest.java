@@ -219,115 +219,6 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @Test(priority = 10, dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
-    @TestCase({"EPMCMBIBPC-2646"})
-    public void validationOfInstanceTypesRestrictionsHierarchy() {
-        try {
-            String[] masks = clusterAllowedMasks.split(",");
-            loginAs(admin);
-            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s*", masks[0]));
-            setMaskForRole(testRole, instanceTypesMask, format("%s*", masks[1]));
-            setMaskForUser(user.login, instanceTypesMask, format("%s*", masks[2]));
-            setMaskForUser(user.login, toolInstanceTypesMask, format("%s*", masks[3]));
-            logout();
-            loginAs(user);
-            library()
-                    .cd(folder)
-                    .clickOnDraftVersion(pipeline)
-                    .configurationTab()
-                    .editConfiguration(configurationName, profile ->
-                            profile
-                                    .expandTab(EXEC_ENVIRONMENT)
-                                    .ensure(INSTANCE_TYPE, empty)
-                                    .checkValueIsInDropDown(INSTANCE_TYPE, masks[2])
-                    )
-                    .click(CODE_TAB)
-                    .exitFromConfigurationWithoutSaved();
-            library()
-                    .cd(folder)
-                    .configurationWithin(configuration, configuration ->
-                            configuration
-                                    .expandTabs(execEnvironmentTab)
-                                    .sleep(4, SECONDS)
-                                    .ensure(DISK, value(customDisk))
-                                    .ensure(DOCKER_IMAGE, value(defaultGroup), value(testingTool))
-                                    .ensure(INSTANCE_TYPE, empty)
-                                    .checkValueIsInDropDown(INSTANCE_TYPE, masks[3])
-                    )
-                    .exitFromConfigurationWithoutSaved();
-            tools()
-                    .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
-                    .sleep(1, SECONDS)
-                    .checkValueIsInDropDown(INSTANCE_TYPE, masks[3]);
-        } finally {
-            logout();
-            loginAs(admin);
-            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, defaultClusterAllowedInstanceTypes);
-            setMaskForRole(testRole, instanceTypesMask, "");
-            setMaskForUser(user.login, instanceTypesMask, "");
-            setMaskForUser(user.login, toolInstanceTypesMask, "");
-        }
-    }
-
-    @Test(priority = 10, dependsOnMethods = {"validationOfInstanceTypesRestrictionsHierarchy"})
-    @TestCase({"EPMCMBIBPC-2647"})
-    public void validationOfToolsInstanceTypesRestrictionsHierarchy() {
-        try {
-            String[] masks = clusterAllowedMasks.split(",");
-            loginAs(admin);
-            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s*", masks[0]));
-            setMaskForUser(user.login, instanceTypesMask, format("%s*", masks[2]));
-            setMaskForUser(user.login, toolInstanceTypesMask, format("%s*", masks[3]));
-            logout();
-            validationOfToolsInstanceTypesRestrictionsOverInstanceManagement();
-        } finally {
-            logout();
-            loginAs(admin);
-            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, defaultClusterAllowedInstanceTypes);
-            setMaskForUser(user.login, instanceTypesMask, "");
-            setMaskForUser(user.login, toolInstanceTypesMask, "");
-        }
-    }
-
-    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
-    @Test
-    @TestCase({"EPMCMBIBPC-2650"})
-    public void validationOfPriceTypesRestrictionsOverInstanceManagement() {
-        try {
-            loginAs(admin);
-            tools()
-                    .performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
-                            tool.showInstanceManagement(instanceManagement ->
-                                    instanceManagement
-                                            .clearAllowedPriceTypeField()
-                                            .setPriceType(onDemandPrice)
-                                            .clickApply()
-                                            .sleep(2, SECONDS)));
-            tools()
-                    .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
-                    .expandTab(ADVANCED_PANEL)
-                    .ensurePriceTypeList(ON_DEMAND);
-            logout();
-            loginAs(user);
-            tools()
-                    .performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
-                            tool
-                                    .hover(SHOW_METADATA)
-                                    .ensure(attributesMenu, appears)
-                                    .ensure(showInstanceManagement, not(visible)));
-            tools()
-                    .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
-                    .expandTab(ADVANCED_PANEL)
-                    .ensurePriceTypeList(ON_DEMAND);
-        } finally {
-            logout();
-            loginAs(admin);
-            tools()
-                    .performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
-                            tool.showInstanceManagement(InstanceManagementSectionAO::clearAllowedPriceTypeField));
-        }
-    }
-
     @Test
     @TestCase({"EPMCMBIBPC-2641"})
     public void validationOfToolsInstanceTypesRestrictionsOverUserManagement() {
@@ -421,6 +312,100 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
+    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
+    @TestCase({"EPMCMBIBPC-2646"})
+    public void validationOfInstanceTypesRestrictionsHierarchy() {
+        try {
+            String[] masks = clusterAllowedMasks.split(",");
+            loginAs(admin);
+            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s*", masks[0]));
+            setMaskForRole(testRole, instanceTypesMask, format("%s*", masks[1]));
+            setMaskForUser(user.login, instanceTypesMask, format("%s*", masks[2]));
+            setMaskForUser(user.login, toolInstanceTypesMask, format("%s*", masks[3]));
+            logout();
+            loginAs(user);
+            library()
+                    .cd(folder)
+                    .clickOnDraftVersion(pipeline)
+                    .configurationTab()
+                    .editConfiguration(configurationName, profile ->
+                            profile
+                                    .expandTab(EXEC_ENVIRONMENT)
+                                    .ensure(INSTANCE_TYPE, empty)
+                                    .checkValueIsInDropDown(INSTANCE_TYPE, masks[2])
+                    )
+                    .click(CODE_TAB)
+                    .exitFromConfigurationWithoutSaved();
+            library()
+                    .cd(folder)
+                    .configurationWithin(configuration, configuration ->
+                            configuration
+                                    .expandTabs(execEnvironmentTab)
+                                    .sleep(4, SECONDS)
+                                    .ensure(DISK, value(customDisk))
+                                    .ensure(DOCKER_IMAGE, value(defaultGroup), value(testingTool))
+                                    .ensure(INSTANCE_TYPE, empty)
+                                    .checkValueIsInDropDown(INSTANCE_TYPE, masks[3])
+                    )
+                    .exitFromConfigurationWithoutSaved();
+            tools()
+                    .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                    .sleep(1, SECONDS)
+                    .checkValueIsInDropDown(INSTANCE_TYPE, masks[3]);
+        } finally {
+            logout();
+            loginAs(admin);
+            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, defaultClusterAllowedInstanceTypes);
+            setMaskForRole(testRole, instanceTypesMask, "");
+            setMaskForUser(user.login, instanceTypesMask, "");
+            setMaskForUser(user.login, toolInstanceTypesMask, "");
+        }
+    }
+
+    @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
+    @TestCase({"EPMCMBIBPC-2647"})
+    public void validationOfToolsInstanceTypesRestrictionsHierarchy() {
+        try {
+            String[] masks = clusterAllowedMasks.split(",");
+            loginAs(admin);
+            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s*", masks[0]));
+            setClusterAllowedStringPreference(clusterAllowedInstanceTypesDocker, format("%s*", masks[1]));
+            setMaskForUser(user.login, instanceTypesMask, format("%s*", masks[2]));
+            setMaskForUser(user.login, toolInstanceTypesMask, format("%s*", masks[3]));
+            tools()
+                    .performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
+                            tool.showInstanceManagement(instanceManagement ->
+                                    instanceManagement
+                                            .addAllowedToolInstanceTypesMask(format("%s.*", instanceFamilyName))
+                                            .clickApply()
+                                            .sleep(2, SECONDS)));
+            tools()
+                    .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                    .expandTab(EXEC_ENVIRONMENT)
+                    .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName);
+            logout();
+            loginAs(user);
+            tools()
+                    .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                    .expandTab(EXEC_ENVIRONMENT)
+                    .checkValueIsInDropDown(INSTANCE_TYPE, masks[3]);
+        } finally {
+            logout();
+            loginAs(admin);
+            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, defaultClusterAllowedInstanceTypes);
+            setClusterAllowedStringPreference(clusterAllowedInstanceTypesDocker, defaultClusterAllowedInstanceTypes);
+            setMaskForUser(user.login, instanceTypesMask, "");
+            setMaskForUser(user.login, toolInstanceTypesMask, "");
+            tools()
+                    .performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
+                            tool.showInstanceManagement(instanceManagement ->
+                                    instanceManagement
+                                            .addAllowedToolInstanceTypesMask("")
+                                            .clickApply()
+                                            .sleep(2, SECONDS)));
+        }
+    }
+
     @CloudProviderOnly(values={Cloud.AWS,Cloud.GCP})
     @Test(dependsOnMethods={"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2648"})
@@ -468,6 +453,45 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                     .editRole(testRole)
                     .clearAllowedPriceTypeField()
                     .ok();
+        }
+    }
+
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
+    @Test
+    @TestCase({"EPMCMBIBPC-2650"})
+    public void validationOfPriceTypesRestrictionsOverInstanceManagement() {
+        try {
+            loginAs(admin);
+            tools()
+                    .performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
+                            tool.showInstanceManagement(instanceManagement ->
+                                    instanceManagement
+                                            .clearAllowedPriceTypeField()
+                                            .setPriceType(onDemandPrice)
+                                            .clickApply()
+                                            .sleep(2, SECONDS)));
+            tools()
+                    .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                    .expandTab(ADVANCED_PANEL)
+                    .ensurePriceTypeList(ON_DEMAND);
+            logout();
+            loginAs(user);
+            tools()
+                    .performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
+                            tool
+                                    .hover(SHOW_METADATA)
+                                    .ensure(attributesMenu, appears)
+                                    .ensure(showInstanceManagement, not(visible)));
+            tools()
+                    .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                    .expandTab(ADVANCED_PANEL)
+                    .ensurePriceTypeList(ON_DEMAND);
+        } finally {
+            logout();
+            loginAs(admin);
+            tools()
+                    .performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
+                            tool.showInstanceManagement(InstanceManagementSectionAO::clearAllowedPriceTypeField));
         }
     }
 
