@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
+import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
@@ -42,9 +43,12 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
+import static com.codeborne.selenide.Selenide.switchTo;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners.confine;
 import static java.util.stream.Collectors.toList;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
 
@@ -140,7 +144,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
     public GlobalSearchAO validateCountSearchResults(final int count) {
         get(SEARCH_RESULT)
                 .findAll(".earch__search-result-item")
-                .shouldHaveSize(count);
+                .shouldHave(sizeGreaterThanOrEqual(count));
         return this;
     }
 
@@ -180,7 +184,10 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
                 entry(INFO_TAB, context().find(byClassName("review__run-table"))),
                 entry(TAGS, context().find(byClassName("review__tags"))),
                 entry(PREVIEW_TAB, context().find(By.xpath(".//div[@class='review__content-preview'][2]"))),
-                entry(ATTRIBUTES, context().find(byClassName("review__attribute")))
+                entry(ATTRIBUTES, context().find(byClassName("review__attribute"))),
+                entry(TITLE_FIELD, context().find(byClassName("review__sub-title"))),
+                entry(SHORT_DESCRIPTION, context().find(byClassName("review__tool-description"))),
+                entry(ENDPOINT, $(withText("Endpoints:")).closest("tr").find("a"))
         );
         private static Condition completed = Condition.or("finished",
                 LogAO.Status.SUCCESS.reached, LogAO.Status.STOPPED.reached, LogAO.Status.FAILURE.reached);
@@ -222,11 +229,27 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
         }
 
         public SearchResultItemPreviewAO checkTags(String ... list) {
-            String tags = String.format("%s %s %s %s", get(TAGS).find(By.xpath("./span[2]/span")).text(),
-                    get(TAGS).find(By.xpath("./span[3]")).text(),
-                    get(TAGS).find(By.xpath("./span[4]")).text(),
-                    get(TAGS).find(By.xpath("./span[5]")).text());
-            Arrays.stream(list).forEach(tags::contains);
+            String tags = String.format("%s %s %s %s", get(TAGS).find(By.xpath(".//span[2]/span")).text(),
+                    get(TAGS).find(By.xpath(".//span[3]")).text(),
+                    get(TAGS).find(By.xpath(".//span[4]")).text(),
+                    get(TAGS).find(By.xpath(".//span[5]")).text());
+            Arrays.stream(list).forEach(s -> assertTrue(tags.contains(s), String.format("Tag %s isn't found in '%s'", s, tags)));
+            return this;
+        }
+
+        public ToolPageAO clickOnEndpointLink() {
+            String endpoint = getEndpointLink();
+            get(ENDPOINT).click();
+            switchTo().window(1);
+            return new ToolPageAO(endpoint);
+        }
+
+        public String getEndpointLink() {
+            return get(ENDPOINT).shouldBe(visible).attr("href");
+        }
+
+        public SearchResultItemPreviewAO checkEndpointsLink(String expectedLink) {
+            assertEquals(getEndpointLink(), expectedLink);
             return this;
         }
     }

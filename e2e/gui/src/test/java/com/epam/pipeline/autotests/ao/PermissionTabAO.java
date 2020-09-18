@@ -105,6 +105,7 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
     public PermissionTabAO addNewGroup(String usersGroup) {
         return clickAddNewGroup()
                 .typeInField(usersGroup)
+                .selectGroup(usersGroup)
                 .ok();
     }
 
@@ -216,6 +217,11 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
         public GroupAdditionPopupAO typeInField(String value) {
             Utils.getPopupByTitle("Select group")
                     .find(tagName("input")).shouldBe(visible).setValue(value);
+            return this;
+        }
+
+        private GroupAdditionPopupAO selectGroup(String name) {
+            $(byClassName("ant-select-dropdown-menu-root")).$(byText(name)).shouldBe(visible).click();
             return this;
         }
     }

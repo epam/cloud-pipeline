@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.Configuration;
 import com.epam.pipeline.autotests.ao.DocumentTabAO;
 import com.epam.pipeline.autotests.ao.GlobalSearchAO;
 import com.epam.pipeline.autotests.ao.LibraryFolderAO;
@@ -25,24 +26,27 @@ import com.epam.pipeline.autotests.ao.NavigationMenuAO;
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
 import com.epam.pipeline.autotests.ao.PipelineLibraryContentAO;
 import com.epam.pipeline.autotests.ao.StorageContentAO;
+import com.epam.pipeline.autotests.ao.ToolDescription;
+import com.epam.pipeline.autotests.ao.ToolPageAO;
+import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
-import org.openqa.selenium.Keys;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.util.function.Function;
 
 import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
-import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Selenide.actions;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
+import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
 import static com.epam.pipeline.autotests.utils.C.LOGIN;
@@ -61,22 +65,26 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     private final String storageFolder = "globalSearchStorageFolder" + Utils.randomSuffix();
     private final String storageFile = "globalSearchStorageFile" + Utils.randomSuffix();
     private final String storageFileContent = "globalSearchStorageFileContent" + Utils.randomSuffix();
+    private final String storageFile2 = "globalSearchStorageFile2" + Utils.randomSuffix();
     private final String storageAlias = "globalSearchStorageAlias" + Utils.randomSuffix();
-    private final String customConfigurationProfile = "custom-profile";
+    private final String toolVersion = "latest";
+    private final String customConfigurationProfile = "customprofile" + Utils.randomSuffix();
     private final String customDisk = "22";
     private final String defaultInstanceType = C.DEFAULT_INSTANCE;
     private final String defaultRegistry = C.DEFAULT_REGISTRY;
     private final String defaultGroup = C.DEFAULT_GROUP;
     private final String testingTool = C.TESTING_TOOL_NAME;
+    private final String toolEndpoint = testingTool.substring(testingTool.lastIndexOf("/") + 1);
     private final String defaultProfile = "default";
     private final String configurationName = "test_conf";
-    private final String configurationNodeType = "c5.large (CPU: 2, RAM: 4)";
-    private final String configurationDisk = "23";
+    private final String configurationNodeType = C.ANOTHER_INSTANCE;
+    private final String configurationDisk = "24";
     private final String configVar = "config.json";
     private final String title = "testIssue" + Utils.randomSuffix();
     private final String description = "testIssueDescription";
     private String draftVersionName = "";
     private String testRunID = "";
+    private String testRunID_2668 = "";
 
     @BeforeClass
     @TestCase(value = {"EPMCMBIBPC-2653"})
@@ -132,10 +140,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     }
 
     @BeforeMethod
-    public void checkCloseSearch() {
-        while($(byClassName("earch__search-container")).is(visible)) {
-            actions().sendKeys(Keys.ESCAPE).perform();
-        }
+    public void refreshPage() {
+        getWebDriver().navigate().refresh();
     }
 
     @Test
@@ -157,19 +163,20 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test
     @TestCase(value = {"EPMCMBIBPC-2658"})
     public void searchForPipeline() {
-        library().cd(folder)
+        library()
+                .cd(folder)
                 .clickOnDraftVersion(pipeline)
                 .configurationTab()
                 .editConfiguration(defaultProfile, profile ->
                         profile
                                 .expandTab(EXEC_ENVIRONMENT)
                                 .expandTab(ADVANCED_PANEL)
-                                .clear(NAME).setValue(NAME,configurationName)
-                                .clear(DISK).setValue(DISK,configurationDisk)
+                                .clear(NAME).setValue(NAME, configurationName)
+                                .clear(DISK).setValue(DISK, configurationDisk)
                                 .selectValue(INSTANCE_TYPE, configurationNodeType)
-                                .sleep(2, SECONDS)
+                                .sleep(3, SECONDS)
                                 .click(SAVE)
-                                .sleep(2, SECONDS)
+                                .sleep(3, SECONDS)
                 );
         draftVersionName = library()
                 .cd(folder)
@@ -200,7 +207,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(DESCRIPTION, text(pipeline))
                 .ensure(HIGHLIGHTS, text("Found in pipelineName"))
                 .ensure(PREVIEW, text(configurationDisk), text(configurationName),
-                        text(configurationNodeType.substring(0, configurationNodeType.indexOf(" "))))
+                        text(configurationNodeType))
                 .parent()
                 .moveToSearchResultItem(pipeline, () -> new PipelineLibraryContentAO(pipeline))
                 .assertPipelineName(pipeline);
@@ -227,7 +234,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .firstVersion()
                 .runPipeline()
                 .launch(this)
-                .showLog(testRunID=getLastRunId())
+                .showLog(testRunID = getLastRunId())
                 .waitForCompletion();
         library()
                 .cd(folder)
@@ -299,13 +306,12 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test
     @TestCase(value = {"EPMCMBIBPC-2660"})
     public void searchForStorage() {
-        home().sleep(2, SECONDS);
         search()
                 .search(storage)
                 .enter()
                 .sleep(2, SECONDS)
-                .validateCountSearchResults(2)
                 .ensure(DATA, text("2 DATA"))
+                .validateCountSearchResults(2)
                 .ensureAll(GlobalSearchAO.disable, FOLDERS, PIPELINES, TOOLS, ISSUES)
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(storage)
@@ -361,6 +367,180 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(PREVIEW, text(storageFolder), text(storageFile))
                 .close()
                 .close();
+    }
+
+    @Test(dependsOnMethods = {"searchForStorageWithChangedName"})
+    @TestCase(value = {"EPMCMBIBPC-2664"})
+    public void searchForPipelineRunOverStoragePath() {
+        home();
+        library()
+                .cd(folder)
+                .clickOnPipeline(pipeline)
+                .firstVersion()
+                .runPipeline()
+                .launch(this)
+                .showLog(getLastRunId())
+                .waitForCompletion();
+        home().sleep(3, MINUTES);
+        search()
+                .click(RUNS)
+                .search(storage)
+                .enter()
+                .sleep(2, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItemWithText(String.format("%s-%s", pipeline.toLowerCase(), getLastRunId()))
+                .ensure(TITLE, Status.SUCCESS.reached, text(getLastRunId()), text(pipeline), text(draftVersionName))
+                .checkTags(configurationDisk, configurationNodeType)
+                .ensure(HIGHLIGHTS, text("Found in logs"),
+                        text(storage.toLowerCase() + " mounted to"));
+    }
+
+    @Test(dependsOnMethods = {"searchForStorageWithChangedName"})
+    @TestCase(value = {"EPMCMBIBPC-2666"})
+    public void searchForFilesAndFoldersInStorage() {
+        home();
+        search()
+                .search(storageFile)
+                .enter()
+                .sleep(2, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItemWithText(storageFile)
+                .ensure(TITLE, text(storageFile))
+                .ensure(HIGHLIGHTS, text("Found in path"))
+                .ensure(INFO, text(storageAlias), text(String.format("s3://%s%s", storage, storageFile)))
+                .ensure(ATTRIBUTES, text(LOGIN))
+                .ensure(PREVIEW, text(storageFileContent))
+                .parent()
+                .search(storageFolder)
+                .enter()
+                .sleep(2, SECONDS)
+                .messageShouldAppear("Nothing found")
+                .close()
+                .close();
+        library()
+                .cd(folder)
+                .selectStorage(storageAlias)
+                .cd(storageFolder)
+                .createFile(storageFile2);
+        search().sleep(2, MINUTES)
+                .search(storageFolder)
+                .enter()
+                .sleep(2, SECONDS)
+                .hover(SEARCH_RESULT)
+                .validateSearchResults(1, storageFile2)
+                .openSearchResultItemWithText(storageFile2)
+                .ensure(TITLE, text(storageFile2))
+                .ensure(HIGHLIGHTS, text("Found in path"))
+                .ensure(PREVIEW, text("Preview not available"));
+    }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-2667"})
+    public void searchForTool() {
+        final ToolDescription tool = tools().perform(defaultRegistry, defaultGroup, testingTool, Function.identity());
+        String toolShortDescription = tool.get(SHORT_DESCRIPTION).getText();
+        String toolDescription = tool.get(FULL_DESCRIPTION).getText();
+        home();
+        search()
+                .click(TOOLS)
+                .search(toolEndpoint)
+                .enter()
+                .sleep(5, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItem(testingTool)
+                .ensure(TITLE, text(toolEndpoint))
+                .ensure(TITLE_FIELD, text("registry"), text(C.DEFAULT_GROUP))
+                .ensure(SHORT_DESCRIPTION, text(toolShortDescription))
+                .ensure(HIGHLIGHTS, text("Found in image"))
+                .ensure(PREVIEW, text("latest"), text("test"))
+                .ensure(PREVIEW_TAB, text(toolDescription))
+                .parent()
+                .moveToSearchResultItem(testingTool, () -> new ToolPageAO(toolEndpoint))
+                .ensure(TITLE, text(testingTool));
+    }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-2668"})
+    public void searchForToolRun() {
+        tools()
+                .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                .launchTool(this, toolEndpoint)
+                .showLog(testRunID_2668 = getLastRunId())
+                .waitForEndpointLink()
+                .clickOnEndpointLink()
+                .sleep(3, SECONDS)
+                .validateEndpointPage(LOGIN)
+                .closeTab();
+        LogAO logAO = new LogAO();
+        String endpointLink = logAO.getEndpointLink();
+        String[] instanceParam = new String[] {
+            logAO.getParameterValue("Node type"),
+            logAO.getParameterValue("Disk").replace(" ", ""),
+            logAO.getParameterValue("Price type")};
+        home();
+        search()
+                .click(RUNS)
+                .search(testRunID_2668)
+                .enter()
+                .sleep(2, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItemWithText(testRunID_2668)
+                .ensure(TITLE, Status.WORKING.reached, text(testRunID_2668),
+                        text(String.format("%s:%s", toolEndpoint, toolVersion)))
+                .checkTags(instanceParam)
+                .ensure(HIGHLIGHTS, text("Found in id"))
+                .ensure(PREVIEW, text("Owner"), text("Scheduled"),
+                        text("Started"), text("Running for"), text("Estimated price"))
+                .checkEndpointsLink(endpointLink)
+                .ensure(PREVIEW_TAB, text("InputData"), text("MountDataStorages"),
+                        text("InitializeEnvironment"), text("Console"))
+                .parent()
+                .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
+                .ensure(STATUS, text(testRunID_2668));
+        search()
+                .click(RUNS)
+                .search(testRunID_2668)
+                .enter()
+                .sleep(2, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItemWithText(testRunID_2668)
+                .clickOnEndpointLink()
+                .sleep(3, SECONDS)
+                .validateEndpointPage(LOGIN)
+                .closeTab();
+    }
+
+    @Test(dependsOnMethods = {"searchForToolRun"})
+    @TestCase(value = {"EPMCMBIBPC-2669"})
+    public void searchForCompletedToolRun() {
+        runsMenu()
+                .activeRuns()
+                .stopRun(testRunID_2668);
+        home().sleep(3, MINUTES);
+        search()
+                .click(RUNS)
+                .search(testRunID_2668)
+                .enter()
+                .sleep(1, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItemWithText(testRunID_2668)
+                .ensure(TITLE, STOPPED.reached, text(testRunID_2668),
+                        text(String.format("%s:%s", toolEndpoint, toolVersion)))
+                .parent()
+                .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
+                .ensure(STATUS, text(testRunID_2668))
+                .shouldHaveStatus(STOPPED);
+        search()
+                .click(RUNS)
+                .search(testRunID_2668)
+                .enter()
+                .sleep(1, SECONDS)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItemWithText(testRunID_2668)
+                .clickOnEndpointLink()
+                .sleep(3, SECONDS)
+                .assertPageTitleIs("404 Not Found")
+                .closeTab();
     }
 
     @Test
@@ -510,6 +690,53 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .close();
     }
 
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-2672"})
+    public void searchForDetachConfigByName() {
+        home();
+        search()
+                .search(configuration)
+                .enter()
+                .sleep(2, SECONDS)
+                .validateSearchResults(1, customConfigurationProfile)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItem(customConfigurationProfile)
+                .ensure(TITLE, text(customConfigurationProfile))
+                .ensure(DESCRIPTION, text(configuration))
+                .ensure(HIGHLIGHTS, text("Found in description"))
+                .ensure(PREVIEW_TAB, text("Price type"), text("Timeout (minutes)"), text("Cmd template"))
+                .ensure(PREVIEW, text(customDisk), text(defaultInstanceType))
+                .parent()
+                .moveToSearchResultItem(customConfigurationProfile, Configuration::new)
+                .assertPageTitleIs(configuration)
+                .sleep(2, SECONDS);
+        home();
+    }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-2673"})
+    public void searchForDetachConfigByConfiguration() {
+        home();
+        search()
+                .search(customConfigurationProfile)
+                .enter()
+                .sleep(2, SECONDS)
+                .validateSearchResults(1, customConfigurationProfile)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItem(customConfigurationProfile)
+                .ensure(TITLE, text(customConfigurationProfile))
+                .ensure(DESCRIPTION, text(configuration))
+                .ensure(HIGHLIGHTS, text("Found in name"), text("Found in entryName"))
+                .ensure(PREVIEW_TAB, text("Price type"), text("Timeout (minutes)"), text("Cmd template"))
+                .ensure(PREVIEW, text(customDisk), text(defaultInstanceType), text("Execution environment"),
+                        text("Docker image"), text("Instance type"), text("Cloud region"), text("Disk size (Gb)"))
+                .parent()
+                .moveToSearchResultItem(customConfigurationProfile, Configuration::new)
+                .assertPageTitleIs(configuration)
+                .sleep(2, SECONDS);
+        home();
+    }
+
     @Test(priority = 100)
     @TestCase(value = {"EPMCMBIBPC-2676"})
     public void searchAfterDeleting() {
@@ -538,7 +765,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         return new NavigationMenuAO().search();
     }
 
-    private String pipelineWithRun(){
+    private String pipelineWithRun() {
         return String.format("%s-%s", pipeline.toLowerCase(), testRunID);
     }
 }

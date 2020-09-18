@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -55,6 +56,7 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -63,6 +65,7 @@ import static org.testng.Assert.assertTrue;
 public class Utils {
 
     public static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
+    public static final String ON_DEMAND = "On-demand";
 
     public static void assertTimePassed(String dateAndTimeString, int maxSeconds) {
         LocalDateTime runDateTime = validateDateTimeString(dateAndTimeString);
@@ -255,19 +258,19 @@ public class Utils {
         try {
             uploadedFile.createNewFile();
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Unable to create temporary file %s, cause: %s", fileName, e.getMessage()), e);
+            throw new RuntimeException(format("Unable to create temporary file %s, cause: %s", fileName, e.getMessage()), e);
         }
         uploadedFile.deleteOnExit();
         return uploadedFile;
     }
 
     public static File createTempFile(String template, String suffix) throws RuntimeException {
-        String fileName = String.format(template, suffix, randomSuffix());
+        String fileName = format(template, suffix, randomSuffix());
         File uploadedFile = Paths.get(C.DOWNLOAD_FOLDER).resolve(fileName).toFile();
         try {
             uploadedFile.createNewFile();
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Unable to create temporary file %s, cause: %s", fileName, e.getMessage()), e);
+            throw new RuntimeException(format("Unable to create temporary file %s, cause: %s", fileName, e.getMessage()), e);
         }
         uploadedFile.deleteOnExit();
         return uploadedFile;
@@ -278,7 +281,7 @@ public class Utils {
         try {
             file.createNewFile();
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Unable to create temporary file %s, cause: %s", fileName, e.getMessage()), e);
+            throw new RuntimeException(format("Unable to create temporary file %s, cause: %s", fileName, e.getMessage()), e);
         }
         file.deleteOnExit();
         return file;
@@ -292,7 +295,7 @@ public class Utils {
             bw.write("String to change size");
             bw.close();
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Unable to create temporary file %s, cause: %s", name, e.getMessage()), e);
+            throw new RuntimeException(format("Unable to create temporary file %s, cause: %s", name, e.getMessage()), e);
         }
         uploadedFile.deleteOnExit();
         return uploadedFile;
@@ -333,7 +336,7 @@ public class Utils {
     }
 
     public static String getFileNameFromPipelineName(String pipelineName, String suffix) {
-        return String.format("%s.%s", pipelineName.replaceAll("-", ""), suffix)
+        return format("%s.%s", pipelineName.replaceAll("-", ""), suffix)
                 .toLowerCase();
     }
 
@@ -341,14 +344,13 @@ public class Utils {
         return context.find(withText(label)).closest(".ant-row");
     }
 
-    public static String convertRGBColorToHex(String folderBackgroundСolor) {
-        String[] RGB = folderBackgroundСolor.split(", ");
+    public static String convertRGBColorToHex(String folderBackgroundColor) {
+        String[] RGB = folderBackgroundColor.split(", ");
         Color color = new Color(
-                Integer.valueOf(RGB[0].substring(RGB[0].indexOf("(") + 1)),
-                Integer.valueOf(RGB[1]),
-                Integer.valueOf(RGB[2]));
-        String hex = "#" + Integer.toHexString(color.getRGB()).substring(2);
-        return hex;
+                Integer.parseInt(RGB[0].substring(RGB[0].indexOf("(") + 1)),
+                Integer.parseInt(RGB[1]),
+                Integer.parseInt(RGB[2]));
+        return format("#%s", Integer.toHexString(color.getRGB()).substring(2));
     }
 
     /**
@@ -374,11 +376,16 @@ public class Utils {
      * concerned to particularly UI tests, and is suffixed with a randomly generated number.
      */
     public static String resourceName(final String testCase) {
-        return String.format("ui-tests-%s-%d", testCase, Utils.randomSuffix());
+        return format("ui-tests-%s-%d", testCase, Utils.randomSuffix());
     }
 
     public static void restartBrowser(final String address) {
         Selenide.close();
         Selenide.open(address);
+    }
+
+    public static void assertStringContainsList(final String str, final String... subStrings) {
+         Arrays.stream(subStrings).forEach(substr -> assertTrue(str.contains(substr),
+                 format("'%s' doesn't exist in string", substr)));
     }
 }

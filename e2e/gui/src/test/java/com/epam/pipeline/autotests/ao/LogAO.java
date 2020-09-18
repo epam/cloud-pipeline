@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
+import static com.codeborne.selenide.Selenide.switchTo;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -57,7 +58,10 @@ public class LogAO implements AccessObject<LogAO> {
             entry(RESUME, $$(tagName("a")).findBy(exactText("RESUME"))),
             entry(ENDPOINT, $(withText("Endpoint")).closest("tr").find("a")),
             entry(INSTANCE, context().find(byXpath("//*[.//*[text()[contains(.,'Instance')]] and contains(@class, 'ant-collapse')]"))),
-            entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]")))
+            entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]"))),
+            entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find("a")),
+            entry(SHARE_WITH, $(withText("Share with:")).closest("tr").find("a"))
+
     );
 
     public LogAO waitForCompletion() {
@@ -184,6 +188,54 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
+    public ToolPageAO clickOnEndpointLink() {
+        String endpoint = getEndpointLink();
+        get(ENDPOINT).click();
+        switchTo().window(1);
+        return new ToolPageAO(endpoint);
+    }
+
+    public ToolPageAO clickOnEndpointLink(String link) {
+        String endpoint = getEndpointLink(link);
+        $(byXpath(String.format(".//a[.='%s']", link))).click();
+        switchTo().window(1);
+        return new ToolPageAO(endpoint);
+    }
+
+    public String getEndpointLink() {
+        return get(ENDPOINT).shouldBe(visible).attr("href");
+    }
+
+    public String getEndpointLink(String link){
+        return $(withText("Endpoint")).closest("tr").$(byXpath(String.format(".//a[.='%s']", link)))
+                .shouldBe(visible).attr("href");
+    }
+
+    public LogAO waitForNestedRunsLink() {
+        get(NESTED_RUNS).waitUntil(appears, SSH_LINK_APPEARING_TIMEOUT);
+        return this;
+    }
+
+    public LogAO clickOnNestedRunLink() {
+        get(NESTED_RUNS).click();
+        return this;
+    }
+
+    public String getNestedRunID(int childNum) {
+        return $(withText("Nested runs:")).closest("tr").find(byXpath(String.format("td/a[%s]/b", childNum))).getText();
+    }
+
+    public LogAO shareWithGroup(final String groupName) {
+        click(SHARE_WITH);
+        new ShareWith().addGroupToShare(groupName);
+        return this;
+    }
+
+    public LogAO validateShareLink(final String link) {
+        get(SHARE_WITH).shouldHave(text(link));
+        return this;
+    }
+
     public LogAO validateException(final String exception) {
         $(byClassName("ant-alert-error")).has(text(exception));
         return this;
@@ -214,6 +266,12 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO clickMountBuckets() {
         waitForMountBuckets().closest("a").click();
         return this;
+    }
+
+
+    public String getParameterValue(final String name) {
+        expandTab(INSTANCE);
+        return $(InstanceParameters.parameterWithName(name)).text();
     }
 
     /**
@@ -428,6 +486,27 @@ public class LogAO implements AccessObject<LogAO> {
                     return iconClass;
                 }
             };
+        }
+    }
+
+    public static class ShareWith implements AccessObject<ShareWith> {
+        private final Map<Primitive, SelenideElement> elements = initialiseElements(
+                entry(ADD_USER, context().find(byCssSelector(".anticon-user-add")).closest("button")),
+                entry(ADD_GROUP, context().find(byCssSelector(".anticon-usergroup-add")).closest("button")),
+                entry(OK, context().find(button("OK")))
+        );
+
+        public void addGroupToShare(final String groupName) {
+            click(ADD_GROUP);
+            setValue(context().find(byClassName("ant-select-search__field")), groupName).enter();
+            click(byXpath("//*[contains(@aria-labelledby, 'rcDialogTitle1') and " +
+                    ".//*[contains(@class, 'ant-modal-footer')]]//button[. =  'OK']"));
+            click(OK);
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
         }
     }
 }

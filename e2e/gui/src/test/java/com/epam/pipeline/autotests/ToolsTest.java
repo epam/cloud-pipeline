@@ -38,6 +38,9 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
+import static com.epam.pipeline.autotests.ao.Profile.execEnvironmentTab;
+import static com.epam.pipeline.autotests.ao.Profile.parametersTab;
 import static com.epam.pipeline.autotests.ao.ToolDescription.editButtonFor;
 import static com.epam.pipeline.autotests.ao.ToolGroup.tool;
 import static com.epam.pipeline.autotests.ao.ToolGroup.toolsNames;
@@ -46,6 +49,7 @@ import static com.epam.pipeline.autotests.ao.ToolVersions.tags;
 import static com.epam.pipeline.autotests.ao.ToolVersions.tagsHave;
 import static com.epam.pipeline.autotests.utils.Conditions.valueContains;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -279,7 +283,7 @@ public class ToolsTest
         );
     }
 
-    @Test(dependsOnMethods = {"toolVersionsTab"})
+    @Test
     @TestCase({"EPMCMBIBPC-429"})
     public void toolExecutionParameters() {
         tools()
@@ -332,7 +336,7 @@ public class ToolsTest
     @TestCase({"EPMCMBIBPC-436"})
     public void toolCustomSettingsRun() {
         final String timeout = "2";
-        final String priceType = "On-demand";
+        final String priceType = ON_DEMAND;
 
         tools()
                 .performWithin(defaultRegistry, defaultGroup, testingTool, setDefaultCommand(defaultCommand))
@@ -417,7 +421,7 @@ public class ToolsTest
     @Test(priority = 10)
     @TestCase({"EPMCMBIBPC-1296"})
     public void toolCustomSettingsRunWithoutDefaults() {
-        final String priceType = "On-demand";
+        final String priceType = ON_DEMAND;
         final String image = String.format("%s/%s/%s",
                 defaultRegistryId, defaultGroup, Utils.nameWithoutGroup(toolWithoutDefaultSettings)
         );
@@ -435,7 +439,7 @@ public class ToolsTest
                 .ensure(VERSION, text("latest"))
                 .ensure(ESTIMATED_PRICE, not(visible))
                 .ensure(INFORMATION_ICON, not(visible))
-                .expandTabs(EXEC_ENVIRONMENT, ADVANCED_PANEL, PARAMETERS_PANEL)
+                .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                 .ensure(DOCKER_IMAGE, valueContains(image))
                 .ensure(DEFAULT_COMMAND, empty)
                 .ensure(INSTANCE_TYPE, text("Node type"))
@@ -460,7 +464,6 @@ public class ToolsTest
     @Test(dependsOnMethods = {"toolCustomSettingsRunWithoutDefaults"}, priority = 10)
     @TestCase({"EPMCMBIBPC-1436"})
     public void validateEstimatedPriceAvailabilityForFilledTool() {
-        final String priceType = "On-demand";
         tools()
                 .perform(defaultRegistry, defaultGroup, testingTool, tool ->
                         tool.settings()
@@ -475,7 +478,7 @@ public class ToolsTest
                 .ensure(ESTIMATED_PRICE, visible)
                 .ensure(INFORMATION_ICON, visible)
                 .expandTab(ADVANCED_PANEL)
-                .setPriceType(priceType)
+                .setPriceType(ON_DEMAND)
                 .hover(INFORMATION_ICON)
                 .ensure(PRICE_TABLE, visible)
                 .expandTab(PARAMETERS_PANEL)
@@ -485,10 +488,6 @@ public class ToolsTest
 
     private By message(final String text) {
         return withText(text);
-    }
-
-    private Consumer<ToolsPage> registryIsPresented(final String registry) {
-        return tools -> tools.get(REGISTRIES_LIST).shouldHave(text(registry));
     }
 
     private Consumer<Registry> selectGroup(final String defaultGroup) {

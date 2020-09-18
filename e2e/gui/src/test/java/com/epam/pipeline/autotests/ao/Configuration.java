@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -40,6 +41,7 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
+import static com.epam.pipeline.autotests.ao.Primitive.DOCKER_IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.EDIT;
 import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
@@ -157,7 +159,8 @@ public class Configuration implements AccessObject<Configuration> {
                 entry(SAVE, context().find(byId("save-pipeline-configuration-button"))),
                 entry(RUN, context().find(byId("run-configuration-button"))),
                 entry(ADD, context().find(byId("add-configuration-button"))),
-                entry(ADD_PARAMETER, context().find(byId("add-parameter-button")))
+                entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
+                entry(DOCKER_IMAGE, context().find(inputOf(fieldWithLabel("Docker image"))))
         );
     }
 
@@ -327,4 +330,8 @@ public class Configuration implements AccessObject<Configuration> {
         return () -> new ConfirmationPopupAO<>(new Object()).ensureTitleIs("Are you sure you want to change configuration?").ok();
     }
 
+    public Configuration assertPageTitleIs(final String expectedTitle) {
+        $(title()).shouldHave(text(expectedTitle));
+        return this;
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.configurationW
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.hintOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.version;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -135,6 +136,7 @@ public class DetachedConfigurationsTest
             .configurationTab()
             .createConfiguration(pipelineCustomProfile)
             .createConfiguration(pipelineProfile1611)
+            .sleep(1, SECONDS)
             .editConfiguration(pipelineCustomProfile, profile ->
                 profile.expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                     .setValue(DISK, customDisk)
@@ -472,7 +474,7 @@ public class DetachedConfigurationsTest
     public void changesValidationInAttachedPipelineConfiguration() {
         final String diskSize = "18";
         final String instanceType = C.DEFAULT_INSTANCE;
-        final String priceType = "On-demand";
+        final String priceType = ON_DEMAND;
 
         library()
             .refresh()
@@ -693,10 +695,11 @@ public class DetachedConfigurationsTest
     @Test(priority = 3, dependsOnMethods = "validateRunClusterFromDetachConfiguration")
     @TestCase("EPMCMBIBPC-1545")
     public void validationPriceTypeFieldForClusterRun() {
-        final String onDemandPriceType = "On-demand";
+        final String onDemandPriceType = ON_DEMAND;
         library()
             .configurationWithin(runWithParametersConfiguration, configuration -> {
                 configuration
+                    .sleep(1, SECONDS)
                     .selectProfile(defaultConfigurationProfile)
                     .expandTab(INSTANCE)
                     .selectValue(PRICE_TYPE, defaultPriceType)
