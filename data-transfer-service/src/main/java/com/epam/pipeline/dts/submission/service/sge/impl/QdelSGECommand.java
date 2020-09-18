@@ -34,9 +34,9 @@ public class QdelSGECommand implements QdelCommand {
     private final String qdelCmd;
     private final CmdExecutor cmdExecutor;
 
-    public QdelSGECommand(final CmdExecutor cmdExecutor,
+    public QdelSGECommand(final CmdExecutor submissionCmdExecutor,
                           final @Value("${dts.submission.qdel.cmd}") String qdelCmd) {
-        this.cmdExecutor = cmdExecutor;
+        this.cmdExecutor = submissionCmdExecutor;
         this.qdelCmd = qdelCmd;
     }
 

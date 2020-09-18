@@ -37,9 +37,9 @@ public class QhostSGECommand implements QhostCommand {
     private final CmdExecutor cmdExecutor;
     private final String qhostCmd;
 
-    public QhostSGECommand(final CmdExecutor cmdExecutor,
+    public QhostSGECommand(final CmdExecutor submissionCmdExecutor,
                            final @Value("${dts.submission.qhost.cmd}") String qhostCmd) {
-        this.cmdExecutor = cmdExecutor;
+        this.cmdExecutor = submissionCmdExecutor;
         this.qhostCmd = qhostCmd;
         this.mapper = new XmlMapper();
     }

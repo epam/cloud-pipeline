@@ -50,8 +50,8 @@ import org.thymeleaf.templateresolver.ITemplateResolver;
 public class SubmissionConfiguration {
 
     @Bean
-    public CmdExecutor cmdExecutor() {
-        return new ImpersonatingCmdExecutor(new PlainCmdExecutor());
+    public CmdExecutor submissionCmdExecutor() {
+        return new PlainCmdExecutor();
     }
 
     @Bean

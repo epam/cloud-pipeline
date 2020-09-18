@@ -56,14 +56,14 @@ public class SubmissionSchedulerImpl implements SubmissionScheduler {
     public SubmissionSchedulerImpl(final SubmissionPreference preference,
                                    final FileService fileService,
                                    final TemplateEngine templateEngine,
-                                   final CmdExecutor cmdExecutor,
+                                   final CmdExecutor submissionCmdExecutor,
                                    final SubmissionConverter converter) {
         this.workDir = fileService.getOrCreateFolder(preference.getWorkdir());
         this.qsubTemplate = fileService.getLocalFile(preference.getQsubTemplate());
         this.preference = preference;
         this.fileService = fileService;
         this.templateEngine = templateEngine;
-        this.cmdExecutor = cmdExecutor;
+        this.cmdExecutor = submissionCmdExecutor;
         this.converter = converter;
     }
 

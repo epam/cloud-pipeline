@@ -39,9 +39,9 @@ public class QstatSGECommand implements QstatCommand {
     private final String qstatCmd;
     private final CmdExecutor cmdExecutor;
 
-    public QstatSGECommand(final CmdExecutor cmdExecutor,
+    public QstatSGECommand(final CmdExecutor submissionCmdExecutor,
                            final @Value("${dts.submission.qstat.cmd}") String qstatCmd) {
-        this.cmdExecutor = cmdExecutor;
+        this.cmdExecutor = submissionCmdExecutor;
         this.qstatCmd = qstatCmd;
     }
 
