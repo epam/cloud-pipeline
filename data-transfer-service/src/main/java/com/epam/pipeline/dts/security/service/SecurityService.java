@@ -18,9 +18,13 @@ package com.epam.pipeline.dts.security.service;
 
 public interface SecurityService {
 
-//    todo: Add java doc
+    /**
+     * Returns currently authenticated user name.
+     */
     String getAuthorizedUser();
-    
-//    todo: Add java doc
+
+    /**
+     * Returns currently authenticated user corresponding local system user name.
+     */
     String getLocalUser();
 }

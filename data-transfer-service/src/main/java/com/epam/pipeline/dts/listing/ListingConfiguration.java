@@ -21,10 +21,6 @@ import com.epam.pipeline.cmd.ImpersonatingCmdExecutor;
 import com.epam.pipeline.cmd.PlainCmdExecutor;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dts.listing.configuration.ListingRestConfiguration;
-import com.epam.pipeline.dts.listing.service.ListingService;
-import com.epam.pipeline.dts.listing.service.impl.ImpersonatingLocalListingService;
-import com.epam.pipeline.dts.security.service.SecurityService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -45,13 +41,5 @@ public class ListingConfiguration {
     @Bean
     public CmdExecutor listingCmdExecutor() {
         return new ImpersonatingCmdExecutor(new PlainCmdExecutor());
-    }
-    
-    @Bean
-    public ListingService listingService(final SecurityService securityService,
-                                         final CmdExecutor listingCmdExecutor,
-                                         @Value("${dts.listing.listTemplate}")
-                                         final String listTemplate) {
-        return new ImpersonatingLocalListingService(securityService, listingCmdExecutor, listTemplate);
     }
 }

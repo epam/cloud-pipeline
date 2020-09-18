@@ -18,6 +18,7 @@ package com.epam.pipeline.cmd;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,15 +27,23 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
-// todo: Add javadoc
+/**
+ * Cmd executor that impersonates requested users while executing or launching commands.
+ * 
+ * It creates temporary files to store command which will impersonate users and execute commands.
+ * 
+ * It embeds environment variables to temporary files to keep the environment during impersonation.
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class ImpersonatingCmdExecutor implements CmdExecutor {
     
     private static final String PERMISSION_DENIED = "permission denied";
     private static final String BASH_TEMPLATE = "bash %s";
-    private static final String IMPERSONATING_TEMPLATE = "echo \"%s\" | sudo -E su -p - %s";
+    private static final String IMPERSONATING_TEMPLATE = "echo \"%s %s\" | sudo su - %s";
+    private static final String ENVIRONMENT_VARIABLE_TEMPLATE = "%s='%s'";
 
     private final CmdExecutor cmdExecutor;
 
@@ -50,7 +59,7 @@ public class ImpersonatingCmdExecutor implements CmdExecutor {
         Path commandScript = null;
         try {
             commandScript = Files.createTempFile("substituted-user-script", ".sh");
-            Files.write(commandScript, Collections.singleton(impersonating(command, username)));
+            Files.write(commandScript, Collections.singleton(impersonating(command, environmentVariables, username)));
             return cmdExecutor.executeCommand(bash(commandScript), environmentVariables, workDir);
         } catch (CmdExecutionException | IOException e) {
             if (isPermissionDenied(e)) {
@@ -69,12 +78,14 @@ public class ImpersonatingCmdExecutor implements CmdExecutor {
     }
 
     @Override
-    public Process launchCommand(final String command, final Map<String, String> environmentVariables,
-                                 final File workDir, final String username) {
+    public Process launchCommand(final String command,
+                                 final Map<String, String> environmentVariables,
+                                 final File workDir,
+                                 final String username) {
         log.info("Launching command '{}' with substituted user '{}'", command, username);
         try {
             final Path commandScript = Files.createTempFile("substituted-user-script", ".sh");
-            Files.write(commandScript, Collections.singleton(impersonating(command, username)));
+            Files.write(commandScript, Collections.singleton(impersonating(command, environmentVariables, username)));
             return cmdExecutor.launchCommand(bash(commandScript), environmentVariables, workDir);
         } catch (CmdExecutionException | IOException e) {
             throw new CmdExecutionException(String.format(
@@ -84,8 +95,18 @@ public class ImpersonatingCmdExecutor implements CmdExecutor {
         // TODO 02.12.18: commandScript is not deleted after the process finishes
     }
 
-    private String impersonating(final String command, final String username) {
-        return String.format(IMPERSONATING_TEMPLATE, command, username);
+    private String impersonating(final String command,
+                                 final Map<String, String> environmentVariables,
+                                 final String username) {
+        return String.format(IMPERSONATING_TEMPLATE, environmentString(environmentVariables), command, username);
+    }
+
+    private String environmentString(final Map<String, String> environmentVariables) {
+        return MapUtils.emptyIfNull(environmentVariables)
+                .entrySet()
+                .stream()
+                .map(it -> String.format(ENVIRONMENT_VARIABLE_TEMPLATE, it.getKey(), it.getValue()))
+                .collect(Collectors.joining(" "));
     }
 
     private String bash(final Path commandScript) {

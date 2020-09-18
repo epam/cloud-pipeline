@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dts.transfer.service.impl;
 
+import com.epam.pipeline.dts.security.service.SecurityService;
 import com.epam.pipeline.dts.transfer.model.StorageItem;
 import com.epam.pipeline.dts.transfer.model.TaskStatus;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
@@ -32,17 +33,19 @@ import org.springframework.util.CollectionUtils;
 import java.util.List;
 
 @Service
-@ConditionalOnProperty(value = "dts.impersonation.enabled", havingValue = "false")
+@ConditionalOnProperty(value = "dts.impersonation.enabled", havingValue = "true", matchIfMissing = true)
 @Slf4j
 @RequiredArgsConstructor
-public class TransferServiceImpl implements TransferService {
+public class ImpersonatingTransferServiceImpl implements TransferService {
     private final TaskService taskService;
     private final DataUploaderProviderManager dataUploaderProviderManager;
+    private final SecurityService securityService;
 
     @Override
     public TransferTask runTransferTask(@NonNull StorageItem source, @NonNull StorageItem destination,
                                         List<String> included) {
-        TransferTask transferTask = taskService.createTask(source, destination, included);
+        String transferUser = securityService.getLocalUser();
+        TransferTask transferTask = taskService.createTask(source, destination, included, transferUser);
         taskService.updateStatus(transferTask.getId(), TaskStatus.RUNNING);
         dataUploaderProviderManager.transferData(transferTask);
         return transferTask;

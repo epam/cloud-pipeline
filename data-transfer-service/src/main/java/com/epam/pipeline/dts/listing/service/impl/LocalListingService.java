@@ -23,6 +23,8 @@ import com.epam.pipeline.dts.listing.model.ListingItem;
 import com.epam.pipeline.dts.listing.model.ListingItemType;
 import com.epam.pipeline.dts.listing.service.ListingService;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.validation.constraints.NotNull;
@@ -33,6 +35,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Service
+@ConditionalOnProperty(value = "dts.impersonation.enabled", havingValue = "false")
 public class LocalListingService implements ListingService {
     private static final int READ_PERMISSION = 1;
     private static final int WRITE_PERMISSION = 1 << 1;
