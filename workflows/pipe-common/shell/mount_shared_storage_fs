@@ -17,8 +17,7 @@
 MOUNT_DIR="$1"
 REQUEST_FOLDER_FOR_ID="$2"
 REQUEST_TYPE="$3"
-
-FS_SETUP_TASK="InitializeSharedFS"
+FS_SETUP_TASK="$4"
 
 _MOUNT_STORAGE_JSON=$(curl -k -s --fail -X $REQUEST_TYPE --header "Authorization: Bearer $API_TOKEN" $API/datastorage/sharedStorage?runId=$REQUEST_FOLDER_FOR_ID)
 _STORAGE_PATH=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload.path')
