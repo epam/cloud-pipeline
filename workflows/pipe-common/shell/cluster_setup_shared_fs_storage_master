@@ -29,7 +29,7 @@ fi
 # Install NFS clients
 install_nfs_client
 
-mount_shared_storage_fs "$MOUNT_DIR" "$RUN_ID" POST
+mount_shared_storage_fs "$MOUNT_DIR" "$RUN_ID" POST "$FS_SETUP_TASK"
 
 if [ $? -ne 0 ]; then
     pipe_log_fail "Failed to setup shared storage FS on master node" "$FS_SETUP_TASK"
