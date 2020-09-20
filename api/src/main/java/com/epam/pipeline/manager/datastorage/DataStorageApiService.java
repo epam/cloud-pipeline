@@ -331,7 +331,7 @@ public class DataStorageApiService {
     public StorageUsage getStorageUsage(final String id, final String path) {
         return dataStorageManager.getStorageUsage(id, path);
     }
-    @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(AclExpressions.RUN_ID_OWNER)
     public StorageMountPath getSharedFSSPathForRun(final Long runId, final boolean createFolder) {
         return runMountService.getSharedFSSPathForRun(runId, createFolder);
     }
