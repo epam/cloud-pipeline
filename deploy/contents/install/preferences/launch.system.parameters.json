@@ -267,5 +267,12 @@
         "description": "Overwrites standard UTC timezone on pipeline run node",
         "defaultValue": "/usr/share/zoneinfo/UTC",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_SHARE_FS_TYPE",
+        "type": "string",
+        "description": "Defines which file system shall be used as shared for cluster runs",
+        "defaultValue": "lfs",
+        "passToWorkers": true
     }
 ]
