@@ -35,6 +35,7 @@ import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
+import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationChange;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Primitive.SHOW_METADATA;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
@@ -82,7 +83,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     private final String clusterAllowedInstanceTypes = "cluster.allowed.instance.types";
     private final String clusterAllowedPriceTypes = "cluster.allowed.price.types";
     private final String clusterAllowedInstanceTypesDocker = "cluster.allowed.instance.types.docker";
-
+    private int instanceTypesCount = 0;
 
     @BeforeClass
     public void initialLogout() {
@@ -124,7 +125,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                     .clickOnDraftVersion(pipeline)
                     .configurationTab()
                     .editConfiguration("default", profile ->
-                            profile
+                            instanceTypesCount = profile
                                     .expandTab(EXEC_ENVIRONMENT)
                                     .selectValue(INSTANCE_TYPE, defaultInstanceType)
                                     .clear(NAME).setValue(NAME, configurationName)
@@ -133,7 +134,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     .sleep(3, SECONDS)
                                     .expandTab(EXEC_ENVIRONMENT)
                                     .ensure(INSTANCE_TYPE, text(defaultInstanceType))
-                    );
+                                    .dropDownCount(INSTANCE_TYPE));
             library()
                     .cd(folder)
                     .createConfiguration(configuration)
@@ -289,6 +290,72 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                             .addAllowedToolInstanceTypesMask("")
                                             .clickApply()
                                             .sleep(2, SECONDS)));
+        }
+    }
+
+    @Test(dependsOnMethods={"preparationForValidationOfInstanceTypesRestrictions"})
+    @TestCase({"EPMCMBIBPC-2644"})
+    public void validationOfInstanceTypesRestrictionsSystemSettings() {
+        try {
+            loginAs(admin);
+            library()
+                    .cd(folder)
+                    .createConfiguration(configuration1)
+                    .configurationWithin(configuration1, configuration ->
+                            configuration
+                                    .selectPipeline(selection ->
+                                            selection.ensureVisible(TREE, FOLDERS)
+                                                    .selectFolder(folder)
+                                                    .selectPipeline(pipeline)
+                                                    .sleep(2, SECONDS)
+                                                    .selectFirstVersion()
+                                                    .ok()
+                                                    .also(confirmConfigurationChange())
+                                    )
+                                    .setValue(DISK, customDisk)
+                                    .click(SAVE));
+            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s.*", instanceFamilyName));
+            logout();
+            loginAs(user);
+            library()
+                    .cd(folder)
+                    .clickOnDraftVersion(pipeline)
+                    .configurationTab()
+                    .editConfiguration(configurationName, profile ->
+                            profile
+                                    .expandTab(EXEC_ENVIRONMENT)
+                                    .ensure(INSTANCE_TYPE, empty)
+                                    .ensure(DISK, not(empty))
+                                    .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
+                    )
+                    .click(CODE_TAB)
+                    .exitFromConfigurationWithoutSaved();
+            library()
+                    .cd(folder)
+                    .configurationWithin(configuration, configuration ->
+                            configuration
+                                    .expandTabs(execEnvironmentTab)
+                                    .sleep(4, SECONDS)
+                                    .ensure(DISK, value(customDisk))
+                                    .ensure(DOCKER_IMAGE, value(defaultGroup), value(testingTool))
+                                    .ensure(INSTANCE_TYPE, not(empty))
+                                    .checkDropDownCount(INSTANCE_TYPE, instanceTypesCount)
+                    );
+            library()
+                    .cd(folder)
+                    .configurationWithin(configuration1, configuration ->
+                            configuration
+                                    .expandTabs(execEnvironmentTab)
+                                    .sleep(4, SECONDS)
+                                    .ensure(DISK, value(customDisk))
+                                    .ensure(INSTANCE_TYPE, empty)
+                                    .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
+                    )
+                    .exitFromConfigurationWithoutSaved();
+        } finally {
+            logout();
+            loginAs(admin);
+            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, defaultClusterAllowedInstanceTypes);
         }
     }
 
@@ -518,10 +585,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     public void validationOfPriceTypesRestrictionsHierarchy() {
         try {
             loginAs(admin);
-            setClusterAllowedStringPreference(clusterAllowedPriceTypes, clusterAllowedPriceTypesValue);
-            openEditUserTab(user.login)
-                    .setAllowedPriceType(onDemandPrice)
-                    .ok();
+            setClusterAllowedStringPreference(clusterAllowedPriceTypes, clusterAllowedPrice);
             tools()
                     .performWithin(defaultRegistry,defaultGroup,testingTool,tool->
                             tool.showInstanceManagement(instanceManagement->
@@ -530,6 +594,14 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                             .setPriceType(spotPriceName)
                                             .clickApply()
                                             .sleep(2,SECONDS)));
+            logout();
+            loginAs(user);
+            validationOfPriceTypesRestrictions("On-demand", "On-demand", spotPriceName);
+            logout();
+            loginAs(admin);
+            openEditUserTab(user.login)
+                    .setAllowedPriceType(onDemandPrice)
+                    .ok();
             logout();
             loginAs(user);
             validationOfPriceTypesRestrictions("On-demand", "On-demand", "On-demand");

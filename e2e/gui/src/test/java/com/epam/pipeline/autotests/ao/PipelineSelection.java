@@ -29,6 +29,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.FOLDERS;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.TREE;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.folderWithName;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.pipelineWithName;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.version;
@@ -64,6 +65,11 @@ public class PipelineSelection extends PopupAO<PipelineSelection, Configuration>
         context().find(version()).find(byClassName("ant-select")).shouldBe(visible).click();
         $(PipelineSelectors.visible(byClassName("ant-select-dropdown-menu")))
                 .find(byText(pipelineConfiguration)).shouldBe(visible).click();
+        return this;
+    }
+
+    public PipelineSelection selectFolder(final String folder) {
+        context().find(folderWithName(folder)).shouldBe(visible).click();
         return this;
     }
 

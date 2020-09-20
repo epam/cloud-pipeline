@@ -57,6 +57,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toMap;
+import static org.testng.Assert.assertEquals;
 
 @SuppressWarnings("unchecked")
 public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
@@ -497,6 +498,18 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         ElementsCollection listDropDown = SelenideElements.of(byClassName("ant-select-dropdown-menu-item"));
         listDropDown.forEach(row -> row.shouldHave(text(option)));
         return (ELEMENT_TYPE) this;
+    }
+
+    default ELEMENT_TYPE checkDropDownCount(final Primitive combobox, final int count) {
+        get(combobox).shouldBe(visible).click();
+        assertEquals(SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).size(), count,
+                "Dropdown list count doesn't correspond expected");
+        return (ELEMENT_TYPE) this;
+    }
+
+    default int dropDownCount(final Primitive combobox) {
+        get(combobox).shouldBe(visible).click();
+        return SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).size();
     }
 
     default ELEMENT_TYPE exitFromConfigurationWithoutSaved() {
