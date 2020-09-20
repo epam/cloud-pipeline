@@ -128,7 +128,7 @@ elif [ "$CP_CAP_SHARE_FS_TYPE" == "lfs" ]; then
     setfacl -m user::rwx -m group:root:rwx -m other::rx ${SHARED_PATH}
 elif [ "$CP_CAP_SHARE_FS_TYPE" == "external" ]; then
     install_nfs_client
-    mount_shared_storage_fs "$SHARED_PATH" "$parent_id" GET
+    mount_shared_storage_fs "$SHARED_PATH" "$parent_id" GET "$FS_SETUP_TASK"
     if [ $? -ne 0 ]; then
         pipe_log_fail "Failed to setup shared storage FS on worker node" "$FS_SETUP_TASK"
         exit 1
