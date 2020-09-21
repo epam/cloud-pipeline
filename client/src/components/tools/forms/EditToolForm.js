@@ -68,10 +68,14 @@ import {
   CP_CAP_DESKTOP_NM
 } from '../../pipelines/launch/form/utilities/parameters';
 import AWSRegionTag from '../../special/AWSRegionTag';
-import AdditionalRunPreference, {
-  dinDEnabled, noMachineEnabled,
-  singularityEnabled, systemDEnabled
-} from '../../pipelines/launch/form/utilities/additional-run-preference';
+import RunCapabilities, {
+  dinDEnabled,
+  noMachineEnabled,
+  singularityEnabled,
+  systemDEnabled,
+  getRunCapabilitiesSkippedParameters,
+  RUN_CAPABILITIES
+} from '../../pipelines/launch/form/utilities/run-capabilities';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -682,6 +686,18 @@ export default class EditToolForm extends React.Component {
     }
   }
 
+  @computed
+  get selectedRunCapabilities () {
+    const {dinD, singularity, systemD, noMachine} = this.state;
+
+    return [
+      dinD ? RUN_CAPABILITIES.dinD : false,
+      singularity ? RUN_CAPABILITIES.singularity : false,
+      systemD ? RUN_CAPABILITIES.systemD : false,
+      noMachine ? RUN_CAPABILITIES.noMachine : false
+    ].filter(Boolean);
+  };
+
   modified = () => {
     const arrayIsNullOrEmpty = (array) => {
       return !array || !array.length;
@@ -1013,20 +1029,13 @@ export default class EditToolForm extends React.Component {
     }
   };
 
-  onDinDChanged = (dinD = false) => {
-    this.setState({dinD});
-  };
-
-  onSingularityChanged = (singularity = false) => {
-    this.setState({singularity});
-  };
-
-  onSystemDChanged = (systemD = false) => {
-    this.setState({systemD});
-  };
-
-  onNoMachineChanged = (noMachine = false) => {
-    this.setState({noMachine});
+  onRunCapabilitiesSelect = (capabilities) => {
+    this.setState({
+      dinD: capabilities.includes(RUN_CAPABILITIES.dinD),
+      singularity: capabilities.includes(RUN_CAPABILITIES.singularity),
+      systemD: capabilities.includes(RUN_CAPABILITIES.systemD),
+      noMachine: capabilities.includes(RUN_CAPABILITIES.noMachine)
+    });
   };
 
   renderExecutionEnvironment = () => {
@@ -1271,33 +1280,16 @@ export default class EditToolForm extends React.Component {
                   />
                 </Col>
               </Row>
-              <Row style={{marginBottom: 10}}>
-                <Col xs={24} sm={6} className={styles.toolSettingsTitle}>Run capabilities:</Col>
-                <Col xs={24} sm={12}>
-                  <Row>
-                    <AdditionalRunPreference
-                      preference="DinD"
-                      value={this.state.dinD}
-                      onChange={this.onDinDChanged}
-                    />
-                    <AdditionalRunPreference
-                      preference="Singularity"
-                      value={this.state.singularity}
-                      onChange={this.onSingularityChanged}
-                    />
-                    <AdditionalRunPreference
-                      preference="SystemD"
-                      value={this.state.systemD}
-                      onChange={this.onSystemDChanged}
-                    />
-                    <AdditionalRunPreference
-                      preference="NoMachine"
-                      value={this.state.noMachine}
-                      onChange={this.onNoMachineChanged}
-                    />
-                  </Row>
-                </Col>
-              </Row>
+              <Form.Item
+                {...this.formItemLayout}
+                label="Run capabilities"
+                style={{marginTop: 10, marginBottom: 10}}
+              >
+                <RunCapabilities
+                  values={this.selectedRunCapabilities}
+                  onChange={this.onRunCapabilitiesSelect}
+                />
+              </Form.Item>
             </Col>
             <Col sm={24} lg={12}>
               <Row type="flex" align="middle" style={{marginBottom: 10}}>
@@ -1316,7 +1308,10 @@ export default class EditToolForm extends React.Component {
             getSystemParameterDisabledState={
               (parameterName) => getSystemParameterDisabledState(this, parameterName)
             }
-            skippedSystemParameters={getSkippedSystemParametersList(this) || []}
+            skippedSystemParameters={[
+              ...getSkippedSystemParametersList(this),
+              ...getRunCapabilitiesSkippedParameters()
+            ]}
             value={this.defaultSystemProperties}
             onInitialized={this.onEditToolFormSystemParametersInitialized} />
           {this.renderSeparator('Custom parameters')}

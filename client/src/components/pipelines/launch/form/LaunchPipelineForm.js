@@ -98,10 +98,14 @@ import {
 } from '../../../runs/actions';
 import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSettings';
 import ServerlessAPIButton from '../../../special/serverless-api-button';
-import AdditionalRunPreference, {
-  dinDEnabled, noMachineEnabled,
-  singularityEnabled, systemDEnabled
-} from './utilities/additional-run-preference';
+import RunCapabilities, {
+  dinDEnabled,
+  noMachineEnabled,
+  singularityEnabled,
+  systemDEnabled,
+  getRunCapabilitiesSkippedParameters,
+  RUN_CAPABILITIES
+} from './utilities/run-capabilities';
 import {
   CP_CAP_LIMIT_MOUNTS,
   CP_CAP_SGE,
@@ -444,56 +448,40 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.setState({showLaunchCommands: false});
   };
 
-  onDinDChanged = (dinD = false) => {
-    this.setState({dinD}, this.formFieldsChanged);
-  };
-
-  onSingularityChanged = (singularity = false) => {
-    this.setState({singularity}, this.formFieldsChanged);
-  };
-
-  onSystemDChanged = (systemD = false) => {
-    this.setState({systemD}, this.formFieldsChanged);
-  };
-
-  onNoMachineChanged = (noMachine = false) => {
-    this.setState({noMachine}, this.formFieldsChanged);
-  };
-
-  renderAdditionalRunCapabilities = () => {
+  @computed
+  get selectedRunCapabilities () {
     const {dinD, singularity, systemD, noMachine} = this.state;
-    return (
-      <FormItem
-        className={getFormItemClassName(styles.formItem, 'runCapabilities')}
-        {...this.leftFormItemLayout}
-        label="Run capabilities"
-        hasFeedback
-      >
-        <Row style={{flex: 1}}>
-          <AdditionalRunPreference
-            preference="DinD"
-            value={dinD}
-            onChange={this.onDinDChanged}
-          />
-          <AdditionalRunPreference
-            preference="Singularity"
-            value={singularity}
-            onChange={this.onSingularityChanged}
-          />
-          <AdditionalRunPreference
-            preference="SystemD"
-            value={systemD}
-            onChange={this.onSystemDChanged}
-          />
-          <AdditionalRunPreference
-            preference="NoMachine"
-            value={noMachine}
-            onChange={this.onNoMachineChanged}
-          />
-        </Row>
-      </FormItem>
-    );
+
+    return [
+      dinD ? RUN_CAPABILITIES.dinD : false,
+      singularity ? RUN_CAPABILITIES.singularity : false,
+      systemD ? RUN_CAPABILITIES.systemD : false,
+      noMachine ? RUN_CAPABILITIES.noMachine : false
+    ].filter(Boolean);
   };
+
+  onRunCapabilitiesSelect = (capabilities) => {
+    this.setState({
+      dinD: capabilities.includes(RUN_CAPABILITIES.dinD),
+      singularity: capabilities.includes(RUN_CAPABILITIES.singularity),
+      systemD: capabilities.includes(RUN_CAPABILITIES.systemD),
+      noMachine: capabilities.includes(RUN_CAPABILITIES.noMachine)
+    }, this.formFieldsChanged);
+  };
+
+  renderAdditionalRunCapabilities = () => (
+    <FormItem
+      className={getFormItemClassName(styles.formItem, 'runCapabilities')}
+      {...this.formItemLayout}
+      label="Run capabilities"
+      hasFeedback
+    >
+      <RunCapabilities
+        values={this.selectedRunCapabilities}
+        onChange={this.onRunCapabilitiesSelect}
+      />
+    </FormItem>
+  );
 
   @observable
   _fireCloudConfigurations = null;
@@ -1154,26 +1142,26 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         };
       }
     }
-    if (this.state.dinD && !this.state.kubeEnabled) {
-      payload.params[CP_CAP_DIND_CONTAINER] = {
+    if (this.state.dinD) {
+      payload[PARAMETERS][CP_CAP_DIND_CONTAINER] = {
         type: 'boolean',
         value: true
       };
     }
-    if (this.state.systemD && !this.state.kubeEnabled) {
-      payload.params[CP_CAP_SYSTEMD_CONTAINER] = {
+    if (this.state.systemD) {
+      payload[PARAMETERS][CP_CAP_SYSTEMD_CONTAINER] = {
         type: 'boolean',
         value: true
       };
     }
     if (this.state.singularity) {
-      payload.params[CP_CAP_SINGULARITY] = {
+      payload[PARAMETERS][CP_CAP_SINGULARITY] = {
         type: 'boolean',
         value: true
       };
     }
     if (this.state.noMachine) {
-      payload.params[CP_CAP_DESKTOP_NM] = {
+      payload[PARAMETERS][CP_CAP_DESKTOP_NM] = {
         type: 'boolean',
         value: true
       };
@@ -1368,13 +1356,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: true
       };
     }
-    if (this.state.dinD && !this.state.kubeEnabled) {
+    if (this.state.dinD) {
       payload.params[CP_CAP_DIND_CONTAINER] = {
         type: 'boolean',
         value: true
       };
     }
-    if (this.state.systemD && !this.state.kubeEnabled) {
+    if (this.state.systemD) {
       payload.params[CP_CAP_SYSTEMD_CONTAINER] = {
         type: 'boolean',
         value: true
@@ -2711,7 +2699,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               notToShow={[
                 ...notToShowSystemParametersFn(PARAMETERS, false),
                 ...notToShowSystemParametersFn(SYSTEM_PARAMETERS, true),
-                CP_CAP_LIMIT_MOUNTS, ...getSkippedSystemParametersList(this)]
+                CP_CAP_LIMIT_MOUNTS, ...getSkippedSystemParametersList(this),
+                ...getRunCapabilitiesSkippedParameters()]
               }
             />
           </Row>
@@ -4753,6 +4742,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       )
                     }
                     {this.renderFormItemRow(this.renderCoresFormItem)}
+                    {this.renderFormItemRow(this.renderAdditionalRunCapabilities)}
                   </div>
                 </div>
                 <div
@@ -4791,7 +4781,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {this.renderStopAfterFormItem()}
               {this.renderLimitMountsFormItem()}
               {this.renderCmdTemplateFormItem()}
-              {this.renderAdditionalRunCapabilities()}
               {this.renderParameters(true)}
             </Collapse.Panel>
             <Collapse.Panel

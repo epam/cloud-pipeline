@@ -37,7 +37,7 @@ import {
   noMachineEnabled,
   singularityEnabled,
   systemDEnabled
-} from './additional-run-preference';
+} from './run-capabilities';
 
 function modified (form, parameters, formName, parametersName, defaultValue) {
   return `${form.getFieldValue(formName) || defaultValue}` !==
