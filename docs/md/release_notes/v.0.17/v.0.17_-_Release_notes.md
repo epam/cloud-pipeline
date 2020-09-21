@@ -1,0 +1,204 @@
+# Cloud Pipeline v.0.17 - Release notes
+
+- [Billing reports enhancements](#billing-reports-enhancements)
+- [Allowed price types for a cluster master node](#allowed-price-types-for-a-cluster-master-node)
+- ["Max" data series in the resources Monitoring](#max-data-series-at-the-resource-monitoring-dashboard)
+
+***
+
+- [Notable Bug fixes](#notable-bug-fixes)
+    - [AWS deployment: unable to list more than 1000 files in the S3 bucket](#aws-deployment-unable-to-list-more-than-1000-files-in-the-s3-bucket)
+    - [Size of tool version created from original tool without any changes is a lot larger than original one](#size-of-tool-version-created-from-original-tool-without-any-changes-is-a-lot-larger-than-original-one)
+    - [`pipe storage cp` fails in Windows for the GCS](#pipe-storage-cp-fails-in-windows-for-the-gcs-with-sslv3-error)
+    - [Shared endpoint for `anonymous` users is being opened from the second time](#shared-endpoint-for-anonymous-users-is-being-opened-from-the-second-time)
+    - [Attempt to view permissions on a pipeline via the `pipe view-pipes` throws an error](#attempt-to-view-permissions-on-a-pipeline-via-the-pipe-view-pipes-throws-an-error)
+    - [Scale down "cold" SGE autoscaling cluster](#scale-down-cold-sge-autoscaling-cluster)
+    - ["Launch Command" functionality issues](#launch-command-functionality-issues)
+    - [Inner data storages navigation bar fails to navigate](#inner-data-storages-navigation-bar-fails-to-navigate)
+    - [Region is being set incorrectly when trying to rerun pipeline](#region-is-being-set-incorrectly-when-trying-to-rerun-pipeline)
+    - [`PAUSE` and `COMMIT` operations fail for the jobs with an autoscaled disk](#pause-and-commit-operations-fail-for-the-jobs-with-an-autoscaled-disk)
+
+***
+
+## Billing reports enhancements
+
+### Access to Billing reports for non-admin users
+
+Previously, only admins had access to the **Billing reports** Dashboard and can view Platform's spendings data.  
+In some cases, it is convenient that non-admin users also have the access to specific cost reports info.
+
+In the current version, such ability was implemented - in two ways:
+
+- a new role was added into the predefined roles list - **`ROLE_BILLING_MANAGER`**. If that role is assigned to the user - for him/her the **Billing reports** Dashboard becomes available. And all possible filters, charts and their types, discounts configuration, export feature and etc. become available too. So, users who are granted this role are able to view the whole **Billing reports** info of the platform (as if they were admins).
+- base access to the **Billing reports** for "general" users that allows to view some information - about users' own spendings:
+    - this behavior is enabled by new system preference **`billing.reports.enabled`**. If this preference is set, all "general" users can access personal billing information - runs/storages where the user is an owner. Also "general" users can use filters, change chart types, make reports export.
+    - the following restrictions are set for "general" users when "base" billing access is enabled:
+        - all showing charts are being displayed only spendings of the current user
+        - there isn't an ability to configure discounts, the button "Configure discounts" is disabled
+        - "Billing centers (TOP 10)" chart isn't displayed
+
+For example, the view of the **Billing reports** Dashboard for the "general" user when the system preference `billing.reports.enabled` is enabled:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_01.png)
+
+### Storage data consumption
+
+Previously, **Cloud Pipeline** allowed to show only costs for the data storages.  
+But it would be convenient to understand what is the total consumption of the data usage (volume of storages usage in GB) across all operational groups or individual by specific user.
+
+Currently, this ability is implemented.
+
+In all "Storages" reports, for the **TOP 10 Storages...** chart, the **Volume** in GB for each storage is displayed in the table, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_02.png)
+
+Additionally for each storage, its Billing Center is displayed (if it's defined) and the storage Type (`S3`/`GS`/`NFS`/`LustreFS`/etc.).
+
+There are two **Volume** values displaying for each storage:
+
+- **`Avg. Vol.`** is the _average_ storage volume, in GB. It means that the exact volumes for each day of the selected report period were brought and then the average value was calculated
+- **`Cur. Vol.`** is the _current_ storage volume, in GB. This volume is a real volume for a current moment/last day of the given period
+
+The user can switch the view of the **TOP 10 Storages...** charts by a new control - ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_03.png)  
+By default, **Costs** displaying is selected. When **Volume** displaying is being selected, "average" volumes of the corresponding storages (in GB) will be displayed in the chart:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_04.png)
+
+These new columns (_Average Volume_, _Current Volume_, _Billing Center_, _Type_) also are being exported in tables reports.
+
+### Region/Provider filter
+
+Previously, **Billing reports** allowed displaying the different Cloud Providers' instance types and their usage. But there was no way to get the overall _per-Cloud_ or _per-Region_ information.
+
+In **`v0.17`**, these abilities were implemented. Now the user can use the following filters:
+
+- specific Cloud Provider(s) (_for multi-Provider deployments_)
+- specific Region(s) of the specific Cloud Provider
+
+They all can be specified via the "**Regions/Providers**" dropdown list in the top of any **Billing reports** page, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_05.png)
+
+### Custom date range for the report
+
+Previously, **Cloud Pipeline** allowed to configure date range on the **Billing reports** dashboard for different periods (_year_, _quarter_, _month(s)_), but the minimum period for any report was only _month_.  
+Sometimes, it is needed to view cost utilization for a specific period in days.
+
+In **`v0.17`**, it was implemented - the user can view **Billing reports** with manually configured period accurate to the day:
+
+- Select the "Custom" period and click the "Calendar" control:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_06.png)
+- Select "From" and "To" dates, confirm the selection:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_07.png)
+- Reports (charts and tables) will be rebuilt for the configured custom date range:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_08.png)
+
+### Export reports in `csv` from any Billing page
+
+Previously, **Cloud Pipeline** allowed to export the **Billing reports** data into the `*.csv` format via the "General" section only. But in separate sections - "Storages" and "Compute Instances" - the user could export data as `*.png` image format only.
+
+Currently, `*.csv` export has been added to all the reports sections ("Storages"/"Compute instances" and all sub-sections):
+
+- reports display the same structure as in the GUI - the top 10 records of the corresponding entities (e.g. storages or instances)
+- for the reports, which contain more than one table - all the tables are exported one after another
+- export in `*.csv` from the "General" page remains the same
+
+Example of an export from the "CPU" page:
+
+- ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_10.png)
+- ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_09.png)
+
+## Allowed price types for a cluster master node
+
+Previously, **Cloud Pipeline** allowed the user to choose whether the cluster master node be a `spot` or `on-demand` instance.  
+While spots are acceptable for the worker nodes, as they can be recreated in failure cases - master node failure will terminate the whole cluster.  
+To make things easy for the end-users, an optional restriction on the specific price types usage for the master nodes was implemented.
+
+There is a new string system preference - **`cluster.allowed.price.types.master`** - that force the clusters' master node price type.
+
+**Default value**: "spot,on_demand" - so, both types are accessible for the user when he/she wants to launch a cluster.
+
+**Possible values**: "spot", "on_demand" or both together comma-separated.
+
+Specified value for that preference defines which price type(s) will be shown in the drop-down, when the cluster run is being configured. For example:
+
+- set in the Preferences:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ForcedMasterType_1.png)
+- once the user selects any _cluster_ configuration in the "Exec environment" section - available price types becomes equal to the set value:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ForcedMasterType_2.png)
+
+**_Note_**: **`cluster.allowed.price.types.master`** preference doesn't apply on the price types for single-node jobs
+
+## "Max" data series at the "Resource Monitoring" dashboard
+
+Previously, **Cloud Pipeline** displayed the resources utilization as an average value. This could hide some spikes (which resulted in job failure), when reviewing at a high zoom-level (e.g. several days).
+
+In the current version, to the "CPU Usage" and the "Memory Usage" charts additional data-series ("lines") were added, which are calculated as a `max` function in each moment.  
+Existing lines are kept as well, but were renamed to `average`.
+
+For example:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ResourceMonitoring_1.png)
+
+For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md).
+
+***
+
+## Notable Bug fixes
+
+### AWS deployment: unable to list more than 1000 files in the S3 bucket
+
+[#1312](https://github.com/epam/cloud-pipeline/issues/1312)
+
+Previously, when `s3` bucket contained more than 1000 files - user could list all the files in the bucket via the GUI, but only first 1000 files via any `pipe` CLI capabilities (`pipe storage ls`, `pipe storage mount`, etc.).
+
+### Size of tool version created from original tool without any changes is a lot larger than original one
+
+[#1270](https://github.com/epam/cloud-pipeline/issues/1270)
+
+Previously, the size of the tool version that had created from the original tool without any changes or after resume operation for paused run - by `COMMIT` operation - was a lot larger than original version.
+
+### `pipe storage cp` fails in Windows for the GCS with `sslv3` error
+
+[#1268](https://github.com/epam/cloud-pipeline/issues/1268)
+
+Previously, the `sslv3` issue happened when data to/from the GCS was copying using the Windows workstation.
+
+### Shared endpoint for `anonymous` users is being opened from the second time
+
+[#1265](https://github.com/epam/cloud-pipeline/issues/1265)
+
+Previously, when `anonymous` user tried to open a hyperlink with the shared endpoint - he/she got the Platform's "Access denied" page.
+But if user tried to open the page in the second time - it was being opened correctly.
+
+### Attempt to view permissions on a pipeline via the `pipe view-pipes` throws an error
+
+[#1216](https://github.com/epam/cloud-pipeline/issues/1216)
+
+Previously, when trying to view permissions of a pipeline via the `pipe view-pipes -r` command - the command execution failed.
+
+### Scale down "cold" SGE autoscaling cluster
+
+[#1123](https://github.com/epam/cloud-pipeline/issues/1123)
+
+Previously, `SGE` autoscaling cluster didn't scale down until at least one running job appears in queue. Currently, `SGE` autoscaling cluster is being scaled down even if there weren't any running jobs yet.
+
+### "Launch Command" functionality issues
+
+[#1086](https://github.com/epam/cloud-pipeline/issues/1086), [#1090](https://github.com/epam/cloud-pipeline/issues/1090)
+
+Previously, if a user specified the values of the parameters with "spaces" (e.g. selection of the input parameter value from the GUI bucket browser) - this broke the command format.  
+Also, the **Launch Command** generation function used single-quotes to wrap the `-cmd` value. This was causing to fail when running the generate commands from the Windows environment. As the Windows CMD shell can't resolve it correctly (the command value is still split by the space).
+
+### Inner data storages navigation bar fails to navigate
+
+[#1077](https://github.com/epam/cloud-pipeline/issues/1077)
+
+Previously, navigation bar for so-called "inner" data storages produced `You cannot navigate to another storage` in case of any interaction with it.
+
+### Region is being set incorrectly when trying to rerun pipeline
+
+[#1066](https://github.com/epam/cloud-pipeline/issues/1066)
+
+Previously, when tried to rerun any run - the default region was being set in the **Cloud Region** field. But the instance type wasn't being changed automatically and remained the same as was set before the run. This could lead to inconsistencies.
+
+### `PAUSE` and `COMMIT` operations fail for the jobs with an autoscaled disk
+
+[#998](https://github.com/epam/cloud-pipeline/issues/998)
+
+Previously, `PAUSE` and `COMMIT` operations failed with the `NullPointerException` error for the jobs with an autoscaled disk.
