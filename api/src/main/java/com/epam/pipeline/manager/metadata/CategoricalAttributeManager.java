@@ -30,6 +30,7 @@ import java.util.Map;
 public class CategoricalAttributeManager {
 
     private final CategoricalAttributeDao categoricalAttributesDao;
+    private final MetadataManager metadataManager;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public boolean insertAttributesValues(final Map<String, List<String>> dict) {
@@ -52,5 +53,11 @@ public class CategoricalAttributeManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public boolean deleteAttributeValueQuery(final String key, final String value) {
         return categoricalAttributesDao.deleteAttributeValueQuery(key, value);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void syncWithMetadata() {
+        final Map<String, List<String>> fullMetadataDict = metadataManager.buildFullMetadataDict();
+        insertAttributesValues(fullMetadataDict);
     }
 }

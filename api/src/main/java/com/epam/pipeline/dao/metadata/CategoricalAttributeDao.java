@@ -34,6 +34,11 @@ import java.util.stream.Collectors;
 
 public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
 
+    public static final Collector<Pair<String, String>, ?, Map<String, List<String>>> STRING_PAIR_TO_DICT_COLLECTOR =
+        Collectors.groupingBy(Pair::getKey, Collector.of(ArrayList::new,
+                                                         (list, pair) -> list.add(pair.getValue()),
+                                                         (left, right) -> {left.addAll(right); return left;},
+                                                         Function.identity()));
     private static final String LIST_PARAMETER = "list";
 
     private String insertAttributeValueQuery;
@@ -79,12 +84,7 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
     }
 
     private Map<String, List<String>> listOfPairsToMap(final List<Pair<String, String>> pairs) {
-        return pairs.stream()
-            .collect(Collectors.groupingBy(Pair::getKey,
-                                           Collector.of(ArrayList::new,
-                                                        (list, pair) -> list.add(pair.getValue()),
-                                                        (left, right) -> { left.addAll(right); return left; },
-                                                        Function.identity())));
+        return pairs.stream().collect(STRING_PAIR_TO_DICT_COLLECTOR);
     }
 
     private boolean rowsChanged(final int[] changes) {

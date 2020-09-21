@@ -110,5 +110,16 @@ public class CategoricalAttributeController extends AbstractRestController {
         return Result.success(categoricalAttributeApiService.deleteAttributeValueQuery(attributeKey, value));
     }
 
-
+    @GetMapping("/sync")
+    @ResponseBody
+    @ApiOperation(
+        value = "Fill in categorical attributes table based on a current metadata.",
+        notes = "Fill in categorical attributes table based on a current metadata.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        })
+    public void syncCategoricalAttributesWithMetadata() {
+       categoricalAttributeApiService.syncWithMetadata();
+    }
 }
