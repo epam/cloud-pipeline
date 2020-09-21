@@ -139,6 +139,11 @@ public class SystemPreferences {
     public static final StringPreference DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME = new StringPreference(
         "storage.system.storage.name", null, DATA_STORAGE_GROUP, null);
 
+    public static final StringPreference DATA_STORAGE_RUN_SHARED_STORAGE_NAME = new StringPreference(
+            "storage.system.run.shared.storage.name", null, DATA_STORAGE_GROUP, pass);
+    public static final StringPreference DATA_STORAGE_RUN_SHARED_FOLDER_PATTERN = new StringPreference(
+            "storage.system.run.shared.folder.pattern", null, DATA_STORAGE_GROUP, pass);
+
     public static final LongPreference STORAGE_SYSTEM_TRANSFER_PIPELINE_ID = new LongPreference(
             "storage.transfer.pipeline.id", null, DATA_STORAGE_GROUP, pass);
 

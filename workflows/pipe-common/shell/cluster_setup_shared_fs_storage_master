@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,21 +15,28 @@
 # limitations under the License.
 
 MOUNT_DIR="$1"
-PUBLISH_DIR="$2"
-ALLOWED_CLIENTS="$3"
 
-CP_CAP_SHARE_FS_TYPE="${CP_CAP_SHARE_FS_TYPE:-lfs}"
+FS_SETUP_TASK="InitializeSharedFS"
+pipe_log_info "Started cluster shared FS setup" "$FS_SETUP_TASK"
 
-if [ "$CP_CAP_SHARE_FS_TYPE" == "nfs" ]; then
-    cluster_setup_shared_fs_nfs_master "$SHARED_FOLDER" "$PUBLISH_SHARED_FOLDER"
-elif [ "$CP_CAP_SHARE_FS_TYPE" == "external" ]; then
-   cluster_setup_shared_fs_storage_master "$SHARED_FOLDER"
-elif [ "$CP_CAP_SHARE_FS_TYPE" == "lfs" ]; then
-    cluster_setup_shared_fs_lfs_master
-    if [ $? -ne 0 ]; then
-        exit 1
-    fi
-
-    cluster_wait_for_nfs "$RUN_ID" "$MOUNT_DIR"
-    lizardfs settrashtime 0 "$MOUNT_DIR" -r
+# Check input parameters
+if [ -z "$MOUNT_DIR" ]
+then
+    pipe_log_fail "Directory to export is not defined, exiting" "$FS_SETUP_TASK"
+    exit 1
 fi
+
+# Install NFS clients
+install_nfs_client
+
+mount_shared_storage_fs "$MOUNT_DIR" "$RUN_ID" POST "$FS_SETUP_TASK"
+
+if [ $? -ne 0 ]; then
+    pipe_log_fail "Failed to setup shared storage FS on master node" "$FS_SETUP_TASK"
+    exit 1
+else
+    pipe_log_success "Successfully mounted shared storage FS to master node" "$FS_SETUP_TASK"
+fi
+
+
+

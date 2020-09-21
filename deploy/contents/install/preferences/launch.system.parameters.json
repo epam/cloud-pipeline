@@ -260,5 +260,12 @@
         "description": "Enable singularity for a current run",
         "defaultValue": "true",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_SHARE_FS_TYPE",
+        "type": "string",
+        "description": "Defines which file system shall be used as shared for cluster runs",
+        "defaultValue": "lfs",
+        "passToWorkers": true
     }
 ]

@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,6 +69,13 @@ RUN yum install -y cronie \
                    nfs-utils \
                    cifs-utils \
                    python
+ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
+ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.rpm"
+ARG LUSTRE_KMOD_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/kmod-lustre-client-$LUSTRE_VERSION.rpm"
+RUN wget -q $LUSTRE_KMOD_URL -O kmod-lustre-client.rpm && \
+    wget -q $LUSTRE_CLIENT_URL -O lustre-client.rpm && \
+    yum install -y -q kmod-lustre-client.rpm lustre-client.rpm && \
+    rm -f *lustre-client.rpm
 RUN curl -s https://bootstrap.pypa.io/get-pip.py | python && \
     pip install -I requests==2.21.0 && \
     wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \

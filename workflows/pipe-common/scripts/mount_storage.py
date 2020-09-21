@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ FUSE_GCSFUSE_ID = 'gcsfuse'
 FUSE_NA_ID = None
 AZURE_PROVIDER = 'AZURE'
 S3_PROVIDER = 'S3'
-
+READ_ONLY_MOUNT_OPT = 'ro'
 
 class PermissionHelper:
 
@@ -555,6 +555,8 @@ class NFSMounter(StorageMounter):
             command = command.format(protocol="cifs")
             if not params['path'].startswith("//"):
                 params['path'] = '//' + params['path']
+        elif self.share_mount.mount_type == "LUSTRE":
+            command = command.format(protocol="lustre")
         else:
             command = command.format(protocol="nfs")
 
@@ -562,12 +564,17 @@ class NFSMounter(StorageMounter):
         if not PermissionHelper.is_storage_writable(self.storage) or PermissionHelper.is_run_sensitive():
             permission = 'g+rx'
             if not mount_options:
-                mount_options = 'ro'
+                mount_options = READ_ONLY_MOUNT_OPT
             else:
                 options = mount_options.split(',')
-                if 'ro' not in options:
-                    mount_options += ',ro'
-
+                if READ_ONLY_MOUNT_OPT not in options:
+                    mount_options += ',{0}'.format(READ_ONLY_MOUNT_OPT)
+        if self.share_mount.mount_type == "SMB":
+            file_mode_options = 'file_mode={mode},dir_mode={mode}'.format(mode=mask)
+            if not mount_options:
+                mount_options = file_mode_options
+            else:
+                mount_options += ',' + file_mode_options
         if mount_options:
             command += ' -o {}'.format(mount_options)
         command += ' {path} {mount}'.format(**params)

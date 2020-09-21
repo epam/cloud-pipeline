@@ -1955,7 +1955,8 @@ class IPRangeFormItem extends React.Component {
 
 const MountOptions = {
   NFS: 'NFS',
-  SMB: 'SMB'
+  SMB: 'SMB',
+  LUSTRE: 'LUSTRE'
 };
 
 const DefaultMountOptions = {
@@ -1973,6 +1974,10 @@ const MountRootFormat = {
     [MountOptions.SMB]: {
       mask: /^[^:]+(:[\d]+)?$/i,
       format: 'server:port'
+    },
+    [MountOptions.LUSTRE]: {
+      mask: /^([^:]+(:\d+)?@\w+)(:([^:]+(:\d+)?@\w+))*(:\/)[^/]+$/i,
+      format: 'host@LND-protocol(:/host@LND-protocol:/...):/root'
     }
   },
   AZURE: {
@@ -1983,6 +1988,10 @@ const MountRootFormat = {
     [MountOptions.SMB]: {
       mask: /^[^:]+(:[\d]+)?$/i,
       format: 'server:port'
+    },
+    [MountOptions.LUSTRE]: {
+      mask: /^([^:]+(:\d+)?@\w+)(:([^:]+(:\d+)?@\w+))*(:\/)[^/]+$/i,
+      format: 'host@LND-protocol(:/host@LND-protocol:/...):/root'
     }
   },
   GCP: {
@@ -1993,6 +2002,10 @@ const MountRootFormat = {
     [MountOptions.SMB]: {
       mask: /^[^:]+(:[\d]+)?:\/.+$/i,
       format: 'server:port:/root'
+    },
+    [MountOptions.LUSTRE]: {
+      mask: /^([^:]+(:\d+)?@\w+)(:([^:]+(:\d+)?@\w+))*(:\/)[^/]+$/i,
+      format: 'host@LND-protocol(:/host@LND-protocol:/...):/root'
     }
   }
 };
@@ -2065,7 +2078,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
         mountOptions: undefined,
         mountRootError: null,
         mountTypeValid: true
-      });
+      }, this.validate);
     } else {
       this.setState({
         id: newValue.id,
@@ -2075,7 +2088,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
         mountOptions: newValue.mountOptions,
         mountRootError: this.mountRootValidationError(newValue.mountRoot, provider),
         mountTypeValid: !!newValue.mountType
-      });
+      }, this.validate);
     }
   };
 
