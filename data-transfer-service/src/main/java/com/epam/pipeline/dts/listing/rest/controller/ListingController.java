@@ -55,8 +55,9 @@ public class ListingController extends AbstractRestController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     public Result<ListingItemsPagingDTO> getListing(@RequestParam final String path,
                                                     @RequestParam final Integer pageSize,
-                                                    @RequestParam(required = false) final String marker) {
+                                                    @RequestParam(required = false) final String marker,
+                                                    @RequestParam(required = false) final String user) {
         return Result.success(listingItemsPagingMapper.modelToDTO(listingService
-                .list(Paths.get(path), pageSize, marker)));
+                .list(Paths.get(path), pageSize, marker, user)));
     }
 }

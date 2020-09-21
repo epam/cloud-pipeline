@@ -36,5 +36,6 @@ public class TransferDTO {
     private LocalDateTime started;
     private LocalDateTime finished;
     private List<String> included;
+    private String user;
 
 }

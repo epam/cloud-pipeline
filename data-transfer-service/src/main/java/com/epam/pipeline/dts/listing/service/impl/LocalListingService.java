@@ -45,7 +45,7 @@ public class LocalListingService implements ListingService {
     private static final int MAX_DEPTH = 1;
 
     @Override
-    public ListingItemsPaging list(@NotNull Path path, Integer pageSize, String marker) {
+    public ListingItemsPaging list(@NotNull Path path, Integer pageSize, String marker, String user) {
         verifyPath(path);
         verifyPagingAttributes(pageSize);
         long offset = StringUtils.isNumeric(marker) ? Long.parseLong(marker) : 1;

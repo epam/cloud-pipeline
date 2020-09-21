@@ -29,4 +29,5 @@ public class TaskCreationDTO {
     private StorageItemWithCredentialsDTO source;
     private StorageItemWithCredentialsDTO destination;
     private List<String> included = new ArrayList<>();
+    private String user;
 }

@@ -66,7 +66,7 @@ public class LocalListingServiceTest extends AbstractTransferTest {
             Path file2 = folder.resolve(FILE2);
             Files.createFile(file2);
 
-            List<ListingItem> actual = listingService.list(pathToFolder, null, null).getResults();
+            List<ListingItem> actual = listingService.list(pathToFolder, null, null, null).getResults();
             List<ListingItem> expected = Stream
                     .of(ListingItem
                                     .builder()
@@ -97,7 +97,7 @@ public class LocalListingServiceTest extends AbstractTransferTest {
             Path file1 = pathToFolder.resolve(FILE1);
             Files.createFile(file1);
 
-            List<ListingItem> actual = listingService.list(file1, null, null).getResults();
+            List<ListingItem> actual = listingService.list(file1, null, null, null).getResults();
             List<ListingItem> expected = Stream
                     .of(ListingItem
                                     .builder()
@@ -120,7 +120,7 @@ public class LocalListingServiceTest extends AbstractTransferTest {
                     .of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)
                     .collect(Collectors.toSet()));
 
-            List<ListingItem> actual = listingService.list(file, null, null).getResults();
+            List<ListingItem> actual = listingService.list(file, null, null, null).getResults();
             List<ListingItem> expected = Stream
                     .of(ListingItem
                             .builder()
@@ -143,7 +143,7 @@ public class LocalListingServiceTest extends AbstractTransferTest {
                     .of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_EXECUTE)
                     .collect(Collectors.toSet()));
 
-            List<ListingItem> actual = listingService.list(file, null, null).getResults();
+            List<ListingItem> actual = listingService.list(file, null, null, null).getResults();
             List<ListingItem> expected = Stream
                     .of(ListingItem
                             .builder()
@@ -167,7 +167,7 @@ public class LocalListingServiceTest extends AbstractTransferTest {
             Path file1 = pathToFolder.resolve(FILE1);
             Files.createFile(file1);
             Files.setPosixFilePermissions(pathToFolder, Collections.emptySet());
-            assertThrows(ForbiddenException.class, () -> listingService.list(pathToFolder, null, null));
+            assertThrows(ForbiddenException.class, () -> listingService.list(pathToFolder, null, null, null));
         }
     }
 
@@ -175,7 +175,7 @@ public class LocalListingServiceTest extends AbstractTransferTest {
     void listingShouldFailIfFolderDoesNotExist() throws IOException {
         try (FileSystem fs = getFSWithPosixAttributes()) {
             Path pathToFolder = fs.getPath(ROOT_FOLDER);
-            assertThrows(NotFoundException.class, () -> listingService.list(pathToFolder, null, null));
+            assertThrows(NotFoundException.class, () -> listingService.list(pathToFolder, null, null, null));
         }
     }
 
@@ -191,7 +191,7 @@ public class LocalListingServiceTest extends AbstractTransferTest {
             Path file2 = folder.resolve(FILE2);
             Files.createFile(file2);
 
-            ListingItemsPaging result = listingService.list(pathToFolder, 1, "1");
+            ListingItemsPaging result = listingService.list(pathToFolder, 1, "1", null);
             List<ListingItem> actual = result.getResults();
             List<ListingItem> expected = Stream
                     .of(ListingItem
@@ -207,7 +207,7 @@ public class LocalListingServiceTest extends AbstractTransferTest {
             assertTransferItems(expected, actual);
             assertThat(result.getNextPageMarker(), is("2"));
 
-            result = listingService.list(pathToFolder, 1, "2");
+            result = listingService.list(pathToFolder, 1, "2", null);
             actual = result.getResults();
             expected = Stream
                     .of(ListingItem

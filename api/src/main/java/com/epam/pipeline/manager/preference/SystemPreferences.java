@@ -403,6 +403,8 @@ public class SystemPreferences {
             "", DTS_GROUP, pass);
     public static final StringPreference DTS_DISTRIBUTION_URL = new StringPreference("dts.dist.url",
             "", DTS_GROUP, pass);
+    public static final StringPreference DTS_USER_METADATA_KEY = new StringPreference(
+            "dts.user.metadata.key", "dts_name", DTS_GROUP, pass);
 
     /**
      * Controls maximum number of scheduled at once runs

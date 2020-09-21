@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @ConditionalOnProperty(value = "dts.impersonation.enabled", havingValue = "true", matchIfMissing = true)
@@ -42,10 +43,12 @@ public class ImpersonatingTransferServiceImpl implements TransferService {
     private final SecurityService securityService;
 
     @Override
-    public TransferTask runTransferTask(@NonNull StorageItem source, @NonNull StorageItem destination,
-                                        List<String> included) {
-        String transferUser = securityService.getLocalUser();
-        TransferTask transferTask = taskService.createTask(source, destination, included, transferUser);
+    public TransferTask runTransferTask(@NonNull StorageItem source,
+                                        @NonNull StorageItem destination,
+                                        List<String> included,
+                                        String user) {
+        String localUser = Optional.ofNullable(user).orElseGet(securityService::getLocalUser);
+        TransferTask transferTask = taskService.createTask(source, destination, included, localUser);
         taskService.updateStatus(transferTask.getId(), TaskStatus.RUNNING);
         dataUploaderProviderManager.transferData(transferTask);
         return transferTask;

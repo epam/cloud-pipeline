@@ -22,5 +22,5 @@ import javax.validation.constraints.NotNull;
 import java.nio.file.Path;
 
 public interface ListingService {
-    ListingItemsPaging list(@NotNull Path path, Integer pageSize, String marker);
+    ListingItemsPaging list(@NotNull Path path, Integer pageSize, String marker, String user);
 }

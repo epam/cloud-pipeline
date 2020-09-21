@@ -37,7 +37,8 @@ public interface DtsClient {
     @GET("list")
     Call<Result<DtsDataStorageListing>> getList(@Query("path") String path,
                                                 @Query("pageSize") Integer pageSize,
-                                                @Query("marker") String marker);
+                                                @Query("marker") String marker,
+                                                @Query("user") String user);
 
     @POST("submission")
     Call<Result<DtsSubmission>> createSubmission(@Body DtsSubmission submission);

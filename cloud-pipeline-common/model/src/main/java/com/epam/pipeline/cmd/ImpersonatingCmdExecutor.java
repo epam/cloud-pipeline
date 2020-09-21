@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 public class ImpersonatingCmdExecutor implements CmdExecutor {
     
     private static final String BASH_TEMPLATE = "bash %s";
-    private static final String IMPERSONATING_TEMPLATE = "echo \"%s %s\" | sudo su - %s";
+    private static final String IMPERSONATING_TEMPLATE = "echo \"%s %s\" | sudo -n su - %s";
     private static final String ENVIRONMENT_VARIABLE_TEMPLATE = "%s='%s'";
 
     private final CmdExecutor cmdExecutor;

@@ -17,27 +17,43 @@
 package com.epam.pipeline.manager.dts;
 
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.entity.dts.DtsDataStorageListing;
 import com.epam.pipeline.entity.dts.DtsRegistry;
+import com.epam.pipeline.entity.metadata.MetadataEntry;
+import com.epam.pipeline.entity.metadata.PipeConfValue;
+import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
+
 @Service
 @RequiredArgsConstructor
 public class DtsListingManager {
     private static final String DELIMITER = "/";
+    private static final String DEFAULT_DTS_USER_METADATA_KEY = "dts_name";
 
     private final AuthManager authManager;
     private final DtsRegistryManager dtsRegistryManager;
     private final DtsClientBuilder clientBuilder;
+    private final MetadataManager metadataManager;
+    private final PreferenceManager preferenceManager;
 
     public DtsDataStorageListing list(String path, Long dtsId, Integer pageSize, String marker) {
         DtsClient dtsClient = clientBuilder.createDtsClient(getDtsBaseUrl(path, dtsId),
                 authManager.issueTokenForCurrentUser().getToken());
         Result<DtsDataStorageListing> result =
-                DtsClient.executeRequest(dtsClient.getList(path, pageSize, marker));
+                DtsClient.executeRequest(dtsClient.getList(path, pageSize, marker, getDtsUser()));
         return result.getPayload();
     }
 
@@ -55,5 +71,26 @@ public class DtsListingManager {
             return content.substring(0, content.length() - 1);
         }
         return content;
+    }
+
+    private String getDtsUser() {
+        return Optional.ofNullable(authManager.getCurrentUser())
+                .map(PipelineUser::getId)
+                .map(id -> new EntityVO(id, AclClass.PIPELINE_USER))
+                .map(Collections::singletonList)
+                .map(metadataManager::listMetadataItems)
+                .map(List::stream)
+                .orElseGet(Stream::empty)
+                .findFirst()
+                .map(MetadataEntry::getData)
+                .map(data -> data.get(getDtsUserMetadataKey()))
+                .map(PipeConfValue::getValue)
+                .orElseGet(authManager::getAuthorizedUser);
+    }
+
+    private String getDtsUserMetadataKey() {
+        return Optional.ofNullable(preferenceManager.getStringPreference(
+                SystemPreferences.DTS_USER_METADATA_KEY.getKey()))
+                .orElse(DEFAULT_DTS_USER_METADATA_KEY);
     }
 }

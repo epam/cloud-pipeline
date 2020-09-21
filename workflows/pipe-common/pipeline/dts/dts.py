@@ -101,7 +101,8 @@ class DataTransferServiceClient:
     def __build_transfer_data(self, path, from_storage, to_storage):
         return {
             'source': self.__build_storage_item(path.source_path, from_storage),
-            'destination': self.__build_storage_item(path.destination_path, to_storage)
+            'destination': self.__build_storage_item(path.destination_path, to_storage),
+            'user': path.user
         }
 
     def __build_storage_item(self, path, type):

@@ -371,14 +371,22 @@ class InputDataTask:
             else:
                 grouped_paths[path.prefix].append(path)
 
+        user_dts_name = self.get_user_dts_name()
         for prefix, paths in grouped_paths.iteritems():
             dts_url = dts_registry[prefix]
             Logger.info('Uploading {} paths using DTS service {}'.format(len(paths), dts_url),  self.task_name)
             dts_client = DataTransferServiceClient(dts_url, self.token, self.api_url, self.token, 10)
-            dts_client.transfer_data([self.create_dts_path(path, upload, rules) for path in paths], self.task_name)
+            dts_client.transfer_data([self.create_dts_path(path, upload, rules, user_dts_name) for path in paths],
+                                     self.task_name)
 
-    def create_dts_path(self, path, upload, rules):
-        return LocalToS3(path.path, path.cloud_path, rules) if upload else S3ToLocal(path.cloud_path, path.path, rules)
+    def get_user_dts_name(self):
+        user_id = self.api.whoami().get('id')
+        metadata_key = self.api.get_preference('dts.user.metadata.key').get('value', 'dts_name')
+        return self.api.load_metadata(user_id, 'PIPELINE_USER').get('data', {}).get(metadata_key)
+
+    def create_dts_path(self, path, upload, rules, user):
+        return LocalToS3(path.path, path.cloud_path, rules, user) \
+            if upload else S3ToLocal(path.cloud_path, path.path, rules, user)
 
     def localize_data(self, remote_locations, upload, rules=None):
         cluster = Cluster.build_cluster(self.api, self.task_name)

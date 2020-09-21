@@ -40,8 +40,10 @@ public class TransferServiceImpl implements TransferService {
     private final DataUploaderProviderManager dataUploaderProviderManager;
 
     @Override
-    public TransferTask runTransferTask(@NonNull StorageItem source, @NonNull StorageItem destination,
-                                        List<String> included) {
+    public TransferTask runTransferTask(@NonNull StorageItem source,
+                                        @NonNull StorageItem destination,
+                                        List<String> included,
+                                        String user) {
         TransferTask transferTask = taskService.createTask(source, destination, included);
         taskService.updateStatus(transferTask.getId(), TaskStatus.RUNNING);
         dataUploaderProviderManager.transferData(transferTask);
