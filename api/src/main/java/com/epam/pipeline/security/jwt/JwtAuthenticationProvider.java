@@ -43,8 +43,7 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
             throw new AuthenticationServiceException("Authentication error", e);
         }
 
-        UserContext context = new UserContext(jwtRawToken, claims);
-        accessService.validateUserBlockStatus(context.getUsername());
+        UserContext context = accessService.getJwtUser(jwtRawToken, claims);
         return new JwtAuthenticationToken(context, context.getAuthorities());
     }
 
