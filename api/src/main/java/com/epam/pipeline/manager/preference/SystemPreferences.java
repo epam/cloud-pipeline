@@ -556,6 +556,11 @@ public class SystemPreferences {
      */
     public static final BooleanPreference SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED = new BooleanPreference(
             "system.ssh.default.root.user.enabled", true, SYSTEM_GROUP, pass);
+    /**
+     * Controls which instance types will be excluded from notification list.
+     */
+    public static final StringPreference SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES = new StringPreference(
+            "system.notifications.exclude.instance.types", null, SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(

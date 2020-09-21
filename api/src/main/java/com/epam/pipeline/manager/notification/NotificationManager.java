@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.notification.NotificationTimestamp;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -47,6 +49,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -102,6 +105,8 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
     @Autowired
     private PreferenceManager preferenceManager;
 
+    private final AntPathMatcher matcher = new AntPathMatcher();
+
     /**
      * Internal method for creating notification message that selecting appropriate email template from db,
      * serialize PipelineRun to key-value object and save it to notification_queue table.
@@ -112,6 +117,13 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyLongRunningTask(PipelineRun run, Long duration, NotificationSettings settings) {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_SUBMITTED, run.getPodId()));
+
+        final String instanceTypesToExclude = preferenceManager.getPreference(SystemPreferences
+                .SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES);
+
+        if (!noneMatchExcludedInstanceType(run, instanceTypesToExclude)) {
+            return;
+        }
 
         NotificationMessage notificationMessage = new NotificationMessage();
 
@@ -263,25 +275,28 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
 
         final List<Long> ccUserIds = getCCUsers(idleRunSettings);
 
-
         final Map<String, PipelineUser> pipelineOwners = getPipelinesOwners(pipelineCpuRatePairs);
 
         final double idleCpuLevel = preferenceManager.getPreference(
                 SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT);
-        final List<NotificationMessage> messages = pipelineCpuRatePairs.stream().map(pair -> {
-            NotificationMessage message = new NotificationMessage();
-            message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
-            message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
-            message.getTemplateParameters().put("idleCpuLevel", idleCpuLevel);
-            message.getTemplateParameters().put("cpuRate", pair.getRight() * PERCENT);
-            if (idleRunSettings.isKeepInformedOwner()) {
-                message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
-            }
-            message.setCopyUserIds(ccUserIds);
-            return message;
-        })
-            .collect(Collectors.toList());
+        final String instanceTypesToExclude = preferenceManager.getPreference(SystemPreferences
+                .SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES);
 
+        final List<NotificationMessage> messages = pipelineCpuRatePairs.stream()
+                .filter(pair -> noneMatchExcludedInstanceType(pair.getLeft(), instanceTypesToExclude))
+                .map(pair -> {
+                    NotificationMessage message = new NotificationMessage();
+                    message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
+                    message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
+                    message.getTemplateParameters().put("idleCpuLevel", idleCpuLevel);
+                    message.getTemplateParameters().put("cpuRate", pair.getRight() * PERCENT);
+                    if (idleRunSettings.isKeepInformedOwner()) {
+                        message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
+                    }
+                    message.setCopyUserIds(ccUserIds);
+                    return message;
+                })
+                .collect(Collectors.toList());
         monitoringNotificationDao.createMonitoringNotifications(messages);
     }
 
@@ -571,8 +586,12 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             return Collections.emptyList();
         }
 
+        final String instanceTypesToExclude = preferenceManager.getPreference(SystemPreferences
+                .SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES);
+
         final List<Long> ccUsers = getCCUsers(settings);
         final List<PipelineRun> filtered = pausedRuns.stream()
+                .filter(run -> noneMatchExcludedInstanceType(run, instanceTypesToExclude))
                 .filter(run -> isRunStuckInStatus(settings, now, threshold, run))
                 .collect(Collectors.toList());
         final Map<String, PipelineUser> pipelineOwners = getPipelinesOwnersFromRuns(filtered);
@@ -582,5 +601,23 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         monitoringNotificationDao.createMonitoringNotifications(messages);
 
         return filtered;
+    }
+
+    private boolean noneMatchExcludedInstanceType(final PipelineRun run, final String instanceTypesToExclude) {
+        if (StringUtils.isBlank(instanceTypesToExclude)) {
+            return true;
+        }
+        final RunInstance instance = run.getInstance();
+        if (Objects.isNull(instance)) {
+            LOGGER.debug("Cannot get instance info for run '{}'", run.getId());
+            return true;
+        }
+        final String nodeType = instance.getNodeType();
+        if (StringUtils.isBlank(nodeType)) {
+            LOGGER.debug("Cannot get node type for run '{}'", run.getId());
+            return true;
+        }
+        return Arrays.stream(instanceTypesToExclude.split(","))
+                .noneMatch(pattern -> matcher.match(pattern, nodeType));
     }
 }
