@@ -40,7 +40,7 @@ import java.util.Map;
 @Controller
 @Api(value = "CategoricalAttributes")
 @RequiredArgsConstructor
-@RequestMapping(value = "/categorical_attribute")
+@RequestMapping(value = "/categoricalAttribute")
 public class CategoricalAttributeController extends AbstractRestController {
 
     private final CategoricalAttributeApiService categoricalAttributeApiService;
@@ -48,8 +48,8 @@ public class CategoricalAttributeController extends AbstractRestController {
     @PostMapping
     @ResponseBody
     @ApiOperation(
-        value = "Add categorical attribute value.",
-        notes = "Add categorical attribute value",
+        value = "Add categorical attributes values.",
+        notes = "Add categorical attributes values",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
@@ -94,20 +94,21 @@ public class CategoricalAttributeController extends AbstractRestController {
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
     public Result<Boolean> deleteAllAttributeValues(@RequestParam final String attributeKey) {
-        return Result.success(categoricalAttributeApiService.deleteAttributeValuesQuery(attributeKey));
+        return Result.success(categoricalAttributeApiService.deleteAttributeValues(attributeKey));
     }
 
-    @DeleteMapping("/delete_value")
+    @DeleteMapping("/deleteValue")
     @ResponseBody
     @ApiOperation(
-        value = "Delete one specified values for a requested attribute.",
-        notes = "Delete one specified values for a requested attribute.",
+        value = "Delete one specific value for a requested attribute.",
+        notes = "Delete one specific value for a requested attribute.",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
-    public Result<Boolean> deleteAttributeValue(@RequestParam final String attributeKey, @RequestParam final String value) {
-        return Result.success(categoricalAttributeApiService.deleteAttributeValueQuery(attributeKey, value));
+    public Result<Boolean> deleteAttributeValue(@RequestParam final String attributeKey,
+                                                @RequestParam final String value) {
+        return Result.success(categoricalAttributeApiService.deleteAttributeValue(attributeKey, value));
     }
 
     @GetMapping("/sync")
@@ -120,6 +121,6 @@ public class CategoricalAttributeController extends AbstractRestController {
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
     public void syncCategoricalAttributesWithMetadata() {
-       categoricalAttributeApiService.syncWithMetadata();
+        categoricalAttributeApiService.syncWithMetadata();
     }
 }

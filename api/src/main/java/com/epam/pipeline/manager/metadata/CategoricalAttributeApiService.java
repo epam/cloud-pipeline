@@ -46,13 +46,13 @@ public class CategoricalAttributeApiService {
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public boolean deleteAttributeValuesQuery(final String key) {
-        return categoricalAttributesManager.deleteAttributeValuesQuery(key);
+    public boolean deleteAttributeValues(final String key) {
+        return categoricalAttributesManager.deleteAttributeValues(key);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public boolean deleteAttributeValueQuery(final String key, final String value) {
-        return categoricalAttributesManager.deleteAttributeValueQuery(key, value);
+    public boolean deleteAttributeValue(final String key, final String value) {
+        return categoricalAttributesManager.deleteAttributeValue(key, value);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)

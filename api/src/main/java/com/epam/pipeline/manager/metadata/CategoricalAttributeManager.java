@@ -46,13 +46,13 @@ public class CategoricalAttributeManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public boolean deleteAttributeValuesQuery(final String key) {
-        return categoricalAttributesDao.deleteAttributeValuesQuery(key);
+    public boolean deleteAttributeValues(final String key) {
+        return categoricalAttributesDao.deleteAttributeValues(key);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public boolean deleteAttributeValueQuery(final String key, final String value) {
-        return categoricalAttributesDao.deleteAttributeValueQuery(key, value);
+    public boolean deleteAttributeValue(final String key, final String value) {
+        return categoricalAttributesDao.deleteAttributeValue(key, value);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

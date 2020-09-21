@@ -36,9 +36,12 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
 
     public static final Collector<Pair<String, String>, ?, Map<String, List<String>>> STRING_PAIR_TO_DICT_COLLECTOR =
         Collectors.groupingBy(Pair::getKey, Collector.of(ArrayList::new,
-                                                         (list, pair) -> list.add(pair.getValue()),
-                                                         (left, right) -> {left.addAll(right); return left;},
-                                                         Function.identity()));
+            (list, pair) -> list.add(pair.getValue()),
+            (left, right) -> {
+                left.addAll(right);
+                return left;
+            },
+            Function.identity()));
     private static final String LIST_PARAMETER = "list";
 
     private String insertAttributeValueQuery;
@@ -72,13 +75,13 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public boolean deleteAttributeValuesQuery(final String key) {
+    public boolean deleteAttributeValues(final String key) {
         return getNamedParameterJdbcTemplate()
                    .update(deleteAttributeValuesQuery, AttributeValueParameters.getParameters(key, null)) > 0;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public boolean deleteAttributeValueQuery(final String key, final String value) {
+    public boolean deleteAttributeValue(final String key, final String value) {
         return getNamedParameterJdbcTemplate()
                    .update(deleteAttributeValueQuery, AttributeValueParameters.getParameters(key, value)) > 0;
     }

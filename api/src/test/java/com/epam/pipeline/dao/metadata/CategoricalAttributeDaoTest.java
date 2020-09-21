@@ -17,6 +17,7 @@
 package com.epam.pipeline.dao.metadata;
 
 import com.epam.pipeline.AbstractSpringTest;
+import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
@@ -28,10 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
 public class CategoricalAttributeDaoTest extends AbstractSpringTest {
@@ -51,11 +48,11 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
         final Map<String, List<String>> values = new HashMap<>();
         values.put(ATTRIBUTE_KEY_1, Arrays.asList(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2));
         values.put(ATTRIBUTE_KEY_2, Arrays.asList(ATTRIBUTE_VALUE_2, ATTRIBUTE_VALUE_3));
-        assertTrue(categoricalAttributeDao.insertAttributesValues(values));
+        Assert.assertTrue(categoricalAttributeDao.insertAttributesValues(values));
         values.put(ATTRIBUTE_KEY_1, Collections.singletonList(ATTRIBUTE_VALUE_1));
-        assertFalse(categoricalAttributeDao.insertAttributesValues(values));
+        Assert.assertFalse(categoricalAttributeDao.insertAttributesValues(values));
         values.put(ATTRIBUTE_KEY_1, Collections.singletonList(ATTRIBUTE_VALUE_3));
-        assertTrue(categoricalAttributeDao.insertAttributesValues(values));
+        Assert.assertTrue(categoricalAttributeDao.insertAttributesValues(values));
     }
 
     @Test
@@ -66,7 +63,7 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
         values.put(ATTRIBUTE_KEY_2, Collections.singletonList(ATTRIBUTE_VALUE_3));
         categoricalAttributeDao.insertAttributesValues(values);
         final Map<String, List<String>> attributesWithValues = categoricalAttributeDao.loadAll();
-        assertEquals(2, attributesWithValues.size());
+        Assert.assertEquals(2, attributesWithValues.size());
         assertValuesPresentedForKeyInMap(attributesWithValues, ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2);
         assertValuesPresentedForKeyInMap(attributesWithValues, ATTRIBUTE_KEY_2, ATTRIBUTE_VALUE_3);
     }
@@ -81,7 +78,7 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
         final Map<String, List<String>>
             attributesWithValues =
             categoricalAttributeDao.loadAllValuesForKeys(Collections.singletonList(ATTRIBUTE_KEY_1));
-        assertEquals(1, attributesWithValues.size());
+        Assert.assertEquals(1, attributesWithValues.size());
         assertValuesPresentedForKeyInMap(attributesWithValues, ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2);
     }
 
@@ -92,9 +89,9 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
         values.put(ATTRIBUTE_KEY_1, Arrays.asList(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2));
         values.put(ATTRIBUTE_KEY_2, Collections.singletonList(ATTRIBUTE_VALUE_3));
         categoricalAttributeDao.insertAttributesValues(values);
-        assertTrue(categoricalAttributeDao.deleteAttributeValuesQuery(ATTRIBUTE_KEY_2));
+        Assert.assertTrue(categoricalAttributeDao.deleteAttributeValues(ATTRIBUTE_KEY_2));
         final Map<String, List<String>> attributesWithValues = categoricalAttributeDao.loadAll();
-        assertEquals(1, attributesWithValues.size());
+        Assert.assertEquals(1, attributesWithValues.size());
         assertValuesPresentedForKeyInMap(attributesWithValues, ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2);
     }
 
@@ -105,9 +102,9 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
         values.put(ATTRIBUTE_KEY_1, Arrays.asList(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2));
         values.put(ATTRIBUTE_KEY_2, Collections.singletonList(ATTRIBUTE_VALUE_3));
         categoricalAttributeDao.insertAttributesValues(values);
-        assertTrue(categoricalAttributeDao.deleteAttributeValueQuery(ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_1));
+        Assert.assertTrue(categoricalAttributeDao.deleteAttributeValue(ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_1));
         final Map<String, List<String>> attributesWithValues = categoricalAttributeDao.loadAll();
-        assertEquals(2, attributesWithValues.size());
+        Assert.assertEquals(2, attributesWithValues.size());
         assertValuesPresentedForKeyInMap(attributesWithValues, ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_2);
         assertValuesPresentedForKeyInMap(attributesWithValues, ATTRIBUTE_KEY_2, ATTRIBUTE_VALUE_3);
     }
@@ -116,7 +113,7 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
                                                   final String key,
                                                   final String... values) {
         final List<String> valuesForKey = attributesWithValues.get(key);
-        assertEquals(values.length, valuesForKey.size());
-        assertThat(valuesForKey, contains(values));
+        Assert.assertEquals(values.length, valuesForKey.size());
+        Assert.assertThat(valuesForKey, contains(values));
     }
 }
