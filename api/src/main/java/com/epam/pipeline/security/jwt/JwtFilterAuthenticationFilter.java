@@ -52,8 +52,7 @@ public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
         try {
             if (!StringUtils.isEmpty(rawToken)) {
                 JwtTokenClaims claims = tokenVerifier.readClaims(rawToken.getToken());
-                UserContext context = new UserContext(rawToken, claims);
-                accessService.validateUserBlockStatus(context.getUsername());
+                UserContext context = accessService.getJwtUser(rawToken, claims);
                 JwtAuthenticationToken token = new JwtAuthenticationToken(context, context.getAuthorities());
                 token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(token);

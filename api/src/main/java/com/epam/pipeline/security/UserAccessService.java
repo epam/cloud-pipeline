@@ -16,9 +16,12 @@
 package com.epam.pipeline.security;
 
 
+import com.epam.pipeline.entity.security.JwtRawToken;
+import com.epam.pipeline.entity.security.JwtTokenClaims;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.security.jwt.TokenVerificationException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,17 +45,26 @@ public class UserAccessService {
         this.validateUser = validateUser;
     }
 
-    public void validateUserBlockStatus(final String userName) {
+    public UserContext getJwtUser(final JwtRawToken jwtRawToken, final JwtTokenClaims claims) {
+        final UserContext jwtUser = new UserContext(jwtRawToken, claims);
         if (!validateUser) {
-            return;
+            return jwtUser;
         }
-        final PipelineUser user = userManager.loadUserByName(userName);
-        if (user == null) {
-            log.info("Failed to find user by name {}. Access is still allowed.", userName);
-            return;
+        final PipelineUser pipelineUser = userManager.loadUserByName(jwtUser.getUsername());
+        if (pipelineUser == null) {
+            log.info("Failed to find user by name {}. Access is still allowed.", jwtUser.getUsername());
+            return jwtUser;
         }
-        validateUserBlockStatus(user);
-        validateUserGroupsBlockStatus(user);
+        if (!jwtUser.getUserId().equals(pipelineUser.getId())) {
+            throw new TokenVerificationException(String.format(
+                    "Invalid JWT token provided for user %s: id %d doesn't match expected value %d.",
+                    jwtUser.getUsername(), jwtUser.getUserId(), pipelineUser.getId()));
+        }
+        validateUserBlockStatus(pipelineUser);
+        validateUserGroupsBlockStatus(pipelineUser);
+        jwtUser.setRoles(pipelineUser.getRoles());
+        jwtUser.setGroups(pipelineUser.getGroups());
+        return jwtUser;
     }
 
     public void validateUserBlockStatus(final PipelineUser user) {
