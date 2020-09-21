@@ -198,7 +198,13 @@ const SystemLongPausedActionPreference = {
   preference: 'system.long.paused.action',
   type: 'enum',
   name: 'Action',
-  enum: ['NOTIFY', 'STOP']
+  enum: ['NOTIFY', 'STOP'],
+  hint: (
+    <div>
+      Sets the <b>action</b> to perform with the instance
+      having the long paused state (longer then configured threshold).
+    </div>
+  )
 };
 
 const Preferences = [
