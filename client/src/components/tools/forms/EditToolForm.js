@@ -846,6 +846,11 @@ export default class EditToolForm extends React.Component {
       kubeEnabled,
       autoScaledPriceType
     } = configuration;
+    let {dinD, systemD} = this.state;
+    if (kubeEnabled) {
+      dinD = true;
+      systemD = true;
+    }
     this.setState({
       launchCluster,
       nodesCount,
@@ -856,7 +861,9 @@ export default class EditToolForm extends React.Component {
       sparkEnabled,
       slurmEnabled,
       kubeEnabled,
-      autoScaledPriceType
+      autoScaledPriceType,
+      dinD,
+      systemD
     }, () => {
       this.closeConfigureClusterDialog();
       const priceType = this.props.form.getFieldValue('is_spot') || this.getPriceTypeInitialValue();

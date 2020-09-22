@@ -3472,6 +3472,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       kubeEnabled,
       autoScaledPriceType
     } = configuration;
+    let {dinD, systemD} = this.state;
+    if (kubeEnabled) {
+      dinD = true;
+      systemD = true;
+    }
     this.setState({
       launchCluster,
       autoScaledCluster,
@@ -3482,7 +3487,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       kubeEnabled,
       nodesCount,
       maxNodesCount,
-      autoScaledPriceType
+      autoScaledPriceType,
+      dinD,
+      systemD
     }, () => {
       this.closeConfigureClusterDialog();
       const priceType = this.getSectionFieldValue(ADVANCED)('is_spot') ||
