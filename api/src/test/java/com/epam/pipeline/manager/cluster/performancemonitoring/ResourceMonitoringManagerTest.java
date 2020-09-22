@@ -38,6 +38,7 @@ import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
@@ -70,6 +71,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.anyMap;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -134,6 +136,8 @@ public class ResourceMonitoringManagerTest {
     ArgumentCaptor<List<Pair<PipelineRun, Double>>> runsToNotifyIdleCaptor;
     @Captor
     ArgumentCaptor<List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>>> runsToNotifyResConsumingCaptor;
+    @Captor
+    ArgumentCaptor<List<PipelineRun>> runsToUpdateTagsCaptor;
 
     private InstanceType testType;
     private PipelineRun okayRun;
@@ -573,7 +577,7 @@ public class ResourceMonitoringManagerTest {
     @Test
     public void testNoActionIfActionTimeoutIsNotFulfilled() throws InterruptedException {
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-            .thenReturn(IdleRunAction.NOTIFY.name());
+            .thenReturn(IdleRunAction.STOP.name());
 
         LocalDateTime now = DateUtils.nowUTC();
         idleOnDemandRun.setLastIdleNotificationTime(now.minusSeconds(HALF_AN_HOUR));
@@ -586,14 +590,23 @@ public class ResourceMonitoringManagerTest {
 
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
+        // checks notifications were sent
+        verify(notificationManager, atLeastOnce())
+                .notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
-        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getValue();
-        Assert.assertEquals(0, updatedRuns.size());
+        // checks runs were not updated
+        verify(pipelineRunManager, atLeastOnce()).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
+        Assert.assertTrue(CollectionUtils.isEmpty(runsToUpdateCaptor.getValue()));
 
-        List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
-        Assert.assertEquals(0, runsToNotify.size());
+        verify(pipelineRunManager, atLeastOnce()).updateRunsTags(runsToUpdateTagsCaptor.capture());
+        Assert.assertTrue(CollectionUtils.isEmpty(runsToUpdateTagsCaptor.getValue()));
+
+        // checks stop action is not performed
+        verify(pipelineRunManager, never()).stop(TEST_OK_RUN_ID);
+        verify(pipelineRunManager, never()).stop(TEST_IDLE_ON_DEMAND_RUN_ID);
+        verify(pipelineRunManager, never()).stop(TEST_IDLE_SPOT_RUN_ID);
+
+        verify(notificationManager, never()).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_STOPPED));
     }
 
     @Test

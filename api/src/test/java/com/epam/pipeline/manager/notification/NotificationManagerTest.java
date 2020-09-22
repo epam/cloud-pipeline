@@ -193,7 +193,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         issueCommentTemplate = createTemplate(4L, "issueCommentTemplate");
         issueCommentSettings = createSettings(NEW_ISSUE_COMMENT, issueCommentTemplate.getId(), -1L, -1L);
         createTemplate(IDLE_RUN.getId(), "idle-run-template");
-        createSettings(IDLE_RUN, IDLE_RUN.getId(), -1, -1);
+        createSettings(IDLE_RUN, IDLE_RUN.getId(), 1, 1);
         longPausedTemplate = createTemplate(LONG_PAUSED.getId(), "longPausedTemplate");
         createSettings(LONG_PAUSED, longPausedTemplate.getId(), LONG_PAUSED_SECONDS,
                 LONG_PAUSED_SECONDS);
@@ -408,14 +408,12 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @Test
     public void testNotifyIdleRun() {
-        PipelineRun run1 = new PipelineRun();
+        final PipelineRun run1 = createTestPipelineRun();
         run1.setOwner(testUser1.getUserName());
-        run1.setStartDate(DateUtils.now());
-        run1.setId(1L);
-        PipelineRun run2 = new PipelineRun();
-        run2.setStartDate(DateUtils.now());
+        pipelineRunDao.updateRun(run1);
+        final PipelineRun run2 = createTestPipelineRun();
         run2.setOwner(testUser2.getUserName());
-        run2.setId(2L);
+        pipelineRunDao.updateRun(run2);
 
         notificationManager.notifyIdleRuns(Arrays.asList(
             new ImmutablePair<>(run1, TEST_CPU_RATE1),
