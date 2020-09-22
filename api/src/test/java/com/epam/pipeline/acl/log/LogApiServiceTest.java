@@ -16,55 +16,75 @@
 
 package com.epam.pipeline.acl.log;
 
+import com.epam.pipeline.acl.AbstractAclTest;
+import com.epam.pipeline.acl.AclTestBeans;
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
+import com.epam.pipeline.manager.log.LogManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
-
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = {LogApiService.class})
-public class LogApiServiceTest {
+@SpringBootTest(classes = {LogApiService.class, AclTestBeans.class})
+public class LogApiServiceTest extends AbstractAclTest {
 
     private static final String UNAUTHORIZED = "Unauthorized";
     private static final String ADMIN_ROLE = "ADMIN";
 
     @Autowired
-    LogApiService logApiService;
+    private LogApiService logApiService;
 
-    @MockBean
-    LogManager logManager;
+    @Autowired
+    private LogManager logManager;
 
-    @MockBean
-    LogPagination logPagination;
+    @Autowired
+    private LogPagination logPagination;
 
-    @MockBean
+    @Autowired
     private AuthManager mockAuthManager;
+
+    private LogFilter logFilter = new LogFilter();
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldAllowAccessToLogPagination() {
+        doReturn(ADMIN_ROLE).when(mockAuthManager).getAuthorizedUser();
+        when(logManager.filter(logFilter)).thenReturn(logPagination);
+
+        assertThat(logApiService.filter(logFilter)).isEqualTo(logPagination);
+    }
 
     @Test(expected = AccessDeniedException.class)
     @WithMockUser(roles = UNAUTHORIZED)
     public void shouldDenyAccessToLogPagination() {
-        LogFilter logFilter = new LogFilter();
         doReturn(UNAUTHORIZED).when(mockAuthManager).getAuthorizedUser();
         when(logManager.filter(logFilter)).thenReturn(logPagination);
 
         logApiService.filter(logFilter);
     }
 
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldAllowAccessToLogFilter() {
+        doReturn(ADMIN_ROLE).when(mockAuthManager).getAuthorizedUser();
+        when(logManager.getFilters()).thenReturn(logFilter);
+
+        assertThat(logApiService.getFilters()).isEqualTo(logFilter);
+    }
+
     @Test(expected = AccessDeniedException.class)
     @WithMockUser(roles = UNAUTHORIZED)
     public void shouldDenyAccessToLogFilter() {
-        LogFilter logFilter = new LogFilter();
         doReturn(UNAUTHORIZED).when(mockAuthManager).getAuthorizedUser();
         when(logManager.getFilters()).thenReturn(logFilter);
 

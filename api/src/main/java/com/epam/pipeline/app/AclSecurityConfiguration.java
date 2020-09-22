@@ -45,6 +45,7 @@ import org.springframework.security.acls.jdbc.LookupStrategy;
 import org.springframework.security.acls.model.AclCache;
 import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.method.configuration.GlobalMethodSecurityConfiguration;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
@@ -52,6 +53,7 @@ import javax.sql.DataSource;
 
 @Configuration
 @ComponentScan(basePackages = {"com.epam.pipeline.acl"})
+@EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 public class AclSecurityConfiguration extends GlobalMethodSecurityConfiguration {
 
     @Autowired
