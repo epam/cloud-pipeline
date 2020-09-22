@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -56,7 +57,7 @@ public class CategoricalAttributeController extends AbstractRestController {
         return Result.success(categoricalAttributeApiService.insertAttributesValues(dict));
     }
 
-    @GetMapping("/loadAll")
+    @GetMapping
     @ApiOperation(
         value = "Load all categorical attributes with values.",
         notes = "Load all categorical attributes with values.",
@@ -68,7 +69,7 @@ public class CategoricalAttributeController extends AbstractRestController {
         return Result.success(categoricalAttributeApiService.loadAll());
     }
 
-    @GetMapping("/load")
+    @GetMapping(value = "{attributeKey}")
     @ApiOperation(
         value = "Load all requested attributes with values.",
         notes = "Load all requested attributes with values.",
@@ -76,11 +77,11 @@ public class CategoricalAttributeController extends AbstractRestController {
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
-    public Result<Map<String, List<String>>> loadCategoricalAttributes(@RequestParam final String attributeKey) {
+    public Result<Map<String, List<String>>> loadCategoricalAttributes(@PathVariable final String attributeKey) {
         return Result.success(categoricalAttributeApiService.loadAllValuesForKey(attributeKey));
     }
 
-    @DeleteMapping("/delete")
+    @DeleteMapping(value = "{attributeKey}")
     @ApiOperation(
         value = "Delete all values for a requested attribute.",
         notes = "Delete all values for a requested attribute.",
@@ -88,11 +89,11 @@ public class CategoricalAttributeController extends AbstractRestController {
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
-    public Result<Boolean> deleteAllAttributeValues(@RequestParam final String attributeKey) {
+    public Result<Boolean> deleteAllAttributeValues(@PathVariable final String attributeKey) {
         return Result.success(categoricalAttributeApiService.deleteAttributeValues(attributeKey));
     }
 
-    @DeleteMapping("/deleteValue")
+    @DeleteMapping(value = "{attributeKey}", params = "value")
     @ApiOperation(
         value = "Delete one specific value for a requested attribute.",
         notes = "Delete one specific value for a requested attribute.",
@@ -100,7 +101,7 @@ public class CategoricalAttributeController extends AbstractRestController {
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
-    public Result<Boolean> deleteAttributeValue(@RequestParam final String attributeKey,
+    public Result<Boolean> deleteAttributeValue(@PathVariable final String attributeKey,
                                                 @RequestParam final String value) {
         return Result.success(categoricalAttributeApiService.deleteAttributeValue(attributeKey, value));
     }
