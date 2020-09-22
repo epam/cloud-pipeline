@@ -337,9 +337,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             if (Objects.isNull(run.getLastIdleNotificationTime())) {
                 run.addTag(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
                 runsToUpdateTags.add(run);
+                run.setLastIdleNotificationTime(DateUtils.nowUTC());
+                runsToUpdateNotificationTime.add(run);
             }
-            run.setLastIdleNotificationTime(DateUtils.nowUTC());
-            runsToUpdateNotificationTime.add(run);
             pipelinesToNotify.add(new ImmutablePair<>(run, cpuUsageRate));
             log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_NOTIFY, run.getPodId(), cpuUsageRate));
         }

@@ -281,12 +281,20 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         final String instanceTypesToExclude = preferenceManager.getPreference(SystemPreferences
                 .SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES);
 
-        final List<NotificationMessage> messages = pipelineCpuRatePairs.stream()
+        final List<Pair<PipelineRun, Double>> filtered = pipelineCpuRatePairs.stream()
                 .filter(pair -> shouldNotifyIdleRun(pair.getLeft().getId(), notificationType, idleRunSettings))
                 .filter(pair -> noneMatchExcludedInstanceType(pair.getLeft(), instanceTypesToExclude))
+                .collect(Collectors.toList());
+        final List<NotificationMessage> messages = filtered.stream()
                 .map(pair -> buildMessageForIdleRun(idleRunSettings, ccUserIds, pipelineOwners, idleCpuLevel, pair))
                 .collect(Collectors.toList());
         monitoringNotificationDao.createMonitoringNotifications(messages);
+
+        if (NotificationType.IDLE_RUN.equals(notificationType)) {
+            final List<Long> runIds = filtered.stream()
+                    .map(pair -> pair.getLeft().getId()).collect(Collectors.toList());
+            monitoringNotificationDao.updateNotificationTimestamp(runIds, NotificationType.IDLE_RUN);
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

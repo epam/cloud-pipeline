@@ -591,11 +591,13 @@ public class ResourceMonitoringManagerTest {
         resourceMonitoringManager.monitorResourceUsage();
 
         // checks notifications were sent
-        verify(pipelineRunManager, atLeastOnce()).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
         verify(notificationManager, atLeastOnce())
                 .notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
-        // checks tags were not updated
+        // checks runs were not updated
+        verify(pipelineRunManager, atLeastOnce()).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
+        Assert.assertTrue(CollectionUtils.isEmpty(runsToUpdateCaptor.getValue()));
+
         verify(pipelineRunManager, atLeastOnce()).updateRunsTags(runsToUpdateTagsCaptor.capture());
         Assert.assertTrue(CollectionUtils.isEmpty(runsToUpdateTagsCaptor.getValue()));
 
