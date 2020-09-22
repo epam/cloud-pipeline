@@ -25,19 +25,18 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
 
-@Controller
+@RestController
 @Api(value = "CategoricalAttributes")
 @RequiredArgsConstructor
 @RequestMapping(value = "/categoricalAttribute")
@@ -46,7 +45,6 @@ public class CategoricalAttributeController extends AbstractRestController {
     private final CategoricalAttributeApiService categoricalAttributeApiService;
 
     @PostMapping
-    @ResponseBody
     @ApiOperation(
         value = "Add categorical attributes values.",
         notes = "Add categorical attributes values",
@@ -59,7 +57,6 @@ public class CategoricalAttributeController extends AbstractRestController {
     }
 
     @GetMapping("/loadAll")
-    @ResponseBody
     @ApiOperation(
         value = "Load all categorical attributes with values.",
         notes = "Load all categorical attributes with values.",
@@ -72,7 +69,6 @@ public class CategoricalAttributeController extends AbstractRestController {
     }
 
     @GetMapping("/load")
-    @ResponseBody
     @ApiOperation(
         value = "Load all requested attributes with values.",
         notes = "Load all requested attributes with values.",
@@ -85,7 +81,6 @@ public class CategoricalAttributeController extends AbstractRestController {
     }
 
     @DeleteMapping("/delete")
-    @ResponseBody
     @ApiOperation(
         value = "Delete all values for a requested attribute.",
         notes = "Delete all values for a requested attribute.",
@@ -98,7 +93,6 @@ public class CategoricalAttributeController extends AbstractRestController {
     }
 
     @DeleteMapping("/deleteValue")
-    @ResponseBody
     @ApiOperation(
         value = "Delete one specific value for a requested attribute.",
         notes = "Delete one specific value for a requested attribute.",
@@ -111,8 +105,7 @@ public class CategoricalAttributeController extends AbstractRestController {
         return Result.success(categoricalAttributeApiService.deleteAttributeValue(attributeKey, value));
     }
 
-    @GetMapping("/sync")
-    @ResponseBody
+    @PostMapping("/sync")
     @ApiOperation(
         value = "Fill in categorical attributes table based on a current metadata.",
         notes = "Fill in categorical attributes table based on a current metadata.",
