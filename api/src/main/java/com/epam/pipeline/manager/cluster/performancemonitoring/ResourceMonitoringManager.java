@@ -324,17 +324,23 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                     List<Pair<PipelineRun, Double>> pipelinesToNotify,
                                     List<PipelineRun> runsToUpdateNotificationTime, Double cpuUsageRate,
                                     List<PipelineRun> runsToUpdateTags) {
-            if (run.getLastIdleNotificationTime() == null) { // first notification - set notification time and notify
-                run.setLastIdleNotificationTime(DateUtils.nowUTC());
-                run.addTag(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
-                runsToUpdateNotificationTime.add(run);
-                runsToUpdateTags.add(run);
-                pipelinesToNotify.add(new ImmutablePair<>(run, cpuUsageRate));
-                log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_NOTIFY, run.getPodId(), cpuUsageRate));
-            } else { // run was already notified - we need to take some action
-                performActionOnIdleRun(run, action, cpuUsageRate,
-                        actionTimeout, pipelinesToNotify, runsToUpdateNotificationTime);
+            if (shouldPerformActionOnIdleRun(run, actionTimeout)) {
+                performActionOnIdleRun(run, action, cpuUsageRate, pipelinesToNotify, runsToUpdateNotificationTime);
+                return;
             }
+            if (Objects.isNull(run.getLastIdleNotificationTime())) {
+                run.addTag(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
+                runsToUpdateTags.add(run);
+                run.setLastIdleNotificationTime(DateUtils.nowUTC());
+                runsToUpdateNotificationTime.add(run);
+            }
+            pipelinesToNotify.add(new ImmutablePair<>(run, cpuUsageRate));
+            log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_NOTIFY, run.getPodId(), cpuUsageRate));
+        }
+
+        private boolean shouldPerformActionOnIdleRun(final PipelineRun run, final int actionTimeout) {
+            return Objects.nonNull(run.getLastIdleNotificationTime()) &&
+                    run.getLastIdleNotificationTime().isBefore(DateUtils.nowUTC().minusMinutes(actionTimeout));
         }
 
         private void processFormerIdleRun(final PipelineRun run, final List<PipelineRun> runsToUpdateNotificationTime,
@@ -346,38 +352,36 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         }
 
         private void performActionOnIdleRun(PipelineRun run, IdleRunAction action,
-                                            double cpuUsageRate, int actionTimeout,
+                                            double cpuUsageRate,
                                             List<Pair<PipelineRun, Double>> pipelinesToNotify,
                                             List<PipelineRun> runsToUpdate) {
-            if (run.getLastIdleNotificationTime().isBefore(DateUtils.nowUTC().minusMinutes(actionTimeout))) {
-                log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_ACTION, run.getPodId(), cpuUsageRate,
-                        action));
-                switch (action) {
-                    case PAUSE:
-                        if (run.getInstance().getSpot()) {
-                            performNotify(run, cpuUsageRate, pipelinesToNotify);
-                        } else {
-                            performPause(run, cpuUsageRate);
-                        }
-
-                        break;
-                    case PAUSE_OR_STOP:
-                        if (run.getInstance().getSpot()) {
-                            performStop(run, cpuUsageRate);
-                        } else {
-                            performPause(run, cpuUsageRate);
-                        }
-
-                        break;
-                    case STOP:
-                        performStop(run, cpuUsageRate);
-                        break;
-                    default:
+            log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_ACTION, run.getPodId(), cpuUsageRate,
+                    action));
+            switch (action) {
+                case PAUSE:
+                    if (run.getInstance().getSpot()) {
                         performNotify(run, cpuUsageRate, pipelinesToNotify);
-                }
+                    } else {
+                        performPause(run, cpuUsageRate);
+                    }
 
-                runsToUpdate.add(run);
+                    break;
+                case PAUSE_OR_STOP:
+                    if (run.getInstance().getSpot()) {
+                        performStop(run, cpuUsageRate);
+                    } else {
+                        performPause(run, cpuUsageRate);
+                    }
+
+                    break;
+                case STOP:
+                    performStop(run, cpuUsageRate);
+                    break;
+                default:
+                    performNotify(run, cpuUsageRate, pipelinesToNotify);
             }
+
+            runsToUpdate.add(run);
         }
 
         private void performNotify(PipelineRun run, double cpuUsageRate,
