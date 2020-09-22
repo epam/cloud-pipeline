@@ -24,7 +24,7 @@ public interface SecurityService {
     String getAuthorizedUser();
 
     /**
-     * Returns currently authenticated user corresponding local system user name.
+     * Returns currently authenticated user corresponding impersonating user name.
      */
-    String getLocalUser();
+    String getImpersonatingUser();
 }

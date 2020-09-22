@@ -16,42 +16,68 @@
 
 package com.epam.pipeline.dts.transfer.service.impl;
 
+import com.epam.pipeline.dts.common.service.CloudPipelineAPIClient;
 import com.epam.pipeline.dts.security.service.SecurityService;
 import com.epam.pipeline.dts.transfer.model.StorageItem;
+import com.epam.pipeline.dts.transfer.model.StorageType;
 import com.epam.pipeline.dts.transfer.model.TaskStatus;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
+import com.epam.pipeline.dts.transfer.model.pipeline.PipelineCredentials;
 import com.epam.pipeline.dts.transfer.service.DataUploaderProviderManager;
 import com.epam.pipeline.dts.transfer.service.TaskService;
 import com.epam.pipeline.dts.transfer.service.TransferService;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 @Service
 @ConditionalOnProperty(value = "dts.impersonation.enabled", havingValue = "true", matchIfMissing = true)
 @Slf4j
-@RequiredArgsConstructor
 public class ImpersonatingTransferServiceImpl implements TransferService {
     private final TaskService taskService;
     private final DataUploaderProviderManager dataUploaderProviderManager;
     private final SecurityService securityService;
+    private final String dtsNameMetadataKey;
+
+    public ImpersonatingTransferServiceImpl(final TaskService taskService,
+                                            final DataUploaderProviderManager dataUploaderProviderManager,
+                                            final SecurityService securityService,
+                                            @Value("${dts.impersonation.name.metadata.key}")
+                                            final String dtsNameMetadataKey) {
+        this.taskService = taskService;
+        this.dataUploaderProviderManager = dataUploaderProviderManager;
+        this.securityService = securityService;
+        this.dtsNameMetadataKey = dtsNameMetadataKey;
+    }
 
     @Override
-    public TransferTask runTransferTask(@NonNull StorageItem source,
-                                        @NonNull StorageItem destination,
-                                        List<String> included,
-                                        String user) {
-        String localUser = Optional.ofNullable(user).orElseGet(securityService::getLocalUser);
-        TransferTask transferTask = taskService.createTask(source, destination, included, localUser);
+    public TransferTask runTransferTask(@NonNull final StorageItem source,
+                                        @NonNull final StorageItem destination,
+                                        final List<String> included) {
+        final String impersonatingUser = getImpersonatingUser(source, destination);
+        final TransferTask transferTask = taskService.createTask(source, destination, included, impersonatingUser);
         taskService.updateStatus(transferTask.getId(), TaskStatus.RUNNING);
         dataUploaderProviderManager.transferData(transferTask);
         return transferTask;
+    }
+
+    private String getImpersonatingUser(@NonNull final StorageItem source, @NonNull final StorageItem destination) {
+        return Stream.of(source, destination)
+                .filter(it -> it.getType() == StorageType.LOCAL)
+                .map(StorageItem::getCredentials)
+                .filter(Objects::nonNull)
+                .map(PipelineCredentials::from)
+                .findFirst()
+                .map(CloudPipelineAPIClient::from)
+                .flatMap(apiClient -> apiClient.getUserMetadataValueByKey(dtsNameMetadataKey))
+                .orElseGet(securityService::getImpersonatingUser);
     }
 
     @Override

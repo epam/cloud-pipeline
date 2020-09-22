@@ -101,7 +101,7 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     }
 
     @Bean
-    public SecurityService securityService(@Value("${dts.impersonation.username.transformation}")
+    public SecurityService securityService(@Value("${dts.impersonation.name.transformation}")
                                            final UsernameTransformation usernameTransformation) {
         return new SecurityServiceImpl(usernameTransformation);
     }

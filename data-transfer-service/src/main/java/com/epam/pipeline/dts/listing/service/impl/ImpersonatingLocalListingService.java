@@ -18,13 +18,16 @@ package com.epam.pipeline.dts.listing.service.impl;
 
 import com.epam.pipeline.cmd.CmdExecutor;
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.dts.common.service.CloudPipelineAPIClient;
 import com.epam.pipeline.dts.listing.configuration.ListingPreference;
 import com.epam.pipeline.dts.listing.model.ListingItemsPaging;
+import com.epam.pipeline.dts.listing.rest.dto.ItemsListingRequestDTO;
 import com.epam.pipeline.dts.listing.service.ListingService;
 import com.epam.pipeline.dts.security.service.SecurityService;
+import com.epam.pipeline.dts.transfer.model.pipeline.PipelineCredentials;
 import com.fasterxml.jackson.core.type.TypeReference;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -40,31 +43,43 @@ import java.util.Optional;
  */
 @Service
 @ConditionalOnProperty(value = "dts.impersonation.enabled", havingValue = "true", matchIfMissing = true)
-@RequiredArgsConstructor
 public class ImpersonatingLocalListingService implements ListingService {
 
     private final SecurityService securityService;
     private final CmdExecutor listingCmdExecutor;
     private final ListingPreference preference;
+    private final String dtsNameMetadataKey;
+
+    public ImpersonatingLocalListingService(final SecurityService securityService,
+                                            final CmdExecutor listingCmdExecutor,
+                                            final ListingPreference preference,
+                                            @Value("${dts.impersonation.name.metadata.key}")
+                                            final String dtsNameMetadataKey) {
+        this.securityService = securityService;
+        this.listingCmdExecutor = listingCmdExecutor;
+        this.preference = preference;
+        this.dtsNameMetadataKey = dtsNameMetadataKey;
+    }
 
     @Override
-    public ListingItemsPaging list(@NotNull final Path path,
-                                   final Integer pageSize,
-                                   final String marker,
-                                   final String user) {
-        final long size = pageSize == null ? Long.MAX_VALUE : pageSize;
-        final long offset = StringUtils.isNumeric(marker) ? Long.parseLong(marker) : 1;
+    public ListingItemsPaging list(final ItemsListingRequestDTO request) {
+        final long size = request.getPageSize() == null ? Long.MAX_VALUE : request.getPageSize();
+        final long offset = StringUtils.isNumeric(request.getMarker()) ? Long.parseLong(request.getMarker()) : 1;
         Assert.isTrue(size > 0, String.format(
-                "Invalid paging attributes: page size - %s. Page size must be greater then zero,", pageSize));
+                "Invalid paging attributes: page size - %s. Page size must be greater then zero,", 
+                request.getPageSize()));
         Assert.isTrue(offset > 0, "Page marker must be greater than zero");
-        try {
-            final String localUser = Optional.ofNullable(user).orElseGet(securityService::getLocalUser);
-            final String listingOutput = listingCmdExecutor.executeCommand(list(path, offset, size), localUser);
-            return parsed(listingOutput);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException(
-                    String.format("An error occurred during listing local file %s.", path.toAbsolutePath()), e);
-        }
+        final String impersonatingUser = getImpersonatingUser(request.getCredentials());
+        final String listingOutput = listingCmdExecutor.executeCommand(
+                list(request.getPath(), offset, size), impersonatingUser);
+        return parsed(listingOutput);
+    }
+
+    private String getImpersonatingUser(final PipelineCredentials credentials) {
+        return Optional.ofNullable(credentials)
+                .map(CloudPipelineAPIClient::from)
+                .flatMap(client -> client.getUserMetadataValueByKey(dtsNameMetadataKey))
+                .orElseGet(securityService::getImpersonatingUser);
     }
 
     private String list(@NotNull final Path path, final long offset, final long size) {

@@ -42,7 +42,7 @@ public class SecurityServiceImpl implements SecurityService {
     }
 
     @Override
-    public String getLocalUser() {
+    public String getImpersonatingUser() {
         return usernameTransformation.apply(getAuthorizedUser());
     }
 }

@@ -17,10 +17,8 @@
 package com.epam.pipeline.dts.listing.service;
 
 import com.epam.pipeline.dts.listing.model.ListingItemsPaging;
-
-import javax.validation.constraints.NotNull;
-import java.nio.file.Path;
+import com.epam.pipeline.dts.listing.rest.dto.ItemsListingRequestDTO;
 
 public interface ListingService {
-    ListingItemsPaging list(@NotNull Path path, Integer pageSize, String marker, String user);
+    ListingItemsPaging list(ItemsListingRequestDTO request);
 }

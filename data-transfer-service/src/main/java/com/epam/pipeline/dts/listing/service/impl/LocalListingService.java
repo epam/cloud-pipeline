@@ -21,13 +21,13 @@ import com.epam.pipeline.dts.listing.exception.NotFoundException;
 import com.epam.pipeline.dts.listing.model.ListingItemsPaging;
 import com.epam.pipeline.dts.listing.model.ListingItem;
 import com.epam.pipeline.dts.listing.model.ListingItemType;
+import com.epam.pipeline.dts.listing.rest.dto.ItemsListingRequestDTO;
 import com.epam.pipeline.dts.listing.service.ListingService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import javax.validation.constraints.NotNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,19 +45,19 @@ public class LocalListingService implements ListingService {
     private static final int MAX_DEPTH = 1;
 
     @Override
-    public ListingItemsPaging list(@NotNull Path path, Integer pageSize, String marker, String user) {
-        verifyPath(path);
-        verifyPagingAttributes(pageSize);
-        long offset = StringUtils.isNumeric(marker) ? Long.parseLong(marker) : 1;
+    public ListingItemsPaging list(ItemsListingRequestDTO request) {
+        verifyPath(request.getPath());
+        verifyPagingAttributes(request.getPageSize());
+        long offset = StringUtils.isNumeric(request.getMarker()) ? Long.parseLong(request.getMarker()) : 1;
         Assert.isTrue(offset > 0, "Page marker must be greater than null");
-        try (Stream<Path> files = Files.walk(path, MAX_DEPTH)) {
+        try (Stream<Path> files = Files.walk(request.getPath(), MAX_DEPTH)) {
             List<ListingItem> items = files
                     .sorted()
-                    .filter(file -> doNotSkipFile(file, path))
+                    .filter(file -> doNotSkipFile(file, request.getPath()))
                     .skip(offset - 1)
-                    .limit(normalizePageSize(pageSize))
+                    .limit(normalizePageSize(request.getPageSize()))
                     .map(file -> ListingItem.builder()
-                            .path(getRelativePath(file, path))
+                            .path(getRelativePath(file, request.getPath()))
                             .type(determineListingItemType(file))
                             .permission(buildPermissions(file))
                             .name(file.getFileName().toString())
@@ -67,11 +67,12 @@ public class LocalListingService implements ListingService {
                     .collect(Collectors.toList());
             return ListingItemsPaging.builder()
                     .results(items)
-                    .nextPageMarker(getNextPageMarker(offset, pageSize, path))
+                    .nextPageMarker(getNextPageMarker(offset, request.getPageSize(), request.getPath()))
                     .build();
         } catch (IOException e) {
             throw new IllegalArgumentException(
-                    String.format("An error occurred during listing local file %s.", path.toAbsolutePath()), e);
+                    String.format("An error occurred during listing local file %s.", 
+                            request.getPath().toAbsolutePath()), e);
         }
     }
 

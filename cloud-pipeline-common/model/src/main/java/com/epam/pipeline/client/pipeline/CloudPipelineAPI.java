@@ -154,6 +154,9 @@ public interface CloudPipelineAPI {
     @GET("user/find")
     Call<Result<List<PipelineUser>>> loadUsersByPrefix(@Query("prefix") String prefix);
 
+    @GET("whoami")
+    Call<Result<PipelineUser>> whoami();
+
     @POST("datastorage/tempCredentials/")
     Call<Result<TemporaryCredentials>> generateTemporaryCredentials(@Body List<DataStorageAction> actions);
 

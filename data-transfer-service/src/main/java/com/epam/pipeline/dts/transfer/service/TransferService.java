@@ -26,8 +26,7 @@ public interface TransferService {
 
     TransferTask runTransferTask(@NonNull StorageItem source,
                                  @NonNull StorageItem destination,
-                                 List<String> included,
-                                 String user);
+                                 List<String> included);
     
     void failRunningTasks();
 }

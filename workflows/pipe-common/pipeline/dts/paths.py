@@ -15,11 +15,10 @@
 
 class Path:
 
-    def __init__(self, source_path, destination_path, rules, user):
+    def __init__(self, source_path, destination_path, rules):
         self.source_path = source_path
         self.destination_path = destination_path
         self.rules = rules
-        self.user = user
 
     def __str__(self):
         return str(self.__dict__)
@@ -31,21 +30,21 @@ class Path:
 
 # TODO: rename to LocalToCloud
 class LocalToS3(Path):
-    def __init__(self, local_path, remote_path, rules, user=None):
-        Path.__init__(self, local_path, remote_path, rules, user)
+    def __init__(self, local_path, remote_path, rules):
+        Path.__init__(local_path, remote_path, rules)
 
 
 # TODO: rename to CloudToLocal
 class S3ToLocal(Path):
-    def __init__(self, remote_path, local_path, rules, user=None):
-        Path.__init__(self, remote_path, local_path, rules, user)
+    def __init__(self, remote_path, local_path, rules):
+        Path.__init__(remote_path, local_path, rules)
 
 
 class LocalToAzure(Path):
-    def __init__(self, local_path, remote_path, rules, user=None):
-        Path.__init__(self, local_path, remote_path, rules, user)
+    def __init__(self, local_path, remote_path, rules):
+        Path.__init__(local_path, remote_path, rules)
 
 
 class AzureToLocal(Path):
-    def __init__(self, remote_path, local_path, rules, user=None):
-        Path.__init__(self, remote_path, local_path, rules, user)
+    def __init__(self, remote_path, local_path, rules):
+        Path.__init__(remote_path, local_path, rules)

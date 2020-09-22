@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.dts;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.dts.DtsClusterConfiguration;
 import com.epam.pipeline.entity.dts.DtsDataStorageListing;
+import com.epam.pipeline.entity.dts.DtsDataStorageListingRequest;
 import com.epam.pipeline.entity.dts.DtsSubmission;
 import com.epam.pipeline.exception.DtsRequestException;
 import retrofit2.Call;
@@ -35,10 +36,7 @@ import java.util.Objects;
 public interface DtsClient {
 
     @GET("list")
-    Call<Result<DtsDataStorageListing>> getList(@Query("path") String path,
-                                                @Query("pageSize") Integer pageSize,
-                                                @Query("marker") String marker,
-                                                @Query("user") String user);
+    Call<Result<DtsDataStorageListing>> getList(@Body DtsDataStorageListingRequest request);
 
     @POST("submission")
     Call<Result<DtsSubmission>> createSubmission(@Body DtsSubmission submission);
