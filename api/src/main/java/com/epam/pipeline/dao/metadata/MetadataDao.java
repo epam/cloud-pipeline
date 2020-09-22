@@ -18,6 +18,7 @@ package com.epam.pipeline.dao.metadata;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.EntityVO;
+import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
@@ -147,13 +148,12 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
                         entityClass.name(), MetadataDao.convertDataToJsonStringForQuery(indicator));
     }
 
-    public Map<String, List<String>> buildFullMetadataDict() {
+    public List<CategoricalAttribute> buildFullMetadataDict() {
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(LIST_PARAMETER, sensitiveMetadataKeys);
-        return getNamedParameterJdbcTemplate().query(createMetadataDictionary, params,
-                                                     MetadataParameters.getMetadataKeyValueMapper())
-            .stream()
-            .collect(CategoricalAttributeDao.STRING_PAIR_TO_DICT_COLLECTOR);
+        final List<Pair<String, String>> allAttributeValues = getNamedParameterJdbcTemplate()
+            .query(createMetadataDictionary, params, MetadataParameters.getMetadataKeyValueMapper());
+        return CategoricalAttributeDao.convertPairsToAttributesList(allAttributeValues);
     }
 
     public static String convertDataToJsonStringForQuery(Map<String, PipeConfValue> data) {

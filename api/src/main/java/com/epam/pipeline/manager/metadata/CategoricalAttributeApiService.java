@@ -16,13 +16,13 @@
 
 package com.epam.pipeline.manager.metadata;
 
+import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -31,17 +31,17 @@ public class CategoricalAttributeApiService {
     private final CategoricalAttributeManager categoricalAttributesManager;
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public boolean insertAttributesValues(final Map<String, List<String>> dict) {
+    public boolean insertAttributesValues(final List<CategoricalAttribute> dict) {
         return categoricalAttributesManager.insertAttributesValues(dict);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public Map<String, List<String>> loadAll() {
+    public List<CategoricalAttribute> loadAll() {
         return categoricalAttributesManager.loadAll();
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public Map<String, List<String>> loadAllValuesForKey(final String key) {
+    public CategoricalAttribute loadAllValuesForKey(final String key) {
         return categoricalAttributesManager.loadAllValuesForKey(key);
     }
 

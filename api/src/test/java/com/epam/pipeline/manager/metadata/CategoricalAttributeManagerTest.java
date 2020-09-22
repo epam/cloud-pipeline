@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.metadata;
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
+import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -33,6 +34,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 public class CategoricalAttributeManagerTest extends AbstractSpringTest {
@@ -74,7 +76,8 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
         metadataManager.updateMetadataItem(metadataVO);
         categoricalAttributeManager.syncWithMetadata();
 
-        final Map<String, List<String>> categoricalAttributesAfterSync = categoricalAttributeManager.loadAll();
+        final Map<String, List<String>> categoricalAttributesAfterSync = categoricalAttributeManager.loadAll().stream()
+            .collect(Collectors.toMap(CategoricalAttribute::getKey, CategoricalAttribute::getValues));
         Assert.assertEquals(2, categoricalAttributesAfterSync.size());
         Assert.assertThat(categoricalAttributesAfterSync.get(KEY_1),
                           CoreMatchers.is(Collections.singletonList(VALUE_1)));

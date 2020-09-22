@@ -17,13 +17,13 @@
 package com.epam.pipeline.manager.metadata;
 
 import com.epam.pipeline.dao.metadata.CategoricalAttributeDao;
+import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -33,15 +33,15 @@ public class CategoricalAttributeManager {
     private final MetadataManager metadataManager;
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public boolean insertAttributesValues(final Map<String, List<String>> dict) {
+    public boolean insertAttributesValues(final List<CategoricalAttribute> dict) {
         return categoricalAttributesDao.insertAttributesValues(dict);
     }
 
-    public Map<String, List<String>> loadAll() {
+    public List<CategoricalAttribute> loadAll() {
         return categoricalAttributesDao.loadAll();
     }
 
-    public Map<String, List<String>> loadAllValuesForKey(final String key) {
+    public CategoricalAttribute loadAllValuesForKey(final String key) {
         return categoricalAttributesDao.loadAllValuesForKey(key);
     }
 
@@ -57,7 +57,7 @@ public class CategoricalAttributeManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void syncWithMetadata() {
-        final Map<String, List<String>> fullMetadataDict = metadataManager.buildFullMetadataDict();
+        final List<CategoricalAttribute> fullMetadataDict = metadataManager.buildFullMetadataDict();
         insertAttributesValues(fullMetadataDict);
     }
 }

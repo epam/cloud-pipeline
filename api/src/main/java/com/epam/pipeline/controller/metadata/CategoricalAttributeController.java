@@ -18,6 +18,7 @@ package com.epam.pipeline.controller.metadata;
 
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.manager.metadata.CategoricalAttributeApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -35,7 +36,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @Api(value = "CategoricalAttributes")
@@ -53,7 +53,7 @@ public class CategoricalAttributeController extends AbstractRestController {
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
-    public Result<Boolean> insertCategoricalAttributes(@RequestBody final Map<String, List<String>> dict) {
+    public Result<Boolean> insertCategoricalAttributes(@RequestBody final List<CategoricalAttribute> dict) {
         return Result.success(categoricalAttributeApiService.insertAttributesValues(dict));
     }
 
@@ -65,7 +65,7 @@ public class CategoricalAttributeController extends AbstractRestController {
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
-    public Result<Map<String, List<String>>> loadAllCategoricalAttributes() {
+    public Result<List<CategoricalAttribute>> loadAllCategoricalAttributes() {
         return Result.success(categoricalAttributeApiService.loadAll());
     }
 
@@ -77,7 +77,7 @@ public class CategoricalAttributeController extends AbstractRestController {
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
-    public Result<Map<String, List<String>>> loadCategoricalAttributes(@PathVariable final String attributeKey) {
+    public Result<CategoricalAttribute> loadCategoricalAttribute(@PathVariable final String attributeKey) {
         return Result.success(categoricalAttributeApiService.loadAllValuesForKey(attributeKey));
     }
 

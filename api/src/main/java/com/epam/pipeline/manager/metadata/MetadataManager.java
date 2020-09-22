@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.dao.metadata.MetadataDao;
+import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
@@ -274,7 +275,7 @@ public class MetadataManager {
         return metadataDao.searchMetadataByClassAndKeyValue(entityClass, indicator);
     }
 
-    public Map<String, List<String>> buildFullMetadataDict() {
+    public List<CategoricalAttribute> buildFullMetadataDict() {
         return metadataDao.buildFullMetadataDict();
     }
 

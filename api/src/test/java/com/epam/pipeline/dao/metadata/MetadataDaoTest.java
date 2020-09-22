@@ -20,6 +20,7 @@ import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.dao.issue.IssueDao;
 import com.epam.pipeline.entity.issue.Issue;
+import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
@@ -244,7 +245,8 @@ public class MetadataDaoTest extends AbstractSpringTest {
         createMetadataForEntity(ID_1, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_1);
         createMetadataForEntity(ID_2, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_2);
         createMetadataForEntityWithSensitiveValue(ID_3, CLASS_1, DATA_KEY_2, DATA_TYPE_1, DATA_VALUE_1, DATA_VALUE_2);
-        final Map<String, List<String>> metadataDict = metadataDao.buildFullMetadataDict();
+        final Map<String, List<String>> metadataDict = metadataDao.buildFullMetadataDict().stream()
+            .collect(Collectors.toMap(CategoricalAttribute::getKey, CategoricalAttribute::getValues));
         Assert.assertEquals(2, metadataDict.size());
         Assert.assertThat(metadataDict.get(DATA_KEY_1), CoreMatchers.is(Arrays.asList(DATA_VALUE_1, DATA_VALUE_2)));
         Assert.assertThat(metadataDict.get(DATA_KEY_2), CoreMatchers.is(Collections.singletonList(DATA_VALUE_1)));
