@@ -103,6 +103,7 @@ import RunCapabilities, {
   noMachineEnabled,
   singularityEnabled,
   systemDEnabled,
+  moduleEnabled,
   getRunCapabilitiesSkippedParameters,
   RUN_CAPABILITIES
 } from './utilities/run-capabilities';
@@ -116,6 +117,7 @@ import {
   CP_CAP_SYSTEMD_CONTAINER,
   CP_CAP_DESKTOP_NM,
   CP_CAP_SINGULARITY,
+  CP_CAP_MODULES,
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
@@ -306,7 +308,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     dinD: false,
     singularity: false,
     systemD: false,
-    noMachine: false
+    noMachine: false,
+    module: false
   };
 
   formItemLayout = {
@@ -450,13 +453,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   @computed
   get selectedRunCapabilities () {
-    const {dinD, singularity, systemD, noMachine} = this.state;
+    const {dinD, singularity, systemD, noMachine, module} = this.state;
 
     return [
       dinD ? RUN_CAPABILITIES.dinD : false,
       singularity ? RUN_CAPABILITIES.singularity : false,
       systemD ? RUN_CAPABILITIES.systemD : false,
-      noMachine ? RUN_CAPABILITIES.noMachine : false
+      noMachine ? RUN_CAPABILITIES.noMachine : false,
+      module ? RUN_CAPABILITIES.module : false
     ].filter(Boolean);
   };
 
@@ -465,7 +469,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       dinD: capabilities.includes(RUN_CAPABILITIES.dinD),
       singularity: capabilities.includes(RUN_CAPABILITIES.singularity),
       systemD: capabilities.includes(RUN_CAPABILITIES.systemD),
-      noMachine: capabilities.includes(RUN_CAPABILITIES.noMachine)
+      noMachine: capabilities.includes(RUN_CAPABILITIES.noMachine),
+      module: capabilities.includes(RUN_CAPABILITIES.module)
     }, this.formFieldsChanged);
   };
 
@@ -851,6 +856,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const singularity = singularityEnabled(this.props.parameters.parameters);
     const systemD = systemDEnabled(this.props.parameters.parameters);
     const noMachine = noMachineEnabled(this.props.parameters.parameters);
+    const module = moduleEnabled(this.props.parameters.parameters);
     if (keepPipeline) {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
@@ -873,6 +879,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         singularity,
         systemD,
         noMachine,
+        module,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
@@ -932,6 +939,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         singularity,
         systemD,
         noMachine,
+        module,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
@@ -1166,6 +1174,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: true
       };
     }
+    if (this.state.module) {
+      payload[PARAMETERS][CP_CAP_MODULES] = {
+        type: 'boolean',
+        value: true
+      };
+    }
     if (this.props.detached && this.state.pipeline && this.state.version) {
       payload.pipelineId = this.state.pipeline.id;
       payload.pipelineVersion = this.state.version;
@@ -1380,6 +1394,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: true
       };
     }
+    if (this.state.module) {
+      payload.params[CP_CAP_MODULES] = {
+        type: 'boolean',
+        value: true
+      };
+    }
     if (!payload.isSpot &&
       !this.state.launchCluster &&
       this.state.scheduleRules &&
@@ -1527,6 +1547,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const singularity = singularityEnabled(this.props.parameters.parameters);
     const systemD = systemDEnabled(this.props.parameters.parameters);
     const noMachine = noMachineEnabled(this.props.parameters.parameters);
+    const module = moduleEnabled(this.props.parameters.parameters);
     let state = {
       launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
       autoScaledCluster: autoScaledCluster,
@@ -1540,6 +1561,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       singularity,
       systemD,
       noMachine,
+      module,
       nodesCount: +this.props.parameters.node_count,
       maxNodesCount: this.props.parameters.parameters &&
       this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
@@ -4755,7 +4777,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       )
                     }
                     {this.renderFormItemRow(this.renderCoresFormItem)}
-                    {this.renderFormItemRow(this.renderAdditionalRunCapabilities)}
+                    {
+                      this.renderFormItemRow(
+                        this.renderAdditionalRunCapabilities,
+                        hints.runCapabilitiesHint
+                      )
+                    }
                   </div>
                 </div>
                 <div
