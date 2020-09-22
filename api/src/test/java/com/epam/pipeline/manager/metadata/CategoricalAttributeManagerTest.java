@@ -41,11 +41,11 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
 
     private static final String KEY_1 = "key1";
     private static final String KEY_2 = "key2";
+    private static final String INVALID_KEY = "invalid_key";
     private static final String SENSITIVE_KEY = "sensitive_metadata_key";
     private static final String VALUE_1 = "valueA";
     private static final String VALUE_2 = "valueB";
     private static final String TYPE = "string";
-
     private static final String TEST_USER = "TEST_USER";
 
     @Autowired
@@ -84,5 +84,10 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
         Assert.assertThat(categoricalAttributesAfterSync.get(KEY_2),
                           CoreMatchers.is(Collections.singletonList(VALUE_2)));
         Assert.assertFalse(categoricalAttributesAfterSync.containsKey(SENSITIVE_KEY));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void loadValuesForNonExistentKey() {
+        categoricalAttributeManager.loadAllValuesForKey(INVALID_KEY);
     }
 }

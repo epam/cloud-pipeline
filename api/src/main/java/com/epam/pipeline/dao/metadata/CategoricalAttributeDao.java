@@ -24,6 +24,7 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,7 +80,9 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
             .stream()
             .map(Pair::getValue)
             .collect(Collectors.toList());
-        return new CategoricalAttribute(key, values);
+        return CollectionUtils.isEmpty(values)
+               ? null
+               : new CategoricalAttribute(key, values);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

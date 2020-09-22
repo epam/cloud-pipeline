@@ -18,6 +18,7 @@ package com.epam.pipeline.dao.metadata;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
@@ -39,6 +40,7 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
 
     private static final String ATTRIBUTE_KEY_1 = "key1";
     private static final String ATTRIBUTE_KEY_2 = "key2";
+    private static final String INCORRECT_KEY = "incorrect_key";
     private static final String ATTRIBUTE_VALUE_1 = "value1";
     private static final String ATTRIBUTE_VALUE_2 = "value2";
     private static final String ATTRIBUTE_VALUE_3 = "value3";
@@ -86,6 +88,11 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
     }
 
     @Test
+    public void testLoadAllWhenNoAttributesArePresent() {
+        Assert.assertTrue(CollectionUtils.isEmpty(categoricalAttributeDao.loadAll()));
+    }
+
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void testLoadAllValuesForKeys() {
         final List<CategoricalAttribute> values = Arrays.asList(
@@ -97,6 +104,11 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
         Assert.assertEquals(ATTRIBUTE_KEY_1, attributeWithValues.getKey());
         Assert.assertThat(attributeWithValues.getValues(),
                           CoreMatchers.is(Arrays.asList(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2)));
+    }
+
+    @Test
+    public void testLoadAllValuesForNonExistentKey() {
+        Assert.assertNull(categoricalAttributeDao.loadAllValuesForKey(INCORRECT_KEY));
     }
 
     @Test

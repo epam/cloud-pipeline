@@ -16,12 +16,15 @@
 
 package com.epam.pipeline.manager.metadata;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.metadata.CategoricalAttributeDao;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import java.util.List;
 
@@ -31,6 +34,7 @@ public class CategoricalAttributeManager {
 
     private final CategoricalAttributeDao categoricalAttributesDao;
     private final MetadataManager metadataManager;
+    private final MessageHelper messageHelper;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public boolean insertAttributesValues(final List<CategoricalAttribute> dict) {
@@ -42,7 +46,10 @@ public class CategoricalAttributeManager {
     }
 
     public CategoricalAttribute loadAllValuesForKey(final String key) {
-        return categoricalAttributesDao.loadAllValuesForKey(key);
+        final CategoricalAttribute categoricalAttribute = categoricalAttributesDao.loadAllValuesForKey(key);
+        Assert.notNull(categoricalAttribute,
+                       messageHelper.getMessage(MessageConstants.ERROR_CATEGORICAL_ATTRIBUTE_DOESNT_EXIST, key));
+        return categoricalAttribute;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
