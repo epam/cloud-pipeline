@@ -84,6 +84,12 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get billingAdminsEnabled () {
+    const value = this.getPreferenceValue('billing.reports.enabled.admins');
+    return value && `${value}`.toLowerCase() === 'true';
+  }
+
+  @computed
   get allowedMasterPriceTypes () {
     const value = this.getPreferenceValue('cluster.allowed.price.types.master') || '';
     if (!value) {
