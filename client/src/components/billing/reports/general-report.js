@@ -90,19 +90,19 @@ function injection (stores, props) {
     billingCentersStorageTableRequest.fetch();
   }
   const exportComputeCsvRequest = new GetGroupedBillingCenters(
-    {...periodInfo, resourceType: 'COMPUTE'},
+    {...filters, resourceType: 'COMPUTE'},
     false
   );
   const exportStorageCsvRequest = new GetGroupedBillingCenters(
-    {...periodInfo, resourceType: 'STORAGE'},
+    {...filters, resourceType: 'STORAGE'},
     false
   );
   const exportComputeByUsersCsvRequest = new GetGroupedUsers(
-    {...periodInfo, resourceType: 'COMPUTE'},
+    {...filters, resourceType: 'COMPUTE'},
     false
   );
   const exportStorageByUsersCsvRequest = new GetGroupedUsers(
-    {...periodInfo, resourceType: 'STORAGE'},
+    {...filters, resourceType: 'STORAGE'},
     false
   );
   exportComputeCsvRequest.fetch();
