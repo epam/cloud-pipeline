@@ -15,10 +15,12 @@
  */
 
 import React from 'react';
+import {inject, observer} from 'mobx-react';
 import styles from './styles.css';
 
 class SystemDictionaries extends React.Component {
   render () {
+    const {systemDictionaries} = this.props;
     return (
       <div>
         System Dictionaries
@@ -27,4 +29,4 @@ class SystemDictionaries extends React.Component {
   }
 }
 
-export default SystemDictionaries;
+export default inject('systemDictionaries')(observer(SystemDictionaries));
