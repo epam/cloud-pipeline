@@ -36,7 +36,8 @@ import {
   dinDEnabled,
   noMachineEnabled,
   singularityEnabled,
-  systemDEnabled
+  systemDEnabled,
+  moduleEnabled
 } from './run-capabilities';
 
 function modified (form, parameters, formName, parametersName, defaultValue) {
@@ -225,8 +226,10 @@ function runCapabilitiesCheck (state, parameters) {
   const singularity = singularityEnabled(parameters.parameters);
   const systemD = systemDEnabled(parameters.parameters);
   const noMachine = noMachineEnabled(parameters.parameters);
+  const module = moduleEnabled(parameters.parameters);
   return dinD !== state.dinD || singularity !== state.singularity ||
-    systemD !== state.systemD || noMachine !== state.noMachine;
+    systemD !== state.systemD || noMachine !== state.noMachine ||
+    module !== state.module;
 }
 
 export default function (props, state, options) {

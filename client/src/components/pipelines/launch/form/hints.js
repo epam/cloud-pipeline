@@ -44,7 +44,15 @@ const dockerImageHint = (localizedStringFn) => (
 
 const awsRegionHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
-    Select <b>cloud region</b>.<br />
+    Select a <b>Cloud Provider</b> and a corresponding <b>region</b>,
+    where the compute node will be created <br />
+  </Row>
+);
+
+const runCapabilitiesHint = () => (
+  <Row style={{maxWidth: 300}}>
+    Allows to configure additional software packages for the job,
+    e.g. <b>Docker-In-Docker</b>, <b>Singularity</b> and others
   </Row>
 );
 
@@ -163,6 +171,7 @@ const hints = {
   dockerImageHint,
   instanceTypeHint,
   awsRegionHint,
+  runCapabilitiesHint,
   awsRegionRestrictedByToolSettingsHint,
   diskHint,
   startIdleHint,

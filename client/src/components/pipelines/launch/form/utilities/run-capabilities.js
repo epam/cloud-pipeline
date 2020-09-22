@@ -6,14 +6,16 @@ import {
   CP_CAP_DIND_CONTAINER,
   CP_CAP_SYSTEMD_CONTAINER,
   CP_CAP_SINGULARITY,
-  CP_CAP_DESKTOP_NM
+  CP_CAP_DESKTOP_NM,
+  CP_CAP_MODULES
 } from './parameters';
 
 export const RUN_CAPABILITIES = {
   dinD: 'DinD',
   singularity: 'Singularity',
   systemD: 'SystemD',
-  noMachine: 'NoMachine'
+  noMachine: 'NoMachine',
+  module: 'Module'
 };
 
 export default class RunCapabilities extends React.Component {
@@ -41,7 +43,7 @@ export default class RunCapabilities extends React.Component {
         allowClear
         mode="multiple"
         onChange={this.onSelectionChanged}
-        placeholder="Select..."
+        placeholder="None selected"
         size="large"
         value={values || []}
         filterOption={
@@ -59,7 +61,8 @@ export function getRunCapabilitiesSkippedParameters () {
     CP_CAP_DIND_CONTAINER,
     CP_CAP_SINGULARITY,
     CP_CAP_SYSTEMD_CONTAINER,
-    CP_CAP_DESKTOP_NM
+    CP_CAP_DESKTOP_NM,
+    CP_CAP_MODULES
   ];
 }
 
@@ -77,4 +80,8 @@ export function systemDEnabled (parameters) {
 
 export function noMachineEnabled (parameters) {
   return booleanParameterIsSetToValue(parameters, CP_CAP_DESKTOP_NM);
+}
+
+export function moduleEnabled (parameters) {
+  return booleanParameterIsSetToValue(parameters, CP_CAP_MODULES);
 }
