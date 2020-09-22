@@ -285,14 +285,14 @@ export default class EditToolForm extends React.Component {
               value: true
             });
           }
-          if (this.state.dinD && !this.state.kubeEnabled) {
+          if (this.state.dinD) {
             params.push({
               name: CP_CAP_DIND_CONTAINER,
               type: 'boolean',
               value: true
             });
           }
-          if (this.state.systemD && !this.state.kubeEnabled) {
+          if (this.state.systemD) {
             params.push({
               name: CP_CAP_SYSTEMD_CONTAINER,
               type: 'boolean',
@@ -1249,6 +1249,16 @@ export default class EditToolForm extends React.Component {
                   </Select>
                 )}
               </Form.Item>
+              <Form.Item
+                {...this.formItemLayout}
+                label="Run capabilities"
+                style={{marginTop: 10, marginBottom: 10}}
+              >
+                <RunCapabilities
+                  values={this.selectedRunCapabilities}
+                  onChange={this.onRunCapabilitiesSelect}
+                />
+              </Form.Item>
               <ConfigureClusterDialog
                 instanceName={this.props.form.getFieldValue('instanceType')}
                 launchCluster={this.state.launchCluster}
@@ -1280,16 +1290,6 @@ export default class EditToolForm extends React.Component {
                   />
                 </Col>
               </Row>
-              <Form.Item
-                {...this.formItemLayout}
-                label="Run capabilities"
-                style={{marginTop: 10, marginBottom: 10}}
-              >
-                <RunCapabilities
-                  values={this.selectedRunCapabilities}
-                  onChange={this.onRunCapabilitiesSelect}
-                />
-              </Form.Item>
             </Col>
             <Col sm={24} lg={12}>
               <Row type="flex" align="middle" style={{marginBottom: 10}}>
@@ -1312,6 +1312,7 @@ export default class EditToolForm extends React.Component {
               ...getSkippedSystemParametersList(this),
               ...getRunCapabilitiesSkippedParameters()
             ]}
+            hiddenParameters={getRunCapabilitiesSkippedParameters()}
             value={this.defaultSystemProperties}
             onInitialized={this.onEditToolFormSystemParametersInitialized} />
           {this.renderSeparator('Custom parameters')}
