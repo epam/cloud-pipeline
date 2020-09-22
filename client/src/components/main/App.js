@@ -24,8 +24,10 @@ import Navigation from './navigation/Navigation';
 import NotificationCenter from './notification/NotificationCenter';
 import searchStyles from '../search/search.css';
 import {SearchDialog} from '../search';
+import roleModel from '../../utils/roleModel';
 
 @inject('preferences')
+@roleModel.authenticationInfo
 @observer
 export default class App extends Component {
 
@@ -83,7 +85,9 @@ export default class App extends Component {
   };
 
   render () {
-    const {preferences} = this.props;
+    const {preferences, authenticatedUserInfo} = this.props;
+    const isBillingPrivilegedUser = authenticatedUserInfo.loaded &&
+      roleModel.isManager.billing(this);
     const isMiewApp = (this.props.router.location.pathname.split('/')[1] || '').toLowerCase() === 'miew';
     const activeTabPath = (this.props.router.location.pathname.split('/')[1] || '').toLowerCase();
     let content;
@@ -108,7 +112,14 @@ export default class App extends Component {
               openSearchDialog={this.openSearchDialog}
               searchControlVisible={this.state.searchFormVisible}
               searchEnabled={preferences.loaded && preferences.searchEnabled}
-              billingEnabled={preferences.loaded && preferences.billingEnabled}
+              billingEnabled={
+                preferences.loaded &&
+                authenticatedUserInfo.loaded &&
+                (
+                  (!isBillingPrivilegedUser && preferences.billingEnabled) ||
+                  (isBillingPrivilegedUser && preferences.billingAdminsEnabled)
+                )
+              }
               router={this.props.router} />
           </Layout.Sider>
           <Layout.Content
