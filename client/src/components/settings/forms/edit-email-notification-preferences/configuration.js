@@ -210,7 +210,14 @@ const SystemLongPausedActionPreference = {
 const SystemNotificationsExcludeInstanceTypesPreference = {
   preference: 'system.notifications.exclude.instance.types',
   type: 'string',
-  name: 'Exclude instance types'
+  name: 'Exclude instance types',
+  hint: (
+    <div>
+      <b>Instances, listed here won't trigger the IDLE notification.</b><br />
+      The list shall be provided as a comma-separated string, you can also use the wildcards.
+      E.g. m5.xlarge,*.large
+    </div>
+  )
 };
 
 const Preferences = [
@@ -223,7 +230,7 @@ const Preferences = [
   SystemMaxLongPausedTimeoutMinutesPreference,
   SystemLongPausedActionTimeoutMinutesPreference,
   SystemLongPausedActionPreference,
-  SystemNotificationsExcludeInstanceTypesPreference,
+  SystemNotificationsExcludeInstanceTypesPreference
 ];
 
 const NotificationPreferences = {
@@ -236,7 +243,7 @@ const NotificationPreferences = {
     SystemIdleActionTimeoutMinutesPreference.preference,
     SystemIdleCPUThresholdPreference.preference,
     SystemIdleActionPreference.preference,
-    SystemNotificationsExcludeInstanceTypesPreference.preference,
+    SystemNotificationsExcludeInstanceTypesPreference.preference
   ],
   [IdleRunPausedType]: [
     SystemMaxIdleTimeoutMinutesPreference.preference,
