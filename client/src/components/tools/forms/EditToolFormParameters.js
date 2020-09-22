@@ -21,7 +21,7 @@ import {computed} from 'mobx';
 import {Button, Checkbox, Col, Dropdown, Icon, Input, Menu, Row, Select} from 'antd';
 import BucketBrowser from '../../pipelines/launch/dialogs/BucketBrowser';
 import SystemParametersBrowser from '../../pipelines/launch/dialogs/SystemParametersBrowser';
-import {LIMIT_MOUNTS_PARAMETER} from '../../pipelines/launch/form/LimitMountsInput';
+import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
 import styles from './EditToolFormParameters.css';
 
 @observer
@@ -33,7 +33,8 @@ export default class EditToolFormParameters extends React.Component {
     readOnly: PropTypes.bool,
     isSystemParameters: PropTypes.bool,
     getSystemParameterDisabledState: PropTypes.func,
-    skippedSystemParameters: PropTypes.array
+    skippedSystemParameters: PropTypes.array,
+    hiddenParameters: PropTypes.array
   };
 
   state = {
@@ -213,6 +214,10 @@ export default class EditToolFormParameters extends React.Component {
       this.props.getSystemParameterDisabledState(parameter.name || '')) {
       return null;
     }
+    if (this.props.isSystemParameters && this.props.hiddenParameters &&
+      this.props.hiddenParameters.includes(parameter.name || '')) {
+      return null;
+    }
 
     const onChange = (property) => (e) => {
       const parameters = this.state.parameters;
@@ -353,7 +358,7 @@ export default class EditToolFormParameters extends React.Component {
           }}
           notToShow={[
             ...this.state.parameters.map(p => p.name),
-            LIMIT_MOUNTS_PARAMETER,
+            CP_CAP_LIMIT_MOUNTS,
             ...this.skippedSystemParameters
           ]}
         />
@@ -376,7 +381,7 @@ export default class EditToolFormParameters extends React.Component {
     for (let i = 0; i < parameters.length; i++) {
       if (!parameters[i].name) {
         validation[i].error = 'Parameter name is required';
-      } else if ((parameters[i].name || '').toUpperCase() === LIMIT_MOUNTS_PARAMETER) {
+      } else if ((parameters[i].name || '').toUpperCase() === CP_CAP_LIMIT_MOUNTS) {
         validation[i].error = 'Parameter name is reserved';
       } else if (parameters
           .map(p => (p.name || '').toLowerCase())
@@ -400,7 +405,9 @@ export default class EditToolFormParameters extends React.Component {
   }
 
   getValues = () => {
-    return this.state.parameters;
+    return this.state.parameters.filter(p => (
+      !this.props.isSystemParameters && !this.props.hiddenParameters.includes(p.name)
+    ));
   };
 
   @computed

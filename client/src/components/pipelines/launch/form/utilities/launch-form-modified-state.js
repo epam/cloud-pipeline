@@ -22,14 +22,22 @@ import {
 import {
   autoScaledClusterEnabled,
   hybridAutoScaledClusterEnabled,
-  CP_CAP_AUTOSCALE_WORKERS,
   getSkippedSystemParametersList,
   gridEngineEnabled,
   sparkEnabled,
   slurmEnabled,
   kubeEnabled
 } from './launch-cluster';
-import {LIMIT_MOUNTS_PARAMETER} from '../LimitMountsInput';
+import {
+  CP_CAP_AUTOSCALE_WORKERS,
+  CP_CAP_LIMIT_MOUNTS
+} from './parameters';
+import {
+  dinDEnabled,
+  noMachineEnabled,
+  singularityEnabled,
+  systemDEnabled
+} from './run-capabilities';
 
 function modified (form, parameters, formName, parametersName, defaultValue) {
   return `${form.getFieldValue(formName) || defaultValue}` !==
@@ -137,8 +145,8 @@ function autoPauseCheck (form, state) {
 
 function limitMountsCheck (form, parameters) {
   const getDefaultValue = () => {
-    if (parameters.parameters && parameters.parameters[LIMIT_MOUNTS_PARAMETER]) {
-      return parameters.parameters[LIMIT_MOUNTS_PARAMETER].value;
+    if (parameters.parameters && parameters.parameters[CP_CAP_LIMIT_MOUNTS]) {
+      return parameters.parameters[CP_CAP_LIMIT_MOUNTS].value;
     }
     return null;
   };
@@ -192,7 +200,7 @@ function parametersCheck (form, parameters, state) {
   }
   const initialValue = Object.keys(parameters.parameters || {})
     .filter(key => [
-      LIMIT_MOUNTS_PARAMETER,
+      CP_CAP_LIMIT_MOUNTS,
       ...getSkippedSystemParametersList({state})
     ].indexOf(key) === -1)
     .map(key => ({key, value: parameters.parameters[key].value || ''}))
@@ -210,6 +218,15 @@ function parametersCheck (form, parameters, state) {
   return Object.keys(formValue).length !== Object.keys(initialValue).length ||
     check(formValue, initialValue) ||
     check(initialValue, formValue);
+}
+
+function runCapabilitiesCheck (state, parameters) {
+  const dinD = dinDEnabled(parameters.parameters);
+  const singularity = singularityEnabled(parameters.parameters);
+  const systemD = systemDEnabled(parameters.parameters);
+  const noMachine = noMachineEnabled(parameters.parameters);
+  return dinD !== state.dinD || singularity !== state.singularity ||
+    systemD !== state.systemD || noMachine !== state.noMachine;
 }
 
 export default function (props, state, options) {
@@ -258,5 +275,7 @@ export default function (props, state, options) {
     // cmd template check
     cmdTemplateCheck(state, parameters, options) ||
     // check general parameters
-    parametersCheck(form, parameters);
+    parametersCheck(form, parameters) ||
+    // check additional run capabilities
+    runCapabilitiesCheck(state, parameters);
 }
