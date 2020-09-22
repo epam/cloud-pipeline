@@ -207,6 +207,12 @@ const SystemLongPausedActionPreference = {
   )
 };
 
+const SystemNotificationsExcludeInstanceTypesPreference = {
+  preference: 'system.notifications.exclude.instance.types',
+  type: 'string',
+  name: 'Exclude instance types'
+};
+
 const Preferences = [
   SystemDiskConsumeThresholdPreference,
   SystemMemoryConsumeThresholdPreference,
@@ -216,7 +222,8 @@ const Preferences = [
   SystemIdleActionPreference,
   SystemMaxLongPausedTimeoutMinutesPreference,
   SystemLongPausedActionTimeoutMinutesPreference,
-  SystemLongPausedActionPreference
+  SystemLongPausedActionPreference,
+  SystemNotificationsExcludeInstanceTypesPreference,
 ];
 
 const NotificationPreferences = {
@@ -228,7 +235,8 @@ const NotificationPreferences = {
     SystemMaxIdleTimeoutMinutesPreference.preference,
     SystemIdleActionTimeoutMinutesPreference.preference,
     SystemIdleCPUThresholdPreference.preference,
-    SystemIdleActionPreference.preference
+    SystemIdleActionPreference.preference,
+    SystemNotificationsExcludeInstanceTypesPreference.preference,
   ],
   [IdleRunPausedType]: [
     SystemMaxIdleTimeoutMinutesPreference.preference,
