@@ -59,7 +59,7 @@ class Filters extends React.Component {
     if (!this.filterStore) {
       return null;
     }
-    const {children, users} = this.props;
+    const {children, users, cloudRegionsInfo} = this.props;
     const exportFormats = /^general$/i.test(this.filterStore.report)
       ? [ExportFormat.csvCostCenters, ExportFormat.csvUsers, ExportFormat.image]
       : [ExportFormat.csv, ExportFormat.image];
@@ -103,7 +103,7 @@ class Filters extends React.Component {
               <RestoreButton className={styles.restoreLayoutButton} />
               <ExportReports
                 className={styles.exportReportsButton}
-                documentName={() => this.filterStore.getDescription({users})}
+                documentName={() => this.filterStore.getDescription({users, cloudRegionsInfo})}
                 formats={exportFormats}
               />
             </div>
@@ -123,4 +123,4 @@ const RUNNER_SEPARATOR = FilterStore.RUNNER_SEPARATOR;
 const REGION_SEPARATOR = FilterStore.REGION_SEPARATOR;
 
 export {RUNNER_SEPARATOR, REGION_SEPARATOR};
-export default inject('users')(roleModel.authenticationInfo(observer(Filters)));
+export default inject('users', 'cloudRegionsInfo')(roleModel.authenticationInfo(observer(Filters)));
