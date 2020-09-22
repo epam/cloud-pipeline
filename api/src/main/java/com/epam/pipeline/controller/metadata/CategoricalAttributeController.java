@@ -76,8 +76,8 @@ public class CategoricalAttributeController extends AbstractRestController {
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
-    public Result<Map<String, List<String>>> loadCategoricalAttributes(@RequestParam final List<String> attributeKeys) {
-        return Result.success(categoricalAttributeApiService.loadAllValuesForKeys(attributeKeys));
+    public Result<Map<String, List<String>>> loadCategoricalAttributes(@RequestParam final String attributeKey) {
+        return Result.success(categoricalAttributeApiService.loadAllValuesForKey(attributeKey));
     }
 
     @DeleteMapping("/delete")

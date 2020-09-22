@@ -42,7 +42,7 @@
         <property name="loadAttributesValuesQuery">
             <value>
                 <![CDATA[
-                    SELECT key, value FROM pipeline.categorical_attributes WHERE key IN (:list)
+                    SELECT key, value FROM pipeline.categorical_attributes WHERE key=:KEY
                 ]]>
             </value>
         </property>

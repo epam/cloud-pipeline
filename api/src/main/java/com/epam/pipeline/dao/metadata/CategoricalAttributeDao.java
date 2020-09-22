@@ -66,18 +66,17 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
         return listOfPairsToMap(allAttributeValues);
     }
 
-    public Map<String, List<String>> loadAllValuesForKeys(final List<String> keys) {
-        final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(LIST_PARAMETER, keys);
+    public Map<String, List<String>> loadAllValuesForKey(final String key) {
         final List<Pair<String, String>> requestedAttributesValues = getNamedParameterJdbcTemplate()
-            .query(loadAttributesValuesQuery, params, AttributeValueParameters.getRowMapper());
+            .query(loadAttributesValuesQuery, AttributeValueParameters.getParameters(key),
+                   AttributeValueParameters.getRowMapper());
         return listOfPairsToMap(requestedAttributesValues);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public boolean deleteAttributeValues(final String key) {
         return getNamedParameterJdbcTemplate()
-                   .update(deleteAttributeValuesQuery, AttributeValueParameters.getParameters(key, null)) > 0;
+                   .update(deleteAttributeValuesQuery, AttributeValueParameters.getParameters(key)) > 0;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -97,6 +96,10 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
     enum AttributeValueParameters {
         KEY,
         VALUE;
+
+        private static MapSqlParameterSource getParameters(final String key) {
+            return getParameters(key, null);
+        }
 
         private static MapSqlParameterSource getParameters(final String key, final String value) {
             final MapSqlParameterSource params = new MapSqlParameterSource();

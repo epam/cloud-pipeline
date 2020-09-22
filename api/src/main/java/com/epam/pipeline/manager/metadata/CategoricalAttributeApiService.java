@@ -41,8 +41,8 @@ public class CategoricalAttributeApiService {
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public Map<String, List<String>> loadAllValuesForKeys(final List<String> keys) {
-        return categoricalAttributesManager.loadAllValuesForKeys(keys);
+    public Map<String, List<String>> loadAllValuesForKey(final String key) {
+        return categoricalAttributesManager.loadAllValuesForKey(key);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)

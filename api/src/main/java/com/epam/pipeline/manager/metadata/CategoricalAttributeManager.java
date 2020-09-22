@@ -41,8 +41,8 @@ public class CategoricalAttributeManager {
         return categoricalAttributesDao.loadAll();
     }
 
-    public Map<String, List<String>> loadAllValuesForKeys(final List<String> keys) {
-        return categoricalAttributesDao.loadAllValuesForKeys(keys);
+    public Map<String, List<String>> loadAllValuesForKey(final String key) {
+        return categoricalAttributesDao.loadAllValuesForKey(key);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

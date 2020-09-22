@@ -75,9 +75,8 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
         values.put(ATTRIBUTE_KEY_1, Arrays.asList(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2));
         values.put(ATTRIBUTE_KEY_2, Collections.singletonList(ATTRIBUTE_VALUE_3));
         categoricalAttributeDao.insertAttributesValues(values);
-        final Map<String, List<String>>
-            attributesWithValues =
-            categoricalAttributeDao.loadAllValuesForKeys(Collections.singletonList(ATTRIBUTE_KEY_1));
+        final Map<String, List<String>> attributesWithValues =
+            categoricalAttributeDao.loadAllValuesForKey(ATTRIBUTE_KEY_1);
         Assert.assertEquals(1, attributesWithValues.size());
         assertValuesPresentedForKeyInMap(attributesWithValues, ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2);
     }
