@@ -18,6 +18,7 @@ package com.epam.pipeline.dao.metadata;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
+import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -44,6 +45,19 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
 
     @Autowired
     private CategoricalAttributeDao categoricalAttributeDao;
+
+    @Test
+    public void testPairsToCategoricalAttributesConversion() {
+        final List<Pair<String, String>> pairs = Arrays.asList(Pair.of(ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_1),
+                                                               Pair.of(ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_2),
+                                                               Pair.of(ATTRIBUTE_KEY_2, ATTRIBUTE_VALUE_2),
+                                                               Pair.of(ATTRIBUTE_KEY_2, ATTRIBUTE_VALUE_3));
+        final List<CategoricalAttribute> attributes = CategoricalAttributeDao.convertPairsToAttributesList(pairs);
+        Assert.assertEquals(2, attributes.size());
+        final Map<String, List<String>> attributesAsMap = convertToMap(attributes);
+        assertValuesPresentedForKeyInMap(attributesAsMap, ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2);
+        assertValuesPresentedForKeyInMap(attributesAsMap, ATTRIBUTE_KEY_2, ATTRIBUTE_VALUE_2, ATTRIBUTE_VALUE_3);
+    }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
