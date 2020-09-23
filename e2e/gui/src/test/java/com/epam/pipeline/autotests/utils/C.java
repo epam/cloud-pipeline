@@ -81,6 +81,7 @@ public class C {
         ANONYMOUS_NAME = conf.getProperty("e2e.ui.anonymous.name");
         ANONYMOUS_TOKEN = conf.getProperty("e2e.ui.anonymous.token");
         ANOTHER_ADMIN_TOKEN = conf.getProperty("e2e.ui.another.admin.token");
+        TEST_DOCKER_IMAGE = conf.getProperty("e2e.ui.test.docker.image");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -125,6 +126,7 @@ public class C {
     public static final String LUIGI_IMAGE;
     public static final String STORAGE_PREFIX;
     public static final String NFS_PREFIX;
+    public static final String TEST_DOCKER_IMAGE;
 
     public static final String DEFAULT_INSTANCE;
     public static final String DEFAULT_INSTANCE_PRICE_TYPE;

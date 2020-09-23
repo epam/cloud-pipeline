@@ -21,9 +21,11 @@ import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
 import com.epam.pipeline.autotests.AbstractSinglePipelineRunningTest;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
+import com.epam.pipeline.autotests.utils.SelenideElements;
 import com.epam.pipeline.autotests.utils.Utils;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.openqa.selenium.By;
@@ -34,10 +36,12 @@ import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.lang.String.format;
+import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
@@ -66,7 +70,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(DOCKER_IMAGE, context().find(byText("Docker image")).closest(".ant-row").find(tagName("input"))),
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
-            entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button")))
+            entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
+            entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]")).closest(".ant-row").find(by("role", "combobox")))
     );
     private final String pipelineName;
     private int parameterIndex = 0;
@@ -312,6 +317,16 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return new SystemParameterPopupAO(this);
     }
 
+    public PipelineRunFormAO checkSystemParameters(String...sysParams) {
+        List<String> systemParams = $$(byClassName("launch-pipeline-form__system-parameter-name"))
+                .stream()
+                .map(SelenideElement::getValue)
+                .collect(toList());
+        Arrays.stream(sysParams).forEach(param -> assertTrue(systemParams.contains(param),
+                format("System parameter %s isn't found ", param)));
+        return this;
+    }
+
     public PipelineRunFormAO chooseConfiguration(final String profileName) {
         click(CONFIGURATION);
         $$(className("ant-select-dropdown")).findBy(visible)
@@ -442,7 +457,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         public ConfigureClusterPopupAO clusterEnableCheckboxSelect(String checkBox){
             if (checkBox.equals("Enable GridEngine")
                     || checkBox.equals("Enable Apache Spark")
-                    || checkBox.equals("Enable Slurm")) {
+                    || checkBox.equals("Enable Slurm")
+                    || checkBox.equals("Enable Kubernetes")) {
                 context()
                         .find(byXpath(
                                 format(".//span[.='%s']/preceding-sibling::span[@class='ant-checkbox']", checkBox)))

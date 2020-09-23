@@ -29,13 +29,20 @@ import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Selenide.open;
+import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.Primitive.DEFAULT_COMMAND;
+import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.ao.Primitive.PORT;
+import static com.epam.pipeline.autotests.ao.Primitive.RUN_CAPABILITIES;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.commons.lang3.StringUtils.rightPad;
 import static org.testng.Assert.assertEquals;
 
 public class RunToolsInSandBoxTest
@@ -50,7 +57,10 @@ public class RunToolsInSandBoxTest
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
     private final String endpoint = C.VALID_ENDPOINT;
+    private final String testDockerImage = C.TEST_DOCKER_IMAGE;
     private String nodeName;
+    private final String dindContainerParameter = "CP_CAP_DIND_CONTAINER";
+    private final String singularityParameter = "CP_CAP_SINGULARITY";
 
     @BeforeClass
     @AfterClass(alwaysRun = true)
@@ -92,7 +102,7 @@ public class RunToolsInSandBoxTest
                 .perform(registry, group, tool, runTool())
                 .setDefaultLaunchOptions()
                 .launchTool(this, nameWithoutGroup(tool))
-                .assertLatestPipelineHasName(String.format("%s:%s", nameWithoutGroup(tool), "latest"));
+                .assertLatestPipelineHasName(format("%s:%s", nameWithoutGroup(tool), "latest"));
     }
 
     @Test(dependsOnMethods = {"validatePipelineIsLaunchedForToolInSandbox"})
@@ -187,6 +197,58 @@ public class RunToolsInSandBoxTest
                 .showLog(getLastRunId())
                 .waitForCompletion()
                 .shouldHaveStatus(LogAO.Status.FAILURE);
+    }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-3172", "EPMCMBIBPC-3173"})
+    public void validationOfDinDLaunchAndFunctionality() {
+        tools()
+                .perform(registry, group, tool, runTool())
+                .selectValue(RUN_CAPABILITIES, "DinD")
+                .launch(this)
+                .showLog(getLastRunId())
+                .expandTab(PARAMETERS)
+                .ensure(configurationParameter(dindContainerParameter, "true"), exist)
+                .waitForSshLink()
+                .ssh(shell -> shell
+                        .execute("docker --version")
+                        .assertOutputContains("Docker version", ", build ")
+                        .execute(format("docker pull %s", testDockerImage))
+                        .execute(format("docker create %s", testDockerImage))
+                        .execute("docker image ls")
+                        .assertOutputContains("REPOSITORY", "TAG", "IMAGE ID", "CREATED", "SIZE")
+                        .assertOutputContains(testDockerImage, "latest")
+                        .assertPageContainsString(format(rightPad(testDockerImage, 20, ' '), "latest"))
+                        .execute("docker container ls -a")
+                        .assertOutputContains("CONTAINER ID", "IMAGE", "COMMAND", "CREATED", "STATUS", "PORTS", "NAMES")
+                        .assertPageContainsString(format(rightPad(testDockerImage, 20, ' '), "\"/bin/bash\""))
+                        .assertOutputContains("Created")
+                        .close());
+    }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-3174", "EPMCMBIBPC-3175"})
+    public void validationOfSingularityLaunchAndFunctionality() {
+        tools()
+                .perform(registry, group, tool, runTool())
+                .selectValue(RUN_CAPABILITIES, "Singularity")
+                .launch(this)
+                .showLog(getLastRunId())
+                .expandTab(PARAMETERS)
+                .ensure(configurationParameter(singularityParameter, "true"), exist)
+                .waitForSshLink()
+                .ssh(shell -> shell
+                        .execute("singularity help version")
+                        .assertOutputContains("Show the version for Singularity")
+                        .execute(format("singularity build %s.sif library://%s", testDockerImage, testDockerImage))
+                        .assertOutputContains(format("Build complete: %s.sif", testDockerImage))
+                        .execute(format("singularity instance start %s.sif instance1", testDockerImage))
+                        .assertOutputContains("instance started successfully")
+                        .execute("singularity instance list")
+                        .assertOutputContains("INSTANCE NAME", "PID", "IP", "IMAGE")
+                        .assertPageContainsString("IMAGE\ninstance1")
+                        .assertPageContainsString(format("/root/%s.sif", testDockerImage))
+                        .close());
     }
 
     private Function<ToolDescription, PipelineRunFormAO> runTool() {
