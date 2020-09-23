@@ -14,13 +14,36 @@
  *  limitations under the License.
  */
 
-import Remote from '../basic/Remote';
-
-class SystemDictionariesLoad extends Remote {
-  constructor (key) {
-    super();
-    this.url = `/categoricalAttribute/${key}`;
-  }
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 5px 0;
 }
 
-export default SystemDictionariesLoad;
+.row .label {
+  margin-right: 5px;
+  font-weight: bold;
+}
+
+.error {
+  color: red;
+}
+
+.actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #ddd;
+}
+
+.actions .action {
+  margin-left: 5px;
+}
+
+.actions .action:first-child {
+  margin-left: initial;
+}

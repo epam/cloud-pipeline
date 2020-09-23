@@ -27,7 +27,7 @@ class SystemDictionariesDelete extends RemotePost {
       credentials: 'include',
       method: 'DELETE'
     };
-    this.url = `/categoricalAttribute/delete/${key}`;
+    this.url = `/categoricalAttribute/${key}`;
   }
 }
 

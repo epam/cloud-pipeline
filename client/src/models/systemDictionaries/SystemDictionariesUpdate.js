@@ -16,11 +16,11 @@
 
 import RemotePost from '../basic/RemotePost';
 
-class SystemDictionariesCreate extends RemotePost {
+class SystemDictionariesUpdate extends RemotePost {
   constructor () {
     super();
     this.url = '/categoricalAttribute';
   }
 }
 
-export default SystemDictionariesCreate;
+export default SystemDictionariesUpdate;

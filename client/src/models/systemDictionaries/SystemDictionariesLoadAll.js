@@ -19,7 +19,14 @@ import Remote from '../basic/Remote';
 class SystemDictionariesLoadAll extends Remote {
   constructor () {
     super();
-    this.url = '/categoricalAttribute/loadAll';
+    this.url = '/categoricalAttribute';
+  }
+
+  getDictionary (key) {
+    if (this.loaded) {
+      return (this.value || []).find((attribute) => attribute.key === key);
+    }
+    return undefined;
   }
 }
 

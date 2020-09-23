@@ -756,10 +756,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
     const key = this.state.editableKeyIndex === metadataItem.index
       ? (this.state.editableText || metadataItem.key)
       : metadataItem.key;
-    const dictionaries = systemDictionaries.loaded
-      ? systemDictionaries.value
-      : {};
-    if (dictionaries.hasOwnProperty(key)) {
+    const dictionary = systemDictionaries.getDictionary(key);
+    if (dictionary) {
       valueElement = (
         <tr key={`${metadataItem.key}_value`} className={styles.valueRowEdit}>
           <td colSpan={6}>
@@ -775,7 +773,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
               onChange={this.saveDictionaryMetadata({index: metadataItem.index})}
             >
               {
-                dictionaries[key].map((v) => (
+                (dictionary.values || []).map((v) => (
                   <Select.Option key={v} value={v}>
                     {v}
                   </Select.Option>
@@ -934,9 +932,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
     if (this.state.addKey) {
       const {systemDictionaries} = this.props;
       const {key} = this.state.addKey;
-      const dictionaries = systemDictionaries.loaded
-        ? systemDictionaries.value
-        : {};
+      const dictionary = systemDictionaries.getDictionary(key);
       const addKeyCancelClicked = () => {
         this.setState({editableKeyIndex: null, editableValueIndex: null, editableText: null, addKey: null});
       };
@@ -971,7 +967,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
       };
 
       let valueItem;
-      if (dictionaries.hasOwnProperty(key)) {
+      if (dictionary) {
         valueItem = (
           <Select
             allowClear
@@ -985,7 +981,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
             onChange={onDictionaryChange}
           >
             {
-              dictionaries[key].map((v) => (
+              (dictionary.values || []).map((v) => (
                 <Select.Option key={v} value={v}>
                   {v}
                 </Select.Option>

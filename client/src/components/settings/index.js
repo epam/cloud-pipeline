@@ -61,7 +61,7 @@ const SettingsTabs = [
     available: (user) => user ? user.admin : false
   },
   {
-    key: 'systemDictionaries',
+    key: 'dictionaries',
     path: '/settings/dictionaries',
     title: 'System Dictionaries',
     available: (user) => user ? user.admin : false

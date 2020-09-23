@@ -92,6 +92,17 @@ export default class Navigation extends React.Component {
       icon: 'setting',
       path: '/settings',
       key: 'settings',
+      keys: [
+        'settings',
+        'cli',
+        'events',
+        'user',
+        'email',
+        'preferences',
+        'regions',
+        'logs',
+        'dictionaries'
+      ],
       isDefault: false,
       isLink: true
     },
