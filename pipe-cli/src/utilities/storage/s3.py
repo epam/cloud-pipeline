@@ -498,9 +498,9 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         key = page_file['Key']
         if key == relative_path:
             return True
-        if relative_path.endswith("/"):
+        if relative_path.endswith(S3BucketOperations.S3_PATH_SEPARATOR):
             return True
-        if key.startswith("%s/" % relative_path):
+        if key.startswith("%s%s" % (relative_path, S3BucketOperations.S3_PATH_SEPARATOR)):
             return True
         return False
 
