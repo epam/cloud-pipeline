@@ -48,12 +48,13 @@ public class PlainCmdExecutor implements CmdExecutor {
             stdReader.join();
             errReader.join();
             if (exitCode != 0) {
-                final String errorMessage = errors.toString();
-                log.error("Command '{}' err output: {}.", command, errorMessage);
-                throw new CmdExecutionException(command, errorMessage);
+                final String errorMessage = String.format("Command '%s' failed with the following stderr: %s", 
+                        command, errors.toString());
+                log.error(errorMessage);
+                throw new CmdExecutionException(errorMessage);
             }
         } catch (InterruptedException e) {
-            throw new CmdExecutionException(command, e);
+            throw new CmdExecutionException(String.format("Command '%s' execution was interrupted", command));
         }
         return output.toString();
     }
@@ -72,7 +73,7 @@ public class PlainCmdExecutor implements CmdExecutor {
                     .toArray(String[]::new);
             return Runtime.getRuntime().exec(cmd, envp, workDir);
         } catch (IOException e) {
-            throw new CmdExecutionException(command, e);
+            throw new CmdExecutionException(String.format("Command '%s' launching has failed", command), e);
         }
     }
 
@@ -80,7 +81,7 @@ public class PlainCmdExecutor implements CmdExecutor {
         try (BufferedReader reader = new BufferedReader(in)) {
             appendReaderContent(content, reader);
         } catch (IOException e) {
-            throw new CmdExecutionException(command, e);
+            throw new CmdExecutionException(String.format("Command '%s' outputs reading has failed", command), e);
         }
     }
 

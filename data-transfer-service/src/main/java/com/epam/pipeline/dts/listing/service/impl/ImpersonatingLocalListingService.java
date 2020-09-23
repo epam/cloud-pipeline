@@ -16,10 +16,12 @@
 
 package com.epam.pipeline.dts.listing.service.impl;
 
+import com.epam.pipeline.cmd.CmdExecutionException;
 import com.epam.pipeline.cmd.CmdExecutor;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dts.common.service.CloudPipelineAPIClient;
 import com.epam.pipeline.dts.listing.configuration.ListingPreference;
+import com.epam.pipeline.dts.listing.exception.LocalListingException;
 import com.epam.pipeline.dts.listing.model.ListingItemsPaging;
 import com.epam.pipeline.dts.listing.rest.dto.ItemsListingRequestDTO;
 import com.epam.pipeline.dts.listing.service.ListingService;
@@ -70,13 +72,18 @@ public class ImpersonatingLocalListingService implements ListingService {
                 request.getPageSize()));
         Assert.isTrue(offset > 0, "Page marker must be greater than zero");
         final String impersonatingUser = getImpersonatingUser(request.getCredentials());
-        final String listingOutput = listingCmdExecutor.executeCommand(
-                list(request.getPath(), offset, size), impersonatingUser);
-        return parsed(listingOutput);
+        try {
+            final String listingOutput = listingCmdExecutor.executeCommand(
+                    list(request.getPath(), offset, size), impersonatingUser);
+            return parsed(listingOutput);
+        } catch (CmdExecutionException e) {
+            throw new LocalListingException(e.getRootMessage(), e);
+        }
     }
 
     private String getImpersonatingUser(final PipelineCredentials credentials) {
         return Optional.ofNullable(credentials)
+                .filter(PipelineCredentials::isComplete)
                 .map(CloudPipelineAPIClient::from)
                 .flatMap(client -> client.getUserMetadataValueByKey(dtsNameMetadataKey))
                 .orElseGet(securityService::getImpersonatingUser);

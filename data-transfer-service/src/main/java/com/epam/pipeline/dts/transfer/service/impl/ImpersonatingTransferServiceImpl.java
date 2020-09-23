@@ -75,6 +75,7 @@ public class ImpersonatingTransferServiceImpl implements TransferService {
                 .filter(Objects::nonNull)
                 .map(PipelineCredentials::from)
                 .findFirst()
+                .filter(PipelineCredentials::isComplete)
                 .map(CloudPipelineAPIClient::from)
                 .flatMap(apiClient -> apiClient.getUserMetadataValueByKey(dtsNameMetadataKey))
                 .orElseGet(securityService::getImpersonatingUser);

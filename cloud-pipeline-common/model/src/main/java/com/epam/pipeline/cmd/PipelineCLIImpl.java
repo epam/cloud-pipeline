@@ -67,6 +67,7 @@ public class PipelineCLIImpl implements PipelineCLI {
         } else {
             log.info(String.format("Upload from %s to %s", source, destination));
             int attempts = 0;
+            CmdExecutionException lastException = null;
 
             while (attempts < retryCount) {
                 try {
@@ -77,10 +78,11 @@ public class PipelineCLIImpl implements PipelineCLI {
                     log.error(String.format("Failed to upload from %s to %s. Error: %s",
                             source, destination, e.getMessage()));
                     attempts++;
+                    lastException = e;
                 }
             }
-            throw new CmdExecutionException(String.format("Exceeded attempts count to upload %s to %s",
-                    source, destination));
+            throw new PipelineCLIException(String.format("Exceeded attempts count to upload %s to %s due to %s",
+                    source, destination, getExceptionRootMessage(lastException)), lastException);
         }
     }
 
@@ -94,6 +96,7 @@ public class PipelineCLIImpl implements PipelineCLI {
     public void downloadData(String source, String destination, List<String> include, String username) {
         log.info(String.format("Download from %s to %s", source, destination));
         int attempts = 0;
+        CmdExecutionException lastException = null;
 
         while (attempts < retryCount) {
             try {
@@ -104,10 +107,17 @@ public class PipelineCLIImpl implements PipelineCLI {
                 log.error(String.format("Failed to download from %s to %s. Error: %s",
                         source, destination, e.getMessage()));
                 attempts++;
+                lastException = e;
             }
         }
-        throw new CmdExecutionException(String.format("Exceeded attempts count to upload %s to %s",
-                source, destination));
+        throw new PipelineCLIException(String.format("Exceeded attempts count to download %s to %s due to %s",
+                source, destination, getExceptionRootMessage(lastException)), lastException);
+    }
+
+    private String getExceptionRootMessage(final CmdExecutionException lastException) {
+        return Optional.ofNullable(lastException)
+                .map(CmdExecutionException::getRootMessage)
+                .orElse("Cmd execution error");
     }
 
     private boolean isFileAlreadyLoaded(final String localFilePath,

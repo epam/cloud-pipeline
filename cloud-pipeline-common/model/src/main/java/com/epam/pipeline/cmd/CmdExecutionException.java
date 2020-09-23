@@ -16,17 +16,26 @@
 
 package com.epam.pipeline.cmd;
 
+import java.util.Optional;
+
 public class CmdExecutionException extends RuntimeException {
 
     public CmdExecutionException(String cmd, Throwable cause) {
-        super("Error while executing command " + cmd, cause);
+        super(cmd, cause);
     }
 
     public CmdExecutionException(String cmd) {
-        super("Error while executing command " + cmd);
+        super(cmd);
     }
 
-    public CmdExecutionException(String cmd, String errors) {
-        super(String.format("Error while executing command %s: \n%s", cmd, errors));
+    public String getRootMessage() {
+        return getRootMessage(this);
+    }
+
+    private String getRootMessage(final Throwable e) {
+        return Optional.of(e)
+                .map(Throwable::getCause)
+                .map(e1 -> Optional.ofNullable(e.getMessage()).orElse("") + " -> " + getRootMessage(e1))
+                .orElseGet(e::getMessage);
     }
 }

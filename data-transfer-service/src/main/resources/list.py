@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import sys
 from collections import namedtuple
 from datetime import datetime
 
@@ -63,8 +64,16 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--path', type=str, required=True, help='Listing path')
     parser.add_argument('-o', '--offset', type=int, required=True, help='Listing offset')
     parser.add_argument('-s', '--size', type=int, required=True, help='Listing size')
+    parser.add_argument('-d', '--debug', action='store_true', help='Enables stacktrace')
+    parser.add_argument('-i', '--indent', type=int, help='Output json indent')
     args = parser.parse_args()
 
-    listing, next_offset = get_listing(args.path, args.offset, args.size)
-
-    print(json.dumps({'results': listing, 'nextPageMarker': next_offset}, indent=4))
+    try:
+        listing, next_offset = get_listing(args.path, args.offset, args.size)
+        print(json.dumps({'results': listing, 'nextPageMarker': next_offset}, indent=args.indent))
+    except BaseException as e:
+        if not args.debug:
+            sys.stderr.write(str(e))
+            exit(1)
+        else:
+            raise
