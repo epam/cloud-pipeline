@@ -35,7 +35,7 @@ import java.util.Objects;
 
 public interface DtsClient {
 
-    @GET("list")
+    @POST("list")
     Call<Result<DtsDataStorageListing>> getList(@Body DtsDataStorageListingRequest request);
 
     @POST("submission")

@@ -28,7 +28,7 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.AllArgsConstructor;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,7 +47,7 @@ public class ListingController extends AbstractRestController {
     private ListingService listingService;
     private ListingItemsPagingMapper listingItemsPagingMapper;
 
-    @GetMapping
+    @PostMapping
     @ApiOperation(
             value = "Returns storage content specified by path. " +
                     "If paging is specified returns content with required restrictions.",
