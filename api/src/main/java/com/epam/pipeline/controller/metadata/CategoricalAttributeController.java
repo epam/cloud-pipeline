@@ -83,27 +83,18 @@ public class CategoricalAttributeController extends AbstractRestController {
 
     @DeleteMapping(value = "{attributeKey}")
     @ApiOperation(
-        value = "Delete all values for a requested attribute.",
-        notes = "Delete all values for a requested attribute.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-        })
-    public Result<Boolean> deleteAllAttributeValues(@PathVariable final String attributeKey) {
-        return Result.success(categoricalAttributeApiService.deleteAttributeValues(attributeKey));
-    }
-
-    @DeleteMapping(value = "{attributeKey}", params = "value")
-    @ApiOperation(
-        value = "Delete one specific value for a requested attribute.",
-        notes = "Delete one specific value for a requested attribute.",
+        value = "Delete values for a requested attribute.",
+        notes = "Delete one specific value for a requested attribute if `value` parameter is specified, or all of the "
+                + "values otherwise.",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
     public Result<Boolean> deleteAttributeValue(@PathVariable final String attributeKey,
-                                                @RequestParam final String value) {
-        return Result.success(categoricalAttributeApiService.deleteAttributeValue(attributeKey, value));
+                                                @RequestParam(required = false) final String value) {
+        return Result.success(value != null
+                              ? categoricalAttributeApiService.deleteAttributeValue(attributeKey, value)
+                              : categoricalAttributeApiService.deleteAttributeValues(attributeKey));
     }
 
     @PostMapping("/sync")
