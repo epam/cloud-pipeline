@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.acl;
+package com.epam.pipeline.test;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.log.LogPagination;
@@ -30,7 +30,17 @@ import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.log.LogManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
-import com.epam.pipeline.manager.pipeline.*;
+import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
+import com.epam.pipeline.manager.pipeline.PipelineManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
+import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
+import com.epam.pipeline.manager.pipeline.ToolManager;
+import com.epam.pipeline.manager.pipeline.ToolGroupManager;
+import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.pipeline.RunLogManager;
+import com.epam.pipeline.manager.pipeline.RunScheduleManager;
+import com.epam.pipeline.manager.pipeline.ToolApiService;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -86,21 +96,6 @@ public class AclTestBeans {
 
     @MockBean
     protected PermissionFactory permissionFactory;
-
-    @Bean
-    public GrantPermissionManager grantPermissionManager() {
-        GrantPermissionManager grantPermissionManager = new GrantPermissionManager();
-        grantPermissionManager.setAclService(aclService);
-        grantPermissionManager.setAuthManager(authManager);
-        grantPermissionManager.setEntityManager(entityManager);
-        grantPermissionManager.setIssueManager(issueManager);
-        grantPermissionManager.setMessageHelper(messageHelper);
-        grantPermissionManager.setMetadataEntityManager(metadataEntityManager);
-        grantPermissionManager.setNodesManager(nodesManager);
-        grantPermissionManager.setPermissionEvaluator(permissionEvaluator);
-        grantPermissionManager.setPermissionFactory(permissionFactory);
-        return grantPermissionManager;
-    }
 
     @MockBean
     protected DataSource dataSource;
@@ -212,4 +207,19 @@ public class AclTestBeans {
 
     @MockBean
     protected ConfigurationRunner configurationRunner;
+
+    @Bean
+    public GrantPermissionManager grantPermissionManager() {
+        GrantPermissionManager grantPermissionManager = new GrantPermissionManager();
+        grantPermissionManager.setAclService(aclService);
+        grantPermissionManager.setAuthManager(authManager);
+        grantPermissionManager.setEntityManager(entityManager);
+        grantPermissionManager.setIssueManager(issueManager);
+        grantPermissionManager.setMessageHelper(messageHelper);
+        grantPermissionManager.setMetadataEntityManager(metadataEntityManager);
+        grantPermissionManager.setNodesManager(nodesManager);
+        grantPermissionManager.setPermissionEvaluator(permissionEvaluator);
+        grantPermissionManager.setPermissionFactory(permissionFactory);
+        return grantPermissionManager;
+    }
 }

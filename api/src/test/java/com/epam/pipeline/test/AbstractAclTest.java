@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.acl;
+package com.epam.pipeline.test;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
@@ -22,7 +22,12 @@ import lombok.AllArgsConstructor;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.acls.domain.*;
+import org.springframework.security.acls.domain.AclAuthorizationStrategy;
+import org.springframework.security.acls.domain.AclImpl;
+import org.springframework.security.acls.domain.ObjectIdentityImpl;
+import org.springframework.security.acls.domain.PermissionFactory;
+import org.springframework.security.acls.domain.PrincipalSid;
+import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.test.context.junit4.SpringRunner;
