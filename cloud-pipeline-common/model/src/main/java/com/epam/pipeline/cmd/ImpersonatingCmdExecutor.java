@@ -24,9 +24,15 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -43,6 +49,11 @@ public class ImpersonatingCmdExecutor implements CmdExecutor {
     private static final String BASH_TEMPLATE = "bash %s";
     private static final String IMPERSONATING_TEMPLATE = "echo \"%s %s\" | sudo -n su - %s";
     private static final String ENVIRONMENT_VARIABLE_TEMPLATE = "%s='%s'";
+    private static final FileAttribute<Set<PosixFilePermission>> DEFAULT_PERMISSIONS =
+            PosixFilePermissions.asFileAttribute(new HashSet<>(Arrays.asList(
+                    PosixFilePermission.OWNER_READ,
+                    PosixFilePermission.OWNER_WRITE,
+                    PosixFilePermission.OWNER_EXECUTE)));
 
     private final CmdExecutor cmdExecutor;
 
@@ -57,7 +68,7 @@ public class ImpersonatingCmdExecutor implements CmdExecutor {
         log.info("Executing command '{}' with substituted user '{}'", command, username);
         Path commandScript = null;
         try {
-            commandScript = Files.createTempFile("substituted-user-script", ".sh");
+            commandScript = Files.createTempFile("impersonated-script", ".sh", DEFAULT_PERMISSIONS);
             Files.write(commandScript, Collections.singleton(impersonating(command, environmentVariables, username)));
             return cmdExecutor.executeCommand(bash(commandScript), environmentVariables, workDir);
         } catch (CmdExecutionException | IOException e) {
@@ -77,7 +88,7 @@ public class ImpersonatingCmdExecutor implements CmdExecutor {
                                  final String username) {
         log.info("Launching command '{}' with substituted user '{}'", command, username);
         try {
-            final Path commandScript = Files.createTempFile("substituted-user-script", ".sh");
+            final Path commandScript = Files.createTempFile("impersonated-script", ".sh", DEFAULT_PERMISSIONS);
             Files.write(commandScript, Collections.singleton(impersonating(command, environmentVariables, username)));
             return cmdExecutor.launchCommand(bash(commandScript), environmentVariables, workDir);
         } catch (CmdExecutionException | IOException e) {
