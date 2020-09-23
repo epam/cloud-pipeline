@@ -40,13 +40,15 @@ public class QsubCmdExecutorTest {
     public void executorShouldDelegateCallToInnerExecutor() {
         qsubCmdExecutor.executeCommand(COMMAND);
 
-        verify(innerExecutor).executeCommand(any(), eq(Collections.emptyMap()), eq(null));
+        verify(innerExecutor).executeCommand(any(), 
+                eq(Collections.emptyMap()), eq(null), eq(null));
     }
 
     @Test
     public void executorShouldCallQsubTemplateCommandInsteadOfTheOriginalOne() {
         qsubCmdExecutor.executeCommand(COMMAND);
 
-        verify(innerExecutor).executeCommand(matches(QSUB_TEMPLATE_PATTERN), eq(Collections.emptyMap()), eq(null));
+        verify(innerExecutor).executeCommand(matches(QSUB_TEMPLATE_PATTERN), 
+                eq(Collections.emptyMap()), eq(null), eq(null));
     }
 }
