@@ -378,8 +378,7 @@ class InputDataTask:
             dts_client.transfer_data([self.create_dts_path(path, upload, rules) for path in paths], self.task_name)
 
     def create_dts_path(self, path, upload, rules):
-        return LocalToS3(path.path, path.cloud_path, rules) \
-            if upload else S3ToLocal(path.cloud_path, path.path, rules)
+        return LocalToS3(path.path, path.cloud_path, rules) if upload else S3ToLocal(path.cloud_path, path.path, rules)
 
     def localize_data(self, remote_locations, upload, rules=None):
         cluster = Cluster.build_cluster(self.api, self.task_name)

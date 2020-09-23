@@ -31,20 +31,20 @@ class Path:
 # TODO: rename to LocalToCloud
 class LocalToS3(Path):
     def __init__(self, local_path, remote_path, rules):
-        Path.__init__(local_path, remote_path, rules)
+        Path.__init__(self, local_path, remote_path, rules)
 
 
 # TODO: rename to CloudToLocal
 class S3ToLocal(Path):
     def __init__(self, remote_path, local_path, rules):
-        Path.__init__(remote_path, local_path, rules)
+        Path.__init__(self, remote_path, local_path, rules)
 
 
 class LocalToAzure(Path):
     def __init__(self, local_path, remote_path, rules):
-        Path.__init__(local_path, remote_path, rules)
+        Path.__init__(self, local_path, remote_path, rules)
 
 
 class AzureToLocal(Path):
     def __init__(self, remote_path, local_path, rules):
-        Path.__init__(remote_path, local_path, rules)
+        Path.__init__(self, remote_path, local_path, rules)

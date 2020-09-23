@@ -198,7 +198,6 @@ class PipelineAPI:
     NOTIFICATION_URL = '/notification'
     REGION_URL = '/cloud/region'
     LOAD_ALLOWED_INSTANCE_TYPES = '/cluster/instance/allowed?regionId=%s&spot=%s'
-    WHOAMI_URL = '/whoami'
     # Pipeline API default header
 
     RESPONSE_STATUS_OK = 'OK'
@@ -841,11 +840,3 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load generated upload url for storage ID {}. "
                                "Error message: {}".format(str(storage_id), str(e.message)))
-
-    def whoami(self):
-        try:
-            url = str(self.api_url) + self.WHOAMI_URL
-            return self.execute_request(url, method='get')
-        except Exception as e:
-            raise RuntimeError("Failed to load current user. "
-                               "Error message: {}".format(str(e.message)))
