@@ -20,6 +20,15 @@
   height: 100%;
 }
 
+.actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 5px 5px;
+  margin-bottom: 5px;
+}
+
 .table {
   overflow-y: auto;
 }
@@ -39,4 +48,9 @@
 .dictionaryRow.selected {
   background-color: #ebf6fd;
   font-weight: bold;
+}
+
+.dictionaryRow.disabled {
+  color: #999;
+  cursor: default;
 }

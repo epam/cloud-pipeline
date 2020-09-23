@@ -94,7 +94,7 @@ class SystemDictionaryForm extends React.Component {
     } = this.state;
     const errors = {
       name: undefined,
-      items: items.map(item => undefined),
+      items: items.map(item => undefined)
     };
     if (!name) {
       errors.name = 'Dictionary name is required';
@@ -170,22 +170,26 @@ class SystemDictionaryForm extends React.Component {
   };
 
   onDelete = () => {
-    const {name, onDelete} = this.props;
+    const {name, onDelete, isNew} = this.props;
     if (onDelete) {
-      Modal.confirm({
-        title: `Are you sure you want to delete "${name}" dictionary?`,
-        style: {
-          wordWrap: 'break-word'
-        },
-        onOk () {
-          onDelete(name);
-        }
-      });
+      if (isNew) {
+        onDelete();
+      } else {
+        Modal.confirm({
+          title: `Are you sure you want to delete "${name}" dictionary?`,
+          style: {
+            wordWrap: 'break-word'
+          },
+          onOk () {
+            onDelete(name);
+          }
+        });
+      }
     }
   };
 
   render () {
-    const {disabled} = this.props;
+    const {disabled, isNew} = this.props;
     const {
       name,
       items,
@@ -259,18 +263,22 @@ class SystemDictionaryForm extends React.Component {
             className={styles.action}
             disabled={disabled}
             onClick={this.onDelete}
-            type="danger"
+            type={isNew ? 'default' : 'danger'}
           >
-            Delete
+            {isNew ? 'Cancel' : 'Delete'}
           </Button>
           <div>
-            <Button
-              className={styles.action}
-              disabled={disabled || !this.modified}
-              onClick={this.updateState}
-            >
-              Revert
-            </Button>
+            {
+              !isNew && (
+                <Button
+                  className={styles.action}
+                  disabled={disabled || !this.modified}
+                  onClick={this.updateState}
+                >
+                  Revert
+                </Button>
+              )
+            }
             <Button
               className={styles.action}
               type="primary"
@@ -290,6 +298,7 @@ SystemDictionaryForm.propTypes = {
   disabled: PropTypes.bool,
   items: PropTypes.array,
   name: PropTypes.string,
+  isNew: PropTypes.bool,
   onChange: PropTypes.func,
   onSave: PropTypes.func,
   onDelete: PropTypes.func

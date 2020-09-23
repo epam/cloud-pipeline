@@ -17,11 +17,19 @@
 import React from 'react';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
-import {Alert, Modal, message, Table} from 'antd';
+import {
+  Alert,
+  Button,
+  Icon,
+  Modal,
+  message,
+  Table
+} from 'antd';
 import SystemDictionaryForm from './forms/SystemDictionaryForm';
 import roleModel from '../../utils/roleModel';
 import SystemDictionariesUpdate from '../../models/systemDictionaries/SystemDictionariesUpdate';
 import SystemDictionariesDelete from '../../models/systemDictionaries/SystemDictionariesDelete';
+import SystemDictionariesSync from '../../models/systemDictionaries/SystemDictionariesSync';
 import LoadingView from '../special/LoadingView';
 import {SplitPanel} from '../special/splitPanel';
 
@@ -29,24 +37,29 @@ import styles from './SystemDictionaries.css';
 
 class SystemDictionaries extends React.Component {
   state = {
+    newDictionary: false,
     modified: false,
     pending: false,
     changesCanBeSkipped: false
   };
 
   componentDidMount () {
-    const {route, router, currentDictionary} = this.props;
-    if (!currentDictionary && this.dictionariesNames.length > 0) {
-      this.selectDictionary(this.dictionariesNames[0]);
-    }
+    const {route, router} = this.props;
+    this.navigateToDefault();
     if (route && router) {
       router.setRouteLeaveHook(route, this.checkModifiedBeforeLeave);
     }
   };
 
   componentDidUpdate () {
+    this.navigateToDefault();
+  };
+
+  navigateToDefault = () => {
     const {currentDictionary} = this.props;
-    if (!currentDictionary && this.dictionariesNames.length > 0) {
+    if (this.dictionaries.length > 0 && currentDictionary && !this.currentDictionary) {
+      this.selectDictionary(this.dictionariesNames[0]);
+    } else if (!currentDictionary && this.dictionariesNames.length > 0) {
       this.selectDictionary(this.dictionariesNames[0]);
     }
   };
@@ -65,6 +78,9 @@ class SystemDictionaries extends React.Component {
 
   @computed
   get currentDictionary () {
+    if (this.state.newDictionary) {
+      return {values: []};
+    }
     const {currentDictionary} = this.props;
     return this.dictionaries.find(dict => dict.key === currentDictionary);
   }
@@ -100,7 +116,36 @@ class SystemDictionaries extends React.Component {
     }
   };
 
+  addNewDictionary = () => {
+    this.setState({
+      newDictionary: true
+    });
+  };
+
+  syncDictionaries = () => {
+    const hide = message.loading('Synchronizing dictionaries...', 0);
+    const {systemDictionaries} = this.props;
+    this.setState({pending: true}, async () => {
+      const request = new SystemDictionariesSync();
+      await request.send();
+      if (request.error) {
+        hide();
+        message.error(request.error, 5);
+        this.setState({pending: false});
+      } else {
+        await systemDictionaries.fetch();
+        hide();
+        this.setState({pending: false, modified: false, newDictionary: false}, () => {
+          this.navigateToDefault();
+        });
+      }
+    });
+  };
+
   selectDictionary = (name) => {
+    if (this.state.newDictionary) {
+      return;
+    }
     const {router} = this.props;
     router && router.push(`settings/dictionaries/${name}`);
   };
@@ -125,7 +170,7 @@ class SystemDictionaries extends React.Component {
       } else {
         await systemDictionaries.fetch();
         hide();
-        this.setState({pending: false, modified: false}, () => {
+        this.setState({pending: false, modified: false, newDictionary: false}, () => {
           router.push(`/dictionaries/${name}`);
         });
       }
@@ -133,23 +178,29 @@ class SystemDictionaries extends React.Component {
   };
 
   onDictionaryDelete = (name) => {
-    const hide = message.loading('Removing dictionary...', 0);
-    const {systemDictionaries, router} = this.props;
-    this.setState({pending: true}, async () => {
-      const request = new SystemDictionariesDelete(name);
-      await request.send();
-      if (request.error) {
-        hide();
-        message.error(request.error, 5);
-        this.setState({pending: false});
-      } else {
-        await systemDictionaries.fetch();
-        hide();
-        this.setState({pending: false, modified: false}, () => {
-          router.push('/dictionaries');
-        });
-      }
-    });
+    if (this.state.newDictionary) {
+      this.setState({
+        newDictionary: false
+      });
+    } else {
+      const hide = message.loading('Removing dictionary...', 0);
+      const {systemDictionaries, router} = this.props;
+      this.setState({pending: true}, async () => {
+        const request = new SystemDictionariesDelete(name);
+        await request.send();
+        if (request.error) {
+          hide();
+          message.error(request.error, 5);
+          this.setState({pending: false});
+        } else {
+          await systemDictionaries.fetch();
+          hide();
+          this.setState({pending: false, modified: false}, () => {
+            router.push('/dictionaries');
+          });
+        }
+      });
+    }
   };
 
   renderDictionariesTable = () => {
@@ -161,19 +212,32 @@ class SystemDictionaries extends React.Component {
         render: (name) => name || 'Other'
       }
     ];
+    const dataSource = [];
+    const {newDictionary} = this.state;
+    if (newDictionary) {
+      dataSource.push({name: 'New dictionary', isNew: true});
+    }
+    dataSource.push(...this.dictionariesNames.map(name => ({name})));
+    const getRowClassName = (group) => {
+      if (newDictionary) {
+        if (group.isNew) {
+          return `${styles.dictionaryRow} ${styles.selected}`;
+        }
+        return `${styles.dictionaryRow} ${styles.disabled}`;
+      }
+      return group.name === currentDictionary
+        ? `${styles.dictionaryRow} ${styles.selected}`
+        : styles.dictionaryRow;
+    };
     return (
       <Table
         className={styles.table}
-        dataSource={this.dictionariesNames.map(name => ({name}))}
+        dataSource={dataSource}
         columns={columns}
         showHeader={false}
         pagination={false}
         rowKey="name"
-        rowClassName={
-          (group) => group.name === currentDictionary
-            ? `${styles.dictionaryRow} ${styles.selected}`
-            : styles.dictionaryRow
-        }
+        rowClassName={getRowClassName}
         onRowClick={group => this.selectDictionary(group.name)}
         size="medium" />
     );
@@ -194,9 +258,31 @@ class SystemDictionaries extends React.Component {
     return (
       <div className={styles.container}>
         <div
+          className={styles.actions}
+        >
+          <Button
+            disabled={this.state.pending || this.state.newDictionary}
+            onClick={this.addNewDictionary}
+          >
+            <Icon type="plus" />
+            <span>Add dictionary</span>
+          </Button>
+          <Button
+            disabled={this.state.pending}
+            type="primary"
+            onClick={this.syncDictionaries}
+          >
+            <Icon type="reload" />
+            <span>Synchronize</span>
+          </Button>
+        </div>
+        <div
           style={{flex: 1, minHeight: 0}}
         >
           <SplitPanel
+            style={{
+              borderTop: '1px solid #ddd'
+            }}
             contentInfo={[
               {
                 key: 'dictionaries',
@@ -218,6 +304,7 @@ class SystemDictionaries extends React.Component {
               }}>
               <SystemDictionaryForm
                 disabled={this.state.pending}
+                isNew={this.state.newDictionary}
                 onDelete={this.onDictionaryDelete}
                 onSave={this.onDictionarySave}
                 onChange={this.onDictionaryChanged}
