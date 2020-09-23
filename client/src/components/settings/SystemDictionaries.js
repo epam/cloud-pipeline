@@ -258,9 +258,9 @@ class SystemDictionaries extends React.Component {
     if (!systemDictionaries.loaded && systemDictionaries.pending) {
       return <LoadingView />;
     }
-    // if (systemDictionaries.error) {
-    //   return <Alert type="warning" message={systemDictionaries.error} />;
-    // }
+    if (systemDictionaries.error) {
+      return <Alert type="warning" message={systemDictionaries.error} />;
+    }
     return (
       <div className={styles.container}>
         <div
