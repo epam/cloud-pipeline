@@ -27,7 +27,17 @@ import MetadataDelete from '../../../models/metadata/MetadataDelete';
 import DataStorageTagsUpdate from '../../../models/dataStorage/tags/DataStorageTagsUpdate';
 import DataStorageTagsDelete from '../../../models/dataStorage/tags/DataStorageTagsDelete';
 import LoadingView from '../../special/LoadingView';
-import {Alert, Button, Col, Icon, Input, message, Modal, Row} from 'antd';
+import {
+  Alert,
+  Button,
+  Col,
+  Icon,
+  Input,
+  message,
+  Modal,
+  Row,
+  Select
+} from 'antd';
 import ItemsTable, {isJson} from './items-table';
 import styles from './Metadata.css';
 import {SplitPanel} from '../splitPanel/SplitPanel';
@@ -107,12 +117,22 @@ const ApplyChanges = {
   dataStorageCache
 })
 @localization.localizedComponent
-@inject('metadataCache', 'pipelines', 'dockerRegistries')
-@inject(({metadataCache, dataStorageCache, pipelines, dockerRegistries}, params) => ({
+@inject('metadataCache', 'pipelines', 'dockerRegistries', 'systemDictionaries')
+@inject((
+  {
+    metadataCache,
+    dataStorageCache,
+    pipelines,
+    dockerRegistries,
+    systemDictionaries
+  },
+  params
+) => ({
   pipelines,
   dockerRegistries,
   metadataCache,
   dataStorageCache,
+  systemDictionaries,
   metadata: metadataLoad(params, metadataCache, dataStorageCache),
   dataStorageTags: params.entityClass === 'DATA_STORAGE_ITEM',
   preview: previewLoad(params, dataStorageCache),
@@ -379,6 +399,34 @@ export default class Metadata extends localization.LocalizedReactComponent {
       } else if (field === 'value') {
         currentMetadataItem.value = value;
       }
+    }
+    const {error, refresh} = await this.applyChanges(metadata, modified);
+    if (error) {
+      message.error(error, 5);
+      return;
+    }
+    if (refresh) {
+      this.props.metadata.fetch();
+    }
+    this.setState({
+      addKey: null,
+      editableKeyIndex: null,
+      editableValueIndex: null,
+      editableText: null
+    });
+  };
+
+  saveDictionaryMetadata = (opts) => async (value) => {
+    const {index} = opts;
+    const metadata = this.metadata;
+    const [currentMetadataItem] = metadata.filter(m => m.index === index);
+    const modified = {};
+    if (currentMetadataItem) {
+      if (currentMetadataItem.value === value) {
+        this.setState({editableKeyIndex: null, editableValueIndex: null, editableText: null});
+        return;
+      }
+      currentMetadataItem.value = value;
     }
     const {error, refresh} = await this.applyChanges(metadata, modified);
     if (error) {
@@ -704,7 +752,40 @@ export default class Metadata extends localization.LocalizedReactComponent {
         </tr>
       );
     }
-    if (isJson(metadataItem.value)) {
+    const {systemDictionaries} = this.props;
+    const key = this.state.editableKeyIndex === metadataItem.index
+      ? (this.state.editableText || metadataItem.key)
+      : metadataItem.key;
+    const dictionaries = systemDictionaries.loaded
+      ? systemDictionaries.value
+      : {};
+    if (dictionaries.hasOwnProperty(key)) {
+      valueElement = (
+        <tr key={`${metadataItem.key}_value`} className={styles.valueRowEdit}>
+          <td colSpan={6}>
+            <Select
+              allowClear
+              showSearch
+              style={{width: '100%'}}
+              filterOption={
+                (input, option) => option.props.children.toLowerCase()
+                  .indexOf(input.toLowerCase()) >= 0
+              }
+              value={metadataItem.value}
+              onChange={this.saveDictionaryMetadata({index: metadataItem.index})}
+            >
+              {
+                dictionaries[key].map((v) => (
+                  <Select.Option key={v} value={v}>
+                    {v}
+                  </Select.Option>
+                ))
+              }
+            </Select>
+          </td>
+        </tr>
+      );
+    } else if (isJson(metadataItem.value)) {
       valueElement = (
         <tr key={`${metadataItem.key}_value`} className={styles.valueRowEdit}>
           <td colSpan={6}>
@@ -851,6 +932,11 @@ export default class Metadata extends localization.LocalizedReactComponent {
 
   renderAddKeyRow = () => {
     if (this.state.addKey) {
+      const {systemDictionaries} = this.props;
+      const {key} = this.state.addKey;
+      const dictionaries = systemDictionaries.loaded
+        ? systemDictionaries.value
+        : {};
       const addKeyCancelClicked = () => {
         this.setState({editableKeyIndex: null, editableValueIndex: null, editableText: null, addKey: null});
       };
@@ -872,11 +958,57 @@ export default class Metadata extends localization.LocalizedReactComponent {
         this.setState({addKey});
       };
 
+      const onDictionaryChange = (e) => {
+        const addKey = this.state.addKey;
+        addKey.value = e;
+        this.setState({addKey});
+      };
+
       const onEnter = (e) => {
         e.stopPropagation();
         this.saveMetadata({})();
         return false;
       };
+
+      let valueItem;
+      if (dictionaries.hasOwnProperty(key)) {
+        valueItem = (
+          <Select
+            allowClear
+            showSearch
+            style={{width: '100%'}}
+            filterOption={
+              (input, option) => option.props.children.toLowerCase()
+                .indexOf(input.toLowerCase()) >= 0
+            }
+            value={this.state.addKey.value}
+            onChange={onDictionaryChange}
+          >
+            {
+              dictionaries[key].map((v) => (
+                <Select.Option key={v} value={v}>
+                  {v}
+                </Select.Option>
+              ))
+            }
+          </Select>
+        )
+      } else {
+        valueItem = (
+          <Input
+            onPressEnter={onEnter}
+            onKeyDown={(e) => {
+              if (e.key && e.key === 'Escape') {
+                this.discardChanges();
+              }
+            }}
+            value={this.state.addKey.value}
+            onChange={onChange('value')}
+            size="small"
+            type="textarea"
+            autosize={true} />
+        );
+      }
 
       return [
         this.getDivider('new key'),
@@ -902,18 +1034,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
             Value:
           </td>
           <td colSpan={2}>
-            <Input
-              onPressEnter={onEnter}
-              onKeyDown={(e) => {
-                if (e.key && e.key === 'Escape') {
-                  this.discardChanges();
-                }
-              }}
-              value={this.state.addKey.value}
-              onChange={onChange('value')}
-              size="small"
-              type="textarea"
-              autosize={true} />
+            {valueItem}
           </td>
         </tr>,
         <tr className={styles.newKeyRow} key="new key title row">
