@@ -16,8 +16,9 @@
 
 package com.epam.pipeline.acl.log;
 
-import com.epam.pipeline.acl.AbstractAclTest;
-import com.epam.pipeline.acl.AclTestBeans;
+import com.epam.pipeline.app.AclSecurityConfiguration;
+import com.epam.pipeline.test.AbstractAclTest;
+import com.epam.pipeline.test.AclTestBeans;
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
 import com.epam.pipeline.manager.log.LogManager;
@@ -35,7 +36,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = {LogApiService.class, AclTestBeans.class})
+@SpringBootTest(classes = {AclTestBeans.class, AclSecurityConfiguration.class})
 public class LogApiServiceTest extends AbstractAclTest {
 
     private static final String UNAUTHORIZED = "Unauthorized";
@@ -53,7 +54,7 @@ public class LogApiServiceTest extends AbstractAclTest {
     @Autowired
     private AuthManager mockAuthManager;
 
-    private LogFilter logFilter = new LogFilter();
+    private final LogFilter logFilter = new LogFilter();
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)

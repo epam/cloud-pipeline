@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.acl;
+package com.epam.pipeline.test;
 
 import com.epam.pipeline.app.AclSecurityConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
