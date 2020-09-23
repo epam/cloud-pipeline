@@ -73,7 +73,7 @@ class SystemDictionaries extends React.Component {
         {key: 'dictionary', values: ['a', 'b', 'c']}
       ];
     }
-    return systemDictionaries.value;
+    return systemDictionaries.value || [];
   }
 
   @computed
@@ -94,13 +94,19 @@ class SystemDictionaries extends React.Component {
 
   checkModifiedBeforeLeave = (nextLocation) => {
     const {router} = this.props;
-    const {changesCanBeSkipped} = this.state;
+    const {changesCanBeSkipped, modified} = this.state;
+    const resetChangesCanBeSkipped = () => {
+      setTimeout(() => this.setState({changesCanBeSkipped: false}), 0);
+    };
     const makeTransition = nextLocation => {
       this.setState({changesCanBeSkipped: true},
-        () => router.push(nextLocation)
+        () => {
+          router.push(nextLocation);
+          resetChangesCanBeSkipped();
+        }
       );
     };
-    if (this.state.modified && !changesCanBeSkipped) {
+    if (modified && !changesCanBeSkipped) {
       Modal.confirm({
         title: 'You have unsaved changes. Continue?',
         style: {

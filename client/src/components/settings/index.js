@@ -90,7 +90,7 @@ export default class extends React.Component {
   renderSettingsNavigation = () => {
     const {router: {location}} = this.props;
     const tabs = SettingsTabs.filter(tab => tab.available(this.currentUser));
-    const activeTab = location.pathname.split('/').pop();
+    const activeTab = location.pathname.split('/').filter(Boolean)[1];
     return (
       <Row
         gutter={16}
