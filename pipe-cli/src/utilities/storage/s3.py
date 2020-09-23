@@ -482,11 +482,27 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         for page in page_iterator:
             if 'Contents' in page:
                 for file in page['Contents']:
-                    total_size += file['Size']
-                    total_objects += 1
+                    if self.prefix_match(file, relative_path):
+                        total_size += file['Size']
+                        total_objects += 1
             if not page['IsTruncated']:
                 break
         return delimiter.join([self.bucket.bucket.path, relative_path]), total_objects, total_size
+
+    @classmethod
+    def prefix_match(cls, page_file, relative_path=None):
+        if not relative_path:
+            return True
+        if 'Key' not in page_file or not page_file['Key']:
+            return False
+        key = page_file['Key']
+        if key == relative_path:
+            return True
+        if relative_path.endswith("/"):
+            return True
+        if key.startswith("%s/" % relative_path):
+            return True
+        return False
 
     def list_versions(self, client, prefix,  operation_parameters, recursive, page_size):
         paginator = client.get_paginator('list_object_versions')
