@@ -80,7 +80,7 @@ export default class AppRouter extends React.Component {
           <Route path="preferences" component={Preferences} />
           <Route path="regions" component={AWSRegionsForm} />
           <Route path="logs" component={SystemLogs} />
-          <Route path="dictionaries" component={SystemDictionaries} />
+          <Route path="dictionaries(/:currentDictionary)" component={SystemDictionaries} />
         </Route>
         <Route path="/cluster" component={Cluster} />
         <Redirect from="/cluster/:nodeName" to="/cluster/:nodeName/info" />
