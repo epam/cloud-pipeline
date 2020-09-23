@@ -16,18 +16,15 @@
 
 package com.epam.pipeline.controller.log;
 
-import com.epam.pipeline.app.JWTSecurityConfiguration;
-import com.epam.pipeline.app.SAMLSecurityConfiguration;
 import com.epam.pipeline.controller.AbstractControllerTest;
-import com.epam.pipeline.controller.ControllerTestBeans;
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.manager.log.LogApiService;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
@@ -37,24 +34,21 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = LogController.class)
-@ContextConfiguration(classes = {
-        ControllerTestBeans.class,
-        JWTSecurityConfiguration.class,
-        SAMLSecurityConfiguration.class})
 public class LogControllerTest extends AbstractControllerTest {
 
-    @MockBean
-    private LogApiService logApiService;
+    @Autowired
+    private LogApiService mockLogApiService;
 
     @Test
     public void testFilterGet() throws Exception {
         LogFilter logFilter = new LogFilter();
-        MvcResult mvcResult = mvc().perform(get("/log/filter")
+        MvcResult mvcResult = mvc().perform(get("/restapi/log/filter")
                 .contentType(EXPECTED_CONTENT_TYPE)
                 .content(getObjectMapper().writeValueAsString(logFilter)))
+                .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isOk()).andReturn();
 
-        verify(logApiService, times(1)).getFilters();
+        verify(mockLogApiService, times(1)).getFilters();
 
         String actual = mvcResult.getResponse().getContentAsString();
         assertThat(actual).isNotBlank();
@@ -64,13 +58,13 @@ public class LogControllerTest extends AbstractControllerTest {
     public void testFilterPost() throws Exception {
         LogFilter logFilter = new LogFilter();
         logFilter.setMessage("testMessage");
-        MvcResult mvcResult = mvc().perform(post("/log/filter")
+        MvcResult mvcResult = mvc().perform(post("/restapi/log/filter")
                 .contentType(EXPECTED_CONTENT_TYPE)
                 .content(getObjectMapper().writeValueAsString(logFilter)))
                 .andExpect(status().isOk()).andReturn();
 
         ArgumentCaptor<LogFilter> logFilterCaptor = ArgumentCaptor.forClass(LogFilter.class);
-        verify(logApiService, times(1)).filter(logFilterCaptor.capture());
+        verify(mockLogApiService, times(1)).filter(logFilterCaptor.capture());
         assertThat(logFilterCaptor.getValue().getMessage()).isEqualTo("testMessage");
 
         String actual = mvcResult.getResponse().getContentAsString();

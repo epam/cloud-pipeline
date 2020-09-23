@@ -20,7 +20,6 @@ import com.epam.pipeline.acl.billing.BillingApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
 import com.epam.pipeline.acl.run.RunApiService;
 import com.epam.pipeline.acl.run.RunScheduleApiService;
-import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.manager.cluster.ClusterApiService;
 import com.epam.pipeline.manager.configuration.RunConfigurationApiService;
 import com.epam.pipeline.manager.configuration.ServerlessConfigurationApiService;
@@ -35,6 +34,7 @@ import com.epam.pipeline.manager.firecloud.FirecloudApiService;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
 import com.epam.pipeline.manager.issue.IssueApiService;
+import com.epam.pipeline.manager.log.LogApiService;
 import com.epam.pipeline.manager.metadata.MetadataApiService;
 import com.epam.pipeline.manager.metadata.MetadataEntityApiService;
 import com.epam.pipeline.manager.notification.NotificationApiService;
@@ -56,9 +56,12 @@ import com.epam.pipeline.manager.template.TemplateManager;
 import com.epam.pipeline.manager.user.RoleApiService;
 import com.epam.pipeline.manager.user.UserApiService;
 import com.epam.pipeline.security.UserAccessService;
+import com.epam.pipeline.security.jwt.JwtTokenGenerator;
+import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.saml.SAMLAuthenticationProvider;
+import org.springframework.security.saml.SAMLEntryPoint;
 
 @Configuration
 public class ControllerTestBeans {
@@ -154,6 +157,9 @@ public class ControllerTestBeans {
     protected PreferenceManager preferenceManager;
 
     @MockBean
+    protected LogApiService logApiService;
+
+    @MockBean
     protected ServerlessConfigurationApiService serverlessConfigurationApiService;
 
     @MockBean
@@ -164,9 +170,6 @@ public class ControllerTestBeans {
 
     @MockBean
     protected DtsOperationsApiService dtsOperationsApiService;
-
-    @MockBean
-    protected MessageHelper messageHelper;
 
     @MockBean
     protected NotificationApiService notificationApiService;
@@ -185,4 +188,13 @@ public class ControllerTestBeans {
 
     @MockBean
     protected UserAccessService userAccessService;
+
+    @MockBean
+    protected SAMLEntryPoint samlEntryPoint;
+
+    @MockBean
+    protected JwtTokenVerifier jwtTokenVerifier;
+
+    @MockBean
+    protected JwtTokenGenerator jwtTokenGenerator;
 }
