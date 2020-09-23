@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.dao.metadata.MetadataDao;
+import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
@@ -272,6 +273,10 @@ public class MetadataManager {
                                                            final String value) {
         Map<String, PipeConfValue> indicator = Collections.singletonMap(key, new PipeConfValue(null, value));
         return metadataDao.searchMetadataByClassAndKeyValue(entityClass, indicator);
+    }
+
+    public List<CategoricalAttribute> buildFullMetadataDict() {
+        return metadataDao.buildFullMetadataDict();
     }
 
     Map<String, PipeConfValue> convertFileContentToMetadata(MultipartFile file) {
