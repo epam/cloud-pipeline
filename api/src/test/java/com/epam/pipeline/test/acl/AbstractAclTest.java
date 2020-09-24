@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.test;
+package com.epam.pipeline.test.acl;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
@@ -24,10 +24,10 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.acls.domain.AclAuthorizationStrategy;
 import org.springframework.security.acls.domain.AclImpl;
+import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.domain.PrincipalSid;
-import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -41,7 +41,12 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 @RunWith(SpringRunner.class)
+@AclTestConfiguration
 public abstract class AbstractAclTest {
+
+    protected static final String ADMIN_ROLE = "ADMIN";
+    protected static final String GENERAL_USER_ROLE = "USER";
+    protected static final String SIMPLE_USER_ROLE = "SIMPLE USER";
 
     @Autowired
     protected PermissionGrantingStrategy grantingStrategy;

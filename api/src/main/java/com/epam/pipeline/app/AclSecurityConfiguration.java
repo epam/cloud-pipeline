@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,6 @@ import org.springframework.security.acls.jdbc.LookupStrategy;
 import org.springframework.security.acls.model.AclCache;
 import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.method.configuration.GlobalMethodSecurityConfiguration;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
@@ -53,7 +52,6 @@ import javax.sql.DataSource;
 
 @Configuration
 @ComponentScan(basePackages = {"com.epam.pipeline.acl"})
-@EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 public class AclSecurityConfiguration extends GlobalMethodSecurityConfiguration {
 
     @Autowired
@@ -81,7 +79,7 @@ public class AclSecurityConfiguration extends GlobalMethodSecurityConfiguration 
     @Bean
     public RoleHierarchy roleHierarchy() {
         RoleHierarchyImpl roleHierarchy = new RoleHierarchyImpl();
-        roleHierarchy.setHierarchy(DefaultRoles.ROLE_ADMIN.getName() +  " > " +
+        roleHierarchy.setHierarchy(DefaultRoles.ROLE_ADMIN.getName() + " > " +
                 DefaultRoles.ROLE_USER.getName());
         return roleHierarchy;
     }
