@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.test;
+package com.epam.pipeline.test.acl;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.log.LogPagination;
@@ -30,19 +30,20 @@ import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.log.LogManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
+import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
+import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
-import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
-import com.epam.pipeline.manager.pipeline.ToolManager;
-import com.epam.pipeline.manager.pipeline.ToolGroupManager;
-import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.RunScheduleManager;
 import com.epam.pipeline.manager.pipeline.ToolApiService;
+import com.epam.pipeline.manager.pipeline.ToolGroupManager;
+import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
+import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
@@ -77,106 +78,109 @@ public class AclTestBeans {
     protected MessageHelper messageHelper;
 
     @MockBean
-    protected JdbcMutableAclServiceImpl aclService;
+    protected JdbcMutableAclServiceImpl mockAclService;
 
     @MockBean
-    protected AuthManager authManager;
+    protected AuthManager mockAuthManager;
 
     @MockBean
-    protected EntityManager entityManager;
+    protected EntityManager mockEntityManager;
 
     @MockBean
-    protected IssueManager issueManager;
+    protected IssueManager mockIssueManager;
 
     @MockBean
-    protected MetadataEntityManager metadataEntityManager;
+    protected MetadataEntityManager mockMetadataEntityManager;
 
     @MockBean
-    protected NodesManager nodesManager;
+    protected NodesManager mockNodesManager;
 
     @MockBean
-    protected PermissionFactory permissionFactory;
+    protected PermissionFactory mockPermissionFactory;
 
     @MockBean
-    protected DataSource dataSource;
+    protected DataSource mockDataSource;
 
     @MockBean
-    protected AclCache aclCache;
+    protected AclCache mockAclCache;
 
     @MockBean
-    protected CacheManager cacheManager;
+    CloudRegionManager mockCloudRegionManager;
 
     @MockBean
-    protected LogManager logManager;
+    protected CacheManager mockCacheManager;
 
     @MockBean
-    protected BillingManager billingManager;
+    protected LogManager mockLogManager;
 
     @MockBean
-    protected PipelineManager pipelineManager;
+    protected BillingManager mockBillingManager;
 
     @MockBean
-    protected PipelineVersionManager pipelineVersionManager;
+    protected PipelineManager mockPipelineManager;
 
     @MockBean
-    protected PipelineRunManager pipelineRunManager;
+    protected PipelineVersionManager mockPipelineVersionManager;
 
     @MockBean
-    protected InstanceOfferManager instanceOfferManager;
+    protected PipelineRunManager mockPipelineRunManager;
 
     @MockBean
-    protected GitManager gitManager;
+    protected InstanceOfferManager mockInstanceOfferManager;
 
     @MockBean
-    protected PipelineFileGenerationManager pipelineFileGenerationManager;
+    protected GitManager mockGitManager;
 
     @MockBean
-    protected DocumentGenerationPropertyManager documentGenerationPropertyManager;
+    protected PipelineFileGenerationManager mockPipelineFileGenerationManager;
 
     @MockBean
-    protected ToolManager toolManager;
+    protected DocumentGenerationPropertyManager mockDocumentGenerationPropertyManager;
 
     @MockBean
-    protected ToolGroupManager toolGroupManager;
+    protected ToolManager mockToolManager;
 
     @MockBean
-    protected DockerRegistryManager dockerRegistryManager;
+    protected ToolGroupManager mockToolGroupManager;
 
     @MockBean
-    protected UserManager userManager;
+    protected DockerRegistryManager mockDockerRegistryManager;
 
     @MockBean
-    protected RunConfigurationManager runConfigurationManager;
+    protected UserManager mockUserManager;
 
     @MockBean
-    protected FolderManager folderManager;
+    protected RunConfigurationManager mockRunConfigurationManager;
 
     @MockBean
-    protected ConfigurationProviderManager configurationProviderManager;
+    protected FolderManager mockFolderManager;
 
     @MockBean
-    protected EntityEventServiceManager entityEventServiceManager;
+    protected ConfigurationProviderManager mockConfigurationProviderManager;
 
     @MockBean
-    protected RunPermissionManager runPermissionManager;
+    protected EntityEventServiceManager mockEntityEventServiceManager;
 
     @MockBean
-    protected FilterManager filterManager;
+    protected RunPermissionManager mockRunPermissionManager;
 
     @MockBean
-    protected RunLogManager runLogManager;
+    protected FilterManager mockFilterManager;
 
     @MockBean
-    protected UtilsManager utilsManager;
+    protected RunLogManager mockRunLogManager;
 
     @MockBean
-    protected RunScheduleManager runScheduleManager;
+    protected UtilsManager mockUtilsManager;
 
     @MockBean
-    protected ToolApiService toolApiService;
+    protected RunScheduleManager mockRunScheduleManager;
 
     @MockBean
-    protected PermissionsService permissionsService;
+    protected ToolApiService mockToolApiService;
+
+    @MockBean
+    protected PermissionsService mockPermissionsService;
 
     @MockBean
     protected PermissionEvaluator mockPermissionEvaluator;
@@ -185,41 +189,41 @@ public class AclTestBeans {
     protected MessageHelper mockMessageHelper;
 
     @MockBean
-    protected CheckPermissionHelper checkPermissionHelper;
+    protected CheckPermissionHelper mockPermissionHelper;
 
     @MockBean
-    protected SidRetrievalStrategy sidRetrievalStrategy;
+    protected SidRetrievalStrategy mockSidRetrievalStrategy;
 
     @MockBean
-    protected PermissionGrantingStrategy permissionGrantingStrategy;
+    protected PermissionGrantingStrategy mockPermissionGrantingStrategy;
 
     @MockBean
-    protected AclAuthorizationStrategy aclAuthorizationStrategy;
+    protected AclAuthorizationStrategy mockAclAuthorizationStrategy;
 
     @MockBean
-    protected AbstractEntityPermissionMapper abstractEntityPermissionMapper;
+    protected AbstractEntityPermissionMapper mockAbstractEntityPermissionMapper;
 
     @MockBean
-    protected PipelineWithPermissionsMapper pipelineWithPermissionsMapper;
+    protected PipelineWithPermissionsMapper mockPipelineWithPermissionsMapper;
 
     @MockBean
-    protected LogPagination logPagination;
+    protected LogPagination mockLogPagination;
 
     @MockBean
-    protected ConfigurationRunner configurationRunner;
+    protected ConfigurationRunner mockConfigurationRunner;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {
         GrantPermissionManager grantPermissionManager = new GrantPermissionManager();
-        grantPermissionManager.setAclService(aclService);
-        grantPermissionManager.setAuthManager(authManager);
-        grantPermissionManager.setEntityManager(entityManager);
-        grantPermissionManager.setIssueManager(issueManager);
+        grantPermissionManager.setAclService(mockAclService);
+        grantPermissionManager.setAuthManager(mockAuthManager);
+        grantPermissionManager.setEntityManager(mockEntityManager);
+        grantPermissionManager.setIssueManager(mockIssueManager);
         grantPermissionManager.setMessageHelper(messageHelper);
-        grantPermissionManager.setMetadataEntityManager(metadataEntityManager);
-        grantPermissionManager.setNodesManager(nodesManager);
+        grantPermissionManager.setMetadataEntityManager(mockMetadataEntityManager);
+        grantPermissionManager.setNodesManager(mockNodesManager);
         grantPermissionManager.setPermissionEvaluator(permissionEvaluator);
-        grantPermissionManager.setPermissionFactory(permissionFactory);
+        grantPermissionManager.setPermissionFactory(mockPermissionFactory);
         return grantPermissionManager;
     }
 }
