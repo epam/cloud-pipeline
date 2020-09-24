@@ -197,7 +197,7 @@ class SystemDictionaryForm extends React.Component {
     } = this.state;
     const {name: nameError, items: itemsError} = errors;
     return (
-      <div>
+      <div className={styles.container}>
         <div className={styles.row}>
           <span className={styles.label}>Name:</span>
           <Input
@@ -219,36 +219,38 @@ class SystemDictionaryForm extends React.Component {
             Items:
           </span>
         </div>
-        {
-          items.map((item, index) => (
-            <div key={index}>
-              <div className={styles.row}>
-                <Input
-                  disabled={disabled}
-                  style={{flex: 1, marginRight: 5}}
-                  value={item}
-                  onChange={this.onItemChanged(index)}
-                />
-                <Button
-                  size="small"
-                  type="danger"
-                  onClick={this.onItemRemove(index)}
-                >
-                  <Icon
-                    type="delete"
+        <div className={styles.items}>
+          {
+            items.map((item, index) => (
+              <div key={index}>
+                <div className={styles.row}>
+                  <Input
+                    disabled={disabled}
+                    style={{flex: 1, marginRight: 5}}
+                    value={item}
+                    onChange={this.onItemChanged(index)}
                   />
-                </Button>
+                  <Button
+                    size="small"
+                    type="danger"
+                    onClick={this.onItemRemove(index)}
+                  >
+                    <Icon
+                      type="delete"
+                    />
+                  </Button>
+                </div>
+                {
+                  itemsError[index] && (
+                    <div className={styles.error}>
+                      {itemsError[index]}
+                    </div>
+                  )
+                }
               </div>
-              {
-                itemsError[index] && (
-                  <div className={styles.error}>
-                    {itemsError[index]}
-                  </div>
-                )
-              }
-            </div>
-          ))
-        }
+            ))
+          }
+        </div>
         <div>
           <Button
             disabled={disabled}

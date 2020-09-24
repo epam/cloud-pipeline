@@ -359,7 +359,8 @@ class SystemDictionaries extends React.Component {
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                padding: 5
+                padding: 5,
+                maxHeight: '100%'
               }}>
               <SystemDictionaryForm
                 disabled={this.state.pending}
