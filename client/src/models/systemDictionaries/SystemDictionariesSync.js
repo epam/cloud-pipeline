@@ -19,6 +19,7 @@ import RemotePost from '../basic/RemotePost';
 class SystemDictionariesSync extends RemotePost {
   constructor () {
     super();
+    this.constructor.noResponse = true;
     this.url = '/categoricalAttribute/sync';
   }
 }

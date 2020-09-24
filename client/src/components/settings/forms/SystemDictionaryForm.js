@@ -128,10 +128,10 @@ class SystemDictionaryForm extends React.Component {
   };
 
   onSave = () => {
-    const {onSave} = this.props;
+    const {onSave, isNew} = this.props;
     if (onSave && this.valid && this.modified) {
-      const {name, items} = this.state;
-      onSave(name, items);
+      const {name, initialName, items} = this.state;
+      onSave(name, items, !isNew && initialName !== name ? initialName : undefined);
     }
   };
 
