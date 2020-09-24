@@ -140,14 +140,12 @@ const SystemIdleActionTimeoutMinutesPreference = {
   preference: 'system.idle.action.timeout.minutes',
   type: 'number',
   min: 0,
-  name: 'Resend/action delay (min)',
+  name: 'Action delay (min)',
   hint: (
     <div>
       <b>Specifies a duration in minutes.</b><br />
       This duration starts after the <b>"Max duration of idle (min)"</b> is over.<br />
       This is a delay before the configured action of the <i>idle</i> run will be performed.<br />
-      {/* eslint-disable-next-line max-len */}
-      In case when the configured action is <b>NOTIFY</b>, this is a delay between repeated notifications.
     </div>
   )
 };

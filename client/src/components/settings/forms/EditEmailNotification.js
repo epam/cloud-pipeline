@@ -168,6 +168,7 @@ export default class EditEmailNotification extends React.Component {
       this.props.template.type === 'LONG_STATUS' ||
       this.props.template.type === 'LONG_PAUSED';
     const renderThreshold = this.props.template.type === 'LONG_PAUSED_STOPPED';
+    const renderDelay = this.props.template.type === 'IDLE_RUN';
     const renderStatusesToInform = this.props.template.type === 'PIPELINE_RUN_STATUS';
     const {getFieldDecorator, resetFields} = this.props.form;
     return (
@@ -292,7 +293,7 @@ export default class EditEmailNotification extends React.Component {
           <Form.Item
             style={{
               marginBottom: 0,
-              display: renderThresholdAndDelay ? 'inherit' : 'none'
+              display: renderThresholdAndDelay || renderDelay ? 'inherit' : 'none'
             }}
             label="Resend delay (sec)"
             className="edit-email-notification-threshold-container">
