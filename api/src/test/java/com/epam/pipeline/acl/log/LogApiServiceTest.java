@@ -41,7 +41,7 @@ public class LogApiServiceTest extends AbstractAclTest {
     @Autowired
     private LogManager logManager;
 
-    LogPagination.LogPaginationBuilder logPagination;
+    private LogPagination.LogPaginationBuilder logPagination;
 
     private final LogFilter logFilter = new LogFilter();
 
