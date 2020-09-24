@@ -346,7 +346,7 @@ class SystemDictionaries extends React.Component {
               {
                 key: 'dictionaries',
                 size: {
-                  pxDefault: 150
+                  pxDefault: 300
                 }
               }
             ]}
