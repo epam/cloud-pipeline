@@ -563,7 +563,9 @@ export default class Folder extends localization.LocalizedReactComponent {
   };
 
   closeRenameFolderDialog = () => {
-    this.setState({editableFolder: null});
+    this.setState({editableFolder: null}, () => {
+      this.props.folder.fetch();
+    });
   };
 
   renameCurrentFolder = async (name) => {

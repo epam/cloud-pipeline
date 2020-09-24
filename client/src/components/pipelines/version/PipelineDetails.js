@@ -62,7 +62,11 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
   @observable _graphIsSupported = null;
 
   toggleModal = () => {
-    this.setState({isModalVisible: !this.state.isModalVisible});
+    this.setState({isModalVisible: !this.state.isModalVisible}, () => {
+      if (!this.state.isModalVisible) {
+        this.props.pipeline.fetch();
+      }
+    });
   };
 
   updatePipeline = (values) => {
