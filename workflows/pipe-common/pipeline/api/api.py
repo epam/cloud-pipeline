@@ -204,8 +204,8 @@ class PipelineAPI:
     MAX_PAGE_SIZE = 400
 
     def __init__(self, api_url, log_dir,
-                attempts=os.getenv('CP_PY_API_TRY_COUNT', 3), timeout=os.getenv('CP_PY_API_TRY_TIMEOUT', 5),
-                connection_timeout=os.getenv('CP_PY_API_CONN_TIMEOUT', 10)):
+                attempts=int(os.getenv('CP_PY_API_TRY_COUNT', 3)), timeout=int(os.getenv('CP_PY_API_TRY_TIMEOUT', 5)),
+                connection_timeout=int(os.getenv('CP_PY_API_CONN_TIMEOUT', 10))):
         urllib3.disable_warnings()
         token = os.environ.get('API_TOKEN')
         self.api_url = api_url
