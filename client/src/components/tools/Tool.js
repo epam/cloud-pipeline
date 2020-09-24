@@ -246,6 +246,7 @@ export default class Tool extends localization.LocalizedReactComponent {
       message.error(updateToolVersionParametersRequest.error, 5);
     } else {
       this.defaultVersionSettings && await this.defaultVersionSettings.fetch();
+      this.props.versionSettings && await this.props.versionSettings.fetch();
       await this.props.allowedInstanceTypes.fetch();
       await this.props.tool.fetch();
     }
