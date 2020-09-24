@@ -47,6 +47,7 @@ class SystemDictionaryForm extends React.Component {
     initialItems: [],
     errors: {
       name: undefined,
+      itemsValidation: undefined,
       items: []
     }
   };
@@ -63,8 +64,8 @@ class SystemDictionaryForm extends React.Component {
 
   get valid () {
     const {errors} = this.state;
-    const {name: errorName, items: errorItems} = errors;
-    return !errorName && !errorItems.find(Boolean);
+    const {name: errorName, items: errorItems, itemsValidation: itemsValidationError} = errors;
+    return !errorName && !errorItems.find(Boolean) && !itemsValidationError;
   }
 
   get modified () {
@@ -94,10 +95,14 @@ class SystemDictionaryForm extends React.Component {
     } = this.state;
     const errors = {
       name: undefined,
-      items: items.map(item => undefined)
+      items: items.map(item => undefined),
+      itemsValidation: undefined
     };
     if (!name) {
       errors.name = 'Dictionary name is required';
+    }
+    if (!items || items.length === 0) {
+      errors.itemsValidation = 'Dictionary must contain at least one item';
     }
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
@@ -195,7 +200,7 @@ class SystemDictionaryForm extends React.Component {
       items,
       errors
     } = this.state;
-    const {name: nameError, items: itemsError} = errors;
+    const {name: nameError, items: itemsError, itemsValidation: itemsValidationError} = errors;
     return (
       <div className={styles.container}>
         <div className={styles.row}>
@@ -219,6 +224,13 @@ class SystemDictionaryForm extends React.Component {
             Items:
           </span>
         </div>
+        {
+          itemsValidationError && (
+            <div className={styles.error}>
+              {itemsValidationError}
+            </div>
+          )
+        }
         <div className={styles.items}>
           {
             items.map((item, index) => (

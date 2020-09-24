@@ -30,7 +30,6 @@ import SystemDictionaryForm from './forms/SystemDictionaryForm';
 import roleModel from '../../utils/roleModel';
 import SystemDictionariesUpdate from '../../models/systemDictionaries/SystemDictionariesUpdate';
 import SystemDictionariesDelete from '../../models/systemDictionaries/SystemDictionariesDelete';
-import SystemDictionariesSync from '../../models/systemDictionaries/SystemDictionariesSync';
 import LoadingView from '../special/LoadingView';
 import {SplitPanel} from '../special/splitPanel';
 
@@ -136,26 +135,6 @@ class SystemDictionaries extends React.Component {
   addNewDictionary = () => {
     this.setState({
       newDictionary: true
-    });
-  };
-
-  syncDictionaries = () => {
-    const hide = message.loading('Synchronizing dictionaries...', 0);
-    const {systemDictionaries} = this.props;
-    this.setState({pending: true}, async () => {
-      const request = new SystemDictionariesSync();
-      await request.send();
-      if (request.error) {
-        hide();
-        message.error(request.error, 5);
-        this.setState({pending: false});
-      } else {
-        await systemDictionaries.fetch();
-        hide();
-        this.setState({pending: false, modified: false, newDictionary: false}, () => {
-          this.navigateToDefault();
-        });
-      }
     });
   };
 
@@ -324,15 +303,6 @@ class SystemDictionaries extends React.Component {
           >
             <Icon type="plus" />
             <span>Add dictionary</span>
-          </Button>
-          <Button
-            className={styles.action}
-            disabled={this.state.pending}
-            type="primary"
-            onClick={this.syncDictionaries}
-          >
-            <Icon type="reload" />
-            <span>Synchronize</span>
           </Button>
         </div>
         <div
