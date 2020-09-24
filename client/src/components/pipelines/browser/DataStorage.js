@@ -219,7 +219,9 @@ export default class DataStorage extends React.Component {
   };
 
   closeEditDialog = () => {
-    this.setState({editDialogVisible: false});
+    this.setState({editDialogVisible: false}, () => {
+      this.props.info.fetch();
+    });
   };
 
   @computed

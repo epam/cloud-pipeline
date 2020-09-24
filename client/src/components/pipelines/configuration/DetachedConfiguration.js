@@ -788,7 +788,9 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
   };
 
   closeEditConfigurationForm = () => {
-    this.setState({editConfigurationFormVisible: false});
+    this.setState({editConfigurationFormVisible: false}, () => {
+      this.props.configurations.fetch();
+    });
   };
 
   editConfiguration = async (opts) => {

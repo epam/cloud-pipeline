@@ -370,7 +370,9 @@ export default class Pipeline extends localization.LocalizedReactComponent {
   };
 
   closeEditPipelineDialog = () => {
-    this.setState({editPipeline: false});
+    this.setState({editPipeline: false}, () => {
+      this.props.pipeline.fetch();
+    });
   };
 
   openClonePipelineDialog = () => {
