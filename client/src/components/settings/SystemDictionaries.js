@@ -55,6 +55,10 @@ class SystemDictionaries extends React.Component {
     this.navigateToDefault();
   };
 
+  componentWillUnmount () {
+    this.resetChangesStateTimeout && clearTimeout(this.resetChangesStateTimeout);
+  }
+
   navigateToDefault = () => {
     const {currentDictionary} = this.props;
     if (this.dictionaries.length > 0 && currentDictionary && !this.currentDictionary) {
@@ -96,7 +100,10 @@ class SystemDictionaries extends React.Component {
     const {router} = this.props;
     const {changesCanBeSkipped, modified} = this.state;
     const resetChangesCanBeSkipped = () => {
-      setTimeout(() => this.setState({changesCanBeSkipped: false}), 0);
+      this.resetChangesStateTimeout = setTimeout(
+        () => this.setState && this.setState({changesCanBeSkipped: false}),
+        0
+      );
     };
     const makeTransition = nextLocation => {
       this.setState({changesCanBeSkipped: true},
