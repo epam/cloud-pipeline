@@ -105,7 +105,7 @@ public class AclTestBeans {
     protected AclCache mockAclCache;
 
     @MockBean
-    CloudRegionManager mockCloudRegionManager;
+    protected CloudRegionManager mockCloudRegionManager;
 
     @MockBean
     protected CacheManager mockCacheManager;
