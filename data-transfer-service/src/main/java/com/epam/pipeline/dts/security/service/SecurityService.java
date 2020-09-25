@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.transfer.rest.dto;
+package com.epam.pipeline.dts.security.service;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+public interface SecurityService {
 
-import java.util.ArrayList;
-import java.util.List;
+    /**
+     * Returns currently authenticated user name.
+     */
+    String getAuthorizedUser();
 
-@Data
-@NoArgsConstructor
-public class TaskCreationDTO {
-
-    private StorageItemWithCredentialsDTO source;
-    private StorageItemWithCredentialsDTO destination;
-    private List<String> included = new ArrayList<>();
+    /**
+     * Returns currently authenticated user corresponding impersonating user name.
+     */
+    String getImpersonatingUser();
 }

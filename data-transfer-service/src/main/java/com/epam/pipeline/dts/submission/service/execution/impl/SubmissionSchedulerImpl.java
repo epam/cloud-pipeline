@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,14 +56,14 @@ public class SubmissionSchedulerImpl implements SubmissionScheduler {
     public SubmissionSchedulerImpl(final SubmissionPreference preference,
                                    final FileService fileService,
                                    final TemplateEngine templateEngine,
-                                   final CmdExecutor cmdExecutor,
+                                   final CmdExecutor submissionCmdExecutor,
                                    final SubmissionConverter converter) {
         this.workDir = fileService.getOrCreateFolder(preference.getWorkdir());
         this.qsubTemplate = fileService.getLocalFile(preference.getQsubTemplate());
         this.preference = preference;
         this.fileService = fileService;
         this.templateEngine = templateEngine;
-        this.cmdExecutor = cmdExecutor;
+        this.cmdExecutor = submissionCmdExecutor;
         this.converter = converter;
     }
 

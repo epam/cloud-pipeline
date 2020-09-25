@@ -14,19 +14,24 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.transfer.rest.dto;
+package com.epam.pipeline.dts.listing.rest.dto;
 
+import com.epam.pipeline.dts.transfer.model.pipeline.PipelineCredentials;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.file.Path;
 
 @Data
 @NoArgsConstructor
-public class TaskCreationDTO {
-
-    private StorageItemWithCredentialsDTO source;
-    private StorageItemWithCredentialsDTO destination;
-    private List<String> included = new ArrayList<>();
+@AllArgsConstructor
+public class ItemsListingRequestDTO {
+    @JsonProperty(required = true)
+    private Path path;
+    @JsonProperty(required = true)
+    private Integer pageSize;
+    private String marker;
+    private PipelineCredentials credentials;
 }

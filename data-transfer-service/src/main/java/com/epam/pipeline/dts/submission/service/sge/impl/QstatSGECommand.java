@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,9 +39,9 @@ public class QstatSGECommand implements QstatCommand {
     private final String qstatCmd;
     private final CmdExecutor cmdExecutor;
 
-    public QstatSGECommand(final CmdExecutor cmdExecutor,
+    public QstatSGECommand(final CmdExecutor submissionCmdExecutor,
                            final @Value("${dts.submission.qstat.cmd}") String qstatCmd) {
-        this.cmdExecutor = cmdExecutor;
+        this.cmdExecutor = submissionCmdExecutor;
         this.qstatCmd = qstatCmd;
     }
 

@@ -14,19 +14,22 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.transfer.rest.dto;
+package com.epam.pipeline.dts.transfer.model;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.function.Function;
 
-@Data
-@NoArgsConstructor
-public class TaskCreationDTO {
-
-    private StorageItemWithCredentialsDTO source;
-    private StorageItemWithCredentialsDTO destination;
-    private List<String> included = new ArrayList<>();
+@RequiredArgsConstructor
+public enum UsernameTransformation implements Function<String, String> {
+    LOWERCASE(String::toLowerCase), 
+    UPPERCASE(String::toUpperCase), 
+    NONE(Function.identity());
+    
+    private final Function<String, String> transformation;
+    
+    @Override
+    public String apply(final String string) {
+        return transformation.apply(string);
+    }
 }
