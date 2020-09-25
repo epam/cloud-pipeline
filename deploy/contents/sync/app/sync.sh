@@ -132,7 +132,10 @@ function prepare_environment {
 
 function check_docker {
     if ! check_installed "docker"; then
-        yum install -q -y wget
+        print_err "Docker is not detected"
+        return 1
+    else
+        print_info "Found Docker, checking if it is active"
     fi
     docker info > /dev/null 2>&1
     return $?
