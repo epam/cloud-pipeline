@@ -394,6 +394,18 @@ function configure_package_manager {
                         if [ $? -ne 0 ]; then
                               echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the yum, removing the repo"
                               rm -f /etc/yum.repos.d/cloud-pipeline.repo
+                        else
+                              # If the CP repo was configured correctly - allow others fail
+                              yum-config-manager --save --setopt=\*.skip_if_unavailable=true &> /var/log/yum.cp.log
+                              # Disable "fastermirror" as it slows down the installtion and is not needed during the CP repo usage
+                              if [ -f "/etc/yum/pluginconf.d/fastestmirror.conf" ]; then
+                                    sed -i 's/enabled=1/enabled=0/g' /etc/yum/pluginconf.d/fastestmirror.conf
+                              fi
+                              # Use the "base" url for the other repos, as the mirrors may cause issues
+                              sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo
+                              sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo
+                              sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo
+                              break
                         fi
                   done
             elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
@@ -408,6 +420,9 @@ function configure_package_manager {
                         if [ $? -ne 0 ]; then
                               echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
                               sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+                        else
+                              # Any specific handling might be needed here, like for the Centos
+                              break
                         fi
                   done
             fi
