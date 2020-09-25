@@ -49,7 +49,7 @@
         <property name="deleteAttributeValuesQuery">
             <value>
                 <![CDATA[
-                    DELETE FROM pipeline.categorical_attributes WHERE key=:KEY
+                    DELETE FROM pipeline.categorical_attributes WHERE key IN (:list)
                 ]]>
             </value>
         </property>
