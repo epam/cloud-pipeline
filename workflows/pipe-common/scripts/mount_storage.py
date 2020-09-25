@@ -92,10 +92,6 @@ class MountStorageTask:
             # filtering nfs storages in order to fetch only nfs from the same region
             available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.storage_type != NFS_TYPE
                                               or x.file_share_mount.region_id == cloud_region_id]
-            if not available_storages_with_mounts:
-                Logger.success('No remote storages are available', task_name=self.task_name)
-                return
-            Logger.info('Found {} available storage(s). Checking mount options.'.format(len(available_storages_with_mounts)), task_name=self.task_name)
 
             limited_storages = os.getenv('CP_CAP_LIMIT_MOUNTS')
             if limited_storages:
@@ -110,6 +106,11 @@ class MountStorageTask:
                     Logger.info('Run is launched with mount limits ({}) Only {} storages will be mounted'.format(limited_storages, len(available_storages_with_mounts)), task_name=self.task_name)
                 except Exception as limited_storages_ex:
                     Logger.warn('Unable to parse CP_CAP_LIMIT_MOUNTS value({}) with error: {}.'.format(limited_storages, str(limited_storages_ex.message)), task_name=self.task_name)
+
+            if not available_storages_with_mounts:
+                Logger.success('No remote storages are available', task_name=self.task_name)
+                return
+            Logger.info('Found {} available storage(s). Checking mount options.'.format(len(available_storages_with_mounts)), task_name=self.task_name)
 
             for mounter in [mounter for mounter in self.mounters.values()]:
                 storage_count_by_type = len(filter((lambda dsm: dsm.storage.storage_type == mounter.type()), available_storages_with_mounts))
