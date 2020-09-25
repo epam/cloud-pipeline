@@ -20,6 +20,7 @@ package com.epam.pipeline.controller;
 
 import com.epam.pipeline.app.AppMVCConfiguration;
 import com.epam.pipeline.app.JWTSecurityConfiguration;
+import com.epam.pipeline.app.RestConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
@@ -35,6 +36,7 @@ import java.lang.annotation.Target;
 @ContextConfiguration(classes = {
         CommonTestContext.class,
         ControllerTestBeans.class,
+        RestConfiguration.class,
         AppMVCConfiguration.class,
         JWTSecurityConfiguration.class})
 @WebAppConfiguration

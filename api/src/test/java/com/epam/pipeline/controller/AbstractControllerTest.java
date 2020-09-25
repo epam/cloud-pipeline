@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller;
 
 import static org.junit.Assert.assertNotNull;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -35,6 +36,7 @@ public abstract class AbstractControllerTest {
     protected static final String JPATH_PAYLOAD = "$.payload";
     protected static final String JPATH_MESSAGE = "$.message";
     protected static final String EXPECTED_CONTENT_TYPE = "application/json;charset=UTF-8";
+    protected static final String SERVLET_PATH = "/restapi";
 
     private MockMvc mockMvc;
 
@@ -53,7 +55,8 @@ public abstract class AbstractControllerTest {
         assertNotNull("ObjectMapper isn't provided.", objectMapper);
 
         typeFactory = TypeFactory.defaultInstance();
-        mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
+        mockMvc = MockMvcBuilders.webAppContextSetup(wac)
+                .apply(springSecurity()).build();
     }
 
     protected final MockMvc mvc() {
