@@ -21,6 +21,7 @@ import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.EntityLoader;
 import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
+import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.PipelineResponseException;
@@ -34,11 +35,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Getter
@@ -117,15 +118,14 @@ public abstract class AbstractCloudPipelineEntityLoader<T> implements EntityLoad
             metadata = Stream.of(MapUtils.emptyIfNull(metadataEntries.get(0).getData()))
                     .map(Map::entrySet)
                     .flatMap(Set::stream)
-                    .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        pipeConfValueEntry -> {
-                            if (pipeConfValueEntry == null || pipeConfValueEntry.getValue() == null) {
-                                return null;
-                            }
-                            return pipeConfValueEntry.getValue().getValue();
-                        }
-                    ));
+                    .collect(HashMap::new,
+                        (map, entry) -> {
+                            final String value = Optional.ofNullable(entry.getValue())
+                                .map(PipeConfValue::getValue)
+                                .orElse(null);
+                            map.put(entry.getKey(), value);
+                        },
+                        HashMap::putAll);
         }
         return MapUtils.emptyIfNull(metadata);
     }
