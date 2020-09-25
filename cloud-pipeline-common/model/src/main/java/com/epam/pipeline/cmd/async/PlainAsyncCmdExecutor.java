@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,11 +61,13 @@ public class PlainAsyncCmdExecutor implements AsyncCmdExecutor {
                 if (exitCode == 0) {
                     return output.toString();
                 } else {
-                    log.error("Command '{}' err output: {}.", command, errors.toString());
-                    throw new CmdExecutionException(command, errors.toString());
+                    final String errorMessage = String.format("Command '%s' failed with the following stderr: %s",
+                            command, errors.toString());
+                    log.error(errorMessage);
+                    throw new CmdExecutionException(errorMessage);
                 }
             } catch (InterruptedException e) {
-                throw new CmdExecutionException(command, e);
+                throw new CmdExecutionException(String.format("Command '%s' execution was interrupted", command));
             }
         }, executor);
         return new SingleProcessExecution<>(process, future);
@@ -75,7 +77,7 @@ public class PlainAsyncCmdExecutor implements AsyncCmdExecutor {
         try (BufferedReader reader = new BufferedReader(in)) {
             appendReaderContent(content, reader);
         } catch (IOException e) {
-            throw new CmdExecutionException(command, e);
+            throw new CmdExecutionException(String.format("Command '%s' outputs reading has failed", command), e);
         }
     }
 

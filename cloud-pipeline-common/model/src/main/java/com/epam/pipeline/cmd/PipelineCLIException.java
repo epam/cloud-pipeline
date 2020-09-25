@@ -16,26 +16,9 @@
 
 package com.epam.pipeline.cmd;
 
-import java.util.Optional;
+public class PipelineCLIException extends RuntimeException {
 
-public class CmdExecutionException extends RuntimeException {
-
-    public CmdExecutionException(String cmd, Throwable cause) {
-        super(cmd, cause);
-    }
-
-    public CmdExecutionException(String cmd) {
-        super(cmd);
-    }
-
-    public String getRootMessage() {
-        return getRootMessage(this);
-    }
-
-    private String getRootMessage(final Throwable e) {
-        return Optional.of(e)
-                .map(Throwable::getCause)
-                .map(e1 -> Optional.ofNullable(e.getMessage()).orElse("") + " -> " + getRootMessage(e1))
-                .orElseGet(e::getMessage);
+    public PipelineCLIException(final String message, final Throwable cause) {
+        super(message, cause);
     }
 }

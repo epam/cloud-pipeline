@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.epam.pipeline.dts.listing.exception.NotFoundException;
 import com.epam.pipeline.dts.listing.model.ListingItemsPaging;
 import com.epam.pipeline.dts.listing.model.ListingItemType;
 import com.epam.pipeline.dts.listing.model.ListingItem;
+import com.epam.pipeline.dts.listing.rest.dto.ItemsListingRequestDTO;
 import com.epam.pipeline.dts.listing.service.impl.LocalListingService;
 import com.epam.pipeline.dts.transfer.service.AbstractTransferTest;
 import com.github.marschall.memoryfilesystem.MemoryFileSystemBuilder;
@@ -66,7 +67,8 @@ public class LocalListingServiceTest extends AbstractTransferTest {
             Path file2 = folder.resolve(FILE2);
             Files.createFile(file2);
 
-            List<ListingItem> actual = listingService.list(pathToFolder, null, null).getResults();
+            List<ListingItem> actual = listingService.list(new ItemsListingRequestDTO(pathToFolder, null, null, null))
+                    .getResults();
             List<ListingItem> expected = Stream
                     .of(ListingItem
                                     .builder()
@@ -97,7 +99,8 @@ public class LocalListingServiceTest extends AbstractTransferTest {
             Path file1 = pathToFolder.resolve(FILE1);
             Files.createFile(file1);
 
-            List<ListingItem> actual = listingService.list(file1, null, null).getResults();
+            List<ListingItem> actual = listingService.list(new ItemsListingRequestDTO(file1, null, null, null))
+                    .getResults();
             List<ListingItem> expected = Stream
                     .of(ListingItem
                                     .builder()
@@ -120,7 +123,8 @@ public class LocalListingServiceTest extends AbstractTransferTest {
                     .of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)
                     .collect(Collectors.toSet()));
 
-            List<ListingItem> actual = listingService.list(file, null, null).getResults();
+            List<ListingItem> actual = listingService.list(new ItemsListingRequestDTO(file, null, null, null))
+                    .getResults();
             List<ListingItem> expected = Stream
                     .of(ListingItem
                             .builder()
@@ -143,7 +147,8 @@ public class LocalListingServiceTest extends AbstractTransferTest {
                     .of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_EXECUTE)
                     .collect(Collectors.toSet()));
 
-            List<ListingItem> actual = listingService.list(file, null, null).getResults();
+            List<ListingItem> actual = listingService.list(new ItemsListingRequestDTO(file, null, null, null))
+                    .getResults();
             List<ListingItem> expected = Stream
                     .of(ListingItem
                             .builder()
@@ -167,7 +172,8 @@ public class LocalListingServiceTest extends AbstractTransferTest {
             Path file1 = pathToFolder.resolve(FILE1);
             Files.createFile(file1);
             Files.setPosixFilePermissions(pathToFolder, Collections.emptySet());
-            assertThrows(ForbiddenException.class, () -> listingService.list(pathToFolder, null, null));
+            assertThrows(ForbiddenException.class, 
+                () -> listingService.list(new ItemsListingRequestDTO(pathToFolder, null, null, null)));
         }
     }
 
@@ -175,7 +181,8 @@ public class LocalListingServiceTest extends AbstractTransferTest {
     void listingShouldFailIfFolderDoesNotExist() throws IOException {
         try (FileSystem fs = getFSWithPosixAttributes()) {
             Path pathToFolder = fs.getPath(ROOT_FOLDER);
-            assertThrows(NotFoundException.class, () -> listingService.list(pathToFolder, null, null));
+            assertThrows(NotFoundException.class, 
+                () -> listingService.list(new ItemsListingRequestDTO(pathToFolder, null, null, null)));
         }
     }
 
@@ -191,7 +198,7 @@ public class LocalListingServiceTest extends AbstractTransferTest {
             Path file2 = folder.resolve(FILE2);
             Files.createFile(file2);
 
-            ListingItemsPaging result = listingService.list(pathToFolder, 1, "1");
+            ListingItemsPaging result = listingService.list(new ItemsListingRequestDTO(pathToFolder, 1, "1", null));
             List<ListingItem> actual = result.getResults();
             List<ListingItem> expected = Stream
                     .of(ListingItem
@@ -207,7 +214,7 @@ public class LocalListingServiceTest extends AbstractTransferTest {
             assertTransferItems(expected, actual);
             assertThat(result.getNextPageMarker(), is("2"));
 
-            result = listingService.list(pathToFolder, 1, "2");
+            result = listingService.list(new ItemsListingRequestDTO(pathToFolder, 1, "2", null));
             actual = result.getResults();
             expected = Stream
                     .of(ListingItem

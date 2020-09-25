@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -37,6 +38,7 @@ public class FilledEnvironmentVariablesCmdExecutorTest {
         envVars.put("API_TOKEN", "token");
 
         cmdExecutor.executeCommand("ls {{HOME}} && echo {{API_TOKEN}}", envVars);
-        verify(innerExecutor).executeCommand(eq("ls /path/to/home/directory && echo token"), eq(envVars), eq(null));
+        verify(innerExecutor).executeCommand(eq("ls /path/to/home/directory && echo token"), eq(envVars),
+                                             isNull(), isNull());
     }
 }

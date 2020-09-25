@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,8 @@ import java.util.stream.Collectors;
 @Builder
 public class PipelineCLIImpl implements PipelineCLI {
 
-    private static final String PIPE_CP_TEMPLATE = "%s storage cp %s %s %s";
-    private static final String PIPE_LS_TEMPLATE = "%s storage ls %s -l";
+    private static final String PIPE_CP_TEMPLATE = "%s storage cp '%s' '%s' %s";
+    private static final String PIPE_LS_TEMPLATE = "%s storage ls '%s' -l";
     private static final String SPACE = " ";
     private static final String FOLDER = "Folder";
     private static final String SEPARATOR = "/";
@@ -59,7 +59,7 @@ public class PipelineCLIImpl implements PipelineCLI {
     }
 
     @Override
-    public String uploadData(String source, String destination, List<String> include) {
+    public String uploadData(String source, String destination, List<String> include, String username) {
         if (!forceUpload && isFileAlreadyLoaded(source, destination)) {
             log.info(String.format("Skip file %s uploading. " +
                     "It already exists in the remote bucket: %s", source, destination));
@@ -67,20 +67,22 @@ public class PipelineCLIImpl implements PipelineCLI {
         } else {
             log.info(String.format("Upload from %s to %s", source, destination));
             int attempts = 0;
+            CmdExecutionException lastException = null;
 
             while (attempts < retryCount) {
                 try {
-                    cmdExecutor.executeCommand(pipeCP(source, destination, include));
+                    cmdExecutor.executeCommand(pipeCP(source, destination, include), username);
                     log.info(String.format("Successfully uploaded from %s to %s", source, destination));
                     return destination;
                 } catch (CmdExecutionException e) {
                     log.error(String.format("Failed to upload from %s to %s. Error: %s",
                             source, destination, e.getMessage()));
                     attempts++;
+                    lastException = e;
                 }
             }
-            throw new CmdExecutionException(String.format("Exceeded attempts count to upload %s to %s",
-                    source, destination));
+            throw new PipelineCLIException(String.format("Exceeded attempts count to upload %s to %s due to %s",
+                    source, destination, getExceptionRootMessage(lastException)), lastException);
         }
     }
 
@@ -91,23 +93,31 @@ public class PipelineCLIImpl implements PipelineCLI {
     }
 
     @Override
-    public void downloadData(String source, String destination, List<String> include) {
+    public void downloadData(String source, String destination, List<String> include, String username) {
         log.info(String.format("Download from %s to %s", source, destination));
         int attempts = 0;
+        CmdExecutionException lastException = null;
 
         while (attempts < retryCount) {
             try {
-                cmdExecutor.executeCommand(pipeCP(source, destination, include));
+                cmdExecutor.executeCommand(pipeCP(source, destination, include), username);
                 log.info(String.format("Successfully downloaded from %s to %s", source, destination));
                 return;
             } catch (CmdExecutionException e) {
                 log.error(String.format("Failed to download from %s to %s. Error: %s",
                         source, destination, e.getMessage()));
                 attempts++;
+                lastException = e;
             }
         }
-        throw new CmdExecutionException(String.format("Exceeded attempts count to upload %s to %s",
-                source, destination));
+        throw new PipelineCLIException(String.format("Exceeded attempts count to download %s to %s due to %s",
+                source, destination, getExceptionRootMessage(lastException)), lastException);
+    }
+
+    private String getExceptionRootMessage(final CmdExecutionException lastException) {
+        return Optional.ofNullable(lastException)
+                .map(CmdExecutionException::getRootMessage)
+                .orElse("Cmd execution error");
     }
 
     private boolean isFileAlreadyLoaded(final String localFilePath,
@@ -152,14 +162,14 @@ public class PipelineCLIImpl implements PipelineCLI {
                 .map(column -> headerLine.indexOf(column.name))
                 .collect(Collectors.toList());
 
-            final RemoteFileDescription remoteFileDescription = new RemoteFileDescription();
+            RemoteFileDescription remoteFileDescription = new RemoteFileDescription();
             for (int i = 0; i < columnIndexes.size(); i++) {
                 final int cellBeginIndex = columnIndexes.get(i);
                 final int cellEndIndex = i < columnIndexes.size() - 1
                     ? columnIndexes.get(i + 1)
                     : headerLine.length();
                 final String cellValue = fileLine.substring(cellBeginIndex, cellEndIndex).trim();
-                columns[i].append(remoteFileDescription, cellValue);
+                remoteFileDescription = columns[i].append(remoteFileDescription, cellValue);
             }
             return remoteFileDescription;
         };
@@ -190,7 +200,7 @@ public class PipelineCLIImpl implements PipelineCLI {
         TYPE("Type", RemoteFileDescription::withType),
         LABELS("Labels", RemoteFileDescription::withLabels),
         MODIFIED("Modified", RemoteFileDescription::withModified),
-        SIZE("Size", (file, value) -> file.withSize(StringUtils.isBlank(value) ? 0L : Long.valueOf(value))),
+        SIZE("Size", (file, value) -> file.withSize(StringUtils.isBlank(value) ? 0L : Long.parseLong(value))),
         NAME("Name", RemoteFileDescription::withName);
 
         final String name;
@@ -202,9 +212,9 @@ public class PipelineCLIImpl implements PipelineCLI {
             this.appender = appender;
         }
 
-        void append(final RemoteFileDescription remoteFileDescription,
-                    final String value) {
-            appender.apply(remoteFileDescription, value);
+        public RemoteFileDescription append(final RemoteFileDescription remoteFileDescription,
+                                            final String value) {
+            return appender.apply(remoteFileDescription, value);
         }
     }
 

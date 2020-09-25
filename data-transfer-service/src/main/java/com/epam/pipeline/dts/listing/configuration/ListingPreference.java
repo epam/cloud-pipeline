@@ -14,19 +14,16 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.transfer.rest.dto;
+package com.epam.pipeline.dts.listing.configuration;
 
 import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
 @Data
-@NoArgsConstructor
-public class TaskCreationDTO {
-
-    private StorageItemWithCredentialsDTO source;
-    private StorageItemWithCredentialsDTO destination;
-    private List<String> included = new ArrayList<>();
+@Component
+@ConfigurationProperties("dts.listing")
+public class ListingPreference {
+    private String listScript;
+    private String listCommand;
 }
