@@ -36,6 +36,12 @@ public class CategoricalAttributeManager {
     private final MetadataManager metadataManager;
     private final MessageHelper messageHelper;
 
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public boolean updateCategoricalAttributes(final List<CategoricalAttribute> dict) {
+        return categoricalAttributesDao.updateCategoricalAttributes(dict);
+    }
+
     @Transactional(propagation = Propagation.REQUIRED)
     public boolean insertAttributesValues(final List<CategoricalAttribute> dict) {
         return categoricalAttributesDao.insertAttributesValues(dict);

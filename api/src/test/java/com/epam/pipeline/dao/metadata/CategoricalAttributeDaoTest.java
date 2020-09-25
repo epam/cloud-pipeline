@@ -76,6 +76,24 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void testUpdateAttributesValues() {
+        final List<CategoricalAttribute> values = new ArrayList<>();
+        values.add(new CategoricalAttribute(ATTRIBUTE_KEY_1, Arrays.asList(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2)));
+        Assert.assertTrue(categoricalAttributeDao.insertAttributesValues(values));
+        final List<CategoricalAttribute> attributes = categoricalAttributeDao.loadAll();
+        Assert.assertEquals(1, attributes.size());
+        assertAttribute(attributes.get(0), ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2);
+
+        final List<CategoricalAttribute> valuesToReplace = new ArrayList<>();
+        valuesToReplace.add(new CategoricalAttribute(ATTRIBUTE_KEY_1, Collections.singletonList(ATTRIBUTE_VALUE_3)));
+        Assert.assertTrue(categoricalAttributeDao.updateCategoricalAttributes(valuesToReplace));
+        final List<CategoricalAttribute> attributesAfter = categoricalAttributeDao.loadAll();
+        Assert.assertEquals(1, attributesAfter.size());
+        assertAttribute(attributesAfter.get(0), ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_3);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void testLoadAll() {
         final List<CategoricalAttribute> values = Arrays.asList(
             new CategoricalAttribute(ATTRIBUTE_KEY_1, Arrays.asList(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2)),
@@ -136,6 +154,12 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
         Assert.assertEquals(2, attributesWithValues.size());
         assertValuesPresentedForKeyInMap(attributesWithValues, ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_2);
         assertValuesPresentedForKeyInMap(attributesWithValues, ATTRIBUTE_KEY_2, ATTRIBUTE_VALUE_3);
+    }
+
+    private void assertAttribute(final CategoricalAttribute attributeAfter, final String key,
+                                 final String ... values) {
+        Assert.assertEquals(key, attributeAfter.getKey());
+        Assert.assertThat(attributeAfter.getValues(), CoreMatchers.is(Arrays.asList(values)));
     }
 
     private Map<String, List<String>> convertToMap(final List<CategoricalAttribute> attributes) {
