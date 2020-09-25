@@ -16,22 +16,24 @@
 
 package com.epam.pipeline.controller.log;
 
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.AbstractControllerTest;
 import com.epam.pipeline.controller.ResponseResult;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
 import com.epam.pipeline.manager.log.LogApiService;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -56,19 +58,24 @@ public class LogControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldReturnLogFilter() throws Exception {
         logFilter.setSortOrder("ASC");
-        doReturn(logFilter).when(mockLogApiService).getFilters();
+        Mockito.doReturn(logFilter).when(mockLogApiService).getFilters();
         final MvcResult mvcResult = mvc().perform(get(LOG_ENDPOINT)
                 .servletPath(SERVLET_PATH)
                 .contentType(EXPECTED_CONTENT_TYPE))
                 .andExpect(status().isOk()).andReturn();
-        verify(mockLogApiService).getFilters();
+        Mockito.verify(mockLogApiService).getFilters();
 
-        final ResponseResult<LogFilter> expected = new ResponseResult<>();
-        expected.setStatus("OK");
-        expected.setPayload(logFilter);
+        final ResponseResult<LogFilter> expectedResult = new ResponseResult<>();
+        expectedResult.setStatus("OK");
+        expectedResult.setPayload(logFilter);
 
         final String actual= mvcResult.getResponse().getContentAsString();
-        assertThat(actual).isEqualToIgnoringWhitespace(getObjectMapper().writeValueAsString(expected));
+        assertThat(actual).isEqualToIgnoringWhitespace(getObjectMapper().writeValueAsString(expectedResult));
+
+        final Result<LogFilter> actualResult =
+                JsonMapper.parseData(actual, new TypeReference<Result<LogFilter>>() { });
+
+        assertEquals(expectedResult.getPayload(), actualResult.getPayload());
     }
 
     @Test
@@ -85,7 +92,7 @@ public class LogControllerTest extends AbstractControllerTest {
     public void shouldReturnFilteredLogs() throws Exception {
         final LogPagination logPagination = LogPagination.builder().pageSize(5).build();
         logFilter.setMessage("testMessage");
-        doReturn(logPagination).when(mockLogApiService).filter(logFilter);
+        Mockito.doReturn(logPagination).when(mockLogApiService).filter(logFilter);
         final MvcResult mvcResult = mvc().perform(post(LOG_ENDPOINT)
                 .servletPath(SERVLET_PATH)
                 .contentType(EXPECTED_CONTENT_TYPE)
@@ -93,15 +100,20 @@ public class LogControllerTest extends AbstractControllerTest {
                 .andExpect(status().isOk()).andReturn();
 
         final ArgumentCaptor<LogFilter> logFilterCaptor = ArgumentCaptor.forClass(LogFilter.class);
-        verify(mockLogApiService).filter(logFilterCaptor.capture());
+        Mockito.verify(mockLogApiService).filter(logFilterCaptor.capture());
         assertThat(logFilterCaptor.getValue().getMessage()).isEqualTo("testMessage");
 
-        final ResponseResult<LogPagination> expected = new ResponseResult<>();
-        expected.setStatus("OK");
-        expected.setPayload(logPagination);
+        final ResponseResult<LogPagination> expectedResult = new ResponseResult<>();
+        expectedResult.setStatus("OK");
+        expectedResult.setPayload(logPagination);
 
         final String actual = mvcResult.getResponse().getContentAsString();
         assertThat(actual).isNotBlank();
-        assertThat(actual).isEqualToIgnoringWhitespace(getObjectMapper().writeValueAsString(expected));
+        assertThat(actual).isEqualToIgnoringWhitespace(getObjectMapper().writeValueAsString(expectedResult));
+
+        final Result<LogPagination> actualResult =
+                JsonMapper.parseData(actual, new TypeReference<Result<LogPagination>>() { });
+
+        assertEquals(expectedResult.getPayload(), actualResult.getPayload());
     }
 }
