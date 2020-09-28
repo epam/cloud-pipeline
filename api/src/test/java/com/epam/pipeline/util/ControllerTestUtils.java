@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller;
+package com.epam.pipeline.util;
 
-import com.epam.pipeline.app.RestConfiguration;
-import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import com.epam.pipeline.controller.ResponseResult;
 
-@SpringBootConfiguration
-@EnableAutoConfiguration
-public class TestRestConfiguration extends RestConfiguration {
+
+public class ControllerTestUtils {
+
+    public static <T> ResponseResult<T> buildExpectedResult(final T payload) {
+        final ResponseResult<T> expectedResult = new ResponseResult<>();
+        expectedResult.setStatus("OK");
+        expectedResult.setPayload(payload);
+        return expectedResult;
+    }
 }
