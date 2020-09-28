@@ -625,58 +625,6 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         instance.ensure(PRICE_TYPE, text(spotPrice)));
     }
 
-    @Test
-    @TestCase({"EPMCMBIBPC-3176"})
-    public void validationOfKubernetesCluster() {
-        String parent = "";
-        String child = library()
-                .createPipeline(Template.SHELL, getPipelineName())
-                .clickOnPipeline(getPipelineName())
-                .firstVersion()
-                .runPipeline()
-                .setDefaultLaunchOptions()
-                .enableClusterLaunch()
-                .clusterSettingsForm(clusterSettingForm)
-                .clusterEnableCheckboxSelect("Enable Kubernetes")
-                .ok()
-                .checkConfigureClusterLabel("Kubernetes Cluster (1 child node)")
-                .click(START_IDLE)
-                .launch(this)
-                .shouldContainRun(getPipelineName(), parent = getRunId())
-                .openClusterRuns(getRunId())
-                .showLog(getRunId())
-                .waitForNestedRunsLink()
-                .getNestedRunID(1);
-        runsMenu()
-                .activeRuns()
-                .showLog(getRunId())
-                .expandTab(PARAMETERS)
-                .ensure(configurationParameter("CP_CAP_KUBE", "true"), exist)
-                .ensure(configurationParameter("CP_CAP_DIND_CONTAINER", "true"), exist)
-                .ensure(configurationParameter("CP_CAP_SYSTEMD_CONTAINER", "true"), exist)
-                .waitForSshLink()
-                .waitForTask("KubeMasterSetup")
-                .click(taskWithName("KubeMasterSetup"))
-                .waitForLog("Kubernetes master is started")
-                .waitForTask("KubeMasterSetupWorkers")
-                .click(taskWithName("KubeMasterSetupWorkers"))
-                .waitForLog("All worker nodes are connected")
-                .ssh(shell -> shell
-                        .execute("kubectl cluster-info")
-                        .assertOutputContains("Kubernetes master is running at", "KubeDNS is running at")
-                        .execute("kubectl get nodes")
-                        .assertOutputContains("NAME", "STATUS", "ROLES", "AGE", "VERSION")
-                        .execute("kubectl run test-nginx --image=nginx")
-                        .execute("kubectl get pods --output=wide")
-                        .assertOutputContains("NAME", "READY", "STATUS", "RESTARTS", "AGE", "IP", "NODE",
-                                "NOMINATED NODE", "READINESS GATES")
-                        .execute("docker --version")
-                        .assertOutputContains("Docker version", ", build ")
-                        .execute("systemctl --version")
-                        .assertOutputContains("systemd")
-                        .close());
-    }
-
     private static PipelineRunFormAO onLaunchPage() {
         return new PipelineRunFormAO();
     }
