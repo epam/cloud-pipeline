@@ -59,8 +59,6 @@ public class RunToolsInSandBoxTest
     private final String endpoint = C.VALID_ENDPOINT;
     private final String testDockerImage = C.TEST_DOCKER_IMAGE;
     private String nodeName;
-    private final String dindContainerParameter = "CP_CAP_DIND_CONTAINER";
-    private final String singularityParameter = "CP_CAP_SINGULARITY";
 
     @BeforeClass
     @AfterClass(alwaysRun = true)
@@ -208,7 +206,7 @@ public class RunToolsInSandBoxTest
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter(dindContainerParameter, "true"), exist)
+                .ensure(configurationParameter("CP_CAP_DIND_CONTAINER", "true"), exist)
                 .waitForSshLink()
                 .ssh(shell -> shell
                         .execute("docker --version")
@@ -235,7 +233,7 @@ public class RunToolsInSandBoxTest
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter(singularityParameter, "true"), exist)
+                .ensure(configurationParameter("CP_CAP_SINGULARITY", "true"), exist)
                 .waitForSshLink()
                 .ssh(shell -> shell
                         .execute("singularity help version")
