@@ -16,6 +16,7 @@ import base64
 import copy
 import hashlib
 import os
+import socket
 from datetime import datetime, timedelta
 
 from requests import RequestException
@@ -683,12 +684,12 @@ class VerifiedHTTPSConnectionWithHeaders(VerifiedHTTPSConnection):
 
         if code != OK:
             self.close()
-            raise OSError("Tunnel connection failed: %d %s" % (code,
-                                                               message.strip()))
+            raise socket.error("Tunnel connection failed: %d %s" % (code,
+                                                                    message.strip()))
         while True:
             line = response.fp.readline(http_client._MAXLINE + 1)
             if len(line) > http_client._MAXLINE:
-                raise RuntimeError("header line")
+                raise http_client.LineTooLong("header line")
             if not line:
                 # for sites which EOF without sending a trailer
                 break
