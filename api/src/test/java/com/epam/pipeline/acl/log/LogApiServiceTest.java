@@ -16,23 +16,19 @@
 
 package com.epam.pipeline.acl.log;
 
-import com.epam.pipeline.app.AclSecurityConfiguration;
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
 import com.epam.pipeline.manager.log.LogManager;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import com.epam.pipeline.test.acl.AclTestBeans;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ContextConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {AclTestBeans.class, AclSecurityConfiguration.class})
 public class LogApiServiceTest extends AbstractAclTest {
 
     @Autowired
@@ -41,7 +37,7 @@ public class LogApiServiceTest extends AbstractAclTest {
     @Autowired
     private LogManager logManager;
 
-    private LogPagination.LogPaginationBuilder logPagination;
+    private final LogPagination logPagination = LogPagination.builder().build();
 
     private final LogFilter logFilter = new LogFilter();
 

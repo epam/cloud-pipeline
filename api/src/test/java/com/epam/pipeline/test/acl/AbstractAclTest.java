@@ -40,12 +40,14 @@ import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 
+/**
+ * Superclass for all ACL layer tests
+ */
 @RunWith(SpringRunner.class)
 @AclTestConfiguration
 public abstract class AbstractAclTest {
 
     protected static final String ADMIN_ROLE = "ADMIN";
-    protected static final String GENERAL_USER_ROLE = "USER";
     protected static final String SIMPLE_USER_ROLE = "SIMPLE USER";
 
     @Autowired

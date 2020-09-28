@@ -16,8 +16,10 @@
 
 package com.epam.pipeline.test.acl;
 
+import com.epam.pipeline.app.AclSecurityConfiguration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
 import java.lang.annotation.ElementType;
@@ -25,11 +27,20 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Test annotation providing the following test ApplicationContext configuration:
+ * - all ACL-related beans are loaded
+ * - for all dependencies mock beans are provided
+ * - AclAspect is enabled for testing
+ * - GlobalMethodSecurity is enabled
+ * - Property source is defined for testing
+ */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 @TestPropertySource(value = {"classpath:test-application.properties"})
+@ContextConfiguration(classes = {AclTestBeans.class, AclSecurityConfiguration.class})
 public @interface AclTestConfiguration {
 
 }
