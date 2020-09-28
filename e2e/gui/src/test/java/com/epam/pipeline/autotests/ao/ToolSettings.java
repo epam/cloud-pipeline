@@ -27,6 +27,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 import static com.codeborne.selenide.Condition.appear;
+import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.visible;
@@ -119,6 +120,15 @@ public class ToolSettings extends ToolTab<ToolSettings> {
         SelenideElement defaultCommand = get(DEFAULT_COMMAND);
         Utils.clearTextField(defaultCommand);
         Utils.clickAndSendKeysWithSlashes(defaultCommand, command);
+        return this;
+    }
+
+    public ToolSettings disableAllowSensitiveStorage() {
+        SelenideElement checkbox = context().$(byText("Allow sensitive storages"))
+                .parent().find(By.xpath("following-sibling::div//span"));
+        if (checkbox.has(cssClass("ant-checkbox-checked"))) {
+            checkbox.click();
+        }
         return this;
     }
 
