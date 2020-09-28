@@ -502,8 +502,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
 
     default ELEMENT_TYPE checkDropDownCount(final Primitive combobox, final int count) {
         get(combobox).shouldBe(visible).click();
-        assertEquals(SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).size(), count,
-                "Dropdown list count doesn't correspond expected");
+        SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).shouldHaveSize(count);
         return (ELEMENT_TYPE) this;
     }
 
