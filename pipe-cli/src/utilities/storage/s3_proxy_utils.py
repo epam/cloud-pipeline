@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import socket
+
 from botocore.vendored.requests.adapters import HTTPAdapter
 from botocore.vendored.requests.packages.urllib3 import ProxyManager
 from botocore.vendored.requests.packages.urllib3.connection import VerifiedHTTPSConnection
@@ -47,12 +49,12 @@ class VerifiedHTTPSConnectionWithHeaders(VerifiedHTTPSConnection):
 
         if code != OK:
             self.close()
-            raise OSError("Tunnel connection failed: %d %s" % (code,
-                                                               message.strip()))
+            raise socket.error("Tunnel connection failed: %d %s" % (code,
+                                                                    message.strip()))
         while True:
             line = response.fp.readline(http_client._MAXLINE + 1)
             if len(line) > http_client._MAXLINE:
-                raise RuntimeError("header line")
+                raise http_client.LineTooLong("header line")
             if not line:
                 # for sites which EOF without sending a trailer
                 break
