@@ -21,7 +21,6 @@ import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
 import com.epam.pipeline.autotests.AbstractSinglePipelineRunningTest;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
-import com.epam.pipeline.autotests.utils.SelenideElements;
 import com.epam.pipeline.autotests.utils.Utils;
 
 import java.util.Arrays;
