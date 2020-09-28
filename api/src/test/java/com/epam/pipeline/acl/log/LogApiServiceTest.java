@@ -35,7 +35,7 @@ public class LogApiServiceTest extends AbstractAclTest {
     private LogApiService logApiService;
 
     @Autowired
-    private LogManager logManager;
+    private LogManager mockLogManager;
 
     private final LogPagination logPagination = LogPagination.builder().build();
 
@@ -44,7 +44,7 @@ public class LogApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldAllowAccessToLogPaginationForAdmin() {
-        doReturn(logPagination).when(logManager).filter(logFilter);
+        doReturn(logPagination).when(mockLogManager).filter(logFilter);
 
         assertThat(logApiService.filter(logFilter)).isEqualTo(logPagination);
     }
@@ -52,7 +52,7 @@ public class LogApiServiceTest extends AbstractAclTest {
     @Test(expected = AccessDeniedException.class)
     @WithMockUser(roles = SIMPLE_USER_ROLE)
     public void shouldDenyAccessToLogPaginationForNotAdmin() {
-        doReturn(logPagination).when(logManager).filter(logFilter);
+        doReturn(logPagination).when(mockLogManager).filter(logFilter);
 
         logApiService.filter(logFilter);
     }
@@ -60,7 +60,7 @@ public class LogApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldAllowAccessToLogFilterForAdmin() {
-        when(logManager.getFilters()).thenReturn(logFilter);
+        when(mockLogManager.getFilters()).thenReturn(logFilter);
 
         assertThat(logApiService.getFilters()).isEqualTo(logFilter);
     }
@@ -68,7 +68,7 @@ public class LogApiServiceTest extends AbstractAclTest {
     @Test(expected = AccessDeniedException.class)
     @WithMockUser(roles = SIMPLE_USER_ROLE)
     public void shouldDenyAccessToLogFilterForNotAdmin() {
-        when(logManager.getFilters()).thenReturn(logFilter);
+        when(mockLogManager.getFilters()).thenReturn(logFilter);
 
         logApiService.getFilters();
     }
