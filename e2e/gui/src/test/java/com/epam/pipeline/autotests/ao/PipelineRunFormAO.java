@@ -66,7 +66,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(DOCKER_IMAGE, context().find(byText("Docker image")).closest(".ant-row").find(tagName("input"))),
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
-            entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button")))
+            entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
+            entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input")))
     );
     private final String pipelineName;
     private int parameterIndex = 0;
@@ -337,6 +338,11 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     public String getCPU() {
         String cpu = $(byXpath(".//b[.='CPU']")).parent().getText();
         return cpu.substring(0, cpu.indexOf(" "));
+    }
+
+    public SelectLimitMountsPopupAO selectDataStoragesToLimitMounts() {
+        click(LIMIT_MOUNTS);
+        return new SelectLimitMountsPopupAO(this);
     }
 
     @Override

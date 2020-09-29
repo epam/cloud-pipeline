@@ -122,11 +122,6 @@ public class Profile implements AccessObject<Profile> {
         return this;
     }
 
-    public SelectLimitMountsPopupAO selectDataStoragesToLimitMounts() {
-        click(LIMIT_MOUNTS);
-        return new SelectLimitMountsPopupAO(this);
-    }
-
     public static Stream<ParameterFieldAO> parameters() {
         return ParameterFieldAO.parameters();
     }
