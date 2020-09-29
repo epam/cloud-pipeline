@@ -57,7 +57,7 @@ if [ ! -d $cmd_home ]; then
   exit 1
 fi
 cd $cmd_home
-eval "bash $cmd_script \"$@\""
+eval "bash $cmd_script $@"
 rm -rf $tmp_location
 cd $prev_location
 
