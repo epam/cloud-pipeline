@@ -316,16 +316,6 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return new SystemParameterPopupAO(this);
     }
 
-    public PipelineRunFormAO checkSystemParameters(String...sysParams) {
-        List<String> systemParams = $$(byClassName("launch-pipeline-form__system-parameter-name"))
-                .stream()
-                .map(SelenideElement::getValue)
-                .collect(toList());
-        Arrays.stream(sysParams).forEach(param -> assertTrue(systemParams.contains(param),
-                format("System parameter %s isn't found ", param)));
-        return this;
-    }
-
     public PipelineRunFormAO chooseConfiguration(final String profileName) {
         click(CONFIGURATION);
         $$(className("ant-select-dropdown")).findBy(visible)

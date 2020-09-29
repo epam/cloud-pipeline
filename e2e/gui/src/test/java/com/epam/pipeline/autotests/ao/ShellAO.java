@@ -83,7 +83,7 @@ public class ShellAO implements AccessObject<ShellAO> {
     }
 
     public ShellAO assertPageContainsString(String str) {
-        assertTrue(context().text().contains(str));
+        context().shouldHave(text(str));
         return this;
     }
 
