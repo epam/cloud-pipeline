@@ -53,6 +53,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            - name: CP_API_CURRENT_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           envFrom:
           - configMapRef:
               name: cp-config-global
@@ -61,7 +65,7 @@ spec:
               name: api-pki
             - mountPath: /opt/api/sso
               name: api-sso
-            - mountPath: /opt/api/logs
+            - mountPath: /var/log/cp-api
               name: api-logs
             - mountPath: ${CP_PREF_TEMPLATES_DIRECTORY_EXT}
               name: api-pipe-templates
