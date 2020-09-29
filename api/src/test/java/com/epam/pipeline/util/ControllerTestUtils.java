@@ -16,15 +16,38 @@
 
 package com.epam.pipeline.util;
 
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.ResponseResult;
+import com.epam.pipeline.controller.Result;
+import com.fasterxml.jackson.core.type.TypeReference;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.test.web.servlet.MvcResult;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 
-public class ControllerTestUtils {
+public final class ControllerTestUtils {
+
+    private ControllerTestUtils() {
+    }
 
     public static <T> ResponseResult<T> buildExpectedResult(final T payload) {
         final ResponseResult<T> expectedResult = new ResponseResult<>();
         expectedResult.setStatus("OK");
         expectedResult.setPayload(payload);
         return expectedResult;
+    }
+
+    public static <T> void assertResponse(final MvcResult mvcResult,
+                                          final JsonMapper objectMapper,
+                                          final ResponseResult<T> expectedResult,
+                                          final TypeReference<Result<T>> typeReference) throws Exception {
+        final String actual = mvcResult.getResponse().getContentAsString();
+        StringUtils.isNotBlank(actual);
+        assertThat(actual).isEqualToIgnoringWhitespace(objectMapper.writeValueAsString(expectedResult));
+
+        final Result<T> actualResult = JsonMapper.parseData(actual, typeReference);
+        assertEquals(expectedResult.getPayload(), actualResult.getPayload());
+        System.out.println(actualResult.getPayload());
     }
 }

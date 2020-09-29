@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.controller.log;
 
-import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.epam.pipeline.controller.ResponseResult;
 import com.epam.pipeline.controller.Result;
@@ -34,7 +33,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -45,6 +43,7 @@ public class LogControllerTest extends AbstractControllerTest {
     @Autowired
     private LogApiService mockLogApiService;
 
+    public static final String TEST_MESSAGE = "testMessage";
     private static final String LOG_ENDPOINT = SERVLET_PATH + "/log/filter";
     private final LogFilter logFilter = new LogFilter();
 
@@ -69,13 +68,8 @@ public class LogControllerTest extends AbstractControllerTest {
 
         final ResponseResult<LogFilter> expectedResult = ControllerTestUtils.buildExpectedResult(logFilter);
 
-        final String actual = mvcResult.getResponse().getContentAsString();
-        assertThat(actual).isNotBlank();
-        assertThat(actual).isEqualToIgnoringWhitespace(getObjectMapper().writeValueAsString(expectedResult));
-
-        final Result<LogFilter> actualResult =
-                JsonMapper.parseData(actual, new TypeReference<Result<LogFilter>>() { });
-        assertEquals(expectedResult.getPayload(), actualResult.getPayload());
+        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
+                new TypeReference<Result<LogFilter>>() { });
     }
 
     @Test
@@ -91,7 +85,7 @@ public class LogControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldReturnFilteredLogs() throws Exception {
         final LogPagination logPagination = LogPagination.builder().pageSize(5).build();
-        logFilter.setMessage("testMessage");
+        logFilter.setMessage(TEST_MESSAGE);
         Mockito.doReturn(logPagination).when(mockLogApiService).filter(logFilter);
         final MvcResult mvcResult = mvc().perform(post(LOG_ENDPOINT)
                 .servletPath(SERVLET_PATH)
@@ -103,16 +97,11 @@ public class LogControllerTest extends AbstractControllerTest {
 
         final ArgumentCaptor<LogFilter> logFilterCaptor = ArgumentCaptor.forClass(LogFilter.class);
         Mockito.verify(mockLogApiService).filter(logFilterCaptor.capture());
-        assertThat(logFilterCaptor.getValue().getMessage()).isEqualTo("testMessage");
+        assertThat(logFilterCaptor.getValue().getMessage()).isEqualTo(TEST_MESSAGE);
 
         final ResponseResult<LogPagination> expectedResult = ControllerTestUtils.buildExpectedResult(logPagination);
 
-        final String actual = mvcResult.getResponse().getContentAsString();
-        assertThat(actual).isNotBlank();
-        assertThat(actual).isEqualToIgnoringWhitespace(getObjectMapper().writeValueAsString(expectedResult));
-
-        final Result<LogPagination> actualResult =
-                JsonMapper.parseData(actual, new TypeReference<Result<LogPagination>>() { });
-        assertEquals(expectedResult.getPayload(), actualResult.getPayload());
+        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
+                new TypeReference<Result<LogPagination>>() { });
     }
 }
