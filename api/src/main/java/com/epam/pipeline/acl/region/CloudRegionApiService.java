@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.region;
+package com.epam.pipeline.acl.region;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
@@ -23,6 +23,7 @@ import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
 import com.epam.pipeline.entity.info.CloudRegionInfo;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PostFilter;
