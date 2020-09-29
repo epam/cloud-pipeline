@@ -77,7 +77,7 @@ public class AclTestBeans {
     @Autowired
     protected MessageHelper messageHelper;
 
-    @MockBean
+    @MockBean(name = "aclService")
     protected JdbcMutableAclServiceImpl mockAclService;
 
     @MockBean
