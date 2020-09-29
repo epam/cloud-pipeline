@@ -48,6 +48,7 @@ import static org.mockito.Mockito.doReturn;
 public abstract class AbstractAclTest {
 
     protected static final String ADMIN_ROLE = "ADMIN";
+    protected static final String GENERAL_USER_ROLE = "USER";
     protected static final String SIMPLE_USER_ROLE = "SIMPLE USER";
 
     @Autowired
