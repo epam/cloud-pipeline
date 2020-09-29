@@ -194,12 +194,19 @@ This command allows to sync configuration between 2 Cloud Pipeline deployments.
 Environment variables for controlling execution flow:
  ```bash
  export CP_SYNC_USERS_METADATA_SKIP_KEYS= # describes keys, that shall be skipped during metadata sync in users sync routine (Optional, if not specified all metadata will be transferred without any filtering)
+ export CP_SYNC_TOOLS_METADATA_SKIP_KEYS= # the same, as described above, but for tools sync routine
+ export CP_SYNC_TOOLS_TRANSFER_POOL_SIZE= # amount of threads, that is going to be used for tools transfer.  
+                                          # Note, that it boosts the sync speed, but results in higher storage volume
+                                          # consumption, as all versions of a tool are pulled at first to 
+                                          # a local docker and pushed after to remote registry
+
 ```
 
 ```bash
 ~/.pipe/pipectl   sync \
 # Pipectl sync options
                 --users \                       # enables users/groups synchronization
+                --tools \                       # enables tools synchronization
                 --source-url {url_a} \          # URL of `source` environment's API host
                 --source-token {token_a} \      # JWT token to access `source` environment
                 --target-url {url_b} \          # URL of `destination` environment's API host

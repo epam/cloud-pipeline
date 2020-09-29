@@ -12,130 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import os
-import requests
 import sys
-import urllib3
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-API_GET_ALL_USERS = 'users'
-API_CREATE_USER = 'user'
-API_BLOCK_USER = 'user/{user_id}/block'
-API_SET_GROUP_BLOCK_STATUS = 'group/{group_name}/block'
-API_GET_ALL_BLOCK_STATUSES = 'groups/block'
-
-API_GET_ALL_ROLES = 'role/loadAll'
-API_CREATE_ROLE = 'role/create'
-API_ASSIGN_ROLE_TO_USER = 'role/{role_id}/assign'
-
-API_METADATA_LOAD = 'metadata/load'
-API_METADATA_UPDATE = 'metadata/update'
+from api.users_api import UserSyncAPI
+from print_utils import print_info_message, print_warn_message
 
 metadata_keys_to_ignore = os.getenv('CP_SYNC_USERS_METADATA_SKIP_KEYS', '').split(',')
-
-
-class API(object):
-    def __init__(self, api_host_url, access_key):
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        self.api = api_host_url + '/pipeline/restapi'
-        self.__headers__ = {'Content-Type': 'application/json',
-                            'Authorization': 'Bearer {}'.format(access_key)}
-
-    def get_url_for_method(self, method):
-        return '{}/{}'.format(self.api.strip('/'), method)
-
-    def get_headers(self):
-        return self.__headers__
-
-    def call(self, method, data=None, params=None, http_method=None, error_message=None):
-        url = '{}/{}'.format(self.api.strip('/'), method)
-        if not http_method:
-            if data:
-                response = requests.post(url, data, headers=self.__headers__, verify=False)
-            else:
-                response = requests.get(url, headers=self.__headers__, verify=False)
-        else:
-            if http_method.lower() == 'get':
-                response = requests.get(url, headers=self.__headers__, params=params, verify=False)
-            elif http_method.lower() == 'put':
-                response = requests.put(url, data, headers=self.__headers__, params=params, verify=False)
-            elif http_method.lower() == 'post':
-                response = requests.post(url, data, headers=self.__headers__, params=params, verify=False)
-            elif http_method.lower() == 'delete':
-                if data:
-                    response = requests.delete(url, data=data, headers=self.__headers__, verify=False)
-                else:
-                    response = requests.delete(url, headers=self.__headers__, verify=False)
-            else:
-                if data:
-                    response = requests.post(url, data, headers=self.__headers__, verify=False)
-                else:
-                    response = requests.get(url, headers=self.__headers__, verify=False)
-        response_data = json.loads(response.text)
-        message_text = error_message if error_message else 'Failed to fetch data from server'
-        if 'status' not in response_data:
-            raise RuntimeError('{}. Server responded with status: {}.'
-                               .format(message_text, str(response_data.status_code)))
-        if response_data['status'] != 'OK':
-            raise RuntimeError('{}. Server responded with message: {}'.format(message_text, response_data['message']))
-        else:
-            return response_data
-
-    def update_group_blocking_status(self, group_name, status=True):
-        data = self.call(API_SET_GROUP_BLOCK_STATUS.format(group_name=group_name),
-                         params={'blockStatus': str(status).lower()}, http_method='POST')
-        return data['payload']
-
-    def load_all_roles(self):
-        data = self.call(API_GET_ALL_ROLES, http_method='GET')
-        roles = data['payload']
-        if not roles:
-            roles = []
-        return roles
-
-    def create_role(self, role_name, is_user_default):
-        data = self.call(API_CREATE_ROLE, params={'roleName': role_name, 'userDefault': is_user_default},
-                         http_method='POST')
-        return data['payload']
-
-    def load_all_users(self):
-        data = self.call(API_GET_ALL_USERS, http_method='GET')
-        users = data['payload']
-        if not users:
-            users = []
-        return users
-
-    def create_user(self, name, roles_ids):
-        data = self.call(API_CREATE_USER, data=json.dumps({'userName': name, 'roleIds': roles_ids}), http_method='POST')
-        return data['payload']
-
-    def get_available_groups_blocking(self):
-        data = self.call(API_GET_ALL_BLOCK_STATUSES, http_method='GET')
-        blocking_statuses = data['payload']
-        if not blocking_statuses:
-            blocking_statuses = []
-        return {status['groupName']: status['blocked'] for status in blocking_statuses}
-
-    def set_user_blocking(self, user_id, status):
-        self.call(API_BLOCK_USER.format(user_id=user_id), params={'blockStatus': status}, http_method='POST')
-
-    def assign_users_to_roles(self, role_id, user_ids):
-        self.call(API_ASSIGN_ROLE_TO_USER.format(role_id=role_id), params={'userIds': user_ids}, http_method='POST')
-
-    def load_entities_metadata(self, entities_ids, entity_class):
-        data = []
-        for entity_id in entities_ids:
-            data.append({'entityId': entity_id, 'entityClass': entity_class})
-        response = self.call(API_METADATA_LOAD, data=json.dumps(data), http_method='POST')
-        if response['payload']:
-            return response['payload']
-        else:
-            return []
-
-    def upload_metadata(self, metadata_entity):
-        self.call(API_METADATA_UPDATE, data=json.dumps(metadata_entity), http_method='POST')
 
 
 def sync_roles(api_source, api_target):
@@ -145,22 +28,23 @@ def sync_roles(api_source, api_target):
     for src_role in roles_a:
         role_name = src_role['name']
         if role_name not in roles_dict:
-            print('Role [{}] doesn\'t exist in the target deployment, try creating it'.format(role_name))
+            print_info_message('Role [{}] doesn\'t exist in the target deployment, try creating it'.format(role_name))
             new_role = api_target.create_role(role_name, src_role['userDefault'])
             if not new_role:
-                print('  Error creating role [{}] in the target deployment, it will be skipped!'.format(role_name))
+                print_warn_message('Error creating role [{}] in the target deployment, it will be skipped!'
+                                   .format(role_name))
                 continue
             else:
-                print('  Role [{}] created in the target deployment successfully!'.format(role_name))
+                print_info_message('Role [{}] created in the target deployment successfully!'.format(role_name))
                 new_role['blocked'] = False
                 roles_dict[new_role['name']] = new_role
         else:
-            print('Role [{}] exists in the target deployment already'.format(role_name))
+            print_info_message('Role [{}] exists in the target deployment already'.format(role_name))
         required_blocking_status = src_role['blocked']
         current_target_blocking_status = roles_dict[role_name]['blocked']
         if required_blocking_status != current_target_blocking_status:
-            print('Update blocking status for role [{}] in the target deployment to `{}`'
-                  .format(role_name, required_blocking_status))
+            print_info_message('Update blocking status for role [{}] in the target deployment to `{}`'
+                               .format(role_name, required_blocking_status))
             api_target.update_group_blocking_status(role_name, required_blocking_status)
     name_to_id_mapping = {role_name: role_obj['id'] for role_name, role_obj in roles_dict.items()}
     roles_ids_mapping = {role['id']: roles_dict[role['name']]['id'] for role in roles_a}
@@ -174,15 +58,15 @@ def sync_groups_statuses(api_source, api_target):
         if group_name not in groups_blocking_b:
             if blocking_status:
                 if ' ' in group_name:
-                    print('Group name [{}] is invalid, skipping'.format(group_name))
+                    print_warn_message('Group name [{}] is invalid, skipping'.format(group_name))
                     continue
-                print('Missed blocking status for a group [{}]'.format(group_name))
+                print_info_message('Missed blocking status for a group [{}]'.format(group_name))
                 api_target.update_group_blocking_status(group_name, blocking_status)
         else:
             current_target_blocking_status = groups_blocking_b[group_name]
             if blocking_status != current_target_blocking_status:
-                print('Update blocking status for group [{}] in the target deployment to `{}`'
-                      .format(group_name, blocking_status))
+                print_info_message('Update blocking status for group [{}] in the target deployment to `{}`'
+                                   .format(group_name, blocking_status))
             api_target.update_group_blocking_status(group_name, blocking_status)
 
 
@@ -202,7 +86,7 @@ def sync_users(api_source, api_target, roles_mapping):
     for user in users_a:
         username = user['userName']
         if username in target_users_dict:
-            print('User [{}] exists in the target deployment already'.format(username))
+            print_info_message('User [{}] exists in the target deployment already'.format(username))
             existing_user = target_users_dict[username]
             source_user_roles = [role['name'] for role in user['roles']]
             existing_user_roles = [role['name'] for role in existing_user['roles']]
@@ -213,17 +97,17 @@ def sync_users(api_source, api_target, roles_mapping):
                     else:
                         roles_to_assign[role].append(existing_user['id'])
         else:
-            print('User [{}] doesn\'t exist in the target deployment, try creating it'.format(username))
+            print_info_message('User [{}] doesn\'t exist in the target deployment, try creating it'.format(username))
             existing_user = create_new_user_in_target(api_target, roles_mapping, user)
             existing_user['blocked'] = False
-            print('  User [{}] created in the target deployment successfully!'.format(username))
+            print_info_message('User [{}] created in the target deployment successfully!'.format(username))
         user_ids_mapping[user['id']] = existing_user['id']
         if user['blocked'] != existing_user['blocked']:
-            print('Update blocking status for user [{}] in the target deployment to `{}`'
-                  .format(username, user['blocked']))
+            print_info_message('Update blocking status for user [{}] in the target deployment to `{}`'
+                               .format(username, user['blocked']))
             api_target.set_user_blocking(existing_user['id'], user['blocked'])
     for role_name, users_ids in roles_to_assign.items():
-        print('Syncing {} users for [{}] role'.format(len(users_ids), role_name))
+        print_info_message('Syncing {} users for [{}] role'.format(len(users_ids), role_name))
         api_target.assign_users_to_roles(roles_mapping[role_name], users_ids)
     return user_ids_mapping
 
@@ -240,27 +124,27 @@ def sync_metadata_for_entity_class(api_source, api_target, ids_mapping, entity_c
                 api_target.upload_metadata(metadata_entity)
 
 
-def sync_users_routine(api_host_url_a, api_token_a, api_host_url_b, api_token_b):
-    api_source = API(api_host_url_a, api_token_a)
-    api_target = API(api_host_url_b, api_token_b)
-    print('\n===Start roles sync===')
+def sync_users_routine(api_url_a, api_token_a, api_url_b, api_token_b):
+    api_source = UserSyncAPI(api_url_a, api_token_a)
+    api_target = UserSyncAPI(api_url_b, api_token_b)
+    print_info_message('===Start roles sync===')
     roles_mapping, roles_ids_mapping = sync_roles(api_source, api_target)
-    print('===Roles sync is finished===')
+    print_info_message('===Roles sync is finished===')
 
-    print('\n===Start groups\' blocking statuses sync===')
+    print_info_message('===Start groups\' blocking statuses sync===')
     sync_groups_statuses(api_source, api_target)
-    print('===Groups\' blocking statuses sync is finished===')
+    print_info_message('===Groups\' blocking statuses sync is finished===')
 
-    print('\n===Start users sync===')
+    print_info_message('===Start users sync===')
     user_ids_mapping = sync_users(api_source, api_target, roles_mapping)
-    print('===Users sync is finished===')
+    print_info_message('===Users sync is finished===')
 
-    print('\n===Start metadata sync===')
-    print('  Syncing users\' metadata')
+    print_info_message('===Start metadata sync===')
+    print_info_message('Syncing users\' metadata')
     sync_metadata_for_entity_class(api_source, api_target, ids_mapping=user_ids_mapping, entity_class='PIPELINE_USER')
-    print('  Syncing roles\' metadata')
+    print_info_message('Syncing roles\' metadata')
     sync_metadata_for_entity_class(api_source, api_target, ids_mapping=roles_ids_mapping, entity_class='ROLE')
-    print('===Metadata sync is finished===')
+    print_info_message('===Metadata sync is finished===')
 
 
 if __name__ == '__main__':
