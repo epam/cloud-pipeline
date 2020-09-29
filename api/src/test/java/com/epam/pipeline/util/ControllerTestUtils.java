@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public final class ControllerTestUtils {
 
@@ -43,11 +44,10 @@ public final class ControllerTestUtils {
                                           final ResponseResult<T> expectedResult,
                                           final TypeReference<Result<T>> typeReference) throws Exception {
         final String actual = mvcResult.getResponse().getContentAsString();
-        StringUtils.isNotBlank(actual);
+        assertTrue(StringUtils.isNotBlank(actual));
         assertThat(actual).isEqualToIgnoringWhitespace(objectMapper.writeValueAsString(expectedResult));
 
         final Result<T> actualResult = JsonMapper.parseData(actual, typeReference);
         assertEquals(expectedResult.getPayload(), actualResult.getPayload());
-        System.out.println(actualResult.getPayload());
     }
 }
