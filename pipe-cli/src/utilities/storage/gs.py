@@ -242,17 +242,49 @@ class _ProgressOutputStream(_OutputStreamMixin):
                 self._progress_callback(self._bytes_transferred)
 
 
-def _do_nothing(*args, **kwargs):
-    pass
+class _ResumableIterReader:
 
-
-class _IterReader:
-
-    def __init__(self, iter):
-        self._iter = iter
+    def __init__(self, get_iter, start, end, size, attempts):
+        self._get_iter = get_iter
+        self._start = start
+        self._end = end
+        self._size = size
+        self._total_attempts = attempts
+        self._attempts = self._total_attempts
+        self._bytes_transferred = 0
+        self._iter = None
+        self._need_resume = True
+        self._null = b''
 
     def read(self, *args, **kwargs):
-        return self._iter.next()
+        while self._bytes_transferred < self._size and self._attempts:
+            try:
+                if self._need_resume:
+                    self._iter = self._get_iter(self._start + self._bytes_transferred, self._end)
+                    self._need_resume = False
+                try:
+                    chunk = self._iter.next()
+                    self._bytes_transferred += len(chunk)
+                    return chunk
+                except StopIteration:
+                    return self._null
+            except RequestException as e:
+                self._attempts -= 1
+                self._need_resume = True
+                if not self._attempts:
+                    raise RuntimeError('Resumable download has failed after %s sequential resumes. '
+                                       'You can alter the number of allowed resumes using %s environment variable. '
+                                       'Original error: %s.'
+                                       % (self._total_attempts, CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS, str(e)))
+                # todo: Remove before merging
+                else:
+                    print('Resumable download from %s to %s failed on %s because of %s. It will be resumed.'
+                          % (self._start, self._end, self._bytes_transferred, str(e)))
+        return self._null
+
+
+def _do_nothing(*args, **kwargs):
+    pass
 
 
 class _StreamingDownloadMixin(Blob):
@@ -266,15 +298,17 @@ class _StreamingDownloadMixin(Blob):
         headers["accept-encoding"] = "gzip"
 
         transport = self._get_transport(None)
-        try:
+
+        def get_iter(start, end):
+            # We should set not null stream parameter to be able to use iter_content later.
+            # It's ok to set any not null value since we also override _write_to_stream method.
             download = Download(download_url, stream=42, headers=headers, start=start, end=end)
             download._write_to_stream = _do_nothing
             response = download.consume(transport)
-            body_iter = response.iter_content(chunk_size=resumable_media.requests.download._SINGLE_GET_CHUNK_SIZE,
-                                              decode_unicode=False)
-            return _IterReader(body_iter)
-        except resumable_media.InvalidResponse as exc:
-            _raise_from_invalid_response(exc)
+            return response.iter_content(chunk_size=resumable_media.requests.download._SINGLE_GET_CHUNK_SIZE,
+                                         decode_unicode=False)
+
+        return _ResumableIterReader(get_iter, start, end, self._size, self._attempts)
 
 
 class _ResumableDownloadProgressMixin(Blob):
