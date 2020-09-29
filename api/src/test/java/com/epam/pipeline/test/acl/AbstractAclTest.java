@@ -17,6 +17,7 @@
 package com.epam.pipeline.test.acl;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.security.acl.AclPermissionFactory;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import lombok.AllArgsConstructor;
 import org.apache.commons.collections.CollectionUtils;
@@ -55,13 +56,12 @@ public abstract class AbstractAclTest {
     protected PermissionGrantingStrategy grantingStrategy;
 
     @Autowired
-    protected PermissionFactory permissionFactory;
-
-    @Autowired
     protected JdbcMutableAclServiceImpl aclService;
 
     @Autowired
     protected AclAuthorizationStrategy aclAuthorizationStrategy;
+
+    protected PermissionFactory permissionFactory = new AclPermissionFactory();
 
     protected void initAclEntity(AbstractSecuredEntity entity) {
         initAclEntity(entity, Collections.emptyList());
