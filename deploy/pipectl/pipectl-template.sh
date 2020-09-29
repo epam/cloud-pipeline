@@ -43,13 +43,21 @@ function extract_payload()
 }
 
 extract_payload "$tmp_location"
-install_home=$tmp_location/install/app
-if [ ! -d $install_home ]; then
-    echo "ERROR: $install_home not found, corrupted installer"
-fi
 prev_location=$(pwd)
-cd $install_home
-bash install.sh "$@"
+operation=$(echo "$@" | awk '{print $1;}')
+if [ "$operation" = "sync" ]; then
+  cmd_home=$tmp_location/sync/app
+  cmd_script="sync.sh"
+else
+  cmd_home=$tmp_location/install/app
+  cmd_script="install.sh"
+fi
+if [ ! -d $cmd_home ]; then
+  echo "ERROR: $cmd_home not found, corrupted installer"
+  exit 1
+fi
+cd $cmd_home
+eval "bash $cmd_script \"$@\""
 rm -rf $tmp_location
 cd $prev_location
 
