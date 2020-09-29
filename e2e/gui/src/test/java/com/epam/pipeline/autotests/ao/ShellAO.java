@@ -33,7 +33,6 @@ import static com.codeborne.selenide.Selenide.switchTo;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertTrue;
 
 public class ShellAO implements AccessObject<ShellAO> {
 
