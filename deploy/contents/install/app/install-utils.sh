@@ -624,7 +624,7 @@ function parse_options {
     fi
 
     if [ "$cp_bad_command" ]; then
-        echo $bad_command_msg
+        echo $cp_bad_command_msg
         return 1
     fi
 

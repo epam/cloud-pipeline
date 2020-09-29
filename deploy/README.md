@@ -26,6 +26,7 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
 
 
 # Run pipectl
+## install
 ```bash
 ~/.pipe/pipectl install \
                 # Docker distribution credentials
@@ -133,7 +134,7 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_KUBE_SERVICES_TYPE= \                       # Allows to select a preferred services mode type: "node-port" or "external-ip" (default: "node-port")
 ```
 
-# Examples
+## Examples
 
 ### AWS - install all services
 ```
@@ -185,4 +186,23 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
             -env CP_KUBE_MASTER_DOCKER_PATH="/docker/drive/" \
             -env CP_KUBE_MASTER_ETCD_HOST_PATH="/etcd/drive/" \
             -m
+```
+
+## sync
+This command allows to sync configuration between 2 Cloud Pipeline deployments.
+
+Environment variables for controlling execution flow:
+ ```bash
+ export CP_SYNC_USERS_METADATA_SKIP_KEYS= # describes keys, that shall be skipped during metadata sync in users sync routine (Optional, if not specified all metadata will be transferred without any filtering)
+```
+
+```bash
+~/.pipe/pipectl   sync \
+# Pipectl sync options
+                --users \                       # enables users/groups synchronization
+                --source-url {url_a} \          # URL of `source` environment's API host
+                --source-token {token_a} \      # JWT token to access `source` environment
+                --target-url {url_b} \          # URL of `destination` environment's API host
+                --target-token {token_b}        # JWT token to access `destination` environment
+            
 ```
