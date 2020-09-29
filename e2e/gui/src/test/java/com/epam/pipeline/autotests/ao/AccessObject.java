@@ -57,7 +57,6 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toMap;
-import static org.testng.Assert.assertEquals;
 
 @SuppressWarnings("unchecked")
 public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
