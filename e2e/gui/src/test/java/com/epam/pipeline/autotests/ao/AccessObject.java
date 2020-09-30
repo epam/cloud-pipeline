@@ -499,6 +499,17 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         return (ELEMENT_TYPE) this;
     }
 
+    default ELEMENT_TYPE checkDropDownCount(final Primitive combobox, final int count) {
+        get(combobox).shouldBe(visible).click();
+        SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).shouldHaveSize(count);
+        return (ELEMENT_TYPE) this;
+    }
+
+    default int dropDownCount(final Primitive combobox) {
+        get(combobox).shouldBe(visible).click();
+        return SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).size();
+    }
+
     default ELEMENT_TYPE exitFromConfigurationWithoutSaved() {
         new ConfirmationPopupAO<>(this)
                 .ensureTitleIs("You have unsaved changes. Continue?")

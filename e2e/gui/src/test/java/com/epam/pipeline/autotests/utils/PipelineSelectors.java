@@ -85,6 +85,15 @@ public interface PipelineSelectors {
         ));
     }
 
+    static By folderWithName(final String name) {
+        final String metadataClass = "pipelines-library-tree-node-folder";
+        final String titleClass = "browser__tree-item-title";
+        return byXpath(String.format(
+                ".//*[contains(@class, '%s') and .//*[contains(@class, '%s') and text() = '%s']]",
+                metadataClass, titleClass, name
+        ));
+    }
+
     /**
      * Selects a pipeline in a tree by name.
      *

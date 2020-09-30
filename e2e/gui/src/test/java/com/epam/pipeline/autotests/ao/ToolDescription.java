@@ -19,6 +19,7 @@ import com.codeborne.selenide.SelenideElement;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.appears;
@@ -138,6 +139,15 @@ public class ToolDescription extends ToolTab<ToolDescription> {
             if (get(APPLY).isEnabled()) {
                 clickApply();
             }
+            return this;
+        }
+
+        public InstanceManagementSectionAO addAllowedToolInstanceTypesMask(String mask) {
+            By optionField = byXpath("//div/b[text()='Allowed tool instance types mask']/following::div/input");
+            if (StringUtils.isBlank(mask)) {
+                clearByKey(optionField);
+            }
+            setValue(optionField, mask);
             return this;
         }
 
