@@ -28,12 +28,15 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
+
+    private static final String LIST_PARAMETER = "list";
 
     private String insertAttributeValueQuery;
     private String loadAllAttributesValuesQuery;
@@ -55,6 +58,15 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
             .stream()
             .map(e -> new CategoricalAttribute(e.getKey(), e.getValue()))
             .collect(Collectors.toList());
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean updateCategoricalAttributes(final List<CategoricalAttribute> dict) {
+        final List<String> dictionaries = dict.stream()
+            .map(CategoricalAttribute::getKey)
+            .collect(Collectors.toList());
+        this.deleteAttributeValues(dictionaries);
+        return this.insertAttributesValues(dict);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -87,8 +99,14 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public boolean deleteAttributeValues(final String key) {
-        return getNamedParameterJdbcTemplate()
-                   .update(deleteAttributeValuesQuery, AttributeValueParameters.getParameters(key)) > 0;
+        return deleteAttributeValues(Collections.singletonList(key));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean deleteAttributeValues(final List<String> keys) {
+        return !CollectionUtils.isEmpty(keys)
+               && getNamedParameterJdbcTemplate()
+                      .update(deleteAttributeValuesQuery, new MapSqlParameterSource(LIST_PARAMETER, keys)) > 0;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

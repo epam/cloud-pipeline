@@ -47,14 +47,14 @@ public class CategoricalAttributeController extends AbstractRestController {
 
     @PostMapping
     @ApiOperation(
-        value = "Add categorical attributes values.",
-        notes = "Add categorical attributes values",
+        value = "Update categorical attributes values.",
+        notes = "Update categorical attributes values",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
-    public Result<Boolean> insertCategoricalAttributes(@RequestBody final List<CategoricalAttribute> dict) {
-        return Result.success(categoricalAttributeApiService.insertAttributesValues(dict));
+    public Result<Boolean> updateCategoricalAttributes(@RequestBody final List<CategoricalAttribute> dict) {
+        return Result.success(categoricalAttributeApiService.updateCategoricalAttributes(dict));
     }
 
     @GetMapping

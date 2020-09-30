@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,10 @@ public interface PipelineCLI {
         return uploadData(source, destination, Collections.emptyList());
     }
 
+    default String uploadData(String source, String destination, List<String> include) {
+        return uploadData(source, destination, include, null);
+    }
+
     /**
      * Upload local file {@code source} to s3 bucket by path {@code destination}.
      *
@@ -38,7 +42,7 @@ public interface PipelineCLI {
      * @param destination Destination S3 file path.
      * @return Url of the file in bucket.
      */
-    String uploadData(String source, String destination, List<String> include);
+    String uploadData(String source, String destination, List<String> include, String username);
 
     default void downloadData(String source, Path destination) {
         downloadData(source, destination.toString());
@@ -48,13 +52,17 @@ public interface PipelineCLI {
         downloadData(source, destination, Collections.emptyList());
     }
 
+    default void downloadData(String source, String destination, List<String> include) {
+        downloadData(source, destination, include, null);
+    }
+
     /**
      * Download file from {@code destination} to local file {@code source}.
      *
      * @param source S3 file path.
      * @param destination Path to a file to be downloaded.
      */
-    void downloadData(String source, String destination, List<String> include);
+    void downloadData(String source, String destination, List<String> include, String username);
 
     /**
      * Retrieves a remote file description if one exists.

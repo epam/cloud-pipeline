@@ -251,6 +251,11 @@ if [ "$CP_PREF_API_STATIC_DIRECTORY_EXT" ] && ! is_dir_empty "$CP_PREF_API_STATI
 fi
 
 # Configure logging and launch
+API_LOG_HOME="/var/log/cp-api/${CP_API_SRV_INSTANCE_NAME:-$CP_API_CURRENT_NODE_NAME}"
+mkdir -p $API_LOG_HOME
+rm -rf $CP_API_HOME/logs
+ln -s $API_LOG_HOME $CP_API_HOME/logs
+
 API_RUN_TIME_LOG=$CP_API_HOME/logs/runtime.log
 mkdir -p $(dirname $API_RUN_TIME_LOG)
 touch $API_RUN_TIME_LOG

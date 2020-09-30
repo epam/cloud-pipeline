@@ -31,8 +31,8 @@ public class CategoricalAttributeApiService {
     private final CategoricalAttributeManager categoricalAttributesManager;
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public boolean insertAttributesValues(final List<CategoricalAttribute> dict) {
-        return categoricalAttributesManager.insertAttributesValues(dict);
+    public boolean updateCategoricalAttributes(final List<CategoricalAttribute> dict) {
+        return categoricalAttributesManager.updateCategoricalAttributes(dict);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)

@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.log;
+package com.epam.pipeline.acl.log;
 
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
+import com.epam.pipeline.manager.log.LogManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
