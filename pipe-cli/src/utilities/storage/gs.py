@@ -276,10 +276,6 @@ class _ResumableIterReader:
                                        'You can alter the number of allowed resumes using %s environment variable. '
                                        'Original error: %s.'
                                        % (self._total_attempts, CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS, str(e)))
-                # todo: Remove before merging
-                else:
-                    print('Resumable download from %s to %s failed on %s because of %s. It will be resumed.'
-                          % (self._start, self._end, self._bytes_transferred, str(e)))
         return self._null
 
 
