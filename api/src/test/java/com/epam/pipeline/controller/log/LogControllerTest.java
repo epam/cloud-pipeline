@@ -16,12 +16,12 @@
 
 package com.epam.pipeline.controller.log;
 
+import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.epam.pipeline.controller.ResponseResult;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
-import com.epam.pipeline.manager.log.LogApiService;
 import com.epam.pipeline.util.ControllerTestUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Test;
