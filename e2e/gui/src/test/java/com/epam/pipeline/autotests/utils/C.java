@@ -84,6 +84,7 @@ public class C {
         DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES = conf.getProperty("e2e.ui.default.cluster.allowed.instance.types");
         CLUSTER_ALLOWED_MASKS = conf.getProperty("e2e.ui.cluster.allowed.masks");
         DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES = conf.getProperty("e2e.ui.default.cluster.allowed.price.types");
+        TEST_DOCKER_IMAGE = conf.getProperty("e2e.ui.test.docker.image");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -128,6 +129,7 @@ public class C {
     public static final String LUIGI_IMAGE;
     public static final String STORAGE_PREFIX;
     public static final String NFS_PREFIX;
+    public static final String TEST_DOCKER_IMAGE;
 
     public static final String DEFAULT_INSTANCE;
     public static final String DEFAULT_INSTANCE_PRICE_TYPE;

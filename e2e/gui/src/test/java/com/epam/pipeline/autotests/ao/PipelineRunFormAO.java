@@ -66,7 +66,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(DOCKER_IMAGE, context().find(byText("Docker image")).closest(".ant-row").find(tagName("input"))),
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
-            entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button")))
+            entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
+            entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]")).closest(".ant-row").find(by("role", "combobox")))
     );
     private final String pipelineName;
     private int parameterIndex = 0;
@@ -442,7 +443,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         public ConfigureClusterPopupAO clusterEnableCheckboxSelect(String checkBox){
             if (checkBox.equals("Enable GridEngine")
                     || checkBox.equals("Enable Apache Spark")
-                    || checkBox.equals("Enable Slurm")) {
+                    || checkBox.equals("Enable Slurm")
+                    || checkBox.equals("Enable Kubernetes")) {
                 context()
                         .find(byXpath(
                                 format(".//span[.='%s']/preceding-sibling::span[@class='ant-checkbox']", checkBox)))
