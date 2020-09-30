@@ -20,11 +20,16 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.security.UserContext;
+import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -38,10 +43,14 @@ public class RunScheduleJob implements Job {
     @Autowired
     private MessageHelper messageHelper;
 
+    @Autowired
+    private UserManager userManager;
+
     @Override
     public void execute(final JobExecutionContext context) {
         log.debug("Job " + context.getJobDetail().getKey().getName() + " fired " + context.getFireTime());
 
+        setAuth(context.getMergedJobDataMap().getString("User"));
         final Long runId = context.getMergedJobDataMap().getLongValue("SchedulableId");
         final String action = context.getMergedJobDataMap().getString("Action");
         Assert.notNull(runId,
@@ -56,5 +65,14 @@ public class RunScheduleJob implements Job {
         }
 
         log.debug("Next job scheduled " + context.getNextFireTime());
+    }
+
+    private void setAuth(final String userName) {
+        Assert.notNull(userName, "User is not provided!");
+        PipelineUser pipelineUser = userManager.loadUserByName(userName);
+        UserContext userContext = new UserContext(pipelineUser);
+        SecurityContextHolder.getContext().setAuthentication(
+                new JwtAuthenticationToken(userContext, userContext.getAuthorities())
+        );
     }
 }
