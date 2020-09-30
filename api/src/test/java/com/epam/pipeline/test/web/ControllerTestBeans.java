@@ -35,6 +35,7 @@ import com.epam.pipeline.manager.firecloud.FirecloudApiService;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
 import com.epam.pipeline.manager.issue.IssueApiService;
+import com.epam.pipeline.manager.metadata.CategoricalAttributeApiService;
 import com.epam.pipeline.manager.metadata.MetadataApiService;
 import com.epam.pipeline.manager.metadata.MetadataEntityApiService;
 import com.epam.pipeline.manager.notification.NotificationApiService;
@@ -199,4 +200,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected JwtTokenGenerator jwtTokenGenerator;
+
+    @MockBean
+    protected CategoricalAttributeApiService categoricalAttributeApiService;
 }
