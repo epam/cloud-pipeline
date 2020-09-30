@@ -56,6 +56,8 @@ public class LogAO implements AccessObject<LogAO> {
             entry(COMMIT, $$(tagName("a")).findBy(exactText("COMMIT"))),
             entry(PAUSE, $$(tagName("a")).findBy(exactText("PAUSE"))),
             entry(RESUME, $$(tagName("a")).findBy(exactText("RESUME"))),
+            entry(STOP, $$(tagName("a")).findBy(exactText("STOP"))),
+            entry(RERUN, $$(tagName("a")).findBy(exactText("RERUN"))),
             entry(ENDPOINT, $(withText("Endpoint")).closest("tr").find("a")),
             entry(INSTANCE, context().find(byXpath("//*[.//*[text()[contains(.,'Instance')]] and contains(@class, 'ant-collapse')]"))),
             entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]"))),
@@ -155,6 +157,26 @@ public class LogAO implements AccessObject<LogAO> {
                 .sleep(1, SECONDS)
                 .click(button(PAUSE.name()));
         return this;
+    }
+
+    public LogAO clickOnStopButton() {
+        get(STOP).shouldBe(visible).click();
+        return this;
+    }
+
+    public LogAO stop(final String pipelineName) {
+        clickOnStopButton();
+        new ConfirmationPopupAO<>(this)
+                .ensureTitleIs(
+                        String.format("Stop %s?", pipelineName))
+                .sleep(1, SECONDS)
+                .click(button(STOP.name()));
+        return this;
+    }
+
+    public PipelineRunFormAO clickOnRerunButton() {
+        get(RERUN).shouldBe(visible).click();
+        return new PipelineRunFormAO();
     }
 
     public LogAO assertPausingFinishedSuccessfully() {

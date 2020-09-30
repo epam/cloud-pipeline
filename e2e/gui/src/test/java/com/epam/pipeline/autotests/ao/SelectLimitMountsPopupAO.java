@@ -72,6 +72,10 @@ public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, 
         return click(CLEAR_SELECTION);
     }
 
+    public SelectLimitMountsPopupAO selectAllNonSensitive() {
+        return click(SELECT_ALL_NON_SENSITIVE);
+    }
+
     @Override
     public SelenideElement context() {
         return $$(byClassName("ant-modal-content")).find(visible);
