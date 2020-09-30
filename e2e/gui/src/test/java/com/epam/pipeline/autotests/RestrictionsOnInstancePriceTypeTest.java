@@ -482,7 +482,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @CloudProviderOnly(values = {Cloud.AWS,Cloud.GCP})
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2648"})
     public void validationOfPriceTypesRestrictionsOverUserManagement() {
@@ -503,7 +503,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @CloudProviderOnly(values = {Cloud.AWS,Cloud.GCP})
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2649"})
     public void validationOfPriceTypesRestrictionsForUserGroup() {
@@ -571,7 +571,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @CloudProviderOnly(values = {Cloud.AWS,Cloud.GCP})
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2651"})
     public void validationOfPriceTypesRestrictionsSystemSettings() {
@@ -588,7 +588,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         }
     }
 
-    @CloudProviderOnly(values = {Cloud.AWS,Cloud.GCP})
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
     @TestCase({"EPMCMBIBPC-2652"})
     public void validationOfPriceTypesRestrictionsHierarchy() {
@@ -693,7 +693,8 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .exitFromConfigurationWithoutSaved();
     }
 
-    private void validationOfPriceTypesRestrictions(String pipelinePriceTypes, String configurationPriceTypes, String toolPriceTypes) {
+    private void validationOfPriceTypesRestrictions(String pipelinePriceTypes, String configurationPriceTypes,
+                                                    String toolPriceTypes) {
         library()
                 .cd(folder)
                 .clickOnDraftVersion(pipeline)
