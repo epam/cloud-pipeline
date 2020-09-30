@@ -19,17 +19,16 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Alert} from 'antd';
 import dataStorages from '../../../models/dataStorage/DataStorages';
-
-const LIMIT_MOUNTS_PARAMETER = 'CP_CAP_LIMIT_MOUNTS';
+import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
 
 function getSensitiveBuckets (parameters, dataStoragesStore) {
-  if (!parameters || !parameters.hasOwnProperty(LIMIT_MOUNTS_PARAMETER) || !dataStoragesStore) {
+  if (!parameters || !parameters.hasOwnProperty(CP_CAP_LIMIT_MOUNTS) || !dataStoragesStore) {
     return [];
   }
   if (!dataStoragesStore.loaded) {
     return [];
   }
-  const {value} = parameters[LIMIT_MOUNTS_PARAMETER];
+  const {value} = parameters[CP_CAP_LIMIT_MOUNTS];
   if (!value) {
     return [];
   }

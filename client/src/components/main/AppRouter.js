@@ -47,6 +47,7 @@ import Preferences from '../settings/Preferences';
 import AWSRegionsForm from '../settings/AWSRegionsForm';
 import SystemLogs from '../settings/system-logs';
 import SystemEvents from '../settings/SystemEvents';
+import SystemDictionaries from '../settings/SystemDictionaries';
 import AllRuns from '../runs/AllRuns';
 import RunsFilter from '../runs/RunsFilter';
 import RunsSearch from '../runs/RunsSearch';
@@ -79,6 +80,7 @@ export default class AppRouter extends React.Component {
           <Route path="preferences" component={Preferences} />
           <Route path="regions" component={AWSRegionsForm} />
           <Route path="logs" component={SystemLogs} />
+          <Route path="dictionaries(/:currentDictionary)" component={SystemDictionaries} />
         </Route>
         <Route path="/cluster" component={Cluster} />
         <Redirect from="/cluster/:nodeName" to="/cluster/:nodeName/info" />

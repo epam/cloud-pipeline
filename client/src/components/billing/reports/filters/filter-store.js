@@ -101,7 +101,7 @@ class Filter {
     }
   };
 
-  getDescription = ({users}) => {
+  getDescription = ({users, cloudRegionsInfo}) => {
     const title = ReportsRouting.getTitle(this.report) || 'Report';
     const {start, endStrict} = getPeriod(this.period, this.range);
     let dates = this.period;
@@ -109,30 +109,42 @@ class Filter {
       dates = `${start.format('YYYY-MM-DD')} - ${endStrict.format('YYYY-MM-DD')}`;
     }
     let runner;
-    if (!/^general$/i.test(this.report)) {
-      if (
-        this.runner &&
-        this.runner.type === RunnerType.user &&
-        users &&
-        users.loaded
-      ) {
-        const userList = (users.value || [])
-          .filter(({id}) => (this.runner.id || [])
-            .filter((rId) => `${id}` === `${rId}`).length > 0
-          );
-        if (userList.length > 0) {
-          runner = userList.map(u => u.userName).join(' ');
-        } else {
-          runner = `user ${this.runner.id.map(i => `#${i}`).join(' ')}`;
-        }
-      } else if (this.runner) {
-        runner = `${this.runner.type} ${this.runner.id.join(' ')}`;
+    if (
+      this.runner &&
+      this.runner.type === RunnerType.user &&
+      users &&
+      users.loaded
+    ) {
+      const userList = (users.value || [])
+        .filter(({id}) => (this.runner.id || [])
+          .filter((rId) => `${id}` === `${rId}`).length > 0
+        );
+      if (userList.length > 0) {
+        runner = userList.map(u => u.userName).join(' ');
+      } else {
+        runner = `user ${this.runner.id.map(i => `#${i}`).join(' ')}`;
+      }
+    } else if (this.runner) {
+      runner = `${this.runner.type} ${this.runner.id.join(' ')}`;
+    }
+    let regions;
+    if (this.region && this.region.length) {
+      if (cloudRegionsInfo && cloudRegionsInfo.loaded) {
+        const cloudRegions = cloudRegionsInfo.value || [];
+        const names = this.region
+          .map(r => +r)
+          .map(r => cloudRegions.find(cr => cr.id === r) || {name: `${r}`})
+          .map(r => r.name);
+        regions = `regions ${names.join(' ')}`;
+      } else {
+        regions = `regions ${this.region.join(' ')}`;
       }
     }
     return [
       title,
       dates,
-      runner
+      runner,
+      regions,
     ].filter(Boolean).join(' - ');
   };
 

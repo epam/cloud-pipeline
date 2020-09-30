@@ -43,6 +43,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
+import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SET_AS_DEFAULT;
 import static com.epam.pipeline.autotests.ao.Primitive.TIMEOUT;
@@ -79,7 +80,8 @@ public class Profile implements AccessObject<Profile> {
                 entry(PARAMETERS, context().find(byId("launch-pipeline-parameters-panel"))),
                 entry(DELETE, context().find(byId("remove-pipeline-configuration-button"))),
                 entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
-                entry(INSTANCE_TYPE, context().find(comboboxOf(fieldWithLabel("Node type"))))
+                entry(INSTANCE_TYPE, context().find(comboboxOf(fieldWithLabel("Node type")))),
+                entry(PRICE_TYPE, context().find(comboboxOf(fieldWithLabel("Price type"))))
         );
     }
 

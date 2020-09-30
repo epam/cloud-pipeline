@@ -907,6 +907,8 @@ public class PipelineRunManager {
         }
         Tool tool = toolManager.loadByNameOrId(pipelineRun.getDockerImage());
         pipelineRun.setStatus(TaskStatus.RESUMING);
+        // prolong the run here in order to get rid off idle notification right after resume
+        prolongIdleRun(pipelineRun.getId());
         runCRUDService.updateRunStatus(pipelineRun);
         dockerContainerOperationManager.resumeRun(pipelineRun, tool.getEndpoints());
         return pipelineRun;

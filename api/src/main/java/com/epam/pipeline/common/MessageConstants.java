@@ -520,6 +520,9 @@ public final class MessageConstants {
     public static final String ERROR_DISK_SIZE_MISSING = "error.disk.size.missing";
     public static final String ERROR_DISK_SIZE_INVALID = "error.disk.size.invalid";
 
+    //System dictionaries
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_DOESNT_EXIST = "categorical.attribute.not.exist";
+
     //Other
     public static final String ERROR_KEEP_ALIVE_POLICY_NOT_SUPPORTED = "error.keep.alive.policy.not.supported";
 

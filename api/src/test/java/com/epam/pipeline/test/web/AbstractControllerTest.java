@@ -14,30 +14,30 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller;
+package com.epam.pipeline.test.web;
 
 import static org.junit.Assert.assertNotNull;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
 import com.epam.pipeline.config.JsonMapper;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.junit.Before;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+@RunWith(SpringRunner.class)
+@WebTestConfiguration
 public abstract class AbstractControllerTest {
-    protected static final String JPATH_STATUS = "$.status";
-    protected static final String JPATH_PAYLOAD = "$.payload";
-    protected static final String JPATH_MESSAGE = "$.message";
     protected static final String EXPECTED_CONTENT_TYPE = "application/json;charset=UTF-8";
+    protected static final String SERVLET_PATH = "/restapi";
 
     private MockMvc mockMvc;
 
     @Autowired
     private JsonMapper objectMapper;
-
-    private TypeFactory typeFactory;
 
     @Autowired
     protected WebApplicationContext wac;
@@ -48,8 +48,8 @@ public abstract class AbstractControllerTest {
         assertNotNull("WebApplicationContext isn't provided.", wac);
         assertNotNull("ObjectMapper isn't provided.", objectMapper);
 
-        typeFactory = TypeFactory.defaultInstance();
-        mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
+        mockMvc = MockMvcBuilders.webAppContextSetup(wac)
+                .apply(springSecurity()).build();
     }
 
     protected final MockMvc mvc() {
@@ -58,10 +58,6 @@ public abstract class AbstractControllerTest {
 
     protected final JsonMapper getObjectMapper() {
         return objectMapper;
-    }
-
-    protected final TypeFactory getTypeFactory() {
-        return typeFactory;
     }
 
 }

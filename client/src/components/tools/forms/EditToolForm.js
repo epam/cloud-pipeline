@@ -38,22 +38,11 @@ import EditToolFormParameters from './EditToolFormParameters';
 import styles from '../Tools.css';
 import {names} from '../../../models/utils/ContextualPreference';
 import {
-  LIMIT_MOUNTS_PARAMETER,
   LimitMountsInput
 } from '../../pipelines/launch/form/LimitMountsInput';
 import {
   autoScaledClusterEnabled,
   hybridAutoScaledClusterEnabled,
-  CP_CAP_SGE,
-  CP_CAP_SPARK,
-  CP_CAP_SLURM,
-  CP_CAP_KUBE,
-  CP_CAP_DIND_CONTAINER,
-  CP_CAP_SYSTEMD_CONTAINER,
-  CP_CAP_AUTOSCALE,
-  CP_CAP_AUTOSCALE_WORKERS,
-  CP_CAP_AUTOSCALE_HYBRID,
-  CP_CAP_AUTOSCALE_PRICE_TYPE,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState,
@@ -63,7 +52,32 @@ import {
   kubeEnabled,
   getAutoScaledPriceTypeValue
 } from '../../pipelines/launch/form/utilities/launch-cluster';
+import {
+  CP_CAP_LIMIT_MOUNTS,
+  CP_CAP_SGE,
+  CP_CAP_SPARK,
+  CP_CAP_SLURM,
+  CP_CAP_KUBE,
+  CP_CAP_DIND_CONTAINER,
+  CP_CAP_SYSTEMD_CONTAINER,
+  CP_CAP_MODULES,
+  CP_CAP_AUTOSCALE,
+  CP_CAP_AUTOSCALE_WORKERS,
+  CP_CAP_AUTOSCALE_HYBRID,
+  CP_CAP_AUTOSCALE_PRICE_TYPE,
+  CP_CAP_SINGULARITY,
+  CP_CAP_DESKTOP_NM
+} from '../../pipelines/launch/form/utilities/parameters';
 import AWSRegionTag from '../../special/AWSRegionTag';
+import RunCapabilities, {
+  dinDEnabled,
+  noMachineEnabled,
+  singularityEnabled,
+  systemDEnabled,
+  moduleEnabled,
+  getRunCapabilitiesSkippedParameters,
+  RUN_CAPABILITIES
+} from '../../pipelines/launch/form/utilities/run-capabilities';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -139,7 +153,12 @@ export default class EditToolForm extends React.Component {
     sparkEnabled: false,
     slurmEnabled: false,
     kubeEnabled: false,
-    launchCluster: false
+    launchCluster: false,
+    dinD: false,
+    singularity: false,
+    systemD: false,
+    noMachine: false,
+    module: false
   };
 
   @observable defaultLimitMounts;
@@ -196,7 +215,7 @@ export default class EditToolForm extends React.Component {
           params.push(...this.toolFormParameters.getValues(), ...this.toolFormSystemParameters.getValues());
           if (values.limitMounts) {
             params.push({
-              name: LIMIT_MOUNTS_PARAMETER,
+              name: CP_CAP_LIMIT_MOUNTS,
               value: values.limitMounts
             });
           }
@@ -265,6 +284,41 @@ export default class EditToolForm extends React.Component {
             });
             params.push({
               name: CP_CAP_SYSTEMD_CONTAINER,
+              type: 'boolean',
+              value: true
+            });
+          }
+          if (this.state.dinD) {
+            params.push({
+              name: CP_CAP_DIND_CONTAINER,
+              type: 'boolean',
+              value: true
+            });
+          }
+          if (this.state.systemD) {
+            params.push({
+              name: CP_CAP_SYSTEMD_CONTAINER,
+              type: 'boolean',
+              value: true
+            });
+          }
+          if (this.state.singularity) {
+            params.push({
+              name: CP_CAP_SINGULARITY,
+              type: 'boolean',
+              value: true
+            });
+          }
+          if (this.state.noMachine) {
+            params.push({
+              name: CP_CAP_DESKTOP_NM,
+              type: 'boolean',
+              value: true
+            });
+          }
+          if (this.state.module) {
+            params.push({
+              name: CP_CAP_MODULES,
               type: 'boolean',
               value: true
             });
@@ -415,6 +469,11 @@ export default class EditToolForm extends React.Component {
         state.autoScaledPriceType = props.configuration &&
           getAutoScaledPriceTypeValue(props.configuration.parameters);
         state.launchCluster = state.nodesCount > 0 || state.autoScaledCluster;
+        state.dinD = dinDEnabled(props.configuration.parameters);
+        state.singularity = singularityEnabled(props.configuration.parameters);
+        state.systemD = systemDEnabled(props.configuration.parameters);
+        state.noMachine = noMachineEnabled(props.configuration.parameters);
+        state.module = moduleEnabled(props.configuration.parameters);
         this.defaultCommand = props.configuration && props.configuration.cmd_template
           ? props.configuration.cmd_template
           : this.defaultCommand;
@@ -424,8 +483,8 @@ export default class EditToolForm extends React.Component {
               getSystemParameterDisabledState(this, key)) {
               continue;
             }
-            if (key === LIMIT_MOUNTS_PARAMETER) {
-              this.defaultLimitMounts = props.configuration.parameters[LIMIT_MOUNTS_PARAMETER].value;
+            if (key === CP_CAP_LIMIT_MOUNTS) {
+              this.defaultLimitMounts = props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value;
               continue;
             }
             if (this.props.runDefaultParameters.loaded &&
@@ -638,6 +697,19 @@ export default class EditToolForm extends React.Component {
     }
   }
 
+  @computed
+  get selectedRunCapabilities () {
+    const {dinD, singularity, systemD, noMachine, module} = this.state;
+
+    return [
+      dinD ? RUN_CAPABILITIES.dinD : false,
+      singularity ? RUN_CAPABILITIES.singularity : false,
+      systemD ? RUN_CAPABILITIES.systemD : false,
+      noMachine ? RUN_CAPABILITIES.noMachine : false,
+      module ? RUN_CAPABILITIES.module : false
+    ].filter(Boolean);
+  };
+
   modified = () => {
     const arrayIsNullOrEmpty = (array) => {
       return !array || !array.length;
@@ -710,6 +782,19 @@ export default class EditToolForm extends React.Component {
     const autoScaledPriceTypeValue = this.props.configuration &&
       getAutoScaledPriceTypeValue(this.props.configuration.parameters);
     const launchCluster = nodesCount > 0 || autoScaledCluster;
+    const additionalCapabilitiesChanged = () => {
+      const dinD = dinDEnabled(this.props.configuration.parameters);
+      const singularity = singularityEnabled(this.props.configuration.parameters);
+      const systemD = systemDEnabled(this.props.configuration.parameters);
+      const noMachine = noMachineEnabled(this.props.configuration.parameters)
+      const module = moduleEnabled(this.props.configuration.parameters);
+      return dinD !== this.state.dinD ||
+        singularity !== this.state.singularity ||
+        systemD !== this.state.systemD ||
+        noMachine !== this.state.noMachine ||
+        module !== this.state.module;
+    };
+
     return configurationFormFieldChanged('is_spot') ||
       configurationFormFieldChanged('instance_size', 'instanceType') ||
       configurationFormFieldChanged('instance_disk', 'disk') ||
@@ -729,7 +814,7 @@ export default class EditToolForm extends React.Component {
       autoScaledPriceTypeValue !== this.state.autoScaledPriceType ||
       (this.state.launchCluster && nodesCount !== this.state.nodesCount) ||
       (this.state.launchCluster && this.state.autoScaledCluster && maxNodesCount !== this.state.maxNodesCount) ||
-      limitMountsFieldChanged() || cloudRegionFieldChanged();
+      limitMountsFieldChanged() || cloudRegionFieldChanged() || additionalCapabilitiesChanged();
   };
 
   initializeEndpointsControl = (control) => {
@@ -777,6 +862,11 @@ export default class EditToolForm extends React.Component {
       kubeEnabled,
       autoScaledPriceType
     } = configuration;
+    let {dinD, systemD} = this.state;
+    if (kubeEnabled) {
+      dinD = true;
+      systemD = true;
+    }
     this.setState({
       launchCluster,
       nodesCount,
@@ -787,7 +877,9 @@ export default class EditToolForm extends React.Component {
       sparkEnabled,
       slurmEnabled,
       kubeEnabled,
-      autoScaledPriceType
+      autoScaledPriceType,
+      dinD,
+      systemD
     }, () => {
       this.closeConfigureClusterDialog();
       const priceType = this.props.form.getFieldValue('is_spot') || this.getPriceTypeInitialValue();
@@ -958,6 +1050,16 @@ export default class EditToolForm extends React.Component {
         onCancel: cancel
       });
     }
+  };
+
+  onRunCapabilitiesSelect = (capabilities) => {
+    this.setState({
+      dinD: capabilities.includes(RUN_CAPABILITIES.dinD),
+      singularity: capabilities.includes(RUN_CAPABILITIES.singularity),
+      systemD: capabilities.includes(RUN_CAPABILITIES.systemD),
+      noMachine: capabilities.includes(RUN_CAPABILITIES.noMachine),
+      module: capabilities.includes(RUN_CAPABILITIES.module)
+    });
   };
 
   renderExecutionEnvironment = () => {
@@ -1171,6 +1273,16 @@ export default class EditToolForm extends React.Component {
                   </Select>
                 )}
               </Form.Item>
+              <Form.Item
+                {...this.formItemLayout}
+                label="Run capabilities"
+                style={{marginTop: 10, marginBottom: 10}}
+              >
+                <RunCapabilities
+                  values={this.selectedRunCapabilities}
+                  onChange={this.onRunCapabilitiesSelect}
+                />
+              </Form.Item>
               <ConfigureClusterDialog
                 instanceName={this.props.form.getFieldValue('instanceType')}
                 launchCluster={this.state.launchCluster}
@@ -1220,7 +1332,11 @@ export default class EditToolForm extends React.Component {
             getSystemParameterDisabledState={
               (parameterName) => getSystemParameterDisabledState(this, parameterName)
             }
-            skippedSystemParameters={getSkippedSystemParametersList(this) || []}
+            skippedSystemParameters={[
+              ...getSkippedSystemParametersList(this),
+              ...getRunCapabilitiesSkippedParameters()
+            ]}
+            hiddenParameters={getRunCapabilitiesSkippedParameters()}
             value={this.defaultSystemProperties}
             onInitialized={this.onEditToolFormSystemParametersInitialized} />
           {this.renderSeparator('Custom parameters')}

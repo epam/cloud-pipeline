@@ -40,11 +40,13 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.execution.EnvVarsBuilder;
 import com.epam.pipeline.manager.execution.EnvVarsBuilderTest;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.Matchers;
@@ -148,6 +150,9 @@ public class NotificationManagerTest extends AbstractManagerTest {
     @Autowired
     private IssueDao issueDao;
 
+    @Autowired
+    private PreferenceManager preferenceManager;
+
     private PipelineRun longRunnging;
     private PipelineUser admin;
     private PipelineUser testOwner;
@@ -188,7 +193,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         issueCommentTemplate = createTemplate(4L, "issueCommentTemplate");
         issueCommentSettings = createSettings(NEW_ISSUE_COMMENT, issueCommentTemplate.getId(), -1L, -1L);
         createTemplate(IDLE_RUN.getId(), "idle-run-template");
-        createSettings(IDLE_RUN, IDLE_RUN.getId(), -1, -1);
+        createSettings(IDLE_RUN, IDLE_RUN.getId(), 1, 1);
         longPausedTemplate = createTemplate(LONG_PAUSED.getId(), "longPausedTemplate");
         createSettings(LONG_PAUSED, longPausedTemplate.getId(), LONG_PAUSED_SECONDS,
                 LONG_PAUSED_SECONDS);
@@ -403,14 +408,12 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @Test
     public void testNotifyIdleRun() {
-        PipelineRun run1 = new PipelineRun();
+        final PipelineRun run1 = createTestPipelineRun();
         run1.setOwner(testUser1.getUserName());
-        run1.setStartDate(DateUtils.now());
-        run1.setId(1L);
-        PipelineRun run2 = new PipelineRun();
-        run2.setStartDate(DateUtils.now());
+        pipelineRunDao.updateRun(run1);
+        final PipelineRun run2 = createTestPipelineRun();
         run2.setOwner(testUser2.getUserName());
-        run2.setId(2L);
+        pipelineRunDao.updateRun(run2);
 
         notificationManager.notifyIdleRuns(Arrays.asList(
             new ImmutablePair<>(run1, TEST_CPU_RATE1),
@@ -603,15 +606,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @Test
     public void shouldCreateNotificationForLongPausedRuns() {
-        final LocalDateTime now = DateUtils.nowUTC();
         final PipelineRun runningRun = createTestPipelineRun(); // shall be skipped
-        final PipelineRun pausedRun = createTestPipelineRun();
-        pausedRun.setStatus(TaskStatus.PAUSED);
-        pausedRun.setRunStatuses(Collections.singletonList(RunStatus.builder()
-                .runId(pausedRun.getId())
-                .status(TaskStatus.PAUSED)
-                .timestamp(now.minusSeconds(LONG_PAUSED_SECONDS))
-                .build()));
+        final PipelineRun pausedRun = buildPausedRun(DateUtils.nowUTC().minusSeconds(LONG_PAUSED_SECONDS));
 
         notificationManager.notifyLongPausedRuns(Arrays.asList(runningRun, pausedRun));
 
@@ -625,14 +621,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @Test
     public void shouldNotCreateNotificationForLongPausedRunsIfNotTimeout() {
-        final LocalDateTime now = DateUtils.nowUTC();
-        final PipelineRun pausedRun = createTestPipelineRun();
-        pausedRun.setStatus(TaskStatus.PAUSED);
-        pausedRun.setRunStatuses(Collections.singletonList(RunStatus.builder()
-                .runId(pausedRun.getId())
-                .status(TaskStatus.PAUSED)
-                .timestamp(now.plusSeconds(LONG_PAUSED_SECONDS))
-                .build()));
+        final PipelineRun pausedRun = buildPausedRun(DateUtils.nowUTC().plusSeconds(LONG_PAUSED_SECONDS));
 
         notificationManager.notifyLongPausedRuns(Collections.singletonList(pausedRun));
 
@@ -642,15 +631,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @Test
     public void shouldCreateNotificationForStopLongPausedRuns() {
-        final LocalDateTime now = DateUtils.nowUTC();
         final PipelineRun runningRun = createTestPipelineRun(); // shall be skipped
-        final PipelineRun pausedRun = createTestPipelineRun();
-        pausedRun.setStatus(TaskStatus.PAUSED);
-        pausedRun.setRunStatuses(Collections.singletonList(RunStatus.builder()
-                .runId(pausedRun.getId())
-                .status(TaskStatus.PAUSED)
-                .timestamp(now.minusSeconds(LONG_PAUSED_SECONDS))
-                .build()));
+        final PipelineRun pausedRun = buildPausedRun(DateUtils.nowUTC().minusSeconds(LONG_PAUSED_SECONDS));
 
         notificationManager.notifyLongPausedRunsBeforeStop(Arrays.asList(runningRun, pausedRun));
 
@@ -661,19 +643,52 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @Test
     public void shouldNotCreateNotificationForStopLongPausedRunsIfNotTimeout() {
-        final LocalDateTime now = DateUtils.nowUTC();
-        final PipelineRun pausedRun = createTestPipelineRun();
-        pausedRun.setStatus(TaskStatus.PAUSED);
-        pausedRun.setRunStatuses(Collections.singletonList(RunStatus.builder()
-                .runId(pausedRun.getId())
-                .status(TaskStatus.PAUSED)
-                .timestamp(now.plusSeconds(LONG_PAUSED_SECONDS))
-                .build()));
+        final PipelineRun pausedRun = buildPausedRun(DateUtils.nowUTC().plusSeconds(LONG_PAUSED_SECONDS));
 
         notificationManager.notifyLongPausedRunsBeforeStop(Collections.singletonList(pausedRun));
 
         final List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertEquals(0, messages.size());
+    }
+
+    @Test
+    public void shouldNotNotifyIfInstanceTypeShouldExcluded() {
+        final Preference preference = new Preference();
+        preference.setName(SystemPreferences.SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES.getKey());
+        preference.setValue("r5.*,m5.large");
+        preferenceManager.update(Collections.singletonList(preference));
+
+        final LocalDateTime statusUpdateTime = DateUtils.nowUTC().minusSeconds(LONG_PAUSED_SECONDS);
+        final PipelineRun pausedRunToExclude1 = buildPausedRunWithNodeType(statusUpdateTime, "m5.large");
+        final PipelineRun pausedRunToExclude2 = buildPausedRunWithNodeType(statusUpdateTime, "r5.large");
+        final PipelineRun pausedRunToInclude = buildPausedRunWithNodeType(statusUpdateTime, "c5.xlarge");
+
+        final List<PipelineRun> filtered = notificationManager.notifyLongPausedRunsBeforeStop(Arrays.asList(
+                pausedRunToExclude1,
+                pausedRunToExclude2,
+                pausedRunToInclude));
+
+        Assert.assertEquals(1, filtered.size());
+        Assert.assertEquals(pausedRunToInclude.getId(), filtered.get(0).getId());
+    }
+
+    private PipelineRun buildPausedRun(final LocalDateTime statusUpdateTime) {
+        final PipelineRun pausedRun = createTestPipelineRun();
+        pausedRun.setStatus(TaskStatus.PAUSED);
+        pausedRun.setRunStatuses(Collections.singletonList(RunStatus.builder()
+                .runId(pausedRun.getId())
+                .status(TaskStatus.PAUSED)
+                .timestamp(statusUpdateTime)
+                .build()));
+        return pausedRun;
+    }
+
+    private PipelineRun buildPausedRunWithNodeType(final LocalDateTime statusUpdateTime, final String nodeType) {
+        final PipelineRun pausedRun = buildPausedRun(statusUpdateTime);
+        final RunInstance instance = buildRunInstance();
+        instance.setNodeType(nodeType);
+        pausedRun.setInstance(instance);
+        return pausedRun;
     }
 
     private NotificationSettings createSettings(NotificationType type, long templateId, long threshold, long delay) {
@@ -733,10 +748,14 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     private void setRunInstance(final PipelineRun run) {
-        RunInstance runInstance = new RunInstance();
+        run.setInstance(buildRunInstance());
+    }
+
+    private RunInstance buildRunInstance() {
+        final RunInstance runInstance = new RunInstance();
         runInstance.setCloudProvider(CloudProvider.AWS);
         runInstance.setCloudRegionId(1L);
-        run.setInstance(runInstance);
+        return runInstance;
     }
 
     private Pipeline createPipeline(PipelineUser testOwner) {

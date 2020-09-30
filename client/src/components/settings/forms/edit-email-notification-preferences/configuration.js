@@ -140,14 +140,12 @@ const SystemIdleActionTimeoutMinutesPreference = {
   preference: 'system.idle.action.timeout.minutes',
   type: 'number',
   min: 0,
-  name: 'Resend/action delay (min)',
+  name: 'Action delay (min)',
   hint: (
     <div>
       <b>Specifies a duration in minutes.</b><br />
       This duration starts after the <b>"Max duration of idle (min)"</b> is over.<br />
       This is a delay before the configured action of the <i>idle</i> run will be performed.<br />
-      {/* eslint-disable-next-line max-len */}
-      In case when the configured action is <b>NOTIFY</b>, this is a delay between repeated notifications.
     </div>
   )
 };
@@ -198,7 +196,26 @@ const SystemLongPausedActionPreference = {
   preference: 'system.long.paused.action',
   type: 'enum',
   name: 'Action',
-  enum: ['NOTIFY', 'STOP']
+  enum: ['NOTIFY', 'STOP'],
+  hint: (
+    <div>
+      Sets the <b>action</b> to perform with the instance
+      having the long paused state (longer then configured threshold).
+    </div>
+  )
+};
+
+const SystemNotificationsExcludeInstanceTypesPreference = {
+  preference: 'system.notifications.exclude.instance.types',
+  type: 'string',
+  name: 'Exclude instance types',
+  hint: (
+    <div>
+      <b>Instances, listed here won't trigger the IDLE notification.</b><br />
+      The list shall be provided as a comma-separated string, you can also use the wildcards.
+      E.g. m5.xlarge,*.large
+    </div>
+  )
 };
 
 const Preferences = [
@@ -210,7 +227,8 @@ const Preferences = [
   SystemIdleActionPreference,
   SystemMaxLongPausedTimeoutMinutesPreference,
   SystemLongPausedActionTimeoutMinutesPreference,
-  SystemLongPausedActionPreference
+  SystemLongPausedActionPreference,
+  SystemNotificationsExcludeInstanceTypesPreference
 ];
 
 const NotificationPreferences = {
@@ -222,7 +240,8 @@ const NotificationPreferences = {
     SystemMaxIdleTimeoutMinutesPreference.preference,
     SystemIdleActionTimeoutMinutesPreference.preference,
     SystemIdleCPUThresholdPreference.preference,
-    SystemIdleActionPreference.preference
+    SystemIdleActionPreference.preference,
+    SystemNotificationsExcludeInstanceTypesPreference.preference
   ],
   [IdleRunPausedType]: [
     SystemMaxIdleTimeoutMinutesPreference.preference,

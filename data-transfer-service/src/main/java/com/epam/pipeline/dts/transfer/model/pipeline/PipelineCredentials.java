@@ -36,4 +36,8 @@ public class PipelineCredentials implements Credentials {
             throw new CredentialsParsingException("Pipeline credentials parsing error", e);
         }
     }
+
+    public boolean isComplete() {
+        return api != null && apiToken != null;
+    }
 }

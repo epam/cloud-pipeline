@@ -33,7 +33,7 @@ import PipelineRunner from '../../../models/pipelines/PipelineRunner';
 import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEstimatedPrice';
 import {names} from '../../../models/utils/ContextualPreference';
 import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/launch-cluster';
-import {LIMIT_MOUNTS_PARAMETER} from '../../pipelines/launch/form/LimitMountsInput';
+import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
 import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
@@ -231,8 +231,8 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
             parameters={payload.params}
             permissionErrors={permissionErrors}
             limitMounts={
-              payload.params && payload.params[LIMIT_MOUNTS_PARAMETER]
-                ? payload.params[LIMIT_MOUNTS_PARAMETER].value
+              payload.params && payload.params[CP_CAP_LIMIT_MOUNTS]
+                ? payload.params[CP_CAP_LIMIT_MOUNTS].value
                 : undefined
             } />
         ),
@@ -251,13 +251,13 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
                 if (!payload.params) {
                   payload.params = {};
                 }
-                payload.params[LIMIT_MOUNTS_PARAMETER] = {
+                payload.params[CP_CAP_LIMIT_MOUNTS] = {
                   type: 'string',
                   required: false,
                   value: limitMounts
                 };
-              } else if (payload.params && payload.params[LIMIT_MOUNTS_PARAMETER]) {
-                delete payload.params[LIMIT_MOUNTS_PARAMETER];
+              } else if (payload.params && payload.params[CP_CAP_LIMIT_MOUNTS]) {
+                delete payload.params[CP_CAP_LIMIT_MOUNTS];
               }
             }
           }

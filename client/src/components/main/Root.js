@@ -51,6 +51,7 @@ import NotificationRenderer from '../special/notifications/utilities/Notificatio
 import AppRouter from './AppRouter';
 import AllowedInstanceTypes from '../../models/utils/AllowedInstanceTypes';
 import configurationSchedules from '../../models/configurationSchedule/ConfigurationSchedules';
+import SystemDictionariesLoadAll from '../../models/systemDictionaries/SystemDictionariesLoadAll';
 import {Search} from '../../models/search';
 import * as billing from '../../models/billing';
 
@@ -73,6 +74,8 @@ const onDemandInstanceTypes = new InstanceTypes(false);
 const spotToolInstanceTypes = new ToolInstanceTypes(true);
 const onDemandToolInstanceTypes = new ToolInstanceTypes(false);
 
+const systemDictionaries = new SystemDictionariesLoadAll();
+
 (() => { return awsRegions.fetchIfNeededOrWait(); })();
 (() => { return cloudRegionsInfo.fetchIfNeededOrWait(); })();
 (() => { return allowedInstanceTypes.fetchIfNeededOrWait(); })();
@@ -80,6 +83,7 @@ const onDemandToolInstanceTypes = new ToolInstanceTypes(false);
 (() => { return onDemandInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return spotToolInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return onDemandToolInstanceTypes.fetchIfNeededOrWait(); })();
+(() => { return systemDictionaries.fetchIfNeededOrWait(); })();
 
 const Root = () =>
   <Provider
@@ -122,7 +126,8 @@ const Root = () =>
       searchEngine,
       configurationSchedules,
       quotaTemplates: billing.quotas.templates.list,
-      billingCenters: new billing.FetchBillingCenters()
+      billingCenters: new billing.FetchBillingCenters(),
+      systemDictionaries
     }}>
     <AppRouter />
   </Provider>;

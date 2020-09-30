@@ -36,7 +36,7 @@ export default class Preferences extends React.Component {
   };
 
   componentDidMount () {
-    const {route, router} = this.props;
+    const {route, router, preferences} = this.props;
     const {selectedPreferenceGroup} = this.state;
     if (!selectedPreferenceGroup && this.preferencesGroups.length > 0) {
       this.selectPreferenceGroup(this.preferencesGroups[0]);
@@ -44,6 +44,7 @@ export default class Preferences extends React.Component {
     if (route && router) {
       router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
     }
+    preferences.fetch();
   };
 
   componentDidUpdate () {
