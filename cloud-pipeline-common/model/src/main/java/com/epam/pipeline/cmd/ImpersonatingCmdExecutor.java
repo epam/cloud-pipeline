@@ -38,9 +38,11 @@ import java.util.stream.Collectors;
 /**
  * Cmd executor that impersonates requested users while executing or launching commands.
  * 
- * It creates temporary files to store command which will impersonate users and execute commands.
+ * It creates temporary files to store command which will impersonate users and execute commands. 
+ * Also it embeds environment variables to temporary files to keep the environment during impersonation.
  * 
- * It embeds environment variables to temporary files to keep the environment during impersonation.
+ * Notice that in case of any execution error with impersonated user another attempt to execute the command with
+ * current user will be performed.
  */
 @RequiredArgsConstructor
 @Slf4j
@@ -65,15 +67,23 @@ public class ImpersonatingCmdExecutor implements CmdExecutor {
         if (username == null) {
             return cmdExecutor.executeCommand(command, environmentVariables, workDir);
         }
-        log.info("Executing command '{}' with substituted user '{}'", command, username);
+        log.info("Executing command '{}' with impersonated user '{}'", command, username);
         Path commandScript = null;
         try {
             commandScript = Files.createTempFile("impersonated-script", ".sh", DEFAULT_PERMISSIONS);
             Files.write(commandScript, Collections.singleton(impersonating(command, environmentVariables, username)));
             return cmdExecutor.executeCommand(bash(commandScript), environmentVariables, workDir);
         } catch (CmdExecutionException | IOException e) {
-            throw new CmdExecutionException(String.format(
-                    "Original command '%s' execution with substituted user '%s' went bad", command, username), e);
+            log.error(String.format(
+                    "Original command '%s' execution with impersonated user '%s' went bad. " +
+                    "Trying to perform the operation with the default user.", command, username), e);
+            try {
+                return cmdExecutor.executeCommand(command, environmentVariables, workDir);
+            } catch (CmdExecutionException e1) {
+                throw new CmdExecutionException(String.format(
+                        "Original command '%s' execution with both impersonated user '%s' and default user went bad.", 
+                        command, username), e1);
+            }
         } finally {
             Optional.ofNullable(commandScript)
                     .map(Path::toFile)
@@ -86,14 +96,14 @@ public class ImpersonatingCmdExecutor implements CmdExecutor {
                                  final Map<String, String> environmentVariables,
                                  final File workDir,
                                  final String username) {
-        log.info("Launching command '{}' with substituted user '{}'", command, username);
+        log.info("Launching command '{}' with impersonated user '{}'", command, username);
         try {
             final Path commandScript = Files.createTempFile("impersonated-script", ".sh", DEFAULT_PERMISSIONS);
             Files.write(commandScript, Collections.singleton(impersonating(command, environmentVariables, username)));
             return cmdExecutor.launchCommand(bash(commandScript), environmentVariables, workDir);
         } catch (CmdExecutionException | IOException e) {
             throw new CmdExecutionException(String.format(
-                    "Original command '%s' launching with substituted user '%s' went bad", command, username
+                    "Original command '%s' launching with impersonated user '%s' went bad", command, username
             ), e);
         }
         // TODO 02.12.18: commandScript is not deleted after the process finishes
