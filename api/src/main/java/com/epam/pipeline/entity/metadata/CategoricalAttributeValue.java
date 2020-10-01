@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.metadata;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import java.util.Collections;
 import java.util.List;
@@ -25,6 +26,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(exclude = {"id"})
 public class CategoricalAttributeValue {
 
     public CategoricalAttributeValue(final String key, final String value) {
