@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import copy
-import io
 import os
 import socket
 from abc import abstractmethod, ABCMeta
@@ -45,7 +44,7 @@ import click
 from google.auth import _helpers
 from google.auth.transport.requests import AuthorizedSession
 from google.cloud.storage import Client, Blob
-from google.cloud.storage.blob import _get_encryption_headers, _raise_from_invalid_response
+from google.cloud.storage.blob import _get_encryption_headers
 from google.oauth2.credentials import Credentials
 from google import resumable_media
 from google.resumable_media import DataCorruption
@@ -68,25 +67,6 @@ CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS = 'CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS'
 CP_CLI_GCP_MULTIPART_THRESHOLD = 'CP_CLI_GCP_MULTIPART_THRESHOLD'
 CP_CLI_GCP_MULTIPART_CHUNKSIZE = 'CP_CLI_GCP_MULTIPART_CHUNKSIZE'
 CP_CLI_GCP_MAX_CONCURRENCY = 'CP_CLI_GCP_MAX_CONCURRENCY'
-
-
-class GsProgressPercentage(ProgressPercentage):
-
-    def __init__(self, filename, size):
-        super(GsProgressPercentage, self).__init__(filename, size)
-        self._total_bytes = 0
-
-    def __call__(self, bytes_amount):
-        newest_bytes = bytes_amount - self._total_bytes
-        self._total_bytes = bytes_amount
-        super(GsProgressPercentage, self).__call__(newest_bytes)
-
-    @staticmethod
-    def callback(source_key, size, quiet, lock=None):
-        if not StorageOperations.show_progress(quiet, size, lock):
-            return None
-        progress = GsProgressPercentage(source_key, size)
-        return lambda current: progress(current)
 
 
 class S3TransferUploadClient:
@@ -231,6 +211,7 @@ class _ProgressOutputStream(_OutputStreamMixin):
         self._progress_callback = progress_callback
         self._progress_chunk_size = progress_chunk_size
         self._progress_chunk = 0
+        self._reported_bytes_transferred = 0
 
     def write(self, data):
         self._stream.write(data)
@@ -239,7 +220,13 @@ class _ProgressOutputStream(_OutputStreamMixin):
         if current_chunk > self._progress_chunk:
             self._progress_chunk = current_chunk
             if self._progress_callback:
-                self._progress_callback(self._bytes_transferred)
+                self._progress_callback(self._bytes_transferred - self._reported_bytes_transferred)
+            self._reported_bytes_transferred = self._bytes_transferred
+
+    def close(self):
+        if self._bytes_transferred > self._reported_bytes_transferred:
+            if self._progress_callback:
+                self._progress_callback(self._bytes_transferred - self._reported_bytes_transferred)
 
 
 class _ResumableIterReader:
@@ -331,6 +318,7 @@ class _ResumableDownloadProgressMixin(Blob):
                                        'You can alter the number of allowed resumes using %s environment variable. '
                                        'Original error: %s.'
                                        % (self._attempts, CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS, str(e)))
+        stream.close()
         self.reload()
 
 
@@ -351,10 +339,13 @@ class _UploadProgressMixin(Blob):
         )
 
         response = None
+        bytes_uploaded = 0
         while not upload.finished:
-            if self._progress_callback:
-                self._progress_callback(upload._bytes_uploaded)
             response = upload.transmit_next_chunk(transport)
+            chunk_bytes_uploaded = upload._bytes_uploaded - bytes_uploaded
+            bytes_uploaded = upload._bytes_uploaded
+            if self._progress_callback:
+                self._progress_callback(chunk_bytes_uploaded)
 
         return response
 
@@ -636,7 +627,10 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
         destination_blob.patch()
         # Transfer between buckets in GCP is almost an instant operation. Therefore the progress bar can be updated
         # only once.
-        progress_callback = GsProgressPercentage.callback(full_path, size, quiet, lock)
+        if StorageOperations.show_progress(quiet, size, lock):
+            progress_callback = ProgressPercentage(full_path, size)
+        else:
+            progress_callback = None
         if progress_callback is not None:
             progress_callback(size)
         if clean:
@@ -695,13 +689,13 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
                     click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
                 return
         self.create_local_folder(destination_key, lock)
+        if StorageOperations.show_progress(quiet, size, lock):
+            progress_callback = ProgressPercentage(source_key, size)
+        else:
+            progress_callback = None
         self._replace_default_download_chunk_size(self._buffering)
         transfer_config = self._get_download_config()
         if size > transfer_config.multipart_threshold:
-            if StorageOperations.show_progress(quiet, size, lock):
-                progress_callback = ProgressPercentage(source_key, size)
-            else:
-                progress_callback = None
             bucket = self.client.bucket(source_wrapper.bucket.path)
             blob = self.custom_blob(bucket, source_key, None, size)
             download_client = GsRangeDownloadClient(source_wrapper.bucket.path, destination_key, self.client,
@@ -711,15 +705,12 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
                                      object_size=size, extra_args={},
                                      callback=progress_callback)
         else:
-            progress_callback = GsProgressPercentage.callback(source_key, size, quiet, lock)
             bucket = self.client.bucket(source_wrapper.bucket.path)
             if StorageOperations.file_is_empty(size):
                 blob = bucket.blob(source_key)
             else:
                 blob = self.custom_blob(bucket, source_key, progress_callback, size)
             self._download_to_file(blob, destination_key)
-            if progress_callback is not None:
-                progress_callback(size)
         if clean:
             blob.delete()
 
@@ -773,12 +764,12 @@ class GsUploadManager(GsManager, AbstractTransferManager):
                 if not quiet:
                     click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
                 return
+        if StorageOperations.show_progress(quiet, size, lock):
+            progress_callback = ProgressPercentage(relative_path, size)
+        else:
+            progress_callback = None
         transfer_config = self._get_upload_config(size)
         if size > transfer_config.multipart_threshold:
-            if StorageOperations.show_progress(quiet, size, lock):
-                progress_callback = ProgressPercentage(relative_path, size)
-            else:
-                progress_callback = None
             upload_client = GsCompositeUploadClient(destination_wrapper.bucket.path, destination_key,
                                                     StorageOperations.generate_tags(tags, source_key),
                                                     self.client, progress_callback)
@@ -786,13 +777,10 @@ class GsUploadManager(GsManager, AbstractTransferManager):
             uploader.upload_file(filename=source_key, bucket=destination_wrapper.bucket.path, key=destination_key,
                                  callback=None, extra_args={})
         else:
-            progress_callback = GsProgressPercentage.callback(relative_path, size, quiet, lock)
             bucket = self.client.bucket(destination_wrapper.bucket.path)
             blob = self.custom_blob(bucket, destination_key, progress_callback, size)
             blob.metadata = StorageOperations.generate_tags(tags, source_key)
             blob.upload_from_filename(source_key)
-            if progress_callback is not None:
-                progress_callback(size)
         if clean:
             source_wrapper.delete_item(source_key)
 
@@ -856,7 +844,10 @@ class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
                 if not quiet:
                     click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
                 return
-        progress_callback = GsProgressPercentage.callback(relative_path, size, quiet, lock)
+        if StorageOperations.show_progress(quiet, size, lock):
+            progress_callback = ProgressPercentage(relative_path, size)
+        else:
+            progress_callback = None
         bucket = self.client.bucket(destination_wrapper.bucket.path)
         if StorageOperations.file_is_empty(size):
             blob = bucket.blob(destination_key)
@@ -864,8 +855,6 @@ class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
             blob = self.custom_blob(bucket, destination_key, progress_callback, size)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
         blob.upload_from_file(_SourceUrlIO(urlopen(source_key)))
-        if progress_callback is not None:
-            progress_callback(blob.size)
 
 
 class GsTemporaryCredentials:
