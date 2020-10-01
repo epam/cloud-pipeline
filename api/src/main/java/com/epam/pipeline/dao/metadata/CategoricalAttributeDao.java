@@ -29,6 +29,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -117,7 +118,7 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
             .collect(Collectors.groupingBy(CategoricalAttributeValue::getKey))
             .entrySet()
             .stream()
-            .map(entry -> new CategoricalAttribute(entry.getKey(), entry.getValue()))
+            .map(entry -> new CategoricalAttribute(entry.getKey(), mergeLinks(entry.getValue())))
             .collect(Collectors.toList());
     }
 
@@ -127,7 +128,7 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
                    AttributeValueParameters.getRowMapper(true));
         return CollectionUtils.isEmpty(values)
                ? null
-               : new CategoricalAttribute(key, values);
+               : new CategoricalAttribute(key, mergeLinks(values));
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -150,6 +151,25 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
 
     private boolean rowsChanged(final int[] changes) {
         return Arrays.stream(changes).anyMatch(num -> num == 1);
+    }
+
+    private List<CategoricalAttributeValue> mergeLinks(final List<CategoricalAttributeValue> values) {
+        return values.stream()
+            .collect(Collectors.groupingBy(CategoricalAttributeValue::getId))
+            .entrySet()
+            .stream()
+            .map(entry -> {
+                final List<CategoricalAttributeValue> valuesWithLink = entry.getValue();
+                final CategoricalAttributeValue value = new CategoricalAttributeValue(entry.getKey(),
+                                                                                      valuesWithLink.get(0).getKey(),
+                                                                                      valuesWithLink.get(0).getValue());
+                final List<CategoricalAttributeValue> allLinks = valuesWithLink.stream()
+                    .map(CategoricalAttributeValue::getLinks)
+                    .flatMap(Collection::stream).collect(Collectors.toList());
+                value.setLinks(allLinks);
+                return value;
+            })
+            .collect(Collectors.toList());
     }
 
     enum AttributeValueParameters {
@@ -182,12 +202,12 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
             return params;
         }
 
-        private static RowMapper<CategoricalAttributeValue> getRowMapper(final boolean extended) {
+        private static RowMapper<CategoricalAttributeValue> getRowMapper(final boolean mappingWithLinks) {
             return (rs, rowNum) -> {
                 final CategoricalAttributeValue value = new CategoricalAttributeValue(rs.getLong(ID.name()),
                                                                                       rs.getString(KEY.name()),
                                                                                       rs.getString(VALUE.name()));
-                if (extended) {
+                if (mappingWithLinks) {
                     final String childKey = rs.getString(CHILD_KEY.name());
                     final List<CategoricalAttributeValue> links = new ArrayList<>();
                     if (childKey != null) {
