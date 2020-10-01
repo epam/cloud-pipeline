@@ -29,7 +29,6 @@ class DataStorageBadge extends React.Component {
   @computed
   get storageInfo () {
     const {dataStorages, storageId} = this.props;
-    console.log(storageId);
     if (dataStorages.loaded) {
       const [storage] = (this.props.dataStorages.value || [])
         .filter(storage => +storage.id === +storageId)
