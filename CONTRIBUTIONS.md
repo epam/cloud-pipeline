@@ -96,6 +96,13 @@ Full test results (only for automated tests) are being uploaded to [LINK_FOR_TES
 ## Go-live
 
 After the test(s) is passed, the implementation of the new functionality/bug fixes is verified, the corresponding mark (comment) is being adds to the original task issue.  
+
+After, the documentation on the new functionality shall be prepared:
+
+- documentation is being performed as a separate pull request
+- link to the prepared documentation pull request is being added to the original task issue as a comment
+- all docs are being stored in the Cloud Pipeline repo: [Documentation](docs/README.md).
+
 Then, the task can be closed.
 
 In general, the whole contribution procedure looks like:
@@ -108,4 +115,5 @@ In general, the whole contribution procedure looks like:
     - _manually_ (for non-automated test cases) - testing, comment "_passed_" to the test case issue or errors description to the task issue and return to step 2
     - _automated_ - state labels, pull request(s), comment "_passed_" to the test case issue or errors description to the task issue and return to step 2
 6. Test results: test case issue is closed, automated test results are being uploaded to the Cloud Pipeline repo, comment "_tests are passed_" to the original task
-7. Task is closed
+7. Documentation writing: pull request(s), comment "_docs were updated_" to the original task
+8. Task is closed
