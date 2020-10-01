@@ -59,7 +59,7 @@ class DataStorageList extends React.Component {
             <div style={{maxHeight: '50vh', overflow: 'auto', paddingRight: 20}}>
               {
                 this.storages.map(storage => (
-                  <DataStorageBadge key={storage.id} storageId={storage.id} />
+                  <DataStorageBadge key={storage.id} storage={storage} />
                 ))
               }
             </div>
@@ -72,7 +72,7 @@ class DataStorageList extends React.Component {
       <div className={styles.container}>
         {
           storages.map(storage => (
-            <DataStorageBadge key={storage.id} storageId={storage.id} />
+            <DataStorageBadge key={storage.id} storage={storage} />
           ))
         }
         {extra}
