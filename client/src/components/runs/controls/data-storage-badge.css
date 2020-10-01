@@ -3,6 +3,7 @@
   padding: 1px 5px;
   display: flex;
   flex-wrap: nowrap;
+  align-items: center;
   border: 1px solid #dfdfdf;
   border-radius: 3px;
   transition: background-color 0.2s ease;
@@ -18,4 +19,10 @@
 
 .sensitive-storage-name {
   color: #cf1322;
+}
+
+.unknown-storage {
+  color: #8c8c8c;
+  background-color: #f0f0f0;
+  cursor: default;
 }

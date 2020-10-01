@@ -28,25 +28,30 @@ import styles from './data-storage-badge.css';
 class DataStorageBadge extends React.Component {
   @computed
   get storageInfo () {
-    const {dataStorages, storageId} = this.props;
+    const {dataStorages, storageId, storage} = this.props;
+    if (typeof storage === 'object' && storage !== null && Object.keys(storage).length) {
+      return storage;
+    }
     if (dataStorages.loaded) {
       const [storage] = (this.props.dataStorages.value || [])
-        .filter(storage => +storage.id === +storageId)
+        .filter(storage => String(storage.id) === String(storageId))
         .map((s) => s);
       return storage;
     }
     return null;
   }
 
-  componentDidMount () {
-    this.props.dataStorages.fetchIfNeededOrWait();
-  }
-
   render () {
-    const {storageId} = this.props;
-    if (!storageId || !this.storageInfo) {
+    const {storageId, showUnknown, storage} = this.props;
+    if (!storageId && !storage) {
       return null;
-    }
+    };
+    if (!this.storageInfo && showUnknown) {
+      return (
+        <span className={[styles.storageItem, styles.unknownStorage].join(' ')}>
+          Unknown Storage
+        </span>);
+    };
     return (
       <Link
         className={styles.storageItem}
@@ -64,11 +69,15 @@ class DataStorageBadge extends React.Component {
 }
 
 DataStorageBadge.propTypes = {
-  storageId: PropTypes.string
+  storageId: PropTypes.string,
+  showUnknown: PropTypes.bool,
+  storage: PropTypes.object
 };
 
 DataStorageBadge.defaultProps = {
-  storageId: null
+  storageId: null,
+  showUnknown: false,
+  storage: null
 };
 
 export default DataStorageBadge;
