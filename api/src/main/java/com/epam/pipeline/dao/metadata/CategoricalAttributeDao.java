@@ -94,11 +94,12 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
                 .stream())
             .flatMap(attributeValue -> attributeValue.getLinks()
                 .stream()
-                .map(link -> AttributeValueParameters.getLinkParameters(pairsIds.get(Pair.of(attributeValue.getKey(),
-                                                                                             attributeValue.getKey())),
-                                                                        pairsIds.get(Pair.of(link.getKey(),
-                                                                                             link.getKey())),
-                                                                        link.getAutofill())))
+                .map(link ->
+                         AttributeValueParameters.getLinkParameters(pairsIds.get(Pair.of(attributeValue.getKey(),
+                                                                                         attributeValue.getValue())),
+                                                                    pairsIds.get(Pair.of(link.getKey(),
+                                                                                         link.getValue())),
+                                                                    link.getAutofill())))
             .toArray(MapSqlParameterSource[]::new);
         getNamedParameterJdbcTemplate().batchUpdate(insertAttributeValueLinkQuery, links);
         return rowsChanged(changes);
@@ -197,7 +198,7 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
                                                                final Boolean autofill) {
             final MapSqlParameterSource params = new MapSqlParameterSource();
             params.addValue(PARENT_ID.name(), parentId);
-            params.addValue(CHILD_ID.name(), parentId);
+            params.addValue(CHILD_ID.name(), childId);
             params.addValue(AUTOFILL.name(), autofill);
             return params;
         }
