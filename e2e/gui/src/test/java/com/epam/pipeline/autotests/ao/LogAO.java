@@ -25,6 +25,8 @@ import org.openqa.selenium.WebElement;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,8 +38,10 @@ import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.switchTo;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.tagName;
+import static org.testng.Assert.assertTrue;
 
 public class LogAO implements AccessObject<LogAO> {
     public static final long SSH_LINK_APPEARING_TIMEOUT = C.SSH_APPEARING_TIMEOUT;
@@ -153,7 +157,7 @@ public class LogAO implements AccessObject<LogAO> {
         clickOnPauseButton();
         new ConfirmationPopupAO<>(this)
                 .ensureTitleIs(
-                        String.format("Do you want to pause %s?", pipelineName))
+                        format("Do you want to pause %s?", pipelineName))
                 .sleep(1, SECONDS)
                 .click(button(PAUSE.name()));
         return this;
@@ -168,7 +172,7 @@ public class LogAO implements AccessObject<LogAO> {
         clickOnStopButton();
         new ConfirmationPopupAO<>(this)
                 .ensureTitleIs(
-                        String.format("Stop %s?", pipelineName))
+                        format("Stop %s?", pipelineName))
                 .sleep(1, SECONDS)
                 .click(button(STOP.name()));
         return this;
@@ -195,7 +199,7 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO resume(final String pipelineName) {
         get(RESUME).shouldBe(visible).click();
         new ConfirmationPopupAO<>(this)
-                .ensureTitleContains(String.format("Do you want to resume %s?", pipelineName))
+                .ensureTitleContains(format("Do you want to resume %s?", pipelineName))
                 .sleep(2, SECONDS)
                 .click(button(RESUME.name()));
         return this;
@@ -219,7 +223,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public ToolPageAO clickOnEndpointLink(String link) {
         String endpoint = getEndpointLink(link);
-        $(byXpath(String.format(".//a[.='%s']", link))).click();
+        $(byXpath(format(".//a[.='%s']", link))).click();
         switchTo().window(1);
         return new ToolPageAO(endpoint);
     }
@@ -229,7 +233,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public String getEndpointLink(String link){
-        return $(withText("Endpoint")).closest("tr").$(byXpath(String.format(".//a[.='%s']", link)))
+        return $(withText("Endpoint")).closest("tr").$(byXpath(format(".//a[.='%s']", link)))
                 .shouldBe(visible).attr("href");
     }
 
@@ -244,7 +248,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public String getNestedRunID(int childNum) {
-        return $(withText("Nested runs:")).closest("tr").find(byXpath(String.format("td/a[%s]/b", childNum))).getText();
+        return $(withText("Nested runs:")).closest("tr").find(byXpath(format("td/a[%s]/b", childNum))).getText();
     }
 
     public LogAO shareWithGroup(final String groupName) {
@@ -322,7 +326,7 @@ public class LogAO implements AccessObject<LogAO> {
      * @return Qualifier of a parameter with such {@code name} and {@code value}.
      */
     public static By configurationParameter(final String name, final String value) {
-        return byXpath(String.format(".//*/*[normalize-space(translate(., ' \t\n', '   ')) = '%s:%s']", name, value));
+        return byXpath(format(".//*/*[normalize-space(translate(., ' \t\n', '   ')) = '%s:%s']", name, value));
     }
 
     public LogAO validateRunTitle(String title) {
@@ -344,7 +348,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public static By detailsWithLabel(final String label) {
         Objects.requireNonNull(label);
-        return byXpath(String.format("//tr[.//th[normalize-space(text()) = '%s:']]//td", label));
+        return byXpath(format("//tr[.//th[normalize-space(text()) = '%s:']]//td", label));
     }
 
     public static By taskList() {
@@ -357,13 +361,13 @@ public class LogAO implements AccessObject<LogAO> {
 
     public static By taskWithName(final String name) {
         Objects.requireNonNull(name);
-        final By taskQualifier = byXpath(String.format(".//li[contains(., '%s')]", name));
-        return Combiners.confine(taskQualifier, taskList(), String.format("task with name %s", name));
+        final By taskQualifier = byXpath(format(".//li[contains(., '%s')]", name));
+        return Combiners.confine(taskQualifier, taskList(), format("task with name %s", name));
     }
 
     public static By parameterWithName(final String name, final String value) {
         Objects.requireNonNull(name);
-        return byXpath(String.format(
+        return byXpath(format(
                 "//tr[.//td[contains(@class, 'log__task-parameter-name') and contains(.//text(), '%s')] and " +
                         ".//td[contains(., '%s')]]", name, value));
     }
@@ -372,19 +376,37 @@ public class LogAO implements AccessObject<LogAO> {
         return byClassName("ReactVirtualized__List");
     }
 
+    public LogAO logContainsMessage(final String message) {
+        assertTrue(logMessages().anyMatch(mes -> mes.contains(message)), format("Message '%s' isn't cantained in log", message));
+        return this;
+    }
+
+    public LogAO checkAvailableStoragesCount(int count) {
+        String log = logMessages().collect(Collectors.toSet()).toString();
+        Pattern pattern = Pattern.compile("\\d+ available storage\\(s\\)\\. Checking mount options\\.");
+        Matcher matcher = pattern.matcher(log);
+        String res = "";
+        while (matcher.find()) {
+            res = log.substring(matcher.start(), log.indexOf(" available"));
+        }
+        assertTrue(Integer.parseInt(res) >= count,
+                format("Available storages count (actual %s) should be more or equals %s", res, count));
+        return this;
+    }
+
     public static By logMessage(final String text) {
         Objects.requireNonNull(text);
         final String messageClass = "log__log-row";
-        final By messageQualifier = byXpath(String.format(
+        final By messageQualifier = byXpath(format(
                 "//*[contains(concat(' ', @class, ' '), ' %s ') and .//*[contains(., \"%s\")]]",
                 messageClass, text
         ));
-        return Combiners.confine(messageQualifier, log(), String.format("log message with text {%s}", text));
+        return Combiners.confine(messageQualifier, log(), format("log message with text {%s}", text));
     }
 
     public static By timeInfo(final String label) {
         Objects.requireNonNull(label);
-        return byXpath(String.format(
+        return byXpath(format(
             ".//*[@class = 'task-link__time-info' and contains(.//text(), '%s')]",
             label
         ));
@@ -392,7 +414,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public static Condition containsMessage(final String text) {
         Objects.requireNonNull(text);
-        return new Condition(String.format("contains message {%s}", text)) {
+        return new Condition(format("contains message {%s}", text)) {
 
             private static final String container = ".log__logs-table";
             private final By message = logMessage(text);
@@ -436,7 +458,7 @@ public class LogAO implements AccessObject<LogAO> {
             @Override
             public String actualValue(final WebElement logElement) {
                 final String allMissingMessages = missingMessages.stream().collect(Collectors.joining("\n"));
-                return String.format("Following messages wasn't found in log:%n%s", allMissingMessages);
+                return format("Following messages wasn't found in log:%n%s", allMissingMessages);
             }
         };
     }
@@ -455,7 +477,7 @@ public class LogAO implements AccessObject<LogAO> {
         public static By parameterWithName(final String name) {
             final String parameterName = "log__node-parameter-name";
             final String parameterValue = "log__node-parameter-value";
-            return byXpath(String.format(
+            return byXpath(format(
                 ".//*[contains(@class, '%s') and text() = '%s']/following-sibling::*[contains(@class, '%s')]",
                 parameterName, name, parameterValue
             ));

@@ -26,6 +26,8 @@ import com.epam.pipeline.autotests.utils.Utils;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
 import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.*;
@@ -34,6 +36,7 @@ import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.tagName;
@@ -342,7 +345,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public SelectLimitMountsPopupAO selectDataStoragesToLimitMounts() {
         click(LIMIT_MOUNTS);
-        return new SelectLimitMountsPopupAO(this);
+        return new SelectLimitMountsPopupAO(this).sleep(2, SECONDS);
     }
 
     @Override

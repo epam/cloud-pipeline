@@ -82,7 +82,7 @@ public class Profile implements AccessObject<Profile> {
                 entry(DELETE, context().find(byId("remove-pipeline-configuration-button"))),
                 entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
                 entry(INSTANCE_TYPE, context().find(comboboxOf(fieldWithLabel("Node type")))),
-                entry(PRICE_TYPE, context().find(comboboxOf(fieldWithLabel("Price type"))))
+                entry(PRICE_TYPE, context().find(comboboxOf(fieldWithLabel("Price type")))),
                 entry(INSTANCE_TYPE, context().find(comboboxOf(fieldWithLabel("Node type")))),
                 entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input")))
         );

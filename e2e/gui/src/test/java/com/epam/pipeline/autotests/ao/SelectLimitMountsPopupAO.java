@@ -69,11 +69,11 @@ public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, 
     }
 
     public SelectLimitMountsPopupAO clearSelection() {
-        return click(CLEAR_SELECTION);
+        return click(CLEAR_SELECTION).sleep(1, SECONDS);
     }
 
     public SelectLimitMountsPopupAO selectAllNonSensitive() {
-        return click(SELECT_ALL_NON_SENSITIVE);
+        return click(SELECT_ALL_NON_SENSITIVE).sleep(1, SECONDS);
     }
 
     @Override
