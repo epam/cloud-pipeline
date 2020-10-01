@@ -16,21 +16,17 @@
 
 package com.epam.pipeline.controller.region;
 
-import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.epam.pipeline.controller.ResponseResult;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.entity.info.CloudRegionInfo;
-import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.region.CloudRegionApiService;
 import com.epam.pipeline.util.ControllerTestUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.Assertions;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -54,6 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class CloudRegionControllerTest extends AbstractControllerTest {
 
     public static final long ID = 1L;
+    public static final int DURATION = 773;
     private static final String REGION_URL = SERVLET_PATH + "/cloud/region";
     public static final String LOAD_PROVIDERS_URL = REGION_URL + "/provider";
     public static final String LOAD_REGIONS_INFO_URL = REGION_URL + "/info";
@@ -162,16 +159,8 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
         final ResponseResult<List<CloudRegionInfo>> expectedResult =
                 ControllerTestUtils.buildExpectedResult(cloudRegionInfos);
 
-        final String actual= mvcResult.getResponse().getContentAsString();
-        Assert.assertTrue(StringUtils.isNotBlank(actual));
-        Assertions.assertThat(actual).isEqualToIgnoringWhitespace(getObjectMapper().writeValueAsString(expectedResult));
-
-        final Result<List<AbstractCloudRegion>> actualResult =
-                JsonMapper.parseData(actual, new TypeReference<Result<List<AwsRegion>>>() { });
-        final CloudRegionInfo actualCloudRegionInfo = new CloudRegionInfo(actualResult.getPayload().get(0));
-        final List<CloudRegionInfo> actualCloudRegionInfos = Collections.singletonList(actualCloudRegionInfo);
-
-        Assert.assertEquals(expectedResult.getPayload(), actualCloudRegionInfos);
+        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
+                new TypeReference<Result<List<CloudRegionInfo>>>() { });
     }
 
     @Test
@@ -247,7 +236,7 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldCreateRegion() throws Exception {
         final AWSRegionDTO awsRegionDTO = new AWSRegionDTO();
-        awsRegionDTO.setBackupDuration(773);
+        awsRegionDTO.setBackupDuration(DURATION);
         Mockito.doReturn(awsRegion).when(mockCloudRegionApiService).create(Mockito.refEq(awsRegionDTO));
 
         final MvcResult mvcResult = mvc().perform(post(REGION_URL)
@@ -280,7 +269,7 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldUpdateRegionById() throws Exception {
         final AWSRegionDTO awsRegionDTO = new AWSRegionDTO();
-        awsRegionDTO.setBackupDuration(773);
+        awsRegionDTO.setBackupDuration(DURATION);
         Mockito.doReturn(awsRegion).when(mockCloudRegionApiService).update(Mockito.eq(ID), Mockito.refEq(awsRegionDTO));
 
         final MvcResult mvcResult = mvc().perform(put(String.format(REGION_ID_URL, ID))
@@ -292,7 +281,7 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
                 .andReturn();
 
         final ArgumentCaptor<AWSRegionDTO> awsRegionDTOCaptor = ArgumentCaptor.forClass(AWSRegionDTO.class);
-        Mockito.verify(mockCloudRegionApiService).update(Mockito.eq(ID) ,awsRegionDTOCaptor.capture());
+        Mockito.verify(mockCloudRegionApiService).update(Mockito.eq(ID), awsRegionDTOCaptor.capture());
         Assertions.assertThat(awsRegionDTOCaptor.getValue().getBackupDuration())
                 .isEqualTo(awsRegionDTO.getBackupDuration());
 

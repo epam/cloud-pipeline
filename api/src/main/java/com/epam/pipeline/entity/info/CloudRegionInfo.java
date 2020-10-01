@@ -18,15 +18,19 @@ package com.epam.pipeline.entity.info;
 
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
-import lombok.Value;
+import lombok.Data;
 
-@Value
+@Data
 public class CloudRegionInfo {
 
-    private final Long id;
-    private final String name;
-    private final CloudProvider provider;
-    private final String regionId;
+    private Long id;
+    private String name;
+    private CloudProvider provider;
+    private String regionId;
+
+    public CloudRegionInfo() {
+
+    }
 
     public CloudRegionInfo(final AbstractCloudRegion region) {
         this.id = region.getId();
