@@ -49,12 +49,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = CloudRegionController.class)
 public class CloudRegionControllerTest extends AbstractControllerTest {
 
-    public static final long ID = 1L;
-    public static final int DURATION = 773;
+    private static final long ID = 1L;
+    private static final int DURATION = 773;
     private static final String REGION_URL = SERVLET_PATH + "/cloud/region";
-    public static final String LOAD_PROVIDERS_URL = REGION_URL + "/provider";
-    public static final String LOAD_REGIONS_INFO_URL = REGION_URL + "/info";
-    public static final String LOAD_AVAILABLE_REGIONS_URL = REGION_URL + "/available";
+    private static final String LOAD_PROVIDERS_URL = REGION_URL + "/provider";
+    private static final String LOAD_REGIONS_INFO_URL = REGION_URL + "/info";
+    private static final String LOAD_AVAILABLE_REGIONS_URL = REGION_URL + "/available";
     private static final String REGION_ID_URL = REGION_URL + "/%d";
     private AwsRegion awsRegion;
     private ResponseResult<AwsRegion> expectedAwsRegionResult;
