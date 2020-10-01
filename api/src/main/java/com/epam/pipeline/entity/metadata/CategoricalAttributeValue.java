@@ -29,6 +29,12 @@ import java.util.List;
 @EqualsAndHashCode(exclude = {"id"})
 public class CategoricalAttributeValue {
 
+    private Long id;
+    private String key;
+    private String value;
+    private Boolean autofill;
+    private List<CategoricalAttributeValue> links;
+
     public CategoricalAttributeValue(final String key, final String value) {
         this(null, key, value);
     }
@@ -40,10 +46,4 @@ public class CategoricalAttributeValue {
     public CategoricalAttributeValue(final Long id, final String key, final String value, final Boolean autofill) {
         this(id, key, value, autofill, Collections.emptyList());
     }
-
-    private Long id;
-    private String key;
-    private String value;
-    private Boolean autofill;
-    private List<CategoricalAttributeValue> links;
 }
