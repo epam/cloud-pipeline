@@ -62,7 +62,7 @@ import WorkflowGraph from '../../pipelines/version/graph/WorkflowGraph';
 import {graphIsSupportedForLanguage} from '../../pipelines/version/graph/visualization';
 import LoadingView from '../../special/LoadingView';
 import AWSRegionTag from '../../special/AWSRegionTag';
-import DataStorageBadge from '../controls/data-storage-badge.js';
+import DataStorageList from '../controls/data-storage-list';
 import CommitRunDialog from './forms/CommitRunDialog';
 import ShareWithForm from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
@@ -330,12 +330,6 @@ class Logs extends localization.LocalizedReactComponent {
     }
   };
 
-  renderRunParameterDescription = (value, runParameterName) => {
-    return runParameterName === CP_CAP_LIMIT_MOUNTS
-      ? <DataStorageBadge storageId={value} />
-      : value;
-  }
-
   renderRunParameter = (runParameter) => {
     if (!runParameter || !runParameter.name) {
       return null;
@@ -409,6 +403,21 @@ class Logs extends localization.LocalizedReactComponent {
           </tr>
         );
       }
+    } else if (runParameter.name === CP_CAP_LIMIT_MOUNTS) {
+      const values = (valueSelector() || '').split(',').map(v => v.trim());
+      return (
+        <tr key={runParameter.name}>
+          <td
+            className={styles.taskParameterName}
+            style={{verticalAlign: 'middle'}}
+          >
+            {runParameter.name}:
+          </td>
+          <td>
+            <DataStorageList identifiers={values} />
+          </td>
+        </tr>
+      );
     } else {
       let values = (valueSelector() || '').split(',').map(v => v.trim());
       if (values.length === 1) {
@@ -416,7 +425,7 @@ class Logs extends localization.LocalizedReactComponent {
           <tr
             key={runParameter.name}>
             <td className={styles.taskParameterName}>{runParameter.name}:</td>
-            <td>{this.renderRunParameterDescription(values[0], runParameter.name)}</td>
+            <td>{values[0]}</td>
           </tr>
         );
       } else if (values.length <= MAX_PARAMETER_VALUES_TO_DISPLAY + 1) {
@@ -426,11 +435,8 @@ class Logs extends localization.LocalizedReactComponent {
               <span>{runParameter.name}:</span>
             </td>
             <td>
-              <ul className={styles.runParameterDescription}>
-                {values.map((value, index) => (
-                  <li key={index}>
-                    {this.renderRunParameterDescription(value, runParameter.name)}
-                  </li>))}
+              <ul>
+                {values.map((value, index) => <li key={index}>{value}</li>)}
               </ul>
             </td>
           </tr>
@@ -442,25 +448,18 @@ class Logs extends localization.LocalizedReactComponent {
               <span>{runParameter.name}:</span>
             </td>
             <td>
-              <ul className={styles.runParameterDescription}>
+              <ul>
                 {
                   values
                     .filter((value, index) => index < MAX_PARAMETER_VALUES_TO_DISPLAY)
-                    .map((value, index) => (
-                      <li key={index}>
-                        {this.renderRunParameterDescription(value, runParameter.name)}
-                      </li>))
+                    .map((value, index) => <li key={index}>{value}</li>)
                 }
                 <li>
                   <Popover
                     placement="right"
                     content={
                       <div style={{maxHeight: '50vh', overflow: 'auto', paddingRight: 20}}>
-                        {values.map((value, index) => (
-                          <Row key={index}>
-                            {this.renderRunParameterDescription(value, runParameter.name)}
-                          </Row>
-                        ))}
+                        {values.map((value, index) => <Row key={index}>{value}</Row>)}
                       </div>
                     }>
                     <a>And {values.length - MAX_PARAMETER_VALUES_TO_DISPLAY} more</a>
