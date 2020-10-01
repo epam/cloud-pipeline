@@ -464,7 +464,7 @@ export default class EditUserRolesDialog extends React.Component {
     const {metadata} = this.state;
     return (
       <Modal
-        width="50%"
+        width="80%"
         closable={false}
         title={(
           <div>
@@ -530,7 +530,7 @@ export default class EditUserRolesDialog extends React.Component {
               size: {
                 priority: 0,
                 percentMinimum: 33,
-                percentDefault: 75
+                percentDefault: 60
               }
             },
             {
@@ -538,7 +538,7 @@ export default class EditUserRolesDialog extends React.Component {
               size: {
                 keepPreviousSize: true,
                 priority: 2,
-                percentDefault: 25,
+                percentDefault: 40,
                 pxMinimum: 200
               }
             }

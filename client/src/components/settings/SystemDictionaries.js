@@ -344,6 +344,7 @@ class SystemDictionaries extends React.Component {
                     ? (this.currentDictionary.values || []).map(o => o)
                     : []
                 }
+                dictionaries={this.dictionaries.map(d => d)}
               />
             </div>
           </SplitPanel>
