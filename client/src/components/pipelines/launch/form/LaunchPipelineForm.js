@@ -2577,8 +2577,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const [currentConfiguration] =
             this.props.configurations.filter(config =>
               config.name === this.props.currentConfigurationName);
-          const rootEntityId =
-            currentConfiguration.rootEntityId ? `${currentConfiguration.rootEntityId}` : '';
+          let rootEntityId = '';
+          if (currentConfiguration.rootEntityId) {
+            const entity = currentMetadataEntity.find(
+              entity => entity.metadataClass &&
+                `${entity.metadataClass.id}` === `${currentConfiguration.rootEntityId}`
+            );
+            if (entity) {
+              rootEntityId = `${currentConfiguration.rootEntityId}`;
+            }
+          }
 
           this.setState({
             currentMetadataEntity,
