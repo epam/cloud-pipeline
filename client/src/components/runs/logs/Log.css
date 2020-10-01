@@ -127,6 +127,12 @@
   font-weight: bold;
 }
 
+.run-parameter-description {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
 .node-parameter-name {
   font-weight: bolder;
 }

@@ -1,0 +1,21 @@
+.storage-item {
+  margin: 0 2px;
+  padding: 1px 5px;
+  display: flex;
+  flex-wrap: nowrap;
+  border: 1px solid #dfdfdf;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.storage-item:hover {
+  background-color: #f0f0f0;
+}
+
+.storage-name {
+  margin-left: 5px;
+}
+
+.sensitive-storage-name {
+  color: #cf1322;
+}
