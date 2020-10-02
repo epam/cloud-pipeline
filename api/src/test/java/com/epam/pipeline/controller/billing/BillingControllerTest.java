@@ -26,6 +26,7 @@ import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.epam.pipeline.util.ControllerTestUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.assertj.core.api.Assertions;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -52,6 +53,14 @@ public class BillingControllerTest extends AbstractControllerTest {
     private static final String GET_BILLING_CHART_INFO_URL = BILLING_URL + "/charts";
     private static final String GET_BILLING_CHART_INFO_PAGINATED_URL = GET_BILLING_CHART_INFO_URL + "/pagination";
     private static final String GET_BILLING_CENTERS = BILLING_URL + "/centers";
+    private static final String REQUEST_JSON = "{\"from\":\"-999999999-01-01\"," +
+                                                "\"to\":\"+999999999-12-31\"," +
+                                                "\"filters\":{\"test\":[\"test\"]}," +
+                                                "\"interval\":\"1d\"," +
+                                                "\"grouping\":\"BILLING_CENTER\"," +
+                                                "\"loadDetails\":true," +
+                                                "\"pageSize\":5," +
+                                                "\"pageNum\":1}";
     private BillingChartRequest billingChartRequest;
     private List<BillingChartInfo> billingChartInfos;
 
@@ -65,7 +74,7 @@ public class BillingControllerTest extends AbstractControllerTest {
                 .build();
         billingChartRequest = new BillingChartRequest(
                 LocalDate.MIN, LocalDate.MAX, Collections.singletonMap("test", Collections.singletonList("test")),
-                null, BillingGrouping.BILLING_CENTER, true, 5L, 1L
+                DateHistogramInterval.DAY, BillingGrouping.BILLING_CENTER, true, 5L, 1L
         );
 
         billingChartInfos = Collections.singletonList(billingChartInfo);
@@ -86,13 +95,12 @@ public class BillingControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = mvc().perform(post(GET_BILLING_CHART_INFO_URL)
                 .servletPath(SERVLET_PATH)
                 .contentType(EXPECTED_CONTENT_TYPE)
-                .content(getObjectMapper().writeValueAsString(billingChartRequest)))
+                .content(REQUEST_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
 
         Mockito.verify(mockBillingApiService).getBillingChartInfo(billingChartRequest);
-
         final ArgumentCaptor<BillingChartRequest> billingChartRequestCaptor =
                 ArgumentCaptor.forClass(BillingChartRequest.class);
         Mockito.verify(mockBillingApiService).getBillingChartInfo(billingChartRequestCaptor.capture());
@@ -121,7 +129,7 @@ public class BillingControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = mvc().perform(post(GET_BILLING_CHART_INFO_PAGINATED_URL)
                 .servletPath(SERVLET_PATH)
                 .contentType(EXPECTED_CONTENT_TYPE)
-                .content(getObjectMapper().writeValueAsString(billingChartRequest)))
+                .content(REQUEST_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
