@@ -41,14 +41,15 @@ public class Launch_LimitMountsTest extends AbstractAutoRemovingPipelineRunningT
     private final String mountDataStoragesTask = "MountDataStorages";
     private String storageID = "";
     private String testRunID = "";
-    private String pipeline = "";
 
     @BeforeClass
     public void setPreferences() {
         library()
                 .createStorage(storage1)
                 .createStorage(storage2)
-                .selectStorage(storage1);
+                .selectStorage(storage1)
+                .validateHeader(storage1);
+
         String url = WebDriverRunner.getWebDriver().getCurrentUrl();
         storageID = url.substring(url.lastIndexOf("/") + 1);
         tools()
