@@ -109,26 +109,22 @@ public class ToolApiService {
         return toolManager.deleteToolVersion(registry, image, version);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY +
-            "OR hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')")
+    @PreAuthorize(AclExpressions.TOOL_READ)
     public List<String> loadImageTags(Long id) {
         return toolManager.loadTags(id);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY +
-            "OR hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')")
+    @PreAuthorize(AclExpressions.TOOL_READ)
     public ImageDescription getImageDescription(Long id, String tag) {
         return toolManager.loadToolDescription(id, tag);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY +
-            "OR hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')")
+    @PreAuthorize(AclExpressions.TOOL_READ)
     public List<ImageHistoryLayer> getImageHistory(final Long id, final String tag) {
         return toolManager.loadToolHistory(id, tag);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY +
-                  "OR hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')")
+    @PreAuthorize(AclExpressions.TOOL_READ)
     public String getImageDefaultCommand(final Long id, final String tag) {
         return toolManager.loadToolDefaultCommand(id, tag);
     }
