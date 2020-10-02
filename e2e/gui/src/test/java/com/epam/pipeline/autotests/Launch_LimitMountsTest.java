@@ -138,7 +138,7 @@ public class Launch_LimitMountsTest extends AbstractAutoRemovingPipelineRunningT
                 .ensureNotVisible(PARAMETERS)
                 .waitForSshLink()
                 .waitForTask(mountDataStoragesTask)
-                .click(taskWithName(mountDataStoragesTask))
+                .clickMountBuckets()
                 .logContainsMessage(" available storage(s). Checking mount options.")
                 .checkAvailableStoragesCount(2)
                 .ensure(log(), not(containsMessages("Run is launched with mount limits")))

@@ -40,6 +40,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toSet;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertTrue;
 
@@ -382,12 +383,12 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO checkAvailableStoragesCount(int count) {
-        String log = logMessages().collect(Collectors.toSet()).toString();
+        Set<String> log = this.logMessages().collect(toSet());
         Pattern pattern = Pattern.compile("\\d+ available storage\\(s\\)\\. Checking mount options\\.");
-        Matcher matcher = pattern.matcher(log);
+        Matcher matcher = pattern.matcher(log.toString());
         String res = "";
         while (matcher.find()) {
-            res = log.substring(matcher.start(), log.indexOf(" available"));
+            res = log.toString().substring(matcher.start(), log.toString().indexOf(" available"));
         }
         assertTrue(Integer.parseInt(res) >= count,
                 format("Available storages count (actual %s) should be more or equals %s", res, count));
