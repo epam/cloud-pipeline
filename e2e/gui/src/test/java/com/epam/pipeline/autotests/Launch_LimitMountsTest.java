@@ -65,7 +65,6 @@ public class Launch_LimitMountsTest extends AbstractAutoRemovingPipelineRunningT
         library()
                 .removeStorage(storage1)
                 .removeStorage(storage2);
-
     }
 
     @Test
@@ -143,8 +142,8 @@ public class Launch_LimitMountsTest extends AbstractAutoRemovingPipelineRunningT
                 .logContainsMessage(" available storage(s). Checking mount options.")
                 .checkAvailableStoragesCount(2)
                 .ensure(log(), not(containsMessages("Run is launched with mount limits")))
-                .ensure(log(), containsMessages(format("-->%s mounted to /cloud-data/%s", storage1.toLowerCase(), storage1.toLowerCase())))
-                .ensure(log(), containsMessages(format("-->%s mounted to /cloud-data/%s", storage2.toLowerCase(), storage2.toLowerCase())))
+                .logContainsMessage(format("-->%s mounted to /cloud-data/%s", storage1.toLowerCase(), storage1.toLowerCase()))
+                .logContainsMessage(format("-->%s mounted to /cloud-data/%s", storage2.toLowerCase(), storage2.toLowerCase()))
                 .ssh(shell -> shell
                         .execute("ls /cloud-data/")
                         .assertOutputContains(storage1.toLowerCase())
