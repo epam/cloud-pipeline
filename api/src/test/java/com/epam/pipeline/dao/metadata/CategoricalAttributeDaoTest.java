@@ -230,6 +230,18 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
                               .allMatch(CollectionUtils::isEmpty));
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void testCreateLinkOnNonExistentAttributeValue() {
+        final CategoricalAttributeValue valueWithLink = new CategoricalAttributeValue(ATTRIBUTE_KEY_2,
+                                                                                      ATTRIBUTE_VALUE_3);
+        valueWithLink.setLinks(Collections.singletonList(new CategoricalAttributeValue(ATTRIBUTE_KEY_1,
+                                                                                       ATTRIBUTE_VALUE_1)));
+        final List<CategoricalAttribute> attributes = Collections
+            .singletonList(new CategoricalAttribute(ATTRIBUTE_KEY_2, Collections.singletonList(valueWithLink)));
+        categoricalAttributeDao.insertAttributesValues(attributes);
+    }
+
     private void assertAttribute(final CategoricalAttribute attributeAfter, final String key,
                                  final String ... values) {
         Assert.assertEquals(key, attributeAfter.getKey());

@@ -16,16 +16,19 @@
 
 package com.epam.pipeline.dao.metadata;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,6 +36,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -41,6 +45,8 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
 
     private static final String LIST_PARAMETER = "list";
 
+    @Autowired
+    private MessageHelper messageHelper;
     private String insertAttributeValueQuery;
     private String loadAllAttributesValuesQuery;
     private String loadAllAttributesValuesWithoutLinksQuery;
@@ -80,29 +86,32 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public boolean insertAttributesValues(final List<CategoricalAttribute> dict) {
         final MapSqlParameterSource[] values = dict.stream()
-            .flatMap(entry -> entry.getValues()
+            .filter(attribute -> Objects.nonNull(attribute.getKey()))
+            .flatMap(entry -> CollectionUtils.emptyIfNull(entry.getValues())
                 .stream()
+                .filter(value -> Objects.nonNull(value.getValue()))
                 .map(value -> AttributeValueParameters.getValueParameters(entry.getKey(), value.getValue())))
             .toArray(MapSqlParameterSource[]::new);
-        final int[] changes = getNamedParameterJdbcTemplate().batchUpdate(insertAttributeValueQuery, values);
+        if (values.length == 0) {
+            return false;
+        }
+        final boolean valuesChanges =
+            rowsChanged(getNamedParameterJdbcTemplate().batchUpdate(insertAttributeValueQuery, values));
         final Map<Pair<String, String>, Long> pairsIds = loadAll(false).stream()
-            .flatMap(attribute -> attribute.getValues().stream())
+            .flatMap(attribute -> CollectionUtils.emptyIfNull(attribute.getValues()).stream())
             .collect(Collectors.toMap(value -> Pair.of(value.getKey(), value.getValue()),
                                       CategoricalAttributeValue::getId));
         final MapSqlParameterSource[] links = dict.stream()
-            .flatMap(entry -> entry.getValues()
+            .flatMap(entry -> CollectionUtils.emptyIfNull(entry.getValues())
                 .stream())
-            .flatMap(attributeValue -> attributeValue.getLinks()
+            .flatMap(attributeValue -> CollectionUtils.emptyIfNull(attributeValue.getLinks())
                 .stream()
-                .map(link ->
-                         AttributeValueParameters.getLinkParameters(pairsIds.get(Pair.of(attributeValue.getKey(),
-                                                                                         attributeValue.getValue())),
-                                                                    pairsIds.get(Pair.of(link.getKey(),
-                                                                                         link.getValue())),
-                                                                    link.getAutofill())))
+                .map(link -> getLinkParameters(pairsIds, attributeValue, link)))
             .toArray(MapSqlParameterSource[]::new);
-        getNamedParameterJdbcTemplate().batchUpdate(insertAttributeValueLinkQuery, links);
-        return rowsChanged(changes);
+        final boolean linksChanges =
+            links.length > 0
+            && rowsChanged(getNamedParameterJdbcTemplate().batchUpdate(insertAttributeValueLinkQuery, links));
+        return valuesChanges || linksChanges;
     }
 
     public List<CategoricalAttribute> loadAll() {
@@ -148,6 +157,20 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
     public boolean deleteAttributeValue(final String key, final String value) {
         return getNamedParameterJdbcTemplate()
                    .update(deleteAttributeValueQuery, AttributeValueParameters.getValueParameters(key, value)) > 0;
+    }
+
+
+    private MapSqlParameterSource getLinkParameters(final Map<Pair<String, String>, Long> pairsIds,
+                                                    final CategoricalAttributeValue attributeValue,
+                                                    final CategoricalAttributeValue link) {
+        final Long childId = pairsIds.get(Pair.of(link.getKey(), link.getValue()));
+        if (childId == null) {
+            throw new IllegalArgumentException(messageHelper.getMessage(
+                MessageConstants.ERROR_CATEGORICAL_ATTRIBUTE_INVALID_LINK,
+                attributeValue.getKey(), attributeValue.getValue(), link.getKey(), link.getValue()));
+        }
+        final Long parentId = pairsIds.get(Pair.of(attributeValue.getKey(), attributeValue.getValue()));
+        return AttributeValueParameters.getLinkParameters(parentId, childId, link.getAutofill());
     }
 
     private boolean rowsChanged(final int[] changes) {
