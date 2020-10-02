@@ -454,6 +454,7 @@ export default class EditToolForm extends React.Component {
     if (props.configuration) {
       (async () => {
         await this.props.runDefaultParameters.fetchIfNeededOrWait();
+        await this.props.dataStorageAvailable.fetchIfNeededOrWait();
         state.maxNodesCount = props.configuration && props.configuration.parameters &&
           props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS]
             ? +props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS].value
@@ -484,7 +485,17 @@ export default class EditToolForm extends React.Component {
               continue;
             }
             if (key === CP_CAP_LIMIT_MOUNTS) {
-              this.defaultLimitMounts = props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value;
+              if (this.props.dataStorageAvailable.loaded) {
+                const availableMounts = new Set((this.props.dataStorageAvailable.value || [])
+                  .map(d => +d.id));
+                this.defaultLimitMounts = (props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value || '')
+                  .split(',')
+                  .map(o => +o)
+                  .filter(o => availableMounts.has(o))
+                  .join(',');
+              } else {
+                this.defaultLimitMounts = props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value;
+              }
               continue;
             }
             if (this.props.runDefaultParameters.loaded &&
