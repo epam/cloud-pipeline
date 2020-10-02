@@ -3839,11 +3839,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         return null;
       };
       const availableMounts = new Set((dataStorageAvailable.value || []).map(d => +d.id));
-      const defaultValue = getDefaultValue()
+      const defaultValue = (getDefaultValue() || '')
         .split(',')
         .map(o => +o)
         .filter(o => availableMounts.has(o))
-        .join(',');
+        .join(',') || null;
       return (
         <FormItem
           className={getFormItemClassName(styles.formItemRow, 'limitMounts')}
