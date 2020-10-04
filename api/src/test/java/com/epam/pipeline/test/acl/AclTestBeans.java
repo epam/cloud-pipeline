@@ -259,6 +259,9 @@ public class AclTestBeans {
     protected MetadataUploadManager mockMetadataUploadManager;
 
     @MockBean
+    protected CloudRegionManager mockCloudRegionManager;
+
+    @MockBean
     protected NotificationSettingsManager mockNotificationSettingsManager;
 
     @MockBean
@@ -304,9 +307,6 @@ public class AclTestBeans {
     protected FolderCrudManager mockCrudManager() {
         return Mockito.mock(FolderCrudManager.class);
     }
-
-    @MockBean
-    protected CloudRegionManager mockCloudRegionManager;
 
     @MockBean
     protected StorageProviderManager mockStorageProviderManager;
