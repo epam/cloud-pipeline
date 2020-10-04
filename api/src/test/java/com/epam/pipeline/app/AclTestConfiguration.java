@@ -17,6 +17,7 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.acl.log.LogApiService;
+import com.epam.pipeline.acl.region.CloudRegionApiService;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.manager.EntityManager;
@@ -45,6 +46,7 @@ import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
+import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.utils.UtilsManager;
 import com.epam.pipeline.security.acl.AclPermissionFactory;
@@ -73,7 +75,7 @@ import javax.sql.DataSource;
 @Import({AclSecurityConfiguration.class, DBConfiguration.class,
         MappersConfiguration.class, CacheConfiguration.class})
 @ComponentScan(basePackages = {"com.epam.pipeline.manager.security"})
-@TestPropertySource(value={"classpath:test-application.properties"})
+@TestPropertySource(value = {"classpath:test-application.properties"})
 @EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
 @EnableAspectJAutoProxy
 public class AclTestConfiguration {
@@ -143,6 +145,12 @@ public class AclTestConfiguration {
 
     @MockBean
     protected LogManager mockLogManager;
+
+    @MockBean
+    protected CloudRegionApiService mockCloudRegionApiService;
+
+    @MockBean
+    protected CloudRegionManager mockCloudRegionManager;
 
     @MockBean
     protected EntityEventServiceManager entityEventServiceManager;

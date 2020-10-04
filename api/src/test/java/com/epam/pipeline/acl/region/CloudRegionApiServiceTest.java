@@ -37,7 +37,9 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
 
 public class CloudRegionApiServiceTest extends AbstractAclTest {
 
@@ -61,8 +63,8 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
     public void setUp() throws Exception {
         region = new AwsRegion();
         region.setId(1L);
-        region.setName("");
-        region.setOwner(ADMIN_ROLE);
+        region.setName("OWNER");
+        region.setOwner(OWNER_USER);
 
         clouds = new ArrayList<>();
         clouds.add(region);
@@ -161,16 +163,35 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
-    public void shouldReturnAllCloudRegions() {
-        initAclEntity(region, Collections.singletonList(new UserPermission(ADMIN_ROLE, AclPermission.READ.getMask())));
+    public void shouldReturnAllCloudRegionsForAdmin() {
         doReturn(clouds).when(cloudRegionManager).loadAll();
 
-        assertThat(cloudRegionApiService.loadAll()).isEqualTo(clouds);
+        List<? extends AbstractCloudRegion> abstractCloudRegions = cloudRegionApiService.loadAll();
+
+        assertThat(abstractCloudRegions).isEqualTo(clouds);
+        assertThat(abstractCloudRegions.get(0).getId()).isEqualTo(clouds.get(0).getId());
     }
 
     @Test
-    @WithMockUser(roles = SIMPLE_USER_ROLE)
-    public void shouldFailReturningCloudRegions() {
+    @WithMockUser(username = SIMPLE_USER_ROLE)
+    public void shouldReturnAllCloudRegionsWhenPermissionIsGranted() {
+        initAclEntity(region,
+                Collections.singletonList(new UserPermission(SIMPLE_USER_ROLE, AclPermission.READ.getMask())));
+        doReturn(clouds).when(cloudRegionManager).loadAll();
+
+        List<? extends AbstractCloudRegion> abstractCloudRegions = cloudRegionApiService.loadAll();
+
+        System.out.println("abstractCloudRegions: " + abstractCloudRegions.get(0).getMask());
+        System.out.println("clouds: " + clouds.get(0).getMask());
+
+
+        assertThat(abstractCloudRegions).isEqualTo(clouds);
+        assertThat(abstractCloudRegions.get(0).getId()).isEqualTo(clouds.get(0).getId());
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER_ROLE)
+    public void shouldReturnEmptyListOfCloudRegionsWithoutPermission() {
         initAclEntity(region);
         doReturn(clouds).when(cloudRegionManager).loadAll();
 
@@ -181,16 +202,31 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
-    public void shouldReturnCloudRegion() {
-        initAclEntity(region, Collections.singletonList(new UserPermission(ADMIN_ROLE, AclPermission.READ.getMask())));
+    public void shouldReturnCloudRegionForAdmin() {
         doReturn(region).when(cloudRegionManager).load(region.getId());
 
-        assertThat(cloudRegionApiService.load(region.getId())).isEqualTo(region);
+        AbstractCloudRegion load = cloudRegionApiService.load(region.getId());
+
+        assertThat(load).isEqualTo(region);
+        assertThat(load.getId()).isEqualTo(clouds.get(0).getId());
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER_ROLE)
+    public void shouldReturnCloudRegionWhenPermissionIsGranted() {
+        initAclEntity(region,
+                Collections.singletonList(new UserPermission(SIMPLE_USER_ROLE, AclPermission.READ.getMask())));
+        when(cloudRegionManager.load(eq(region.getId()))).thenReturn(region);
+
+        AbstractCloudRegion result = cloudRegionApiService.load(region.getId());
+
+        assertThat(result).isEqualTo(region);
+        assertThat(result.getId()).isEqualTo(region.getId());
     }
 
     @Test(expected = AccessDeniedException.class)
-    @WithMockUser(roles = SIMPLE_USER_ROLE)
-    public void shouldFailReturningCloudRegion() {
+    @WithMockUser(username = SIMPLE_USER_ROLE)
+    public void shouldFailReturningCloudRegionWithoutPermission() {
         initAclEntity(region);
         doReturn(region).when(cloudRegionManager).load(region.getId());
 
