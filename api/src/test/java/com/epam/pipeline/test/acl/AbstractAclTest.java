@@ -17,7 +17,6 @@
 package com.epam.pipeline.test.acl;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
-import com.epam.pipeline.security.acl.AclPermissionFactory;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import lombok.AllArgsConstructor;
 import org.apache.commons.collections.CollectionUtils;
@@ -50,7 +49,8 @@ public abstract class AbstractAclTest {
 
     protected static final String ADMIN_ROLE = "ADMIN";
     protected static final String GENERAL_USER_ROLE = "USER";
-    protected static final String SIMPLE_USER_ROLE = "SIMPLE USER";
+    protected static final String SIMPLE_USER_ROLE = "SIMPLE_USER";
+    protected static final String OWNER_USER = "OWNER";
 
     @Autowired
     protected PermissionGrantingStrategy grantingStrategy;
@@ -61,7 +61,8 @@ public abstract class AbstractAclTest {
     @Autowired
     protected AclAuthorizationStrategy aclAuthorizationStrategy;
 
-    protected PermissionFactory permissionFactory = new AclPermissionFactory();
+    @Autowired
+    protected PermissionFactory permissionFactory;
 
     protected void initAclEntity(AbstractSecuredEntity entity) {
         initAclEntity(entity, Collections.emptyList());
