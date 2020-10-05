@@ -17,7 +17,6 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.acl.log.LogApiService;
-import com.epam.pipeline.acl.region.CloudRegionApiService;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.manager.EntityManager;
