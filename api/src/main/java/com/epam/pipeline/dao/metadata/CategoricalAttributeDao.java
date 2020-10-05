@@ -103,7 +103,8 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
                                       CategoricalAttributeValue::getId));
         final MapSqlParameterSource[] links = dict.stream()
             .flatMap(entry -> CollectionUtils.emptyIfNull(entry.getValues())
-                .stream())
+                .stream()
+                .peek(attributeValue -> attributeValue.setKey(entry.getKey())))
             .flatMap(attributeValue -> CollectionUtils.emptyIfNull(attributeValue.getLinks())
                 .stream()
                 .map(link -> getLinkParameters(pairsIds, attributeValue, link)))
