@@ -528,6 +528,7 @@ public final class MessageConstants {
 
     //System dictionaries
     public static final String ERROR_CATEGORICAL_ATTRIBUTE_DOESNT_EXIST = "categorical.attribute.not.exist";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_INVALID_LINK = "categorical.attribute.invalid.link";
 
     //Other
     public static final String ERROR_KEEP_ALIVE_POLICY_NOT_SUPPORTED = "error.keep.alive.policy.not.supported";

@@ -21,6 +21,7 @@ import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.dao.issue.IssueDao;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
+import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
@@ -235,7 +236,10 @@ public class MetadataDaoTest extends AbstractSpringTest {
         final Map<String, List<String>> metadataDict = metadataDao.buildFullMetadataDict(
                 Collections.singletonList(SENSITIVE_DATA_KEY))
                 .stream()
-                .collect(Collectors.toMap(CategoricalAttribute::getKey, CategoricalAttribute::getValues));
+                .collect(Collectors.toMap(CategoricalAttribute::getKey,
+                attribute -> attribute.getValues().stream()
+                                          .map(CategoricalAttributeValue::getValue)
+                                          .collect(Collectors.toList())));
         Assert.assertEquals(2, metadataDict.size());
         assertThat(metadataDict.get(DATA_KEY_1), CoreMatchers.is(Arrays.asList(DATA_VALUE_1, DATA_VALUE_2)));
         assertThat(metadataDict.get(DATA_KEY_2), CoreMatchers.is(Collections.singletonList(DATA_VALUE_1)));
