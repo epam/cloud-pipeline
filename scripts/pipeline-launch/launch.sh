@@ -928,9 +928,6 @@ if check_cp_cap "CP_CAP_KUBE"; then
       export CP_CAP_SYSTEMD_CONTAINER="true"
 fi
 
-# Apply MAC/networking tweaks if requested
-change_mac
-
 echo "------"
 echo
 ######################################################
@@ -1193,10 +1190,12 @@ else
       fi
 fi
 
+# Apply MAC/networking tweaks if requested
+change_mac
+
 echo "------"
 echo
 ######################################################
-
 
 
 ######################################################
