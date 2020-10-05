@@ -377,19 +377,15 @@ public class LogAO implements AccessObject<LogAO> {
         return byClassName("ReactVirtualized__List");
     }
 
-    public LogAO logContainsMessage(final String message) {
-        assertTrue(logMessages().anyMatch(mes -> mes.contains(message)), format("Message '%s' isn't cantained in log", message));
+    public LogAO logContainsMessage(Set<String> logMess, final String message) {
+        assertTrue(logMess.stream().anyMatch(mes -> mes.contains(message)), format("Message '%s' isn't cantained in log", message));
         return this;
     }
 
-    public LogAO checkAvailableStoragesCount(int count) {
-        Set<String> log = this.logMessages().collect(toSet());
-        Pattern pattern = Pattern.compile("\\d+ available storage\\(s\\)\\. Checking mount options\\.");
-        Matcher matcher = pattern.matcher(log.toString());
-        String res = "";
-        while (matcher.find()) {
-            res = log.toString().substring(matcher.start(), log.toString().indexOf(" available"));
-        }
+    public LogAO checkAvailableStoragesCount(Set<String> logMess, int count) {
+        String str = logMess.stream().filter(Pattern.compile("\\d+ available storage\\(s\\)\\. Checking mount options\\.")
+                        .asPredicate()).findFirst().toString();
+        String res = str.substring(str.indexOf("Found")+6, str.indexOf(" available"));
         assertTrue(Integer.parseInt(res) >= count,
                 format("Available storages count (actual %s) should be more or equals %s", res, count));
         return this;

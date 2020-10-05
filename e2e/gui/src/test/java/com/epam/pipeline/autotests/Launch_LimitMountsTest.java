@@ -1,6 +1,7 @@
 package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.WebDriverRunner;
+import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.ToolSettings;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Navigation;
@@ -10,6 +11,9 @@ import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import java.util.Set;
+import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
@@ -31,6 +35,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.SEARCH_INPUT;
 import static com.epam.pipeline.autotests.ao.Primitive.SELECT_ALL;
 import static com.epam.pipeline.autotests.ao.Primitive.SELECT_ALL_NON_SENSITIVE;
 import static java.lang.String.format;
+import static java.util.stream.Collectors.toSet;
 
 public class Launch_LimitMountsTest extends AbstractAutoRemovingPipelineRunningTest implements Navigation {
     private String storage1 = "launchLimitMountsStorage" + Utils.randomSuffix();
@@ -124,7 +129,8 @@ public class Launch_LimitMountsTest extends AbstractAutoRemovingPipelineRunningT
     @Test(dependsOnMethods = {"runPipelineWithLimitMounts"})
     @TestCase(value = {"EPMCMBIBPC-2683"})
     public void rerunPipelineWithoutLimitMounts() {
-        runsMenu()
+        final Set<String> logMess =
+                 runsMenu()
                 .showLog(testRunID)
                 .stop(format("pipeline-%s", testRunID))
                 .clickOnRerunButton()
@@ -140,11 +146,18 @@ public class Launch_LimitMountsTest extends AbstractAutoRemovingPipelineRunningT
                 .waitForSshLink()
                 .waitForTask(mountDataStoragesTask)
                 .clickMountBuckets()
-                .logContainsMessage(" available storage(s). Checking mount options.")
-                .checkAvailableStoragesCount(2)
+                .logMessages()
+                .collect(toSet());
+
+         runsMenu()
+                .showLog(getRunId())
+                .logContainsMessage(logMess, " available storage(s). Checking mount options.")
+                .checkAvailableStoragesCount(logMess,2)
                 .ensure(log(), not(containsMessages("Run is launched with mount limits")))
-                .logContainsMessage(format("-->%s mounted to /cloud-data/%s", storage1.toLowerCase(), storage1.toLowerCase()))
-                .logContainsMessage(format("-->%s mounted to /cloud-data/%s", storage2.toLowerCase(), storage2.toLowerCase()))
+                .logContainsMessage(logMess, format("-->%s mounted to /cloud-data/%s",
+                        storage1.toLowerCase(), storage1.toLowerCase()))
+                .logContainsMessage(logMess, format("-->%s mounted to /cloud-data/%s",
+                        storage2.toLowerCase(), storage2.toLowerCase()))
                 .ssh(shell -> shell
                         .execute("ls /cloud-data/")
                         .assertOutputContains(storage1.toLowerCase())
