@@ -24,5 +24,5 @@ import java.util.List;
 public class CategoricalAttribute {
 
     private String key;
-    private List<String> values;
+    private List<CategoricalAttributeValue> values;
 }

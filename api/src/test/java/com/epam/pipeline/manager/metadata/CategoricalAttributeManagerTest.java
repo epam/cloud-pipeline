@@ -20,6 +20,7 @@ import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
+import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -77,7 +78,10 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
         categoricalAttributeManager.syncWithMetadata();
 
         final Map<String, List<String>> categoricalAttributesAfterSync = categoricalAttributeManager.loadAll().stream()
-            .collect(Collectors.toMap(CategoricalAttribute::getKey, CategoricalAttribute::getValues));
+            .collect(Collectors.toMap(CategoricalAttribute::getKey,
+                attribute -> attribute.getValues().stream()
+                                          .map(CategoricalAttributeValue::getValue)
+                                          .collect(Collectors.toList())));
         Assert.assertEquals(2, categoricalAttributesAfterSync.size());
         Assert.assertThat(categoricalAttributesAfterSync.get(KEY_1),
                           CoreMatchers.is(Collections.singletonList(VALUE_1)));
