@@ -733,8 +733,6 @@ for _CP_WGET_CONF in $_CP_WGET_CONFIGS; do
       echo "robots = off" >> $_CP_WGET_CONF
 done
 
-
-
 echo "------"
 echo
 
@@ -924,15 +922,19 @@ eval "$_CP_ENV_UMASK"
 # Current jobs hostname and IPs shall be added to the no_proxy, otherwise any http request to "self" will fail
 add_self_to_no_proxy
 
-# We need to make sure that the DIND and SYSTEMD are available if the Kuberners is requested
+# We need to make sure that the DIND and SYSTEMD are available if the Kubernetes is requested
 if check_cp_cap "CP_CAP_KUBE"; then
       export CP_CAP_DIND_CONTAINER="true"
       export CP_CAP_SYSTEMD_CONTAINER="true"
 fi
 
+# Apply MAC/networking tweaks if requested
+change_mac
+
 echo "------"
 echo
 ######################################################
+
 
 ######################################################
 echo Configure owner account

@@ -274,5 +274,18 @@
         "description": "Defines which file system shall be used as shared for cluster runs",
         "defaultValue": "lfs",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_HW_ADDR",
+        "type": "string",
+        "description": "Allows to override the MAC address of the instance, running a job. Format: XX:XX:XX:XX:XX:XX",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_HW_NAME",
+        "type": "string",
+        "description": "Controls the network interface name, to apply the CP_CAP_HW_ADDR. Default: eth0",
+        "defaultValue": "eth0",
+        "passToWorkers": false
     }
 ]
