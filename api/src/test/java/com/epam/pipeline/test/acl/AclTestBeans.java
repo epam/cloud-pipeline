@@ -326,6 +326,35 @@ public class AclTestBeans {
     @MockBean
     protected DataStoragePathLoader mockDataStoragePathLoader;
 
+    @MockBean
+    protected FolderDao mockFolderDao;
+
+    @MockBean
+    protected PreferenceManager mockPreferenceManager;
+
+    @MockBean
+    protected RoleManager mockRoleManager;
+
+    @Bean
+    protected TemplatesScanner mockTemplatesScanner() {
+        return Mockito.mock(TemplatesScanner.class);
+    }
+
+    @Bean
+    protected JsonService mockJsonService() {
+        return Mockito.mock(JsonService.class);
+    }
+
+    @Bean
+    protected DataStorageManager mockDataStorageManager() {
+        return Mockito.mock(DataStorageManager.class);
+    }
+
+    @Bean
+    protected FolderCrudManager mockCrudManager() {
+        return Mockito.mock(FolderCrudManager.class);
+    }
+
     @Bean
     public GrantPermissionManager grantPermissionManager() {
         GrantPermissionManager grantPermissionManager = new GrantPermissionManager();
