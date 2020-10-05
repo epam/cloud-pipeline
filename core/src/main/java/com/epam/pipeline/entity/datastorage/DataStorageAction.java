@@ -39,7 +39,7 @@ public class DataStorageAction {
 
     @JsonIgnore
     public boolean isListOnly() {
-        return list || listVersion && (!read && !readVersion && !write && !writeVersion);
+        return (list || listVersion) && (!read && !readVersion && !write && !writeVersion);
     }
 
 }

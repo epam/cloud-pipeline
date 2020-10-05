@@ -18,6 +18,7 @@ package com.epam.pipeline.aspect.leakagepolicy;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -37,6 +38,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -72,10 +75,10 @@ public class DataLeakagePolicyAspect {
         }
         final boolean sensitiveContext = isRequestContextSensitive();
         log.debug("Processing request for {}sensitive context", sensitiveContext ? "" : "non-");
-        final List<AbstractDataStorage> storages = actions.stream()
+        final Map<Long, AbstractDataStorage> storages = actions.stream()
                 .map(action -> storageManager.load(action.getId()))
-                .collect(Collectors.toList());
-        final boolean sensitiveRequest = storages.stream().anyMatch(AbstractDataStorage::isSensitive);
+                .collect(Collectors.toMap(BaseEntity::getId, Function.identity(), (s1, s2) -> s2));
+        final boolean sensitiveRequest = storages.values().stream().anyMatch(AbstractDataStorage::isSensitive);
         log.debug("Sensitive data is{} requested.", sensitiveRequest ? "" : " not");
         if (!sensitiveContext && sensitiveRequest) {
             if (actions.stream().allMatch(DataStorageAction::isListOnly)) {
@@ -86,24 +89,30 @@ public class DataLeakagePolicyAspect {
             throw new StorageForbiddenOperationException(messageHelper.getMessage(
                     MessageConstants.ERROR_SENSITIVE_REQUEST_WRONG_CONTEXT));
         }
-        if (sensitiveContext && actions.stream()
-                .anyMatch(action -> action.isWrite() || action.isWriteVersion())) {
-            log.debug("Write operation is requested for sensitive context. Request is forbidden.");
-            throw new StorageForbiddenOperationException(messageHelper.getMessage(
-                    MessageConstants.ERROR_SENSITIVE_WRITE_FORBIDDEN));
+        if (sensitiveContext) {
+            actions.forEach(action -> {
+                final AbstractDataStorage storage = storages.get(action.getId());
+                if (!storage.isSensitive() && (action.isWrite() || action.isWriteVersion())) {
+                    log.debug("Write operation is requested for non-sensitive storage with id '{}' " +
+                            "in sensitive context. Request is forbidden.", action.getId());
+                    throw new StorageForbiddenOperationException(messageHelper.getMessage(
+                            MessageConstants.ERROR_SENSITIVE_WRITE_FORBIDDEN));
+                }
+            });
         }
     }
 
     private boolean isRequestContextSensitive() {
-        final RequestAttributes requestAttributes = RequestContextHolder.currentRequestAttributes();
-        if (requestAttributes == null) {
-            return false;
-        }
-        final HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
-        final String ip = request.getRemoteAddr();
-        log.debug("Processing request from IP: {}", ip);
-        return runManager.loadActiveRunsByPodIP(ip)
-                .map(PipelineRun::getSensitive)
-                .orElse(false);
+        return true;
+//        final RequestAttributes requestAttributes = RequestContextHolder.currentRequestAttributes();
+//        if (requestAttributes == null) {
+//            return false;
+//        }
+//        final HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
+//        final String ip = request.getRemoteAddr();
+//        log.debug("Processing request from IP: {}", ip);
+//        return runManager.loadActiveRunsByPodIP(ip)
+//                .map(PipelineRun::getSensitive)
+//                .orElse(false);
     }
 }
