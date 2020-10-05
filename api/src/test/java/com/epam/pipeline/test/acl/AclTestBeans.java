@@ -276,34 +276,14 @@ public class AclTestBeans {
     @MockBean
     protected MetadataPostProcessorService mockMetadataPostProcessorService;
 
-    @Bean
-    protected TemplatesScanner mockTemplatesScanner() {
-        return Mockito.mock(TemplatesScanner.class);
-    }
-
-    @Bean
-    protected JsonService mockJsonService() {
-        return Mockito.mock(JsonService.class);
-    }
-
     @MockBean
     protected FolderDao mockFolderDao;
-
-    @Bean
-    protected DataStorageManager mockDataStorageManager() { //todo
-        return Mockito.mock(DataStorageManager.class);
-    }
 
     @MockBean
     protected PreferenceManager mockPreferenceManager;
 
     @MockBean
     protected RoleManager mockRoleManager;
-
-    @Bean
-    protected FolderCrudManager mockCrudManager() {
-        return Mockito.mock(FolderCrudManager.class);
-    }
 
     @MockBean
     protected CloudRegionManager mockCloudRegionManager;
@@ -325,6 +305,26 @@ public class AclTestBeans {
 
     @MockBean
     protected DataStoragePathLoader mockDataStoragePathLoader;
+
+    @Bean
+    protected FolderCrudManager mockCrudManager() {
+        return Mockito.mock(FolderCrudManager.class);
+    }
+
+    @Bean
+    protected DataStorageManager mockDataStorageManager() { //todo
+        return Mockito.mock(DataStorageManager.class);
+    }
+
+    @Bean
+    protected TemplatesScanner mockTemplatesScanner() {
+        return Mockito.mock(TemplatesScanner.class);
+    }
+
+    @Bean
+    protected JsonService mockJsonService() {
+        return Mockito.mock(JsonService.class);
+    }
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {
