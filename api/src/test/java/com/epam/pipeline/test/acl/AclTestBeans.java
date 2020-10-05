@@ -341,3 +341,4 @@ public class AclTestBeans {
         return grantPermissionManager;
     }
 }
+
