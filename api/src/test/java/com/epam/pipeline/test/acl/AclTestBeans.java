@@ -109,7 +109,7 @@ public class AclTestBeans {
     protected MessageHelper messageHelper;
 
     @Autowired
-    protected PermissionsService mockPermissionsService;
+    protected PermissionsService permissionsService;
 
     @MockBean(name = "aclService")
     protected JdbcMutableAclServiceImpl mockAclService;
@@ -277,15 +277,6 @@ public class AclTestBeans {
     protected MetadataPostProcessorService mockMetadataPostProcessorService;
 
     @MockBean
-    protected FolderDao mockFolderDao;
-
-    @MockBean
-    protected PreferenceManager mockPreferenceManager;
-
-    @MockBean
-    protected RoleManager mockRoleManager;
-
-    @MockBean
     protected CloudRegionManager mockCloudRegionManager;
 
     @MockBean
@@ -306,15 +297,14 @@ public class AclTestBeans {
     @MockBean
     protected DataStoragePathLoader mockDataStoragePathLoader;
 
-    @Bean
-    protected FolderCrudManager mockCrudManager() {
-        return Mockito.mock(FolderCrudManager.class);
-    }
+    @MockBean
+    protected FolderDao mockFolderDao;
 
-    @Bean
-    protected DataStorageManager mockDataStorageManager() { //todo
-        return Mockito.mock(DataStorageManager.class);
-    }
+    @MockBean
+    protected PreferenceManager mockPreferenceManager;
+
+    @MockBean
+    protected RoleManager mockRoleManager;
 
     @Bean
     protected TemplatesScanner mockTemplatesScanner() {
@@ -324,6 +314,16 @@ public class AclTestBeans {
     @Bean
     protected JsonService mockJsonService() {
         return Mockito.mock(JsonService.class);
+    }
+
+    @Bean
+    protected DataStorageManager mockDataStorageManager() {
+        return Mockito.mock(DataStorageManager.class);
+    }
+
+    @Bean
+    protected FolderCrudManager mockCrudManager() {
+        return Mockito.mock(FolderCrudManager.class);
     }
 
     @Bean

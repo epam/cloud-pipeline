@@ -147,9 +147,6 @@ public class AclTestConfiguration {
     protected LogManager mockLogManager;
 
     @MockBean
-    protected CloudRegionApiService mockCloudRegionApiService;
-
-    @MockBean
     protected CloudRegionManager mockCloudRegionManager;
 
     @MockBean
