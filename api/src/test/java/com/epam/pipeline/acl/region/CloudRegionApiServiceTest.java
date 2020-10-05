@@ -204,7 +204,6 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
         final AbstractCloudRegion load = cloudRegionApiService.load(region.getId());
 
         assertThat(load).isEqualTo(region);
-        assertThat(load.getId()).isEqualTo(clouds.get(0).getId());
     }
 
     @Test
@@ -217,7 +216,6 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
         final AbstractCloudRegion result = cloudRegionApiService.load(region.getId());
 
         assertThat(result).isEqualTo(region);
-        assertThat(result.getId()).isEqualTo(region.getId());
     }
 
     @Test(expected = AccessDeniedException.class)
