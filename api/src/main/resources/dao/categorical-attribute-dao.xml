@@ -51,7 +51,7 @@
                         links_values.key child_key,
                         links_values.value as child_value
                     FROM pipeline.categorical_attributes attributes
-                    LEFT OUTER JOIN pipeline.categorical_attributes_links links on attributes.id=links.parent_id
+                    LEFT JOIN pipeline.categorical_attributes_links links on attributes.id=links.parent_id
                     LEFT JOIN pipeline.categorical_attributes links_values on links_values.id = links.child_id
                 ]]>
             </value>

@@ -79,8 +79,8 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
         final List<String> dictionaries = dict.stream()
             .map(CategoricalAttribute::getKey)
             .collect(Collectors.toList());
-        this.deleteAttributeValues(dictionaries);
-        return this.insertAttributesValues(dict);
+        deleteAttributeValues(dictionaries);
+        return insertAttributesValues(dict);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
