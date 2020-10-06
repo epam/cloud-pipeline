@@ -84,6 +84,15 @@
                 ]]>
             </value>
         </property>
+        <property name="loadMetadataKeysQuery">
+            <value>
+                <![CDATA[
+                    SELECT DISTINCT jsonb_object_keys(data) as key
+                    FROM pipeline.metadata as m
+                    WHERE m.entity_class = ?
+                ]]>
+            </value>
+        </property>
         <property name="loadMetadataItemsQuery">
             <value>
                 <![CDATA[

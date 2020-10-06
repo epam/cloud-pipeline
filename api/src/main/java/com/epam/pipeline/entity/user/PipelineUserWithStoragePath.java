@@ -1,11 +1,10 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
- *
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +15,13 @@
 
 package com.epam.pipeline.entity.user;
 
+import com.epam.pipeline.entity.metadata.PipeConfValue;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Delegate;
+
+import java.util.Map;
 
 @Getter
 @Setter
@@ -29,6 +31,7 @@ public class PipelineUserWithStoragePath {
     @Delegate
     private PipelineUser pipelineUser;
     private String defaultStoragePath;
+    private Map<String, PipeConfValue> metadata;
 
     @Getter
     public enum PipelineUserFields {

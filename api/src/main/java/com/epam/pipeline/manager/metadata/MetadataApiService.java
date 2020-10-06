@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class MetadataApiService {
@@ -98,7 +99,7 @@ public class MetadataApiService {
     }
 
     @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
-    public List<String> getMetadataKeys(final AclClass entityClass) {
+    public Set<String> getMetadataKeys(final AclClass entityClass) {
         return metadataManager.getMetadataKeys(entityClass);
     }
 }

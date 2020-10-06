@@ -43,6 +43,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Set;
 
 @Controller
 @Api(value = "Metadata")
@@ -112,7 +113,7 @@ public class MetadataController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<String>> getMetadataKeys(@RequestParam final AclClass entityClass) {
+    public Result<Set<String>> getMetadataKeys(@RequestParam final AclClass entityClass) {
         return Result.success(metadataApiService.getMetadataKeys(entityClass));
     }
 
