@@ -279,6 +279,10 @@ public class MetadataManager {
         return metadataDao.buildFullMetadataDict();
     }
 
+    public Set<String> getMetadataKeys(final AclClass entityClass) {
+        return metadataDao.loadMetadataKeys(entityClass);
+    }
+
     Map<String, PipeConfValue> convertFileContentToMetadata(MultipartFile file) {
         String delimiter = MetadataParsingUtils.getDelimiterFromFileExtension(file.getOriginalFilename());
         try (InputStream content = file.getInputStream()) {
