@@ -81,6 +81,11 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
+    public ShellAO assertPageContainsString(String str) {
+        context().shouldHave(text(str));
+        return this;
+    }
+
     public NavigationMenuAO assertAccessIsDenied() {
         assertPageContains("Permission denied");
         return close();

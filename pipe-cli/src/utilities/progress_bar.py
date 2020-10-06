@@ -76,6 +76,8 @@ class ProgressPercentage(object):
 
     def __call__(self, bytes_amount):
         with self._lock:
+            if int(bytes_amount) <= 0:
+                return
             self._seen_so_far += float(bytes_amount) / self.unit_divider
             if self._size == 0:
                 percentage = 100.00

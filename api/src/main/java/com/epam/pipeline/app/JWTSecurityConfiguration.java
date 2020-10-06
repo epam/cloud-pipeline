@@ -63,6 +63,9 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Value("${jwt.use.for.all.requests:false}")
     private boolean useJwtAuthForAllRequests;
+
+    @Value("${jwt.disable.session:true}")
+    private boolean disableJwtSession;
     
     @Value("${api.security.anonymous.urls:/restapi/route}")
     private String[] anonymousResources;
@@ -108,7 +111,8 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .antMatchers(getSecuredResources())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName())
                 .and()
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                .sessionManagement().sessionCreationPolicy(
+                        disableJwtSession ? SessionCreationPolicy.NEVER : SessionCreationPolicy.IF_REQUIRED)
                 .and()
                 .requestCache().requestCache(requestCache())
                 .and()

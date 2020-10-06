@@ -6,6 +6,7 @@
     "ansi_up": "^2.0.2",
     "antd": "2.13.14",
     "chart.js": "^2.9.3",
+    "classnames": "^2.2.6",
     "codemirror": "^5.28.0",
     "color-convert": "^2.0.1",
     "cytoscape": "^2.7.16",

@@ -134,6 +134,13 @@ const hasRole = (roleName) => ({props}) => {
   return false;
 };
 
+const userHasRole = (user, roleName) => {
+  if (user && user.roles && user.roles.length > 0 && roleName) {
+    return user.admin || (user.roles || []).find(r => r.name === roleName);
+  }
+  return false;
+};
+
 const authenticationInfo = (...opts) => inject('authenticatedUserInfo')(...opts);
 
 const refreshAuthenticationInfo = async ({props}) => {
@@ -177,6 +184,8 @@ export default {
   collapseMask,
   manager,
   isManager,
+  hasRole,
+  userHasRole,
   authenticationInfo,
   refreshAuthenticationInfo
 };

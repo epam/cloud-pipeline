@@ -11,6 +11,7 @@ pytest==3.2.5
 pytest-cov==2.5.1
 boto3==1.6.9
 botocore==1.9.9
+s3transfer==0.1.13
 future
 PyJWT==1.6.1
 tld==0.10

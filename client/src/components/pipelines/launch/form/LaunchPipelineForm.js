@@ -2593,8 +2593,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const [currentConfiguration] =
             this.props.configurations.filter(config =>
               config.name === this.props.currentConfigurationName);
-          const rootEntityId =
-            currentConfiguration.rootEntityId ? `${currentConfiguration.rootEntityId}` : '';
+          let rootEntityId = '';
+          if (currentConfiguration.rootEntityId) {
+            const entity = currentMetadataEntity.find(
+              entity => entity.metadataClass &&
+                `${entity.metadataClass.id}` === `${currentConfiguration.rootEntityId}`
+            );
+            if (entity) {
+              rootEntityId = `${currentConfiguration.rootEntityId}`;
+            }
+          }
 
           this.setState({
             currentMetadataEntity,
@@ -3914,54 +3922,64 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderLimitMountsFormItem = () => {
-    const getDefaultValue = () => {
-      if (this.props.parameters.parameters &&
-        this.props.parameters.parameters[CP_CAP_LIMIT_MOUNTS]) {
-        return this.props.parameters.parameters[CP_CAP_LIMIT_MOUNTS].value;
-      }
-      return null;
-    };
-    return (
-      <FormItem
-        className={getFormItemClassName(styles.formItemRow, 'limitMounts')}
-        {...this.cmdTemplateFormItemLayout}
-        label="Limit mounts">
-        <div>
-          <Row type="flex" align="middle">
-            <div style={{flex: 1}}>
-              <FormItem
-                className={styles.formItemRow}
-                hasFeedback>
-                {this.getSectionFieldDecorator(ADVANCED)('limitMounts',
-                  {
-                    initialValue: getDefaultValue()
-                  }
-                )(
-                  <LimitMountsInput
-                    allowSensitive={this.toolAllowSensitive}
-                    disabled={
-                      !!this.state.fireCloudMethodName ||
-                      (this.props.readOnly && !this.props.canExecute)
-                    } />
-                )}
-              </FormItem>
-            </div>
-            <div style={{marginLeft: 7, marginTop: 3}}>
-              {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.limitMountsHint)}
-            </div>
-          </Row>
-          {
-            !this.toolAllowSensitive && (
-              <Alert
-                type="warning"
-                showIcon
-                message="Tool configuration restricts selection of sensitive storages"
-              />
-            )
-          }
-        </div>
-      </FormItem>
-    );
+    const {dataStorageAvailable} = this.props;
+    if (dataStorageAvailable.loaded) {
+      const getDefaultValue = () => {
+        if (this.props.parameters.parameters &&
+          this.props.parameters.parameters[CP_CAP_LIMIT_MOUNTS]) {
+          return this.props.parameters.parameters[CP_CAP_LIMIT_MOUNTS].value;
+        }
+        return null;
+      };
+      const availableMounts = new Set((dataStorageAvailable.value || []).map(d => +d.id));
+      const defaultValue = (getDefaultValue() || '')
+        .split(',')
+        .map(o => +o)
+        .filter(o => availableMounts.has(o))
+        .join(',') || null;
+      return (
+        <FormItem
+          className={getFormItemClassName(styles.formItemRow, 'limitMounts')}
+          {...this.cmdTemplateFormItemLayout}
+          label="Limit mounts">
+          <div>
+            <Row type="flex" align="middle">
+              <div style={{flex: 1}}>
+                <FormItem
+                  className={styles.formItemRow}
+                  hasFeedback>
+                  {this.getSectionFieldDecorator(ADVANCED)('limitMounts',
+                    {
+                      initialValue: defaultValue
+                    }
+                  )(
+                    <LimitMountsInput
+                      allowSensitive={this.toolAllowSensitive}
+                      disabled={
+                        !!this.state.fireCloudMethodName ||
+                        (this.props.readOnly && !this.props.canExecute)
+                      }/>
+                  )}
+                </FormItem>
+              </div>
+              <div style={{marginLeft: 7, marginTop: 3}}>
+                {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.limitMountsHint)}
+              </div>
+            </Row>
+            {
+              !this.toolAllowSensitive && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  message="Tool configuration restricts selection of sensitive storages"
+                />
+              )
+            }
+          </div>
+        </FormItem>
+      );
+    }
+    return null;
   };
 
   renderCmdTemplateFormItem = () => {

@@ -26,7 +26,6 @@ import com.epam.pipeline.autotests.utils.Utils;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import org.openqa.selenium.By;
 
@@ -70,6 +69,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
             entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
+            entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]")).closest(".ant-row").find(by("role", "combobox"))),
             entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input")))
     );
     private final String pipelineName;
@@ -451,7 +451,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         public ConfigureClusterPopupAO clusterEnableCheckboxSelect(String checkBox){
             if (checkBox.equals("Enable GridEngine")
                     || checkBox.equals("Enable Apache Spark")
-                    || checkBox.equals("Enable Slurm")) {
+                    || checkBox.equals("Enable Slurm")
+                    || checkBox.equals("Enable Kubernetes")) {
                 context()
                         .find(byXpath(
                                 format(".//span[.='%s']/preceding-sibling::span[@class='ant-checkbox']", checkBox)))
