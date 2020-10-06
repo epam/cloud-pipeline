@@ -34,13 +34,13 @@ import {
   GetGroupedTools,
   GetGroupedToolsWithPrevious,
   GetGroupedPipelines,
-  GetGroupedPipelinesWithPrevious
+  GetGroupedPipelinesWithPrevious, GetGroupedFileStorages
 } from '../../../models/billing';
 import {
   numberFormatter,
   costTickFormatter,
   DisplayUser,
-  ResizableContainer
+  ResizableContainer, getPeriodMonths
 } from './utilities';
 import {InstanceReportLayout, Layout} from './layout';
 import styles from './reports.css';
@@ -72,6 +72,30 @@ function injection (stores, props) {
     pageSize: tablePageSize,
     pageNum: 0
   };
+  const periods = getPeriodMonths(periodInfo);
+  const exportInstances = [];
+  const exportPipelines = [];
+  const exportTools = [];
+  if (periods && periods.length > 0) {
+    exportInstances.push(...periods.map(p => (
+      new GetGroupedInstances(
+        {...filters, ...p, name: Period.month},
+        pagination
+      )
+    )));
+    exportPipelines.push(...periods.map(p => (
+      new GetGroupedPipelines(
+        {...filters, ...p, name: Period.month},
+        pagination
+      )
+    )));
+    exportTools.push(...periods.map(p => (
+      new GetGroupedTools(
+        {...filters, ...p, name: Period.month},
+        pagination
+      )
+    )));
+  }
   const instances = new GetGroupedInstancesWithPrevious(filters, pagination);
   instances.fetch();
   const instancesTable = new GetGroupedInstances(filters, pagination);
@@ -84,6 +108,9 @@ function injection (stores, props) {
   pipelines.fetch();
   const pipelinesTable = new GetGroupedPipelines(filters, pagination);
   pipelinesTable.fetch();
+  exportInstances.push(instances);
+  exportPipelines.push(pipelines);
+  exportTools.push(tools);
   let filterBy = GetBillingData.FILTER_BY.compute;
   if (/^cpu$/i.test(type)) {
     filterBy = GetBillingData.FILTER_BY.cpu;
@@ -102,7 +129,10 @@ function injection (stores, props) {
     tools,
     toolsTable,
     pipelines,
-    pipelinesTable
+    pipelinesTable,
+    exportInstances,
+    exportPipelines,
+    exportTools
   };
 }
 
@@ -290,7 +320,10 @@ class InstanceReport extends React.Component {
       pipelines,
       instancesTable,
       toolsTable,
-      pipelinesTable
+      pipelinesTable,
+      exportInstances,
+      exportPipelines,
+      exportTools
     } = this.props;
     const {dataSample, previousDataSample} = this.state;
     const composers = [
@@ -300,8 +333,9 @@ class InstanceReport extends React.Component {
       {
         composer: ExportComposers.tableComposer,
         options: [
-          instances,
+          exportInstances,
           `Instances (TOP ${tablePageSize})`,
+          [],
           [
             {
               key: 'usage',
@@ -328,13 +362,15 @@ class InstanceReport extends React.Component {
       {
         composer: ExportComposers.tableComposer,
         options: [
-          pipelines,
+          exportPipelines,
           `Pipelines (TOP ${tablePageSize})`,
           [
             {
               key: 'owner',
               title: 'Owner'
-            },
+            }
+          ],
+          [
             {
               key: 'usage',
               title: 'Usage (hours)'
@@ -360,13 +396,15 @@ class InstanceReport extends React.Component {
       {
         composer: ExportComposers.tableComposer,
         options: [
-          tools,
+          exportTools,
           `Tools (TOP ${tablePageSize})`,
           [
             {
               key: 'owner',
               title: 'Owner'
-            },
+            }
+          ],
+          [
             {
               key: 'usage',
               title: 'Usage (hours)'

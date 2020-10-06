@@ -26,7 +26,13 @@ import {
   BillingTable,
   Summary
 } from './charts';
-import {costTickFormatter, numberFormatter, DisplayUser, ResizableContainer} from './utilities';
+import {
+  costTickFormatter,
+  numberFormatter,
+  DisplayUser,
+  ResizableContainer,
+  getPeriodMonths
+} from './utilities';
 import Filters, {RUNNER_SEPARATOR, REGION_SEPARATOR} from './filters';
 import {Period, getPeriod} from './periods';
 import StorageFilter, {StorageFilters} from './filters/storage-filter';
@@ -68,6 +74,8 @@ function injection (stores, props) {
     cloudRegionId,
     ...periodInfo
   };
+  const periods = getPeriodMonths(periodInfo);
+  const exportCsvRequest = [];
   let filterBy = GetBillingData.FILTER_BY.storages;
   let storages;
   let storagesTable;
@@ -75,14 +83,39 @@ function injection (stores, props) {
     storages = new GetGroupedFileStoragesWithPrevious(filters, true);
     storagesTable = new GetGroupedFileStorages(filters, true);
     filterBy = GetBillingData.FILTER_BY.fileStorages;
+    if (periods && periods.length > 0) {
+      exportCsvRequest.push(...periods.map(p => (
+        new GetGroupedFileStorages(
+          {...filters, ...p, name: Period.month},
+          true
+        )
+      )));
+    }
   } else if (/^object$/i.test(type)) {
     storages = new GetGroupedObjectStoragesWithPrevious(filters, true);
     storagesTable = new GetGroupedObjectStorages(filters, true);
     filterBy = GetBillingData.FILTER_BY.objectStorages;
+    if (periods && periods.length > 0) {
+      exportCsvRequest.push(...periods.map(p => (
+        new GetGroupedObjectStorages(
+          {...filters, ...p, name: Period.month},
+          true
+        )
+      )));
+    }
   } else {
     storages = new GetGroupedStoragesWithPrevious(filters, true);
     storagesTable = new GetGroupedStorages(filters, true);
+    if (periods && periods.length > 0) {
+      exportCsvRequest.push(...periods.map(p => (
+        new GetGroupedStorages(
+          {...filters, ...p, name: Period.month},
+          true
+        )
+      )));
+    }
   }
+  exportCsvRequest.push(storages);
   storages.fetch();
   storagesTable.fetch();
   const summary = new GetBillingData({
@@ -97,6 +130,7 @@ function injection (stores, props) {
     type,
     summary,
     storages,
+    exportCsvRequest,
     storagesTable
   };
 }
@@ -253,7 +287,7 @@ class StorageReports extends React.Component {
   };
 
   render () {
-    const {storages, storagesTable, summary} = this.props;
+    const {storages, exportCsvRequest, storagesTable, summary} = this.props;
     const composers = [
       {
         composer: ExportComposers.discountsComposer
@@ -261,7 +295,7 @@ class StorageReports extends React.Component {
       {
         composer: ExportComposers.tableComposer,
         options: [
-          storages,
+          exportCsvRequest,
           `${this.getTitle()} (TOP ${tablePageSize})`,
           [
             {
@@ -277,22 +311,6 @@ class StorageReports extends React.Component {
               title: 'Type'
             },
             {
-              key: 'value',
-              title: 'Cost',
-              applyDiscounts: ({storage}) => storage,
-              formatter: costTickFormatter
-            },
-            {
-              key: 'usage',
-              title: 'Average Volume (GB)',
-              formatter: numberFormatter
-            },
-            {
-              key: 'usageLast',
-              title: 'Current Volume (GB)',
-              formatter: numberFormatter
-            },
-            {
               key: 'region',
               title: 'Region'
             },
@@ -304,6 +322,24 @@ class StorageReports extends React.Component {
               key: 'created',
               title: 'Created date',
               formatter: displayDate
+            }
+          ],
+          [
+            {
+              key: 'value',
+              title: 'Cost',
+              applyDiscounts: ({storage}) => storage,
+              formatter: (value) => value ? costTickFormatter(value, '') : ''
+            },
+            {
+              key: 'usage',
+              title: 'Average Volume (GB)',
+              formatter: (value) => value ? numberFormatter(value, '') : ''
+            },
+            {
+              key: 'usageLast',
+              title: 'Current Volume (GB)',
+              formatter: (value) => value ? numberFormatter(value, '') : ''
             }
           ],
           'Storage',

@@ -41,7 +41,8 @@ import {
   costTickFormatter,
   getUserDisplayInfo,
   DisplayUser,
-  ResizableContainer
+  ResizableContainer,
+  getPeriodMonths
 } from './utilities';
 import {GeneralReportLayout, Layout} from './layout';
 import roleModel from '../../../utils/roleModel';
@@ -79,6 +80,41 @@ function injection (stores, props) {
   billingCentersComputeRequest.fetch();
   let billingCentersComputeTableRequest;
   let billingCentersStorageTableRequest;
+  const periods = getPeriodMonths(periodInfo);
+  const exportCsvRequest = [];
+  const exportByUsersCsvRequest = [];
+  if (periods && periods.length > 0) {
+    exportCsvRequest.push(
+      ...periods.map(p => {
+        const periodFilters = {...filters, ...p, name: Period.month};
+        return [
+          new GetGroupedBillingCenters(
+            {...periodFilters, resourceType: 'COMPUTE'},
+            false
+          ),
+          new GetGroupedBillingCenters(
+            {...periodFilters, resourceType: 'STORAGE'},
+            false
+          )
+        ];
+      })
+    );
+    exportByUsersCsvRequest.push(
+      ...periods.map(p => {
+        const periodFilters = {...filters, ...p, name: Period.month};
+        return [
+          new GetGroupedUsers(
+            {...periodFilters, resourceType: 'COMPUTE'},
+            false
+          ),
+          new GetGroupedUsers(
+            {...periodFilters, resourceType: 'STORAGE'},
+            false
+          )
+        ];
+      })
+    );
+  }
   if (group) {
     billingCentersComputeTableRequest = new GetGroupedBillingCenters(
       {...filters, resourceType: 'COMPUTE'}
@@ -105,10 +141,6 @@ function injection (stores, props) {
     {...filters, resourceType: 'STORAGE'},
     false
   );
-  exportComputeCsvRequest.fetch();
-  exportStorageCsvRequest.fetch();
-  exportComputeByUsersCsvRequest.fetch();
-  exportStorageByUsersCsvRequest.fetch();
   const resources = new GetGroupedResourcesWithPrevious(filters);
   resources.fetch();
   const summaryCompute = new GetBillingData(
@@ -125,6 +157,8 @@ function injection (stores, props) {
     }
   );
   summaryStorages.fetch();
+  exportCsvRequest.push([exportComputeCsvRequest, exportStorageCsvRequest]);
+  exportByUsersCsvRequest.push([exportComputeByUsersCsvRequest, exportStorageByUsersCsvRequest]);
   return {
     user,
     group,
@@ -135,12 +169,8 @@ function injection (stores, props) {
     billingCentersComputeTableRequest,
     billingCentersStorageTableRequest,
     resources,
-    exportCsvRequest: [
-      [exportComputeCsvRequest, exportStorageCsvRequest]
-    ],
-    exportByUsersCsvRequest: [
-      [exportComputeByUsersCsvRequest, exportStorageByUsersCsvRequest]
-    ],
+    exportCsvRequest,
+    exportByUsersCsvRequest,
     users,
     preferences
   };
