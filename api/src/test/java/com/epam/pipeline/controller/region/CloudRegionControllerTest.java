@@ -16,6 +16,10 @@
 
 package com.epam.pipeline.controller.region;
 
+import com.epam.pipeline.controller.vo.region.AzureRegionDTO;
+import com.epam.pipeline.controller.vo.region.GCPRegionDTO;
+import com.epam.pipeline.entity.region.AzureRegion;
+import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.epam.pipeline.controller.ResponseResult;
 import com.epam.pipeline.controller.Result;
@@ -50,26 +54,37 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class CloudRegionControllerTest extends AbstractControllerTest {
 
     private static final long ID = 1L;
-    private static final int DURATION = 773;
     private static final String REGION_URL = SERVLET_PATH + "/cloud/region";
     private static final String LOAD_PROVIDERS_URL = REGION_URL + "/provider";
     private static final String LOAD_REGIONS_INFO_URL = REGION_URL + "/info";
     private static final String LOAD_AVAILABLE_REGIONS_URL = REGION_URL + "/available";
     private static final String REGION_ID_URL = REGION_URL + "/%d";
     private AwsRegion awsRegion;
+    private AWSRegionDTO awsRegionDTO;
+    private AzureRegion azureRegion;
+    private AzureRegionDTO azureRegionDTO;
+    private GCPRegion gcpRegion;
+    private GCPRegionDTO gcpRegionDTO;
     private ResponseResult<AwsRegion> expectedAwsRegionResult;
+    private ResponseResult<AzureRegion> expectedAzureResult;
+    private ResponseResult<GCPRegion> expectedGcpResult;
 
     @Autowired
     private CloudRegionApiService mockCloudRegionApiService;
 
     @Before
     public void setUp() {
-        awsRegion = new AwsRegion();
-        awsRegion.setId(ID);
-        awsRegion.setName("testName");
-        awsRegion.setRegionCode("7367");
+        awsRegion = RegionCreatorUtils.getDefaultAwsRegion();
+        azureRegion = RegionCreatorUtils.getDefaultAzureRegion();
+        gcpRegion = RegionCreatorUtils.getDefaultGcpRegion();
+
+        awsRegionDTO = RegionCreatorUtils.getDefaultAwsRegionDTO();
+        azureRegionDTO = RegionCreatorUtils.getDefaultAzureRegionDTO();
+        gcpRegionDTO = RegionCreatorUtils.getDefaultGcpRegionDTO();
 
         expectedAwsRegionResult = ControllerTestUtils.buildExpectedResult(awsRegion);
+        expectedAzureResult = ControllerTestUtils.buildExpectedResult(azureRegion);
+        expectedGcpResult = ControllerTestUtils.buildExpectedResult(gcpRegion);
     }
 
     @Test
@@ -172,7 +187,7 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldLoadRegionById() throws Exception{
+    public void shouldLoadAwsRegionById() throws Exception{
         Mockito.doReturn(awsRegion).when(mockCloudRegionApiService).load(ID);
 
         final MvcResult mvcResult = mvc().perform(get(String.format(REGION_ID_URL, ID))
@@ -190,6 +205,50 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedAwsRegionResult,
                 new TypeReference<Result<AwsRegion>>() { });
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldLoadAzureRegionById() throws Exception{
+        Mockito.doReturn(azureRegion).when(mockCloudRegionApiService).load(ID);
+
+        final MvcResult mvcResult = mvc().perform(get(String.format(REGION_ID_URL, ID))
+                .servletPath(SERVLET_PATH)
+                .contentType(EXPECTED_CONTENT_TYPE))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
+                .andReturn();
+
+        final ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
+        Mockito.verify(mockCloudRegionApiService).load(longCaptor.capture());
+        Assertions.assertThat(longCaptor.getValue()).isEqualTo(ID);
+
+        Mockito.verify(mockCloudRegionApiService).load(ID);
+
+        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedAzureResult,
+                new TypeReference<Result<AzureRegion>>() { });
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldLoadGcpRegionById() throws Exception{
+        Mockito.doReturn(gcpRegion).when(mockCloudRegionApiService).load(ID);
+
+        final MvcResult mvcResult = mvc().perform(get(String.format(REGION_ID_URL, ID))
+                .servletPath(SERVLET_PATH)
+                .contentType(EXPECTED_CONTENT_TYPE))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
+                .andReturn();
+
+        final ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
+        Mockito.verify(mockCloudRegionApiService).load(longCaptor.capture());
+        Assertions.assertThat(longCaptor.getValue()).isEqualTo(ID);
+
+        Mockito.verify(mockCloudRegionApiService).load(ID);
+
+        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedGcpResult,
+                new TypeReference<Result<GCPRegion>>() { });
     }
 
     @Test
@@ -234,9 +293,7 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldCreateRegion() throws Exception {
-        final AWSRegionDTO awsRegionDTO = new AWSRegionDTO();
-        awsRegionDTO.setBackupDuration(DURATION);
+    public void shouldCreateAwsRegion() throws Exception {
         Mockito.doReturn(awsRegion).when(mockCloudRegionApiService).create(Mockito.refEq(awsRegionDTO));
 
         final MvcResult mvcResult = mvc().perform(post(REGION_URL)
@@ -249,13 +306,59 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
 
         final ArgumentCaptor<AWSRegionDTO> awsRegionDTOCaptor = ArgumentCaptor.forClass(AWSRegionDTO.class);
         Mockito.verify(mockCloudRegionApiService).create(awsRegionDTOCaptor.capture());
-        Assertions.assertThat(awsRegionDTOCaptor.getValue().getBackupDuration())
-                .isEqualTo(awsRegionDTO.getBackupDuration());
+        Assertions.assertThat(awsRegionDTOCaptor.getValue()).isEqualToComparingFieldByField(awsRegionDTO);
 
         Mockito.verify(mockCloudRegionApiService).create(Mockito.refEq(awsRegionDTO));
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedAwsRegionResult,
                 new TypeReference<Result<AwsRegion>>() { });
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldCreateAzureRegion() throws Exception {
+        Mockito.doReturn(azureRegion).when(mockCloudRegionApiService).create(Mockito.refEq(azureRegionDTO));
+
+        final MvcResult mvcResult = mvc().perform(post(REGION_URL)
+                .servletPath(SERVLET_PATH)
+                .contentType(EXPECTED_CONTENT_TYPE)
+                .content(getObjectMapper().writeValueAsString(azureRegionDTO)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
+                .andReturn();
+
+        final ArgumentCaptor<AzureRegionDTO> azureRegionDTOCaptor = ArgumentCaptor.forClass(AzureRegionDTO.class);
+        Mockito.verify(mockCloudRegionApiService).create(azureRegionDTOCaptor.capture());
+        Assertions.assertThat(azureRegionDTOCaptor.getValue().getAuthFile())
+                .isEqualTo(azureRegionDTO.getAuthFile());
+
+        Mockito.verify(mockCloudRegionApiService).create(Mockito.refEq(azureRegionDTO));
+
+        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedAzureResult,
+                new TypeReference<Result<AzureRegion>>() { });
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldCreateGcpRegion() throws Exception {
+        Mockito.doReturn(gcpRegion).when(mockCloudRegionApiService).create(Mockito.refEq(gcpRegionDTO));
+
+        final MvcResult mvcResult = mvc().perform(post(REGION_URL)
+                .servletPath(SERVLET_PATH)
+                .contentType(EXPECTED_CONTENT_TYPE)
+                .content(getObjectMapper().writeValueAsString(gcpRegionDTO)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
+                .andReturn();
+
+        final ArgumentCaptor<GCPRegionDTO> gcpRegionDTOCaptor = ArgumentCaptor.forClass(GCPRegionDTO.class);
+        Mockito.verify(mockCloudRegionApiService).create(gcpRegionDTOCaptor.capture());
+        Assertions.assertThat(gcpRegionDTOCaptor.getValue()).isEqualToComparingFieldByField(gcpRegionDTO);
+
+        Mockito.verify(mockCloudRegionApiService).create(Mockito.refEq(gcpRegionDTO));
+
+        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedGcpResult,
+                new TypeReference<Result<GCPRegion>>() { });
     }
 
     @Test
@@ -267,9 +370,7 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldUpdateRegionById() throws Exception {
-        final AWSRegionDTO awsRegionDTO = new AWSRegionDTO();
-        awsRegionDTO.setBackupDuration(DURATION);
+    public void shouldUpdateAwsRegionById() throws Exception {
         Mockito.doReturn(awsRegion).when(mockCloudRegionApiService).update(Mockito.eq(ID), Mockito.refEq(awsRegionDTO));
 
         final MvcResult mvcResult = mvc().perform(put(String.format(REGION_ID_URL, ID))
@@ -292,6 +393,53 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
     }
 
     @Test
+    @WithMockUser
+    public void shouldUpdateAzureRegionById() throws Exception {
+        Mockito.doReturn(azureRegion).when(mockCloudRegionApiService)
+                .update(Mockito.eq(ID), Mockito.refEq(azureRegionDTO));
+
+        final MvcResult mvcResult = mvc().perform(put(String.format(REGION_ID_URL, ID))
+                .servletPath(SERVLET_PATH)
+                .contentType(EXPECTED_CONTENT_TYPE)
+                .content(getObjectMapper().writeValueAsString(azureRegionDTO)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
+                .andReturn();
+
+        final ArgumentCaptor<AzureRegionDTO> azureRegionDTOCaptor = ArgumentCaptor.forClass(AzureRegionDTO.class);
+        Mockito.verify(mockCloudRegionApiService).update(Mockito.eq(ID), azureRegionDTOCaptor.capture());
+        Assertions.assertThat(azureRegionDTOCaptor.getValue()).isEqualToComparingFieldByField(azureRegionDTO);
+
+        Mockito.verify(mockCloudRegionApiService).update(Mockito.eq(ID), Mockito.refEq(azureRegionDTO));
+
+        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedAzureResult,
+                new TypeReference<Result<AzureRegion>>() { });
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldUpdateGcpRegionById() throws Exception {
+        Mockito.doReturn(gcpRegion).when(mockCloudRegionApiService).update(Mockito.eq(ID), Mockito.refEq(gcpRegionDTO));
+
+        final MvcResult mvcResult = mvc().perform(put(String.format(REGION_ID_URL, ID))
+                .servletPath(SERVLET_PATH)
+                .contentType(EXPECTED_CONTENT_TYPE)
+                .content(getObjectMapper().writeValueAsString(gcpRegionDTO)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
+                .andReturn();
+
+        final ArgumentCaptor<GCPRegionDTO> gcpRegionDTOCaptor = ArgumentCaptor.forClass(GCPRegionDTO.class);
+        Mockito.verify(mockCloudRegionApiService).update(Mockito.eq(ID), gcpRegionDTOCaptor.capture());
+        Assertions.assertThat(gcpRegionDTOCaptor.getValue()).isEqualToComparingFieldByField(gcpRegionDTO);
+
+        Mockito.verify(mockCloudRegionApiService).update(Mockito.eq(ID), Mockito.refEq(gcpRegionDTO));
+
+        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedGcpResult,
+                new TypeReference<Result<GCPRegion>>() { });
+    }
+
+    @Test
     public void shouldFailDeleteForUnauthorizedUser() throws Exception {
         mvc().perform(delete(String.format(REGION_ID_URL, ID))
                 .servletPath(SERVLET_PATH))
@@ -300,7 +448,7 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldDeleteRegionById() throws Exception {
+    public void shouldDeleteAwsRegionById() throws Exception {
         Mockito.doReturn(awsRegion).when(mockCloudRegionApiService).delete(ID);
 
         final MvcResult mvcResult = mvc().perform(delete(String.format(REGION_ID_URL, ID))
@@ -318,5 +466,49 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedAwsRegionResult,
                 new TypeReference<Result<AwsRegion>>() { });
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDeleteAzureRegionById() throws Exception {
+        Mockito.doReturn(azureRegion).when(mockCloudRegionApiService).delete(ID);
+
+        final MvcResult mvcResult = mvc().perform(delete(String.format(REGION_ID_URL, ID))
+                .servletPath(SERVLET_PATH)
+                .contentType(EXPECTED_CONTENT_TYPE))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
+                .andReturn();
+
+        final ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
+        Mockito.verify(mockCloudRegionApiService).delete(longCaptor.capture());
+        Assertions.assertThat(longCaptor.getValue()).isEqualTo(ID);
+
+        Mockito.verify(mockCloudRegionApiService).delete(ID);
+
+        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedAzureResult,
+                new TypeReference<Result<AzureRegion>>() { });
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDeleteGcpRegionById() throws Exception {
+        Mockito.doReturn(gcpRegion).when(mockCloudRegionApiService).delete(ID);
+
+        final MvcResult mvcResult = mvc().perform(delete(String.format(REGION_ID_URL, ID))
+                .servletPath(SERVLET_PATH)
+                .contentType(EXPECTED_CONTENT_TYPE))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
+                .andReturn();
+
+        final ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
+        Mockito.verify(mockCloudRegionApiService).delete(longCaptor.capture());
+        Assertions.assertThat(longCaptor.getValue()).isEqualTo(ID);
+
+        Mockito.verify(mockCloudRegionApiService).delete(ID);
+
+        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedGcpResult,
+                new TypeReference<Result<GCPRegion>>() { });
     }
 }
