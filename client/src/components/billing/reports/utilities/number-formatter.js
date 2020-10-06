@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-export default function (value) {
+export default function (value, separator = ',') {
   if (isNaN(value)) {
     return value;
   }
@@ -23,5 +23,5 @@ export default function (value) {
     {
       useGrouping: true,
       style: 'decimal'
-    });
+    }).replace(/,/g, separator);
 }
