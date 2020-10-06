@@ -804,6 +804,9 @@ export default class UserManagementForm extends React.Component {
   };
 
   render () {
+    if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
+      return null;
+    }
     if (!this.isReader && !this.isAdmin) {
       return (
         <Alert type="error" message="Access is denied" />
