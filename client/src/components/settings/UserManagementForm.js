@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {observer, inject} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {
+  Alert,
   Tabs,
   Table,
   Row,
@@ -49,6 +50,7 @@ import roleModel from '../../utils/roleModel';
 
 const PAGE_SIZE = 20;
 
+@roleModel.authenticationInfo
 @inject('dataStorages', 'users')
 @inject(({users, authenticatedUserInfo}) => ({
   users,
@@ -92,6 +94,10 @@ export default class UserManagementForm extends React.Component {
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value.admin
       : false;
+  };
+
+  get isReader () {
+    return roleModel.hasRole('ROLE_USER_READER')(this);
   };
 
   operationWrapper = (operation) => (...props) => {
@@ -335,23 +341,29 @@ export default class UserManagementForm extends React.Component {
           value={this.state.userSearchText}
           onPressEnter={this.fetchUsers}
           onChange={this.onUserSearchChanged} />
-        <Button
-          size="small"
-          style={{marginLeft: 5}}
-          onClick={this.openCreateUserDialog}
-        >
-          <Icon type="plus" />Create user
-        </Button>
-        { this.isAdmin &&
-          <Dropdown.Button
-            size="small"
-            style={{marginLeft: 5}}
-            onClick={() => doExport()}
-            overlay={exportUserMenu}
-            icon={<Icon type="download" />}
-          >
-            Export users
-          </Dropdown.Button>
+        {
+          this.isAdmin && (
+            <Button
+              size="small"
+              style={{marginLeft: 5}}
+              onClick={this.openCreateUserDialog}
+            >
+              <Icon type="plus" />Create user
+            </Button>
+          )
+        }
+        {
+          (this.isReader || this.isAdmin) && (
+            <Dropdown.Button
+              size="small"
+              style={{marginLeft: 5}}
+              onClick={() => doExport()}
+              overlay={exportUserMenu}
+              icon={<Icon type="download" />}
+            >
+              Export users
+            </Dropdown.Button>
+          )
         }
       </Row>
     );
@@ -463,23 +475,25 @@ export default class UserManagementForm extends React.Component {
         render: (roles) => renderTagsList((roles || []), styles.userRole, 10),
         className: styles.rolesColumn
       },
-      {
-        key: 'actions',
-        render: (user) => {
-          return (
-            <Row type="flex" justify="end">
-              <Button
-                id="edit-user-button"
-                size="small"
-                onClick={() => this.openEditUserRolesDialog(user)}
-              >
-                <Icon type="edit" />
-              </Button>
-            </Row>
-          );
+      this.isAdmin
+        ? {
+          key: 'actions',
+          render: (user) => {
+            return (
+              <Row type="flex" justify="end">
+                <Button
+                  id="edit-user-button"
+                  size="small"
+                  onClick={() => this.openEditUserRolesDialog(user)}
+                >
+                  <Icon type="edit" />
+                </Button>
+              </Row>
+            );
+          }
         }
-      }
-    ];
+        : undefined
+    ].filter(Boolean);
     return (
       <Table
         className={styles.table}
@@ -489,6 +503,7 @@ export default class UserManagementForm extends React.Component {
         dataSource={this.users}
         onChange={this.handleUserTableChange}
         rowClassName={user => `user-${user.id}`}
+        onRowClick={(user) => this.openEditUserRolesDialog(user)}
         pagination={{
           total: this.users.length,
           PAGE_SIZE,
@@ -561,19 +576,21 @@ export default class UserManagementForm extends React.Component {
           );
         }
       },
-      {
-        key: 'actions',
-        render: (role) => {
-          return (
-            <Row className={styles.roleActions} type="flex" justify="end">
-              <Button size="small" onClick={() => this.openEditRoleDialog(role)}>
-                <Icon type="edit" />
-              </Button>
-            </Row>
-          );
+      this.isAdmin
+        ? {
+          key: 'actions',
+          render: (role) => {
+            return (
+              <Row className={styles.roleActions} type="flex" justify="end">
+                <Button size="small" onClick={() => this.openEditRoleDialog(role)}>
+                  <Icon type="edit" />
+                </Button>
+              </Row>
+            );
+          }
         }
-      }
-    ];
+        : undefined
+    ].filter(Boolean);
 
     const roles = (this.props.roles.value || [])
       .map(r => r)
@@ -590,6 +607,7 @@ export default class UserManagementForm extends React.Component {
         columns={columns}
         dataSource={roles}
         onChange={this.handleRolesTableChange}
+        onRowClick={(role) => this.openEditRoleDialog(role)}
         pagination={{total: roles.length, PAGE_SIZE, current: this.state.rolesTableCurrentPage}}
         size="small" />
     );
@@ -624,22 +642,24 @@ export default class UserManagementForm extends React.Component {
           );
         }
       },
-      {
-        key: 'actions',
-        render: (role) => {
-          return (
-            <Row className={styles.roleActions} type="flex" justify="end">
-              <Button size="small" onClick={() => this.openEditGroupDialog(role)}>
-                <Icon type="edit" />
-              </Button>
-              <Button size="small" type="danger" onClick={() => this.deleteRoleConfirm(role)}>
-                <Icon type="delete" />
-              </Button>
-            </Row>
-          );
+      this.isAdmin
+        ? {
+          key: 'actions',
+          render: (role) => {
+            return (
+              <Row className={styles.roleActions} type="flex" justify="end">
+                <Button size="small" onClick={() => this.openEditGroupDialog(role)}>
+                  <Icon type="edit" />
+                </Button>
+                <Button size="small" type="danger" onClick={() => this.deleteRoleConfirm(role)}>
+                  <Icon type="delete" />
+                </Button>
+              </Row>
+            );
+          }
         }
-      }
-    ];
+        : undefined
+    ].filter(Boolean);
 
     const splitRoleName = (name) => {
       if (name && name.toLowerCase().indexOf('role_') === 0) {
@@ -668,6 +688,7 @@ export default class UserManagementForm extends React.Component {
         columns={columns}
         dataSource={roles}
         onChange={this.handleGroupsTableChange}
+        onRowClick={(group) => this.openEditGroupDialog(group)}
         pagination={{total: roles.length, PAGE_SIZE, current: this.state.groupsTableCurrentPage}}
         size="small" />
     );
@@ -783,6 +804,14 @@ export default class UserManagementForm extends React.Component {
   };
 
   render () {
+    if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
+      return null;
+    }
+    if (!this.isReader && !this.isAdmin) {
+      return (
+        <Alert type="error" message="Access is denied" />
+      );
+    }
     const {exportUserDialogVisible, userDataToExport} = this.state;
     return (
       <Tabs className="user-management-tabs" style={{width: '100%', overflow: 'auto'}} type="card">
@@ -793,7 +822,9 @@ export default class UserManagementForm extends React.Component {
             visible={!!this.state.editableUser}
             onUserDelete={this.deleteUser}
             onClose={this.closeEditUserRolesDialog}
-            user={this.state.editableUser} />
+            user={this.state.editableUser}
+            readOnly={!this.isAdmin}
+          />
           <ExportUserForm
             visible={exportUserDialogVisible}
             values={userDataToExport}
@@ -818,17 +849,23 @@ export default class UserManagementForm extends React.Component {
                 value={this.state.groupsSearchText}
                 onChange={this.onGroupSearchChanged} />
             </div>
-            <div style={{paddingLeft: 10}}>
-              <Button size="small" type="primary" onClick={this.openCreateGroupDialog}>
-                <Icon type="plus" /> Create group
-              </Button>
-            </div>
+            {
+              this.isAdmin && (
+                <div style={{paddingLeft: 10}}>
+                  <Button size="small" type="primary" onClick={this.openCreateGroupDialog}>
+                    <Icon type="plus" /> Create group
+                  </Button>
+                </div>
+              )
+            }
           </Row>
           {this.renderGroupsTable()}
           <EditRoleDialog
             visible={!!this.state.editableGroup}
             onClose={this.closeEditGroupDialog}
-            role={this.state.editableGroup} />
+            role={this.state.editableGroup}
+            readOnly={!this.isAdmin}
+          />
           <Modal
             title="Create group"
             footer={
@@ -908,7 +945,9 @@ export default class UserManagementForm extends React.Component {
           <EditRoleDialog
             visible={!!this.state.editableRole}
             onClose={this.closeEditRoleDialog}
-            role={this.state.editableRole} />
+            role={this.state.editableRole}
+            readOnly={!this.isAdmin}
+          />
         </Tabs.TabPane>
       </Tabs>
     );

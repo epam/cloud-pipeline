@@ -55,7 +55,8 @@ export default class EditUserRolesDialog extends React.Component {
       userName: PropTypes.string
     }),
     onClose: PropTypes.func,
-    onUserDelete: PropTypes.func
+    onUserDelete: PropTypes.func,
+    readOnly: PropTypes.bool
   };
 
   state = {
@@ -178,6 +179,7 @@ export default class EditUserRolesDialog extends React.Component {
   };
 
   renderUserRolesList = () => {
+    const {readOnly} = this.props;
     const {roles, rolesInitialized} = this.state;
     if (!rolesInitialized) {
       return null;
@@ -192,7 +194,7 @@ export default class EditUserRolesDialog extends React.Component {
               size="small"
               type="danger"
               onClick={() => this.removeRole(role.id)}
-              disabled={this.state.operationInProgress}
+              disabled={this.state.operationInProgress || readOnly}
             >
               <Icon type="delete" />
             </Button>
@@ -248,8 +250,13 @@ export default class EditUserRolesDialog extends React.Component {
   }
 
   get defaultStorageId () {
+    const {readOnly, dataStorages} = this.props;
     const {defaultStorageId} = this.state;
-    if (defaultStorageId) {
+    if (defaultStorageId && dataStorages.loaded) {
+      const dataStorage = (dataStorages.value || []).find(d => d.id === +defaultStorageId);
+      if (!dataStorage) {
+        return readOnly ? `Access is denied` : undefined;
+      }
       return `${defaultStorageId}`;
     }
     return undefined;
@@ -454,6 +461,7 @@ export default class EditUserRolesDialog extends React.Component {
     if (!this.props.userInfo) {
       return null;
     }
+    const {readOnly} = this.props;
     let blocked = false;
     if (this.props.userInfo.loaded) {
       blocked = this.props.userInfo.value.blocked;
@@ -482,10 +490,12 @@ export default class EditUserRolesDialog extends React.Component {
           <Row type="flex" justify="space-between">
             <div>
               <Button
+                disabled={readOnly}
                 id="delete-user-button"
                 type="danger"
                 onClick={this.onDelete}>DELETE</Button>
               <Button
+                disabled={readOnly}
                 type="danger"
                 onClick={() => this.onBlockUnBlock(!blocked)}
               >
@@ -496,6 +506,7 @@ export default class EditUserRolesDialog extends React.Component {
             </div>
             <div>
               <Button
+                disabled={readOnly}
                 id="revert-changes-edit-user-form"
                 onClick={() => this.revertChanges()}
                 disabled={!this.modified}
@@ -547,7 +558,7 @@ export default class EditUserRolesDialog extends React.Component {
               <Select
                 allowClear
                 showSearch
-                disabled={this.state.operationInProgress}
+                disabled={this.state.operationInProgress || readOnly}
                 value={this.defaultStorageId}
                 style={{flex: 1}}
                 onChange={this.onChangeDefaultStorageId}
@@ -578,7 +589,7 @@ export default class EditUserRolesDialog extends React.Component {
               </span>
               <div style={{flex: 1}} id="find-role-select-container">
                 <Select
-                  disabled={this.state.operationInProgress}
+                  disabled={this.state.operationInProgress || readOnly}
                   value={this.state.selectedRole}
                   size="small"
                   showSearch
@@ -609,13 +620,22 @@ export default class EditUserRolesDialog extends React.Component {
                   disabled={
                     this.state.selectedRole === null ||
                     this.state.selectedRole === undefined ||
-                    this.state.operationInProgress
+                    this.state.operationInProgress ||
+                    readOnly
                   }>
                   <Icon type="plus" /> Add
                 </Button>
               </div>
             </Row>
-            <Row type="flex" style={{height: '30vh', overflow: 'auto', display: 'flex', flexDirection: 'column'}}>
+            <Row
+              type="flex"
+              style={{
+                height: '30vh',
+                overflow: 'auto',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
               {this.renderUserRolesList()}
             </Row>
           </div>
@@ -654,7 +674,7 @@ export default class EditUserRolesDialog extends React.Component {
               }
             ]}>
             <Metadata
-              readOnly={this.state.operationInProgress}
+              readOnly={this.state.operationInProgress || readOnly}
               key={METADATA_PANEL_KEY}
               entityId={this.props.userId}
               entityClass="PIPELINE_USER"
@@ -663,7 +683,7 @@ export default class EditUserRolesDialog extends React.Component {
               value={metadata}
             />
             <InstanceTypesManagementForm
-              disabled={this.state.operationInProgress}
+              disabled={this.state.operationInProgress || readOnly}
               key="INSTANCE_MANAGEMENT"
               resourceId={this.props.userId}
               level="USER"
