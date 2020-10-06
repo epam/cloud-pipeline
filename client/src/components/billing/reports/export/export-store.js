@@ -50,9 +50,11 @@ class ExportStore {
   }
 
   doCsvExport = (title, ...options) => {
+    const hide = message.loading('Exporting...', 0);
     const promises = this.listeners.map(listener => listener.getExportData(...options));
     Promise.all(promises)
       .then((sheets) => {
+        hide();
         sheets.forEach((sheet, index) => {
           const extra = sheets.length > 1 ? ` (${index + 1} of ${sheets.length})` : '';
           const name = `${title}${extra}.csv`;
@@ -60,6 +62,7 @@ class ExportStore {
         });
       })
       .catch((error) => {
+        hide();
         message.error(error.toString(), 5);
       });
   };

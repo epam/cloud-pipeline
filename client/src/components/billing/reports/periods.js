@@ -70,6 +70,16 @@ function getRangeDescription ({start, end}, period) {
       if (!start) {
         return undefined;
       }
+      if (start && end) {
+        const startOfMonthDate = moment(start).startOf('M').date();
+        const endOfMonthDate = moment(end).endOf('M').date();
+        if (startOfMonthDate !== start.date() || endOfMonthDate !== end.date()) {
+          if (start.date() === end.date()) {
+            return start.format('D MMMM YYYY');
+          }
+          return `${start.date()} - ${end.date()} ${start.format('MMMM YYYY')}`;
+        }
+      }
       return start.format('MMMM YYYY');
   }
 }

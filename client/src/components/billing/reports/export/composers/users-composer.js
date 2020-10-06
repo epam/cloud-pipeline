@@ -24,7 +24,14 @@ function compose (csv, discounts, exportOptions, resources, usersRequest, prefer
   if (format !== ExportFormats.csvUsers) {
     return Promise.resolve();
   }
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
+    if (resources && resources.length) {
+      try {
+        await Promise.all(resources.map(r => Promise.all(r.map(rr => rr.fetch()))));
+      } catch (e) {
+        reject(e);
+      }
+    }
     if (
       !resources ||
       resources.length === 0 ||
@@ -65,10 +72,11 @@ function compose (csv, discounts, exportOptions, resources, usersRequest, prefer
       for (let c = 0; c < users.length; c++) {
         usersRows[users[c]] = csv.addRow(getUserDisplayInfo(users[c], usersRequest, preferences));
       }
+      const billingCenterColumn = csv.addColumns('');
       const grandTotalRow = csv.addRow('Grand total', true);
       const columns = {};
       for (let i = 0; i < resources.length; i++) {
-        columns[i] = csv.addColumns('', '', '', '', '');
+        columns[i] = csv.addColumns('', '', '', '');
       }
       const round = a => Math.round(a * 100.0) / 100.0;
       csv.setCellValueByIndex(
@@ -80,6 +88,11 @@ function compose (csv, discounts, exportOptions, resources, usersRequest, prefer
         storageDiscountRow,
         0,
         storageValue !== 0 ? `${round(storageValue)} %` : '-'
+      );
+      csv.setCellValueByIndex(
+        titleRow,
+        billingCenterColumn,
+        'Billing center'
       );
       for (let i = 0; i < resources.length; i++) {
         const [resource] = resources[i];
@@ -94,26 +107,21 @@ function compose (csv, discounts, exportOptions, resources, usersRequest, prefer
         csv.setCellValueByIndex(
           titleRow,
           columns[i][0],
-          'Billing center'
-        );
-        csv.setCellValueByIndex(
-          titleRow,
-          columns[i][1],
           'Sum of runs'
         );
         csv.setCellValueByIndex(
           titleRow,
-          columns[i][2],
+          columns[i][1],
           'Sum of hours'
         );
         csv.setCellValueByIndex(
           titleRow,
-          columns[i][3],
+          columns[i][2],
           'Sum of runs costs'
         );
         csv.setCellValueByIndex(
           titleRow,
-          columns[i][4],
+          columns[i][3],
           'Sum of storage costs'
         );
       }
@@ -169,48 +177,48 @@ function compose (csv, discounts, exportOptions, resources, usersRequest, prefer
           sumOfStorageCosts += storageCosts;
           csv.setCellValueByIndex(
             usersRows[user],
-            columns[i][0],
+            billingCenterColumn,
             billingCenter
           );
           csv.setCellValueByIndex(
             usersRows[user],
-            columns[i][1],
+            columns[i][0],
             runs
           );
           csv.setCellValueByIndex(
             usersRows[user],
-            columns[i][2],
+            columns[i][1],
             hours
           );
           csv.setCellValueByIndex(
             usersRows[user],
-            columns[i][3],
+            columns[i][2],
             runsCosts
           );
           csv.setCellValueByIndex(
             usersRows[user],
-            columns[i][4],
+            columns[i][3],
             storageCosts
           );
         }
         csv.setCellValueByIndex(
           grandTotalRow,
-          columns[i][1],
+          columns[i][0],
           sumOfRuns
         );
         csv.setCellValueByIndex(
           grandTotalRow,
-          columns[i][2],
+          columns[i][1],
           round(sumOfHours)
         );
         csv.setCellValueByIndex(
           grandTotalRow,
-          columns[i][3],
+          columns[i][2],
           round(sumOfRunsCosts)
         );
         csv.setCellValueByIndex(
           grandTotalRow,
-          columns[i][4],
+          columns[i][3],
           round(sumOfStorageCosts)
         );
       }
