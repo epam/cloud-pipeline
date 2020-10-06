@@ -68,7 +68,6 @@ public class LogAO implements AccessObject<LogAO> {
             entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]"))),
             entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find("a")),
             entry(SHARE_WITH, $(withText("Share with:")).closest("tr").find("a"))
-
     );
 
     public LogAO waitForCompletion() {
