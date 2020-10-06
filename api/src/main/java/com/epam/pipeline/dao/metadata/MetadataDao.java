@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -63,6 +65,7 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     private String searchMetadataByClassAndKeyValueQuery;
     private String loadUniqueValuesFromEntitiesAttributes;
     private String createMetadataDictionary;
+    private String loadMetadataKeysQuery;
 
     @Value("#{'${metadata.sensitive.keys}'.split(',')}")
     private List<String> sensitiveMetadataKeys;
@@ -160,6 +163,13 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
         return JsonMapper.convertDataToJsonStringForQuery(data);
     }
 
+    public Set<String> loadMetadataKeys(final AclClass entityClass) {
+        final List<String> result = ListUtils.emptyIfNull(
+                getJdbcTemplate()
+                        .queryForList(loadMetadataKeysQuery, String.class, entityClass.name()));
+        return new HashSet<>(result);
+    }
+
     private String convertEntitiesToString(String query, List<EntityVO> entities) {
         return entitiesValuePattern.matcher(query)
                 .replaceAll(entities.stream()
@@ -220,6 +230,11 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setCreateMetadataDictionary(final String createMetadataDictionary) {
         this.createMetadataDictionary = createMetadataDictionary;
+    }
+
+    @Required
+    public void setLoadMetadataKeysQuery(final String loadMetadataKeysQuery) {
+        this.loadMetadataKeysQuery = loadMetadataKeysQuery;
     }
 
     public enum MetadataParameters {
