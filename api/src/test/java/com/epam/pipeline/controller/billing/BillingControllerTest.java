@@ -104,7 +104,7 @@ public class BillingControllerTest extends AbstractControllerTest {
         final ArgumentCaptor<BillingChartRequest> billingChartRequestCaptor =
                 ArgumentCaptor.forClass(BillingChartRequest.class);
         Mockito.verify(mockBillingApiService).getBillingChartInfo(billingChartRequestCaptor.capture());
-        Assertions.assertThat(billingChartRequestCaptor).isEqualTo(billingChartRequestCaptor);
+        Assertions.assertThat(billingChartRequestCaptor.getValue()).isEqualTo(billingChartRequest);
 
         final ResponseResult<List<BillingChartInfo>> expectedResult =
                 ControllerTestUtils.buildExpectedResult(billingChartInfos);
@@ -139,7 +139,7 @@ public class BillingControllerTest extends AbstractControllerTest {
         final ArgumentCaptor<BillingChartRequest> billingChartRequestCaptor =
                 ArgumentCaptor.forClass(BillingChartRequest.class);
         Mockito.verify(mockBillingApiService).getBillingChartInfoPaginated(billingChartRequestCaptor.capture());
-        Assertions.assertThat(billingChartRequestCaptor).isEqualTo(billingChartRequestCaptor);
+        Assertions.assertThat(billingChartRequestCaptor.getValue()).isEqualTo(billingChartRequest);
 
         final ResponseResult<List<BillingChartInfo>> expectedResult =
                 ControllerTestUtils.buildExpectedResult(billingChartInfos);
