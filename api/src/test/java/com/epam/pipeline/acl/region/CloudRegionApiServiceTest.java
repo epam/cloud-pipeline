@@ -55,7 +55,11 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
 
     private AwsRegion region;
 
-    private List<AbstractCloudRegion> clouds;
+    private AwsRegion regionWithoutPermission;
+
+    private List<AbstractCloudRegion> singleRegionList;
+
+    private List<AbstractCloudRegion> twoRegionsList;
 
     private List<CloudRegionInfo> cloudRegionInfoList;
 
@@ -66,8 +70,17 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
         region.setName("OWNER");
         region.setOwner(OWNER_USER);
 
-        clouds = new ArrayList<>();
-        clouds.add(region);
+        regionWithoutPermission = new AwsRegion();
+        regionWithoutPermission.setId(2L);
+        regionWithoutPermission.setName("SIMPLE_USER");
+        regionWithoutPermission.setOwner(OWNER_USER);
+
+        singleRegionList = new ArrayList<>();
+        singleRegionList.add(region);
+
+        twoRegionsList = new ArrayList<>();
+        twoRegionsList.add(region);
+        twoRegionsList.add(regionWithoutPermission);
 
         cloudRegionInfoList = new ArrayList<>();
         cloudRegionInfoList.add(new CloudRegionInfo(region));
@@ -164,12 +177,13 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldReturnAllCloudRegionsForAdmin() {
-        doReturn(clouds).when(mockCloudRegionManager).loadAll();
+        doReturn(singleRegionList).when(mockCloudRegionManager).loadAll();
 
         final List<? extends AbstractCloudRegion> abstractCloudRegions = cloudRegionApiService.loadAll();
+        final AbstractCloudRegion resultRegion = abstractCloudRegions.get(0);
 
-        assertThat(abstractCloudRegions).isEqualTo(clouds);
-        assertThat(abstractCloudRegions.get(0).getId()).isEqualTo(clouds.get(0).getId());
+        assertThat(abstractCloudRegions).isEqualTo(singleRegionList);
+        assertThat(resultRegion.getId()).isEqualTo(region.getId());
     }
 
     @Test
@@ -177,23 +191,39 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
     public void shouldReturnAllCloudRegionsWhenPermissionIsGranted() {
         initAclEntity(region,
                 Collections.singletonList(new UserPermission(SIMPLE_USER_ROLE, AclPermission.READ.getMask())));
-        doReturn(clouds).when(mockCloudRegionManager).loadAll();
+        doReturn(singleRegionList).when(mockCloudRegionManager).loadAll();
 
         final List<? extends AbstractCloudRegion> abstractCloudRegions = cloudRegionApiService.loadAll();
+        System.out.println(abstractCloudRegions);
+        final AbstractCloudRegion resultRegion = abstractCloudRegions.get(0);
 
-        assertThat(abstractCloudRegions).isEqualTo(clouds);
-        assertThat(abstractCloudRegions.get(0).getId()).isEqualTo(clouds.get(0).getId());
+        assertThat(abstractCloudRegions).isEqualTo(singleRegionList);
+        assertThat(resultRegion.getId()).isEqualTo(region.getId());
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER_ROLE)
+    public void shouldReturnListWithRegionsPermissionsForWhichIsGranted() {
+        initAclEntity(region,
+                Collections.singletonList(new UserPermission(SIMPLE_USER_ROLE, AclPermission.READ.getMask())));
+        initAclEntity(regionWithoutPermission,
+                Collections.singletonList(new UserPermission(SIMPLE_USER_ROLE, AclPermission.NO_READ.getMask())));
+        doReturn(twoRegionsList).when(mockCloudRegionManager).loadAll();
+        
+        final List<? extends AbstractCloudRegion> abstractCloudRegions = cloudRegionApiService.loadAll();
+
+        assertThat(abstractCloudRegions.size()).isEqualTo(1);
     }
 
     @Test
     @WithMockUser(username = SIMPLE_USER_ROLE)
     public void shouldReturnEmptyListOfCloudRegionsWithoutPermission() {
         initAclEntity(region);
-        doReturn(clouds).when(mockCloudRegionManager).loadAll();
+        doReturn(singleRegionList).when(mockCloudRegionManager).loadAll();
 
         cloudRegionApiService.loadAll();
 
-        assertThat(clouds).isEmpty();
+        assertThat(singleRegionList).isEmpty();
     }
 
     @Test

@@ -111,6 +111,9 @@ public class AclTestBeans {
     @Autowired
     protected PermissionsService permissionsService;
 
+    @Autowired
+    protected CheckPermissionHelper permissionHelper;
+
     @MockBean(name = "aclService")
     protected JdbcMutableAclServiceImpl mockAclService;
 
@@ -212,9 +215,6 @@ public class AclTestBeans {
 
     @MockBean
     protected MessageHelper mockMessageHelper;
-
-    @Autowired
-    protected CheckPermissionHelper mockPermissionHelper;
 
     @MockBean
     protected SidRetrievalStrategy mockSidRetrievalStrategy;

@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.app;
 
-import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.manager.EntityManager;
@@ -138,9 +137,6 @@ public class AclTestConfiguration {
 
     @MockBean
     protected RunConfigurationManager runConfigurationManager;
-
-    @MockBean
-    protected LogApiService mockLogApiService;
 
     @MockBean
     protected LogManager mockLogManager;
