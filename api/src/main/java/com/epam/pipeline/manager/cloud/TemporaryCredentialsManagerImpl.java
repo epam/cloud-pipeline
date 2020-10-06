@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,19 +22,19 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
-import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.leakagepolicy.SensitiveStorageOperation;
 import com.epam.pipeline.utils.CommonUtils;
-import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @SuppressWarnings("unchecked")
@@ -56,32 +56,39 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
     @SensitiveStorageOperation
     @Override
     public TemporaryCredentials generate(final List<DataStorageAction> actions) {
-        final AbstractDataStorage dataStorage = ListUtils.emptyIfNull(actions)
-                .stream()
-                .findFirst()
-                .map(action -> dataStorageManager.load(action.getId()))
-                .orElseThrow(() -> new IllegalArgumentException("Actions are not provided"));
-        final TemporaryCredentialsGenerator credentialsGenerator = getCredentialsGenerator(dataStorage);
+        final List<AbstractDataStorage> storages = actions.stream()
+                .map(DataStorageAction::getId)
+                .distinct()
+                .map(dataStorageManager::load)
+                .collect(Collectors.toList());
+        Assert.state(CollectionUtils.isNotEmpty(storages), "No storages were specified");
+        final TemporaryCredentialsGenerator credentialsGenerator = getCredentialsGenerator(storages);
 
-        final AbstractCloudRegion region = credentialsGenerator.getRegion(dataStorage);
+        final Map<Long, AbstractDataStorage> storagesById = storages.stream()
+                .collect(Collectors.toMap(AbstractDataStorage::getId, Function.identity()));
+        actions.forEach(action -> prepareAction(action, storagesById));
 
-        actions.forEach(action -> {
-            AbstractDataStorage loadedDataStorage =
-                    action.getId().equals(dataStorage.getId()) ? dataStorage : dataStorageManager.load(action.getId());
-            action.setBucketName(loadedDataStorage.getRoot());
-            action.setPath(loadedDataStorage.getPath());
-            AbstractCloudRegion loadedRegion = credentialsGenerator.getRegion(loadedDataStorage);
-            Assert.isTrue(Objects.equals(region.getId(), loadedRegion.getId()),
-                    "Actions shall be requested for buckets from the same region");
-        });
-
-        return credentialsGenerator.generate(actions, dataStorage);
+        return credentialsGenerator.generate(actions, storages);
     }
 
-    private TemporaryCredentialsGenerator getCredentialsGenerator(final AbstractDataStorage dataStorage) {
-        return Optional.ofNullable(MapUtils.emptyIfNull(credentialsGenerators).get(dataStorage.getType()))
+    private TemporaryCredentialsGenerator getCredentialsGenerator(final List<AbstractDataStorage> storages) {
+        final AbstractDataStorage storage = verifyAllTypesAreSameAngGetStorage(storages);
+        return Optional.ofNullable(MapUtils.emptyIfNull(credentialsGenerators).get(storage.getType()))
                 .orElseThrow(() -> new IllegalArgumentException(
                         messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_SUPPORTED,
-                                dataStorage.getName(), dataStorage.getType())));
+                                storage.getName(), storage.getType())));
+    }
+
+    private void prepareAction(final DataStorageAction action, final Map<Long, AbstractDataStorage> storagesById) {
+        final AbstractDataStorage loadedDataStorage = storagesById.get(action.getId());
+        action.setBucketName(loadedDataStorage.getRoot());
+        action.setPath(loadedDataStorage.getPath());
+    }
+
+    private AbstractDataStorage verifyAllTypesAreSameAngGetStorage(final List<AbstractDataStorage> storages) {
+        Assert.state(storages.stream()
+                .map(AbstractDataStorage::getType)
+                .distinct().count() <= 1, "Storage types shall be the same");
+        return storages.get(0);
     }
 }

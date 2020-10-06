@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,11 @@ public class GCPTemporaryCredentialGenerator implements TemporaryCredentialsGene
         return DataStorageType.GS;
     }
 
+    @Override
+    public TemporaryCredentials generate(final List<DataStorageAction> actions, final List<GSBucketStorage> storages) {
+        return generate(actions, storages.get(0));
+    }
+
     /**
      * Generates temporary access credentials. Returns full read access to all data storages if all actions require
      * only read access. If at least one action requires write access returns full write access to all data storages.
@@ -63,8 +68,7 @@ public class GCPTemporaryCredentialGenerator implements TemporaryCredentialsGene
      * @param dataStorage to get additional info
      * @return access token, project ID and expiration time
      */
-    @Override
-    public TemporaryCredentials generate(final List<DataStorageAction> actions, final GSBucketStorage dataStorage) {
+    private TemporaryCredentials generate(final List<DataStorageAction> actions, final GSBucketStorage dataStorage) {
         try {
             final GCPRegion region = getRegion(dataStorage);
             final IAMCredentials credentials = gcpClient.buildIAMCredentialsClient(region);

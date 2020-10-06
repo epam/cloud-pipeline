@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,12 @@ public class AzureTemporaryCredentialsGenerator implements TemporaryCredentialsG
     }
 
     @Override
-    public TemporaryCredentials generate(final List<DataStorageAction> actions, final AzureBlobStorage dataStorage) {
+    public TemporaryCredentials generate(final List<DataStorageAction> actions, final List<AzureBlobStorage> storages) {
+        Assert.isTrue(storages.size() == 1, "Multiple regions are not supported for AZURE provider");
+        return generate(actions, storages.get(0));
+    }
+
+    private TemporaryCredentials generate(final List<DataStorageAction> actions, final AzureBlobStorage dataStorage) {
         final AzureRegion region = cloudRegionManager.getAzureRegion(dataStorage);
         final AzureRegionCredentials credentials = cloudRegionManager.loadCredentials(region);
 
