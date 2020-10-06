@@ -250,7 +250,7 @@ class _ResumableIterReader:
                     self._iter = self._get_iter(self._start + self._bytes_transferred, self._end)
                     self._need_resume = False
                 try:
-                    chunk = self._iter.next()
+                    chunk = next(self._iter)
                     self._bytes_transferred += len(chunk)
                     return chunk
                 except StopIteration:
