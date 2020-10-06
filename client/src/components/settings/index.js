@@ -40,7 +40,7 @@ const SettingsTabs = [
     key: 'user',
     path: '/settings/user',
     title: 'User management',
-    available: (user) => user ? user.admin : false
+    available: (user) => user ? roleModel.userHasRole(user, 'ROLE_USER_READER') : false
   },
   {
     key: 'email',
