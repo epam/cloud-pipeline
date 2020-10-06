@@ -250,7 +250,7 @@ class _ResumableIterReader:
                     self._iter = self._get_iter(self._start + self._bytes_transferred, self._end)
                     self._need_resume = False
                 try:
-                    chunk = self._iter.next()
+                    chunk = next(self._iter)
                     self._bytes_transferred += len(chunk)
                     return chunk
                 except StopIteration:
@@ -934,21 +934,13 @@ class ProxyConnectWithHeadersHTTPSAdapter(HTTPAdapter):
         return manager
 
 
-class _ProxySession(AuthorizedSession):
-
-    def request(self, method, url, data=None, headers=None, **kwargs):
-        parsed_url = urlparse(url)
-        request_url = '%s://%s' % (parsed_url.scheme, parsed_url.netloc)
-        self.proxies = StorageOperations.get_proxy_config(request_url)
-        return super(_ProxySession, self).request(method, url, data, headers, **kwargs)
-
-
 class _RefreshingClient(Client):
     MAX_REFRESH_ATTEMPTS = 100
 
     def __init__(self, bucket, read, write, refresh_credentials, versioning=False):
         credentials = _RefreshingCredentials(refresh=lambda: refresh_credentials(bucket, read, write, versioning))
-        session = _ProxySession(credentials, max_refresh_attempts=self.MAX_REFRESH_ATTEMPTS)
+        session = AuthorizedSession(credentials, max_refresh_attempts=self.MAX_REFRESH_ATTEMPTS)
+        session.proxies = StorageOperations.get_proxy_config('https://storage.googleapis.com')
         adapter = ProxyConnectWithHeadersHTTPSAdapter(max_retries=3)
         session.mount("https://", adapter)
         super(_RefreshingClient, self).__init__(project=credentials.temporary_credentials.secret_key, _http=session)
