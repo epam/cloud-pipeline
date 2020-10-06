@@ -148,14 +148,14 @@ public class Launch_LimitMountsTest extends AbstractAutoRemovingPipelineRunningT
                 .logMessages()
                 .collect(toSet());
 
-         runsMenu()
+        runsMenu()
                 .showLog(getRunId())
                 .logContainsMessage(logMess, " available storage(s). Checking mount options.")
                 .checkAvailableStoragesCount(logMess,2)
-                .ensure(log(), not(containsMessages("Run is launched with mount limits")))
-                .logContainsMessage(logMess, format("-->%s mounted to /cloud-data/%s",
+                .logNotContainsMessage(logMess, "Run is launched with mount limits")
+                .logContainsMessage(logMess, format("%s mounted to /cloud-data/%s",
                         storage1.toLowerCase(), storage1.toLowerCase()))
-                .logContainsMessage(logMess, format("-->%s mounted to /cloud-data/%s",
+                .logContainsMessage(logMess, format("%s mounted to /cloud-data/%s",
                         storage2.toLowerCase(), storage2.toLowerCase()))
                 .ssh(shell -> shell
                         .execute("ls /cloud-data/")

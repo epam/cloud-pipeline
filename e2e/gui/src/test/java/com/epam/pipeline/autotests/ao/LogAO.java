@@ -381,11 +381,18 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
+    public LogAO logNotContainsMessage(Set<String> logMess, final String message) {
+        assertTrue(logMess.stream().noneMatch(mes -> mes.contains(message)), format("Message '%s' isn't cantained in log", message));
+        return this;
+    }
+
     public LogAO checkAvailableStoragesCount(Set<String> logMess, int count) {
         String str = logMess.stream().filter(Pattern.compile("\\d+ available storage\\(s\\)\\. Checking mount options\\.")
                         .asPredicate()).findFirst().toString();
-        String res = str.substring(str.indexOf("Found")+6, str.indexOf(" available"));
-        assertTrue(Integer.parseInt(res) >= count,
+        Matcher matcher = Pattern.compile(" \\d* ").matcher(str);
+        matcher.find();
+        int res = Integer.parseInt(matcher.group().replace(" ", ""));
+        assertTrue(res >= count,
                 format("Available storages count (actual %s) should be more or equals %s", res, count));
         return this;
     }
