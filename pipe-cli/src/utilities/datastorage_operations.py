@@ -33,7 +33,7 @@ from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 
-ALL_ERRORS = Exception
+ALL_ERRORS = []
 
 
 class DataStorageOperations(object):

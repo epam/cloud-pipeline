@@ -116,10 +116,22 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
                     click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
                 return
         self.create_local_folder(destination_key, lock)
+        from boto3.s3.transfer import TransferConfig
+        transfer_config = TransferConfig()
+        CP_CLI_AWS_MULTIPART_THRESHOLD='CP_CLI_AWS_MULTIPART_THRESHOLD'
+        CP_CLI_AWS_MULTIPART_CHUNKSIZE='CP_CLI_AWS_MULTIPART_CHUNKSIZE'
+        CP_CLI_AWS_MAX_CONCURRENCY='CP_CLI_AWS_MAX_CONCURRENCY'
+        if os.getenv(CP_CLI_AWS_MULTIPART_THRESHOLD):
+            transfer_config.multipart_threshold = int(os.getenv(CP_CLI_AWS_MULTIPART_THRESHOLD))
+        if os.getenv(CP_CLI_AWS_MULTIPART_CHUNKSIZE):
+            transfer_config.multipart_chunksize = int(os.getenv(CP_CLI_AWS_MULTIPART_CHUNKSIZE))
+        if os.getenv(CP_CLI_AWS_MAX_CONCURRENCY):
+            transfer_config.max_concurrency = int(os.getenv(CP_CLI_AWS_MAX_CONCURRENCY))
         if StorageItemManager.show_progress(quiet, size, lock):
-            self.bucket.download_file(source_key, destination_key, Callback=ProgressPercentage(relative_path, size))
+            self.bucket.download_file(source_key, destination_key, Callback=ProgressPercentage(relative_path, size),
+                                      Config=transfer_config)
         else:
-            self.bucket.download_file(source_key, destination_key)
+            self.bucket.download_file(source_key, destination_key, Config=transfer_config)
         if clean:
             source_wrapper.delete_item(source_key)
 
@@ -150,11 +162,22 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
             'ACL': 'bucket-owner-full-control'
         }
         TransferManager.ALLOWED_UPLOAD_ARGS.append('Tagging')
+        from boto3.s3.transfer import TransferConfig
+        transfer_config = TransferConfig()
+        CP_CLI_AWS_MULTIPART_THRESHOLD='CP_CLI_AWS_MULTIPART_THRESHOLD'
+        CP_CLI_AWS_MULTIPART_CHUNKSIZE='CP_CLI_AWS_MULTIPART_CHUNKSIZE'
+        CP_CLI_AWS_MAX_CONCURRENCY='CP_CLI_AWS_MAX_CONCURRENCY'
+        if os.getenv(CP_CLI_AWS_MULTIPART_THRESHOLD):
+            transfer_config.multipart_threshold = int(os.getenv(CP_CLI_AWS_MULTIPART_THRESHOLD))
+        if os.getenv(CP_CLI_AWS_MULTIPART_CHUNKSIZE):
+            transfer_config.multipart_chunksize = int(os.getenv(CP_CLI_AWS_MULTIPART_CHUNKSIZE))
+        if os.getenv(CP_CLI_AWS_MAX_CONCURRENCY):
+            transfer_config.max_concurrency = int(os.getenv(CP_CLI_AWS_MAX_CONCURRENCY))
         if StorageItemManager.show_progress(quiet, size, lock):
             self.bucket.upload_file(source_key, destination_key, Callback=ProgressPercentage(relative_path, size),
-                                    ExtraArgs=extra_args)
+                                    ExtraArgs=extra_args, Config=transfer_config)
         else:
-            self.bucket.upload_file(source_key, destination_key, ExtraArgs=extra_args)
+            self.bucket.upload_file(source_key, destination_key, ExtraArgs=extra_args, Config=transfer_config)
         if clean:
             source_wrapper.delete_item(source_key)
 
