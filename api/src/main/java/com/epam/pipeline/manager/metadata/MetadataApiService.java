@@ -96,4 +96,9 @@ public class MetadataApiService {
                                                            final String value) {
         return metadataManager.searchMetadataByClassAndKeyValue(entityClass, key, value);
     }
+
+    @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
+    public List<String> getMetadataKeys(final AclClass entityClass) {
+        return metadataManager.getMetadataKeys(entityClass);
+    }
 }
