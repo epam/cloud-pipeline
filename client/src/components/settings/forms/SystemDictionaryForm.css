@@ -25,7 +25,20 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  margin: 5px 0;
+  margin-top: 5px;
+}
+
+.item {
+  padding: 2px;
+  border-bottom: 1px solid #ddd;
+}
+
+.item:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.item:last-child {
+  border-bottom: none;
 }
 
 .row .label {
@@ -35,6 +48,10 @@
 
 .error {
   color: red;
+}
+
+.input.error {
+  border-color: red;
 }
 
 .items {
@@ -59,4 +76,17 @@
 
 .actions .action:first-child {
   margin-left: initial;
+}
+
+.link {
+  padding: 5px 10px;
+  font-size: smaller;
+}
+
+.link .add {
+  text-decoration: underline;
+  cursor: pointer;
+  color: #2282bf;
+  padding: 4px;
+  font-size: larger;
 }

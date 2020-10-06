@@ -29,6 +29,7 @@ import DataStorageTagsDelete from '../../../models/dataStorage/tags/DataStorageT
 import LoadingView from '../../special/LoadingView';
 import {
   Alert,
+  AutoComplete,
   Button,
   Col,
   Icon,
@@ -321,29 +322,6 @@ export default class Metadata extends localization.LocalizedReactComponent {
         return {refresh: false};
       }
     }
-    const payload = Object.assign(previousMetadata, modified || {});
-    if (applyChanges === ApplyChanges.callback && onChange) {
-      await onChange(payload);
-      return {refresh: false};
-    } else if (this.props.dataStorageTags) {
-      const request = new DataStorageTagsUpdate(
-        this.props.entityParentId,
-        this.props.entityId,
-        this.props.entityVersion
-      );
-      await request.send(payload);
-      return {error: request.error, refresh: !request.error};
-    } else {
-      const request = new MetadataUpdate();
-      await request.send({
-        entity: {
-          entityId: this.props.entityId,
-          entityClass: this.props.entityClass,
-        },
-        data: payload
-      });
-      return {error: request.error, refresh: !request.error};
-    }
   };
 
   saveMetadata = (opts) => async () => {
@@ -369,13 +347,37 @@ export default class Metadata extends localization.LocalizedReactComponent {
         message.error('Enter value', 5);
         return;
       }
+      await this.props.systemDictionaries.fetchIfNeededOrWait();
+      const {
+        result,
+        warnings
+      } = this.getCascadeValues(
+        this.state.addKey.key.trim(),
+        this.state.addKey.value,
+        this.props.systemDictionaries.loaded
+          ? (this.props.systemDictionaries.value || [])
+          : []
+      );
       if (this.props.dataStorageTags) {
         modified[this.state.addKey.key.trim()] = this.state.addKey.value;
+        result.forEach(({key, value}) => {
+          modified[key] = value;
+        });
       } else {
         modified[this.state.addKey.key] = {
           value: this.state.addKey.value,
           type: 'string'
         };
+        result.forEach(({key, value}) => {
+          modified[key] = {value, type: 'string'};
+        });
+      }
+      if (warnings.size > 0) {
+        message.warning(
+          // eslint-disable-next-line
+          `Error auto-filling attributes: circular dependency for "${[...warnings].join(', ')}" dictionar${warnings.size > 1 ? 'ies' : 'y'}`,
+          5
+        );
       }
     }
     if (currentMetadataItem) {
@@ -416,6 +418,85 @@ export default class Metadata extends localization.LocalizedReactComponent {
     });
   };
 
+  applyValues = async (values = []) => {
+    const metadata = this.metadata;
+    values.forEach(({key, value}) => {
+      const currentMetadataItem = metadata.find(m => m.key === key);
+      if (currentMetadataItem) {
+        currentMetadataItem.value = value;
+      } else {
+        metadata.push({key, value});
+      }
+    });
+    const {error, refresh} = await this.applyChanges(metadata, {});
+    if (error) {
+      message.error(error, 5);
+      return;
+    }
+    if (refresh) {
+      this.props.metadata.fetch();
+    }
+    this.setState({
+      addKey: null,
+      editableKeyIndex: null,
+      editableValueIndex: null,
+      editableText: null
+    });
+  };
+
+  getCascadeValues = (key, value, dictionaries, processed = []) => {
+    let warnings = new Set();
+    let result = processed.slice().concat(({key, value}));
+    const dictionary = dictionaries.find(dict => dict.key === key);
+    if (dictionary) {
+      const {values = []} = dictionary;
+      const dictValue = values.find(v => v.value === value);
+      if (dictValue) {
+        const {links = []} = dictValue;
+        for (let l = 0; l < links.length; l++) {
+          const {key: linkKey, value: linkValue} = links[l];
+          const existedLink = result.find(p => p.key === linkKey);
+          if (existedLink) {
+            if (existedLink.value !== linkValue) {
+              // eslint-disable-next-line
+              warnings.add(linkKey);
+            }
+          } else {
+            const {
+              result: childResult,
+              warnings: childWarnings
+            } = this.getCascadeValues(linkKey, linkValue, dictionaries, result);
+            result = childResult;
+            warnings = new Set([...warnings, ...childWarnings]);
+          }
+        }
+      }
+    }
+    return {
+      result,
+      warnings
+    };
+  };
+
+  applyCascadeValues = async (key, value) => {
+    const {systemDictionaries} = this.props;
+    await systemDictionaries.fetchIfNeededOrWait();
+    if (systemDictionaries.loaded) {
+      const {
+        result: values,
+        warnings
+      } = this.getCascadeValues(key, value, systemDictionaries.value || []);
+      if (warnings.size > 0) {
+        message.warning(
+          // eslint-disable-next-line
+          `Error auto-filling attributes: circular dependency for "${[...warnings].join(', ')}" dictionar${warnings.size > 1 ? 'ies' : 'y'}`,
+          5
+        );
+      }
+      await this.applyValues(values);
+    }
+  };
+
   saveDictionaryMetadata = (opts) => async (value) => {
     const {index} = opts;
     const metadata = this.metadata;
@@ -427,6 +508,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
         return;
       }
       currentMetadataItem.value = value;
+      await this.applyCascadeValues(currentMetadataItem.key, value);
     }
     const {error, refresh} = await this.applyChanges(metadata, modified);
     if (error) {
@@ -774,8 +856,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
             >
               {
                 (dictionary.values || []).map((v) => (
-                  <Select.Option key={v} value={v}>
-                    {v}
+                  <Select.Option key={v.value} value={v.value}>
+                    {v.value}
                   </Select.Option>
                 ))
               }
@@ -931,21 +1013,16 @@ export default class Metadata extends localization.LocalizedReactComponent {
   renderAddKeyRow = () => {
     if (this.state.addKey) {
       const {systemDictionaries} = this.props;
+      const existingKeys = new Set(this.metadata.map(m => m.key));
       const {key} = this.state.addKey;
       const dictionary = systemDictionaries.getDictionary(key);
+      const availableDictionaries = systemDictionaries.loaded
+        ? (systemDictionaries.value || [])
+          .map(dict => dict.key)
+          .filter(dict => !existingKeys.has(dict))
+        : [];
       const addKeyCancelClicked = () => {
         this.setState({editableKeyIndex: null, editableValueIndex: null, editableText: null, addKey: null});
-      };
-
-      const refKeyInput = (input) => {
-        if (this.state.addKey &&
-          !this.state.addKey.autofocused &&
-          input && input.refs && input.refs.input && input.refs.input.focus) {
-          input.refs.input.focus();
-          const addKey = this.state.addKey;
-          addKey.autofocused = true;
-          this.setState({addKey});
-        }
       };
 
       const onChange = (field) => (e) => {
@@ -982,8 +1059,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
           >
             {
               (dictionary.values || []).map((v) => (
-                <Select.Option key={v} value={v}>
-                  {v}
+                <Select.Option key={v.value} value={v.value}>
+                  {v.value}
                 </Select.Option>
               ))
             }
@@ -1013,16 +1090,26 @@ export default class Metadata extends localization.LocalizedReactComponent {
             Key:
           </td>
           <td colSpan={2}>
-            <Input
-              ref={refKeyInput}
-              onKeyDown={(e) => {
-                if (e.key && e.key === 'Escape') {
-                  this.discardChanges();
-                }
-              }}
+            <AutoComplete
+              allowClear
+              backfill
+              autoFocus
               value={this.state.addKey.key}
-              onChange={onChange('key')}
-              size="small" />
+              onChange={value => onChange('key')({target: {value}})}
+              size="small"
+              filterOption={
+                (input, option) =>
+                  option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              }
+            >
+              {
+                availableDictionaries.map((dict) => (
+                  <AutoComplete.Option key={dict} value={dict}>
+                    {dict}
+                  </AutoComplete.Option>
+                ))
+              }
+            </AutoComplete>
           </td>
         </tr>,
         <tr className={styles.newKeyRow} key="new value row">

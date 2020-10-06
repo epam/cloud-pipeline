@@ -16,27 +16,71 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Icon, Input, Modal} from 'antd';
+import {
+  Button,
+  Icon,
+  Input,
+  Modal
+} from 'antd';
+import SystemDictionaryLinksForm from './SystemDictionaryLinksForm';
 import styles from './SystemDictionaryForm.css';
 
-function arraysAreEqual (array1, array2) {
-  if (!array1 && !array2) {
+function linksAreEqual (linksA, linksB) {
+  if (!linksA && !linksB) {
     return true;
   }
-  if (!array1 || !array2) {
+  if (!linksA || !linksB) {
     return false;
   }
-  const set1 = new Set(array1);
-  const set2 = new Set(array2);
-  if (set1.size !== set2.size) {
+  if (linksA.length !== linksB.length) {
     return false;
   }
-  for (let el of set1) {
-    if (!set2.has(el)) {
+  for (let i = 0; i < linksA.length; i++) {
+    const linkA = linksA[i];
+    const linkB = linksB.find(el => el.key === linkA.key && el.value === linkA.value);
+    if (!linkB) {
       return false;
     }
   }
   return true;
+}
+
+function dictionariesAreEqual (dictionaryA, dictionaryB) {
+  if (!dictionaryA && !dictionaryB) {
+    return true;
+  }
+  if (!dictionaryA || !dictionaryB) {
+    return false;
+  }
+  if (dictionaryA.length !== dictionaryB.length) {
+    return false;
+  }
+  for (let i = 0; i < dictionaryA.length; i++) {
+    const item = dictionaryA[i];
+    const sameItem = dictionaryB.find(el => el.value === item.value);
+    if (!sameItem) {
+      return false;
+    }
+    const {links: linksA = []} = item;
+    const {links: linksB = []} = sameItem;
+    if (!linksAreEqual(linksA, linksB)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function mapValue (value) {
+  const {
+    autofill = true,
+    value: linkValue,
+    links = []
+  } = value || {};
+  return {
+    autofill,
+    value: linkValue,
+    links: links.map(link => ({key: link.key, value: link.value}))
+  };
 }
 
 class SystemDictionaryForm extends React.Component {
@@ -49,7 +93,9 @@ class SystemDictionaryForm extends React.Component {
       name: undefined,
       itemsValidation: undefined,
       items: []
-    }
+    },
+    linksFormVisible: false,
+    editableLinksIndex: undefined
   };
 
   componentDidMount () {
@@ -57,7 +103,10 @@ class SystemDictionaryForm extends React.Component {
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (prevProps.name !== this.props.name || !arraysAreEqual(prevProps.items, this.props.items)) {
+    if (
+      prevProps.name !== this.props.name ||
+      !dictionariesAreEqual(prevProps.items, this.props.items)
+    ) {
       this.updateState();
     }
   }
@@ -75,7 +124,12 @@ class SystemDictionaryForm extends React.Component {
       items,
       initialItems
     } = this.state;
-    return name !== initialName || !arraysAreEqual(items, initialItems);
+    return name !== initialName || !dictionariesAreEqual(items, initialItems);
+  }
+
+  get dictionaries () {
+    const {dictionaries, name, isNew} = this.props;
+    return (dictionaries || []).filter(d => isNew || d.key !== name);
   }
 
   updateState = () => {
@@ -83,8 +137,8 @@ class SystemDictionaryForm extends React.Component {
     this.setState({
       name,
       initialName: name,
-      items: (items || []).slice(),
-      initialItems: (items || []).slice()
+      items: (items || []).map(mapValue),
+      initialItems: (items || []).map(mapValue)
     }, this.afterChange);
   };
 
@@ -100,6 +154,8 @@ class SystemDictionaryForm extends React.Component {
     };
     if (!name) {
       errors.name = 'Dictionary name is required';
+    } else if (this.dictionaries.find(d => d.key === name)) {
+      errors.name = `"${name}" dictionary already exists`;
     }
     if (!items || items.length === 0) {
       errors.itemsValidation = 'Dictionary must contain at least one item';
@@ -108,12 +164,12 @@ class SystemDictionaryForm extends React.Component {
       const item = items[i];
       for (let j = i + 1; j < items.length; j++) {
         const test = items[j];
-        if ((item || '').trim() === (test || '').trim()) {
+        if ((item.value || '').trim() === (test.value || '').trim()) {
           errors.items[i] = 'Duplicates are not allowed';
           errors.items[j] = 'Duplicates are not allowed';
         }
       }
-      if (!item) {
+      if (!item.value) {
         errors.items[i] = 'Value is required';
       }
     }
@@ -140,6 +196,14 @@ class SystemDictionaryForm extends React.Component {
     }
   };
 
+  openLinksForm = (index) => {
+    this.setState({linksFormVisible: true, editableLinksIndex: index});
+  };
+
+  closeLinksForm = () => {
+    this.setState({linksFormVisible: false, editableLinksIndex: undefined});
+  };
+
   afterChange = () => {
     this.doValidation(this.onChange);
   }
@@ -152,7 +216,7 @@ class SystemDictionaryForm extends React.Component {
 
   onItemChanged = (index) => (e) => {
     const {items} = this.state;
-    items[index] = e.target.value;
+    items[index].value = e.target.value;
     this.setState({
       items: items.slice()
     }, this.afterChange);
@@ -168,7 +232,16 @@ class SystemDictionaryForm extends React.Component {
 
   onItemAdd = () => {
     const {items} = this.state;
-    items.push('');
+    items.push({value: '', autofill: true, links: []});
+    this.setState({
+      items: items.slice()
+    }, this.afterChange);
+  };
+
+  onChangeLinks = (links) => {
+    const {items, editableLinksIndex} = this.state;
+    items[editableLinksIndex || 0].links = (links || [])
+      .map(link => ({key: link.key, value: link.value}));
     this.setState({
       items: items.slice()
     }, this.afterChange);
@@ -195,6 +268,7 @@ class SystemDictionaryForm extends React.Component {
 
   render () {
     const {disabled, isNew} = this.props;
+    const {linksFormVisible, editableLinksIndex} = this.state;
     const {
       name,
       items,
@@ -234,12 +308,13 @@ class SystemDictionaryForm extends React.Component {
         <div className={styles.items}>
           {
             items.map((item, index) => (
-              <div key={index}>
+              <div key={index} className={styles.item}>
                 <div className={styles.row}>
                   <Input
+                    className={`${styles.input} ${itemsError[index] ? styles.error : ''}`}
                     disabled={disabled}
                     style={{flex: 1, marginRight: 5}}
-                    value={item}
+                    value={item.value}
                     onChange={this.onItemChanged(index)}
                   />
                   <Button
@@ -259,11 +334,48 @@ class SystemDictionaryForm extends React.Component {
                     </div>
                   )
                 }
+                <div className={styles.link}>
+                  {
+                    (item.links || []).length === 0 && (
+                      <span
+                        className={styles.add}
+                        onClick={() => this.openLinksForm(index)}
+                      >
+                        <Icon type="plus" />
+                        Add linked dictionary item
+                      </span>
+                    )
+                  }
+                  {
+                    (item.links || []).length > 0 && (
+                      <div
+                        className={styles.add}
+                        onClick={() => this.openLinksForm(index)}
+                      >
+                        {
+                          (item.links || []).map((link, index) => (
+                            <div
+                              key={`${link.key}-${link.value}-${index}`}
+                              style={{
+                                margin: '2px 0'
+                              }}
+                            >
+                              <Icon type="link" />
+                              {link.key}
+                              <Icon type="arrow-right" />
+                              {link.value}
+                            </div>
+                          ))
+                        }
+                      </div>
+                    )
+                  }
+                </div>
               </div>
             ))
           }
         </div>
-        <div>
+        <div style={{padding: 2}}>
           <Button
             disabled={disabled}
             onClick={this.onItemAdd}
@@ -303,6 +415,17 @@ class SystemDictionaryForm extends React.Component {
             </Button>
           </div>
         </div>
+        <SystemDictionaryLinksForm
+          availableDictionaries={this.dictionaries}
+          visible={linksFormVisible}
+          onClose={this.closeLinksForm}
+          value={
+            linksFormVisible
+              ? (items[editableLinksIndex || 0].links || [])
+              : []
+          }
+          onChange={this.onChangeLinks}
+        />
       </div>
     );
   }
@@ -315,7 +438,8 @@ SystemDictionaryForm.propTypes = {
   isNew: PropTypes.bool,
   onChange: PropTypes.func,
   onSave: PropTypes.func,
-  onDelete: PropTypes.func
+  onDelete: PropTypes.func,
+  dictionaries: PropTypes.array
 };
 
 export default SystemDictionaryForm;
