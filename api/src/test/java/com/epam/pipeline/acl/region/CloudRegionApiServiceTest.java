@@ -55,11 +55,7 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
 
     private AwsRegion region;
 
-    private AwsRegion regionWithoutPermission;
-
     private List<AbstractCloudRegion> singleRegionList;
-
-    private List<AbstractCloudRegion> twoRegionsList;
 
     private List<CloudRegionInfo> cloudRegionInfoList;
 
@@ -70,20 +66,10 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
         region.setName("OWNER");
         region.setOwner(OWNER_USER);
 
-        regionWithoutPermission = new AwsRegion();
-        regionWithoutPermission.setId(2L);
-        regionWithoutPermission.setName("SIMPLE_USER");
-        regionWithoutPermission.setOwner(OWNER_USER);
-
         singleRegionList = new ArrayList<>();
         singleRegionList.add(region);
 
-        twoRegionsList = new ArrayList<>();
-        twoRegionsList.add(region);
-        twoRegionsList.add(regionWithoutPermission);
-
-        cloudRegionInfoList = new ArrayList<>();
-        cloudRegionInfoList.add(new CloudRegionInfo(region));
+        cloudRegionInfoList = Collections.singletonList(new CloudRegionInfo(region));
     }
 
     @Test
@@ -180,9 +166,11 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
         doReturn(singleRegionList).when(mockCloudRegionManager).loadAll();
 
         final List<? extends AbstractCloudRegion> abstractCloudRegions = cloudRegionApiService.loadAll();
-        final AbstractCloudRegion resultRegion = abstractCloudRegions.get(0);
 
         assertThat(abstractCloudRegions).isEqualTo(singleRegionList);
+        assertThat(abstractCloudRegions.size()).isEqualTo(singleRegionList.size());
+
+        final AbstractCloudRegion resultRegion = abstractCloudRegions.get(0);
         assertThat(resultRegion.getId()).isEqualTo(region.getId());
     }
 
@@ -194,7 +182,6 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
         doReturn(singleRegionList).when(mockCloudRegionManager).loadAll();
 
         final List<? extends AbstractCloudRegion> abstractCloudRegions = cloudRegionApiService.loadAll();
-        System.out.println(abstractCloudRegions);
         final AbstractCloudRegion resultRegion = abstractCloudRegions.get(0);
 
         assertThat(abstractCloudRegions).isEqualTo(singleRegionList);
@@ -204,15 +191,26 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER_ROLE)
     public void shouldReturnListWithRegionsPermissionsForWhichIsGranted() {
+        final AwsRegion regionWithoutPermission = new AwsRegion();
+        regionWithoutPermission.setId(2L);
+        regionWithoutPermission.setName("SIMPLE_USER");
+        regionWithoutPermission.setOwner(OWNER_USER);
+
+        final ArrayList<AbstractCloudRegion> twoRegionsList = new ArrayList<>();
+        twoRegionsList.add(region);
+        twoRegionsList.add(regionWithoutPermission);
+
         initAclEntity(region,
                 Collections.singletonList(new UserPermission(SIMPLE_USER_ROLE, AclPermission.READ.getMask())));
         initAclEntity(regionWithoutPermission,
                 Collections.singletonList(new UserPermission(SIMPLE_USER_ROLE, AclPermission.NO_READ.getMask())));
         doReturn(twoRegionsList).when(mockCloudRegionManager).loadAll();
-        
-        final List<? extends AbstractCloudRegion> abstractCloudRegions = cloudRegionApiService.loadAll();
 
+        final List<? extends AbstractCloudRegion> abstractCloudRegions = cloudRegionApiService.loadAll();
         assertThat(abstractCloudRegions.size()).isEqualTo(1);
+
+        final AbstractCloudRegion resultRegion = abstractCloudRegions.get(0);
+        assertThat(resultRegion.getId()).isEqualTo(region.getId());
     }
 
     @Test
