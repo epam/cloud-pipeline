@@ -106,7 +106,6 @@ public class PipelineExecutor {
             Map<String, String> labels = new HashMap<>();
             labels.put("spawned_by", "pipeline-api");
             labels.put("pipeline_id", pipelineId);
-            labels.put("owner", run.getOwner());
             if (Boolean.TRUE.equals(run.getSensitive())) {
                 labels.put("sensitive", "true");
             }
