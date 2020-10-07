@@ -177,8 +177,9 @@ export default class EditToolFormParameters extends React.Component {
         disabled={this.props.readOnly}
         checked={`${parameter.value}` === 'true'}
         style={Object.assign({marginLeft: 5, marginTop: 4}, isError ? {color: 'red'} : {})}
-        onChange={onChange}>
-        {parameter.value ? 'Enabled' : 'Disabled'}
+        onChange={onChange}
+      >
+        Enabled
       </Checkbox>
     );
   };

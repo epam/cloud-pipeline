@@ -3773,7 +3773,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               <Row type="flex" align="middle">
                 <Col span={10}>
                   <Checkbox checked={this.state.autoPause} onChange={onChange}>
-                    {this.state.autoPause ? 'Enabled' : 'Disabled'}
+                    Enabled
                   </Checkbox>
                 </Col>
                 <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
