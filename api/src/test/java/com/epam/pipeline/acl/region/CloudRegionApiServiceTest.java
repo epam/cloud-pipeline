@@ -165,13 +165,9 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
     public void shouldReturnAllCloudRegionsForAdmin() {
         doReturn(singleRegionList).when(mockCloudRegionManager).loadAll();
 
-        final List<? extends AbstractCloudRegion> abstractCloudRegions = cloudRegionApiService.loadAll();
+        final List<AwsRegion> resultList = (List<AwsRegion>) cloudRegionApiService.loadAll();
 
-        assertThat(abstractCloudRegions).isEqualTo(singleRegionList);
-        assertThat(abstractCloudRegions.size()).isEqualTo(singleRegionList.size());
-
-        final AbstractCloudRegion resultRegion = abstractCloudRegions.get(0);
-        assertThat(resultRegion.getId()).isEqualTo(region.getId());
+        assertThat(resultList).hasSize(1).contains(region);
     }
 
     @Test
@@ -181,11 +177,9 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
                 Collections.singletonList(new UserPermission(SIMPLE_USER_ROLE, AclPermission.READ.getMask())));
         doReturn(singleRegionList).when(mockCloudRegionManager).loadAll();
 
-        final List<? extends AbstractCloudRegion> abstractCloudRegions = cloudRegionApiService.loadAll();
-        final AbstractCloudRegion resultRegion = abstractCloudRegions.get(0);
+        final List<AwsRegion> resultList = (List<AwsRegion>) cloudRegionApiService.loadAll();
 
-        assertThat(abstractCloudRegions).isEqualTo(singleRegionList);
-        assertThat(resultRegion.getId()).isEqualTo(region.getId());
+        assertThat(resultList).hasSize(1).contains(region);
     }
 
     @Test
@@ -206,11 +200,9 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
                 Collections.singletonList(new UserPermission(SIMPLE_USER_ROLE, AclPermission.NO_READ.getMask())));
         doReturn(twoRegionsList).when(mockCloudRegionManager).loadAll();
 
-        final List<? extends AbstractCloudRegion> abstractCloudRegions = cloudRegionApiService.loadAll();
-        assertThat(abstractCloudRegions.size()).isEqualTo(1);
+        final List<AwsRegion> resultList = (List<AwsRegion>) cloudRegionApiService.loadAll();
 
-        final AbstractCloudRegion resultRegion = abstractCloudRegions.get(0);
-        assertThat(resultRegion.getId()).isEqualTo(region.getId());
+        assertThat(resultList).hasSize(1).contains(region);
     }
 
     @Test
@@ -219,9 +211,9 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
         initAclEntity(region);
         doReturn(singleRegionList).when(mockCloudRegionManager).loadAll();
 
-        cloudRegionApiService.loadAll();
+        final List<AwsRegion> resultList = (List<AwsRegion>) cloudRegionApiService.loadAll();
 
-        assertThat(singleRegionList).isEmpty();
+        assertThat(resultList).isEmpty();
     }
 
     @Test
