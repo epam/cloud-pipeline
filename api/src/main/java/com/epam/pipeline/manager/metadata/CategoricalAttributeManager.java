@@ -20,13 +20,18 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.metadata.CategoricalAttributeDao;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
+import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +44,25 @@ public class CategoricalAttributeManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public boolean updateCategoricalAttributes(final List<CategoricalAttribute> dict) {
-        return categoricalAttributesDao.updateCategoricalAttributes(dict);
+        final boolean valuesChanged = categoricalAttributesDao.insertAttributesValues(dict);
+        final Map<String, Set<String>> receivedValues = dict.stream()
+            .collect(Collectors.toMap(CategoricalAttribute::getKey,
+                attribute -> attribute
+                    .getValues()
+                    .stream()
+                    .map(CategoricalAttributeValue::getValue)
+                    .collect(Collectors.toSet())));
+        final List<CategoricalAttributeValue> valuesToRemove = loadAll().stream()
+            .flatMap(entry -> CollectionUtils.emptyIfNull(entry.getValues())
+                .stream()
+                .peek(attributeValue -> attributeValue.setKey(entry.getKey())))
+            .filter(value -> receivedValues.containsKey(value.getKey()))
+            .filter(value -> !receivedValues.get(value.getKey()).contains(value.getValue()))
+            .collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(valuesToRemove)) {
+            categoricalAttributesDao.deleteAttributeValuePairs(valuesToRemove);
+        }
+        return categoricalAttributesDao.insertValuesLinks(dict) || valuesChanged;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
