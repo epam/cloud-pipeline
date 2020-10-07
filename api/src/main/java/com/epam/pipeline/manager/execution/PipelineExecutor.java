@@ -78,6 +78,7 @@ public class PipelineExecutor {
             .name("host-cgroups")
             .hostPath("/sys/fs/cgroup")
             .mountPath("/sys/fs/cgroup").build();
+    private static final String DOMAIN_DELIMITER = "@";
 
     private final PreferenceManager preferenceManager;
     private final String kubeNamespace;
@@ -106,7 +107,7 @@ public class PipelineExecutor {
             Map<String, String> labels = new HashMap<>();
             labels.put("spawned_by", "pipeline-api");
             labels.put("pipeline_id", pipelineId);
-            labels.put("owner", run.getOwner());
+            labels.put("owner", normalizeOwner(run.getOwner()));
             if (Boolean.TRUE.equals(run.getSensitive())) {
                 labels.put("sensitive", "true");
             }
@@ -136,6 +137,14 @@ public class PipelineExecutor {
             Pod created = new PodOperationsImpl(httpClient, client.getConfiguration(), kubeNamespace).create(pod);
             LOGGER.debug("Created POD: {}", created.toString());
         }
+    }
+
+    private String normalizeOwner(final String owner) {
+        return splitName(owner).replaceAll(KubernetesConstants.KUBE_NAME_REGEXP, "-");
+    }
+
+    private String splitName(final String owner) {
+        return owner.split(DOMAIN_DELIMITER)[0];
     }
 
     private void addWorkerLabel(final String clusterId, final Map<String, String> labels, final PipelineRun run) {

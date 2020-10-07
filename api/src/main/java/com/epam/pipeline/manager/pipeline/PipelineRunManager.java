@@ -57,6 +57,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
@@ -1263,7 +1264,7 @@ public class PipelineRunManager {
     // PodId should contain only a-z 0-9 and -, it also should be smaller then 63 characters
     private String normalizePodName(String name, String runId) {
         String podName = name.trim().toLowerCase();
-        podName = podName.replaceAll("[^a-z0-9\\-]+", "-");
+        podName = podName.replaceAll(KubernetesConstants.KUBE_NAME_REGEXP, "-");
         if (podName.length() + runId.length() + 1 > POD_ID_LENGTH) {
             podName = podName.substring(0, POD_ID_LENGTH - runId.length() - 1);
         }
