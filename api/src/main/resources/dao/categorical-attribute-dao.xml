@@ -56,7 +56,7 @@
                 ]]>
             </value>
         </property>
-        <property name="loadAttributesValuesQuery">
+        <property name="loadAttributeValuesQuery">
             <value>
                 <![CDATA[
                     SELECT
@@ -71,6 +71,24 @@
                     LEFT OUTER JOIN pipeline.categorical_attributes_links links on attributes.id=links.parent_id
                     LEFT JOIN pipeline.categorical_attributes links_values on links_values.id = links.child_id
                     WHERE attributes.key=:KEY
+                ]]>
+            </value>
+        </property>
+        <property name="loadAttributesValuesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        attributes.key,
+                        attributes.value,
+                        attributes.id,
+                        links.child_id,
+                        links.autofill,
+                        links_values.key child_key,
+                        links_values.value as child_value
+                    FROM pipeline.categorical_attributes attributes
+                    LEFT OUTER JOIN pipeline.categorical_attributes_links links on attributes.id=links.parent_id
+                    LEFT JOIN pipeline.categorical_attributes links_values on links_values.id = links.child_id
+                    WHERE attributes.key IN (:list)
                 ]]>
             </value>
         </property>
