@@ -86,8 +86,8 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
     @Override
     public TemporaryCredentials generate(final List<DataStorageAction> actions,
                                          final List<S3bucketDataStorage> storages) {
-        final Integer duration =
-                preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_TEMP_CREDENTIALS_DURATION);
+        final Integer duration = preferenceManager.getPreference(
+                SystemPreferences.DATA_STORAGE_TEMP_CREDENTIALS_DURATION);
         final List<Pair<S3bucketDataStorage, AwsRegion>> storagesWithRegions = storages.stream()
                 .map(storage -> new ImmutablePair<>(storage, cloudRegionManager.getAwsRegion(storage)))
                 .collect(Collectors.toList());
@@ -221,7 +221,7 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
                 .map(pair -> AWSUtils.getRoleValue(pair.getLeft(), pair.getRight()))
                 .distinct()
                 .collect(Collectors.toList());
-        Assert.state(roles.size() <= 1, "Multiple roles is not supported to assume for AWS provider");
+        Assert.state(roles.size() == 1, "Exactly one role is supported to assume for AWS provider");
         return roles.get(0);
     }
 
@@ -231,8 +231,8 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
                 .map(AwsRegion::getProfile)
                 .distinct()
                 .collect(Collectors.toList());
-        Assert.state(profiles.size() <= 1,
-                "Multiple account profiles is not supported to assume for AWS provider");
+        Assert.state(profiles.size() == 1,
+                "Exactly one account profile is supported for AWS provider");
         return profiles.get(0);
     }
 }

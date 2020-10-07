@@ -58,6 +58,10 @@ public class GCPTemporaryCredentialGenerator implements TemporaryCredentialsGene
 
     @Override
     public TemporaryCredentials generate(final List<DataStorageAction> actions, final List<GSBucketStorage> storages) {
+        Assert.state(storages.stream()
+                .map(GSBucketStorage::getRegionId)
+                .distinct()
+                .count() == 1, "Multi-region actions are not supported for GS data type");
         return generate(actions, storages.get(0));
     }
 

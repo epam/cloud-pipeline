@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.leakagepolicy.SensitiveStorageOperation;
 import com.epam.pipeline.utils.CommonUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Service;
@@ -32,11 +33,13 @@ import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @SuppressWarnings("unchecked")
 public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsManager {
 
@@ -57,6 +60,7 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
     @Override
     public TemporaryCredentials generate(final List<DataStorageAction> actions) {
         final List<AbstractDataStorage> storages = actions.stream()
+                .filter(this::storageIdNotNull)
                 .map(DataStorageAction::getId)
                 .distinct()
                 .map(dataStorageManager::load)
@@ -88,7 +92,15 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
     private AbstractDataStorage verifyAllTypesAreSameAngGetStorage(final List<AbstractDataStorage> storages) {
         Assert.state(storages.stream()
                 .map(AbstractDataStorage::getType)
-                .distinct().count() <= 1, "Storage types shall be the same");
+                .distinct()
+                .count() <= 1, "Storage types shall be the same");
         return storages.get(0);
+    }
+
+    private boolean storageIdNotNull(final DataStorageAction action) {
+        if (Objects.isNull(action.getId())) {
+            log.debug("Storage ID was not specified for action. This action will be skipped.");
+        }
+        return Objects.nonNull(action.getId());
     }
 }
