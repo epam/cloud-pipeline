@@ -248,10 +248,9 @@ class PreferenceInput extends React.Component {
           style={{lineHeight: 1, marginLeft: 2}}
           checked={`${this.state.value}` === 'true'}
           onChange={e => this.onValueChange(e.target.checked.toString())}
-          disabled={this.props.disabled}>
-          {
-            `${this.state.value}` === 'true' ? 'Enabled' : 'Disabled'
-          }
+          disabled={this.props.disabled}
+        >
+          Enabled
         </Checkbox>
       );
     } else if (this.props.value.type === 'OBJECT') {
