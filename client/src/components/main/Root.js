@@ -52,6 +52,7 @@ import AppRouter from './AppRouter';
 import AllowedInstanceTypes from '../../models/utils/AllowedInstanceTypes';
 import configurationSchedules from '../../models/configurationSchedule/ConfigurationSchedules';
 import SystemDictionariesLoadAll from '../../models/systemDictionaries/SystemDictionariesLoadAll';
+import GetMetadataKeys from '../../models/metadata/GetMetadataKeys';
 import {Search} from '../../models/search';
 import * as billing from '../../models/billing';
 
@@ -75,6 +76,7 @@ const spotToolInstanceTypes = new ToolInstanceTypes(true);
 const onDemandToolInstanceTypes = new ToolInstanceTypes(false);
 
 const systemDictionaries = new SystemDictionariesLoadAll();
+const userMetadataKeys = new GetMetadataKeys('PIPELINE_USER');
 
 (() => { return awsRegions.fetchIfNeededOrWait(); })();
 (() => { return cloudRegionsInfo.fetchIfNeededOrWait(); })();
@@ -127,7 +129,8 @@ const Root = () =>
       configurationSchedules,
       quotaTemplates: billing.quotas.templates.list,
       billingCenters: new billing.FetchBillingCenters(),
-      systemDictionaries
+      systemDictionaries,
+      userMetadataKeys
     }}>
     <AppRouter />
   </Provider>;

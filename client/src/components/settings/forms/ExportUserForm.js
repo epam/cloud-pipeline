@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
+  Collapse,
   Checkbox,
   Modal,
   Button,
@@ -41,12 +42,15 @@ const Keys = [
 
 const DefaultValues = Keys.map(k => k.value);
 
-async function doExport (fields = DefaultValues) {
+async function doExport (fields = DefaultValues, metadataKeys = []) {
   try {
     const request = new ExportUsers();
     const payload = Keys
       .map(({value}) => ({[value]: fields.indexOf(value) >= 0}))
       .reduce((r, c) => ({...r, ...c}), {});
+    if (metadataKeys.length > 0) {
+      payload.metadataColumns = metadataKeys.slice();
+    }
     await request.send(payload);
     if (request.value instanceof Blob) {
       const error = await checkBlob(request.value);
@@ -90,7 +94,9 @@ export default function ExportUserForm ({
   onChange,
   onSubmit,
   values,
-  visible
+  visible,
+  metadataKeys,
+  selectedMetadataKeys
 }) {
   const modalControls = [
     <Button
@@ -103,11 +109,48 @@ export default function ExportUserForm ({
       disabled={values.length === 0}
       key="submit"
       type="primary"
-      onClick={() => onSubmit(values)}
+      onClick={() => {
+        onSubmit && onSubmit(values, selectedMetadataKeys);
+        onCancel && onCancel();
+      }}
     >
       Download CSV
     </Button>
   ];
+
+  let modalContent;
+
+  if (metadataKeys.length > 0) {
+    modalContent = (
+      <Collapse defaultActiveKey={['fields']}>
+        <Collapse.Panel key="fields" header="Fields">
+          <Checkbox.Group
+            className={styles.inputContainer}
+            options={Keys}
+            value={values}
+            onChange={(checkedValues) => onChange(checkedValues, selectedMetadataKeys)}
+          />
+        </Collapse.Panel>
+        <Collapse.Panel key="attributes" header="Attributes">
+          <Checkbox.Group
+            className={styles.inputContainer}
+            options={metadataKeys}
+            value={selectedMetadataKeys}
+            onChange={(checkedValues) => onChange(values, checkedValues)}
+          />
+        </Collapse.Panel>
+      </Collapse>
+    );
+  } else {
+    modalContent = (
+      <Checkbox.Group
+        className={styles.inputContainer}
+        options={Keys}
+        value={values}
+        onChange={(checkedValues) => onChange(checkedValues, selectedMetadataKeys)}
+      />
+    );
+  }
 
   return (
     <Modal
@@ -116,12 +159,7 @@ export default function ExportUserForm ({
       footer={modalControls}
       onCancel={onCancel}
     >
-      <Checkbox.Group
-        className={styles.inputContainer}
-        options={Keys}
-        value={values}
-        onChange={(checkedValues) => onChange(checkedValues)}
-      />
+      {modalContent}
     </Modal>
   );
 }
@@ -130,5 +168,7 @@ ExportUserForm.propTypes = {
   onCancel: PropTypes.func.isRequired,
   onChange: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
-  values: PropTypes.array
+  values: PropTypes.array,
+  metadataKeys: PropTypes.array,
+  selectedMetadataKeys: PropTypes.array
 };
