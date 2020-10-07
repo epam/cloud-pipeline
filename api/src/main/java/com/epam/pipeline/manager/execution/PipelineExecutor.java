@@ -140,7 +140,7 @@ public class PipelineExecutor {
     }
 
     private String normalizeOwner(final String owner) {
-        return splitName(owner).replaceAll(KubernetesConstants.KUBE_NAME_REGEXP, "-");
+        return splitName(owner).replaceAll(KubernetesConstants.KUBE_NAME_FULL_REGEXP, "-");
     }
 
     private String splitName(final String owner) {
