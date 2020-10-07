@@ -51,12 +51,12 @@ import roleModel from '../../utils/roleModel';
 const PAGE_SIZE = 20;
 
 @roleModel.authenticationInfo
-@inject('dataStorages', 'users', 'metadataKeys')
-@inject(({users, authenticatedUserInfo, metadataKeys}) => ({
+@inject('dataStorages', 'users', 'userMetadataKeys')
+@inject(({users, authenticatedUserInfo, userMetadataKeys}) => ({
   users,
   authenticatedUserInfo,
   roles: new Roles(),
-  metadataKeys
+  userMetadataKeys
 }))
 @observer
 export default class UserManagementForm extends React.Component {
@@ -709,11 +709,16 @@ export default class UserManagementForm extends React.Component {
   };
 
   openExportUserDialog = () => {
-    this.setState({
-      exportUserDialogVisible: true,
-      userDataToExport: DefaultValues,
-      metadataKeys: []
-    });
+    const hide = message.loading('Fetching attributes list...', 0);
+    this.props.userMetadataKeys.fetch()
+      .then(() => {
+        hide();
+        this.setState({
+          exportUserDialogVisible: true,
+          userDataToExport: DefaultValues,
+          metadataKeys: []
+        });
+      });
   };
 
   closeExportUserDialog = () => {
@@ -841,8 +846,8 @@ export default class UserManagementForm extends React.Component {
             onCancel={this.closeExportUserDialog}
             onSubmit={doExport}
             metadataKeys={
-              this.props.metadataKeys.loaded
-                ? (this.props.metadataKeys.value || []).map(o => o)
+              this.props.userMetadataKeys.loaded
+                ? (this.props.userMetadataKeys.value || []).map(o => o)
                 : []
             }
           />
@@ -968,7 +973,6 @@ export default class UserManagementForm extends React.Component {
   }
 
   componentDidMount () {
-    this.props.metadataKeys.fetch();
     this.props.onInitialized && this.props.onInitialized(this);
   }
 }

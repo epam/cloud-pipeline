@@ -17,8 +17,8 @@
 import Remote from '../basic/Remote';
 
 export default class GetMetadataKeys extends Remote {
-  constructor () {
+  constructor (entityClass) {
     super();
-    this.url = '/metadata/keys';
+    this.url = `/metadata/keys?entityClass=${entityClass}`;
   }
 }

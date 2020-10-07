@@ -49,7 +49,7 @@ async function doExport (fields = DefaultValues, metadataKeys = []) {
       .map(({value}) => ({[value]: fields.indexOf(value) >= 0}))
       .reduce((r, c) => ({...r, ...c}), {});
     if (metadataKeys.length > 0) {
-      // todo: append metadata keys to the payload
+      payload.metadataColumns = metadataKeys.slice();
     }
     await request.send(payload);
     if (request.value instanceof Blob) {

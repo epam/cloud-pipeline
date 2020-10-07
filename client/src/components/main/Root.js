@@ -76,7 +76,7 @@ const spotToolInstanceTypes = new ToolInstanceTypes(true);
 const onDemandToolInstanceTypes = new ToolInstanceTypes(false);
 
 const systemDictionaries = new SystemDictionariesLoadAll();
-const metadataKeys = new GetMetadataKeys();
+const userMetadataKeys = new GetMetadataKeys('PIPELINE_USER');
 
 (() => { return awsRegions.fetchIfNeededOrWait(); })();
 (() => { return cloudRegionsInfo.fetchIfNeededOrWait(); })();
@@ -130,7 +130,7 @@ const Root = () =>
       quotaTemplates: billing.quotas.templates.list,
       billingCenters: new billing.FetchBillingCenters(),
       systemDictionaries,
-      metadataKeys
+      userMetadataKeys
     }}>
     <AppRouter />
   </Provider>;
