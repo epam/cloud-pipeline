@@ -1,4 +1,5 @@
 # Common
+CP_COMMON_DISTR_DOCKER_PREFIX=lifescience/cloud-pipeline
 CP_COMMON_SSL_SELF_SIGNED=false
 CP_COMMON_CERT_DIR=/opt/common/pki
 CP_COMMON_ROOT_FS_MIN_DISK_MB=20480

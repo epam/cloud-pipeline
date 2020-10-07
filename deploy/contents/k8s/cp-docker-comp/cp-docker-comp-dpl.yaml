@@ -18,7 +18,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-docker-comp
-          image: lifescience/cloud-pipeline:docker-comp-$CP_VERSION
+          image: $CP_COMMON_DISTR_DOCKER_PREFIX:docker-comp-$CP_VERSION
           imagePullPolicy: "Always"
           command: ["/init"]
           ports:

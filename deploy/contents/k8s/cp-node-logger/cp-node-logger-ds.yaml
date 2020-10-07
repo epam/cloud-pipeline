@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: cp-node-logger
-        image: lifescience/cloud-pipeline:node-logger-$CP_VERSION
+        image: $CP_COMMON_DISTR_DOCKER_PREFIX:node-logger-$CP_VERSION
         imagePullPolicy: "IfNotPresent"
         volumeMounts:
         - name: kubelet-log

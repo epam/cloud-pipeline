@@ -18,7 +18,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-tinyproxy
-          image: lifescience/cloud-pipeline:tinyproxy-$CP_VERSION
+          image: $CP_COMMON_DISTR_DOCKER_PREFIX:tinyproxy-$CP_VERSION
           imagePullPolicy: "IfNotPresent"
           command: ["/init"]
           envFrom:

@@ -13,7 +13,7 @@ spec:
     effect: NoSchedule
   containers:
     - name: cp-idp
-      image: lifescience/cloud-pipeline:idp-$CP_VERSION
+      image: $CP_COMMON_DISTR_DOCKER_PREFIX:idp-$CP_VERSION
       imagePullPolicy: "Always"
       command: ["/init"]
       ports:

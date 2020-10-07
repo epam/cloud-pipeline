@@ -18,7 +18,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-clair
-          image: lifescience/cloud-pipeline:clair-$CP_VERSION
+          image: $CP_COMMON_DISTR_DOCKER_PREFIX:clair-$CP_VERSION
           imagePullPolicy: "Always"
           ports:
             - containerPort: 8080

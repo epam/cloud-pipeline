@@ -18,7 +18,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-docker-registry
-          image: lifescience/cloud-pipeline:registry-$CP_VERSION
+          image: $CP_COMMON_DISTR_DOCKER_PREFIX:registry-$CP_VERSION
           imagePullPolicy: "Always"
           ports:
             - containerPort: 443

@@ -18,7 +18,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-dav
-          image: lifescience/cloud-pipeline:dav-$CP_VERSION
+          image: $CP_COMMON_DISTR_DOCKER_PREFIX:dav-$CP_VERSION
           imagePullPolicy: "Always"
           securityContext:
             privileged: true

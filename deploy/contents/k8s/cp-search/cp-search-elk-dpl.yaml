@@ -18,7 +18,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-search-elk
-          image: lifescience/cloud-pipeline:search-elk-$CP_VERSION
+          image: $CP_COMMON_DISTR_DOCKER_PREFIX:search-elk-$CP_VERSION
           securityContext:
             privileged: true
           imagePullPolicy: "IfNotPresent"
