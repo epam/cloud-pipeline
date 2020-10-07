@@ -25,11 +25,9 @@ import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.epam.pipeline.util.ControllerTestUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.assertj.core.api.Assertions;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -101,10 +99,6 @@ public class BillingControllerTest extends AbstractControllerTest {
                 .andReturn();
 
         Mockito.verify(mockBillingApiService).getBillingChartInfo(billingChartRequest);
-        final ArgumentCaptor<BillingChartRequest> billingChartRequestCaptor =
-                ArgumentCaptor.forClass(BillingChartRequest.class);
-        Mockito.verify(mockBillingApiService).getBillingChartInfo(billingChartRequestCaptor.capture());
-        Assertions.assertThat(billingChartRequestCaptor.getValue()).isEqualTo(billingChartRequest);
 
         final ResponseResult<List<BillingChartInfo>> expectedResult =
                 ControllerTestUtils.buildExpectedResult(billingChartInfos);
@@ -135,11 +129,6 @@ public class BillingControllerTest extends AbstractControllerTest {
                 .andReturn();
 
         Mockito.verify(mockBillingApiService).getBillingChartInfoPaginated(billingChartRequest);
-
-        final ArgumentCaptor<BillingChartRequest> billingChartRequestCaptor =
-                ArgumentCaptor.forClass(BillingChartRequest.class);
-        Mockito.verify(mockBillingApiService).getBillingChartInfoPaginated(billingChartRequestCaptor.capture());
-        Assertions.assertThat(billingChartRequestCaptor.getValue()).isEqualTo(billingChartRequest);
 
         final ResponseResult<List<BillingChartInfo>> expectedResult =
                 ControllerTestUtils.buildExpectedResult(billingChartInfos);
