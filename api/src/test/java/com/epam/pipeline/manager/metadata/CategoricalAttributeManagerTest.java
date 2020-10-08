@@ -21,8 +21,11 @@ import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
+import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
@@ -36,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-
+@Transactional
 public class CategoricalAttributeManagerTest extends AbstractSpringTest {
 
     private static final String KEY_1 = "key1";
@@ -57,10 +60,14 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
     @Autowired
     private UserManager userManager;
 
+    @Autowired
+    private PreferenceManager preferenceManager;
 
     @Test
-    @Transactional
     public void syncWithMetadata() {
+        preferenceManager.update(Collections.singletonList(new Preference(
+                SystemPreferences.MISC_METADATA_SENSITIVE_KEYS.getKey(),
+                String.format("[\"%s\"]", SENSITIVE_KEY))));
         Assert.assertEquals(0, categoricalAttributeManager.loadAll().size());
 
         final PipelineUser testUser = userManager

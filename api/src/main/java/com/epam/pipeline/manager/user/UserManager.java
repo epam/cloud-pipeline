@@ -391,7 +391,9 @@ public class UserManager {
 
     public byte[] exportUsers(final PipelineUserExportVO attr) {
         final Collection<PipelineUserWithStoragePath> users = loadAllUsersWithDataStoragePath();
-        return new UserExporter().exportUsers(attr, users).getBytes(Charset.defaultCharset());
+        final List<String> sensitiveKeys = preferenceManager.getPreference(
+                SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
+        return new UserExporter().exportUsers(attr, users, sensitiveKeys).getBytes(Charset.defaultCharset());
     }
 
     private void checkAllRolesPresent(List<Long> roles) {

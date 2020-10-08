@@ -27,7 +27,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Required;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -66,9 +65,6 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     private String loadUniqueValuesFromEntitiesAttributes;
     private String createMetadataDictionary;
     private String loadMetadataKeysQuery;
-
-    @Value("#{'${metadata.sensitive.keys}'.split(',')}")
-    private List<String> sensitiveMetadataKeys;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void registerMetadataItem(MetadataEntry metadataEntry) {
@@ -151,9 +147,10 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
                         entityClass.name(), MetadataDao.convertDataToJsonStringForQuery(indicator));
     }
 
-    public List<CategoricalAttribute> buildFullMetadataDict() {
+    public List<CategoricalAttribute> buildFullMetadataDict(final List<String> sensitiveMetadataKeys) {
+        //TODO: fix for case with empty sensitiveMetadataKeys
         final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(LIST_PARAMETER, sensitiveMetadataKeys);
+        params.addValue(LIST_PARAMETER, ListUtils.emptyIfNull(sensitiveMetadataKeys));
         final List<Pair<String, String>> allAttributeValues = getNamedParameterJdbcTemplate()
             .query(createMetadataDictionary, params, MetadataParameters.getMetadataKeyValueMapper());
         return CategoricalAttributeDao.convertPairsToAttributesList(allAttributeValues);
