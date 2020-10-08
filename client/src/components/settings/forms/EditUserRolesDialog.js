@@ -250,8 +250,13 @@ export default class EditUserRolesDialog extends React.Component {
   }
 
   get defaultStorageId () {
+    const {readOnly, dataStorages} = this.props;
     const {defaultStorageId} = this.state;
-    if (defaultStorageId) {
+    if (defaultStorageId && dataStorages.loaded) {
+      const dataStorage = (dataStorages.value || []).find(d => d.id === +defaultStorageId);
+      if (!dataStorage) {
+        return readOnly ? `Access is denied` : undefined;
+      }
       return `${defaultStorageId}`;
     }
     return undefined;
