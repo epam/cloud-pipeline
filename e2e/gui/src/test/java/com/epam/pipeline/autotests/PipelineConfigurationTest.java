@@ -57,6 +57,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.menu;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTest {
@@ -158,7 +159,8 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .showLog(getLastRunId())
             .instanceParameters(p -> p.ensure(parameterWithName("Price type"), have(text(onDemandPriceName))))
             .click(taskWithName("InitializeNode"))
-            .ensure(logMessage(withActualRunId("Checking if instance already exists for RunID run_id")), visible);
+            .ensure(logMessage(withActualRunId("Checking if instance already exists for RunID run_id")), visible)
+            .sleep(1, MINUTES);
         if (Cloud.AZURE.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
             new LogAO()
                     .ensure(logMessage(withActualRunId("Create VMScaleSet with low priority instance for run: run_id")),
