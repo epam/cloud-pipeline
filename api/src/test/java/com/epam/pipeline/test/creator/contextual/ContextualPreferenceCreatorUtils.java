@@ -29,8 +29,8 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class ContextualPreferenceCreatorUtils {
 
-    private static final PreferenceType preferenceType = PreferenceType.STRING;
-    private static final ContextualPreferenceLevel preferenceLevel = ContextualPreferenceLevel.ROLE;
+    private static final PreferenceType PREFERENCE_TYPE = PreferenceType.STRING;
+    private static final ContextualPreferenceLevel PREFERENCE_LEVEL = ContextualPreferenceLevel.ROLE;
 
     private ContextualPreferenceCreatorUtils() {
 
@@ -41,7 +41,7 @@ public final class ContextualPreferenceCreatorUtils {
     }
 
     public static ContextualPreferenceExternalResource getCPExternalResource() {
-        return new ContextualPreferenceExternalResource(preferenceLevel, TEST_STRING);
+        return new ContextualPreferenceExternalResource(PREFERENCE_LEVEL, TEST_STRING);
     }
 
     public static ContextualPreferenceSearchRequest getCPSearchRequest() {
@@ -52,7 +52,7 @@ public final class ContextualPreferenceCreatorUtils {
 
     public static ContextualPreferenceVO getContextualPreferenceVO() {
         return new ContextualPreferenceVO(
-                TEST_STRING, TEST_STRING, preferenceType, getCPExternalResource()
+                TEST_STRING, TEST_STRING, PREFERENCE_TYPE, getCPExternalResource()
         );
     }
 }

@@ -40,7 +40,7 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_
 public final class NodeCreatorUtils {
 
     private static final List<InstanceType> INSTANCE_TYPES = Collections.singletonList(getDefaultInstanceType());
-    private static final LocalDateTime ldt =
+    private static final LocalDateTime LDT =
             LocalDateTime.parse("2019-04-01T09:08:07", DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
     private NodeCreatorUtils() {
@@ -84,6 +84,6 @@ public final class NodeCreatorUtils {
     }
 
     public static NodeDisk getDefaultNodeDisk() {
-        return new NodeDisk(ID, TEST_STRING, ldt);
+        return new NodeDisk(ID, TEST_STRING, LDT);
     }
 }
