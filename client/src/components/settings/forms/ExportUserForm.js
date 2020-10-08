@@ -28,6 +28,7 @@ import ExportUsers from '../../../models/user/Export';
 import styles from './ExportUserForm.css';
 
 const Keys = [
+  {label: 'Header', value: 'includeHeader'},
   {label: 'Identifier', value: 'includeId'},
   {label: 'User name', value: 'includeUserName'},
   {label: 'Attributes', value: 'includeAttributes'},
@@ -36,8 +37,7 @@ const Keys = [
   {label: 'Roles', value: 'includeRoles'},
   {label: 'Groups', value: 'includeGroups'},
   {label: 'Blocked', value: 'includeStatus'},
-  {label: 'Default data storage', value: 'includeDataStorage'},
-  {label: 'Header', value: 'includeHeader'}
+  {label: 'Default data storage', value: 'includeDataStorage'}
 ];
 
 const DefaultValues = Keys.map(k => k.value);
@@ -131,7 +131,7 @@ export default function ExportUserForm ({
             onChange={(checkedValues) => onChange(checkedValues, selectedMetadataKeys)}
           />
         </Collapse.Panel>
-        <Collapse.Panel key="attributes" header="Attributes">
+        <Collapse.Panel key="attributes" header="Metadata">
           <Checkbox.Group
             className={styles.inputContainer}
             options={metadataKeys}
