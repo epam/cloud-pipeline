@@ -372,8 +372,12 @@ export default class Metadata extends localization.LocalizedReactComponent {
           modified[key] = {value, type: 'string'};
         });
       }
-      if (warnings.length > 0) {
-        message.warning(warnings.join('\n'), 5);
+      if (warnings.size > 0) {
+        message.warning(
+          // eslint-disable-next-line
+          `Error auto-filling attributes: circular dependency for "${[...warnings].join(', ')}" dictionar${warnings.size > 1 ? 'ies' : 'y'}`,
+          5
+        );
       }
     }
     if (currentMetadataItem) {
@@ -441,8 +445,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
   };
 
   getCascadeValues = (key, value, dictionaries, processed = []) => {
-    const warnings = [];
-    let result = processed.slice();
+    let warnings = new Set();
+    let result = processed.slice().concat(({key, value}));
     const dictionary = dictionaries.find(dict => dict.key === key);
     if (dictionary) {
       const {values = []} = dictionary;
@@ -455,16 +459,15 @@ export default class Metadata extends localization.LocalizedReactComponent {
           if (existedLink) {
             if (existedLink.value !== linkValue) {
               // eslint-disable-next-line
-              warnings.push(`Error auto-filling attributes: incorrect dependency for "${linkValue}" value of "${linkKey}" dictionary`);
+              warnings.add(linkKey);
             }
           } else {
-            result.push({key: linkKey, value: linkValue});
             const {
               result: childResult,
               warnings: childWarnings
             } = this.getCascadeValues(linkKey, linkValue, dictionaries, result);
             result = childResult;
-            warnings.push(...childWarnings);
+            warnings = new Set([...warnings, ...childWarnings]);
           }
         }
       }
@@ -483,8 +486,12 @@ export default class Metadata extends localization.LocalizedReactComponent {
         result: values,
         warnings
       } = this.getCascadeValues(key, value, systemDictionaries.value || []);
-      if (warnings.length > 0) {
-        message.warning(warnings.join('\n'), 5);
+      if (warnings.size > 0) {
+        message.warning(
+          // eslint-disable-next-line
+          `Error auto-filling attributes: circular dependency for "${[...warnings].join(', ')}" dictionar${warnings.size > 1 ? 'ies' : 'y'}`,
+          5
+        );
       }
       await this.applyValues(values);
     }
