@@ -36,7 +36,7 @@ public final class RegionCreatorUtils {
     }
 
     public static AwsRegion getDefaultAwsRegion() {
-        AwsRegion region = new AwsRegion();
+        final AwsRegion region = new AwsRegion();
         region.setRegionCode("us-east-1");
         region.setName("US East");
         region.setDefault(true);
@@ -44,7 +44,7 @@ public final class RegionCreatorUtils {
     }
 
     public static AzureRegion getDefaultAzureRegion() {
-        AzureRegion region = new AzureRegion();
+        final AzureRegion region = new AzureRegion();
         region.setDefault(true);
         region.setProvider(CloudProvider.AZURE);
         region.setResourceGroup("resourceGroup");
@@ -53,21 +53,21 @@ public final class RegionCreatorUtils {
     }
 
     public static GCPRegion getDefaultGcpRegion() {
-        GCPRegion region = new GCPRegion();
+        final GCPRegion region = new GCPRegion();
         region.setCustomInstanceTypes(getGcpCustomInstanceTypes());
         region.setDefault(true);
         return region;
     }
 
     private static List<GCPCustomInstanceType> getGcpCustomInstanceTypes() {
-        List<GCPCustomInstanceType> customInstanceTypes = new ArrayList<>();
+        final List<GCPCustomInstanceType> customInstanceTypes = new ArrayList<>();
         customInstanceTypes.add(GCPCustomInstanceType.withCpu(4, 16));
         customInstanceTypes.add(GCPCustomInstanceType.withGpu(4, 16, 4, "test"));
         return customInstanceTypes;
     }
 
     public static AWSRegionDTO getDefaultAwsRegionDTO() {
-        AWSRegionDTO awsRegionDTO = new AWSRegionDTO();
+        final AWSRegionDTO awsRegionDTO = new AWSRegionDTO();
         awsRegionDTO.setRegionCode("us-east-1");
         awsRegionDTO.setName("US East");
         awsRegionDTO.setKmsKeyId("test");
@@ -80,7 +80,7 @@ public final class RegionCreatorUtils {
     }
 
     public static AzureRegionDTO getDefaultAzureRegionDTO() {
-        AzureRegionDTO regionDTO = new AzureRegionDTO();
+        final AzureRegionDTO regionDTO = new AzureRegionDTO();
         regionDTO.setDefault(true);
         regionDTO.setResourceGroup("resourceGroup");
         regionDTO.setStorageAccount("storageAcc");
@@ -92,7 +92,7 @@ public final class RegionCreatorUtils {
     }
 
     public static GCPRegionDTO getDefaultGcpRegionDTO() {
-        GCPRegionDTO regionDTO = new GCPRegionDTO();
+        final GCPRegionDTO regionDTO = new GCPRegionDTO();
         regionDTO.setCorsRules("corsRules");
         regionDTO.setApplicationName("testName");
         regionDTO.setImpersonatedAccount("testAccount");

@@ -30,10 +30,8 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.region.CloudRegionApiService;
 import com.epam.pipeline.util.ControllerTestUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -197,10 +195,6 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
 
-        final ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
-        Mockito.verify(mockCloudRegionApiService).load(longCaptor.capture());
-        Assertions.assertThat(longCaptor.getValue()).isEqualTo(ID);
-
         Mockito.verify(mockCloudRegionApiService).load(ID);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedAwsRegionResult,
@@ -219,10 +213,6 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
 
-        final ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
-        Mockito.verify(mockCloudRegionApiService).load(longCaptor.capture());
-        Assertions.assertThat(longCaptor.getValue()).isEqualTo(ID);
-
         Mockito.verify(mockCloudRegionApiService).load(ID);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedAzureResult,
@@ -240,10 +230,6 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
-
-        final ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
-        Mockito.verify(mockCloudRegionApiService).load(longCaptor.capture());
-        Assertions.assertThat(longCaptor.getValue()).isEqualTo(ID);
 
         Mockito.verify(mockCloudRegionApiService).load(ID);
 
@@ -271,10 +257,6 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
-
-        final ArgumentCaptor<CloudProvider> cloudProviderCaptor = ArgumentCaptor.forClass(CloudProvider.class);
-        Mockito.verify(mockCloudRegionApiService).loadAllAvailable(cloudProviderCaptor.capture());
-        Assertions.assertThat(cloudProviderCaptor.getValue()).isEqualTo(CloudProvider.AWS);
 
         Mockito.verify(mockCloudRegionApiService).loadAllAvailable(CloudProvider.AWS);
 
@@ -304,10 +286,6 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
 
-        final ArgumentCaptor<AWSRegionDTO> awsRegionDTOCaptor = ArgumentCaptor.forClass(AWSRegionDTO.class);
-        Mockito.verify(mockCloudRegionApiService).create(awsRegionDTOCaptor.capture());
-        Assertions.assertThat(awsRegionDTOCaptor.getValue()).isEqualToComparingFieldByField(awsRegionDTO);
-
         Mockito.verify(mockCloudRegionApiService).create(Mockito.refEq(awsRegionDTO));
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedAwsRegionResult,
@@ -327,11 +305,6 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
 
-        final ArgumentCaptor<AzureRegionDTO> azureRegionDTOCaptor = ArgumentCaptor.forClass(AzureRegionDTO.class);
-        Mockito.verify(mockCloudRegionApiService).create(azureRegionDTOCaptor.capture());
-        Assertions.assertThat(azureRegionDTOCaptor.getValue().getAuthFile())
-                .isEqualTo(azureRegionDTO.getAuthFile());
-
         Mockito.verify(mockCloudRegionApiService).create(Mockito.refEq(azureRegionDTO));
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedAzureResult,
@@ -350,10 +323,6 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
-
-        final ArgumentCaptor<GCPRegionDTO> gcpRegionDTOCaptor = ArgumentCaptor.forClass(GCPRegionDTO.class);
-        Mockito.verify(mockCloudRegionApiService).create(gcpRegionDTOCaptor.capture());
-        Assertions.assertThat(gcpRegionDTOCaptor.getValue()).isEqualToComparingFieldByField(gcpRegionDTO);
 
         Mockito.verify(mockCloudRegionApiService).create(Mockito.refEq(gcpRegionDTO));
 
@@ -381,11 +350,6 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
 
-        final ArgumentCaptor<AWSRegionDTO> awsRegionDTOCaptor = ArgumentCaptor.forClass(AWSRegionDTO.class);
-        Mockito.verify(mockCloudRegionApiService).update(Mockito.eq(ID), awsRegionDTOCaptor.capture());
-        Assertions.assertThat(awsRegionDTOCaptor.getValue().getBackupDuration())
-                .isEqualTo(awsRegionDTO.getBackupDuration());
-
         Mockito.verify(mockCloudRegionApiService).update(Mockito.eq(ID), Mockito.refEq(awsRegionDTO));
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedAwsRegionResult,
@@ -406,10 +370,6 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
 
-        final ArgumentCaptor<AzureRegionDTO> azureRegionDTOCaptor = ArgumentCaptor.forClass(AzureRegionDTO.class);
-        Mockito.verify(mockCloudRegionApiService).update(Mockito.eq(ID), azureRegionDTOCaptor.capture());
-        Assertions.assertThat(azureRegionDTOCaptor.getValue()).isEqualToComparingFieldByField(azureRegionDTO);
-
         Mockito.verify(mockCloudRegionApiService).update(Mockito.eq(ID), Mockito.refEq(azureRegionDTO));
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedAzureResult,
@@ -428,10 +388,6 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
-
-        final ArgumentCaptor<GCPRegionDTO> gcpRegionDTOCaptor = ArgumentCaptor.forClass(GCPRegionDTO.class);
-        Mockito.verify(mockCloudRegionApiService).update(Mockito.eq(ID), gcpRegionDTOCaptor.capture());
-        Assertions.assertThat(gcpRegionDTOCaptor.getValue()).isEqualToComparingFieldByField(gcpRegionDTO);
 
         Mockito.verify(mockCloudRegionApiService).update(Mockito.eq(ID), Mockito.refEq(gcpRegionDTO));
 
@@ -458,10 +414,6 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
 
-        final ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
-        Mockito.verify(mockCloudRegionApiService).delete(longCaptor.capture());
-        Assertions.assertThat(longCaptor.getValue()).isEqualTo(ID);
-
         Mockito.verify(mockCloudRegionApiService).delete(ID);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedAwsRegionResult,
@@ -480,10 +432,6 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
 
-        final ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
-        Mockito.verify(mockCloudRegionApiService).delete(longCaptor.capture());
-        Assertions.assertThat(longCaptor.getValue()).isEqualTo(ID);
-
         Mockito.verify(mockCloudRegionApiService).delete(ID);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedAzureResult,
@@ -501,10 +449,6 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
-
-        final ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
-        Mockito.verify(mockCloudRegionApiService).delete(longCaptor.capture());
-        Assertions.assertThat(longCaptor.getValue()).isEqualTo(ID);
 
         Mockito.verify(mockCloudRegionApiService).delete(ID);
 
