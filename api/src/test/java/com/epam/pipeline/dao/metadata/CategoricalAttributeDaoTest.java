@@ -16,6 +16,10 @@
 
 package com.epam.pipeline.dao.metadata;
 
+import static com.epam.pipeline.util.CategoricalAttributeTestUtils.assertValuesPresentedForKeyInMap;
+import static com.epam.pipeline.util.CategoricalAttributeTestUtils.convertToMap;
+import static com.epam.pipeline.util.CategoricalAttributeTestUtils.fromStrings;
+
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
@@ -30,14 +34,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
 public class CategoricalAttributeDaoTest extends AbstractSpringTest {
 
@@ -85,27 +87,7 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
         Assert.assertTrue(categoricalAttributeDao.insertAttributesValues(values));
     }
 
-    @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void testUpdateAttributesValues() {
-        final List<CategoricalAttribute> values = new ArrayList<>();
-        values.add(new CategoricalAttribute(ATTRIBUTE_KEY_1,
-                                            fromStrings(ATTRIBUTE_KEY_1,
-                                                        Arrays.asList(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2))));
-        Assert.assertTrue(categoricalAttributeDao.insertAttributesValues(values));
-        final List<CategoricalAttribute> attributes = categoricalAttributeDao.loadAll();
-        Assert.assertEquals(1, attributes.size());
-        assertAttribute(attributes.get(0), ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2);
 
-        final List<CategoricalAttribute> valuesToReplace = new ArrayList<>();
-        valuesToReplace.add(new CategoricalAttribute(ATTRIBUTE_KEY_1,
-                                                     fromStrings(ATTRIBUTE_KEY_1,
-                                                                 Collections.singletonList(ATTRIBUTE_VALUE_3))));
-        Assert.assertTrue(categoricalAttributeDao.updateCategoricalAttributes(valuesToReplace));
-        final List<CategoricalAttribute> attributesAfter = categoricalAttributeDao.loadAll();
-        Assert.assertEquals(1, attributesAfter.size());
-        assertAttribute(attributesAfter.get(0), ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_3);
-    }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -179,97 +161,5 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
         Assert.assertEquals(2, attributesWithValues.size());
         assertValuesPresentedForKeyInMap(attributesWithValues, ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_2);
         assertValuesPresentedForKeyInMap(attributesWithValues, ATTRIBUTE_KEY_2, ATTRIBUTE_VALUE_3);
-    }
-
-    @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void testLinkCreationAndCleanup() {
-        final List<CategoricalAttributeValue> valuesWithoutLinks =
-            fromStrings(ATTRIBUTE_KEY_1, Arrays.asList(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2));
-        final CategoricalAttributeValue valueWithLink = new CategoricalAttributeValue(ATTRIBUTE_KEY_2,
-                                                                                      ATTRIBUTE_VALUE_3);
-        valueWithLink.setLinks(Collections.singletonList(new CategoricalAttributeValue(ATTRIBUTE_KEY_1,
-                                                                                       ATTRIBUTE_VALUE_1)));
-        final List<CategoricalAttribute> attributes =
-            Arrays.asList(new CategoricalAttribute(ATTRIBUTE_KEY_1, valuesWithoutLinks),
-                          new CategoricalAttribute(ATTRIBUTE_KEY_2, Collections.singletonList(valueWithLink)));
-
-        categoricalAttributeDao.insertAttributesValues(attributes);
-
-        final Map<String, List<CategoricalAttributeValue>> attributeMap = categoricalAttributeDao.loadAll().stream()
-            .collect(Collectors.toMap(CategoricalAttribute::getKey, CategoricalAttribute::getValues));
-        Assert.assertTrue(attributeMap.get(ATTRIBUTE_KEY_1).stream()
-                              .map(CategoricalAttributeValue::getLinks)
-                              .allMatch(CollectionUtils::isEmpty));
-        final List<CategoricalAttributeValue> valuesForKey2 = attributeMap.get(ATTRIBUTE_KEY_2);
-        Assert.assertEquals(1, valuesForKey2.size());
-        final CategoricalAttributeValue value1ForKey2 = valuesForKey2.get(0);
-        Assert.assertEquals(ATTRIBUTE_KEY_2, value1ForKey2.getKey());
-        Assert.assertEquals(ATTRIBUTE_VALUE_3, value1ForKey2.getValue());
-        final List<CategoricalAttributeValue> links = value1ForKey2.getLinks();
-        Assert.assertEquals(1, links.size());
-        final CategoricalAttributeValue linkToKey1Value1 = links.get(0);
-        Assert.assertEquals(ATTRIBUTE_KEY_1, linkToKey1Value1.getKey());
-        Assert.assertEquals(ATTRIBUTE_VALUE_1, linkToKey1Value1.getValue());
-        Assert.assertFalse(linkToKey1Value1.getAutofill());
-        Assert.assertEquals(attributeMap.get(ATTRIBUTE_KEY_1).stream()
-                                .filter(value -> value.getKey().equals(ATTRIBUTE_KEY_1)
-                                                 && value.getValue().equals(ATTRIBUTE_VALUE_1))
-                                .map(CategoricalAttributeValue::getId)
-                                .findAny()
-                                .get(),
-                            linkToKey1Value1.getId());
-
-        categoricalAttributeDao.deleteAttributeValue(ATTRIBUTE_KEY_1, ATTRIBUTE_VALUE_1);
-        final Map<String, List<CategoricalAttributeValue>> attributeMapAfterDelete =
-            categoricalAttributeDao.loadAll().stream()
-                .collect(Collectors.toMap(CategoricalAttribute::getKey, CategoricalAttribute::getValues));
-        Assert.assertTrue(attributeMapAfterDelete.values().stream()
-                              .flatMap(Collection::stream)
-                              .map(CategoricalAttributeValue::getLinks)
-                              .allMatch(CollectionUtils::isEmpty));
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void testCreateLinkOnNonExistentAttributeValue() {
-        final CategoricalAttributeValue valueWithLink = new CategoricalAttributeValue(ATTRIBUTE_KEY_2,
-                                                                                      ATTRIBUTE_VALUE_3);
-        valueWithLink.setLinks(Collections.singletonList(new CategoricalAttributeValue(ATTRIBUTE_KEY_1,
-                                                                                       ATTRIBUTE_VALUE_1)));
-        final List<CategoricalAttribute> attributes = Collections
-            .singletonList(new CategoricalAttribute(ATTRIBUTE_KEY_2, Collections.singletonList(valueWithLink)));
-        categoricalAttributeDao.insertAttributesValues(attributes);
-    }
-
-    private void assertAttribute(final CategoricalAttribute attributeAfter, final String key,
-                                 final String ... values) {
-        Assert.assertEquals(key, attributeAfter.getKey());
-        final List<CategoricalAttributeValue> attributeValues = Stream.of(values)
-            .map(v -> new CategoricalAttributeValue(key, v))
-            .collect(Collectors.toList());
-        Assert.assertThat(attributeAfter.getValues(), CoreMatchers.is(attributeValues));
-    }
-
-    private Map<String, List<String>> convertToMap(final Collection<CategoricalAttribute> attributes) {
-        return attributes.stream()
-            .collect(Collectors.toMap(CategoricalAttribute::getKey,
-                attribute -> attribute.getValues().stream()
-                                          .map(CategoricalAttributeValue::getValue)
-                                          .collect(Collectors.toList())));
-    }
-
-    private void assertValuesPresentedForKeyInMap(final Map<String, List<String>> attributesWithValues,
-                                                  final String key,
-                                                  final String... values) {
-        final List<String> valuesForKey = attributesWithValues.get(key);
-        Assert.assertEquals(values.length, valuesForKey.size());
-        Assert.assertThat(valuesForKey, contains(values));
-    }
-
-    private List<CategoricalAttributeValue> fromStrings(final String key, final List<String> strings) {
-        return strings.stream()
-            .map(s -> new CategoricalAttributeValue(key, s))
-            .collect(Collectors.toList());
     }
 }
