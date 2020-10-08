@@ -65,7 +65,8 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
                 .distinct()
                 .map(dataStorageManager::load)
                 .collect(Collectors.toList());
-        Assert.state(CollectionUtils.isNotEmpty(storages), "No storages were specified");
+        Assert.state(CollectionUtils.isNotEmpty(storages),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGES_NOT_FOUND));
         final TemporaryCredentialsGenerator credentialsGenerator = getCredentialsGenerator(storages);
 
         final Map<Long, AbstractDataStorage> storagesById = storages.stream()
@@ -93,7 +94,7 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
         Assert.state(storages.stream()
                 .map(AbstractDataStorage::getType)
                 .distinct()
-                .count() <= 1, "Storage types shall be the same");
+                .count() <= 1, messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGES_TYPES_NOT_SAME));
         return storages.get(0);
     }
 

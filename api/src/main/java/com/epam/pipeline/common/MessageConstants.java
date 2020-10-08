@@ -235,6 +235,8 @@ public final class MessageConstants {
     public static final String ERROR_SENSITIVE_WRITE_FORBIDDEN = "error.sensitive.datastorage.write.forbidden";
     public static final String ERROR_SENSITIVE_RUN_NOT_ALLOWED_FOR_TOOL = "error.sensitive.tool.forbidden";
     public static final String ERROR_SHARED_STORAGE_IS_NOT_CONFIGURED = "error.share.storage.not.configured";
+    public static final String ERROR_DATASTORAGES_TYPES_NOT_SAME = "error.datastorages.types.not.same";
+    public static final String ERROR_DATASTORAGES_NOT_FOUND = "error.datastorages.not.found";
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
@@ -504,6 +506,10 @@ public final class MessageConstants {
 
     public static final String ERROR_GCP_INSTANCE_NOT_RUNNING = "error.gcp.instance.not.running";
     public static final String ERROR_GCP_INSTANCE_NOT_FOUND = "error.gcp.instance.not.found";
+
+    //AWS
+    public static final String ERROR_AWS_PROFILE_UNIQUENESS = "error.aws.profile.uniqueness";
+    public static final String ERROR_AWS_S3_ROLE_UNIQUENESS = "error.aws.s3.role.uniqueness";
 
     //Billing
     public static final String ERROR_BILLING_FIELD_DATE_GROUPING_NOT_SUPPORTED =

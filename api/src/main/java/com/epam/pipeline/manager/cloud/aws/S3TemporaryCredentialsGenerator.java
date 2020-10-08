@@ -20,6 +20,8 @@ import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder
 import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
 import com.amazonaws.services.securitytoken.model.Credentials;
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
@@ -77,6 +79,7 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
 
     private final CloudRegionManager cloudRegionManager;
     private final PreferenceManager preferenceManager;
+    private final MessageHelper messageHelper;
 
     @Override
     public DataStorageType getStorageType() {
@@ -221,7 +224,8 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
                 .map(pair -> AWSUtils.getRoleValue(pair.getLeft(), pair.getRight()))
                 .distinct()
                 .collect(Collectors.toList());
-        Assert.state(roles.size() == 1, "Exactly one role is supported to assume for AWS provider");
+        Assert.state(roles.size() == 1,
+                messageHelper.getMessage(MessageConstants.ERROR_AWS_S3_ROLE_UNIQUENESS));
         return roles.get(0);
     }
 
@@ -232,7 +236,7 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
                 .distinct()
                 .collect(Collectors.toList());
         Assert.state(profiles.size() == 1,
-                "Exactly one account profile is supported for AWS provider");
+                messageHelper.getMessage(MessageConstants.ERROR_AWS_PROFILE_UNIQUENESS));
         return profiles.get(0);
     }
 }
