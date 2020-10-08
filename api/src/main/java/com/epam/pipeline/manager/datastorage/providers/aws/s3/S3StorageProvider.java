@@ -346,6 +346,6 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         action.setWrite(write);
         action.setWriteVersion(useVersion);
         return stsCredentialsGenerator
-                .generate(Collections.singletonList(action), dataStorage);
+                .generate(Collections.singletonList(action), Collections.singletonList(dataStorage));
     }
 }
