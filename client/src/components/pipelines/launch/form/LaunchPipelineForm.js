@@ -123,6 +123,7 @@ import {
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE
 } from './utilities/parameters';
+import OOMCheck from './utilities/oom-check';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -3910,7 +3911,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               <Input
                 disabled={
                   (this.props.readOnly && !this.props.canExecute)
-                } />
+                }
+              />
             )}
           </FormItem>
         </Col>
@@ -3937,6 +3939,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         .map(o => +o)
         .filter(o => availableMounts.has(o))
         .join(',') || null;
+      let currentValue = this.props.form.getFieldValue(`${ADVANCED}.limitMounts`);
+      if (currentValue === undefined) {
+        currentValue = defaultValue;
+      }
+      const instanceType = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
+        this.getDefaultValue('instance_size');
+      const instance = this.instanceTypes.find(t => t.name === instanceType);
       return (
         <FormItem
           className={getFormItemClassName(styles.formItemRow, 'limitMounts')}
@@ -3958,7 +3967,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       disabled={
                         !!this.state.fireCloudMethodName ||
                         (this.props.readOnly && !this.props.canExecute)
-                      }/>
+                      }
+                    />
                   )}
                 </FormItem>
               </div>
@@ -3975,6 +3985,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 />
               )
             }
+            <OOMCheck
+              dataStorages={
+                dataStorageAvailable.loaded
+                  ? (dataStorageAvailable.value || [])
+                  : []
+              }
+              limitMounts={currentValue}
+              preferences={this.props.preferences}
+              instance={instance}
+            />
           </div>
         </FormItem>
       );
