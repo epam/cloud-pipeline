@@ -765,7 +765,11 @@ export default class EditToolForm extends React.Component {
       return toolCommandValue !== formCommandValue;
     };
     const limitMountsFieldChanged = () => {
-      return this.defaultLimitMounts !== this.props.form.getFieldValue('limitMounts');
+      const fieldValue = this.props.form.getFieldValue('limitMounts');
+      if (!this.defaultLimitMounts && !fieldValue) {
+        return false;
+      }
+      return this.defaultLimitMounts !== fieldValue;
     };
     const cloudRegionFieldChanged = () => {
       return this.getCloudRegionInitialValue() !== this.props.form.getFieldValue('cloudRegionId');
