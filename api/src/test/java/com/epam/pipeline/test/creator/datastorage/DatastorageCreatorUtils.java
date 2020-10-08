@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.test.datastorage;
+package com.epam.pipeline.test.creator.datastorage;
 
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 
-public final class DatastorageCreatorUtils {
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 
-    private static final String TEST_STRING = "test";
-    private static final long ID = 1L;
+public final class DatastorageCreatorUtils {
 
     private DatastorageCreatorUtils() {
 

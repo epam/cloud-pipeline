@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.test.cluster;
+package com.epam.pipeline.test.creator.cluster;
 
 import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
@@ -33,10 +33,15 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_LIST;
+
 public final class NodeCreatorUtils {
 
-    private static final List<String> TEST_LIST = Collections.singletonList("test");
     private static final List<InstanceType> INSTANCE_TYPES = Collections.singletonList(getDefaultInstanceType());
+    private static final LocalDateTime ldt =
+            LocalDateTime.parse("2019-04-01T09:08:07", DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
     private NodeCreatorUtils() {
 
@@ -48,44 +53,43 @@ public final class NodeCreatorUtils {
     }
 
     public static InstanceType getDefaultInstanceType() {
-        final InstanceType instanceType = InstanceType.builder().name("TEST").build();
+        final InstanceType instanceType = InstanceType.builder().name(TEST_STRING).build();
         return instanceType;
     }
 
     public static Node getDefaultNode() {
         final ObjectMeta objectMeta = new ObjectMeta();
         final Node node = new Node(
-                "v1", "test", objectMeta, new NodeSpec(), new NodeStatus());
+                TEST_STRING, TEST_STRING, objectMeta, new NodeSpec(), new NodeStatus());
         return node;
     }
 
     public static MasterNode getDefaultMasterNode() {
-        final MasterNode masterNode = MasterNode.fromNode(getDefaultNode(), "7367");
+        final MasterNode masterNode = MasterNode.fromNode(getDefaultNode(), TEST_STRING);
         return masterNode;
     }
 
     public static FilterNodesVO getDefaultFilterNodesVO() {
         final FilterNodesVO filterNodesVO = new FilterNodesVO();
-        filterNodesVO.setAddress("testAddress");
+        filterNodesVO.setAddress(TEST_STRING);
         return filterNodesVO;
     }
 
     public static FilterPodsRequest getDefaultFilterPodsRequest() {
-        FilterPodsRequest filterPodsRequest = new FilterPodsRequest();
-        filterPodsRequest.setPodStatuses(TEST_LIST);
+        final FilterPodsRequest filterPodsRequest = new FilterPodsRequest();
+        filterPodsRequest.setPodStatuses(TEST_STRING_LIST);
         return filterPodsRequest;
     }
 
-    public AllowedInstanceAndPriceTypes getDefaultAllowedInstanceAndPriceTypes() {
+    public static AllowedInstanceAndPriceTypes getDefaultAllowedInstanceAndPriceTypes() {
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = new AllowedInstanceAndPriceTypes(
-                INSTANCE_TYPES, INSTANCE_TYPES, TEST_LIST, TEST_LIST
+                INSTANCE_TYPES, INSTANCE_TYPES, TEST_STRING_LIST, TEST_STRING_LIST
         );
         return allowedInstanceAndPriceTypes;
     }
 
     public static NodeDisk getDefaultNodeDisk() {
-        final NodeDisk nodeDisk = new NodeDisk(1L, "NAME",
-                LocalDateTime.parse("2019-04-01T09:08:07", DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        final NodeDisk nodeDisk = new NodeDisk(ID, TEST_STRING, ldt);
         return nodeDisk;
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.test.contextual;
+package com.epam.pipeline.test.creator.contextual;
 
 import com.epam.pipeline.controller.vo.ContextualPreferenceVO;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
@@ -25,9 +25,12 @@ import com.epam.pipeline.entity.preference.PreferenceType;
 
 import java.util.Collections;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+
 public final class ContextualPreferenceCreatorUtils {
 
-    private static final String TEST_STRING = "test";
+    private static final PreferenceType preferenceType = PreferenceType.STRING;
+    private static final ContextualPreferenceLevel preferenceLevel = ContextualPreferenceLevel.ROLE;
 
     private ContextualPreferenceCreatorUtils() {
 
@@ -40,7 +43,7 @@ public final class ContextualPreferenceCreatorUtils {
 
     public static ContextualPreferenceExternalResource getCPExternalResource() {
         final ContextualPreferenceExternalResource contextualPreferenceExternalResource
-                = new ContextualPreferenceExternalResource(ContextualPreferenceLevel.ROLE, TEST_STRING);
+                = new ContextualPreferenceExternalResource(preferenceLevel, TEST_STRING);
         return contextualPreferenceExternalResource;
     }
 
@@ -53,7 +56,7 @@ public final class ContextualPreferenceCreatorUtils {
 
     public static ContextualPreferenceVO getContextualPreferenceVO() {
         final ContextualPreferenceVO contextualPreferenceVO = new ContextualPreferenceVO(
-                TEST_STRING, TEST_STRING, PreferenceType.STRING, getCPExternalResource()
+                TEST_STRING, TEST_STRING, preferenceType, getCPExternalResource()
         );
         return contextualPreferenceVO;
     }

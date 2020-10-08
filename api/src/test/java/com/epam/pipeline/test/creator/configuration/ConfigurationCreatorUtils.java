@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.test.configuration;
+package com.epam.pipeline.test.creator.configuration;
 
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
@@ -25,10 +25,11 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import java.util.Collections;
 import java.util.List;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+
 public final class ConfigurationCreatorUtils {
 
-    private static final String TEST_STRING = "TEST";
-    private static final Long ID = 1L;
     private static final List<AbstractRunConfigurationEntry> ENTRIES
             = Collections.singletonList(getRunConfigurationEntry());
 
