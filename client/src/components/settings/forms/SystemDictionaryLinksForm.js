@@ -202,7 +202,6 @@ class SystemDictionaryLinksForm extends React.Component {
         </span>
         <Icon type="caret-right" />
         <Select
-          allowClear
           showSearch
           disabled={!selectedDictionary}
           style={{

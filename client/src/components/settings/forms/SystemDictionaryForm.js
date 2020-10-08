@@ -128,8 +128,8 @@ class SystemDictionaryForm extends React.Component {
   }
 
   get dictionaries () {
-    const {dictionaries, name} = this.props;
-    return (dictionaries || []).filter(d => d.key !== name);
+    const {dictionaries, name, isNew} = this.props;
+    return (dictionaries || []).filter(d => isNew || d.key !== name);
   }
 
   updateState = () => {
@@ -154,6 +154,8 @@ class SystemDictionaryForm extends React.Component {
     };
     if (!name) {
       errors.name = 'Dictionary name is required';
+    } else if (this.dictionaries.find(d => d.key === name)) {
+      errors.name = `"${name}" dictionary already exists`;
     }
     if (!items || items.length === 0) {
       errors.itemsValidation = 'Dictionary must contain at least one item';
