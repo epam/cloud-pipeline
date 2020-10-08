@@ -17,37 +17,61 @@
 package com.epam.pipeline.test.acl;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
+import com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao;
+import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.dao.pipeline.FolderDao;
+import com.epam.pipeline.dao.pipeline.PipelineDao;
+import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.dao.pipeline.RestartRunDao;
+import com.epam.pipeline.dao.pipeline.RunLogDao;
+import com.epam.pipeline.dao.pipeline.RunStatusDao;
+import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
+import com.epam.pipeline.dao.user.GroupStatusDao;
+import com.epam.pipeline.dao.user.RoleDao;
+import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.log.LogPagination;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.HierarchicalEntityManager;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
+import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
+import com.epam.pipeline.manager.datastorage.DataStorageApiService;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStoragePathLoader;
 import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
+import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
-import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
+import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
+import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
 import com.epam.pipeline.manager.dts.DtsRegistryManager;
+import com.epam.pipeline.manager.dts.DtsSubmissionManager;
 import com.epam.pipeline.manager.event.EntityEventServiceManager;
+import com.epam.pipeline.manager.execution.CommandBuilder;
+import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.firecloud.FirecloudManager;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.git.TemplatesScanner;
+import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.log.LogManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.metadata.MetadataUploadManager;
 import com.epam.pipeline.manager.metadata.processor.MetadataPostProcessorService;
+import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.notification.NotificationSettingsManager;
 import com.epam.pipeline.manager.notification.NotificationTemplateManager;
 import com.epam.pipeline.manager.notification.SystemNotificationManager;
@@ -55,7 +79,6 @@ import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.FolderCrudManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
-import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
@@ -72,9 +95,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
-import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.manager.user.RoleManager;
-import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.utils.JsonService;
 import com.epam.pipeline.manager.utils.UtilsManager;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
@@ -113,7 +134,7 @@ public class AclTestBeans {
     @Autowired
     protected PermissionsService permissionsService;
 
-    @Autowired
+    @MockBean
     protected CheckPermissionHelper permissionHelper;
 
     @MockBean(name = "aclService")
@@ -153,9 +174,6 @@ public class AclTestBeans {
     protected BillingManager mockBillingManager;
 
     @MockBean
-    protected PipelineManager mockPipelineManager;
-
-    @MockBean
     protected PipelineVersionManager mockPipelineVersionManager;
 
     @MockBean
@@ -183,9 +201,6 @@ public class AclTestBeans {
     protected DockerRegistryManager mockDockerRegistryManager;
 
     @MockBean
-    protected UserManager mockUserManager;
-
-    @MockBean
     protected RunConfigurationManager mockRunConfigurationManager;
 
     @MockBean
@@ -196,9 +211,6 @@ public class AclTestBeans {
 
     @MockBean
     protected EntityEventServiceManager mockEntityEventServiceManager;
-
-    @MockBean
-    protected RunPermissionManager mockRunPermissionManager;
 
     @MockBean
     protected FilterManager mockFilterManager;
@@ -309,10 +321,82 @@ public class AclTestBeans {
     protected RoleManager mockRoleManager;
 
     @MockBean
-    protected LustreFSManager mockLustreFSManager;
+    NodeDiskManager mockNodeDiskManager;
 
     @MockBean
-    protected ContextualPreferenceManager mockContextualPreferenceManager;
+    UsageMonitoringManager mockNsageMonitoringManager;
+
+    @MockBean
+    ContextualPreferenceManager mockContextualPreferenceManager;
+
+    @MockBean
+    DataStorageApiService mockDataStorageApiService;
+
+    @MockBean
+    ToolVersionManager mockToolVersionManager;
+
+    @MockBean
+    PipelineDao mockPipelineDao;
+
+    @MockBean
+    DataStorageRuleDao mockDataStorageRuleDao;
+
+    @MockBean
+    PipelineRunDao mockPipelineRunDao;
+
+    @MockBean
+    RestartRunDao mockRestartRunDao;
+
+    @MockBean
+    DtsSubmissionManager mockDtsSubmissionManager;
+
+    @MockBean
+    PipelineLauncher mockPipelineLauncher;
+
+    @MockBean
+    CommandBuilder mockCommandBuilder;
+
+    @MockBean
+    CredentialsManager mockCredentialsManager;
+
+    @MockBean
+    RunStatusDao mockRunStatusDao;
+
+    @MockBean
+    StopServerlessRunDao mockStopServerlessRunDao;
+
+    @MockBean
+    DockerContainerOperationManager mockDockerContainerOperationManager;
+
+    @MockBean
+    ContextualPreferenceDao mockContextualPreferenceDao;
+
+    @MockBean
+    ContextualPreferenceHandler mockContextualPreferenceHandler;
+
+    @MockBean
+    MonitoringNotificationDao mockMonitoringNotificationDao;
+
+    @MockBean
+    UserDao mockUserDao;
+
+    @MockBean
+    RoleDao mockRoleDao;
+
+    @MockBean
+    RunLogDao mockRunLogDao;
+
+    @MockBean
+    GroupStatusDao mockGroupStatusDao;
+
+    @MockBean
+    DataStorageValidator mockDataStorageValidator;
+
+    @MockBean
+    NotificationManager mockNotificationManager;
+
+    @MockBean
+    Pipeline mockPipeline;
 
     @Bean
     protected TemplatesScanner mockTemplatesScanner() {
@@ -330,9 +414,9 @@ public class AclTestBeans {
     }
 
     @Bean
-    protected FolderCrudManager mockCrudManager() {
+    protected FolderCrudManager folderCrudManager() {
         return Mockito.mock(FolderCrudManager.class);
-    }
+    } /////
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

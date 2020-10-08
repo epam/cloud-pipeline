@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.cluster;
+package com.epam.pipeline.acl.cluster;
 
 import java.io.InputStream;
 import java.time.Duration;
@@ -29,6 +29,9 @@ import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.NodeDiskManager;
+import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import lombok.RequiredArgsConstructor;
