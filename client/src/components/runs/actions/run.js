@@ -48,6 +48,7 @@ import {
 } from './execution-allowed-check';
 import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
 import SensitiveBucketsWarning from './sensitive-buckets-warning';
+import OOMCheck from '../../pipelines/launch/form/utilities/oom-check';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => inject('spotInstanceTypes', 'onDemandInstanceTypes')(...opts);
@@ -147,6 +148,9 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
     if (stores.awsRegions) {
       await stores.awsRegions.fetchIfNeededOrWait();
     }
+    if (stores.preferences) {
+      await stores.preferences.fetchIfNeededOrWait();
+    }
     if (payload.pipelineId) {
       const {pipelines} = stores;
       await pipelines.fetchIfNeededOrWait();
@@ -234,7 +238,9 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
               payload.params && payload.params[CP_CAP_LIMIT_MOUNTS]
                 ? payload.params[CP_CAP_LIMIT_MOUNTS].value
                 : undefined
-            } />
+            }
+            preferences={stores.preferences}
+          />
         ),
         style: {
           wordWrap: 'break-word'
@@ -301,7 +307,6 @@ function notUniqueInArray(element, index, array) {
 
 @observer
 export class RunConfirmation extends React.Component {
-
   state = {
     isSpot: false,
     instanceType: null,
@@ -328,6 +333,7 @@ export class RunConfirmation extends React.Component {
     hddSize: PropTypes.number,
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
+    preferences: PropTypes.object
   };
 
   static defaultProps = {
@@ -343,42 +349,54 @@ export class RunConfirmation extends React.Component {
 
   @computed
   get currentCloudProvider () {
-    const [currentProvider] = (this.props.cloudRegions || []).filter(p => +p.id === +this.props.cloudRegionId);
+    const [currentProvider] = (this.props.cloudRegions || [])
+      .filter(p => +p.id === +this.props.cloudRegionId);
     return currentProvider ? currentProvider.provider : null;
   }
 
   @computed
   get gpuEnabled () {
-    const [currentInstanceType] = (this.props.instanceTypes || []).filter(i => i.name === this.state.instanceType);
-    return currentInstanceType && currentInstanceType.hasOwnProperty('gpu') && +currentInstanceType.gpu > 0;
+    const [currentInstanceType] = (this.props.instanceTypes || [])
+      .filter(i => i.name === this.state.instanceType);
+    return currentInstanceType && currentInstanceType.hasOwnProperty('gpu') &&
+      +currentInstanceType.gpu > 0;
   }
 
   @computed
-  get initialSelectedDataStorageIndecis() {
-    return (this.props.limitMounts || this.dataStorages.map(d => `${d.id}`).join(','))
+  get initialSelectedDataStorageIndecis () {
+    return (
+      this.props.limitMounts ||
+      this.dataStorages.filter(d => !d.sensitive)
+        .map(d => `${d.id}`).join(',')
+    )
       .split(',')
       .map(d => +d);
   }
 
   @computed
-  get selectedDataStorageIndecis() {
-    return (this.state.limitMounts || this.dataStorages.map(d => `${d.id}`).join(','))
+  get selectedDataStorageIndecis () {
+    return (
+      this.state.limitMounts ||
+      this.dataStorages.filter(d => !d.sensitive)
+        .map(d => `${d.id}`).join(',')
+    )
       .split(',')
       .map(d => +d);
   }
 
   @computed
-  get dataStorages() {
+  get dataStorages () {
     return (this.props.dataStorages || []).map(d => d);
   }
 
   @computed
-  get initialSelectedDataStorages() {
-    return this.dataStorages.filter(d => this.initialSelectedDataStorageIndecis.indexOf(+d.id) >= 0);
+  get initialSelectedDataStorages () {
+    return this.dataStorages
+      .filter(d => this.initialSelectedDataStorageIndecis.indexOf(+d.id) >= 0);
   }
 
   @computed
-  get conflicting() {
+  get conflicting () {
     return this.initialSelectedDataStorages
       .filter((d, i, a) =>
         !!d.mountPoint &&
@@ -387,7 +405,7 @@ export class RunConfirmation extends React.Component {
   }
 
   @computed
-  get notConflictingIndecis() {
+  get notConflictingIndecis () {
     return this.initialSelectedDataStorages
       .filter((d, i, a) =>
         !d.mountPoint ||
@@ -397,7 +415,7 @@ export class RunConfirmation extends React.Component {
   }
 
   @computed
-  get initialLimitMountsHaveConflicts() {
+  get initialLimitMountsHaveConflicts () {
     return this.dataStorages
       .filter(d => this.initialSelectedDataStorageIndecis.indexOf(+d.id) >= 0 && !!d.mountPoint)
       .map(d => d.mountPoint)
@@ -406,7 +424,7 @@ export class RunConfirmation extends React.Component {
   }
 
   @computed
-  get limitMountsHaveConflicts() {
+  get limitMountsHaveConflicts () {
     return this.dataStorages
       .filter(d => this.selectedDataStorageIndecis.indexOf(+d.id) >= 0 && !!d.mountPoint)
       .map(d => d.mountPoint)
@@ -421,7 +439,7 @@ export class RunConfirmation extends React.Component {
     const instanceTypes = [];
     for (let i = 0; i < this.props.instanceTypes.length; i++) {
       const instanceType = this.props.instanceTypes[i];
-      if (instanceTypes.filter(t => t.name === instanceType.name).length === 0) {
+      if (!instanceTypes.find(t => t.name === instanceType.name)) {
         instanceTypes.push(instanceType);
       }
     }
@@ -435,6 +453,13 @@ export class RunConfirmation extends React.Component {
       return vcpuCompared === 0 ? skuCompare(typeA, typeB) : vcpuCompared;
     });
   };
+
+  get currentInstanceType () {
+    if (!this.props.instanceTypes || !this.state.instanceType) {
+      return undefined;
+    }
+    return this.getInstanceTypes().find(t => t.name === this.state.instanceType);
+  }
 
   setOnDemand = (onDemand) => {
     this.setState({
@@ -496,7 +521,7 @@ export class RunConfirmation extends React.Component {
     const selectedIds = [...this.notConflictingIndecis, ...selectedConflictingIds];
     if (selectedIds.length > 0) {
       this.setState({
-        limitMounts: selectedIds.length === this.dataStorages.length ? undefined : selectedIds.join(',')
+        limitMounts: selectedIds.join(',')
       }, () => {
         this.props.onChangeLimitMounts && this.props.onChangeLimitMounts(this.state.limitMounts);
       });
@@ -721,6 +746,13 @@ export class RunConfirmation extends React.Component {
             />
           )
         }
+        <OOMCheck
+          style={{margin: 2}}
+          limitMounts={this.state.limitMounts}
+          dataStorages={this.props.dataStorages}
+          preferences={this.props.preferences}
+          instance={this.currentInstanceType}
+        />
         {
           this.props.permissionErrors && this.props.permissionErrors.length > 0
             ? (
@@ -801,6 +833,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     onChangeLimitMounts: PropTypes.func,
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
+    preferences: PropTypes.object
   };
 
   static defaultProps = {
@@ -887,6 +920,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             hddSize={this.props.hddSize}
             parameters={this.props.parameters}
             permissionErrors={this.props.permissionErrors}
+            preferences={this.props.preferences}
           />
         </Row>
         {

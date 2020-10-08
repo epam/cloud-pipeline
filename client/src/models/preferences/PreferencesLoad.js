@@ -98,6 +98,15 @@ class PreferencesLoad extends Remote {
     return value.split(',').map(v => /^spot$/i.test(v));
   }
 
+  @computed
+  get storageMountsPerGBRatio () {
+    const value = this.getPreferenceValue('storage.mounts.per.gb.ratio');
+    if (!value || Number.isNaN(value)) {
+      return undefined;
+    }
+    return Number(value);
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
@@ -122,7 +131,6 @@ class PreferencesLoad extends Remote {
     }
     return string;
   };
-
 }
 
 export default new PreferencesLoad();

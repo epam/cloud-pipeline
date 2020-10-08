@@ -30,7 +30,6 @@ function filterUniqueIdentifiers (o, i, a) {
 @inject('dataStorageAvailable')
 @observer
 export class LimitMountsInput extends React.Component {
-
   static propTypes = {
     onChange: PropTypes.func,
     value: PropTypes.string,
@@ -182,8 +181,7 @@ export class LimitMountsInput extends React.Component {
     this.setState({value: this.props.value});
   }
 
-  componentWillUnmount() {
+  componentWillUnmount () {
     this.props.dataStorageAvailable.invalidateCache();
   }
-
 }
