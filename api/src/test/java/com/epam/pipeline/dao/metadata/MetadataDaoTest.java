@@ -233,11 +233,13 @@ public class MetadataDaoTest extends AbstractSpringTest {
         createMetadataForEntity(ID_1, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_1);
         createMetadataForEntity(ID_2, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_2);
         createMetadataForEntityWithSensitiveValue(ID_3, CLASS_1, DATA_KEY_2, DATA_TYPE_1, DATA_VALUE_1, DATA_VALUE_2);
-        final Map<String, List<String>> metadataDict = metadataDao.buildFullMetadataDict().stream()
-            .collect(Collectors.toMap(CategoricalAttribute::getKey,
-                attribute -> attribute.getValues().stream()
-                                          .map(CategoricalAttributeValue::getValue)
-                                          .collect(Collectors.toList())));
+        final Map<String, List<String>> metadataDict = metadataDao.buildFullMetadataDict(
+                Collections.singletonList(SENSITIVE_DATA_KEY))
+                .stream()
+                .collect(Collectors.toMap(CategoricalAttribute::getKey,
+                    attribute -> attribute.getValues().stream()
+                        .map(CategoricalAttributeValue::getValue)
+                        .collect(Collectors.toList())));
         Assert.assertEquals(2, metadataDict.size());
         assertThat(metadataDict.get(DATA_KEY_1), CoreMatchers.is(Arrays.asList(DATA_VALUE_1, DATA_VALUE_2)));
         assertThat(metadataDict.get(DATA_KEY_2), CoreMatchers.is(Collections.singletonList(DATA_VALUE_1)));

@@ -593,6 +593,9 @@ public class SystemPreferences {
     public static final StringPreference MISC_SYSTEM_EVENTS_CONFIRMATION_METADATA_KEY = new StringPreference(
             "system.events.confirmation.metadata.key", "confirmed_notifications", MISC_GROUP,
             PreferenceValidators.isNotBlank);
+    public static final ObjectPreference<List<String>> MISC_METADATA_SENSITIVE_KEYS = new ObjectPreference<>(
+            "misc.metadata.sensitive.keys", null, new TypeReference<List<String>>() {}, MISC_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}));
 
     // Search
     public static final StringPreference SEARCH_ELASTIC_SCHEME = new StringPreference("search.elastic.scheme",

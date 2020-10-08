@@ -25,15 +25,17 @@ import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
+import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
 import org.apache.commons.collections4.CollectionUtils;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -45,7 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-
+@Transactional
 public class CategoricalAttributeManagerTest extends AbstractSpringTest {
 
     private static final String KEY_1 = "key1";
@@ -67,10 +69,14 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
     @Autowired
     private UserManager userManager;
 
+    @Autowired
+    private PreferenceManager preferenceManager;
 
     @Test
-    @Transactional
     public void syncWithMetadata() {
+        preferenceManager.update(Collections.singletonList(new Preference(
+                SystemPreferences.MISC_METADATA_SENSITIVE_KEYS.getKey(),
+                String.format("[\"%s\"]", SENSITIVE_KEY))));
         Assert.assertEquals(0, categoricalAttributeManager.loadAll().size());
 
         final PipelineUser testUser = userManager
@@ -100,7 +106,6 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void testLinkCreationAndCleanup() {
         final List<CategoricalAttributeValue> valuesWithoutLinks =
             fromStrings(KEY_1, Arrays.asList(VALUE_1, VALUE_2));
@@ -151,7 +156,6 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void testUpdateAttributesValues() {
         final List<CategoricalAttribute> values = new ArrayList<>();
         values.add(new CategoricalAttribute(KEY_1, fromStrings(KEY_1, Arrays.asList(VALUE_1, VALUE_2))));
@@ -170,7 +174,6 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
 
 
     @Test(expected = IllegalArgumentException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void testCreateLinkOnNonExistentAttributeValue() {
         final CategoricalAttributeValue valueWithLink = new CategoricalAttributeValue(KEY_2, VALUE_3);
         valueWithLink.setLinks(Collections.singletonList(new CategoricalAttributeValue(KEY_1, VALUE_1)));

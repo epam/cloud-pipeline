@@ -46,7 +46,8 @@ public class UserExporter {
     public static final String SPACE = " ";
 
     public String exportUsers(final PipelineUserExportVO exportSettings,
-                              final Collection<PipelineUserWithStoragePath> users) {
+                              final Collection<PipelineUserWithStoragePath> users,
+                              final List<String> sensitiveKeys) {
         final StringWriter writer = new StringWriter();
         final List<String> attributeNames = CollectionUtils.emptyIfNull(users).stream()
                 .map(user -> MapUtils.emptyIfNull(user.getAttributes()).keySet())
@@ -57,6 +58,7 @@ public class UserExporter {
         final List<String> metadataColumns = ListUtils.emptyIfNull(exportSettings.getMetadataColumns())
                 .stream()
                 .distinct()
+                .filter(key -> !ListUtils.emptyIfNull(sensitiveKeys).contains(key))
                 .sorted()
                 .collect(Collectors.toList());
         final String[] csvHeader = getColumnMapping(exportSettings, attributeNames, metadataColumns);
