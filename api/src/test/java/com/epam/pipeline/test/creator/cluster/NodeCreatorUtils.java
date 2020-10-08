@@ -48,25 +48,21 @@ public final class NodeCreatorUtils {
     }
 
     public static NodeInstance getDefaultNodeInstance() {
-        final NodeInstance nodeInstance = new NodeInstance();
-        return nodeInstance;
+        return new NodeInstance();
     }
 
     public static InstanceType getDefaultInstanceType() {
-        final InstanceType instanceType = InstanceType.builder().name(TEST_STRING).build();
-        return instanceType;
+        return InstanceType.builder().name(TEST_STRING).build();
     }
 
     public static Node getDefaultNode() {
         final ObjectMeta objectMeta = new ObjectMeta();
-        final Node node = new Node(
+        return new Node(
                 TEST_STRING, TEST_STRING, objectMeta, new NodeSpec(), new NodeStatus());
-        return node;
     }
 
     public static MasterNode getDefaultMasterNode() {
-        final MasterNode masterNode = MasterNode.fromNode(getDefaultNode(), TEST_STRING);
-        return masterNode;
+        return MasterNode.fromNode(getDefaultNode(), TEST_STRING);
     }
 
     public static FilterNodesVO getDefaultFilterNodesVO() {
@@ -82,14 +78,12 @@ public final class NodeCreatorUtils {
     }
 
     public static AllowedInstanceAndPriceTypes getDefaultAllowedInstanceAndPriceTypes() {
-        final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = new AllowedInstanceAndPriceTypes(
+        return new AllowedInstanceAndPriceTypes(
                 INSTANCE_TYPES, INSTANCE_TYPES, TEST_STRING_LIST, TEST_STRING_LIST
         );
-        return allowedInstanceAndPriceTypes;
     }
 
     public static NodeDisk getDefaultNodeDisk() {
-        final NodeDisk nodeDisk = new NodeDisk(ID, TEST_STRING, ldt);
-        return nodeDisk;
+        return new NodeDisk(ID, TEST_STRING, ldt);
     }
 }

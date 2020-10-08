@@ -28,7 +28,6 @@ public final class DatastorageCreatorUtils {
     }
 
     public static S3bucketDataStorage getS3bucketDataStorage() {
-        final S3bucketDataStorage s3Bucket = new S3bucketDataStorage(ID, TEST_STRING, TEST_STRING);
-        return s3Bucket;
+        return new S3bucketDataStorage(ID, TEST_STRING, TEST_STRING);
     }
 }

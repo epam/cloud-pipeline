@@ -37,27 +37,22 @@ public final class ContextualPreferenceCreatorUtils {
     }
 
     public static ContextualPreference getContextualPreference() {
-        final ContextualPreference contextualPreference = new ContextualPreference(TEST_STRING, TEST_STRING);
-        return contextualPreference;
+        return new ContextualPreference(TEST_STRING, TEST_STRING);
     }
 
     public static ContextualPreferenceExternalResource getCPExternalResource() {
-        final ContextualPreferenceExternalResource contextualPreferenceExternalResource
-                = new ContextualPreferenceExternalResource(preferenceLevel, TEST_STRING);
-        return contextualPreferenceExternalResource;
+        return new ContextualPreferenceExternalResource(preferenceLevel, TEST_STRING);
     }
 
     public static ContextualPreferenceSearchRequest getCPSearchRequest() {
-        final ContextualPreferenceSearchRequest searchRequest = new ContextualPreferenceSearchRequest(
+        return new ContextualPreferenceSearchRequest(
                 Collections.singletonList(TEST_STRING), getCPExternalResource()
         );
-        return searchRequest;
     }
 
     public static ContextualPreferenceVO getContextualPreferenceVO() {
-        final ContextualPreferenceVO contextualPreferenceVO = new ContextualPreferenceVO(
+        return new ContextualPreferenceVO(
                 TEST_STRING, TEST_STRING, preferenceType, getCPExternalResource()
         );
-        return contextualPreferenceVO;
     }
 }
