@@ -21,17 +21,19 @@ export default function getPeriodMonths (periodInfo) {
     return null;
   }
   const {start, endStrict} = periodInfo;
-  if (endStrict.diff(start, 'M') > 0) {
+  const startOfMonth = moment(start).startOf('M');
+  const endOfMonth = moment(endStrict).endOf('M');
+  if (endOfMonth.diff(startOfMonth, 'M') > 0) {
     let d = moment(start);
     const periods = [];
-    while (d < endStrict) {
+    while (d < endOfMonth) {
       const start = moment(d);
       let end = moment(d).endOf('M');
       if (end > endStrict) {
         end = endStrict;
       }
       periods.push({start, end, endStrict: end});
-      d = d.add(1, 'M');
+      d = d.add(1, 'M').startOf('M');
     }
     return periods;
   }

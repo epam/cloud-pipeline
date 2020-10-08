@@ -102,8 +102,9 @@ function compose (
       const headerColumns = fixedColumns.map(c => '');
       requests.forEach((r) => {
         const {filters} = r;
-        const {start, endStrict, name} = filters;
-        const periodName = Range.getRangeDescription({start, end: endStrict}, name);
+        const {start, end, endStrict, name} = filters;
+        const endDate = endStrict || end;
+        const periodName = Range.getRangeDescription({start, end: endDate}, name);
         headerColumns.push(periodName);
         for (let c = 1; c < columns.length; c++) {
           headerColumns.push('');
