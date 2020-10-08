@@ -50,6 +50,7 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
     private String insertAttributeValueQuery;
     private String loadAllAttributesValuesQuery;
     private String loadAllAttributesValuesWithoutLinksQuery;
+    private String loadAttributeValuesQuery;
     private String loadAttributesValuesQuery;
     private String deleteAttributeValuesQuery;
     private String deleteAttributeValueQuery;
@@ -75,15 +76,6 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public boolean updateCategoricalAttributes(final List<CategoricalAttribute> dict) {
-        final List<String> dictionaries = dict.stream()
-            .map(CategoricalAttribute::getKey)
-            .collect(Collectors.toList());
-        deleteAttributeValues(dictionaries);
-        return insertAttributesValues(dict);
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
     public boolean insertAttributesValues(final List<CategoricalAttribute> dict) {
         final MapSqlParameterSource[] values = dict.stream()
             .filter(attribute -> Objects.nonNull(attribute.getKey()))
@@ -92,11 +84,12 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
                 .filter(value -> Objects.nonNull(value.getValue()))
                 .map(value -> AttributeValueParameters.getValueParameters(entry.getKey(), value.getValue())))
             .toArray(MapSqlParameterSource[]::new);
-        if (values.length == 0) {
-            return false;
-        }
-        final boolean valuesChanges =
-            rowsChanged(getNamedParameterJdbcTemplate().batchUpdate(insertAttributeValueQuery, values));
+        return values.length != 0
+               && rowsChanged(getNamedParameterJdbcTemplate().batchUpdate(insertAttributeValueQuery, values));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean insertValuesLinks(final List<CategoricalAttribute> dict) {
         final Map<Pair<String, String>, Long> pairsIds = loadAll(false).stream()
             .flatMap(attribute -> CollectionUtils.emptyIfNull(attribute.getValues()).stream())
             .collect(Collectors.toMap(value -> Pair.of(value.getKey(), value.getValue()),
@@ -109,10 +102,8 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
                 .stream()
                 .map(link -> getLinkParameters(pairsIds, attributeValue, link)))
             .toArray(MapSqlParameterSource[]::new);
-        final boolean linksChanges =
-            links.length > 0
-            && rowsChanged(getNamedParameterJdbcTemplate().batchUpdate(insertAttributeValueLinkQuery, links));
-        return valuesChanges || linksChanges;
+        return links.length > 0
+               && rowsChanged(getNamedParameterJdbcTemplate().batchUpdate(insertAttributeValueLinkQuery, links));
     }
 
     public List<CategoricalAttribute> loadAll() {
@@ -120,26 +111,28 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
     }
 
     public List<CategoricalAttribute> loadAll(final boolean loadWithLinks) {
-        return getNamedParameterJdbcTemplate()
+        final List<CategoricalAttributeValue> allValues = getNamedParameterJdbcTemplate()
             .query(loadWithLinks
                    ? loadAllAttributesValuesQuery
                    : loadAllAttributesValuesWithoutLinksQuery,
-                   AttributeValueParameters.getRowMapper(loadWithLinks))
-            .stream()
-            .collect(Collectors.groupingBy(CategoricalAttributeValue::getKey))
-            .entrySet()
-            .stream()
-            .map(entry -> new CategoricalAttribute(entry.getKey(), mergeLinks(entry.getValue())))
-            .collect(Collectors.toList());
+                   AttributeValueParameters.getRowMapper(loadWithLinks));
+        return mapValuesToAttributes(allValues);
     }
 
     public CategoricalAttribute loadAllValuesForKey(final String key) {
         final List<CategoricalAttributeValue> values = getNamedParameterJdbcTemplate()
-            .query(loadAttributesValuesQuery, AttributeValueParameters.getValueParameters(key),
+            .query(loadAttributeValuesQuery, AttributeValueParameters.getValueParameters(key),
                    AttributeValueParameters.getRowMapper(true));
         return CollectionUtils.isEmpty(values)
                ? null
                : new CategoricalAttribute(key, mergeLinks(values));
+    }
+
+    public List<CategoricalAttribute> loadAllValuesForKeys(final Collection<String> keys) {
+        final List<CategoricalAttributeValue> values = getNamedParameterJdbcTemplate()
+            .query(loadAttributesValuesQuery, new MapSqlParameterSource(LIST_PARAMETER, keys),
+                   AttributeValueParameters.getRowMapper(true));
+        return mapValuesToAttributes(values);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -152,6 +145,17 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
         return !CollectionUtils.isEmpty(keys)
                && getNamedParameterJdbcTemplate()
                       .update(deleteAttributeValuesQuery, new MapSqlParameterSource(LIST_PARAMETER, keys)) > 0;
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean deleteSpecificAttributeValues(final List<CategoricalAttribute> attributes) {
+        final MapSqlParameterSource[] valuesToRemove =
+            attributes.stream().flatMap(attribute -> CollectionUtils.emptyIfNull(attribute.getValues())
+                .stream()
+                .peek(attributeValue -> attributeValue.setKey(attribute.getKey())))
+                .map(p -> AttributeValueParameters.getValueParameters(p.getKey(), p.getValue()))
+                .toArray(MapSqlParameterSource[]::new);
+        return rowsChanged(getNamedParameterJdbcTemplate().batchUpdate(deleteAttributeValueQuery, valuesToRemove));
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -194,6 +198,16 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
                 value.setLinks(allLinks);
                 return value;
             })
+            .collect(Collectors.toList());
+    }
+
+    private List<CategoricalAttribute> mapValuesToAttributes(final List<CategoricalAttributeValue> values) {
+        return values
+            .stream()
+            .collect(Collectors.groupingBy(CategoricalAttributeValue::getKey))
+            .entrySet()
+            .stream()
+            .map(entry -> new CategoricalAttribute(entry.getKey(), mergeLinks(entry.getValue())))
             .collect(Collectors.toList());
     }
 
@@ -260,6 +274,11 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadAllAttributesValuesWithoutLinksQuery(String loadAllAttributesValuesWithoutLinksQuery) {
         this.loadAllAttributesValuesWithoutLinksQuery = loadAllAttributesValuesWithoutLinksQuery;
+    }
+
+    @Required
+    public void setLoadAttributeValuesQuery(String loadAttributeValuesQuery) {
+        this.loadAttributeValuesQuery = loadAttributeValuesQuery;
     }
 
     @Required

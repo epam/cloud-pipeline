@@ -20,13 +20,18 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.metadata.CategoricalAttributeDao;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
+import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +44,19 @@ public class CategoricalAttributeManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public boolean updateCategoricalAttributes(final List<CategoricalAttribute> dict) {
-        return categoricalAttributesDao.updateCategoricalAttributes(dict);
+        final List<CategoricalAttribute> currentValues =
+            categoricalAttributesDao.loadAllValuesForKeys(dict.stream()
+                                                              .map(CategoricalAttribute::getKey)
+                                                              .collect(Collectors.toList()));
+        final List<CategoricalAttribute> attributeWithValuesToRemove =
+            keepAttributesWithValuesToRemove(dict, currentValues);
+        final boolean valuesRemoved = CollectionUtils.isNotEmpty(attributeWithValuesToRemove)
+               && categoricalAttributesDao.deleteSpecificAttributeValues(attributeWithValuesToRemove);
+        final List<CategoricalAttribute> attributesWithValuesToInsert =
+            keepAttributesWithValuesToInsert(dict, currentValues);
+        final boolean valuesInserted =  CollectionUtils.isNotEmpty(attributesWithValuesToInsert)
+               && categoricalAttributesDao.insertAttributesValues(attributesWithValuesToInsert);
+        return categoricalAttributesDao.insertValuesLinks(dict) || valuesInserted || valuesRemoved;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -72,5 +89,47 @@ public class CategoricalAttributeManager {
     public void syncWithMetadata() {
         final List<CategoricalAttribute> fullMetadataDict = metadataManager.buildFullMetadataDict();
         insertAttributesValues(fullMetadataDict);
+    }
+
+    private List<CategoricalAttribute> keepAttributesWithValuesToRemove(final List<CategoricalAttribute> receivedState,
+                                                                        final List<CategoricalAttribute> currentState) {
+        final Map<String, Set<String>> receivedValues = collectAttributesToMap(receivedState);
+        return currentState.stream()
+            .filter(value -> receivedValues.containsKey(value.getKey()))
+            .map(attribute -> {
+                final List<CategoricalAttributeValue> newValues = CollectionUtils.emptyIfNull(attribute.getValues())
+                    .stream()
+                    .filter(value -> !receivedValues.get(value.getKey()).contains(value.getValue()))
+                    .collect(Collectors.toList());
+                return new CategoricalAttribute(attribute.getKey(), newValues);
+            })
+            .filter(attribute -> CollectionUtils.isNotEmpty(attribute.getValues()))
+            .collect(Collectors.toList());
+    }
+
+    private List<CategoricalAttribute> keepAttributesWithValuesToInsert(final List<CategoricalAttribute> receivedState,
+                                                                        final List<CategoricalAttribute> currentState) {
+        final Map<String, Set<String>> currentValues = collectAttributesToMap(currentState);
+        return receivedState.stream()
+            .map(attribute -> {
+                final List<CategoricalAttributeValue> newValues = CollectionUtils.emptyIfNull(attribute.getValues())
+                    .stream()
+                    .filter(value -> !currentValues.containsKey(attribute.getKey())
+                                        || !currentValues.get(attribute.getKey()).contains(value.getValue()))
+                    .collect(Collectors.toList());
+                return new CategoricalAttribute(attribute.getKey(), newValues);
+            })
+            .filter(attribute -> CollectionUtils.isNotEmpty(attribute.getValues()))
+            .collect(Collectors.toList());
+    }
+
+    private Map<String, Set<String>> collectAttributesToMap(final List<CategoricalAttribute> attributes) {
+        return attributes.stream()
+            .collect(Collectors.toMap(CategoricalAttribute::getKey,
+                attribute -> attribute
+                    .getValues()
+                    .stream()
+                    .map(CategoricalAttributeValue::getValue)
+                    .collect(Collectors.toSet())));
     }
 }
