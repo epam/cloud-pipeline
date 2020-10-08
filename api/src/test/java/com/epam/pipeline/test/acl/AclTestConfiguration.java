@@ -19,7 +19,6 @@ package com.epam.pipeline.test.acl;
 import com.epam.pipeline.app.AclSecurityConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
@@ -40,14 +39,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @ContextConfiguration(classes = {AclTestBeans.class, AclSecurityConfiguration.class})
-@ComponentScan(
-        basePackages = {"com.epam.pipeline.security", "com.epam.pipeline.manager.security"},
-        excludeFilters = {
-                @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com.epam.pipeline.security.jwt.*"),
-                @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com.epam.pipeline.security.saml.*"),
-                @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com.epam.pipeline.manager.security.run.*")
-        }
-)
+@ComponentScan(basePackages = {"com.epam.pipeline.security.acl", "com.epam.pipeline.manager.security"})
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 @TestPropertySource(value = {"classpath:test-application.properties"})

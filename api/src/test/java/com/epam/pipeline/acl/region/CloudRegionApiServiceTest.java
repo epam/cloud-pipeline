@@ -172,10 +172,10 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(username = SIMPLE_USER_ROLE)
+    @WithMockUser(username = SIMPLE_USER)
     public void shouldReturnAllCloudRegionsWhenPermissionIsGranted() {
         initAclEntity(region,
-                Collections.singletonList(new UserPermission(SIMPLE_USER_ROLE, AclPermission.READ.getMask())));
+                Collections.singletonList(new UserPermission(SIMPLE_USER, AclPermission.READ.getMask())));
         doReturn(singleRegionList).when(mockCloudRegionManager).loadAll();
 
         final List<? extends AbstractCloudRegion> resultList = cloudRegionApiService.loadAll();
@@ -185,7 +185,7 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(username = SIMPLE_USER_ROLE)
+    @WithMockUser(username = SIMPLE_USER)
     public void shouldReturnListWithRegionsPermissionsForWhichIsGranted() {
         final AwsRegion regionWithoutPermission = new AwsRegion();
         regionWithoutPermission.setId(2L);
@@ -197,9 +197,9 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
         twoRegionsList.add(regionWithoutPermission);
 
         initAclEntity(region,
-                Collections.singletonList(new UserPermission(SIMPLE_USER_ROLE, AclPermission.READ.getMask())));
+                Collections.singletonList(new UserPermission(SIMPLE_USER, AclPermission.READ.getMask())));
         initAclEntity(regionWithoutPermission,
-                Collections.singletonList(new UserPermission(SIMPLE_USER_ROLE, AclPermission.NO_READ.getMask())));
+                Collections.singletonList(new UserPermission(SIMPLE_USER, AclPermission.NO_READ.getMask())));
         doReturn(twoRegionsList).when(mockCloudRegionManager).loadAll();
 
         final List<? extends AbstractCloudRegion> resultList = cloudRegionApiService.loadAll();
@@ -209,7 +209,7 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(username = SIMPLE_USER_ROLE)
+    @WithMockUser(username = SIMPLE_USER)
     public void shouldReturnEmptyListOfCloudRegionsWithoutPermission() {
         initAclEntity(region);
         doReturn(singleRegionList).when(mockCloudRegionManager).loadAll();
@@ -230,10 +230,10 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(username = SIMPLE_USER_ROLE)
+    @WithMockUser(username = SIMPLE_USER)
     public void shouldReturnCloudRegionWhenPermissionIsGranted() {
         initAclEntity(region,
-                Collections.singletonList(new UserPermission(SIMPLE_USER_ROLE, AclPermission.READ.getMask())));
+                Collections.singletonList(new UserPermission(SIMPLE_USER, AclPermission.READ.getMask())));
         when(mockCloudRegionManager.load(eq(region.getId()))).thenReturn(region);
 
         final AbstractCloudRegion result = cloudRegionApiService.load(region.getId());
@@ -242,7 +242,7 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
     }
 
     @Test(expected = AccessDeniedException.class)
-    @WithMockUser(username = SIMPLE_USER_ROLE)
+    @WithMockUser(username = SIMPLE_USER)
     public void shouldFailReturningCloudRegionWithoutPermission() {
         initAclEntity(region);
         doReturn(region).when(mockCloudRegionManager).load(region.getId());
