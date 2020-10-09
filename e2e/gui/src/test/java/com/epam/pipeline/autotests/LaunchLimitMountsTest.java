@@ -50,7 +50,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.SENSITIVE_STORAGE;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
 
-public class Launch_LimitMountsTest extends AbstractAutoRemovingPipelineRunningTest implements Navigation {
+public class LaunchLimitMountsTest extends AbstractAutoRemovingPipelineRunningTest implements Navigation {
     private String storage1 = "launchLimitMountsStorage" + Utils.randomSuffix();
     private String storage2 = "launchLimitMountsStorage" + Utils.randomSuffix();
     private String storageSensitive = "launchLimitMountsStorage" + Utils.randomSuffix();

@@ -402,7 +402,7 @@
 
     <test name="Launch_LimitMountsTest">
         <classes>
-            <class name="com.epam.pipeline.autotests.Launch_LimitMountsTest"/>
+            <class name="com.epam.pipeline.autotests.LaunchLimitMountsTest"/>
         </classes>
     </test>
 </suite>
