@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.util;
 
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
@@ -57,7 +57,7 @@ public final class CategoricalAttributeTestUtils {
                                                         final String... values) {
         final List<String> valuesForKey = attributesWithValues.get(key);
         Assert.assertEquals(values.length, valuesForKey.size());
-        Assert.assertThat(valuesForKey, contains(values));
+        Assert.assertThat(valuesForKey, containsInAnyOrder(values));
     }
 
     public static List<CategoricalAttributeValue> fromStrings(final String key, final List<String> strings) {

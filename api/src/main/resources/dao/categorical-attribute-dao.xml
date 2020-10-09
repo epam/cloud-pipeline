@@ -121,5 +121,12 @@
                 ]]>
             </value>
         </property>
+        <property name="deleteAttributeValueLinkQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.categorical_attributes_links WHERE parent_id=:PARENT_ID AND child_id=:CHILD_ID
+                ]]>
+            </value>
+        </property>
     </bean>
 </beans>

@@ -55,6 +55,7 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
     private String deleteAttributeValuesQuery;
     private String deleteAttributeValueQuery;
     private String insertAttributeValueLinkQuery;
+    private String deleteAttributeValueLinkQuery;
 
     public static List<CategoricalAttribute> convertPairsToAttributesList(final List<Pair<String, String>> pairs) {
         return pairs.stream()
@@ -162,6 +163,22 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
     public boolean deleteAttributeValue(final String key, final String value) {
         return getNamedParameterJdbcTemplate()
                    .update(deleteAttributeValueQuery, AttributeValueParameters.getValueParameters(key, value)) > 0;
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean deleteLinks(final List<Pair<Long, Long>> deletedLinks) {
+        final MapSqlParameterSource[] valuesToRemove =
+                deletedLinks
+                        .stream()
+                        .map(pair -> {
+                            final MapSqlParameterSource params = new MapSqlParameterSource();
+                            params.addValue(AttributeValueParameters.PARENT_ID.name(), pair.getLeft());
+                            params.addValue(AttributeValueParameters.CHILD_ID.name(), pair.getRight());
+                            return params;
+                        })
+                        .toArray(MapSqlParameterSource[]::new);
+        return rowsChanged(getNamedParameterJdbcTemplate()
+                .batchUpdate(deleteAttributeValueLinkQuery, valuesToRemove));
     }
 
 
@@ -299,5 +316,10 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setInsertAttributeValueLinkQuery(String insertAttributeValueLinkQuery) {
         this.insertAttributeValueLinkQuery = insertAttributeValueLinkQuery;
+    }
+
+    @Required
+    public void setDeleteAttributeValueLinkQuery(String deleteAttributeValueLinkQuery) {
+        this.deleteAttributeValueLinkQuery = deleteAttributeValueLinkQuery;
     }
 }

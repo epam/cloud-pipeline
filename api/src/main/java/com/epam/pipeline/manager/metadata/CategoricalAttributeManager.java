@@ -23,14 +23,16 @@ import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,11 +54,17 @@ public class CategoricalAttributeManager {
             keepAttributesWithValuesToRemove(dict, currentValues);
         final boolean valuesRemoved = CollectionUtils.isNotEmpty(attributeWithValuesToRemove)
                && categoricalAttributesDao.deleteSpecificAttributeValues(attributeWithValuesToRemove);
+
+        final List<Pair<Long, Long>> deletedLinks = getDeletedLinks(dict, currentValues);
+        final boolean linksRemoved = CollectionUtils.isNotEmpty(deletedLinks) &&
+                categoricalAttributesDao.deleteLinks(deletedLinks);
+
         final List<CategoricalAttribute> attributesWithValuesToInsert =
             keepAttributesWithValuesToInsert(dict, currentValues);
         final boolean valuesInserted =  CollectionUtils.isNotEmpty(attributesWithValuesToInsert)
                && categoricalAttributesDao.insertAttributesValues(attributesWithValuesToInsert);
-        return categoricalAttributesDao.insertValuesLinks(dict) || valuesInserted || valuesRemoved;
+
+        return categoricalAttributesDao.insertValuesLinks(dict) || valuesInserted || valuesRemoved || linksRemoved;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -131,5 +139,52 @@ public class CategoricalAttributeManager {
                     .stream()
                     .map(CategoricalAttributeValue::getValue)
                     .collect(Collectors.toSet())));
+    }
+
+    private List<Pair<Long, Long>> getDeletedLinks(final List<CategoricalAttribute> receivedState,
+                                                   final List<CategoricalAttribute> currentState) {
+        final Map<String, List<CategoricalAttributeValue>> newStateMap = receivedState.stream()
+                .collect(Collectors.toMap(CategoricalAttribute::getKey,
+                        CategoricalAttribute::getValues, (a1, a2) -> a2));
+        return ListUtils.emptyIfNull(currentState)
+                .stream()
+                .map(currentAttribute -> getDeletedLinksForAttribute(newStateMap, currentAttribute))
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+    }
+
+    private List<ImmutablePair<Long, Long>> getDeletedLinksForAttribute(
+            final Map<String, List<CategoricalAttributeValue>> newStateMap,
+            final CategoricalAttribute currentAttribute) {
+        final Map<String, CategoricalAttributeValue> newValues = ListUtils.emptyIfNull(
+                newStateMap.get(currentAttribute.getKey()))
+                .stream()
+                .collect(Collectors.toMap(
+                        CategoricalAttributeValue::getValue, Function.identity(), (v1, v2) -> v2));
+        return ListUtils.emptyIfNull(currentAttribute.getValues())
+                .stream()
+                .map(currentValue -> getDeletedLinksForValue(newValues, currentValue))
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+    }
+
+    private List<ImmutablePair<Long, Long>> getDeletedLinksForValue(
+            final Map<String, CategoricalAttributeValue> newValues,
+            final CategoricalAttributeValue currentValue) {
+        final List<CategoricalAttributeValue> newLinks = Optional.ofNullable(newValues.get(currentValue.getValue()))
+                .map(CategoricalAttributeValue::getLinks)
+                .orElse(Collections.emptyList());
+        return ListUtils.emptyIfNull(currentValue.getLinks())
+                .stream()
+                .filter(currentLink -> ListUtils.emptyIfNull(newLinks).stream()
+                        .noneMatch(newLink -> isSameLink(currentLink, newLink)))
+                .map(deleteLink -> new ImmutablePair<>(currentValue.getId(), deleteLink.getId()))
+                .collect(Collectors.toList());
+    }
+
+    private boolean isSameLink(final CategoricalAttributeValue currentLink,
+                               final CategoricalAttributeValue newLink) {
+        return newLink.getKey().equals(currentLink.getKey()) &&
+                newLink.getValue().equals(currentLink.getValue());
     }
 }
