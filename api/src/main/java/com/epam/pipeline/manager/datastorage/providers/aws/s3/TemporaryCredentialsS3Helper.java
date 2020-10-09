@@ -39,7 +39,6 @@ public class TemporaryCredentialsS3Helper extends S3Helper {
 
         return AmazonS3ClientBuilder.standard()
                 .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
-                .withRegion(credentials.getRegion())
                 .build();
     }
 }
