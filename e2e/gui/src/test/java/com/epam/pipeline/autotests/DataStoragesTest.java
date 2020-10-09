@@ -93,7 +93,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
         navigateToLibrary()
             .createStorage(refreshingTestStorage)
             .selectStorage(refreshingTestStorage)
-            .inAnotherTab(library -> library.createFolder(folder))
+            .inAnotherTab(library -> library.sleep(2, SECONDS).createFolder(folder).sleep(3, SECONDS))
             .ensure(folderWithName(folder), not(exist).because(String.format(
                 "Folder with name %s is not supposed to appear until the page will be refreshed.", folder)
             ))

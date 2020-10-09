@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.AbstractPipelineTabAO;
-import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
 import com.epam.pipeline.autotests.ao.PipelineConfigurationTabAO;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
@@ -24,7 +23,6 @@ import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.ConfigurationProfile;
 import com.epam.pipeline.autotests.utils.TestCase;
-import com.epam.pipeline.autotests.utils.listener.Cloud;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
@@ -158,24 +156,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .showLog(getLastRunId())
             .instanceParameters(p -> p.ensure(parameterWithName("Price type"), have(text(onDemandPriceName))))
             .click(taskWithName("InitializeNode"))
-            .ensure(logMessage(withActualRunId("Checking if instance already exists for RunID run_id")), visible);
-        if (Cloud.AZURE.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
-            new LogAO()
-                    .ensure(logMessage(withActualRunId("Create VMScaleSet with low priority instance for run: run_id")),
-                            not(visible));
-            return;
-        } else if (Cloud.GCP.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
-            new LogAO()
-                    .ensure(logMessage(withActualRunId("No existing instance found for RunID run_id")), visible)
-                    .ensure(logMessage(withActualRunId("Preemptible instance with run id: run_id will be launched")),
-                            not(visible));
-            return;
-        }
-        new LogAO()
-            .ensure(logMessage(withActualRunId("No existing instance found for RunID run_id")), visible)
-            .ensure(logMessage(withActualRunId("Checking if spot request for RunID run_id already exists...")), visible)
-            .ensure(logMessage(withActualRunId("No spot request for RunID run_id found")), visible)
-            .ensure(logMessage(withActualRunId("Creating on demand instance")), visible);
+            .ensure(logMessage("- IsSpot: False"), visible);
     }
 
     @Test
