@@ -40,7 +40,6 @@ import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.stream.Collectors.toSet;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertTrue;
 
@@ -370,6 +369,13 @@ public class LogAO implements AccessObject<LogAO> {
         return byXpath(format(
                 "//tr[.//td[contains(@class, 'log__task-parameter-name') and contains(.//text(), '%s')] and " +
                         ".//td[contains(., '%s')]]", name, value));
+    }
+
+    public LogAO checkMountLimitsParameter(String...storages) {
+        Arrays.stream(storages)
+                .forEach(storage -> $(byText("CP_CAP_LIMIT_MOUNTS")).$(By.xpath("following::td"))
+                        .shouldHave(text(storage)));
+        return this;
     }
 
     public static By log() {

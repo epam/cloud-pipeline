@@ -15,7 +15,6 @@
  */
 package com.epam.pipeline.autotests.ao;
 
-import com.codeborne.selenide.CollectionCondition;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.SelenideElements;
 import org.openqa.selenium.By;
@@ -27,7 +26,6 @@ import static com.codeborne.selenide.CollectionCondition.sizeGreaterThan;
 import static com.codeborne.selenide.CollectionCondition.texts;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
-import static com.codeborne.selenide.Selectors.byCssSelector;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
@@ -39,8 +37,8 @@ import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.SEARCH_INPUT;
 import static com.epam.pipeline.autotests.ao.Primitive.SELECT_ALL;
 import static com.epam.pipeline.autotests.ao.Primitive.SELECT_ALL_NON_SENSITIVE;
+import static com.epam.pipeline.autotests.ao.Primitive.SENSITIVE_STORAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.TABLE;
-import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, PipelineRunFormAO> {
@@ -50,8 +48,9 @@ public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, 
             entry(CLEAR_SELECTION, context().find(byClassName("ant-btn-danger"))),
             entry(SELECT_ALL, context().find(byXpath("//button/span[.='Select all']")).closest("button")),
             entry(SELECT_ALL_NON_SENSITIVE, context().find(byXpath("//button/span[.='Select all non-sensitive']")).closest("button")),
-            entry(SEARCH_INPUT, context().find(byClassName("ant-input-search"))),
-            entry(TABLE, context().find(byClassName("ant-table-content")))
+            entry(SEARCH_INPUT, context().find(byClassName("ant-input"))),
+            entry(TABLE, context().find(byClassName("ant-table-content"))),
+            entry(SENSITIVE_STORAGE, context().find(byClassName("ant-alert-message")))
     );
 
     public SelectLimitMountsPopupAO(PipelineRunFormAO parentAO) {
@@ -97,14 +96,16 @@ public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, 
     }
 
     public SelectLimitMountsPopupAO setSearchStorage(String storage) {
-        actions().sendKeys(storage).perform();
+        clear(SEARCH_INPUT);
+        setValue(SEARCH_INPUT, storage);
         return this;
     }
 
     public SelectLimitMountsPopupAO searchStorage(String storage) {
-        return clickSearch()
-                .setSearchStorage(storage)
-                .pressEnter();
+        return //setSearchStorage(storage)
+                clear(SEARCH_INPUT)
+        .setValue(SEARCH_INPUT, storage)
+        .pressEnter();
     }
 
     public SelectLimitMountsPopupAO selectStorage(final String storage) {

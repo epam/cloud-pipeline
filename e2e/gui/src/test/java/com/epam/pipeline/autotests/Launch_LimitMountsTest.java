@@ -46,46 +46,68 @@ import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SEARCH_INPUT;
 import static com.epam.pipeline.autotests.ao.Primitive.SELECT_ALL;
 import static com.epam.pipeline.autotests.ao.Primitive.SELECT_ALL_NON_SENSITIVE;
+import static com.epam.pipeline.autotests.ao.Primitive.SENSITIVE_STORAGE;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
 
 public class Launch_LimitMountsTest extends AbstractAutoRemovingPipelineRunningTest implements Navigation {
     private String storage1 = "launchLimitMountsStorage" + Utils.randomSuffix();
     private String storage2 = "launchLimitMountsStorage" + Utils.randomSuffix();
+    private String storageSensitive = "launchLimitMountsStorage" + Utils.randomSuffix();
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
     private final String mountDataStoragesTask = "MountDataStorages";
     private String storageID = "";
+    private String sensitiveStorageID = "";
     private String testRunID = "";
+    private String message = "Selection contains sensitive storages. This will apply a number of restrictions " +
+            "for the job: no Internet access, all the storages will be available in a read-only mode, " +
+            "you won't be able to extract the data from the running job and other.";
 
-    @BeforeClass
+    @BeforeClass(alwaysRun = true)
     public void setPreferences() {
         library()
                 .createStorage(storage1)
                 .createStorage(storage2)
+                .clickOnCreateStorageButton()
+                .setStoragePath(storageSensitive)
+                .clickSensitiveStorageCheckbox()
+                .ok()
                 .selectStorage(storage1)
                 .validateHeader(storage1);
 
         String url = WebDriverRunner.getWebDriver().getCurrentUrl();
         storageID = url.substring(url.lastIndexOf("/") + 1);
+        library()
+                .selectStorage(storageSensitive)
+                .validateHeader(storageSensitive);
+
+        url = WebDriverRunner.getWebDriver().getCurrentUrl();
+        sensitiveStorageID = url.substring(url.lastIndexOf("/") + 1);
         tools()
                 .performWithin(registry, group, tool, tool ->
                         tool.settings()
                                 .disableAllowSensitiveStorage()
                                 .performIf(SAVE, enabled, ToolSettings::save)
-                                .ensure(SAVE, disabled)
                 );
     }
 
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public void removeEntities() {
         library()
                 .removeStorage(storage1)
-                .removeStorage(storage2);
+                .removeStorage(storage2)
+                .removeStorage(storageSensitive);
+        tools()
+                .performWithin(registry, group, tool, tool ->
+                        tool.settings()
+                                .disableAllowSensitiveStorage()
+                                .performIf(SAVE, enabled, ToolSettings::save)
+                );
     }
 
-    @Test
+    @Test(priority = 1)
     @TestCase(value = {"EPMCMBIBPC-2681"})
     public void prepareLimitMounts() {
         tools()
@@ -110,7 +132,7 @@ public class Launch_LimitMountsTest extends AbstractAutoRemovingPipelineRunningT
                 .ensure(LIMIT_MOUNTS, text(storage1));
     }
 
-    @Test
+    @Test(priority = 1)
     @TestCase(value = {"EPMCMBIBPC-2682"})
     public void runPipelineWithLimitMounts() {
         tools()
@@ -130,7 +152,7 @@ public class Launch_LimitMountsTest extends AbstractAutoRemovingPipelineRunningT
                 .click(taskWithName(mountDataStoragesTask))
                 .ensure(log(), containsMessages("Found 1 available storage(s). Checking mount options."))
                 .ensure(log(), containsMessages(format("Run is launched with mount limits (%s) Only 1 storages will be mounted", storageID)))
-                .ensure(log(), containsMessages(format("-->%s mounted to /cloud-data/%s", storage1.toLowerCase(), storage1.toLowerCase())))
+                .ensure(log(), containsMessages(mountStorageMessage(storage1)))
                 .ssh(shell -> shell
                         .execute("ls /cloud-data/")
                         .assertOutputContains(storage1.toLowerCase())
@@ -138,7 +160,7 @@ public class Launch_LimitMountsTest extends AbstractAutoRemovingPipelineRunningT
                         .close());
     }
 
-    @Test(dependsOnMethods = {"runPipelineWithLimitMounts"})
+    @Test(priority = 1, dependsOnMethods = {"runPipelineWithLimitMounts"})
     @TestCase(value = {"EPMCMBIBPC-2683"})
     public void rerunPipelineWithoutLimitMounts() {
         final Set<String> logMess =
@@ -166,14 +188,90 @@ public class Launch_LimitMountsTest extends AbstractAutoRemovingPipelineRunningT
                 .logContainsMessage(logMess, " available storage(s). Checking mount options.")
                 .checkAvailableStoragesCount(logMess,2)
                 .logNotContainsMessage(logMess, "Run is launched with mount limits")
-                .logContainsMessage(logMess, format("%s mounted to /cloud-data/%s",
-                        storage1.toLowerCase(), storage1.toLowerCase()))
-                .logContainsMessage(logMess, format("%s mounted to /cloud-data/%s",
-                        storage2.toLowerCase(), storage2.toLowerCase()))
+                .logContainsMessage(logMess, mountStorageMessage(storage1))
+                .logContainsMessage(logMess, mountStorageMessage(storage2))
                 .ssh(shell -> shell
                         .execute("ls /cloud-data/")
                         .assertOutputContains(storage1.toLowerCase())
                         .assertOutputContains(storage2.toLowerCase())
                         .close());
+    }
+
+    @Test(priority = 2)
+    @TestCase(value = {"EPMCMBIBPC-3177"})
+    public void prepareSensitiveLimitMounts() {
+        tools()
+                .performWithin(registry, group, tool, tool ->
+                        tool.settings()
+                                .enableAllowSensitiveStorage()
+                                .performIf(SAVE, enabled, ToolSettings::save)
+                );
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
+                .selectDataStoragesToLimitMounts()
+                .ensureVisible(SEARCH_INPUT)
+                .ensureAll(disabled, SELECT_ALL_NON_SENSITIVE)
+                .ensureAll(enabled, SELECT_ALL, CLEAR_SELECTION, CANCEL, OK)
+                .validateFields("", "Name", "Type")
+                .storagesCountShouldBeGreaterThan(2)
+                .clearSelection()
+                .ensureAll(enabled, SELECT_ALL, SELECT_ALL_NON_SENSITIVE)
+                .ensureAll(disabled, OK)
+                .ensureNotVisible(CLEAR_SELECTION)
+                .click(SELECT_ALL)
+                .ensure(SENSITIVE_STORAGE, text(message))
+                .ensureVisible(CLEAR_SELECTION)
+                .ensure(OK, enabled)
+                .clearSelection()
+                .ensureNotVisible(SENSITIVE_STORAGE)
+                .ensureNotVisible(CLEAR_SELECTION)
+                .ensure(OK, disabled)
+                .searchStorage(storageSensitive)
+                .selectStorage(storageSensitive)
+                .ensure(SENSITIVE_STORAGE, text(message))
+                .ensureVisible(CLEAR_SELECTION)
+                .ensure(OK, enabled)
+                .searchStorage(storage1)
+                .selectStorage(storage1)
+                .ok()
+                .ensure(LIMIT_MOUNTS, text(storage1), text(storageSensitive));
+    }
+
+    @Test(priority = 2, dependsOnMethods = {"prepareSensitiveLimitMounts"})
+    @TestCase(value = {"EPMCMBIBPC-3178"})
+    public void runPipelineWithSensitiveLimitMounts() {
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .selectDataStoragesToLimitMounts()
+                .clearSelection()
+                .searchStorage(storageSensitive)
+                .selectStorage(storageSensitive)
+                .searchStorage(storage1)
+                .selectStorage(storage1)
+                .ok()
+                .launch(this)
+                .showLog(getRunId())
+                .expandTab(PARAMETERS)
+                .checkMountLimitsParameter(storageSensitive, storage1)
+                .waitForSshLink()
+                .waitForTask(mountDataStoragesTask)
+                .click(taskWithName(mountDataStoragesTask))
+                .ensure(log(), containsMessages("Found 2 available storage(s). Checking mount options."))
+                .ensure(log(), containsMessages(format("Run is launched with mount limits (%s,%s) Only 2 storages will be mounted",
+                        sensitiveStorageID, storageID)))
+                .ensure(log(), containsMessages(mountStorageMessage(storage1)))
+                .ensure(log(), containsMessages(mountStorageMessage(storageSensitive)))
+                .ssh(shell -> shell
+                        .execute("ls /cloud-data/")
+                        .assertOutputContains(storage1.toLowerCase())
+                        .assertPageDoesNotContain(storageSensitive.toLowerCase())
+                        .close());
+    }
+
+    private String mountStorageMessage(String storage) {
+        return format("%s mounted to /cloud-data/%s", storage.toLowerCase(), storage.toLowerCase());
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,6 +127,15 @@ public class ToolSettings extends ToolTab<ToolSettings> {
         SelenideElement checkbox = context().$(byText("Allow sensitive storages"))
                 .parent().find(By.xpath("following-sibling::div//span"));
         if (checkbox.has(cssClass("ant-checkbox-checked"))) {
+            checkbox.click();
+        }
+        return this;
+    }
+
+    public ToolSettings enableAllowSensitiveStorage() {
+        SelenideElement checkbox = context().$(byText("Allow sensitive storages"))
+                .parent().find(By.xpath("following-sibling::div//span"));
+        if (!checkbox.has(cssClass("ant-checkbox-checked"))) {
             checkbox.click();
         }
         return this;
