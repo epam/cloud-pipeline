@@ -28,12 +28,11 @@ import com.epam.pipeline.test.creator.contextual.ContextualPreferenceCreatorUtil
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.epam.pipeline.util.ControllerTestUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -47,6 +46,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@WebMvcTest(controllers = ContextualPreferenceController.class)
 public class ContextualPreferenceControllerTest extends AbstractControllerTest {
 
     private static final String TEST_STRING = "TEST";
@@ -125,14 +125,6 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
 
         Mockito.verify(mockContextualPreferenceApiService).load(TEST_STRING, contextualPreferenceExternalResource);
 
-        final ArgumentCaptor<String> stringCaptor = ArgumentCaptor.forClass(String.class);
-        final ArgumentCaptor<ContextualPreferenceExternalResource> cperCaptor =
-                ArgumentCaptor.forClass(ContextualPreferenceExternalResource.class);
-        Mockito.verify(mockContextualPreferenceApiService).load(stringCaptor.capture(), cperCaptor.capture());
-        Assertions.assertThat(stringCaptor.getValue()).isEqualTo(TEST_STRING);
-        Assertions.assertThat(cperCaptor.getValue())
-                .isEqualToComparingFieldByField(contextualPreferenceExternalResource);
-
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
                 new TypeReference<Result<ContextualPreference>>() { });
     }
@@ -163,13 +155,6 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
         Mockito.verify(mockContextualPreferenceApiService)
                 .search(searchRequest.getPreferences(), searchRequest.getResource());
 
-        ArgumentCaptor<List> listCaptor = ArgumentCaptor.forClass(List.class);
-        ArgumentCaptor<ContextualPreferenceExternalResource> cperCaptor =
-                ArgumentCaptor.forClass(ContextualPreferenceExternalResource.class);
-        Mockito.verify(mockContextualPreferenceApiService).search(listCaptor.capture(), cperCaptor.capture());
-        Assertions.assertThat(listCaptor.getValue()).isEqualTo(searchRequest.getPreferences());
-        Assertions.assertThat(cperCaptor.getValue()).isEqualTo(searchRequest.getResource());
-
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
                 new TypeReference<Result<ContextualPreference>>() { });
     }
@@ -199,10 +184,6 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
 
         Mockito.verify(mockContextualPreferenceApiService).upsert(contextualPreferenceVO);
 
-        ArgumentCaptor<ContextualPreferenceVO> cpvoCaptor = ArgumentCaptor.forClass(ContextualPreferenceVO.class);
-        Mockito.verify(mockContextualPreferenceApiService).upsert(cpvoCaptor.capture());
-        Assertions.assertThat(cpvoCaptor.getValue()).isEqualTo(contextualPreferenceVO);
-
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
                 new TypeReference<Result<ContextualPreference>>() { });
     }
@@ -231,14 +212,6 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
                 .andReturn();
 
         Mockito.verify(mockContextualPreferenceApiService).delete(TEST_STRING, contextualPreferenceExternalResource);
-
-        final ArgumentCaptor<String> stringCaptor = ArgumentCaptor.forClass(String.class);
-        final ArgumentCaptor<ContextualPreferenceExternalResource> cperCaptor =
-                ArgumentCaptor.forClass(ContextualPreferenceExternalResource.class);
-        Mockito.verify(mockContextualPreferenceApiService).delete(stringCaptor.capture(), cperCaptor.capture());
-        Assertions.assertThat(stringCaptor.getValue()).isEqualTo(TEST_STRING);
-        Assertions.assertThat(cperCaptor.getValue())
-                .isEqualToComparingFieldByField(contextualPreferenceExternalResource);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
                 new TypeReference<Result<ContextualPreference>>() { });
