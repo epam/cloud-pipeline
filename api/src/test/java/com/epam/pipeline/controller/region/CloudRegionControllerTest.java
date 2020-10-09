@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.controller.region;
 
+import com.epam.pipeline.acl.region.CloudRegionApiService;
 import com.epam.pipeline.controller.vo.region.AzureRegionDTO;
 import com.epam.pipeline.controller.vo.region.GCPRegionDTO;
 import com.epam.pipeline.entity.region.AzureRegion;
@@ -28,7 +29,6 @@ import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.entity.info.CloudRegionInfo;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.manager.region.CloudRegionApiService;
 import com.epam.pipeline.util.ControllerTestUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Before;
