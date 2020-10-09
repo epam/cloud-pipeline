@@ -50,6 +50,7 @@ function OOMCheck (
       <Alert
         type="warning"
         style={style}
+        showIcon
         message={(
           <div>
             <div style={{fontWeight: 'bold'}}>

@@ -77,7 +77,6 @@ import RunCapabilities, {
   moduleEnabled,
   RUN_CAPABILITIES
 } from '../../pipelines/launch/form/utilities/run-capabilities';
-import OOMCheck from '../../pipelines/launch/form/utilities/oom-check';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -1084,13 +1083,6 @@ export default class EditToolForm extends React.Component {
       if (allowSensitive === undefined) {
         allowSensitive = this.getAllowSensitiveInitialValue();
       }
-      let currentLimitMountsValue = this.props.form.getFieldValue('limitMounts');
-      if (currentLimitMountsValue === undefined) {
-        currentLimitMountsValue = this.defaultLimitMounts;
-      }
-      const currentInstanceTypeValue = this.props.form.getFieldValue('instanceType') ||
-        this.getInstanceTypeInitialValue();
-      const currentInstance = this.instanceTypes.find(t => t.name === currentInstanceTypeValue);
       return (
         <div>
           {this.renderSeparator('Execution defaults')}
@@ -1204,16 +1196,6 @@ export default class EditToolForm extends React.Component {
                   />
                 )}
               </Form.Item>
-              <OOMCheck
-                dataStorages={
-                  this.props.dataStorageAvailable.loaded
-                    ? (this.props.dataStorageAvailable.value || [])
-                    : []
-                }
-                limitMounts={currentLimitMountsValue}
-                preferences={this.props.preferences}
-                instance={currentInstance}
-              />
               <Form.Item {...this.formItemLayout} label="Allow sensitive storages" style={{marginTop: 10, marginBottom: 10}}>
                 {getFieldDecorator('allowSensitive',
                   {

@@ -3984,16 +3984,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 />
               )
             }
-            <OOMCheck
-              dataStorages={
-                dataStorageAvailable.loaded
-                  ? (dataStorageAvailable.value || [])
-                  : []
-              }
-              limitMounts={currentValue}
-              preferences={this.props.preferences}
-              instance={instance}
-            />
+            {
+              !this.props.editConfigurationMode && (
+                <OOMCheck
+                  dataStorages={
+                    dataStorageAvailable.loaded
+                      ? (dataStorageAvailable.value || [])
+                      : []
+                  }
+                  limitMounts={currentValue}
+                  preferences={this.props.preferences}
+                  instance={instance}
+                />
+              )
+            }
           </div>
         </FormItem>
       );
