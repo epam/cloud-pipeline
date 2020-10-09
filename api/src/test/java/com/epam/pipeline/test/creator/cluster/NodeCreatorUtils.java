@@ -40,6 +40,7 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_
 public final class NodeCreatorUtils {
 
     private static final List<InstanceType> INSTANCE_TYPES = Collections.singletonList(getDefaultInstanceType());
+    private static final String UUID = "1fb7aff6-03bf-11eb-adc1-0242ac120002";
     private static final LocalDateTime LDT =
             LocalDateTime.parse("2019-04-01T09:08:07", DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
@@ -57,6 +58,7 @@ public final class NodeCreatorUtils {
 
     public static Node getDefaultNode() {
         final ObjectMeta objectMeta = new ObjectMeta();
+        objectMeta.setUid(UUID);
         return new Node(
                 TEST_STRING, TEST_STRING, objectMeta, new NodeSpec(), new NodeStatus());
     }

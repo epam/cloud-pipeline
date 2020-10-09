@@ -27,13 +27,10 @@ import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.manager.cluster.ClusterApiService;
+import com.epam.pipeline.test.creator.cluster.NodeCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.epam.pipeline.util.ControllerTestUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.fabric8.kubernetes.api.model.Node;
-import io.fabric8.kubernetes.api.model.NodeSpec;
-import io.fabric8.kubernetes.api.model.NodeStatus;
-import io.fabric8.kubernetes.api.model.ObjectMeta;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Before;
@@ -76,15 +73,14 @@ public class ClusterControllerTest extends AbstractControllerTest {
     private static final String NODE_USAGE_URL = NODE_NAME_URL + "/usage";
     private static final String NODE_DISKS_URL = NODE_NAME_URL + "/disks";
     private static final String NODE_STATISTICS_URL = NODE_USAGE_URL + "/report";
+    private static final String PORT = "7367";
     private static final String NAME = "testName";
     private static final String TEST_DATA = "test_data";
     private static final String FROM_STRING = "2019-04-01T09:08:07";
     private static final String TO_STRING = "2020-05-02T12:11:10";
-    private static final String UUID = "1fb7aff6-03bf-11eb-adc1-0242ac120002";
     private NodeInstance nodeInstance;
     private List<NodeInstance> nodeInstances;
     private List<InstanceType> instanceTypes;
-    private List<String> testList;
     private LocalDateTime from;
     private LocalDateTime to;
 
@@ -93,12 +89,10 @@ public class ClusterControllerTest extends AbstractControllerTest {
 
     @Before
     public void setUp() throws Exception {
-        nodeInstance = new NodeInstance();
+        nodeInstance = NodeCreatorUtils.getDefaultNodeInstance();
         nodeInstances = Collections.singletonList(nodeInstance);
 
-        instanceTypes = Collections.singletonList(InstanceType.builder().name(NAME).build());
-
-        testList = Collections.singletonList("test");
+        instanceTypes = Collections.singletonList(NodeCreatorUtils.getDefaultInstanceType());
 
         from = LocalDateTime.parse(FROM_STRING, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         to = LocalDateTime.parse(TO_STRING, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
@@ -114,12 +108,8 @@ public class ClusterControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadMasterNodes() throws Exception {
-        final ObjectMeta objectMeta = new ObjectMeta();
-        objectMeta.setUid(UUID);
-        final List<MasterNode> masterNodes = Collections.singletonList(MasterNode.fromNode(new Node(
-                "v1", "test", objectMeta, new NodeSpec(), new NodeStatus()
-        ), "7367"));
-
+        final List<MasterNode> masterNodes = Collections.singletonList(MasterNode.fromNode(
+                NodeCreatorUtils.getDefaultNode(), PORT));
 
         Mockito.doReturn(masterNodes).when(mockClusterApiService).getMasterNodes();
 
@@ -177,8 +167,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldFilterNodes() throws Exception {
-        final FilterNodesVO filterNodesVO = new FilterNodesVO();
-        filterNodesVO.setAddress("testAddress");
+        final FilterNodesVO filterNodesVO = NodeCreatorUtils.getDefaultFilterNodesVO();
 
         Mockito.doReturn(nodeInstances).when(mockClusterApiService).filterNodes(Mockito.refEq(filterNodesVO));
 
@@ -245,8 +234,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadNodeFiltered() throws Exception {
-        final FilterPodsRequest filterPodsRequest = new FilterPodsRequest();
-        filterPodsRequest.setPodStatuses(testList);
+        final FilterPodsRequest filterPodsRequest = NodeCreatorUtils.getDefaultFilterPodsRequest();
 
         Mockito.doReturn(nodeInstance).when(mockClusterApiService)
                 .getNode(Mockito.eq(NAME), Mockito.refEq(filterPodsRequest));
@@ -386,9 +374,8 @@ public class ClusterControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadAllowedInstanceAndPriceTypes() throws Exception {
-        final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = new AllowedInstanceAndPriceTypes(
-                instanceTypes, instanceTypes, testList, testList
-        );
+        final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
+                NodeCreatorUtils.getDefaultAllowedInstanceAndPriceTypes();
 
         Mockito.doReturn(allowedInstanceAndPriceTypes).when(mockClusterApiService)
                 .getAllowedInstanceAndPriceTypes(ID, ID, false);
@@ -513,7 +500,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadNodeDisks() throws Exception {
-        final List<NodeDisk> nodeDisks = Collections.singletonList(new NodeDisk(ID, NAME, from));
+        final List<NodeDisk> nodeDisks = Collections.singletonList(NodeCreatorUtils.getDefaultNodeDisk());
 
         Mockito.doReturn(nodeDisks).when(mockClusterApiService).loadNodeDisks(NAME);
 
