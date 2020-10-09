@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.vo.region.AzureRegionDTO;
 import com.epam.pipeline.controller.vo.region.GCPRegionDTO;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.test.creator.region.RegionCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.epam.pipeline.controller.ResponseResult;
 import com.epam.pipeline.controller.Result;
@@ -52,6 +53,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class CloudRegionControllerTest extends AbstractControllerTest {
 
     private static final long ID = 1L;
+    private static final String TEST_STRING = "TEST";
     private static final String REGION_URL = SERVLET_PATH + "/cloud/region";
     private static final String LOAD_PROVIDERS_URL = REGION_URL + "/provider";
     private static final String LOAD_REGIONS_INFO_URL = REGION_URL + "/info";
@@ -247,7 +249,7 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadAllAvailableRegions() throws Exception {
-        final List<String> regions = Collections.singletonList("testRegion");
+        final List<String> regions = Collections.singletonList(TEST_STRING);
         Mockito.doReturn(regions).when(mockCloudRegionApiService).loadAllAvailable(CloudProvider.AWS);
 
         final MvcResult mvcResult = mvc().perform(get(LOAD_AVAILABLE_REGIONS_URL)

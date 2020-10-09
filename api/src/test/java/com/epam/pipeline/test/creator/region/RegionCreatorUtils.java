@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.region;
+package com.epam.pipeline.test.creator.region;
 
 import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.controller.vo.region.AzureRegionDTO;
@@ -29,7 +29,12 @@ import com.epam.pipeline.entity.region.GCPRegion;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+
 public final class RegionCreatorUtils {
+
+    private static final boolean TRUE = true;
+    private static final int NUMBER = 4;
 
     private RegionCreatorUtils() {
 
@@ -37,68 +42,68 @@ public final class RegionCreatorUtils {
 
     public static AwsRegion getDefaultAwsRegion() {
         final AwsRegion region = new AwsRegion();
-        region.setRegionCode("us-east-1");
-        region.setName("US East");
-        region.setDefault(true);
+        region.setRegionCode(TEST_STRING);
+        region.setName(TEST_STRING);
+        region.setDefault(TRUE);
         return region;
     }
 
     public static AzureRegion getDefaultAzureRegion() {
         final AzureRegion region = new AzureRegion();
-        region.setDefault(true);
+        region.setDefault(TRUE);
         region.setProvider(CloudProvider.AZURE);
-        region.setResourceGroup("resourceGroup");
-        region.setStorageAccount("storageAcc");
+        region.setResourceGroup(TEST_STRING);
+        region.setStorageAccount(TEST_STRING);
         return region;
     }
 
     public static GCPRegion getDefaultGcpRegion() {
         final GCPRegion region = new GCPRegion();
         region.setCustomInstanceTypes(getGcpCustomInstanceTypes());
-        region.setDefault(true);
+        region.setDefault(TRUE);
         return region;
     }
 
     private static List<GCPCustomInstanceType> getGcpCustomInstanceTypes() {
         final List<GCPCustomInstanceType> customInstanceTypes = new ArrayList<>();
-        customInstanceTypes.add(GCPCustomInstanceType.withCpu(4, 16));
-        customInstanceTypes.add(GCPCustomInstanceType.withGpu(4, 16, 4, "test"));
+        customInstanceTypes.add(GCPCustomInstanceType.withCpu(NUMBER, NUMBER));
+        customInstanceTypes.add(GCPCustomInstanceType.withGpu(NUMBER, NUMBER, NUMBER, TEST_STRING));
         return customInstanceTypes;
     }
 
     public static AWSRegionDTO getDefaultAwsRegionDTO() {
         final AWSRegionDTO awsRegionDTO = new AWSRegionDTO();
-        awsRegionDTO.setRegionCode("us-east-1");
-        awsRegionDTO.setName("US East");
-        awsRegionDTO.setKmsKeyId("test");
-        awsRegionDTO.setKmsKeyArn("tset");
-        awsRegionDTO.setProfile("testProfile");
-        awsRegionDTO.setSshKeyName("testKey");
-        awsRegionDTO.setTempCredentialsRole("testRole");
-        awsRegionDTO.setDefault(true);
+        awsRegionDTO.setRegionCode(TEST_STRING);
+        awsRegionDTO.setName(TEST_STRING);
+        awsRegionDTO.setKmsKeyId(TEST_STRING);
+        awsRegionDTO.setKmsKeyArn(TEST_STRING);
+        awsRegionDTO.setProfile(TEST_STRING);
+        awsRegionDTO.setSshKeyName(TEST_STRING);
+        awsRegionDTO.setTempCredentialsRole(TEST_STRING);
+        awsRegionDTO.setDefault(TRUE);
         return awsRegionDTO;
     }
 
     public static AzureRegionDTO getDefaultAzureRegionDTO() {
         final AzureRegionDTO regionDTO = new AzureRegionDTO();
-        regionDTO.setDefault(true);
-        regionDTO.setResourceGroup("resourceGroup");
-        regionDTO.setStorageAccount("storageAcc");
-        regionDTO.setStorageAccountKey("testKey");
+        regionDTO.setDefault(TRUE);
+        regionDTO.setResourceGroup(TEST_STRING);
+        regionDTO.setStorageAccount(TEST_STRING);
+        regionDTO.setStorageAccountKey(TEST_STRING);
         regionDTO.setAzurePolicy(new AzurePolicy());
-        regionDTO.setSubscription("testSub");
-        regionDTO.setAzureApiUrl("testUrl");
+        regionDTO.setSubscription(TEST_STRING);
+        regionDTO.setAzureApiUrl(TEST_STRING);
         return regionDTO;
     }
 
     public static GCPRegionDTO getDefaultGcpRegionDTO() {
         final GCPRegionDTO regionDTO = new GCPRegionDTO();
-        regionDTO.setCorsRules("corsRules");
-        regionDTO.setApplicationName("testName");
-        regionDTO.setImpersonatedAccount("testAccount");
-        regionDTO.setProject("testProject");
+        regionDTO.setCorsRules(TEST_STRING);
+        regionDTO.setApplicationName(TEST_STRING);
+        regionDTO.setImpersonatedAccount(TEST_STRING);
+        regionDTO.setProject(TEST_STRING);
         regionDTO.setCustomInstanceTypes(getGcpCustomInstanceTypes());
-        regionDTO.setDefault(true);
+        regionDTO.setDefault(TRUE);
         return regionDTO;
     }
 }
