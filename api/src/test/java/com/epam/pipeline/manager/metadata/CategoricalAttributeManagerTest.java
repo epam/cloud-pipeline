@@ -18,6 +18,9 @@ package com.epam.pipeline.manager.metadata;
 
 import static com.epam.pipeline.util.CategoricalAttributeTestUtils.assertAttribute;
 import static com.epam.pipeline.util.CategoricalAttributeTestUtils.fromStrings;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertThat;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.EntityVO;
@@ -98,9 +101,9 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
                                           .map(CategoricalAttributeValue::getValue)
                                           .collect(Collectors.toList())));
         Assert.assertEquals(2, categoricalAttributesAfterSync.size());
-        Assert.assertThat(categoricalAttributesAfterSync.get(KEY_1),
+        assertThat(categoricalAttributesAfterSync.get(KEY_1),
                           CoreMatchers.is(Collections.singletonList(VALUE_1)));
-        Assert.assertThat(categoricalAttributesAfterSync.get(KEY_2),
+        assertThat(categoricalAttributesAfterSync.get(KEY_2),
                           CoreMatchers.is(Collections.singletonList(VALUE_2)));
         Assert.assertFalse(categoricalAttributesAfterSync.containsKey(SENSITIVE_KEY));
     }
@@ -180,5 +183,35 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
         final List<CategoricalAttribute> attributes = Collections
             .singletonList(new CategoricalAttribute(KEY_2, Collections.singletonList(valueWithLink)));
         categoricalAttributeManager.updateCategoricalAttributes(attributes);
+    }
+
+    @Test
+    public void shouldDeleteLinksOnUpdate() {
+        final CategoricalAttribute attribute = new CategoricalAttribute(KEY_1,
+                fromStrings(KEY_1, Arrays.asList(VALUE_1, VALUE_2)));
+
+        final CategoricalAttributeValue valueWithLink = new CategoricalAttributeValue(KEY_2, VALUE_3);
+        valueWithLink.setLinks(Arrays.asList(
+                new CategoricalAttributeValue(KEY_1, VALUE_1),
+                new CategoricalAttributeValue(KEY_1, VALUE_2)));
+        final CategoricalAttribute attributeWithLink = new CategoricalAttribute(KEY_2,
+                Collections.singletonList(valueWithLink));
+
+        final List<CategoricalAttribute> attributes = Arrays.asList(attribute, attributeWithLink);
+        categoricalAttributeManager.updateCategoricalAttributes(attributes);
+        final CategoricalAttribute loadedAttrWithLink = categoricalAttributeManager.loadAllValuesForKey(KEY_2);
+        assertThat(loadedAttrWithLink.getValues(), hasSize(1));
+        assertThat(loadedAttrWithLink.getValues().get(0).getLinks(), hasSize(2));
+
+        loadedAttrWithLink.getValues().get(0).setLinks(
+                Collections.singletonList(new CategoricalAttributeValue(KEY_1, VALUE_2)));
+        categoricalAttributeManager.updateCategoricalAttributes(Collections.singletonList(loadedAttrWithLink));
+
+        final CategoricalAttribute loadedAttrWithoutLink = categoricalAttributeManager.loadAllValuesForKey(KEY_2);
+        assertThat(loadedAttrWithoutLink.getValues(), hasSize(1));
+        final List<CategoricalAttributeValue> links = loadedAttrWithoutLink.getValues().get(0).getLinks();
+        assertThat(links, hasSize(1));
+        assertThat(links.get(0).getKey(), equalTo(KEY_1));
+        assertThat(links.get(0).getValue(), equalTo(VALUE_2));
     }
 }
