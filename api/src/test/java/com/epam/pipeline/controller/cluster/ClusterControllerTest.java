@@ -31,11 +31,9 @@ import com.epam.pipeline.test.creator.cluster.NodeCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.epam.pipeline.util.ControllerTestUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -179,10 +177,6 @@ public class ClusterControllerTest extends AbstractControllerTest {
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
 
-        final ArgumentCaptor<FilterNodesVO> filterNodesVOCaptor = ArgumentCaptor.forClass(FilterNodesVO.class);
-        Mockito.verify(mockClusterApiService).filterNodes(filterNodesVOCaptor.capture());
-        Assertions.assertThat(filterNodesVOCaptor.getValue().getAddress()).isEqualTo(filterNodesVO.getAddress());
-
         Mockito.verify(mockClusterApiService).filterNodes(Mockito.refEq(filterNodesVO));
 
         final ResponseResult<List<NodeInstance>> expectedResult =
@@ -210,10 +204,6 @@ public class ClusterControllerTest extends AbstractControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
-
-        final ArgumentCaptor<String> stringCaptor = ArgumentCaptor.forClass(String.class);
-        Mockito.verify(mockClusterApiService).getNode(stringCaptor.capture());
-        Assertions.assertThat(stringCaptor.getValue()).isEqualTo(NAME);
 
         Mockito.verify(mockClusterApiService).getNode(NAME);
 
@@ -247,13 +237,6 @@ public class ClusterControllerTest extends AbstractControllerTest {
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
 
-        final ArgumentCaptor<String> stringCaptor = ArgumentCaptor.forClass(String.class);
-        final ArgumentCaptor<FilterPodsRequest> filterPodsRequestCaptor =
-                ArgumentCaptor.forClass(FilterPodsRequest.class);
-        Mockito.verify(mockClusterApiService).getNode(stringCaptor.capture(), filterPodsRequestCaptor.capture());
-        Assertions.assertThat(stringCaptor.getValue()).isEqualTo(NAME);
-        Assertions.assertThat(filterPodsRequestCaptor.getValue()).isEqualToComparingFieldByField(filterPodsRequest);
-
         Mockito.verify(mockClusterApiService)
                 .getNode(Mockito.eq(NAME), Mockito.refEq(filterPodsRequest));
 
@@ -282,10 +265,6 @@ public class ClusterControllerTest extends AbstractControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
-
-        final ArgumentCaptor<String> stringCaptor = ArgumentCaptor.forClass(String.class);
-        Mockito.verify(mockClusterApiService).terminateNode(stringCaptor.capture());
-        Assertions.assertThat(stringCaptor.getValue()).isEqualTo(NAME);
 
         Mockito.verify(mockClusterApiService).terminateNode(NAME);
 
@@ -320,12 +299,6 @@ public class ClusterControllerTest extends AbstractControllerTest {
 
         Mockito.verify(mockClusterApiService).getAllowedInstanceTypes(ID, true);
 
-        final ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
-        final ArgumentCaptor<Boolean> booleanCaptor = ArgumentCaptor.forClass(Boolean.class);
-        Mockito.verify(mockClusterApiService).getAllowedInstanceTypes(longCaptor.capture(), booleanCaptor.capture());
-        Assertions.assertThat(longCaptor.getValue()).isEqualTo(ID);
-        Assertions.assertThat(booleanCaptor.getValue()).isEqualTo(true);
-
         final ResponseResult<List<InstanceType>> expectedResult =
                 ControllerTestUtils.buildExpectedResult(instanceTypes);
 
@@ -349,13 +322,6 @@ public class ClusterControllerTest extends AbstractControllerTest {
                 .andReturn();
 
         Mockito.verify(mockClusterApiService).getAllowedToolInstanceTypes(ID, false);
-
-        final ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
-        final ArgumentCaptor<Boolean> booleanCaptor = ArgumentCaptor.forClass(Boolean.class);
-        Mockito.verify(mockClusterApiService)
-                .getAllowedToolInstanceTypes(longCaptor.capture(), booleanCaptor.capture());
-        Assertions.assertThat(longCaptor.getValue()).isEqualTo(ID);
-        Assertions.assertThat(booleanCaptor.getValue()).isEqualTo(false);
 
         final ResponseResult<List<InstanceType>> expectedResult =
                 ControllerTestUtils.buildExpectedResult(instanceTypes);
@@ -392,13 +358,6 @@ public class ClusterControllerTest extends AbstractControllerTest {
 
         Mockito.verify(mockClusterApiService).getAllowedInstanceAndPriceTypes(ID, ID, false);
 
-        final ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
-        final ArgumentCaptor<Boolean> booleanCaptor = ArgumentCaptor.forClass(Boolean.class);
-        Mockito.verify(mockClusterApiService).getAllowedInstanceAndPriceTypes(
-                longCaptor.capture(), longCaptor.capture(), booleanCaptor.capture());
-        Assertions.assertThat(longCaptor.getValue()).isEqualTo(ID);
-        Assertions.assertThat(booleanCaptor.getValue()).isEqualTo(false);
-
         final ResponseResult<AllowedInstanceAndPriceTypes> expectedResult =
                 ControllerTestUtils.buildExpectedResult(allowedInstanceAndPriceTypes);
 
@@ -430,17 +389,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
                 .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
 
-        Mockito.verify(mockClusterApiService)
-                .getStatsForNode(NAME, from, to);
-
-        final ArgumentCaptor<String> stringCaptor = ArgumentCaptor.forClass(String.class);
-        final ArgumentCaptor<LocalDateTime> fromCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
-        final ArgumentCaptor<LocalDateTime> toCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
-        Mockito.verify(mockClusterApiService)
-                .getStatsForNode(stringCaptor.capture(), fromCaptor.capture(), toCaptor.capture());
-        Assertions.assertThat(stringCaptor.getValue()).isEqualTo(NAME);
-        Assertions.assertThat(fromCaptor.getValue()).isEqualTo(from);
-        Assertions.assertThat(toCaptor.getValue()).isEqualTo(to);
+        Mockito.verify(mockClusterApiService).getStatsForNode(NAME, from, to);
 
         final ResponseResult<List<MonitoringStats>> expectedResult =
                 ControllerTestUtils.buildExpectedResult(monitoringStats);
@@ -474,18 +423,6 @@ public class ClusterControllerTest extends AbstractControllerTest {
 
         Mockito.verify(mockClusterApiService).getUsageStatisticsFile(NAME, from, to, Duration.ofHours(1));
 
-        final ArgumentCaptor<String> stringCaptor = ArgumentCaptor.forClass(String.class);
-        final ArgumentCaptor<LocalDateTime> fromCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
-        final ArgumentCaptor<LocalDateTime> toCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
-        final ArgumentCaptor<Duration> durationCaptor = ArgumentCaptor.forClass(Duration.class);
-        Mockito.verify(mockClusterApiService).getUsageStatisticsFile(
-                stringCaptor.capture(), fromCaptor.capture(), toCaptor.capture(), durationCaptor.capture()
-        );
-        Assertions.assertThat(stringCaptor.getValue()).isEqualTo(NAME);
-        Assertions.assertThat(fromCaptor.getValue()).isEqualTo(from);
-        Assertions.assertThat(toCaptor.getValue()).isEqualTo(to);
-        Assertions.assertThat(durationCaptor.getValue()).isEqualTo(Duration.ofHours(1));
-
         String actualResponseData = mvcResult.getResponse().getContentAsString();
         Assert.assertEquals(TEST_DATA, actualResponseData);
     }
@@ -512,10 +449,6 @@ public class ClusterControllerTest extends AbstractControllerTest {
                 .andReturn();
 
         Mockito.verify(mockClusterApiService).loadNodeDisks(NAME);
-
-        final ArgumentCaptor<String> stringCaptor = ArgumentCaptor.forClass(String.class);
-        Mockito.verify(mockClusterApiService).loadNodeDisks(stringCaptor.capture());
-        Assertions.assertThat(stringCaptor.getValue()).isEqualTo(NAME);
 
         final ResponseResult<List<NodeDisk>> expectedResult = ControllerTestUtils.buildExpectedResult(nodeDisks);
 
