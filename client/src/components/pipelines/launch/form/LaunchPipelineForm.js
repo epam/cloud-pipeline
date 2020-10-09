@@ -377,18 +377,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   @action
   formFieldsChanged = async () => {
-    this.modified = checkModifiedState(
-      this.props,
-      this.state,
-      {
-        defaultCloudRegionId: this.defaultCloudRegionId,
-        execEnvSelectValue: this.getExecEnvSelectValue().execEnvSelectValue,
-        spotInitialValue: this.correctPriceTypeValue(this.getDefaultValue('is_spot')),
-        cmdTemplateValue: this.cmdTemplateValue,
-        toolDefaultCmd: this.toolDefaultCmd
-      }
-    );
-    this.props.onModified && this.props.onModified(this.modified);
     const {form, parameters} = this.props;
     const formParameters = form.getFieldValue(PARAMETERS);
     const formParametersCorrected = parameterUtilities.correctFormFieldValues(formParameters);
@@ -422,6 +410,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       }
     }
     this.dockerImage = currentDockerImage || this.getDefaultValue('docker_image');
+    this.modified = checkModifiedState(
+      this.props,
+      this.state,
+      {
+        defaultCloudRegionId: this.defaultCloudRegionId,
+        execEnvSelectValue: this.getExecEnvSelectValue().execEnvSelectValue,
+        spotInitialValue: this.correctPriceTypeValue(this.getDefaultValue('is_spot')),
+        cmdTemplateValue: this.cmdTemplateValue,
+        toolDefaultCmd: this.toolDefaultCmd
+      }
+    );
+    this.props.onModified && this.props.onModified(this.modified);
     this.rebuildLaunchCommand();
     if (this.forceValidation) {
       this.forceValidation = false;
