@@ -35,6 +35,7 @@ import {
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE
 } from './parameters';
+import {getRunCapabilitiesSkippedParameters} from './run-capabilities';
 
 const PARAMETER_TITLE_WIDTH = 110;
 const PARAMETER_TITLE_RIGHT_MARGIN = 5;
@@ -108,10 +109,11 @@ export function getSkippedSystemParametersList (controller) {
       CP_CAP_AUTOSCALE,
       CP_CAP_AUTOSCALE_WORKERS,
       CP_CAP_AUTOSCALE_HYBRID,
-      CP_CAP_AUTOSCALE_PRICE_TYPE
+      CP_CAP_AUTOSCALE_PRICE_TYPE,
+      ...getRunCapabilitiesSkippedParameters()
     ];
   }
-  return [CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS];
+  return [CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS, ...getRunCapabilitiesSkippedParameters()];
 }
 
 export function getSystemParameterDisabledState (controller, parameterName) {
