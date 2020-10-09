@@ -17,20 +17,40 @@
 package com.epam.pipeline.test.acl;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dao.datastorage.DataStorageDao;
+import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.entity.log.LogPagination;
 import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.HierarchicalEntityManager;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
+import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.datastorage.DataStoragePathLoader;
+import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
+import com.epam.pipeline.manager.datastorage.FileShareMountManager;
+import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
+import com.epam.pipeline.manager.docker.scan.ToolScanManager;
+import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
+import com.epam.pipeline.manager.dts.DtsRegistryManager;
 import com.epam.pipeline.manager.event.EntityEventServiceManager;
 import com.epam.pipeline.manager.filter.FilterManager;
+import com.epam.pipeline.manager.firecloud.FirecloudManager;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.git.TemplatesScanner;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.log.LogManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.metadata.MetadataUploadManager;
+import com.epam.pipeline.manager.metadata.processor.MetadataPostProcessorService;
+import com.epam.pipeline.manager.notification.NotificationSettingsManager;
+import com.epam.pipeline.manager.notification.NotificationTemplateManager;
+import com.epam.pipeline.manager.notification.SystemNotificationManager;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
+import com.epam.pipeline.manager.pipeline.FolderCrudManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
@@ -43,17 +63,25 @@ import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
+import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
+import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.manager.utils.JsonService;
 import com.epam.pipeline.manager.utils.UtilsManager;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
+import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
+import com.epam.pipeline.mapper.MetadataEntryMapper;
+import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cache.CacheManager;
@@ -63,13 +91,16 @@ import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.acls.domain.AclAuthorizationStrategy;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.model.AclCache;
-import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
 
 import javax.sql.DataSource;
+import java.util.concurrent.Executor;
 
 @Configuration
 public class AclTestBeans {
+
+    @Autowired
+    protected PermissionFactory permissionFactory;
 
     @Autowired
     protected PermissionEvaluator permissionEvaluator;
@@ -77,7 +108,13 @@ public class AclTestBeans {
     @Autowired
     protected MessageHelper messageHelper;
 
-    @MockBean
+    @Autowired
+    protected PermissionsService permissionsService;
+
+    @Autowired
+    protected CheckPermissionHelper permissionHelper;
+
+    @MockBean(name = "aclService")
     protected JdbcMutableAclServiceImpl mockAclService;
 
     @MockBean
@@ -85,6 +122,9 @@ public class AclTestBeans {
 
     @MockBean
     protected EntityManager mockEntityManager;
+
+    @MockBean
+    protected HierarchicalEntityManager mockHierarchicalEntityManager;
 
     @MockBean
     protected IssueManager mockIssueManager;
@@ -96,16 +136,10 @@ public class AclTestBeans {
     protected NodesManager mockNodesManager;
 
     @MockBean
-    protected PermissionFactory mockPermissionFactory;
-
-    @MockBean
     protected DataSource mockDataSource;
 
-    @MockBean
+    @MockBean(name = "aclCache")
     protected AclCache mockAclCache;
-
-    @MockBean
-    protected CloudRegionManager mockCloudRegionManager;
 
     @MockBean
     protected CacheManager mockCacheManager;
@@ -180,22 +214,10 @@ public class AclTestBeans {
     protected ToolApiService mockToolApiService;
 
     @MockBean
-    protected PermissionsService mockPermissionsService;
-
-    @MockBean
-    protected PermissionEvaluator mockPermissionEvaluator;
-
-    @MockBean
     protected MessageHelper mockMessageHelper;
 
     @MockBean
-    protected CheckPermissionHelper mockPermissionHelper;
-
-    @MockBean
     protected SidRetrievalStrategy mockSidRetrievalStrategy;
-
-    @MockBean
-    protected PermissionGrantingStrategy mockPermissionGrantingStrategy;
 
     @MockBean
     protected AclAuthorizationStrategy mockAclAuthorizationStrategy;
@@ -212,6 +234,98 @@ public class AclTestBeans {
     @MockBean
     protected ConfigurationRunner mockConfigurationRunner;
 
+    @MockBean
+    protected AbstractRunConfigurationMapper mockRunConfigurationMapper;
+
+    @MockBean
+    protected MetadataManager mockMetaDataManager;
+
+    @MockBean
+    protected DataStorageRuleManager mockDataStorageRuleManager;
+
+    @MockBean
+    protected ToolScanScheduler mockToolScanScheduler;
+
+    @MockBean
+    protected ToolScanManager mockToolScanManager;
+
+    @MockBean
+    protected DtsRegistryManager mockDtsRegistryManager;
+
+    @MockBean
+    protected FirecloudManager mockFirecloudManager;
+
+    @MockBean
+    protected MetadataUploadManager mockMetadataUploadManager;
+
+    @MockBean
+    protected NotificationSettingsManager mockNotificationSettingsManager;
+
+    @MockBean
+    protected NotificationTemplateManager mockNotificationTemplateManager;
+
+    @MockBean
+    protected SystemNotificationManager mockSystemNotificationManager;
+
+    @MockBean
+    protected MetadataEntryMapper mockMetadataEntryMapper;
+
+    @MockBean
+    protected PermissionGrantVOMapper mockPermissionGrantVOMapper;
+
+    @MockBean
+    protected MetadataPostProcessorService mockMetadataPostProcessorService;
+
+    @MockBean
+    protected CloudRegionManager mockCloudRegionManager;
+
+    @MockBean
+    protected StorageProviderManager mockStorageProviderManager;
+
+    @MockBean
+    protected DataStorageDao mockDataStorageDao;
+
+    @MockBean
+    protected FileShareMountManager mockFileShareMountManager;
+
+    @MockBean
+    protected Executor mockExecutor;
+
+    @MockBean
+    protected SearchManager mockSearchManager;
+
+    @MockBean
+    protected DataStoragePathLoader mockDataStoragePathLoader;
+
+    @MockBean
+    protected FolderDao mockFolderDao;
+
+    @MockBean
+    protected PreferenceManager mockPreferenceManager;
+
+    @MockBean
+    protected RoleManager mockRoleManager;
+
+    @Bean
+    protected TemplatesScanner mockTemplatesScanner() {
+        return Mockito.mock(TemplatesScanner.class);
+    }
+
+    @Bean
+    protected JsonService mockJsonService() {
+        return Mockito.mock(JsonService.class);
+    }
+
+    @Bean
+    protected DataStorageManager mockDataStorageManager() {
+        return Mockito.mock(DataStorageManager.class);
+    }
+
+    @Bean
+    protected FolderCrudManager mockCrudManager() {
+        return Mockito.mock(FolderCrudManager.class);
+    }
+
     @Bean
     public GrantPermissionManager grantPermissionManager() {
         GrantPermissionManager grantPermissionManager = new GrantPermissionManager();
@@ -223,7 +337,7 @@ public class AclTestBeans {
         grantPermissionManager.setMetadataEntityManager(mockMetadataEntityManager);
         grantPermissionManager.setNodesManager(mockNodesManager);
         grantPermissionManager.setPermissionEvaluator(permissionEvaluator);
-        grantPermissionManager.setPermissionFactory(mockPermissionFactory);
+        grantPermissionManager.setPermissionFactory(permissionFactory);
         return grantPermissionManager;
     }
 }
