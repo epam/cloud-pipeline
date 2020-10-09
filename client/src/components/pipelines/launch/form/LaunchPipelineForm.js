@@ -104,7 +104,6 @@ import RunCapabilities, {
   singularityEnabled,
   systemDEnabled,
   moduleEnabled,
-  getRunCapabilitiesSkippedParameters,
   RUN_CAPABILITIES
 } from './utilities/run-capabilities';
 import {
@@ -1469,6 +1468,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   @computed
+  get instanceTypesLoaded () {
+    return this.props.allowedInstanceTypes && this.props.allowedInstanceTypes.loaded;
+  }
+
+  @computed
   get instanceTypes () {
     const request = this.props.allowedInstanceTypes && this.props.allowedInstanceTypes.loaded
       ? this.props.allowedInstanceTypes
@@ -2730,8 +2734,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               notToShow={[
                 ...notToShowSystemParametersFn(PARAMETERS, false),
                 ...notToShowSystemParametersFn(SYSTEM_PARAMETERS, true),
-                CP_CAP_LIMIT_MOUNTS, ...getSkippedSystemParametersList(this),
-                ...getRunCapabilitiesSkippedParameters()]
+                CP_CAP_LIMIT_MOUNTS, ...getSkippedSystemParametersList(this)]
               }
             />
           </Row>
@@ -2809,15 +2812,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       if (this.props.isDetachedConfiguration && this.props.selectedPipelineParametersIsLoading) {
         return [];
       } else {
-        const systemParamsToSkip = isSystem ? getRunCapabilitiesSkippedParameters() : [];
         const normalizedParameters = parameterUtilities.normalizeParameters(parameters);
         return parameters.keys.map(key => {
           const parameter = (parameters.params ? parameters.params[key] : undefined) ||
             this.addedParameters[key];
           let name = parameter ? parameter.name : '';
-          if (isSystem && (!name || systemParamsToSkip.includes(name))) {
-            return null;
-          }
           let value = parameter ? parameter.value : '';
           let type = parameter ? parameter.type : 'string';
           let readOnly = parameter ? parameter.readOnly : false;
@@ -3663,8 +3662,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   correctInstanceTypeValue = (value) => {
-    if (value !== undefined && value !== null) {
-      const [v] = this.instanceTypes.filter(v => v.name === value);
+    if (value !== undefined && value !== null && this.instanceTypesLoaded) {
+      const v = this.instanceTypes.find(v => v.name === value);
       if (v !== undefined) {
         return v.name;
       }
