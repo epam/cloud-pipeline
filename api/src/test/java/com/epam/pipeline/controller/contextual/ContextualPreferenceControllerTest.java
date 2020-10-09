@@ -23,8 +23,8 @@ import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceSearchRequest;
-import com.epam.pipeline.entity.preference.PreferenceType;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceApiService;
+import com.epam.pipeline.test.creator.contextual.ContextualPreferenceCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.epam.pipeline.util.ControllerTestUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -49,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 public class ContextualPreferenceControllerTest extends AbstractControllerTest {
 
-    private static final String TEST_STRING = "test";
+    private static final String TEST_STRING = "TEST";
     private static final String CONTEXTUAL_URL = SERVLET_PATH + "/contextual/preference";
     private static final String LOAD_URL = CONTEXTUAL_URL + "/load";
     private static final String LOAD_ALL_URL = LOAD_URL + "/all";
@@ -63,11 +63,11 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
 
     @Before
     public void setUp() {
-        contextualPreference = new ContextualPreference(TEST_STRING, TEST_STRING);
+        contextualPreference = ContextualPreferenceCreatorUtils.getContextualPreference();
         expectedResult = ControllerTestUtils.buildExpectedResult(contextualPreference);
 
         contextualPreferenceExternalResource
-                = new ContextualPreferenceExternalResource(PREFERENCE_LEVEL, TEST_STRING);
+                = ContextualPreferenceCreatorUtils.getCPExternalResource();
     }
 
     @Test
@@ -147,9 +147,7 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldSearch() throws Exception {
-        final ContextualPreferenceSearchRequest searchRequest = new ContextualPreferenceSearchRequest(
-                Collections.singletonList(TEST_STRING), contextualPreferenceExternalResource
-        );
+        final ContextualPreferenceSearchRequest searchRequest = ContextualPreferenceCreatorUtils.getCPSearchRequest();
 
         Mockito.doReturn(contextualPreference).when(mockContextualPreferenceApiService)
                 .search(searchRequest.getPreferences(), searchRequest.getResource());
@@ -186,9 +184,8 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldUpdate() throws Exception {
-        final ContextualPreferenceVO contextualPreferenceVO = new ContextualPreferenceVO(
-                TEST_STRING, TEST_STRING, PreferenceType.STRING, contextualPreferenceExternalResource
-        );
+        final ContextualPreferenceVO contextualPreferenceVO =
+                ContextualPreferenceCreatorUtils.getContextualPreferenceVO();
 
         Mockito.doReturn(contextualPreference).when(mockContextualPreferenceApiService).upsert(contextualPreferenceVO);
 
