@@ -75,7 +75,6 @@ import RunCapabilities, {
   singularityEnabled,
   systemDEnabled,
   moduleEnabled,
-  getRunCapabilitiesSkippedParameters,
   RUN_CAPABILITIES
 } from '../../pipelines/launch/form/utilities/run-capabilities';
 
@@ -1343,11 +1342,7 @@ export default class EditToolForm extends React.Component {
             getSystemParameterDisabledState={
               (parameterName) => getSystemParameterDisabledState(this, parameterName)
             }
-            skippedSystemParameters={[
-              ...getSkippedSystemParametersList(this),
-              ...getRunCapabilitiesSkippedParameters()
-            ]}
-            hiddenParameters={getRunCapabilitiesSkippedParameters()}
+            skippedSystemParameters={getSkippedSystemParametersList(this)}
             value={this.defaultSystemProperties}
             onInitialized={this.onEditToolFormSystemParametersInitialized} />
           {this.renderSeparator('Custom parameters')}

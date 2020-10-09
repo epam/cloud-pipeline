@@ -40,7 +40,25 @@ import {
   moduleEnabled
 } from './run-capabilities';
 
+function formItemInitialized (form, formName) {
+  if (!formName) {
+    return false;
+  }
+  const values = form.getFieldsValue();
+  const names = formName.split('.');
+  const test = (o, keyIndex) => {
+    if (keyIndex >= names.length) {
+      return true;
+    }
+    return o.hasOwnProperty(names[keyIndex]) && test(o[names[keyIndex]], keyIndex + 1);
+  };
+  return values.hasOwnProperty(formName) || test(values, 0);
+}
+
 function modified (form, parameters, formName, parametersName, defaultValue) {
+  if (!formItemInitialized(form, formName)) {
+    return false;
+  }
   return `${form.getFieldValue(formName) || defaultValue}` !==
     `${parameters[parametersName] || defaultValue}`;
 }
@@ -137,22 +155,39 @@ function executionEnvironmentCheck (props, state, {execEnvSelectValue}) {
 }
 
 function spotOnDemandCheck (form, {spotInitialValue}) {
+  if (!formItemInitialized(form, `${ADVANCED}.is_spot`)) {
+    return false;
+  }
   return `${form.getFieldValue(`${ADVANCED}.is_spot`)}` !== `${spotInitialValue}`;
 }
 
 function autoPauseCheck (form, state) {
+  if (!formItemInitialized(form, `${ADVANCED}.is_spot`)) {
+    return false;
+  }
   return `${form.getFieldValue(`${ADVANCED}.is_spot`)}` === 'false' && !state.autoPause;
 }
 
 function limitMountsCheck (form, parameters) {
+  if (!formItemInitialized(form, `${ADVANCED}.limitMounts`)) {
+    return false;
+  }
   const getDefaultValue = () => {
     if (parameters.parameters && parameters.parameters[CP_CAP_LIMIT_MOUNTS]) {
       return parameters.parameters[CP_CAP_LIMIT_MOUNTS].value;
     }
-    return null;
+    return undefined;
   };
+  const isNull = o => o === null || o === undefined;
   const initial = getDefaultValue();
-  return form.getFieldValue(`${ADVANCED}.limitMounts`) !== initial;
+  const formValue = form.getFieldValue(`${ADVANCED}.limitMounts`);
+  if (isNull(formValue) && isNull(initial)) {
+    return false;
+  }
+  if (isNull(formValue) || isNull(initial)) {
+    return true;
+  }
+  return formValue !== initial;
 }
 function cmdTemplateCheck (state, parameters, {cmdTemplateValue, toolDefaultCmd}) {
   let code = cmdTemplateValue;
@@ -168,6 +203,9 @@ function cmdTemplateCheck (state, parameters, {cmdTemplateValue, toolDefaultCmd}
 }
 
 function parametersCheck (form, parameters, state) {
+  if (!formItemInitialized(form, PARAMETERS) || !formItemInitialized(form, SYSTEM_PARAMETERS)) {
+    return false;
+  }
   const formParams = form.getFieldValue(PARAMETERS);
   const formSystemParams = form.getFieldValue(SYSTEM_PARAMETERS);
   const formValue = {};

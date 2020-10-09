@@ -103,7 +103,6 @@ import RunCapabilities, {
   singularityEnabled,
   systemDEnabled,
   moduleEnabled,
-  getRunCapabilitiesSkippedParameters,
   RUN_CAPABILITIES
 } from './utilities/run-capabilities';
 import {
@@ -376,18 +375,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   @action
   formFieldsChanged = async () => {
-    this.modified = checkModifiedState(
-      this.props,
-      this.state,
-      {
-        defaultCloudRegionId: this.defaultCloudRegionId,
-        execEnvSelectValue: this.getExecEnvSelectValue().execEnvSelectValue,
-        spotInitialValue: this.correctPriceTypeValue(this.getDefaultValue('is_spot')),
-        cmdTemplateValue: this.cmdTemplateValue,
-        toolDefaultCmd: this.toolDefaultCmd
-      }
-    );
-    this.props.onModified && this.props.onModified(this.modified);
     const {form, parameters} = this.props;
     const formParameters = form.getFieldValue(PARAMETERS);
     const formParametersCorrected = parameterUtilities.correctFormFieldValues(formParameters);
@@ -421,6 +408,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       }
     }
     this.dockerImage = currentDockerImage || this.getDefaultValue('docker_image');
+    this.modified = checkModifiedState(
+      this.props,
+      this.state,
+      {
+        defaultCloudRegionId: this.defaultCloudRegionId,
+        execEnvSelectValue: this.getExecEnvSelectValue().execEnvSelectValue,
+        spotInitialValue: this.correctPriceTypeValue(this.getDefaultValue('is_spot')),
+        cmdTemplateValue: this.cmdTemplateValue,
+        toolDefaultCmd: this.toolDefaultCmd
+      }
+    );
+    this.props.onModified && this.props.onModified(this.modified);
     this.rebuildLaunchCommand();
     if (this.forceValidation) {
       this.forceValidation = false;
@@ -1452,6 +1451,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       return vcpuCompared === 0 ? skuCompare(typeA, typeB) : vcpuCompared;
     });
   };
+
+  @computed
+  get instanceTypesLoaded () {
+    return this.props.allowedInstanceTypes && this.props.allowedInstanceTypes.loaded;
+  }
 
   @computed
   get instanceTypes () {
@@ -2714,8 +2718,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               notToShow={[
                 ...notToShowSystemParametersFn(PARAMETERS, false),
                 ...notToShowSystemParametersFn(SYSTEM_PARAMETERS, true),
-                CP_CAP_LIMIT_MOUNTS, ...getSkippedSystemParametersList(this),
-                ...getRunCapabilitiesSkippedParameters()]
+                CP_CAP_LIMIT_MOUNTS, ...getSkippedSystemParametersList(this)]
               }
             />
           </Row>
@@ -2793,15 +2796,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       if (this.props.isDetachedConfiguration && this.props.selectedPipelineParametersIsLoading) {
         return [];
       } else {
-        const systemParamsToSkip = isSystem ? getRunCapabilitiesSkippedParameters() : [];
         const normalizedParameters = parameterUtilities.normalizeParameters(parameters);
         return parameters.keys.map(key => {
           const parameter = (parameters.params ? parameters.params[key] : undefined) ||
             this.addedParameters[key];
           let name = parameter ? parameter.name : '';
-          if (isSystem && (!name || systemParamsToSkip.includes(name))) {
-            return null;
-          }
           let value = parameter ? parameter.value : '';
           let type = parameter ? parameter.type : 'string';
           let readOnly = parameter ? parameter.readOnly : false;
@@ -3609,8 +3608,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   correctInstanceTypeValue = (value) => {
-    if (value !== undefined && value !== null) {
-      const [v] = this.instanceTypes.filter(v => v.name === value);
+    if (value !== undefined && value !== null && this.instanceTypesLoaded) {
+      const v = this.instanceTypes.find(v => v.name === value);
       if (v !== undefined) {
         return v.name;
       }
