@@ -493,6 +493,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     }
 
     default ELEMENT_TYPE checkValueIsInDropDown(final Primitive combobox, final String option) {
+        sleep(1, SECONDS);
         get(combobox).shouldBe(visible).click();
         ElementsCollection listDropDown = SelenideElements.of(byClassName("ant-select-dropdown-menu-item"));
         listDropDown.forEach(row -> row.shouldHave(text(option)));
