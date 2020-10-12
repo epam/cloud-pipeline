@@ -22,16 +22,16 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.manager.configuration.RunConfigurationApiService;
+import com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.epam.pipeline.util.ControllerTestUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -44,6 +44,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@WebMvcTest(controllers = ConfigurationController.class)
 public class ConfigurationControllerTest extends AbstractControllerTest {
 
     private static final long ID = 1L;
@@ -63,8 +64,8 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
         mapper = getObjectMapper();
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
-        runConfigurationVO = new RunConfigurationVO();
-        runConfiguration = new RunConfiguration();
+        runConfigurationVO = ConfigurationCreatorUtils.getRunConfigurationVO();
+        runConfiguration = ConfigurationCreatorUtils.getRunConfiguration();
 
         expectedResult = ControllerTestUtils.buildExpectedResult(runConfiguration);
     }
@@ -91,11 +92,6 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
 
         Mockito.verify(mockRunConfigurationApiService).save(Mockito.refEq(runConfigurationVO));
 
-        final ArgumentCaptor<RunConfigurationVO> runConfigurationVOCaptor =
-                ArgumentCaptor.forClass(RunConfigurationVO.class);
-        Mockito.verify(mockRunConfigurationApiService).save(runConfigurationVOCaptor.capture());
-        Assertions.assertThat(runConfigurationVOCaptor.getValue()).isEqualToComparingFieldByField(runConfigurationVO);
-
         ControllerTestUtils.assertResponse(mvcResult, mapper, expectedResult,
                 new TypeReference<Result<RunConfiguration>>() { });
     }
@@ -117,11 +113,6 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
                 .andReturn();
 
         Mockito.verify(mockRunConfigurationApiService).update(Mockito.refEq(runConfigurationVO));
-
-        final ArgumentCaptor<RunConfigurationVO> runConfigurationVOCaptor =
-                ArgumentCaptor.forClass(RunConfigurationVO.class);
-        Mockito.verify(mockRunConfigurationApiService).update(runConfigurationVOCaptor.capture());
-        Assertions.assertThat(runConfigurationVOCaptor.getValue()).isEqualToComparingFieldByField(runConfigurationVO);
 
         ControllerTestUtils.assertResponse(mvcResult, mapper, expectedResult,
                 new TypeReference<Result<RunConfiguration>>() { });
@@ -148,10 +139,6 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
 
         Mockito.verify(mockRunConfigurationApiService).delete(ID);
 
-        final ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
-        Mockito.verify(mockRunConfigurationApiService).delete(longCaptor.capture());
-        Assertions.assertThat(longCaptor.getValue()).isEqualTo(ID);
-
         ControllerTestUtils.assertResponse(mvcResult, mapper, expectedResult,
                 new TypeReference<Result<RunConfiguration>>() { });
     }
@@ -176,10 +163,6 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
                 .andReturn();
 
         Mockito.verify(mockRunConfigurationApiService).load(ID);
-
-        final ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
-        Mockito.verify(mockRunConfigurationApiService).load(longCaptor.capture());
-        Assertions.assertThat(longCaptor.getValue()).isEqualTo(ID);
 
         ControllerTestUtils.assertResponse(mvcResult, mapper, expectedResult,
                 new TypeReference<Result<RunConfiguration>>() { });
