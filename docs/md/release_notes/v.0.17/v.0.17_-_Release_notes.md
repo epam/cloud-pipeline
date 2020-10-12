@@ -22,6 +22,9 @@
 
 ## Billing reports enhancements
 
+In the previous version, the **Billing reports** functionality was introduced (see details [here](../../manual/Appendix_D/Appendix_D._Costs_management.md#billing-reports)).  
+In **`v0.17`**, several useful features for the **Billing reports** were implemented.
+
 ### Access to Billing reports for non-admin users
 
 Previously, only admins had access to the **Billing reports** Dashboard and can view Platform's spendings data.  
@@ -30,8 +33,9 @@ In some cases, it is convenient that non-admin users also have the access to spe
 In the current version, such ability was implemented - in two ways:
 
 - a new role was added into the predefined roles list - **`ROLE_BILLING_MANAGER`**. If that role is assigned to the user - for him/her the **Billing reports** Dashboard becomes available. And all possible filters, charts and their types, discounts configuration, export feature and etc. become available too. So, users who are granted this role are able to view the whole **Billing reports** info of the platform (as if they were admins).
+    - **_Note_**: this behavior is enabled by the new system preference **`billing.reports.enabled.admins`**. It allows to configure **Billing reports** visibility for admins and billing managers. Default value is _true_.
 - base access to the **Billing reports** for "general" users that allows to view some information - about users' own spendings:
-    - this behavior is enabled by new system preference **`billing.reports.enabled`**. If this preference is set, all "general" users can access personal billing information - runs/storages where the user is an owner. Also "general" users can use filters, change chart types, make reports export.
+    - this behavior is enabled by the new system preference **`billing.reports.enabled`**. If this preference is set, all "general" users can access personal billing information - runs/storages where the user is an owner. Also "general" users can use filters, change chart types, make reports export.
     - the following restrictions are set for "general" users when "base" billing access is enabled:
         - all showing charts are being displayed only spendings of the current user
         - there isn't an ability to configure discounts, the button "Configure discounts" is disabled
@@ -89,6 +93,16 @@ In **`v0.17`**, it was implemented - the user can view **Billing reports** with 
 - Reports (charts and tables) will be rebuilt for the configured custom date range:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_08.png)
 
+### Displaying different user's attributes in the Billing reports
+
+Previously, in all the **Billing reports**, info about users was displayed as user ID only. In some cases, it would be more convenient to display user names or emails - to take a more readable form.
+
+In the current version, this ability is implemented.  
+A new System Preference is introduced: **`billing.reports.user.name.attribute`**  
+It defines which user's attribute shall be used to display the users in the **Billing reports**. If it is set, specified attribute will be used in all billing charts, tables, export reports.
+
+Possible values for described preference: _`userName`_, _`FirstName`_, _`LastName`_, etc.
+
 ### Export reports in `csv` from any Billing page
 
 Previously, **Cloud Pipeline** allowed to export the **Billing reports** data into the `*.csv` format via the "General" section only. But in separate sections - "Storages" and "Compute Instances" - the user could export data as `*.png` image format only.
@@ -103,6 +117,33 @@ Example of an export from the "CPU" page:
 
 - ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_10.png)
 - ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_09.png)
+
+### Breakdown the billing reports by month
+
+**Cloud Pipeline** allows exporting billing reports in the `*.csv`. Previously, the values were shown as aggregates for the _whole_ selected period. In some cases, it is more convenient to change this view to a breakdown by month.
+
+In the current version, this ability is implemented.  
+Now, if any period - longer than a month is selected (including a `custom` period), the `*.csv`-report contains an aggregate for each month of that period.  
+The whole period summary is being included as well (as previously).
+
+Example of the report for a custom period:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_11.png)
+
+### "Billing General" export broken by the user
+
+Previously, **Cloud Pipeline** could export the "General" billing report split by the "Cost Center". For some use cases, needs to have this report broken by the user as well.
+
+Now, this ability is implemented.  
+User can specify which dimension to use for the export:
+
+- by **Cost Center** - in this case, the "General" billing report will be split by the "Cost Center" (as it was previosly)
+- by **User** - in this case, export will be in the same format as for the "Cost Center", but split the values by the user (using [`billing.reports.user.name.attribute`](#displaying-different-users-attributes-in-the-billing-reports) to display the username)
+
+Format of the report is being selected before the export:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_12.png)
+
+Example of the report broken by the user:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_13.png)
 
 ## Allowed price types for a cluster master node
 
