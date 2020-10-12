@@ -18,10 +18,13 @@ package com.epam.pipeline.manager.datastorage.lustre;
 import com.amazonaws.services.fsx.AmazonFSx;
 import com.amazonaws.services.fsx.AmazonFSxClient;
 import com.amazonaws.services.fsx.model.*;
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.LustreFS;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.exception.datastorage.exception.LustreFSException;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -42,10 +45,13 @@ public class LustreFSManager {
 
     private static final String RUN_ID_TAG_NAME = "RUN_ID";
     private static final String LUSTRE_MOUNT_TEMPLATE = "%s@tcp:/%s";
+    public static final int LUSTRE_MIN_SIZE_GB = 1200;
+    public static final int LUSTRE_SIZE_STEP_GB = 2400;
 
     private final PipelineRunManager runManager;
     private final CloudRegionManager regionManager;
     private final PreferenceManager preferenceManager;
+    private final MessageHelper messageHelper;
 
     public LustreFS getOrCreateLustreFS(final Long runId, final Integer size) {
         final AmazonFSx fsxClient = buildFsxClient(runId);
@@ -58,14 +64,16 @@ public class LustreFSManager {
         final AmazonFSx fsxClient = buildFsxClient(runId);
         return findFsForRun(runId, null, fsxClient)
                 .map(this::convert)
-                .orElseThrow(() -> new IllegalArgumentException("Failed to find lustre Fs for run id"));
+                .orElseThrow(() -> new LustreFSException(
+                        messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_NOT_FOUND, runId)));
     }
 
     public LustreFS deleteLustreFs(final Long runId) {
         final AmazonFSx fsxClient = buildFsxClient(runId);
         return findFsForRun(runId, null, fsxClient)
                 .map(fs -> deleteFs(fs, fsxClient))
-                .orElseThrow(() -> new IllegalArgumentException("Failed to find lustre Fs for run id"));
+                .orElseThrow(() -> new LustreFSException(
+                        messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_NOT_FOUND, runId)));
     }
 
     private LustreFS deleteFs(final FileSystem fs, final AmazonFSx fsxClient) {
@@ -78,11 +86,11 @@ public class LustreFSManager {
     private LustreFS createLustreFs(final Long runId, final Integer size, final AmazonFSx fsxClient) {
         log.debug("Creating a new lustre fs for run id {}.", runId);
         final AwsRegion regionForRun = getRegionForRun(runId);
+        final int actualSize = getFSSize(size);
         preferenceManager.getPreference(SystemPreferences.CLUSTER_NETWORKS_CONFIG);
         final CreateFileSystemResult result = fsxClient.createFileSystem(new CreateFileSystemRequest()
                 .withFileSystemType(FileSystemType.LUSTRE)
-                .withStorageCapacity(Optional.ofNullable(size)
-                        .orElseGet(() -> preferenceManager.getPreference(SystemPreferences.LUSTRE_FS_DEFAULT_SIZE)))
+                .withStorageCapacity(actualSize)
                 .withStorageType(StorageType.SSD)
                 .withSecurityGroupIds(preferenceManager.getPreference(SystemPreferences.LUSTRE_FS_SECURITY_GROUPS))
                 .withSubnetIds(preferenceManager.getPreference(SystemPreferences.LUSTRE_FS_VPC_ID))
@@ -98,9 +106,23 @@ public class LustreFSManager {
         final FileSystem fs = result.getFileSystem();
         if (fs.getLifecycle().equals("FAILED")) {
             log.debug("Lustre fs creation failed: {}", fs);
-            throw new IllegalArgumentException("Failed to created Lustre FS");
+            throw new LustreFSException(messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_NOT_CREATED, runId));
         }
         return convert(fs);
+    }
+
+    private int getFSSize(final Integer size) {
+//        For PERSISTENT_1 SSD deployment types,
+//        valid values are 1200 GiB, 2400 GiB, and increments of 2400 GiB.
+        final Integer initialSize = Optional.ofNullable(size)
+                .orElseGet(() -> preferenceManager.getPreference(SystemPreferences.LUSTRE_FS_DEFAULT_SIZE_GB));
+        if (initialSize <= LUSTRE_MIN_SIZE_GB) {
+            return LUSTRE_MIN_SIZE_GB;
+        }
+        if (initialSize % LUSTRE_SIZE_STEP_GB == 0) {
+            return initialSize;
+        }
+        return LUSTRE_SIZE_STEP_GB * (1 + initialSize / LUSTRE_SIZE_STEP_GB);
     }
 
     private LustreFS convert(final FileSystem lustre) {
@@ -146,12 +168,16 @@ public class LustreFSManager {
 
     private AwsRegion getRegionForRun(Long runId) {
         final PipelineRun pipelineRun = runManager.loadPipelineRun(runId);
+        return getRegion(pipelineRun);
+    }
+
+    private AwsRegion getRegion(PipelineRun pipelineRun) {
         final Long cloudRegionId = pipelineRun.getInstance().getCloudRegionId();
         final AbstractCloudRegion region = regionManager.load(cloudRegionId);
         if (region instanceof AwsRegion) {
             return (AwsRegion)region;
         } else {
-            throw new IllegalArgumentException("Lustre FS is supported for AWS regions only");
+            throw new LustreFSException(messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_REGION_NOT_SUPPORTED));
         }
     }
 }

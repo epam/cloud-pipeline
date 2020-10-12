@@ -17,6 +17,7 @@
 package com.epam.pipeline.test.web;
 
 import com.epam.pipeline.acl.billing.BillingApiService;
+import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
 import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
 import com.epam.pipeline.acl.run.RunApiService;
@@ -203,4 +204,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected CategoricalAttributeApiService categoricalAttributeApiService;
+
+    @MockBean
+    protected LustreFSApiService lustreFSApiService;
 }

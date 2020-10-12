@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.cluster.cleaner.RunCleaner;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.notification.NotificationSettingsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -48,6 +49,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,6 +121,7 @@ public class PodMonitor extends AbstractSchedulingManager {
         private final RestartRunManager restartRunManager;
         private final CloudFacade cloudFacade;
         private final PreferenceManager preferenceManager;
+        private final List<RunCleaner> cleaners;
 
         @Autowired
         PodMonitorCore(final RunLogManager runLogManager,
@@ -132,6 +135,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                        final RestartRunManager restartRunManager,
                        final CloudFacade cloudFacade,
                        final PreferenceManager preferenceManager,
+                       final List<RunCleaner> cleaners,
                        final @Value("${kube.namespace}") String kubeNamespace) {
             this.runLogManager = runLogManager;
             this.pipelineRunManager = pipelineRunManager;
@@ -145,6 +149,7 @@ public class PodMonitor extends AbstractSchedulingManager {
             this.cloudFacade = cloudFacade;
             this.preferenceManager = preferenceManager;
             this.kubeNamespace = kubeNamespace;
+            this.cleaners = ListUtils.emptyIfNull(cleaners);
         }
 
         /**
@@ -338,6 +343,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                 clearWorkerNodes(run, client);
                 //save luigi log
                 getPodLogs(run, parent);
+                cleanRunResources(run);
                 //delete all pods
                 LOGGER.debug("Clearing pods for successful pipeline: {}.", run.getPodId());
                 client.pods().inNamespace(kubeNamespace).withLabel(PIPELINE_ID_LABEL, run.getPodId()).delete();
@@ -457,11 +463,17 @@ public class PodMonitor extends AbstractSchedulingManager {
         private void setRunFinished(PipelineRun run, Pod pod, KubernetesClient client) {
             savePodStatus(run, pod, client);
             checkAndUpdateInstanceState(run, true);
+            cleanRunResources(run);
             run.setStatus(run.getStatus().isFinal() ? run.getStatus() : TaskStatus.FAILURE);
             run.setTerminating(true);
             run.setEndDate(DateUtils.now());
             notificationManager.removeNotificationTimestamps(run.getId());
             killAsync(run);
+        }
+
+        private void cleanRunResources(final PipelineRun run) {
+            LOGGER.debug("Clearing resources for run {}.", run.getId());
+            cleaners.forEach(cleaner -> cleaner.cleanResources(run));
         }
 
         private void savePodStatus(PipelineRun run, Pod pod, KubernetesClient client) {

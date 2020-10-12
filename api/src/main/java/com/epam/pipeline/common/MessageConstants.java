@@ -533,6 +533,11 @@ public final class MessageConstants {
     //Other
     public static final String ERROR_KEEP_ALIVE_POLICY_NOT_SUPPORTED = "error.keep.alive.policy.not.supported";
 
+    //Lustre
+    public static final String ERROR_LUSTRE_NOT_FOUND = "error.lustre.not.found.for.run";
+    public static final String ERROR_LUSTRE_NOT_CREATED = "error.lustre.not.created.for.run";
+    public static final String ERROR_LUSTRE_REGION_NOT_SUPPORTED = "error.lustre.region.not.supported";
+
     private MessageConstants() {
         // no-op
     }

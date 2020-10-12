@@ -24,6 +24,7 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
+import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.event.EntityEventServiceManager;
 import com.epam.pipeline.manager.filter.FilterManager;
@@ -173,6 +174,9 @@ public class AclTestConfiguration {
 
     @MockBean
     public BillingManager billingManager;
+
+    @MockBean
+    protected LustreFSManager lustreFSManager;
 
     @Bean
     public PermissionFactory permissionFactory() {

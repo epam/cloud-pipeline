@@ -668,8 +668,8 @@ public class SystemPreferences {
             "billing.reports.enabled.admins", true, BILLING_GROUP, pass);
 
     // Lustre FS
-    public static final IntPreference LUSTRE_FS_DEFAULT_SIZE = new IntPreference(
-            "lustre.fs.default.size", 1200, LUSTRE_GROUP, pass);
+    public static final IntPreference LUSTRE_FS_DEFAULT_SIZE_GB = new IntPreference(
+            "lustre.fs.default.size.gb", 1200, LUSTRE_GROUP, pass);
     public static final IntPreference LUSTRE_FS_BKP_RETENTION_DAYS = new IntPreference(
             "lustre.fs.backup.retention.days", 7, LUSTRE_GROUP, pass);
     public static final IntPreference LUSTRE_FS_DEFAULT_THROUGHPUT = new IntPreference(
