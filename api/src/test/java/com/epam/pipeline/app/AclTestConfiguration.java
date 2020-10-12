@@ -21,7 +21,9 @@ import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
@@ -144,6 +146,12 @@ public class AclTestConfiguration {
 
     @MockBean
     protected CloudRegionManager mockCloudRegionManager;
+
+    @MockBean
+    protected NodeDiskManager mockNodeDiskManager;
+
+    @MockBean
+    UsageMonitoringManager mockUsageMonitoringManager;
 
     @MockBean
     protected EntityEventServiceManager entityEventServiceManager;

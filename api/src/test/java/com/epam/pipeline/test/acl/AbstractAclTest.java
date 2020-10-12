@@ -50,8 +50,11 @@ public abstract class AbstractAclTest {
     protected static final String ADMIN_ROLE = "ADMIN";
     protected static final String GENERAL_USER_ROLE = "USER";
     protected static final String SIMPLE_USER_ROLE = "SIMPLE_USER";
-    protected static final String SIMPLE_USER= "SIMPLE_USER";
     protected static final String OWNER_USER = "OWNER";
+    protected static final String SIMPLE_USER = "SIMPLE_USER";
+    protected static final String SIMPLE_USER_2 = "SIMPLE_USER_2";
+    protected static final String TEST_NAME = "test_name";
+    protected static final String TEST_NAME_2 = "test_name_2";
 
     @Autowired
     protected PermissionGrantingStrategy grantingStrategy;

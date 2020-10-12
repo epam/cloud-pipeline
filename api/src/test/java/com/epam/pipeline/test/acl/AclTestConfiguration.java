@@ -17,8 +17,10 @@
 package com.epam.pipeline.test.acl;
 
 import com.epam.pipeline.app.AclSecurityConfiguration;
+import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
@@ -39,7 +41,11 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @ContextConfiguration(classes = {AclTestBeans.class, AclSecurityConfiguration.class})
-@ComponentScan(basePackages = {"com.epam.pipeline.security.acl", "com.epam.pipeline.manager.security"})
+@Import({ContextualPreferenceHandler.class})
+@ComponentScan(basePackages = {"com.epam.pipeline.security.acl",
+        "com.epam.pipeline.security.run",
+        "com.epam.pipeline.manager.security",
+        "com.epam.pipeline.manager.user"})
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 @TestPropertySource(value = {"classpath:test-application.properties"})

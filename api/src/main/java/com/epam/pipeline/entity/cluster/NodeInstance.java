@@ -45,7 +45,6 @@ import static com.epam.pipeline.manager.cluster.KubernetesConstants.RUN_ID_LABEL
 public class NodeInstance extends AbstractSecuredEntity {
 
     private UUID uid;
-    private String name;
     private String creationTimestamp;
     private List<NodeInstanceAddress> addresses;
 

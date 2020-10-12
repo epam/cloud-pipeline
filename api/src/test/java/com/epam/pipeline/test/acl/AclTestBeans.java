@@ -76,13 +76,20 @@ import com.epam.pipeline.manager.notification.NotificationSettingsManager;
 import com.epam.pipeline.manager.notification.NotificationTemplateManager;
 import com.epam.pipeline.manager.notification.SystemNotificationManager;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
+import com.epam.pipeline.manager.pipeline.FolderApiService;
 import com.epam.pipeline.manager.pipeline.FolderCrudManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
+import com.epam.pipeline.manager.pipeline.PipelineManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
+import com.epam.pipeline.manager.pipeline.RestartRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.RunScheduleManager;
+import com.epam.pipeline.manager.pipeline.RunStatusManager;
+import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
 import com.epam.pipeline.manager.pipeline.ToolApiService;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
@@ -92,7 +99,6 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
-import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
 import com.epam.pipeline.manager.user.RoleManager;
@@ -133,9 +139,6 @@ public class AclTestBeans {
 
     @Autowired
     protected PermissionsService permissionsService;
-
-    @MockBean
-    protected CheckPermissionHelper permissionHelper;
 
     @MockBean(name = "aclService")
     protected JdbcMutableAclServiceImpl mockAclService;
@@ -321,82 +324,103 @@ public class AclTestBeans {
     protected RoleManager mockRoleManager;
 
     @MockBean
-    NodeDiskManager mockNodeDiskManager;
+    protected NodeDiskManager mockNodeDiskManager;
 
     @MockBean
-    UsageMonitoringManager mockNsageMonitoringManager;
+    protected UsageMonitoringManager mockUsageMonitoringManager;
 
     @MockBean
-    ContextualPreferenceManager mockContextualPreferenceManager;
+    protected ContextualPreferenceManager mockContextualPreferenceManager;
 
     @MockBean
-    DataStorageApiService mockDataStorageApiService;
+    protected DataStorageApiService mockDataStorageApiService;
 
     @MockBean
-    ToolVersionManager mockToolVersionManager;
+    protected ToolVersionManager mockToolVersionManager;
 
     @MockBean
-    PipelineDao mockPipelineDao;
+    protected PipelineDao mockPipelineDao;
 
     @MockBean
-    DataStorageRuleDao mockDataStorageRuleDao;
+    protected DataStorageRuleDao mockDataStorageRuleDao;
 
     @MockBean
-    PipelineRunDao mockPipelineRunDao;
+    protected PipelineRunDao mockPipelineRunDao;
 
     @MockBean
-    RestartRunDao mockRestartRunDao;
+    protected RestartRunDao mockRestartRunDao;
 
     @MockBean
-    DtsSubmissionManager mockDtsSubmissionManager;
+    protected DtsSubmissionManager mockDtsSubmissionManager;
 
     @MockBean
-    PipelineLauncher mockPipelineLauncher;
+    protected PipelineLauncher mockPipelineLauncher;
 
     @MockBean
-    CommandBuilder mockCommandBuilder;
+    protected CommandBuilder mockCommandBuilder;
 
     @MockBean
-    CredentialsManager mockCredentialsManager;
+    protected CredentialsManager mockCredentialsManager;
 
     @MockBean
-    RunStatusDao mockRunStatusDao;
+    protected RunStatusDao mockRunStatusDao;
 
     @MockBean
-    StopServerlessRunDao mockStopServerlessRunDao;
+    protected StopServerlessRunDao mockStopServerlessRunDao;
 
     @MockBean
-    DockerContainerOperationManager mockDockerContainerOperationManager;
+    protected DockerContainerOperationManager mockDockerContainerOperationManager;
 
     @MockBean
-    ContextualPreferenceDao mockContextualPreferenceDao;
+    protected ContextualPreferenceDao mockContextualPreferenceDao;
 
     @MockBean
-    ContextualPreferenceHandler mockContextualPreferenceHandler;
+    protected ContextualPreferenceHandler mockContextualPreferenceHandler;
 
     @MockBean
-    MonitoringNotificationDao mockMonitoringNotificationDao;
+    protected MonitoringNotificationDao mockMonitoringNotificationDao;
 
     @MockBean
-    UserDao mockUserDao;
+    protected UserDao mockUserDao;
 
     @MockBean
-    RoleDao mockRoleDao;
+    protected RoleDao mockRoleDao;
 
     @MockBean
-    RunLogDao mockRunLogDao;
+    protected RunLogDao mockRunLogDao;
 
     @MockBean
-    GroupStatusDao mockGroupStatusDao;
+    protected GroupStatusDao mockGroupStatusDao;
 
     @MockBean
-    DataStorageValidator mockDataStorageValidator;
+    protected DataStorageValidator mockDataStorageValidator;
 
     @MockBean
-    NotificationManager mockNotificationManager;
+    protected NotificationManager mockNotificationManager;
 
     @MockBean
-    Pipeline mockPipeline;
+    protected Pipeline mockPipeline;
+
+    @MockBean
+    protected PipelineManager mockPipelineManager;
+
+    @MockBean
+    protected PipelineConfigurationManager mockPipelineConfigurationManager;
+
+    @MockBean
+    protected FolderApiService mockFolderApiService;
+
+    @MockBean
+    protected RestartRunManager mockRestartRunManager;
+
+    @MockBean
+    protected RunStatusManager mockRunStatusManager;
+
+    @MockBean
+    protected PipelineRunCRUDService mockPipelineRunCRUDService;
+
+    @MockBean
+    protected StopServerlessRunManager mockStopServerlessRunManager;
 
     @Bean
     protected TemplatesScanner mockTemplatesScanner() {
@@ -414,7 +438,7 @@ public class AclTestBeans {
     }
 
     @Bean
-    protected FolderCrudManager folderCrudManager() {
+    protected FolderCrudManager mockFolderCrudManager() {
         return Mockito.mock(FolderCrudManager.class);
     } /////
 
