@@ -21,15 +21,19 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.region.AwsRegion;
 
 public class TemporaryCredentialsS3Helper extends S3Helper {
 
     private final TemporaryCredentials credentials;
+    private final AwsRegion region;
 
     public TemporaryCredentialsS3Helper(final TemporaryCredentials credentials,
-                                        final MessageHelper messageHelper) {
+                                        final MessageHelper messageHelper,
+                                        final AwsRegion region) {
         super(messageHelper);
         this.credentials = credentials;
+        this.region = region;
     }
 
     @Override
@@ -39,6 +43,7 @@ public class TemporaryCredentialsS3Helper extends S3Helper {
 
         return AmazonS3ClientBuilder.standard()
                 .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
+                .withRegion(region.getRegionCode())
                 .build();
     }
 }

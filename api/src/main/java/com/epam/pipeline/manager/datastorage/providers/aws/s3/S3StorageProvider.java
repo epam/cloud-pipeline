@@ -186,14 +186,14 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
                                                           String path, String version,
                                                           ContentDisposition contentDisposition) {
         final TemporaryCredentials credentials = getStsCredentials(dataStorage, version, false);
-        return getS3Helper(credentials).generateDownloadURL(dataStorage.getRoot(),
+        return getS3Helper(credentials, getAwsRegion(dataStorage)).generateDownloadURL(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path), version, contentDisposition);
     }
 
     @Override
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(S3bucketDataStorage dataStorage, String path) {
         final TemporaryCredentials credentials = getStsCredentials(dataStorage, null, true);
-        return getS3Helper(credentials).generateDataStorageItemUploadUrl(
+        return getS3Helper(credentials, getAwsRegion(dataStorage)).generateDataStorageItemUploadUrl(
                 dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), authManager.getAuthorizedUser());
     }
 
@@ -325,8 +325,8 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         return new RegionAwareS3Helper(region, messageHelper);
     }
 
-    public S3Helper getS3Helper(final TemporaryCredentials credentials) {
-        return new TemporaryCredentialsS3Helper(credentials, messageHelper);
+    public S3Helper getS3Helper(final TemporaryCredentials credentials, final AwsRegion region) {
+        return new TemporaryCredentialsS3Helper(credentials, messageHelper, region);
     }
 
     private AwsRegion getAwsRegion(S3bucketDataStorage dataStorage) {
