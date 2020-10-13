@@ -42,6 +42,7 @@ public class C {
         COMPLETION_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.run.completion.timeout"));
         BUCKETS_MOUNTING_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.buckets.mounting.timeout"));
         ENDPOINT_INITIALIZATION_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.endpoint.initialization.timeout"));
+        SEARCH_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.search.timeout.in.minutes"));
         LOGIN_DELAY_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.login.delay.timeout"));
         VALID_ENDPOINT = conf.getProperty("e2e.ui.valid.endpoint");
         LOGIN = conf.getProperty("e2e.ui.login");
@@ -95,6 +96,7 @@ public class C {
     public static final int BUCKETS_MOUNTING_TIMEOUT;
     public static final int ENDPOINT_INITIALIZATION_TIMEOUT;
     public static final int LOGIN_DELAY_TIMEOUT;
+    public static final int SEARCH_TIMEOUT;
 
     public static final String LOGIN;
     public static final String PASSWORD;
