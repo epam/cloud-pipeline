@@ -80,6 +80,7 @@ const PAGE_SIZE = 40;
 @connect({
   dataStorages, folders, pipelinesLibrary
 })
+@inject('awsRegions')
 @inject(({routing, dataStorages, folders, pipelinesLibrary, preferences, dataStorageCache }, {params, onReloadTree}) => {
   const queryParameters = parseQueryParameters(routing);
   const showVersions = (queryParameters.versions || 'false').toLowerCase() === 'true';
@@ -124,12 +125,32 @@ export default class DataStorage extends React.Component {
   @observable
   _shareStorageLink = null;
 
+  @observable generateDownloadUrls;
+
   @computed
   get showMetadata () {
     if (this.state.metadata === undefined && this.props.info.loaded) {
       return this.props.info.value.hasMetadata && roleModel.readAllowed(this.props.info.value);
     }
     return !!this.state.metadata;
+  }
+
+  @computed
+  get region () {
+    if (this.props.info && this.props.info.loaded && this.props.awsRegions.loaded) {
+      const {regionId} = this.props.info.value;
+      return (this.props.awsRegions.value || []).find(r => +r.id === +regionId);
+    }
+    return null;
+  }
+
+  @computed
+  get regionName () {
+    const region = this.region;
+    if (region) {
+      return region.regionId || region.name;
+    }
+    return null;
   }
 
   @computed
@@ -1297,6 +1318,8 @@ export default class DataStorage extends React.Component {
                     title={'Upload'}
                     storageId={this.props.storageId}
                     path={this.props.path}
+                    storageInfo={this.props.info.value}
+                    region={this.regionName}
                     // synchronous
                     uploadToS3={this.props.info.value.type === 'S3'}
                     uploadToNFS={this.props.info.value.type === 'NFS'}
@@ -1559,15 +1582,31 @@ export default class DataStorage extends React.Component {
               OK
             </Button>
           }>
-          {this.generateDownloadUrls && (!this.generateDownloadUrls.pending
-            ? (
+          {
+            this.generateDownloadUrls &&
+            this.generateDownloadUrls.pending &&
+            !this.generateDownloadUrls.loaded && (
+              <div>
+                <Row type="flex" justify="center">
+                  <br />
+                  <Spin />
+                </Row>
+              </div>
+            )
+          }
+          {
+            this.generateDownloadUrls && this.generateDownloadUrls.loaded && (
               <Input
                 type="textarea"
                 className={styles.generateDownloadUrlInput}
                 rows={10}
                 value={this.generateDownloadUrls.value.map(u => u.url).join('\n')} />
             )
-            : <div><Row type="flex" justify="center"><br /><Spin /></Row></div>)
+          }
+          {
+            this.generateDownloadUrls && this.generateDownloadUrls.error && (
+              <Alert type="error" message={this.generateDownloadUrls.error} />
+            )
           }
         </Modal>
         <Modal
