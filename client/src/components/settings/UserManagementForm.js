@@ -516,7 +516,8 @@ export default class UserManagementForm extends React.Component {
     );
   };
 
-  deleteRoleConfirm = (role) => {
+  deleteRoleConfirm = (e, role) => {
+    e.stopPropagation();
     const deleteRole = async () => {
       const hide = message.loading('Removing role...', 0);
       const request = new RoleRemove(role.id);
@@ -653,7 +654,7 @@ export default class UserManagementForm extends React.Component {
                 <Button size="small" onClick={() => this.openEditGroupDialog(role)}>
                   <Icon type="edit" />
                 </Button>
-                <Button size="small" type="danger" onClick={() => this.deleteRoleConfirm(role)}>
+                <Button size="small" type="danger" onClick={(e) => this.deleteRoleConfirm(e, role)}>
                   <Icon type="delete" />
                 </Button>
               </Row>
