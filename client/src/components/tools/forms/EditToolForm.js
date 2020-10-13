@@ -75,7 +75,6 @@ import RunCapabilities, {
   singularityEnabled,
   systemDEnabled,
   moduleEnabled,
-  getRunCapabilitiesSkippedParameters,
   RUN_CAPABILITIES
 } from '../../pipelines/launch/form/utilities/run-capabilities';
 
@@ -765,7 +764,11 @@ export default class EditToolForm extends React.Component {
       return toolCommandValue !== formCommandValue;
     };
     const limitMountsFieldChanged = () => {
-      return this.defaultLimitMounts !== this.props.form.getFieldValue('limitMounts');
+      const fieldValue = this.props.form.getFieldValue('limitMounts');
+      if (!this.defaultLimitMounts && !fieldValue) {
+        return false;
+      }
+      return this.defaultLimitMounts !== fieldValue;
     };
     const cloudRegionFieldChanged = () => {
       return this.getCloudRegionInitialValue() !== this.props.form.getFieldValue('cloudRegionId');
@@ -1343,11 +1346,7 @@ export default class EditToolForm extends React.Component {
             getSystemParameterDisabledState={
               (parameterName) => getSystemParameterDisabledState(this, parameterName)
             }
-            skippedSystemParameters={[
-              ...getSkippedSystemParametersList(this),
-              ...getRunCapabilitiesSkippedParameters()
-            ]}
-            hiddenParameters={getRunCapabilitiesSkippedParameters()}
+            skippedSystemParameters={getSkippedSystemParametersList(this)}
             value={this.defaultSystemProperties}
             onInitialized={this.onEditToolFormSystemParametersInitialized} />
           {this.renderSeparator('Custom parameters')}

@@ -33,8 +33,7 @@ export default class EditToolFormParameters extends React.Component {
     readOnly: PropTypes.bool,
     isSystemParameters: PropTypes.bool,
     getSystemParameterDisabledState: PropTypes.func,
-    skippedSystemParameters: PropTypes.array,
-    hiddenParameters: PropTypes.array
+    skippedSystemParameters: PropTypes.array
   };
 
   state = {
@@ -177,8 +176,9 @@ export default class EditToolFormParameters extends React.Component {
         disabled={this.props.readOnly}
         checked={`${parameter.value}` === 'true'}
         style={Object.assign({marginLeft: 5, marginTop: 4}, isError ? {color: 'red'} : {})}
-        onChange={onChange}>
-        {parameter.value ? 'Enabled' : 'Disabled'}
+        onChange={onChange}
+      >
+        Enabled
       </Checkbox>
     );
   };
@@ -212,10 +212,6 @@ export default class EditToolFormParameters extends React.Component {
   renderParameter = (parameter, index) => {
     if (this.props.isSystemParameters && this.props.getSystemParameterDisabledState &&
       this.props.getSystemParameterDisabledState(parameter.name || '')) {
-      return null;
-    }
-    if (this.props.isSystemParameters && this.props.hiddenParameters &&
-      this.props.hiddenParameters.includes(parameter.name || '')) {
       return null;
     }
 
@@ -405,9 +401,7 @@ export default class EditToolFormParameters extends React.Component {
   }
 
   getValues = () => {
-    return this.state.parameters.filter(p => (
-      !this.props.isSystemParameters && !this.props.hiddenParameters.includes(p.name)
-    ));
+    return this.state.parameters;
   };
 
   @computed

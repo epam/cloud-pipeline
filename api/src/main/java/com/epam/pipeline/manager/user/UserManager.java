@@ -18,13 +18,16 @@ package com.epam.pipeline.manager.user;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.info.UserInfo;
+import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.JwtRawToken;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.GroupStatus;
@@ -33,6 +36,7 @@ import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -54,6 +58,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -86,6 +91,9 @@ public class UserManager {
 
     @Autowired
     private DataStorageValidator storageValidator;
+
+    @Autowired
+    private MetadataManager metadataManager;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser createUser(String name, List<Long> roles,
@@ -167,7 +175,17 @@ public class UserManager {
     }
 
     public Collection<PipelineUserWithStoragePath> loadAllUsersWithDataStoragePath() {
-        return userDao.loadAllUsersWithDataStoragePath();
+        final Collection<PipelineUserWithStoragePath> users = userDao.loadAllUsersWithDataStoragePath();
+        final Map<Long, Map<String, PipeConfValue>> metadata = ListUtils.emptyIfNull(
+                metadataManager.listMetadataItems(users.stream()
+                        .map(user -> new EntityVO(user.getId(), AclClass.PIPELINE_USER))
+                        .collect(Collectors.toList())))
+                .stream()
+                .collect(HashMap::new,
+                    (map, entry) -> map.put(entry.getEntity().getEntityId(), entry.getData()),
+                    HashMap::putAll);
+        users.forEach(user -> user.setMetadata(metadata.get(user.getId())));
+        return users;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -377,7 +395,9 @@ public class UserManager {
 
     public byte[] exportUsers(final PipelineUserExportVO attr) {
         final Collection<PipelineUserWithStoragePath> users = loadAllUsersWithDataStoragePath();
-        return new UserExporter().exportUsers(attr, users).getBytes(Charset.defaultCharset());
+        final List<String> sensitiveKeys = preferenceManager.getPreference(
+                SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
+        return new UserExporter().exportUsers(attr, users, sensitiveKeys).getBytes(Charset.defaultCharset());
     }
 
     private void checkAllRolesPresent(List<Long> roles) {

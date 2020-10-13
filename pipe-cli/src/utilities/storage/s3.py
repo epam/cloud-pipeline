@@ -827,8 +827,7 @@ class S3BucketOperations(object):
                 access_key=credentials.access_key_id,
                 secret_key=credentials.secret_key,
                 token=credentials.session_token,
-                expiry_time=credentials.expiration,
-                region_name=credentials.region)
+                expiry_time=credentials.expiration)
 
         fresh_metadata = refresh()
         session_credentials = RefreshableCredentials.create_from_metadata(
@@ -838,7 +837,7 @@ class S3BucketOperations(object):
 
         s = get_session()
         s._credentials = session_credentials
-        return Session(botocore_session=s, region_name=fresh_metadata['region_name'])
+        return Session(botocore_session=s)
 
     @classmethod
     def get_transfer_between_buckets_manager(cls, source_wrapper, destination_wrapper, command):

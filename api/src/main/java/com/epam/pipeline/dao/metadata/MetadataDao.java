@@ -24,9 +24,9 @@ import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Required;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -37,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -63,9 +64,7 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     private String searchMetadataByClassAndKeyValueQuery;
     private String loadUniqueValuesFromEntitiesAttributes;
     private String createMetadataDictionary;
-
-    @Value("#{'${metadata.sensitive.keys}'.split(',')}")
-    private List<String> sensitiveMetadataKeys;
+    private String loadMetadataKeysQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void registerMetadataItem(MetadataEntry metadataEntry) {
@@ -148,9 +147,10 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
                         entityClass.name(), MetadataDao.convertDataToJsonStringForQuery(indicator));
     }
 
-    public List<CategoricalAttribute> buildFullMetadataDict() {
+    public List<CategoricalAttribute> buildFullMetadataDict(final List<String> sensitiveMetadataKeys) {
+        //TODO: fix for case with empty sensitiveMetadataKeys
         final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(LIST_PARAMETER, sensitiveMetadataKeys);
+        params.addValue(LIST_PARAMETER, ListUtils.emptyIfNull(sensitiveMetadataKeys));
         final List<Pair<String, String>> allAttributeValues = getNamedParameterJdbcTemplate()
             .query(createMetadataDictionary, params, MetadataParameters.getMetadataKeyValueMapper());
         return CategoricalAttributeDao.convertPairsToAttributesList(allAttributeValues);
@@ -158,6 +158,13 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
 
     public static String convertDataToJsonStringForQuery(Map<String, PipeConfValue> data) {
         return JsonMapper.convertDataToJsonStringForQuery(data);
+    }
+
+    public Set<String> loadMetadataKeys(final AclClass entityClass) {
+        final List<String> result = ListUtils.emptyIfNull(
+                getJdbcTemplate()
+                        .queryForList(loadMetadataKeysQuery, String.class, entityClass.name()));
+        return new HashSet<>(result);
     }
 
     private String convertEntitiesToString(String query, List<EntityVO> entities) {
@@ -220,6 +227,11 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setCreateMetadataDictionary(final String createMetadataDictionary) {
         this.createMetadataDictionary = createMetadataDictionary;
+    }
+
+    @Required
+    public void setLoadMetadataKeysQuery(final String loadMetadataKeysQuery) {
+        this.loadMetadataKeysQuery = loadMetadataKeysQuery;
     }
 
     public enum MetadataParameters {

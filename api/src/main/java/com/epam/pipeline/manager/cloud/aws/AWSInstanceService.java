@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -200,7 +200,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     public Map<String, String> buildContainerCloudEnvVars(final AwsRegion region) {
         final Map<String, String> envVars = new HashMap<>();
         envVars.put(SystemParams.CLOUD_REGION_PREFIX + region.getId(), region.getRegionCode());
-        final AWSCredentials credentials = AWSUtils.getCredentialsProvider(region).getCredentials();
+        final AWSCredentials credentials = AWSUtils.getCredentialsProvider(region.getProfile()).getCredentials();
         envVars.put(SystemParams.CLOUD_ACCOUNT_PREFIX + region.getId(), credentials.getAWSAccessKeyId());
         envVars.put(SystemParams.CLOUD_ACCOUNT_KEY_PREFIX + region.getId(), credentials.getAWSSecretKey());
         envVars.put(SystemParams.CLOUD_PROVIDER_PREFIX + region.getId(), region.getProvider().name());

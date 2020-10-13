@@ -41,6 +41,9 @@ public final class KubernetesConstants {
     public static final String CP_CAP_DIND_NATIVE = "CP_CAP_DIND_NATIVE";
     public static final String CP_CAP_SYSTEMD_CONTAINER = "CP_CAP_SYSTEMD_CONTAINER";
 
+    public static final String KUBE_NAME_REGEXP = "[^a-z0-9\\-]+";
+    public static final String KUBE_NAME_FULL_REGEXP = "[^a-zA-Z0-9\\-._]+";
+
     protected static final String POD_SUCCEEDED_PHASE = "Succeeded";
     protected static final String POD_FAILED_PHASE = "Failed";
     protected static final String NODE_LOST = "NodeLost";

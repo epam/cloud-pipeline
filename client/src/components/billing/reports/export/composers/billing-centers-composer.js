@@ -23,7 +23,14 @@ function compose (csv, discounts, exportOptions, resources) {
   if (format !== ExportFormats.csvCostCenters) {
     return Promise.resolve();
   }
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
+    if (resources && resources.length) {
+      try {
+        await Promise.all(resources.map(r => Promise.all(r.map(rr => rr.fetch()))));
+      } catch (e) {
+        reject(e);
+      }
+    }
     if (
       !resources ||
       resources.length === 0 ||

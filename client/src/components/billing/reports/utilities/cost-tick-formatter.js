@@ -16,9 +16,9 @@
 
 import numberFormatter from './number-formatter';
 
-export default function (value) {
+export default function (value, separator = ',') {
   if (isNaN(value)) {
     return value;
   }
-  return `$${numberFormatter(+value)}`;
+  return `$${numberFormatter(+value, separator)}`;
 }

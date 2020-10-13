@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder
 import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
 import com.amazonaws.services.securitytoken.model.Credentials;
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
@@ -35,11 +37,15 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -73,6 +79,7 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
 
     private final CloudRegionManager cloudRegionManager;
     private final PreferenceManager preferenceManager;
+    private final MessageHelper messageHelper;
 
     @Override
     public DataStorageType getStorageType() {
@@ -80,17 +87,19 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
     }
 
     @Override
-    public TemporaryCredentials generate(final List<DataStorageAction> actions, final S3bucketDataStorage dataStorage) {
-        final AwsRegion awsRegion = cloudRegionManager.getAwsRegion(dataStorage);
+    public TemporaryCredentials generate(final List<DataStorageAction> actions,
+                                         final List<S3bucketDataStorage> storages) {
+        final Integer duration = preferenceManager.getPreference(
+                SystemPreferences.DATA_STORAGE_TEMP_CREDENTIALS_DURATION);
+        final List<Pair<S3bucketDataStorage, AwsRegion>> storagesWithRegions = storages.stream()
+                .map(storage -> new ImmutablePair<>(storage, cloudRegionManager.getAwsRegion(storage)))
+                .collect(Collectors.toList());
 
-        final Integer duration =
-                preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_TEMP_CREDENTIALS_DURATION);
-        final String role = Optional.ofNullable(dataStorage.getTempCredentialsRole())
-                .orElse(awsRegion.getTempCredentialsRole());
+        final String role = buildRole(storagesWithRegions);
         final String sessionName = "SessionID-" + PasswordGenerator.generateRandomString(10);
+        final String profile = buildProfile(storagesWithRegions);
+        final String policy = createPolicyWithPermissions(actions, buildKmsArns(storagesWithRegions));
 
-        //TODO: handle situation when we have actions for different storages with different KMS keys
-        final String policy = createPolicyWithPermissions(actions, AWSUtils.getKeyArnValue(dataStorage, awsRegion));
         final AssumeRoleRequest assumeRoleRequest = new AssumeRoleRequest()
                 .withDurationSeconds(duration)
                 .withPolicy(policy)
@@ -98,8 +107,7 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
                 .withRoleArn(role);
 
         final AssumeRoleResult assumeRoleResult = AWSSecurityTokenServiceClientBuilder.standard()
-                .withRegion(awsRegion.getRegionCode())
-                .withCredentials(AWSUtils.getCredentialsProvider(awsRegion))
+                .withCredentials(AWSUtils.getCredentialsProvider(profile))
                 .build()
                 .assumeRole(assumeRoleRequest);
         final Credentials resultingCredentials = assumeRoleResult.getCredentials();
@@ -110,7 +118,6 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
                 .token(resultingCredentials.getSessionToken())
                 .expirationTime(TemporaryCredentialsGenerator
                         .expirationTimeWithUTC(resultingCredentials.getExpiration()))
-                .region(awsRegion.getRegionCode())
                 .build();
     }
 
@@ -119,22 +126,24 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
         return cloudRegionManager.getAwsRegion(dataStorage);
     }
 
-    private String createPolicyWithPermissions(final List<DataStorageAction> actions, final String kmsArn) {
+    private String createPolicyWithPermissions(final List<DataStorageAction> actions, final List<String> kmsArns) {
         final ObjectNode resultPolicy = JsonNodeFactory.instance.objectNode();
         resultPolicy.put("Version", "2012-10-17");
         final ArrayNode statements = resultPolicy.putArray("Statement");
-        if (StringUtils.isNotBlank(kmsArn)) {
-            addKmsActionToStatement(kmsArn, statements);
-        }
-        for (DataStorageAction action : actions) {
-            if (action.isList() || action.isRead() || action.isWrite()) {
-                addListingPermissions(action, statements);
-            }
-            if (action.isRead() || action.isWrite()) {
-                addActionToStatement(action, statements);
-            }
-        }
+        ListUtils.emptyIfNull(kmsArns)
+                .forEach(kmsArn -> addKmsActionToStatement(kmsArn, statements));
+        ListUtils.emptyIfNull(actions)
+                .forEach(action -> addActionsToStatement(action, statements));
         return resultPolicy.toString();
+    }
+
+    private void addActionsToStatement(final DataStorageAction action, final ArrayNode statements) {
+        if (action.isList() || action.isRead() || action.isWrite()) {
+            addListingPermissions(action, statements);
+        }
+        if (action.isRead() || action.isWrite()) {
+            addActionToStatement(action, statements);
+        }
     }
 
     private void addListingPermissions(final DataStorageAction action, final ArrayNode statements) {
@@ -201,5 +210,33 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
         actions.add(KMS_DESCRIBE_KEY_ACTION);
         statement.put(RESOURCE, kmsArn);
         statements.add(statement);
+    }
+
+    private List<String> buildKmsArns(final List<Pair<S3bucketDataStorage, AwsRegion>> storagesWithRegions) {
+        return storagesWithRegions.stream()
+                .map(pair -> AWSUtils.getKeyArnValue(pair.getLeft(), pair.getRight()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    private String buildRole(final List<Pair<S3bucketDataStorage, AwsRegion>> storagesWithRegions) {
+        final List<String> roles = storagesWithRegions.stream()
+                .map(pair -> AWSUtils.getRoleValue(pair.getLeft(), pair.getRight()))
+                .distinct()
+                .collect(Collectors.toList());
+        Assert.state(roles.size() == 1,
+                messageHelper.getMessage(MessageConstants.ERROR_AWS_S3_ROLE_UNIQUENESS));
+        return roles.get(0);
+    }
+
+    private String buildProfile(final List<Pair<S3bucketDataStorage, AwsRegion>> storagesWithRegions) {
+        final List<String> profiles = storagesWithRegions.stream()
+                .map(Pair::getRight)
+                .map(AwsRegion::getProfile)
+                .distinct()
+                .collect(Collectors.toList());
+        Assert.state(profiles.size() == 1,
+                messageHelper.getMessage(MessageConstants.ERROR_AWS_PROFILE_UNIQUENESS));
+        return profiles.get(0);
     }
 }

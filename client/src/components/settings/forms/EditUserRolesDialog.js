@@ -250,8 +250,13 @@ export default class EditUserRolesDialog extends React.Component {
   }
 
   get defaultStorageId () {
+    const {readOnly, dataStorages} = this.props;
     const {defaultStorageId} = this.state;
-    if (defaultStorageId) {
+    if (defaultStorageId && dataStorages.loaded) {
+      const dataStorage = (dataStorages.value || []).find(d => d.id === +defaultStorageId);
+      if (!dataStorage) {
+        return readOnly ? `Access is denied` : undefined;
+      }
       return `${defaultStorageId}`;
     }
     return undefined;
@@ -464,7 +469,7 @@ export default class EditUserRolesDialog extends React.Component {
     const {metadata} = this.state;
     return (
       <Modal
-        width="50%"
+        width="80%"
         closable={false}
         title={(
           <div>
@@ -530,7 +535,7 @@ export default class EditUserRolesDialog extends React.Component {
               size: {
                 priority: 0,
                 percentMinimum: 33,
-                percentDefault: 75
+                percentDefault: 60
               }
             },
             {
@@ -538,7 +543,7 @@ export default class EditUserRolesDialog extends React.Component {
               size: {
                 keepPreviousSize: true,
                 priority: 2,
-                percentDefault: 25,
+                percentDefault: 40,
                 pxMinimum: 200
               }
             }

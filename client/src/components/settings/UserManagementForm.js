@@ -51,11 +51,12 @@ import roleModel from '../../utils/roleModel';
 const PAGE_SIZE = 20;
 
 @roleModel.authenticationInfo
-@inject('dataStorages', 'users')
-@inject(({users, authenticatedUserInfo}) => ({
+@inject('dataStorages', 'users', 'userMetadataKeys')
+@inject(({users, authenticatedUserInfo, userMetadataKeys}) => ({
   users,
   authenticatedUserInfo,
-  roles: new Roles()
+  roles: new Roles(),
+  userMetadataKeys
 }))
 @observer
 export default class UserManagementForm extends React.Component {
@@ -86,7 +87,8 @@ export default class UserManagementForm extends React.Component {
     createGroupDefault: false,
     createGroupDefaultDataStorage: null,
     operationInProgress: false,
-    userDataToExport: []
+    userDataToExport: [],
+    metadataKeys: []
   };
 
   get isAdmin () {
@@ -707,21 +709,28 @@ export default class UserManagementForm extends React.Component {
   };
 
   openExportUserDialog = () => {
-    this.setState({
-      exportUserDialogVisible: true,
-      userDataToExport: DefaultValues
-    });
+    const hide = message.loading('Fetching attributes list...', 0);
+    this.props.userMetadataKeys.fetch()
+      .then(() => {
+        hide();
+        this.setState({
+          exportUserDialogVisible: true,
+          userDataToExport: DefaultValues,
+          metadataKeys: []
+        });
+      });
   };
 
   closeExportUserDialog = () => {
     this.setState({
       exportUserDialogVisible: false,
-      userDataToExport: []
+      userDataToExport: [],
+      metadataKeys: []
     });
   };
 
-  handleExportUsersChange = (checkedValues) => {
-    this.setState({userDataToExport: checkedValues});
+  handleExportUsersChange = (checkedValues, metadataKeys) => {
+    this.setState({userDataToExport: checkedValues, metadataKeys});
   };
 
   createUser = async ({userName, defaultStorageId, roleIds}) => {
@@ -804,12 +813,19 @@ export default class UserManagementForm extends React.Component {
   };
 
   render () {
+    if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
+      return null;
+    }
     if (!this.isReader && !this.isAdmin) {
       return (
         <Alert type="error" message="Access is denied" />
       );
     }
-    const {exportUserDialogVisible, userDataToExport} = this.state;
+    const {
+      exportUserDialogVisible,
+      userDataToExport,
+      metadataKeys
+    } = this.state;
     return (
       <Tabs className="user-management-tabs" style={{width: '100%', overflow: 'auto'}} type="card">
         <Tabs.TabPane tab="Users" key="users">
@@ -825,9 +841,15 @@ export default class UserManagementForm extends React.Component {
           <ExportUserForm
             visible={exportUserDialogVisible}
             values={userDataToExport}
+            selectedMetadataKeys={metadataKeys}
             onChange={this.handleExportUsersChange}
             onCancel={this.closeExportUserDialog}
             onSubmit={doExport}
+            metadataKeys={
+              this.props.userMetadataKeys.loaded
+                ? (this.props.userMetadataKeys.value || []).map(o => o)
+                : []
+            }
           />
           <CreateUserForm
             roles={this.props.roles.loaded ? (this.props.roles.value || []).map(r => r) : []}

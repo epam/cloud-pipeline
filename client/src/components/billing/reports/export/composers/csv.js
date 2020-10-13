@@ -81,11 +81,15 @@ function CSV () {
         this.addSpace = true;
       }
     },
-    addTable: function (name, columns, data, nameColumn = '') {
+    addTable: function (name, headerColumns, columns, data, nameColumn = '') {
       if (this.addSpace) {
         this.rawLines.push([]);
       }
-      this.rawLines.push([name]);
+      if (headerColumns && headerColumns.length > 0) {
+        this.rawLines.push([name].concat(headerColumns));
+      } else {
+        this.rawLines.push([name]);
+      }
       this.rawLines.push([nameColumn].concat(columns));
       data.forEach((item) => {
         const line = [item.name];
