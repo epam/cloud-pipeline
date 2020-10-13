@@ -20,7 +20,7 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
-import com.epam.pipeline.manager.configuration.RunConfigurationApiService;
+import com.epam.pipeline.acl.configuration.RunConfigurationApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
