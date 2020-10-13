@@ -1346,6 +1346,7 @@ export default class DataStorage extends React.Component {
                     title={'Upload'}
                     storageId={this.props.storageId}
                     path={this.props.path}
+                    storageInfo={this.props.info.value}
                     // synchronous
                     uploadToS3={this.props.info.value.type === 'S3'}
                     uploadToNFS={this.props.info.value.type === 'NFS'}
