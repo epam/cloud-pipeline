@@ -102,6 +102,29 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     @AfterClass(alwaysRun = true)
     public void deletingEntities() {
         loginAs(admin);
+        setMaskForUser(user.login, instanceTypesMask, "");
+        setMaskForUser(user.login, toolInstanceTypesMask, "");
+        setMaskForRole(testRole, instanceTypesMask, "");
+        setClusterAllowedStringPreference(clusterAllowedInstanceTypes, defaultClusterAllowedInstanceTypes);
+        setClusterAllowedStringPreference(clusterAllowedInstanceTypesDocker, defaultClusterAllowedInstanceTypes);
+        setClusterAllowedStringPreference(clusterAllowedPriceTypes, defaultClusterAllowedPriceTypes);
+        openEditUserTab(user.login)
+                .clearAllowedPriceTypeField()
+                .ok();
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToRoles()
+                .editRole(testRole)
+                .clearAllowedPriceTypeField()
+                .ok();
+        tools()
+                .performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
+                        tool.showInstanceManagement(instanceManagement ->
+                                instanceManagement
+                                        .addAllowedToolInstanceTypesMask("")
+                                        .clearAllowedPriceTypeField()
+                                        .sleep(2, SECONDS)));
         library()
                 .removeNotEmptyFolder(folder);
         logout();
