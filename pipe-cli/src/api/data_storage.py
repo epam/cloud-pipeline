@@ -89,7 +89,7 @@ class DataStorage(API):
         api = cls.instance()
         response_data = api.call('datastorage/findByPath?id={}'.format(path), None)
         if 'payload' in response_data:
-            return DataStorageModel.load(response_data['payload'])
+            return DataStorageModel.load_with_region(response_data['payload'], cls.get_region_info())
         return None
 
     @classmethod
@@ -346,6 +346,20 @@ class DataStorage(API):
             raise RuntimeError(response_data['message'])
         else:
             raise RuntimeError("Failed to load usage statistic for storage '{}'.".format(name))
+
+    @classmethod
+    def get_region_info(cls):
+        api = cls.instance()
+        endpoint = 'cloud/region/info'
+        response_data = api.call(endpoint, None)
+        if 'payload' in response_data:
+            return response_data['payload']
+        if response_data['status'] == 'OK':
+            return []
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        else:
+            raise RuntimeError("Failed to load regions info")
 
 
 def __create_policy__(sts_duration, lts_duration, versioning, backup_duration):

@@ -44,11 +44,16 @@ from src.utilities.storage.common import StorageOperations, AbstractListingManag
 from src.config import Config
 
 
+import boto3
+boto3.set_stream_logger(name='botocore')
+
+
 class StorageItemManager(object):
 
-    def __init__(self, session, bucket=None):
+    def __init__(self, session, bucket=None, region_name=None):
         self.session = session
-        self.s3 = session.resource('s3', config=S3BucketOperations.get_proxy_config())
+        self.region_name = region_name
+        self.s3 = session.resource('s3', config=S3BucketOperations.get_proxy_config(), region_name=self.region_name)
         self.s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         if bucket:
@@ -71,7 +76,7 @@ class StorageItemManager(object):
         return '&'.join(formatted_tags)
 
     def _get_client(self):
-        client = self.session.client('s3', config=S3BucketOperations.get_proxy_config())
+        client = self.session.client('s3', config=S3BucketOperations.get_proxy_config(), region_name=self.region_name)
         client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         return client
@@ -95,8 +100,8 @@ class StorageItemManager(object):
 
 class DownloadManager(StorageItemManager, AbstractTransferManager):
 
-    def __init__(self, session, bucket):
-        super(DownloadManager, self).__init__(session, bucket=bucket)
+    def __init__(self, session, bucket, region_name=None):
+        super(DownloadManager, self).__init__(session, bucket=bucket, region_name=region_name)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None,
                  relative_path=None, clean=False, quiet=False, size=None, tags=None, skip_existing=False, lock=None):
@@ -126,8 +131,8 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
 
 class UploadManager(StorageItemManager, AbstractTransferManager):
 
-    def __init__(self, session, bucket):
-        super(UploadManager, self).__init__(session, bucket=bucket)
+    def __init__(self, session, bucket, region_name=None):
+        super(UploadManager, self).__init__(session, bucket=bucket, region_name=region_name)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
                  clean=False, quiet=False, size=None, tags=(), skip_existing=False, lock=None):
@@ -161,8 +166,8 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
 
 class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManager):
 
-    def __init__(self, session, bucket):
-        super(TransferFromHttpOrFtpToS3Manager, self).__init__(session, bucket=bucket)
+    def __init__(self, session, bucket, region_name=None):
+        super(TransferFromHttpOrFtpToS3Manager, self).__init__(session, bucket=bucket, region_name=region_name)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
                  clean=False, quiet=False, size=None, tags=(), skip_existing=False, lock=None):
@@ -201,18 +206,25 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
 
 class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager):
 
-    def __init__(self, session, bucket):
-        super(TransferBetweenBucketsManager, self).__init__(session, bucket=bucket)
+    def __init__(self, session, bucket, region_name=None):
+        super(TransferBetweenBucketsManager, self).__init__(session, bucket=bucket, region_name=region_name)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
                  quiet=False, size=None, tags=(), skip_existing=False, lock=None):
         # checked is bucket and file
         source_bucket = source_wrapper.bucket.path
+        source_region = source_wrapper.bucket.region
         destination_key = S3BucketOperations.normalize_s3_path(destination_wrapper, relative_path)
         copy_source = {
             'Bucket': source_bucket,
             'Key': path
         }
+
+        source_s3 = self.session.resource('s3', config=S3BucketOperations.get_proxy_config(), region_name=source_region)
+        source_s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
+            max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
+        source_client = source_s3.meta.client
+
         if skip_existing:
             from_size = self.get_s3_file_size(source_bucket, path)
             to_size = self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
@@ -220,7 +232,8 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
                 if not quiet:
                     click.echo('Skipping file %s since it exists in the destination %s' % (path, destination_key))
                 return
-        object_tags = ObjectTaggingManager.get_object_tagging(ObjectTaggingManager(self.session, source_bucket), path)
+        object_tags = ObjectTaggingManager.get_object_tagging(
+            ObjectTaggingManager(self.session, source_bucket, source_region), path)
         if not tags and object_tags:
             tags = self.convert_object_tags(object_tags)
         if not self.has_required_tag(tags, 'CP_SOURCE'):
@@ -234,9 +247,9 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         }
         if StorageItemManager.show_progress(quiet, size, lock):
             self.bucket.copy(copy_source, destination_key, Callback=ProgressPercentage(relative_path, size),
-                             ExtraArgs=extra_args)
+                             ExtraArgs=extra_args, SourceClient=source_client)
         else:
-            self.bucket.copy(copy_source, destination_key, ExtraArgs=extra_args)
+            self.bucket.copy(copy_source, destination_key, ExtraArgs=extra_args, SourceClient=source_client)
         if clean:
             source_wrapper.delete_item(path)
 
@@ -258,8 +271,8 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
 
 class RestoreManager(StorageItemManager, AbstractRestoreManager):
 
-    def __init__(self, bucket, session):
-        super(RestoreManager, self).__init__(session)
+    def __init__(self, bucket, session, region_name=None):
+        super(RestoreManager, self).__init__(session, region_name=region_name)
         self.bucket = bucket
 
     def restore_version(self, version, exclude=[], include=[], recursive=False):
@@ -362,8 +375,8 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
 
 
 class DeleteManager(StorageItemManager, AbstractDeleteManager):
-    def __init__(self, bucket, session):
-        super(DeleteManager, self).__init__(session)
+    def __init__(self, bucket, session, region_name=None):
+        super(DeleteManager, self).__init__(session, region_name=region_name)
         self.bucket = bucket
 
     def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
@@ -406,8 +419,8 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
 class ListingManager(StorageItemManager, AbstractListingManager):
     DEFAULT_PAGE_SIZE = StorageOperations.DEFAULT_PAGE_SIZE
 
-    def __init__(self, bucket, session, show_versions=False):
-        super(ListingManager, self).__init__(session)
+    def __init__(self, bucket, session, show_versions=False, region_name=None):
+        super(ListingManager, self).__init__(session, region_name=region_name)
         self.bucket = bucket
         self.show_versions = show_versions
 
@@ -601,7 +614,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         return S3BucketOperations.get_items(self.bucket, session=self.session)
 
     def get_file_tags(self, relative_path):
-        return ObjectTaggingManager.get_object_tagging(ObjectTaggingManager(self.session, self.bucket), relative_path)
+        return ObjectTaggingManager.get_object_tagging(ObjectTaggingManager(
+            self.session, self.bucket, self.region_name), relative_path)
 
     @staticmethod
     def need_to_stop_paging(page, page_size, items_count):
@@ -614,8 +628,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
 
 class ObjectTaggingManager(StorageItemManager):
 
-    def __init__(self, session, bucket):
-        super(ObjectTaggingManager, self).__init__(session)
+    def __init__(self, session, bucket, region_name=None):
+        super(ObjectTaggingManager, self).__init__(session, region_name=region_name)
         self.bucket = bucket
 
     def get_object_tagging(self, source):
@@ -784,17 +798,18 @@ class S3BucketOperations(object):
     @classmethod
     def get_list_manager(cls, source_wrapper, show_versions=False):
         session = cls.assumed_session(source_wrapper.bucket.identifier, None, 'ls', versioning=show_versions)
-        return ListingManager(source_wrapper, session, show_versions=show_versions)
+        return ListingManager(source_wrapper, session, show_versions=show_versions,
+                              region_name=source_wrapper.bucket.region)
 
     @classmethod
     def get_delete_manager(cls, source_wrapper, versioning=False):
         session = cls.assumed_session(source_wrapper.bucket.identifier, None, 'mv', versioning=versioning)
-        return DeleteManager(source_wrapper, session)
+        return DeleteManager(source_wrapper, session, source_wrapper.bucket.region)
 
     @classmethod
     def get_restore_manager(cls, source_wrapper):
         session = cls.assumed_session(source_wrapper.bucket.identifier, None, 'mv', versioning=True)
-        return RestoreManager(source_wrapper, session)
+        return RestoreManager(source_wrapper, session, source_wrapper.bucket.region)
 
     @classmethod
     def delete_item(cls, storage_wrapper, relative_path, session=None):
@@ -847,7 +862,7 @@ class S3BucketOperations(object):
         # replace session to be able to delete source for move
         source_wrapper.session = session
         destination_bucket = destination_wrapper.bucket.path
-        return TransferBetweenBucketsManager(session, destination_bucket)
+        return TransferBetweenBucketsManager(session, destination_bucket, destination_wrapper.bucket.region)
 
     @classmethod
     def get_download_manager(cls, source_wrapper, destination_wrapper, command):
@@ -856,21 +871,21 @@ class S3BucketOperations(object):
         # replace session to be able to delete source for move
         source_wrapper.session = session
         source_bucket = source_wrapper.bucket.path
-        return DownloadManager(session, source_bucket)
+        return DownloadManager(session, source_bucket, source_wrapper.bucket.region)
 
     @classmethod
     def get_upload_manager(cls, source_wrapper, destination_wrapper, command):
         destination_id = destination_wrapper.bucket.identifier
         session = cls.assumed_session(None, destination_id, command)
         destination_bucket = destination_wrapper.bucket.path
-        return UploadManager(session, destination_bucket)
+        return UploadManager(session, destination_bucket, destination_wrapper.bucket.region)
 
     @classmethod
     def get_transfer_from_http_or_ftp_manager(cls, source_wrapper, destination_wrapper, command):
         destination_id = destination_wrapper.bucket.identifier
         session = cls.assumed_session(None, destination_id, command)
         destination_bucket = destination_wrapper.bucket.path
-        return TransferFromHttpOrFtpToS3Manager(session, destination_bucket)
+        return TransferFromHttpOrFtpToS3Manager(session, destination_bucket, destination_wrapper.bucket.region)
 
     @classmethod
     def get_full_path(cls, path, param):
