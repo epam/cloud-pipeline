@@ -252,6 +252,10 @@ public class LaunchLimitMountsTest extends AbstractAutoRemovingPipelineRunningTe
                 .searchStorage(storage1)
                 .selectStorage(storage1)
                 .ok()
+                .clickAddSystemParameter()
+                .selectSystemParameters("CP_S3_FUSE_TYPE")
+                .ok()
+                .inputSystemParameterValue("CP_S3_FUSE_TYPE", "pipefuse")
                 .launch(this)
                 .showLog(getRunId())
                 .expandTab(PARAMETERS)
@@ -267,7 +271,7 @@ public class LaunchLimitMountsTest extends AbstractAutoRemovingPipelineRunningTe
                 .ssh(shell -> shell
                         .execute("ls /cloud-data/")
                         .assertOutputContains(storage1.toLowerCase())
-                        .assertPageDoesNotContain(storageSensitive.toLowerCase())
+                        .assertOutputContains(storageSensitive.toLowerCase())
                         .close());
     }
 
