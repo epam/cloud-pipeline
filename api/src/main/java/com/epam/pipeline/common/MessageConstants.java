@@ -537,6 +537,8 @@ public final class MessageConstants {
     public static final String ERROR_LUSTRE_NOT_FOUND = "error.lustre.not.found.for.run";
     public static final String ERROR_LUSTRE_NOT_CREATED = "error.lustre.not.created.for.run";
     public static final String ERROR_LUSTRE_REGION_NOT_SUPPORTED = "error.lustre.region.not.supported";
+    public static final String ERROR_LUSTRE_MISSING_CONFIG = "error.lustre.missing.config";
+    public static final String ERROR_LUSTRE_MISSING_INSTANCE = "error.lustre.missing.instance";
 
     private MessageConstants() {
         // no-op

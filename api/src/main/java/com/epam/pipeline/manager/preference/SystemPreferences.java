@@ -674,14 +674,8 @@ public class SystemPreferences {
             "lustre.fs.backup.retention.days", 7, LUSTRE_GROUP, pass);
     public static final IntPreference LUSTRE_FS_DEFAULT_THROUGHPUT = new IntPreference(
             "lustre.fs.default.throughput", 50, LUSTRE_GROUP, pass);
-    public static final ObjectPreference<List<String>> LUSTRE_FS_VPC_ID = new ObjectPreference<>(
-            "lustre.fs.vpc.id", null, new TypeReference<List<String>>() {}, LUSTRE_GROUP,
-            isNullOrValidJson(new TypeReference<List<String>>() {}));
     public static final StringPreference LUSTRE_FS_MOUNT_OPTIONS = new StringPreference(
             "lustre.fs.mount.options", null, LUSTRE_GROUP, pass);
-    public static final ObjectPreference<List<String>> LUSTRE_FS_SECURITY_GROUPS = new ObjectPreference<>(
-            "ustre.fs.security.groups", null, new TypeReference<List<String>>() {}, LUSTRE_GROUP,
-            isNullOrValidJson(new TypeReference<List<String>>() {}));
 
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
