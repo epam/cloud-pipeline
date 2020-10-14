@@ -25,7 +25,7 @@ import com.epam.pipeline.acl.run.RunScheduleApiService;
 import com.epam.pipeline.manager.cluster.ClusterApiService;
 import com.epam.pipeline.manager.configuration.RunConfigurationApiService;
 import com.epam.pipeline.manager.configuration.ServerlessConfigurationApiService;
-import com.epam.pipeline.manager.contextual.ContextualPreferenceApiService;
+import com.epam.pipeline.acl.contextual.ContextualPreferenceApiService;
 import com.epam.pipeline.manager.datastorage.DataStorageApiService;
 import com.epam.pipeline.manager.datastorage.FileShareMountApiService;
 import com.epam.pipeline.manager.docker.DockerRegistryApiService;
