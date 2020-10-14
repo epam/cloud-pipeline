@@ -350,8 +350,7 @@ class DataStorage(API):
     @classmethod
     def get_region_info(cls):
         api = cls.instance()
-        endpoint = 'cloud/region/info'
-        response_data = api.call(endpoint, None)
+        response_data = api.call('cloud/region/info', None)
         if 'payload' in response_data:
             return response_data['payload']
         if response_data['status'] == 'OK':

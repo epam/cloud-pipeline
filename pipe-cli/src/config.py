@@ -137,8 +137,13 @@ class Config(object):
         else:
             return decorator(_func)
 
-    def resolve_proxy(self, target_url=None):
+    def resolve_proxy(self, target_url=None, cross_region=False):
         if not self.proxy:
+            if cross_region:
+                return {
+                    'http': os.environ.get('http_proxy', ''),
+                    'https': os.environ.get('https_proxy', '')
+                }
             return None
         elif self.proxy == PROXY_TYPE_PAC:
             pac_file = PacAPI.get_pac()

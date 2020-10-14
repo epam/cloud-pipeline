@@ -50,10 +50,11 @@ boto3.set_stream_logger(name='botocore')
 
 class StorageItemManager(object):
 
-    def __init__(self, session, bucket=None, region_name=None):
+    def __init__(self, session, bucket=None, region_name=None, cross_region=False):
         self.session = session
         self.region_name = region_name
-        self.s3 = session.resource('s3', config=S3BucketOperations.get_proxy_config(), region_name=self.region_name)
+        self.s3 = session.resource('s3', config=S3BucketOperations.get_proxy_config(cross_region=cross_region),
+                                   region_name=self.region_name)
         self.s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         if bucket:
@@ -206,8 +207,10 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
 
 class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager):
 
-    def __init__(self, session, bucket, region_name=None):
-        super(TransferBetweenBucketsManager, self).__init__(session, bucket=bucket, region_name=region_name)
+    def __init__(self, session, bucket, region_name=None, cross_region=False):
+        self.cross_region = cross_region
+        super(TransferBetweenBucketsManager, self).__init__(session, bucket=bucket, region_name=region_name,
+                                                            cross_region=cross_region)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
                  quiet=False, size=None, tags=(), skip_existing=False, lock=None):
@@ -219,11 +222,7 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
             'Bucket': source_bucket,
             'Key': path
         }
-
-        source_s3 = self.session.resource('s3', config=S3BucketOperations.get_proxy_config(), region_name=source_region)
-        source_s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
-            max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
-        source_client = source_s3.meta.client
+        source_client = self.build_source_client(source_region)
 
         if skip_existing:
             from_size = self.get_s3_file_size(source_bucket, path)
@@ -252,6 +251,15 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
             self.bucket.copy(copy_source, destination_key, ExtraArgs=extra_args, SourceClient=source_client)
         if clean:
             source_wrapper.delete_item(path)
+
+    def build_source_client(self, source_region):
+        source_s3 = self.session.resource('s3',
+                                          config=S3BucketOperations.get_proxy_config(
+                                              cross_region=self.cross_region),
+                                          region_name=source_region)
+        source_s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
+            max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
+        return source_s3.meta.client
 
     @classmethod
     def has_required_tag(cls, tags, tag_name):
@@ -649,13 +657,14 @@ class S3BucketOperations(object):
     __config__ = None
 
     @classmethod
-    def get_proxy_config(cls):
+    def get_proxy_config(cls, cross_region=False):
         if cls.__config__ is None:
             cls.__config__ = Config.instance()
         if cls.__config__.proxy is None:
             return None
         else:
-            return AwsConfig(proxies=cls.__config__.resolve_proxy(target_url=cls.S3_ENDPOINT_URL))
+            return AwsConfig(proxies=cls.__config__.resolve_proxy(target_url=cls.S3_ENDPOINT_URL,
+                                                                  cross_region=cross_region))
 
     @classmethod
     def _get_client(cls, session, region_name=None):
@@ -862,7 +871,9 @@ class S3BucketOperations(object):
         # replace session to be able to delete source for move
         source_wrapper.session = session
         destination_bucket = destination_wrapper.bucket.path
-        return TransferBetweenBucketsManager(session, destination_bucket, destination_wrapper.bucket.region)
+        cross_region = destination_wrapper.bucket.region != source_wrapper.bucket.region
+        return TransferBetweenBucketsManager(session, destination_bucket, destination_wrapper.bucket.region,
+                                             cross_region)
 
     @classmethod
     def get_download_manager(cls, source_wrapper, destination_wrapper, command):
