@@ -25,23 +25,29 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils;
-import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_2;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 
 public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
+
+    private final HttpServletRequest request = new MockHttpServletRequest();
+    private final RunConfiguration runConfiguration = ConfigurationCreatorUtils.getFirstRunConfigurationWithoutParent();
+    private final RunConfigurationVO runConfigurationVO = ConfigurationCreatorUtils.getRunConfigurationVOWithId();
+
+    private final String TEST_STRING = "TEST";
+    private final Long ID_1 = 1L;
+    private final Long ID_2 = 2L;
 
     @Autowired
     private ServerlessConfigurationApiService serverlessConfigurationApiService;
@@ -58,31 +64,12 @@ public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
     @Autowired
     private ConfigurationProviderManager mockConfigurationProviderManager;
 
-    private HttpServletRequest httpServletRequest;
-
-    private final RunConfiguration runConfiguration = ConfigurationCreatorUtils.getRunConfiguration();
-
-    private final RunConfigurationVO runConfigurationVO = ConfigurationCreatorUtils.getRunConfigurationVO();
-
-    @Before
-    public void setUp() {
-        runConfiguration.setId(ID);
-        runConfiguration.setOwner(SIMPLE_USER);
-        runConfiguration.setName(TEST_NAME);
-
-        runConfigurationVO.setId(ID);
-        runConfigurationVO.setOwner(SIMPLE_USER);
-        runConfigurationVO.setName(TEST_NAME_2);
-    }
-
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldReturnUrlForAdmin() {
-        doReturn(TEST_STRING).when(mockServerlessConfigurationManager).generateUrl(ID, TEST_STRING_2);
+        doReturn(TEST_STRING).when(mockServerlessConfigurationManager).generateUrl(ID_1, TEST_STRING);
 
-        String result = serverlessConfigurationApiService.generateUrl(ID, TEST_STRING_2);
-
-        assertThat(result).isEqualTo(TEST_STRING);
+        assertThat(serverlessConfigurationApiService.generateUrl(ID_1, TEST_STRING)).isEqualTo(TEST_STRING);
     }
 
     @Test
@@ -91,14 +78,12 @@ public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         initAclEntity(runConfigurationVO.toEntity(),
                 Collections.singletonList(new UserPermission(SIMPLE_USER, AclPermission.EXECUTE.getMask())));
-        doReturn(TEST_STRING).when(mockServerlessConfigurationManager).generateUrl(ID, TEST_STRING_2);
+        doReturn(TEST_STRING).when(mockServerlessConfigurationManager).generateUrl(ID_1, TEST_STRING);
 
-        String result = serverlessConfigurationApiService.generateUrl(ID, TEST_STRING_2);
-
-        assertThat(result).isEqualTo(TEST_STRING);
+        assertThat(serverlessConfigurationApiService.generateUrl(ID_1, TEST_STRING)).isEqualTo(TEST_STRING);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyUrlReturningWhenPermissionIsNotGranted() {
         final RunConfiguration runConfigurationWithoutPermission = ConfigurationCreatorUtils.getRunConfiguration();
@@ -107,19 +92,18 @@ public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         initAclEntity(runConfigurationWithoutPermission);
 
-        doReturn(TEST_STRING).when(mockServerlessConfigurationManager).generateUrl(2L, TEST_STRING_2);
+        doReturn(TEST_STRING).when(mockServerlessConfigurationManager).generateUrl(ID_2, TEST_STRING);
 
-        serverlessConfigurationApiService.generateUrl(2L, TEST_STRING_2);
+        assertThrows(AccessDeniedException.class,
+                () -> serverlessConfigurationApiService.generateUrl(ID_2, TEST_STRING));
     }
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldRunForAdmin() {
-        doReturn(TEST_STRING).when(mockServerlessConfigurationManager).run(ID, TEST_STRING_2, httpServletRequest);
+        doReturn(TEST_STRING).when(mockServerlessConfigurationManager).run(ID_1, TEST_STRING, request);
 
-        String result = serverlessConfigurationApiService.run(ID, TEST_STRING_2, httpServletRequest);
-
-        assertThat(result).isEqualTo(TEST_STRING);
+        assertThat(serverlessConfigurationApiService.run(ID_1, TEST_STRING, request)).isEqualTo(TEST_STRING);
     }
 
     @Test
@@ -129,14 +113,12 @@ public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
         initAclEntity(runConfiguration,
                 Collections.singletonList(new UserPermission(SIMPLE_USER, AclPermission.EXECUTE.getMask())));
         doReturn(runConfiguration).when(mockRunConfigurationManager).load(anyLong());
-        doReturn(TEST_STRING).when(mockServerlessConfigurationManager).run(ID, TEST_STRING_2, httpServletRequest);
+        doReturn(TEST_STRING).when(mockServerlessConfigurationManager).run(ID_1, TEST_STRING, request);
 
-        String result = serverlessConfigurationApiService.run(ID, TEST_STRING_2, httpServletRequest);
-
-        assertThat(result).isEqualTo(TEST_STRING);
+        assertThat(serverlessConfigurationApiService.run(ID_1, TEST_STRING, request)).isEqualTo(TEST_STRING);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyRunningWhenPermissionIsNotGranted() {
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
@@ -144,9 +126,10 @@ public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
         doReturn(runConfiguration).when(mockRunConfigurationManager).load(anyLong());
         doReturn(true).when(mockConfigurationProviderManager)
                 .hasNoPermission(runConfigurationVO.getEntries().get(0), "EXECUTE");
-        doReturn(TEST_STRING).when(mockServerlessConfigurationManager).run(ID, TEST_STRING_2, httpServletRequest);
+        doReturn(TEST_STRING).when(mockServerlessConfigurationManager).run(ID_1, TEST_STRING, request);
 
-        serverlessConfigurationApiService.run(ID, TEST_STRING_2, httpServletRequest);
+        assertThrows(AccessDeniedException.class,
+                () -> serverlessConfigurationApiService.run(ID_1, TEST_STRING, request));
     }
 }
 

@@ -27,8 +27,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.Collections;
 import java.util.List;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class ConfigurationCreatorUtils {
 
@@ -53,8 +54,34 @@ public final class ConfigurationCreatorUtils {
         return runConfiguration;
     }
 
+    public static RunConfiguration getFirstRunConfigurationWithoutParent() {
+        final RunConfiguration runConfiguration = getRunConfiguration();
+        runConfiguration.setId(ID);
+        runConfiguration.setOwner("SIMPLE_USER");
+        runConfiguration.setParent(null);
+        return runConfiguration;
+    }
+
+    public static RunConfiguration getSecondRunConfigurationWithoutParent() {
+        final RunConfiguration runConfiguration = getRunConfiguration();
+        runConfiguration.setId(ID_2);
+        runConfiguration.setParent(null);
+        return runConfiguration;
+    }
+
     public static RunConfigurationVO getRunConfigurationVO() {
         final RunConfigurationVO runConfigurationVO = new RunConfigurationVO();
+        runConfigurationVO.setName(TEST_STRING);
+        runConfigurationVO.setDescription(TEST_STRING);
+        runConfigurationVO.setParentId(ID);
+        runConfigurationVO.setEntries(ENTRIES);
+        return runConfigurationVO;
+    }
+
+    public static RunConfigurationVO getRunConfigurationVOWithId() {
+        final RunConfigurationVO runConfigurationVO = new RunConfigurationVO();
+        runConfigurationVO.setId(ID);
+        runConfigurationVO.setOwner("SIMPLE_USER");
         runConfigurationVO.setName(TEST_STRING);
         runConfigurationVO.setDescription(TEST_STRING);
         runConfigurationVO.setParentId(ID);

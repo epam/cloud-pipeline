@@ -44,8 +44,7 @@ import java.lang.annotation.Target;
 @Import({ContextualPreferenceHandler.class})
 @ComponentScan(basePackages = {"com.epam.pipeline.security.acl",
         "com.epam.pipeline.security.run",
-        "com.epam.pipeline.manager.security",
-        "com.epam.pipeline.manager.user"})
+        "com.epam.pipeline.manager.security"})
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 @TestPropertySource(value = {"classpath:test-application.properties"})
