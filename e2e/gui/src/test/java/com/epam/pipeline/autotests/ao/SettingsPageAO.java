@@ -1181,9 +1181,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     .filter(r -> r.has(matchText(message)) && r.has(text(user)) && r.has(text(type)))
                     .findFirst()
                     .orElseThrow(() -> {
-                        screenshot("SystemLogsFor" + user);
+                        String screenshotName = format("SystemLogsFor%s_%s", user, Utils.randomSuffix());
+                        screenshot(screenshotName);
                         return new NoSuchElementException(format("Supposed log info '%s' is not found.",
-                                format("%s message for %s with %s type", message, user, type)));
+                                format("%s message for %s with %s type. Screenshot: %s", message, user, type,
+                                        screenshotName)));
                     });
         }
 
@@ -1203,6 +1205,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
+        public SystemLogsAO clearUserFilters() {
+            clearFiltersBy("User");
+            return this;
+        }
+
         public SystemLogsAO pressEnter() {
             actions().sendKeys(Keys.ENTER).perform();
             return this;
@@ -1211,7 +1218,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public void validateTimeOrder(final SelenideElement info1, final SelenideElement info2) {
             LocalDateTime td1 = Utils.validateDateTimeString(info1.findAll("td").get(0).getText());
             LocalDateTime td2 = Utils.validateDateTimeString(info2.findAll("td").get(0).getText());
-            assertTrue(td1.isAfter(td2));
+            assertTrue(td1.isAfter(td2) || td1.isEqual(td2));
         }
 
         public SystemLogsAO validateRow(final String message, final String user, final String type) {
@@ -1237,6 +1244,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         private String getMessage(final SelenideElement element) {
             return element.findAll("td").get(2).getText();
+        }
+
+        public void clearFiltersBy(final String name) {
+            $(filterBy(name)).find(byClassName("ant-select-selection__clear")).shouldBe(visible).click();
         }
     }
 

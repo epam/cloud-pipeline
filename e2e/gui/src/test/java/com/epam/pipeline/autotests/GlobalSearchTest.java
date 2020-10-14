@@ -677,7 +677,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .library()
                 .cd(folder)
                 .createFolder(folderWithExpression);
-        home().sleep(2, MINUTES);
+        home().sleep(3, MINUTES);
         search()
                 .search(innerFolder1 + "*")
                 .enter()
@@ -742,7 +742,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     public void searchAfterDeleting() {
         library()
                 .removeNotEmptyFolder(folder)
-                .sleep(5, MINUTES);
+                .sleep(C.SEARCH_TIMEOUT, MINUTES);
         home();
         search()
                 .search(pipeline)
