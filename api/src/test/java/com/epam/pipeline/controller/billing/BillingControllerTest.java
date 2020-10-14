@@ -22,22 +22,21 @@ import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import com.epam.pipeline.util.ControllerTestUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
-import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 @WebMvcTest(controllers = BillingController.class)
 public class BillingControllerTest extends AbstractControllerTest {
@@ -55,32 +54,19 @@ public class BillingControllerTest extends AbstractControllerTest {
                                                 "\"loadDetails\":true," +
                                                 "\"pageSize\":5," +
                                                 "\"pageNum\":1}";
-    private static final MultiValueMap<String, String> EMPTY_PARAMS = new LinkedMultiValueMap<>();
-    private BillingChartRequest billingChartRequest;
-    private List<BillingChartInfo> billingChartInfos;
+    private final BillingChartInfo billingChartInfo = BillingChartInfo.builder().cost(COST).build();
+    private final BillingChartRequest billingChartRequest = new BillingChartRequest(
+            LocalDate.MIN, LocalDate.MAX, Collections.singletonMap("test", Collections.singletonList("test")),
+            DateHistogramInterval.DAY, BillingGrouping.BILLING_CENTER, true, 5L, 1L
+    );
+    private final List<BillingChartInfo> billingChartInfos = Collections.singletonList(billingChartInfo);
 
     @Autowired
     private BillingApiService mockBillingApiService;
 
-    @Autowired
-    private ControllerTestUtils controllerTestUtils;
-
-    @Before
-    public void setUp() {
-        final BillingChartInfo billingChartInfo = BillingChartInfo.builder()
-                .cost(COST)
-                .build();
-        billingChartRequest = new BillingChartRequest(
-                LocalDate.MIN, LocalDate.MAX, Collections.singletonMap("test", Collections.singletonList("test")),
-                DateHistogramInterval.DAY, BillingGrouping.BILLING_CENTER, true, 5L, 1L
-        );
-
-        billingChartInfos = Collections.singletonList(billingChartInfo);
-    }
-
     @Test
     public void shouldFailGetBillingChartInfoForUnauthorizedUser() throws Exception {
-        controllerTestUtils.postRequestUnauthorized(mvc(), GET_BILLING_CHART_INFO_URL);
+        performUnauthorizedRequest(post(GET_BILLING_CHART_INFO_URL));
     }
 
     @Test
@@ -88,18 +74,16 @@ public class BillingControllerTest extends AbstractControllerTest {
     public void shouldReturnBillingChartInfo() throws Exception {
         Mockito.doReturn(billingChartInfos).when(mockBillingApiService).getBillingChartInfo(billingChartRequest);
 
-        final MvcResult mvcResult = controllerTestUtils
-                .postRequest(mvc(), GET_BILLING_CHART_INFO_URL, EMPTY_PARAMS, REQUEST_JSON);
+        final MvcResult mvcResult = performRequest(post(GET_BILLING_CHART_INFO_URL).content(REQUEST_JSON));
 
         Mockito.verify(mockBillingApiService).getBillingChartInfo(billingChartRequest);
 
-        controllerTestUtils.assertResponse(mvcResult, billingChartInfos,
-                new TypeReference<Result<List<BillingChartInfo>>>() { });
+        assertResponse(mvcResult, billingChartInfos, new TypeReference<Result<List<BillingChartInfo>>>() { });
     }
 
     @Test
     public void shouldFailGetBillingChartInfoPaginatedForUnauthorizedUser() throws Exception {
-        controllerTestUtils.postRequestUnauthorized(mvc(), GET_BILLING_CHART_INFO_PAGINATED_URL);
+        performUnauthorizedRequest(post(GET_BILLING_CHART_INFO_PAGINATED_URL));
     }
 
     @Test
@@ -108,18 +92,16 @@ public class BillingControllerTest extends AbstractControllerTest {
         Mockito.doReturn(billingChartInfos).when(mockBillingApiService)
                 .getBillingChartInfoPaginated(billingChartRequest);
 
-        final MvcResult mvcResult = controllerTestUtils
-                .postRequest(mvc(), GET_BILLING_CHART_INFO_PAGINATED_URL, EMPTY_PARAMS, REQUEST_JSON);
+        final MvcResult mvcResult = performRequest(post(GET_BILLING_CHART_INFO_PAGINATED_URL).content(REQUEST_JSON));
 
         Mockito.verify(mockBillingApiService).getBillingChartInfoPaginated(billingChartRequest);
 
-        controllerTestUtils.assertResponse(mvcResult, billingChartInfos,
-                new TypeReference<Result<List<BillingChartInfo>>>() { });
+        assertResponse(mvcResult, billingChartInfos, new TypeReference<Result<List<BillingChartInfo>>>() { });
     }
 
     @Test
     public void shouldFailGetAllBillingCentersForUnauthorizedUser() throws Exception {
-        controllerTestUtils.getRequestUnauthorized(mvc(), GET_BILLING_CENTERS);
+        performUnauthorizedRequest(get(GET_BILLING_CENTERS));
     }
 
     @Test
@@ -129,11 +111,10 @@ public class BillingControllerTest extends AbstractControllerTest {
 
         Mockito.doReturn(centers).when(mockBillingApiService).getAllBillingCenters();
 
-        final MvcResult mvcResult = controllerTestUtils.getRequest(mvc(), GET_BILLING_CENTERS, EMPTY_PARAMS, "");
+        final MvcResult mvcResult = performRequest(get(GET_BILLING_CENTERS));
 
         Mockito.verify(mockBillingApiService).getAllBillingCenters();
 
-        controllerTestUtils.assertResponse(mvcResult, centers,
-                new TypeReference<Result<List<String>>>() { });
+        assertResponse(mvcResult, centers, new TypeReference<Result<List<String>>>() { });
     }
 }

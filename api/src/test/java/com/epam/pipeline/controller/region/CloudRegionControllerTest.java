@@ -23,24 +23,24 @@ import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.test.creator.region.RegionCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.entity.info.CloudRegionInfo;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.util.ControllerTestUtils;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 
 import java.util.Collections;
 import java.util.List;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 @WebMvcTest(controllers = CloudRegionController.class)
 public class CloudRegionControllerTest extends AbstractControllerTest {
@@ -52,27 +52,19 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
     private static final String LOAD_REGIONS_INFO_URL = REGION_URL + "/info";
     private static final String LOAD_AVAILABLE_REGIONS_URL = REGION_URL + "/available";
     private static final String REGION_ID_URL = REGION_URL + "/%d";
-    private static final String EMPTY_CONTENT = "";
-    private static final MultiValueMap<String, String> EMPTY_PARAMS = new LinkedMultiValueMap<>();
     private final AwsRegion awsRegion = RegionCreatorUtils.getDefaultAwsRegion();
     private final AWSRegionDTO awsRegionDTO = RegionCreatorUtils.getDefaultAwsRegionDTO();
     private final AzureRegion azureRegion = RegionCreatorUtils.getDefaultAzureRegion();
     private final AzureRegionDTO azureRegionDTO = RegionCreatorUtils.getDefaultAzureRegionDTO();
     private final GCPRegion gcpRegion = RegionCreatorUtils.getDefaultGcpRegion();
     private final GCPRegionDTO gcpRegionDTO = RegionCreatorUtils.getDefaultGcpRegionDTO();
-    private final TypeReference<Result<AwsRegion>> awsRegionTR = new TypeReference<Result<AwsRegion>>() { };
-    private final TypeReference<Result<AzureRegion>> azureRegionTR = new TypeReference<Result<AzureRegion>>() { };
-    private final TypeReference<Result<GCPRegion>> gcpRegionTR = new TypeReference<Result<GCPRegion>>() { };
 
     @Autowired
     private CloudRegionApiService mockCloudRegionApiService;
 
-    @Autowired
-    private ControllerTestUtils controllerTestUtils;
-
     @Test
     public void shouldFailLoadProvidersForUnauthorizedUser() throws Exception {
-        controllerTestUtils.getRequestUnauthorized(mvc(), LOAD_PROVIDERS_URL);
+        performUnauthorizedRequest(get(LOAD_PROVIDERS_URL));
     }
 
     @Test
@@ -82,18 +74,16 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
 
         Mockito.doReturn(cloudProviders).when(mockCloudRegionApiService).loadProviders();
 
-        final MvcResult mvcResult =
-                controllerTestUtils.getRequest(mvc(), LOAD_PROVIDERS_URL, EMPTY_PARAMS, EMPTY_CONTENT);
+        final MvcResult mvcResult = performRequest(get(LOAD_PROVIDERS_URL));
 
         Mockito.verify(mockCloudRegionApiService).loadProviders();
 
-        controllerTestUtils.assertResponse(mvcResult, cloudProviders,
-                new TypeReference<Result<List<CloudProvider>>>() { });
+        assertResponse(mvcResult, cloudProviders, RegionCreatorUtils.CLOUD_PROVIDER_LIST_TYPE);
     }
 
     @Test
     public void shouldFailLoadAllForUnauthorizedUser() throws Exception {
-        controllerTestUtils.getRequestUnauthorized(mvc(), REGION_URL);
+        performUnauthorizedRequest(get(REGION_URL));
     }
 
     @Test
@@ -103,17 +93,16 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
 
         Mockito.doReturn(cloudRegions).when(mockCloudRegionApiService).loadAll();
 
-        final MvcResult mvcResult = controllerTestUtils.getRequest(mvc(), REGION_URL, EMPTY_PARAMS, EMPTY_CONTENT);
+        final MvcResult mvcResult = performRequest(get(REGION_URL));
 
         Mockito.verify(mockCloudRegionApiService).loadAll();
 
-        controllerTestUtils.assertResponse(mvcResult, cloudRegions,
-                new TypeReference<Result<List<AwsRegion>>>() { });
+        assertResponse(mvcResult, cloudRegions, RegionCreatorUtils.AWS_REGION_LIST_TYPE);
     }
 
     @Test
     public void shouldFailLoadAllRegionsInfoForUnauthorizedUser() throws Exception {
-        controllerTestUtils.getRequestUnauthorized(mvc(), LOAD_REGIONS_INFO_URL);
+        performUnauthorizedRequest(get(LOAD_REGIONS_INFO_URL));
     }
 
     @Test
@@ -124,18 +113,16 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
 
         Mockito.doReturn(cloudRegionInfos).when(mockCloudRegionApiService).loadAllRegionsInfo();
 
-        final MvcResult mvcResult =
-                controllerTestUtils.getRequest(mvc(), LOAD_REGIONS_INFO_URL, EMPTY_PARAMS, EMPTY_CONTENT);
+        final MvcResult mvcResult = performRequest(get(LOAD_REGIONS_INFO_URL));
 
         Mockito.verify(mockCloudRegionApiService).loadAllRegionsInfo();
 
-        controllerTestUtils.assertResponse(mvcResult, cloudRegionInfos,
-                new TypeReference<Result<List<CloudRegionInfo>>>() { });
+        assertResponse(mvcResult, cloudRegionInfos, RegionCreatorUtils.CLOUD_REGION_INFO_LIST_TYPE);
     }
 
     @Test
     public void shouldFailLoadForUnauthorizedUser() throws Exception {
-        controllerTestUtils.getRequestUnauthorized(mvc(), String.format(REGION_ID_URL, ID));
+        performUnauthorizedRequest(get(String.format(REGION_ID_URL, ID)));
     }
 
     @Test
@@ -143,12 +130,11 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
     public void shouldLoadAwsRegionById() throws Exception{
         Mockito.doReturn(awsRegion).when(mockCloudRegionApiService).load(ID);
 
-        final MvcResult mvcResult =
-                controllerTestUtils.getRequest(mvc(), String.format(REGION_ID_URL, ID), EMPTY_PARAMS, EMPTY_CONTENT);
+        final MvcResult mvcResult = performRequest(get(String.format(REGION_ID_URL, ID)));
 
         Mockito.verify(mockCloudRegionApiService).load(ID);
 
-        controllerTestUtils.assertResponse(mvcResult, awsRegion, awsRegionTR);
+        assertResponse(mvcResult, awsRegion, RegionCreatorUtils.AWS_REGION_TYPE);
     }
 
     @Test
@@ -156,12 +142,11 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
     public void shouldLoadAzureRegionById() throws Exception{
         Mockito.doReturn(azureRegion).when(mockCloudRegionApiService).load(ID);
 
-        final MvcResult mvcResult =
-                controllerTestUtils.getRequest(mvc(), String.format(REGION_ID_URL, ID), EMPTY_PARAMS, EMPTY_CONTENT);
+        final MvcResult mvcResult = performRequest(get(String.format(REGION_ID_URL, ID)));
 
         Mockito.verify(mockCloudRegionApiService).load(ID);
 
-        controllerTestUtils.assertResponse(mvcResult, azureRegion, azureRegionTR);
+        assertResponse(mvcResult, azureRegion, RegionCreatorUtils.AZURE_REGION_TYPE);
     }
 
     @Test
@@ -169,17 +154,16 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
     public void shouldLoadGcpRegionById() throws Exception{
         Mockito.doReturn(gcpRegion).when(mockCloudRegionApiService).load(ID);
 
-        final MvcResult mvcResult =
-                controllerTestUtils.getRequest(mvc(), String.format(REGION_ID_URL, ID), EMPTY_PARAMS, EMPTY_CONTENT);
+        final MvcResult mvcResult = performRequest(get(String.format(REGION_ID_URL, ID)));
 
         Mockito.verify(mockCloudRegionApiService).load(ID);
 
-        controllerTestUtils.assertResponse(mvcResult, gcpRegion, gcpRegionTR);
+        assertResponse(mvcResult, gcpRegion, RegionCreatorUtils.GCP_REGION_TYPE);
     }
 
     @Test
     public void shouldFailLoadAllAvailableRegionsForUnauthorizedUser() throws Exception {
-        controllerTestUtils.getRequestUnauthorized(mvc(), LOAD_AVAILABLE_REGIONS_URL);
+        performUnauthorizedRequest(get(LOAD_AVAILABLE_REGIONS_URL));
     }
 
     @Test
@@ -188,20 +172,18 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
         final List<String> regions = Collections.singletonList(TEST_STRING);
         Mockito.doReturn(regions).when(mockCloudRegionApiService).loadAllAvailable(CloudProvider.AWS);
 
-        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("provider", CloudProvider.AWS.name());
-
-        final MvcResult mvcResult =
-                controllerTestUtils.getRequest(mvc(), LOAD_AVAILABLE_REGIONS_URL, params, EMPTY_CONTENT);
+        final MvcResult mvcResult = performRequest(
+                get(LOAD_AVAILABLE_REGIONS_URL).param("provider", CloudProvider.AWS.name())
+        );
 
         Mockito.verify(mockCloudRegionApiService).loadAllAvailable(CloudProvider.AWS);
 
-        controllerTestUtils.assertResponse(mvcResult, regions, new TypeReference<Result<List<String>>>() { });
+        assertResponse(mvcResult, regions, RegionCreatorUtils.STRING_LIST_TYPE);
     }
 
     @Test
     public void shouldFailCreateForUnauthorizedUser() throws Exception {
-        controllerTestUtils.postRequestUnauthorized(mvc(), REGION_URL);
+        performUnauthorizedRequest(post(REGION_URL));
     }
 
     @Test
@@ -211,12 +193,11 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
 
         final String content = getObjectMapper().writeValueAsString(awsRegionDTO);
 
-        final MvcResult mvcResult =
-                controllerTestUtils.postRequest(mvc(), REGION_URL, EMPTY_PARAMS, content);
+        final MvcResult mvcResult = performRequest(post(REGION_URL).content(content));
 
         Mockito.verify(mockCloudRegionApiService).create(Mockito.refEq(awsRegionDTO));
 
-        controllerTestUtils.assertResponse(mvcResult, awsRegion, awsRegionTR);
+        assertResponse(mvcResult, awsRegion, RegionCreatorUtils.AWS_REGION_TYPE);
     }
 
     @Test
@@ -226,12 +207,11 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
 
         final String content = getObjectMapper().writeValueAsString(azureRegionDTO);
 
-        final MvcResult mvcResult =
-                controllerTestUtils.postRequest(mvc(), REGION_URL, EMPTY_PARAMS, content);
+        final MvcResult mvcResult = performRequest(post(REGION_URL).content(content));
 
         Mockito.verify(mockCloudRegionApiService).create(Mockito.refEq(azureRegionDTO));
 
-        controllerTestUtils.assertResponse(mvcResult, azureRegion, azureRegionTR);
+        assertResponse(mvcResult, azureRegion, RegionCreatorUtils.AZURE_REGION_TYPE);
     }
 
     @Test
@@ -241,17 +221,16 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
 
         final String content = getObjectMapper().writeValueAsString(gcpRegionDTO);
 
-        final MvcResult mvcResult =
-                controllerTestUtils.postRequest(mvc(), REGION_URL, EMPTY_PARAMS, content);
+        final MvcResult mvcResult = performRequest(post(REGION_URL).content(content));
 
         Mockito.verify(mockCloudRegionApiService).create(Mockito.refEq(gcpRegionDTO));
 
-        controllerTestUtils.assertResponse(mvcResult, gcpRegion, gcpRegionTR);
+        assertResponse(mvcResult, gcpRegion, RegionCreatorUtils.GCP_REGION_TYPE);
     }
 
     @Test
     public void shouldFailUpdateForUnauthorizedUser() throws Exception {
-        controllerTestUtils.putRequestUnauthorized(mvc(), String.format(REGION_ID_URL, ID));
+        performUnauthorizedRequest(put(String.format(REGION_ID_URL, ID)));
     }
 
     @Test
@@ -261,12 +240,11 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
 
         final String content = getObjectMapper().writeValueAsString(awsRegionDTO);
 
-        final MvcResult mvcResult =
-                controllerTestUtils.putRequest(mvc(), String.format(REGION_ID_URL, ID), EMPTY_PARAMS, content);
+        final MvcResult mvcResult = performRequest(put(String.format(REGION_ID_URL, ID)).content(content));
 
         Mockito.verify(mockCloudRegionApiService).update(Mockito.eq(ID), Mockito.refEq(awsRegionDTO));
 
-        controllerTestUtils.assertResponse(mvcResult, awsRegion, awsRegionTR);
+        assertResponse(mvcResult, awsRegion, RegionCreatorUtils.AWS_REGION_TYPE);
     }
 
     @Test
@@ -277,12 +255,11 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
 
         final String content = getObjectMapper().writeValueAsString(azureRegionDTO);
 
-        final MvcResult mvcResult =
-                controllerTestUtils.putRequest(mvc(), String.format(REGION_ID_URL, ID), EMPTY_PARAMS, content);
+        final MvcResult mvcResult = performRequest(put(String.format(REGION_ID_URL, ID)).content(content));
 
         Mockito.verify(mockCloudRegionApiService).update(Mockito.eq(ID), Mockito.refEq(azureRegionDTO));
 
-        controllerTestUtils.assertResponse(mvcResult, azureRegion, azureRegionTR);
+        assertResponse(mvcResult, azureRegion, RegionCreatorUtils.AZURE_REGION_TYPE);
     }
 
     @Test
@@ -292,17 +269,16 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
 
         final String content = getObjectMapper().writeValueAsString(gcpRegionDTO);
 
-        final MvcResult mvcResult =
-                controllerTestUtils.putRequest(mvc(), String.format(REGION_ID_URL, ID), EMPTY_PARAMS, content);
+        final MvcResult mvcResult = performRequest(put(String.format(REGION_ID_URL, ID)).content(content));
 
         Mockito.verify(mockCloudRegionApiService).update(Mockito.eq(ID), Mockito.refEq(gcpRegionDTO));
 
-        controllerTestUtils.assertResponse(mvcResult, gcpRegion, gcpRegionTR);
+        assertResponse(mvcResult, gcpRegion, RegionCreatorUtils.GCP_REGION_TYPE);
     }
 
     @Test
     public void shouldFailDeleteForUnauthorizedUser() throws Exception {
-        controllerTestUtils.deleteRequestUnauthorized(mvc(), String.format(REGION_ID_URL, ID));
+        performUnauthorizedRequest(delete(String.format(REGION_ID_URL, ID)));
     }
 
     @Test
@@ -310,12 +286,11 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
     public void shouldDeleteAwsRegionById() throws Exception {
         Mockito.doReturn(awsRegion).when(mockCloudRegionApiService).delete(ID);
 
-        final MvcResult mvcResult =
-                controllerTestUtils.deleteRequest(mvc(), String.format(REGION_ID_URL, ID), EMPTY_PARAMS, EMPTY_CONTENT);
+        final MvcResult mvcResult = performRequest(delete(String.format(REGION_ID_URL, ID)));
 
         Mockito.verify(mockCloudRegionApiService).delete(ID);
 
-        controllerTestUtils.assertResponse(mvcResult, awsRegion, awsRegionTR);
+        assertResponse(mvcResult, awsRegion, RegionCreatorUtils.AWS_REGION_TYPE);
     }
 
     @Test
@@ -323,12 +298,11 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
     public void shouldDeleteAzureRegionById() throws Exception {
         Mockito.doReturn(azureRegion).when(mockCloudRegionApiService).delete(ID);
 
-        final MvcResult mvcResult =
-                controllerTestUtils.deleteRequest(mvc(), String.format(REGION_ID_URL, ID), EMPTY_PARAMS, EMPTY_CONTENT);
+        final MvcResult mvcResult = performRequest(delete(String.format(REGION_ID_URL, ID)));
 
         Mockito.verify(mockCloudRegionApiService).delete(ID);
 
-        controllerTestUtils.assertResponse(mvcResult, azureRegion, azureRegionTR);
+        assertResponse(mvcResult, azureRegion, RegionCreatorUtils.AZURE_REGION_TYPE);
     }
 
     @Test
@@ -336,11 +310,10 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
     public void shouldDeleteGcpRegionById() throws Exception {
         Mockito.doReturn(gcpRegion).when(mockCloudRegionApiService).delete(ID);
 
-        final MvcResult mvcResult =
-                controllerTestUtils.deleteRequest(mvc(), String.format(REGION_ID_URL, ID), EMPTY_PARAMS, EMPTY_CONTENT);
+        final MvcResult mvcResult = performRequest(delete(String.format(REGION_ID_URL, ID)));
 
         Mockito.verify(mockCloudRegionApiService).delete(ID);
 
-        controllerTestUtils.assertResponse(mvcResult, gcpRegion, gcpRegionTR);
+        assertResponse(mvcResult, gcpRegion, RegionCreatorUtils.GCP_REGION_TYPE);
     }
 }

@@ -16,15 +16,18 @@
 
 package com.epam.pipeline.test.creator.region;
 
+import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.controller.vo.region.AzureRegionDTO;
 import com.epam.pipeline.controller.vo.region.GCPRegionDTO;
+import com.epam.pipeline.entity.info.CloudRegionInfo;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzurePolicy;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPCustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +36,18 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class RegionCreatorUtils {
 
+    public static final TypeReference<Result<AwsRegion>> AWS_REGION_TYPE = new TypeReference<Result<AwsRegion>>() { };
+    public static final TypeReference<Result<AzureRegion>> AZURE_REGION_TYPE =
+            new TypeReference<Result<AzureRegion>>() { };
+    public static final TypeReference<Result<GCPRegion>> GCP_REGION_TYPE = new TypeReference<Result<GCPRegion>>() { };
+    public static final TypeReference<Result<List<CloudProvider>>> CLOUD_PROVIDER_LIST_TYPE =
+            new TypeReference<Result<List<CloudProvider>>>() { };
+    public static final TypeReference<Result<List<AwsRegion>>> AWS_REGION_LIST_TYPE =
+            new TypeReference<Result<List<AwsRegion>>>() { };
+    public static final TypeReference<Result<List<CloudRegionInfo>>> CLOUD_REGION_INFO_LIST_TYPE =
+            new TypeReference<Result<List<CloudRegionInfo>>>() { };
+    public static final TypeReference<Result<List<String>>> STRING_LIST_TYPE =
+            new TypeReference<Result<List<String>>>() { };
     private static final boolean TRUE = true;
     private static final int NUMBER = 4;
 

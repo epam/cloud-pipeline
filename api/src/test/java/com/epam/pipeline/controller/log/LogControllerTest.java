@@ -21,7 +21,6 @@ import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
-import com.epam.pipeline.util.ControllerTestUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -29,8 +28,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 @WebMvcTest(controllers = LogController.class)
 public class LogControllerTest extends AbstractControllerTest {
@@ -38,18 +38,13 @@ public class LogControllerTest extends AbstractControllerTest {
     @Autowired
     private LogApiService mockLogApiService;
 
-    @Autowired
-    private ControllerTestUtils controllerTestUtils;
-
     public static final String TEST_MESSAGE = "testMessage";
     private static final String LOG_ENDPOINT = SERVLET_PATH + "/log/filter";
-    private static final MultiValueMap<String, String> EMPTY_PARAMS = new LinkedMultiValueMap<>();
-    private static final String EMPTY_CONTENT = "";
     private final LogFilter logFilter = new LogFilter();
 
     @Test
     public void shouldFailForUnauthorizedUserGet() throws Exception {
-        controllerTestUtils.getRequestUnauthorized(mvc(), LOG_ENDPOINT);
+        performUnauthorizedRequest(get(LOG_ENDPOINT));
     }
 
     @Test
@@ -57,16 +52,16 @@ public class LogControllerTest extends AbstractControllerTest {
     public void shouldReturnLogFilter() throws Exception {
         logFilter.setSortOrder("ASC");
         Mockito.doReturn(logFilter).when(mockLogApiService).getFilters();
-        final MvcResult mvcResult = controllerTestUtils.getRequest(mvc(), LOG_ENDPOINT, EMPTY_PARAMS, EMPTY_CONTENT);
+        final MvcResult mvcResult = performRequest(get(LOG_ENDPOINT));
 
         Mockito.verify(mockLogApiService).getFilters();
 
-        controllerTestUtils.assertResponse(mvcResult, logFilter, new TypeReference<Result<LogFilter>>() { });
+        assertResponse(mvcResult, logFilter, new TypeReference<Result<LogFilter>>() { });
     }
 
     @Test
     public void shouldFailForUnauthorizedUserPost() throws Exception {
-        controllerTestUtils.putRequestUnauthorized(mvc(), LOG_ENDPOINT);
+        performUnauthorizedRequest(post(LOG_ENDPOINT));
     }
 
     @Test
@@ -77,10 +72,10 @@ public class LogControllerTest extends AbstractControllerTest {
         Mockito.doReturn(logPagination).when(mockLogApiService).filter(logFilter);
         final String content = getObjectMapper().writeValueAsString(logFilter);
 
-        final MvcResult mvcResult = controllerTestUtils.postRequest(mvc(), LOG_ENDPOINT, EMPTY_PARAMS, content);
+        final MvcResult mvcResult = performRequest(post(LOG_ENDPOINT).content(content));
 
         Mockito.verify(mockLogApiService).filter(logFilter);
 
-        controllerTestUtils.assertResponse(mvcResult, logPagination, new TypeReference<Result<LogPagination>>() { });
+        assertResponse(mvcResult, logPagination, new TypeReference<Result<LogPagination>>() { });
     }
 }
