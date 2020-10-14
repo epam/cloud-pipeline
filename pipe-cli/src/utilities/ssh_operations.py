@@ -16,6 +16,11 @@ import base64
 import collections
 import logging
 import os
+import select
+import socket
+import sys
+import time
+
 import paramiko
 from src.utilities.pipe_shell import plain_shell, interactive_shell
 from src.api.pipeline_run import PipelineRun
@@ -57,7 +62,7 @@ def http_proxy_tunnel_connect(proxy, target, timeout=None):
                 break
     except socket.error as error:
         if "timed out" not in error:
-            response = [error]
+            response = [str(error)]
     response = ''.join(response)
     if "200 connection established" not in response.lower():
         raise RuntimeError("Unable to establish HTTP-Tunnel: %s" % repr(response))
@@ -90,9 +95,89 @@ def run_ssh_command(channel, command):
     plain_shell(channel)
     return channel.recv_exit_status()
 
+
 def run_ssh_session(channel):
     channel.invoke_shell()
     interactive_shell(channel)
+
+
+def create_tcp_tunnel(run_id, local_port, remote_port):
+    chunk_size = 4096
+    delay = 0.0001
+
+    logging.basicConfig(level=logging.INFO)
+
+    conn_info = get_conn_info(run_id)
+    proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]),
+                      int(os.getenv('CP_CLI_TUNNEL_PROXY_PORT', conn_info.ssh_proxy[1])))
+    target_endpoint = (conn_info.ssh_endpoint[0], remote_port)
+
+    logging.info('Initializing tunnel on port %s...', local_port)
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(('0.0.0.0', local_port))
+    server_socket.listen(5)
+
+    inputs = []
+    channel = {}
+
+    logging.info('Serving tcp tunnel...')
+    try:
+        inputs.append(server_socket)
+        while True:
+            time.sleep(delay)
+            logging.info('Waiting for connections...')
+            inputs_ready, _, _ = select.select(inputs, [], [])
+            for input in inputs_ready:
+                if input == server_socket:
+                    try:
+                        logging.info('Initializing client connection...')
+                        client_socket, address = server_socket.accept()
+                    except KeyboardInterrupt:
+                        raise
+                    except:
+                        logging.exception('Cannot establish client connection')
+                        break
+                    try:
+                        logging.info('Initializing tunnel connection...')
+                        tunnel_socket = http_proxy_tunnel_connect(proxy_endpoint, target_endpoint, 5)
+                    except KeyboardInterrupt:
+                        raise
+                    except:
+                        logging.exception('Cannot establish tunnel connection')
+                        client_socket.close()
+                        break
+                    inputs.append(client_socket)
+                    inputs.append(tunnel_socket)
+                    channel[client_socket] = tunnel_socket
+                    channel[tunnel_socket] = client_socket
+                    break
+
+                logging.debug('Reading data...')
+                data = input.recv(chunk_size)
+                if data:
+                    logging.debug('Writing data...')
+                    channel[input].send(data)
+                else:
+                    logging.info('Closing client and tunnel connections...')
+                    out = channel[input]
+                    inputs.remove(input)
+                    inputs.remove(out)
+                    channel[out].close()
+                    channel[input].close()
+                    del channel[out]
+                    del channel[input]
+                    break
+    except KeyboardInterrupt:
+        logging.info('Interrupted...')
+    except:
+        logging.exception('Errored...')
+        sys.exit(1)
+    finally:
+        logging.info('Closing all sockets...')
+        for input in inputs:
+            input.close()
+        logging.info('Exiting...')
+
 
 def run_ssh(run_id, command):
     # Grab the run information from the API to setup the run's IP and EDGE proxy address

@@ -35,7 +35,7 @@ from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.pipeline_run_operations import PipelineRunOperations
-from src.utilities.ssh_operations import run_ssh
+from src.utilities.ssh_operations import run_ssh, create_tcp_tunnel
 from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.utilities.user_token_operations import UserTokenOperations
 from src.version import __version__
@@ -1215,6 +1215,23 @@ def ssh(ctx, run_id):
     try:
         ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args))
         sys.exit(ssh_exit_code)
+    except Exception as runtime_error:
+        click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        sys.exit(1)
+
+
+@cli.command(name='tunnel')
+@click.argument('run-id', required=True, type=int)
+@click.option('-lp', '--local-port', required=True, type=int, help='Local port')
+@click.option('-rp', '--remote-port', required=True, type=int, help='Remote port')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@Config.validate_access_token
+def create_tunnel(run_id, local_port, remote_port):
+    """
+    Establishes tcp tunnel for the specified job run between specified local port and remote port.
+    """
+    try:
+        create_tcp_tunnel(run_id, local_port, remote_port)
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
         sys.exit(1)
