@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
+import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeSpec;
 import io.fabric8.kubernetes.api.model.NodeStatus;
@@ -32,6 +33,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
@@ -49,11 +51,34 @@ public final class NodeCreatorUtils {
     }
 
     public static NodeInstance getDefaultNodeInstance() {
-        return new NodeInstance();
+        final List<NodeInstanceAddress> nodeInstanceAddresses = Collections.singletonList(new NodeInstanceAddress());
+        final Map<String, String> testMap = Collections.singletonMap(TEST_STRING, TEST_STRING);
+        NodeInstance nodeInstance = new NodeInstance();
+        nodeInstance.setClusterName(TEST_STRING);
+        nodeInstance.setName(TEST_STRING);
+        nodeInstance.setCreationTimestamp(TEST_STRING);
+        nodeInstance.setRegion(TEST_STRING);
+        nodeInstance.setRunId(TEST_STRING);
+        nodeInstance.setAddresses(nodeInstanceAddresses);
+        nodeInstance.setAllocatable(testMap);
+        nodeInstance.setCapacity(testMap);
+        nodeInstance.setLabels(testMap);
+        return nodeInstance;
     }
 
     public static InstanceType getDefaultInstanceType() {
-        return InstanceType.builder().name(TEST_STRING).build();
+        return InstanceType.builder()
+                .name(TEST_STRING)
+                .gpu(4)
+                .instanceFamily(TEST_STRING)
+                .memory(4)
+                .memoryUnit(TEST_STRING)
+                .operatingSystem(TEST_STRING)
+                .regionId(ID)
+                .sku(TEST_STRING)
+                .termType(TEST_STRING)
+                .vCPU(4)
+                .build();
     }
 
     public static Node getDefaultNode() {
@@ -70,6 +95,7 @@ public final class NodeCreatorUtils {
     public static FilterNodesVO getDefaultFilterNodesVO() {
         final FilterNodesVO filterNodesVO = new FilterNodesVO();
         filterNodesVO.setAddress(TEST_STRING);
+        filterNodesVO.setRunId(TEST_STRING);
         return filterNodesVO;
     }
 

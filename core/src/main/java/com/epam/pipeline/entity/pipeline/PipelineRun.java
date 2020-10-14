@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
 
 @Getter
 @Setter
-@AllArgsConstructor
 public class PipelineRun extends AbstractSecuredEntity {
 
     public static final String PARENT_ID_PARAM = "parent-id";
