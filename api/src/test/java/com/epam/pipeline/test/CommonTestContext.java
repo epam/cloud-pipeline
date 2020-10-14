@@ -18,6 +18,7 @@ package com.epam.pipeline.test;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.util.ControllerTestUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.ResourceBundleMessageSource;
@@ -41,5 +42,10 @@ public class CommonTestContext {
         messageSource.setBasename("messages");
         messageSource.setDefaultEncoding("UTF-8");
         return messageSource;
+    }
+
+    @Bean
+    public ControllerTestUtils controllerTestUtils() {
+        return new ControllerTestUtils();
     }
 }
