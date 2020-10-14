@@ -28,7 +28,6 @@ import com.epam.pipeline.test.creator.contextual.ContextualPreferenceCreatorUtil
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.epam.pipeline.util.ControllerTestUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,21 +53,15 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
     private static final String LOAD_URL = CONTEXTUAL_URL + "/load";
     private static final String LOAD_ALL_URL = LOAD_URL + "/all";
     private static final ContextualPreferenceLevel PREFERENCE_LEVEL = ContextualPreferenceLevel.ROLE;
-    private ContextualPreference contextualPreference;
-    private ResponseResult<ContextualPreference> expectedResult;
-    private ContextualPreferenceExternalResource contextualPreferenceExternalResource;
+    private final ContextualPreference contextualPreference =
+            ContextualPreferenceCreatorUtils.getContextualPreference();
+    private final ResponseResult<ContextualPreference> expectedResult =
+            ControllerTestUtils.buildExpectedResult(contextualPreference);
+    private final ContextualPreferenceExternalResource contextualPreferenceExternalResource =
+            ContextualPreferenceCreatorUtils.getCPExternalResource();
 
     @Autowired
     private ContextualPreferenceApiService mockContextualPreferenceApiService;
-
-    @Before
-    public void setUp() {
-        contextualPreference = ContextualPreferenceCreatorUtils.getContextualPreference();
-        expectedResult = ControllerTestUtils.buildExpectedResult(contextualPreference);
-
-        contextualPreferenceExternalResource
-                = ContextualPreferenceCreatorUtils.getCPExternalResource();
-    }
 
     @Test
     public void shouldFailLoadAllForUnauthorizedUser() throws Exception {
