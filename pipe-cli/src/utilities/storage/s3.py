@@ -658,8 +658,8 @@ class S3BucketOperations(object):
             return AwsConfig(proxies=cls.__config__.resolve_proxy(target_url=cls.S3_ENDPOINT_URL))
 
     @classmethod
-    def _get_client(cls, session):
-        client = session.client('s3', config=S3BucketOperations.get_proxy_config())
+    def _get_client(cls, session, region_name=None):
+        client = session.client('s3', config=S3BucketOperations.get_proxy_config(), region_name=region_name)
         client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         return client
@@ -677,7 +677,7 @@ class S3BucketOperations(object):
         if session is None:
             session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'cp', versioning=versioning)
             storage_wrapper.session = session
-        client = cls._get_client(session)
+        client = cls._get_client(session, storage_wrapper.bucket.region)
         if versioning:
             paginator = client.get_paginator('list_object_versions')
         else:
@@ -735,7 +735,7 @@ class S3BucketOperations(object):
             session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'cp')
 
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
-        client = cls._get_client(session)
+        client = cls._get_client(session, storage_wrapper.bucket.region)
         paginator = client.get_paginator('list_objects_v2')
         operation_parameters = {
             'Bucket': storage_wrapper.bucket.path,
@@ -764,7 +764,7 @@ class S3BucketOperations(object):
                 prefix = prefix + delimiter + relative_path
         if session is None:
             session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'cp')
-        client = cls._get_client(session)
+        client = cls._get_client(session, storage_wrapper.bucket.region)
         paginator = client.get_paginator('list_objects_v2')
         operation_parameters = {
             'Bucket': storage_wrapper.bucket.path,
@@ -815,7 +815,7 @@ class S3BucketOperations(object):
     def delete_item(cls, storage_wrapper, relative_path, session=None):
         if session is None:
             session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'mv')
-        client = cls._get_client(session)
+        client = cls._get_client(session, storage_wrapper.bucket.region)
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
         bucket = storage_wrapper.bucket.path
         if relative_path:
