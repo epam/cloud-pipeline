@@ -16,11 +16,13 @@
 
 package com.epam.pipeline.test.creator.configuration;
 
+import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.pipeline.Folder;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +32,10 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 
 public final class ConfigurationCreatorUtils {
 
+    public static final TypeReference<Result<RunConfiguration>> RUN_CONFIGURATION_TYPE =
+            new TypeReference<Result<RunConfiguration>>() { };
+    public static final TypeReference<Result<List<RunConfiguration>>> RUN_CONFIGURATION_LIST_TYPE =
+            new TypeReference<Result<List<RunConfiguration>>>() { };
     private static final List<AbstractRunConfigurationEntry> ENTRIES
             = Collections.singletonList(getRunConfigurationEntry());
 

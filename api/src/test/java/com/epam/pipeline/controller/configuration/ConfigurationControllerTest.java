@@ -18,14 +18,12 @@ package com.epam.pipeline.controller.configuration;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.ResponseResult;
-import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.manager.configuration.RunConfigurationApiService;
 import com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.epam.pipeline.util.ControllerTestUtils;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.junit.Before;
 import org.junit.Test;
@@ -93,7 +91,7 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
         Mockito.verify(mockRunConfigurationApiService).save(Mockito.refEq(runConfigurationVO));
 
         ControllerTestUtils.assertResponse(mvcResult, mapper, expectedResult,
-                new TypeReference<Result<RunConfiguration>>() { });
+                ConfigurationCreatorUtils.RUN_CONFIGURATION_TYPE);
     }
 
     @Test
@@ -115,7 +113,7 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
         Mockito.verify(mockRunConfigurationApiService).update(Mockito.refEq(runConfigurationVO));
 
         ControllerTestUtils.assertResponse(mvcResult, mapper, expectedResult,
-                new TypeReference<Result<RunConfiguration>>() { });
+                ConfigurationCreatorUtils.RUN_CONFIGURATION_TYPE);
     }
 
     @Test
@@ -140,7 +138,7 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
         Mockito.verify(mockRunConfigurationApiService).delete(ID);
 
         ControllerTestUtils.assertResponse(mvcResult, mapper, expectedResult,
-                new TypeReference<Result<RunConfiguration>>() { });
+                ConfigurationCreatorUtils.RUN_CONFIGURATION_TYPE);
     }
 
     @Test
@@ -165,7 +163,7 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
         Mockito.verify(mockRunConfigurationApiService).load(ID);
 
         ControllerTestUtils.assertResponse(mvcResult, mapper, expectedResult,
-                new TypeReference<Result<RunConfiguration>>() { });
+                ConfigurationCreatorUtils.RUN_CONFIGURATION_TYPE);
     }
 
     @Test
@@ -194,6 +192,6 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
                 = ControllerTestUtils.buildExpectedResult(runConfigurations);
 
         ControllerTestUtils.assertResponse(mvcResult, mapper, expectedResult,
-                new TypeReference<Result<List<RunConfiguration>>>() { });
+                ConfigurationCreatorUtils.RUN_CONFIGURATION_LIST_TYPE);
     }
 }
