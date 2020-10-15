@@ -171,15 +171,16 @@ public class LustreFSManager {
     }
 
     private Optional<FileSystem> findFsForRun(final Long runId, final String token, final AmazonFSx fsxClient) {
-        DescribeFileSystemsResult result = fsxClient.describeFileSystems(
+        final DescribeFileSystemsResult result = fsxClient.describeFileSystems(
                 new DescribeFileSystemsRequest()
                         .withNextToken(token));
-        for (final FileSystem fileSystem : ListUtils.emptyIfNull(result.getFileSystems())) {
-            if (FileSystemType.LUSTRE.name().equals(fileSystem.getFileSystemType()) &&
-                    hasRunTag(runId, fileSystem)) {
-                log.debug("Found a lustre fs with id {} for run {}.", fileSystem.getFileSystemId(), runId);
-                return Optional.of(fileSystem);
-            }
+        final Optional<FileSystem> lustre = ListUtils.emptyIfNull(result.getFileSystems())
+                .stream()
+                .filter(fs -> FileSystemType.LUSTRE.name().equals(fs.getFileSystemType()) && hasRunTag(runId, fs))
+                .findFirst();
+        if (lustre.isPresent()) {
+            log.debug("Found a lustre fs with id {} for run {}.", lustre.get().getFileSystemId(), runId);
+            return lustre;
         }
         if (StringUtils.isNotBlank(result.getNextToken())) {
             return findFsForRun(runId, result.getNextToken(), fsxClient);
