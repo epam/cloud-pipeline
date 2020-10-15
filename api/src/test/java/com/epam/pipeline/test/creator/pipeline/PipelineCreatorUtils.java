@@ -18,7 +18,9 @@ package com.epam.pipeline.test.creator.pipeline;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.*;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class PipelineCreatorUtils {
 

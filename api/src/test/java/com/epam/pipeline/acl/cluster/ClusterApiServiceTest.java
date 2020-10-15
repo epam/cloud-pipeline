@@ -55,7 +55,7 @@ import java.util.List;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
 
 public class ClusterApiServiceTest extends AbstractAclTest {
 
