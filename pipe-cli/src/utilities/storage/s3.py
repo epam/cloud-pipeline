@@ -662,21 +662,10 @@ class S3BucketOperations(object):
             cls.__config__ = Config.instance()
         if cls.__config__.proxy is None:
             if cross_region:
-                return AwsConfig(proxies=cls._build_no_proxy_config())
+                os.environ['no_proxy'] = ''
             return None
         else:
             return AwsConfig(proxies=cls.__config__.resolve_proxy(target_url=cls.S3_ENDPOINT_URL))
-
-    @classmethod
-    def _build_no_proxy_config(cls):
-        result = {}
-        if os.environ.get('http_proxy'):
-            result.update({'http': os.environ.get('http_proxy')})
-        if os.environ.get('https_proxy'):
-            result.update({'https': os.environ.get('https_proxy')})
-        if not result:
-            return None
-        return result
 
     @classmethod
     def _get_client(cls, session, region_name=None):
