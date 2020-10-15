@@ -139,13 +139,28 @@ export default class DataStorage extends React.Component {
   }
 
   @computed
-  get provider () {
+  get region () {
     if (this.props.info && this.props.info.loaded && this.props.awsRegions.loaded) {
       const {regionId} = this.props.info.value;
-      const [region] = (this.props.awsRegions.value || []).filter(r => +r.id === +regionId);
-      if (region) {
-        return region.provider;
-      }
+      return (this.props.awsRegions.value || []).find(r => +r.id === +regionId);
+    }
+    return null;
+  }
+
+  @computed
+  get provider () {
+    const region = this.region;
+    if (region) {
+      return region.provider;
+    }
+    return null;
+  }
+
+  @computed
+  get regionName () {
+    const region = this.region;
+    if (region) {
+      return region.regionId || region.name;
     }
     return null;
   }
@@ -1347,6 +1362,7 @@ export default class DataStorage extends React.Component {
                     storageId={this.props.storageId}
                     path={this.props.path}
                     storageInfo={this.props.info.value}
+                    region={this.regionName}
                     // synchronous
                     uploadToS3={this.props.info.value.type === 'S3'}
                     uploadToNFS={this.props.info.value.type === 'NFS'}

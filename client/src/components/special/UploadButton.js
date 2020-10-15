@@ -29,18 +29,11 @@ import {
   Col,
   Tooltip
 } from 'antd';
-import S3Storage from '../../models/s3-upload/s3-storage';
+import S3Storage, {MAX_FILE_SIZE_DESCRIPTION} from '../../models/s3-upload/s3-storage';
 
 const KB = 1024;
 const MB = 1024 * KB;
-const GB = 1024 * MB;
-const TB = 1024 * GB;
-const S3_MAX_FILE_SIZE_TB = 5;
 const MAX_NFS_FILE_SIZE_MB = 500;
-
-const UPLOAD_CONCURRENCY_LIMIT = 9;
-const S3_MIN_UPLOAD_CHUNK_SIZE = 5 * MB;
-const S3_MAX_UPLOAD_CHUNKS_COUNT = 10000;
 
 class UploadButton extends React.Component {
   static propTypes = {
@@ -53,7 +46,8 @@ class UploadButton extends React.Component {
     title: PropTypes.string,
     validate: PropTypes.func,
     path: PropTypes.string,
-    storageInfo: PropTypes.object
+    storageInfo: PropTypes.object,
+    region: PropTypes.string
   };
 
   state = {
@@ -75,20 +69,22 @@ class UploadButton extends React.Component {
       this.props.storageId !== prevProps.storageId ||
       this.props.uploadToS3 !== prevProps.uploadToS3 ||
       this.props.path !== prevProps.path ||
-      this.props.storageInfo !== prevProps.storageInfo
+      this.props.storageInfo !== prevProps.storageInfo ||
+      this.props.region !== prevProps.region
     ) {
       this.createS3Storage();
     }
   }
 
   createS3Storage = () => {
-    const {storageId, uploadToS3, path: prefix, storageInfo} = this.props;
+    const {storageId, uploadToS3, path: prefix, storageInfo, region} = this.props;
     if (uploadToS3 && storageId && storageInfo) {
       const {delimiter, path} = storageInfo;
       const storage = {
         id: storageId,
         path,
-        delimiter
+        delimiter,
+        region
       };
       if (this.s3Storage) {
         this.s3Storage.storage = storage;
@@ -126,6 +122,19 @@ class UploadButton extends React.Component {
       uploadInfoClosable: true
     }, () => {
       setTimeout(this.hideUploadInfo, 2000);
+    });
+  };
+
+  hideUploadInfoDelayedIfDone = () => {
+    const {uploadingFiles = []} = this.state;
+    const allDone = !uploadingFiles.find(f => !f.done);
+    const haveRetry = uploadingFiles.find(f => f.done && !!f.retryCb && (!!f.error || f.aborted));
+    this.setState({
+      uploadInfoClosable: allDone
+    }, () => {
+      if (allDone && !haveRetry) {
+        setTimeout(this.hideUploadInfo, 2000);
+      }
     });
   };
 
@@ -325,132 +334,17 @@ class UploadButton extends React.Component {
       status: 'waiting...',
       percent: 0
     }));
-    uploadingFiles.forEach(f => {
-      f.abortCallback = () => {
-        const files = this.state.uploadingFiles;
-        const [file] = files.filter(uploadingFile => f.uid === uploadingFile.uid);
-        if (file) {
-          file.done = true;
-          file.percent = 100;
-          file.status = 'canceled';
-          this.setState({uploadingFiles: files});
-        }
-      };
-    });
     this.setState({uploadInfoVisible: true, uploadingFiles: uploadingFiles}, async () => {
       for (let i = 0; i < this.state.synchronousUploadingFiles.length; i++) {
         await this.uploadItemToStorageSDK(this.state.synchronousUploadingFiles[i]);
       }
-      this.hideUploadInfoDelayed(this.state.uploadingFiles);
+      this.hideUploadInfoDelayedIfDone();
     });
   };
 
-  uploadItemToStorageSDK = async (file) => {
-    const saveNotAbortedStorageObject = (item) => {
-      const abortStorageObjects = localStorage.getItem('abortStorageObjects');
-      let storageObjects = [];
-      if (abortStorageObjects) {
-        storageObjects = (JSON.parse(abortStorageObjects) || []);
-        const [currentObject] = storageObjects.filter(object => object.uploadId === item.uploadId);
-        if (!currentObject) {
-          storageObjects.push(item);
-        } else {
-          currentObject.error = item.error;
-        }
-      } else {
-        storageObjects.push(item);
-      }
-      localStorage.setItem('abortStorageObjects', JSON.stringify(storageObjects));
-    };
-
-    const removeNotAbortedStorageObject = (uploadId) => {
-      const abortStorageObjects = JSON.parse(localStorage.getItem('abortStorageObjects'));
-      const [current] = (abortStorageObjects || []).filter(obj => obj.uploadId === uploadId);
-      if (current) {
-        abortStorageObjects.splice(abortStorageObjects.indexOf(current), 1);
-      }
-      localStorage.setItem('abortStorageObjects', JSON.stringify(abortStorageObjects));
-    };
-
-    const saveNotCompletedStorageObject = (item) => {
-      const completeStorageObjects = localStorage.getItem('completeStorageObjects');
-      let storageObjects = [];
-      if (completeStorageObjects) {
-        storageObjects = (JSON.parse(completeStorageObjects) || []);
-        const [currentObject] = storageObjects.filter(object => object.uploadId === item.uploadId);
-        if (!currentObject) {
-          storageObjects.push(item);
-        } else {
-          currentObject.parts = item.parts;
-          currentObject.error = item.error;
-        }
-      } else {
-        storageObjects.push(item);
-      }
-      localStorage.setItem('completeStorageObjects', JSON.stringify(storageObjects));
-    };
-
-    const removeNotCompletedStorageObject = (uploadId) => {
-      const completeStorageObjects = JSON.parse(localStorage.getItem('completeStorageObjects'));
-      const [current] = (completeStorageObjects || []).filter(obj => obj.uploadId === uploadId);
-      if (current) {
-        completeStorageObjects.splice(completeStorageObjects.indexOf(current), 1);
-      }
-      localStorage.setItem('completeStorageObjects', JSON.stringify(completeStorageObjects));
-    };
-
-    const saveCurrentUploadStorageObject = (item) => {
-      let currentUpload = JSON.parse(localStorage.getItem('currentUpload'));
-      if (currentUpload) {
-        if (currentUpload.uploadId !== item.uploadId) {
-          currentUpload = item;
-        } else {
-          if (item.parts) {
-            currentUpload.parts = item.parts;
-          }
-          if (item.error) {
-            if (currentUpload.errors) {
-              currentUpload.errors.push(item.error);
-            } else {
-              currentUpload.errors = [item.error];
-            }
-          }
-        }
-      } else {
-        currentUpload = item;
-      }
-      localStorage.setItem('currentUpload', JSON.stringify(currentUpload));
-    };
-
-    const removeCurrentUploadStorageObject = () => {
-      localStorage.removeItem('currentUpload');
-    };
-
-    const fileName = file.name;
-    const fileSize = file.size;
-    const uploadChunkSize =
-      Math.ceil(fileSize / S3_MIN_UPLOAD_CHUNK_SIZE) > S3_MAX_UPLOAD_CHUNKS_COUNT
-        ? Math.ceil(fileSize / S3_MAX_UPLOAD_CHUNKS_COUNT)
-        : S3_MIN_UPLOAD_CHUNK_SIZE;
-    const parts = [];
-    let partsCount = 0;
-    let readPosition = 0;
-    let uploadId = null;
-
-    try {
-      if (!this.s3Storage) {
-        throw new Error('Error uploading: could not create mutlipart upload request for s3 storage');
-      }
-      const data = await this.s3Storage.createMultipartUpload(fileName);
-      uploadId = data.UploadId;
-      saveCurrentUploadStorageObject({uploadId, fileSize, uploadChunkSize, fileName});
-    } catch (e) {
-      message.error(e.message, 7);
-      return;
-    }
-
+  uploadItemToStorageSDK = (file) => {
     const files = this.state.uploadingFiles;
-    const [uploadingFile] = files.filter(f => f.uid === file.uid);
+    const uploadingFile = files.find(f => f.uid === file.uid);
     if (uploadingFile) {
       uploadingFile.status = 'uploading...';
       this.setState({
@@ -458,205 +352,140 @@ class UploadButton extends React.Component {
       });
     }
 
-    const updatePercent = (e, partsNum) => {
-      if (uploadingFile.abortedByUser) {
-        return;
-      }
-      const {loaded, total} = e;
-      if (total === 0 || loaded === 0) return;
-      const totalChunks = fileSize / uploadChunkSize;
-      if (!uploadingFile.percentParts) {
-        uploadingFile.percentParts = [];
-      }
-      const [currentPart] = uploadingFile.percentParts.filter(part => part.partsNum === partsNum);
-      if (currentPart) {
-        currentPart.percent = Math.min(100, Math.ceil(loaded / total * 100));
-      } else {
-        uploadingFile.percentParts.push({
-          partsNum: partsNum,
-          percent: Math.min(100, Math.ceil(loaded / total * 100))
-        });
-      }
-      let sum = 0;
-      const percents = uploadingFile.percentParts.map(part => part.percent);
-      for (let i = 0; i < percents.length; i++) {
-        sum += percents[i];
-      }
-      uploadingFile.percent = Math.min(100, Math.ceil(sum / totalChunks));
-      this.setState({uploadingFiles: files});
-    };
-
-    const updateError = (error, retryCb = null, cancelCb = null) => {
-      uploadingFile.percent = 100;
-      uploadingFile.error = error;
-      uploadingFile.retryCb = retryCb;
-      uploadingFile.cancelCb = cancelCb;
-      this.setState({uploadingFiles: files});
-    };
-
-    const updateStatus = (status) => {
-      uploadingFile.percent = 100;
-      uploadingFile.status = status;
-      this.setState({uploadingFiles: files});
-    };
-
-    const tryAgain = async () => {
-      uploadingFile.status = 'uploading...';
-      uploadingFile.error = null;
-      this.setState({uploadingFiles: files});
-      await upload();
-      if (!this.state.uploadingFiles
-        .filter(f => f.status !== 'done' && f.status !== 'aborted').length) {
-        this.hideUploadInfoDelayed(this.state.uploadingFiles);
-      }
-    };
-
-    const abort = async () => {
-      uploadingFile.status = 'aborting...';
-      uploadingFile.error = null;
-      this.setState({uploadingFiles: files});
-      try {
-        if (this.s3Storage) {
-          await this.s3Storage.abortMultipartUploadStorageObject(fileName, uploadId);
+    const onProgress = (percent) => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile && !uFile.aborted) {
+        uFile.percent = uFile.done
+          ? 100
+          : Math.min(100, Math.round(percent * 100));
+        if (!uFile.done) {
+          uFile.status = 'uploading...';
         }
-        removeNotAbortedStorageObject(uploadId);
-        removeNotCompletedStorageObject(uploadId);
-        updateStatus('aborted');
-        updateError(null);
-      } catch (e) {
-        updateError('error aborting upload', abort);
-        saveNotAbortedStorageObject({fileName, uploadId, error: e});
-      }
-      removeCurrentUploadStorageObject();
-      if (!this.state.uploadingFiles
-        .filter(f => f.status !== 'done' && f.status !== 'aborted').length) {
-        this.hideUploadInfoDelayed(this.state.uploadingFiles);
+        this.setState({uploadingFiles});
       }
     };
 
-    const complete = async () => {
-      if (uploadingFile.abortedByUser) {
-        return;
-      }
-      const sortedParts = parts.sort((a, b) => {
-        if (a.PartNumber > b.PartNumber) {
-          return 1;
-        } else if (a.PartNumber < b.PartNumber) {
-          return -1;
-        }
-        return 0;
-      });
-      try {
-        if (!this.s3Storage) {
-          throw new Error('Error uploading: could not complete upload request for s3 storage');
-        }
-        await this.s3Storage.completeMultipartUploadStorageObject(
-          fileName,
-          sortedParts,
-          uploadId
-        );
-        removeNotCompletedStorageObject(uploadId);
-        updateStatus('done');
-        updateError(null);
-      } catch (e) {
-        saveNotCompletedStorageObject({
-          fileName,
-          uploadId,
-          parts: sortedParts,
-          error: e
-        });
-        updateError('error completing file', complete, abort);
-      }
-      removeCurrentUploadStorageObject();
-      if (!this.state.uploadingFiles
-        .filter(f => f.status !== 'done' && f.status !== 'aborted').length) {
-        this.hideUploadInfoDelayed(this.state.uploadingFiles);
+    const onError = (error) => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile && error) {
+        uFile.error = error.toString();
+        uFile.status = 'error';
+        uFile.done = true;
+        this.setState({uploadingFiles}, this.hideUploadInfoDelayedIfDone);
       }
     };
 
-    const upload = async () => {
-      let promises = [];
-      const currentAborts = [];
-      partsCount = 0;
-      readPosition = 0;
+    const onDone = () => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile) {
+        uFile.status = 'done';
+        uFile.done = true;
+        uFile.aborting = false;
+        this.setState({uploadingFiles}, this.hideUploadInfoDelayedIfDone);
+      }
+    };
 
-      if (fileSize) {
-        if (fileSize >= S3_MAX_FILE_SIZE_TB * TB) {
-          updateStatus('aborted');
-          updateError(`error: Maximum ${S3_MAX_FILE_SIZE_TB}Tb per file`);
-          if (!this.state.uploadingFiles
-            .filter(f => f.status !== 'done' && f.status !== 'aborted').length) {
-            this.hideUploadInfoDelayed(this.state.uploadingFiles);
-          }
-          return;
-        }
-        uploadingFile.cancelCb = async () => {
-          uploadingFile.abortedByUser = true;
-          currentAborts.forEach(abort => abort && abort());
-          await abort();
+    const abort = () => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile) {
+        uFile.aborted = true;
+        uFile.aborting = false;
+        uFile.status = 'aborted';
+        uFile.uploadID = undefined;
+        uFile.partNumber = undefined;
+        uFile.parts = [];
+        this.setState({uploadingFiles}, this.hideUploadInfoDelayedIfDone);
+      }
+    };
+
+    const startAborting = () => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile) {
+        uFile.uploadID = undefined;
+        uFile.aborting = true;
+        this.setState({uploadingFiles});
+      }
+    };
+
+    const setAbort = (abortFn) => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile) {
+        uFile.cancelCb = () => {
+          startAborting();
+          abortFn && abortFn().then(abort).catch(abort);
         };
-        let requestCounter = 0;
-        let results;
-        do {
-          if (!this.s3Storage) {
-            await abort();
-            break;
-          }
-          const currentChunkSize = (readPosition + uploadChunkSize) > fileSize
-            ? fileSize - readPosition
-            : uploadChunkSize;
-          const bulb = file.slice(readPosition, readPosition + currentChunkSize);
-          partsCount += 1;
-          readPosition += bulb.size;
-          if (parts.map(part => part.PartNumber).indexOf(partsCount) === -1) {
-            const partNumber = partsCount;
-            const upload = this.s3Storage.multipartUploadStorageObject(
-              fileName,
-              bulb,
-              partNumber,
-              uploadId,
-              (e) => updatePercent(e, partNumber)
-            );
-            currentAborts.push(upload.abort.bind(upload));
-            promises.push(upload.promise().then((data) => {
-              parts.push({
-                ETag: data.ETag,
-                PartNumber: partNumber
-              });
-              saveCurrentUploadStorageObject({uploadId, parts});
-              return {data, error: null};
-            }, (error) => {
-              saveCurrentUploadStorageObject({uploadId, error});
-              return {data: null, error: error.message};
-            }));
-          }
-          requestCounter += 1;
-          if (requestCounter === UPLOAD_CONCURRENCY_LIMIT) {
-            results = await Promise.all(promises);
-            promises = [];
-            if (results.map(result => result.error).reduce((a, b) => b || a, 0)) {
-              if (!uploadingFile.abortedByUser) {
-                updateError('error uploading file', tryAgain, abort);
-              }
-            }
-            requestCounter = 0;
-          }
-        } while (readPosition < fileSize && !uploadingFile.abortedByUser);
-
-        if (promises.length) {
-          results = await Promise.all(promises);
-        }
-        if (results.map(result => result.error).reduce((a, b) => b || a, 0)) {
-          if (!uploadingFile.abortedByUser) {
-            updateError('error uploading file', tryAgain, abort);
-          }
-        } else {
-          await complete();
-        }
+        this.setState({uploadingFiles});
       }
     };
 
-    await upload();
+    const setMultipartUploadParts = (id, parts) => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile) {
+        uFile.uploadID = id;
+        uFile.parts = parts;
+        this.setState({uploadingFiles});
+      }
+    };
+
+    const onPartError = (partNumber, error) => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile) {
+        uFile.error = error;
+        uFile.partNumber = partNumber;
+        this.setState({uploadingFiles});
+      }
+    };
+
+    const callbacks = {
+      onPartError,
+      onProgress,
+      setAbort,
+      setMultipartUploadParts
+    };
+
+    const doUpload = (uploadID = undefined, partNumber = 0, multipartParts = []) => {
+      return new Promise((resolve) => {
+        this.s3Storage.doUpload(file, {uploadID, partNumber, multipartParts}, callbacks)
+          .then((error) => {
+            if (error) {
+              onError(error);
+              resolve();
+            } else {
+              onDone();
+              resolve();
+            }
+          })
+          .catch(error => {
+            onError(error);
+            resolve();
+          });
+      });
+    };
+
+    uploadingFile.retryCb = () => {
+      const {uploadingFiles} = this.state;
+      const uFile = uploadingFiles.find(f => f.uid === file.uid);
+      if (uFile && this.s3Storage) {
+        const {uploadID, partNumber, parts: multipartParts} = uFile;
+        uFile.error = undefined;
+        uFile.done = false;
+        uFile.aborted = false;
+        uFile.status = 'uploading...';
+        uFile.percent = 0;
+        this.setState({uploadingFiles}, () => {
+          doUpload(uploadID, partNumber, multipartParts);
+        });
+      }
+    };
+    return doUpload();
   };
 
   render () {
@@ -711,7 +540,7 @@ class UploadButton extends React.Component {
           }
           {
             this.props.uploadToS3 && !this.s3StorageError && !this.props.uploadToNFS &&
-            <Tooltip title={`Maximum ${S3_MAX_FILE_SIZE_TB}Tb per file`} trigger="hover">
+            <Tooltip title={`Maximum ${MAX_FILE_SIZE_DESCRIPTION} per file`} trigger="hover">
               {button}
             </Tooltip>
           }
@@ -763,11 +592,11 @@ class UploadButton extends React.Component {
                         status={status} />
                     </Col>
                     {
-                      this.props.uploadToS3 && (f.cancelCb || f.retryCb) && !f.done &&
+                      this.props.uploadToS3 &&
                       <Col span={3}>
                         <Row type="flex" justify="space-around">
                           {
-                            f.error && f.retryCb &&
+                            f.done && (f.error || f.aborted) && f.retryCb && !f.aborting &&
                             <Button
                               size="small"
                               shape="circle"
@@ -775,7 +604,7 @@ class UploadButton extends React.Component {
                               onClick={() => f.retryCb()} />
                           }
                           {
-                            f.cancelCb &&
+                            !f.done && f.cancelCb && f.uploadID &&
                             <Button
                               size="small"
                               shape="circle"
