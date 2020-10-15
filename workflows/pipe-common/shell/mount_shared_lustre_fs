@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+MOUNT_DIR="$1"
+REQUEST_FOLDER_FOR_ID="$2"
+REQUEST_TYPE="$3"
+FS_SETUP_TASK="$4"
+
+_MOUNT_STORAGE_JSON=$(curl -k -s --fail -X $REQUEST_TYPE --header "Authorization: Bearer $API_TOKEN" $API/lustre/$REQUEST_FOLDER_FOR_ID)
+_STORAGE_PATH=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload.mountPath')
+_MOUNT_OPTIONS=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload.mountOptions')
+_STORAGE_STATUS=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload.status')
+_MOUNT_PROTOCOL="lustre"
+
+if [ -z "$_STORAGE_PATH" ] || [ "$_STORAGE_PATH" == "null" ] || [ "$_STORAGE_STATUS" == "FAILED" ] ; then
+    pipe_log_fail "Failed to get Lustre for shared file system" "$FS_SETUP_TASK"
+    exit 1
+fi
+
+pipe_log_info "Lustre $_STORAGE_PATH will be used as shared FS" "$FS_SETUP_TASK"
+
+if [ "$_MOUNT_OPTIONS" == "null" ]; then
+    _OPTIONS_STR=""
+else
+    _OPTIONS_STR=" -o $_MOUNT_OPTIONS"
+fi
+
+if [ "$_STORAGE_STATUS" != "AVAILABLE" ]; then
+  # Wait for 20 minutes by default
+  _NUM_REPS="${CP_CAP_LUSTRE_WAIT_ATTEMPTS:-240}"
+
+  for i in $(seq 1 "$_NUM_REPS") ; do
+    _STORAGE_STATUS_JSON=$(curl -k -s --fail -X GET --header "Authorization: Bearer $API_TOKEN" $API/lustre/$REQUEST_FOLDER_FOR_ID)
+    _STORAGE_STATUS=$(echo "$_STORAGE_STATUS_JSON" | jq -r '.payload.status')
+    if [ "$_STORAGE_STATUS" == "AVAILABLE" ]; then
+        pipe_log_info "Lustre $_STORAGE_PATH is ready for mount" "$FS_SETUP_TASK"
+        break
+    fi
+    sleep 5
+  done
+fi
+
+
+mkdir -p "${MOUNT_DIR}" && rm -rf "${MOUNT_DIR}/*" && mount -t ${_MOUNT_PROTOCOL} "${_STORAGE_PATH}" "${MOUNT_DIR}" ${_OPTIONS_STR}
+exit $?
