@@ -37,12 +37,14 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.cluster.NodeCreatorUtils;
-import org.junit.Before;
+import com.epam.pipeline.test.creator.contextual.ContextualPreferenceCreatorUtils;
+import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -50,11 +52,27 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.*;
 
 public class ClusterApiServiceTest extends AbstractAclTest {
+
+    private final FilterPodsRequest filterPodsRequest = NodeCreatorUtils.getDefaultFilterPodsRequest();
+    private final NodeInstance nodeInstance = NodeCreatorUtils.getNodeInstanceWithPermission();
+    private final NodeInstance nodeInstanceWithoutPermission = NodeCreatorUtils.getNodeInstanceWithoutPermission();
+    private final PipelineRun pipelineRun = PipelineCreatorUtils.getPipelineRunWithPermission();
+    private final ContextualPreference contextualPreference =
+            ContextualPreferenceCreatorUtils.getContextualPreference();
+    private final FilterNodesVO filterNodesVO = NodeCreatorUtils.getDefaultFilterNodesVO();
+    private final NodeDisk nodeDisk = NodeCreatorUtils.getDefaultNodeDisk();
+    private final MonitoringStats monitoringStats = ContextualPreferenceCreatorUtils.getMonitoringStats();
+    private final InstanceType instanceType = NodeCreatorUtils.getDefaultInstanceType();
+    private final InputStream inputStream = new ByteArrayInputStream(TEST_STRING.getBytes());
+    private final List<NodeDisk> nodeDisks = Collections.singletonList(nodeDisk);
+    private final List<InstanceType> instanceTypes = Collections.singletonList(instanceType);
+    private final List<MonitoringStats> statsList = Collections.singletonList(monitoringStats);
 
     @Autowired
     private ClusterApiService clusterApiService;
@@ -80,79 +98,27 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @Autowired
     private InstanceOfferManager mockInstanceOfferManager;
 
-    private final FilterPodsRequest filterPodsRequest = NodeCreatorUtils.getDefaultFilterPodsRequest();
-
-    private final NodeInstance nodeInstance = NodeCreatorUtils.getDefaultNodeInstance();
-
-    private final NodeInstance nodeInstanceWithoutPermission = NodeCreatorUtils.getDefaultNodeInstance();
-
-    private final PipelineRun pipelineRun = NodeCreatorUtils.getPipelineRun();
-
-    private final ContextualPreference contextualPreference = NodeCreatorUtils.getContextualPreference();
-
-    private final FilterNodesVO filterNodesVO = NodeCreatorUtils.getDefaultFilterNodesVO();
-
-    private final NodeDisk nodeDisk = NodeCreatorUtils.getDefaultNodeDisk();
-
-    private final MonitoringStats monitoringStats = NodeCreatorUtils.getMonitoringStats();
-
-    private final InstanceType instanceType = NodeCreatorUtils.getDefaultInstanceType();
-
-    private InputStream inputStream;
-
-    private List<NodeDisk> nodeDisks;
-
-    private List<InstanceType> instanceTypes;
-
-    private List<MonitoringStats> statsList;
-
-    private List<NodeInstance> singleNodeInstance;
-
-    private List<NodeInstance> twoNodeInstances;
-
-    @Before
-    public void setUp() {
-        statsList = Collections.singletonList(monitoringStats);
-
-        instanceTypes = Collections.singletonList(instanceType);
-
-        nodeDisks = Collections.singletonList(nodeDisk);
-
-        pipelineRun.setId(1L);
-        pipelineRun.setOwner(SIMPLE_USER);
-
-        final PipelineRun pipelineRunWithoutPermission = NodeCreatorUtils.getPipelineRun();
-        pipelineRunWithoutPermission.setId(2L);
-        pipelineRunWithoutPermission.setOwner(SIMPLE_USER_2);
-        pipelineRunWithoutPermission.setName(TEST_NAME_2);
-
-        nodeInstance.setId(1L);
-        nodeInstance.setOwner(OWNER_USER);
-        nodeInstance.setPipelineRun(pipelineRun);
-        nodeInstance.setName(TEST_NAME);
-
-        nodeInstanceWithoutPermission.setId(2L);
-        nodeInstanceWithoutPermission.setOwner(SIMPLE_USER_2);
-        nodeInstanceWithoutPermission.setPipelineRun(pipelineRunWithoutPermission);
-        nodeInstanceWithoutPermission.setName(TEST_NAME_2);
-
-        singleNodeInstance = new ArrayList<>();
+    private List<NodeInstance> initSingleNodeInstanceList() {
+        final List<NodeInstance> singleNodeInstance = new ArrayList<>();
         singleNodeInstance.add(nodeInstance);
+        return singleNodeInstance;
+    }
 
-        twoNodeInstances = new ArrayList<>();
+    private List<NodeInstance> initTwoNodeInstancesList() {
+        final List<NodeInstance> twoNodeInstances = new ArrayList<>();
         twoNodeInstances.add(nodeInstance);
         twoNodeInstances.add(nodeInstanceWithoutPermission);
+        return twoNodeInstances;
     }
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldReturnListWithNodeInstancesForAdmin() {
-        doReturn(singleNodeInstance).when(mockNodesManager).getNodes();
+        doReturn(initSingleNodeInstanceList()).when(mockNodesManager).getNodes();
 
-        List<NodeInstance> nodes = clusterApiService.getNodes();
+        final List<NodeInstance> nodes = clusterApiService.getNodes();
 
-        assertThat(nodes).hasSize(1);
-        assertThat(nodes.get(0)).isEqualTo(nodeInstance);
+        assertThat(nodes).hasSize(1).contains(nodeInstance);
     }
 
     @Test
@@ -163,12 +129,11 @@ public class ClusterApiServiceTest extends AbstractAclTest {
                 Collections.singletonList(new UserPermission(SIMPLE_USER_ROLE, AclPermission.READ.getMask())));
         doReturn(contextualPreference).when(mockContextualPreferenceManager).search(
                 Collections.singletonList(SystemPreferences.RUN_VISIBILITY_POLICY.getKey()));
-        doReturn(singleNodeInstance).when(mockNodesManager).getNodes();
+        doReturn(initSingleNodeInstanceList()).when(mockNodesManager).getNodes();
 
-        List<NodeInstance> nodes = clusterApiService.getNodes();
+        final List<NodeInstance> nodes = clusterApiService.getNodes();
 
-        assertThat(nodes).hasSize(1);
-        assertThat(nodes.get(0)).isEqualTo(nodeInstance);
+        assertThat(nodes).hasSize(1).contains(nodeInstance);
     }
 
     @Test
@@ -183,21 +148,20 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         doReturn(contextualPreference).when(mockContextualPreferenceManager).search(
                 Collections.singletonList(SystemPreferences.RUN_VISIBILITY_POLICY.getKey()));
 
-        doReturn(twoNodeInstances).when(mockNodesManager).getNodes();
+        doReturn(initTwoNodeInstancesList()).when(mockNodesManager).getNodes();
 
-        List<NodeInstance> nodes = clusterApiService.getNodes();
+        final List<NodeInstance> nodes = clusterApiService.getNodes();
 
-        assertThat(nodes).hasSize(1);
-        assertThat(nodes.get(0)).isEqualTo(nodeInstance);
+        assertThat(nodes).hasSize(1).contains(nodeInstance);
     }
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldReturnEmptyNodeInstanceListWhenPermissionIsNotGranted() {
         initAclEntity(nodeInstanceWithoutPermission);
-        doReturn(singleNodeInstance).when(mockNodesManager).getNodes();
+        doReturn(initSingleNodeInstanceList()).when(mockNodesManager).getNodes();
 
-        List<NodeInstance> nodes = clusterApiService.getNodes();
+        final List<NodeInstance> nodes = clusterApiService.getNodes();
 
         assertThat(nodes).isEmpty();
     }
@@ -205,12 +169,11 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldReturnFilteredListWithNodeInstancesForAdmin() {
-        doReturn(singleNodeInstance).when(mockNodesManager).filterNodes(filterNodesVO);
+        doReturn(initSingleNodeInstanceList()).when(mockNodesManager).filterNodes(filterNodesVO);
 
-        List<NodeInstance> nodes = clusterApiService.filterNodes(filterNodesVO);
+        final List<NodeInstance> nodes = clusterApiService.filterNodes(filterNodesVO);
 
-        assertThat(nodes).hasSize(1);
-        assertThat(nodes.get(0)).isEqualTo(nodeInstance);
+        assertThat(nodes).hasSize(1).contains(nodeInstance);
     }
 
     @Test
@@ -221,9 +184,9 @@ public class ClusterApiServiceTest extends AbstractAclTest {
                 Collections.singletonList(new UserPermission(SIMPLE_USER, AclPermission.READ.getMask())));
         doReturn(contextualPreference).when(mockContextualPreferenceManager).search(
                 Collections.singletonList(SystemPreferences.RUN_VISIBILITY_POLICY.getKey()));
-        doReturn(singleNodeInstance).when(mockNodesManager).filterNodes(filterNodesVO);
+        doReturn(initSingleNodeInstanceList()).when(mockNodesManager).filterNodes(filterNodesVO);
 
-        List<NodeInstance> nodes = clusterApiService.filterNodes(filterNodesVO);
+        final List<NodeInstance> nodes = clusterApiService.filterNodes(filterNodesVO);
 
         assertThat(nodes.size()).isEqualTo(1);
         assertThat(nodes.get(0)).isEqualTo(nodeInstance);
@@ -239,12 +202,11 @@ public class ClusterApiServiceTest extends AbstractAclTest {
                 Collections.singletonList(new UserPermission(SIMPLE_USER, AclPermission.NO_READ.getMask())));
         doReturn(contextualPreference).when(mockContextualPreferenceManager).search(
                 Collections.singletonList(SystemPreferences.RUN_VISIBILITY_POLICY.getKey()));
-        doReturn(twoNodeInstances).when(mockNodesManager).filterNodes(filterNodesVO);
+        doReturn(initTwoNodeInstancesList()).when(mockNodesManager).filterNodes(filterNodesVO);
 
-        List<NodeInstance> nodes = clusterApiService.filterNodes(filterNodesVO);
+        final List<NodeInstance> nodes = clusterApiService.filterNodes(filterNodesVO);
 
-        assertThat(nodes).hasSize(1);
-        assertThat(nodes.get(0)).isEqualTo(nodeInstance);
+        assertThat(nodes).hasSize(1).contains(nodeInstance);
     }
 
     @Test
@@ -253,9 +215,9 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         initAclEntity(nodeInstanceWithoutPermission);
         doReturn(contextualPreference).when(mockContextualPreferenceManager).search(
                 Collections.singletonList(SystemPreferences.RUN_VISIBILITY_POLICY.getKey()));
-        doReturn(singleNodeInstance).when(mockNodesManager).filterNodes(filterNodesVO);
+        doReturn(initSingleNodeInstanceList()).when(mockNodesManager).filterNodes(filterNodesVO);
 
-        List<NodeInstance> nodes = clusterApiService.filterNodes(filterNodesVO);
+        final List<NodeInstance> nodes = clusterApiService.filterNodes(filterNodesVO);
 
         assertThat(nodes).isEmpty();
     }
@@ -265,7 +227,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldReturnNodeInstanceForAdmin() {
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
 
-        NodeInstance node = clusterApiService.getNode(nodeInstance.getName());
+       final NodeInstance node = clusterApiService.getNode(nodeInstance.getName());
 
         assertThat(node).isEqualTo(nodeInstance);
     }
@@ -279,7 +241,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
         doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(eq(pipelineRun.getId()));
 
-        NodeInstance node = clusterApiService.getNode(nodeInstance.getName());
+        final NodeInstance node = clusterApiService.getNode(nodeInstance.getName());
 
         assertThat(node).isEqualTo(nodeInstance);
     }
@@ -299,7 +261,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldReturnNodeThroughRequestForAdmin() {
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName(), filterPodsRequest);
 
-        NodeInstance node = clusterApiService.getNode(nodeInstance.getName(), filterPodsRequest);
+        final NodeInstance node = clusterApiService.getNode(nodeInstance.getName(), filterPodsRequest);
 
         assertThat(node).isEqualTo(nodeInstance);
     }
@@ -314,7 +276,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
         doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(eq(pipelineRun.getId()));
 
-        NodeInstance node = clusterApiService.getNode(nodeInstance.getName(), filterPodsRequest);
+        final NodeInstance node = clusterApiService.getNode(nodeInstance.getName(), filterPodsRequest);
 
         assertThat(node).isEqualTo(nodeInstance);
     }
@@ -335,7 +297,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldTerminateNodeForAdmin() {
         doReturn(nodeInstance).when(mockNodesManager).terminateNode(nodeInstance.getName());
 
-        NodeInstance resultNode = clusterApiService.terminateNode(nodeInstance.getName());
+        final NodeInstance resultNode = clusterApiService.terminateNode(nodeInstance.getName());
 
         assertThat(resultNode).isEqualTo(nodeInstance);
     }
@@ -350,7 +312,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
         doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(eq(pipelineRun.getId()));
 
-        NodeInstance resultNode = clusterApiService.terminateNode(nodeInstance.getName());
+        final NodeInstance resultNode = clusterApiService.terminateNode(nodeInstance.getName());
 
         assertThat(resultNode).isEqualTo(nodeInstance);
     }
@@ -369,12 +331,12 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldReturnStatsForNodeForAdmin() {
-        final MonitoringStats monitoringStats = NodeCreatorUtils.getMonitoringStats();
-        statsList = Collections.singletonList(monitoringStats);
+        final MonitoringStats monitoringStats = ContextualPreferenceCreatorUtils.getMonitoringStats();
+        final List<MonitoringStats> statsList = Collections.singletonList(monitoringStats);
         doReturn(statsList).when(mockUsageMonitoringManager)
                 .getStatsForNode(nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX);
 
-        List<MonitoringStats> resultStatsList =
+        final List<MonitoringStats> resultStatsList =
                 clusterApiService.getStatsForNode(nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX);
 
         assertThat(resultStatsList.size()).isEqualTo(1);
@@ -393,7 +355,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
         doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(eq(pipelineRun.getId()));
 
-        List<MonitoringStats> resultStatsList =
+        final List<MonitoringStats> resultStatsList =
                 clusterApiService.getStatsForNode(nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX);
 
         assertThat(resultStatsList.size()).isEqualTo(1);
@@ -420,7 +382,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
                 .getStatsForNodeAsInputStream(nodeInstance.getName(),
                         LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO);
 
-        InputStream resultInputStream =
+        final InputStream resultInputStream =
                 clusterApiService.getUsageStatisticsFile(nodeInstance.getName(),
                         LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO);
 
@@ -440,7 +402,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
         doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(eq(pipelineRun.getId()));
 
-        InputStream resultInputStream =
+        final InputStream resultInputStream =
                 clusterApiService.getUsageStatisticsFile(nodeInstance.getName(),
                         LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO);
 
@@ -466,7 +428,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldReturnInstanceTypes() {
         doReturn(instanceTypes).when(mockInstanceOfferManager).getAllowedInstanceTypes(1L, true);
 
-        List<InstanceType> resultInstanceTypesList = clusterApiService.getAllowedInstanceTypes(1L, true);
+        final List<InstanceType> resultInstanceTypesList = clusterApiService.getAllowedInstanceTypes(1L, true);
 
         assertThat(resultInstanceTypesList).isEqualTo(instanceTypes);
     }
@@ -475,7 +437,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldReturnToolInstanceTypes() {
         doReturn(instanceTypes).when(mockInstanceOfferManager).getAllowedToolInstanceTypes(1L, true);
 
-        List<InstanceType> resultInstanceTypesList = clusterApiService
+        final List<InstanceType> resultInstanceTypesList = clusterApiService
                 .getAllowedToolInstanceTypes(1L, true);
 
         assertThat(resultInstanceTypesList).isEqualTo(instanceTypes);
@@ -488,7 +450,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         doReturn(allowedInstanceAndPriceTypes).when(mockInstanceOfferManager)
                 .getAllowedInstanceAndPriceTypes(1L, 2L, true);
 
-        AllowedInstanceAndPriceTypes result = clusterApiService.getAllowedInstanceAndPriceTypes(1L, 2L, true);
+        final AllowedInstanceAndPriceTypes result = clusterApiService.getAllowedInstanceAndPriceTypes(1L, 2L, true);
 
         assertThat(result).isEqualTo(allowedInstanceAndPriceTypes);
     }
@@ -499,7 +461,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         List<MasterNode> masterNodes = Collections.singletonList(masterNode);
         doReturn(masterNodes).when(mockNodesManager).getMasterNodes();
 
-        List<MasterNode> resultMasterNodesList = clusterApiService.getMasterNodes();
+        final List<MasterNode> resultMasterNodesList = clusterApiService.getMasterNodes();
 
         assertThat(resultMasterNodesList).isEqualTo(masterNodes);
     }
@@ -509,7 +471,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldReturnNodeDisksForAdmin() {
         doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.getNodeId());
 
-        List<NodeDisk> resultNodeDiskList = clusterApiService.loadNodeDisks(nodeDisk.getNodeId());
+        final List<NodeDisk> resultNodeDiskList = clusterApiService.loadNodeDisks(nodeDisk.getNodeId());
 
         assertThat(resultNodeDiskList.size()).isEqualTo(1);
         assertThat(resultNodeDiskList.get(0)).isEqualTo(nodeDisk);
@@ -526,7 +488,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeDisk.getNodeId());
         doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(eq(pipelineRun.getId()));
 
-        List<NodeDisk> resultNodeDiskList = clusterApiService.loadNodeDisks(nodeDisk.getNodeId());
+        final List<NodeDisk> resultNodeDiskList = clusterApiService.loadNodeDisks(nodeDisk.getNodeId());
 
         assertThat(resultNodeDiskList.size()).isEqualTo(1);
         assertThat(resultNodeDiskList.get(0)).isEqualTo(nodeDisk);

@@ -102,6 +102,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
 import com.epam.pipeline.manager.user.RoleManager;
+import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.utils.JsonService;
 import com.epam.pipeline.manager.utils.UtilsManager;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
@@ -422,6 +423,9 @@ public class AclTestBeans {
     @MockBean
     protected StopServerlessRunManager mockStopServerlessRunManager;
 
+    @MockBean
+    protected UserManager mockUserManager;
+
     @Bean
     protected TemplatesScanner mockTemplatesScanner() {
         return Mockito.mock(TemplatesScanner.class);
@@ -440,7 +444,7 @@ public class AclTestBeans {
     @Bean
     protected FolderCrudManager mockFolderCrudManager() {
         return Mockito.mock(FolderCrudManager.class);
-    } /////
+    }
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

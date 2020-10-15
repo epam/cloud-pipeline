@@ -151,7 +151,7 @@ public class AclTestConfiguration {
     protected NodeDiskManager mockNodeDiskManager;
 
     @MockBean
-    UsageMonitoringManager mockUsageMonitoringManager;
+    protected UsageMonitoringManager mockUsageMonitoringManager;
 
     @MockBean
     protected EntityEventServiceManager entityEventServiceManager;
