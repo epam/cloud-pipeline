@@ -40,5 +40,8 @@ public class NetworkConfiguration {
     @JsonProperty("networks")
     private Map<String, String> allowedNetworks;
 
+    @JsonProperty("security_group_ids")
+    private List<String> securityGroups;
+
     private List<SwapConfiguration> swap;
 }

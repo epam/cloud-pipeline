@@ -104,6 +104,7 @@ public class SystemPreferences {
     private static final String GRID_ENGINE_AUTOSCALING_GROUP = "Grid engine autoscaling";
     private static final String GCP_GROUP = "GCP";
     private static final String BILLING_GROUP = "Billing Reports";
+    private static final String LUSTRE_GROUP = "Lustre FS";
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
 
@@ -665,6 +666,16 @@ public class SystemPreferences {
             "billing.reports.enabled", true, BILLING_GROUP, pass);
     public static final BooleanPreference BILLING_REPORTS_ENABLED_ADMINS = new BooleanPreference(
             "billing.reports.enabled.admins", true, BILLING_GROUP, pass);
+
+    // Lustre FS
+    public static final IntPreference LUSTRE_FS_DEFAULT_SIZE_GB = new IntPreference(
+            "lustre.fs.default.size.gb", 1200, LUSTRE_GROUP, pass);
+    public static final IntPreference LUSTRE_FS_BKP_RETENTION_DAYS = new IntPreference(
+            "lustre.fs.backup.retention.days", 7, LUSTRE_GROUP, pass);
+    public static final IntPreference LUSTRE_FS_DEFAULT_THROUGHPUT = new IntPreference(
+            "lustre.fs.default.throughput", 50, LUSTRE_GROUP, pass);
+    public static final StringPreference LUSTRE_FS_MOUNT_OPTIONS = new StringPreference(
+            "lustre.fs.mount.options", null, LUSTRE_GROUP, pass);
 
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
