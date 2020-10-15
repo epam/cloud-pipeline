@@ -35,7 +35,7 @@ from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.pipeline_run_operations import PipelineRunOperations
-from src.utilities.ssh_operations import run_ssh, create_tcp_tunnel
+from src.utilities.ssh_operations import run_ssh, create_tunnel
 from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.utilities.user_token_operations import UserTokenOperations
 from src.version import __version__
@@ -1222,41 +1222,37 @@ def ssh(ctx, run_id):
 
 @cli.command(name='tunnel')
 @click.argument('run-id', required=True, type=int)
-@click.option('-lp', '--local-port', required=True, type=int, help='Local port')
-@click.option('-rp', '--remote-port', required=True, type=int, help='Remote port')
-@click.option('-l', '--log-file', required=False, help='Log file for tunnel')
-@click.option('-v', '--log-level', required=False, help='Log level for tunnel: '
+@click.option('-lp', '--local-port', required=True, type=int, help='Local port to establish connection from')
+@click.option('-rp', '--remote-port', required=True, type=int, help='Remote port to establish connection to')
+@click.option('-l', '--log-file', required=False, help='Logs file for tunnel in background mode')
+@click.option('-v', '--log-level', required=False, help='Logs level for tunnel: '
                                                         'CRITICAL, ERROR, WARNING, INFO or DEBUG')
+@click.option('-t', '--timeout', required=False, type=int, default=1000,
+              help='Time period in ms for background tunnel process health check')
 @click.option('-f', '--foreground', required=False, is_flag=True, default=False,
-              help='Launches tunnel process in foreground mode. '
-                   'By default it is launched as a background process.')
+              help='Establishes tunnel in foreground mode')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
-def create_tunnel(run_id, local_port, remote_port, log_file, log_level, foreground):
+def tunnel(run_id, local_port, remote_port, log_file, log_level, timeout, foreground):
     """
-    Establishes tcp tunnel for the specified job run between specified local port and remote port.
+    Establishes tunnel connection to specified run instance port and server it as a local port.
+
+    It allows to transfer any tcp traffic from local machine to run instance.
+
+    For example it can be used to allow ssh connections to run instance.
+
+    \b
+    First of all establish tunnel connection from run #12345 instance ssh port (22) to some local port (4567).
+        pipe tunnel -lp 4567 -rp 22 12345
+
+    \b
+    Then connect to run instance using regular ssh client on the configured local port (4567).
+        ssh -p 4567 root@localhost
+
+    Its works both on Linux and Windows. On windows git bash can be used for ssh.
     """
     try:
-        if foreground:
-            create_tcp_tunnel(run_id, local_port, remote_port)
-        else:
-            import subprocess
-            import os
-            import platform
-            if platform.system() == 'Windows':
-                executable = sys.argv + ['-f']
-                # https://docs.microsoft.com/ru-ru/windows/win32/procthread/process-creation-flags?redirectedfrom=MSDN
-                CREATE_NEW_PROCESS_GROUP = 0x00000200
-                DETACHED_PROCESS = 0x00000008
-
-                with open(log_file or os.devnull, 'w') as output:
-                    subprocess.Popen(executable, stdout=output, stderr=subprocess.STDOUT, cwd=os.getcwd(),
-                                     env=os.environ.copy(), creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP)
-            else:
-                executable = [(sys.executable)] + sys.argv + ['-f']
-                with open(log_file or os.devnull, 'w') as output:
-                    subprocess.Popen(executable, stdout=output, stderr=subprocess.STDOUT, cwd=os.getcwd(),
-                                     env=os.environ.copy())
+        create_tunnel(run_id, local_port, remote_port, log_file, log_level, timeout, foreground)
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
         sys.exit(1)
