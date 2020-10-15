@@ -22,6 +22,8 @@ import sys
 import time
 
 import paramiko
+
+from src.config import is_frozen
 from src.utilities.pipe_shell import plain_shell, interactive_shell
 from src.api.pipeline_run import PipelineRun
 from src.api.preferenceapi import PreferenceAPI
@@ -100,30 +102,32 @@ def run_ssh_session(channel):
     channel.invoke_shell()
     interactive_shell(channel)
 
-def create_tcp_tunnel(run_id, local_port, remote_port):
-    chunk_size = 4096
-    delay = 0.0001
 
-    logging.basicConfig(level=logging.INFO)
+def create_tunnel(run_id, local_port, remote_port, log_file, log_level, timeout, foreground,
+                  server_delay=0.0001, tunnel_timeout=5, chunk_size=4096):
+    if foreground:
+        server_tunnel(run_id, local_port, remote_port, log_file, log_level, server_delay, tunnel_timeout, chunk_size)
+    else:
+        create_background_tunnel(log_file, timeout)
 
+
+def server_tunnel(run_id, local_port, remote_port, log_file, log_level, server_delay, tunnel_timeout, chunk_size):
+    logging.basicConfig(level=log_level or logging.ERROR)
     conn_info = get_conn_info(run_id)
     proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]),
                       int(os.getenv('CP_CLI_TUNNEL_PROXY_PORT', conn_info.ssh_proxy[1])))
     target_endpoint = (conn_info.ssh_endpoint[0], remote_port)
-
-    logging.info('Initializing tunnel on port %s...', local_port)
+    logging.info('Initializing tunnel %s:pipeline-%s:%s...', local_port, run_id, remote_port)
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(('0.0.0.0', local_port))
     server_socket.listen(5)
-
     inputs = []
     channel = {}
-
-    logging.info('Serving tcp tunnel...')
+    logging.info('Serving tunnel...')
     try:
         inputs.append(server_socket)
         while True:
-            time.sleep(delay)
+            time.sleep(server_delay)
             logging.info('Waiting for connections...')
             inputs_ready, _, _ = select.select(inputs, [], [])
             for input in inputs_ready:
@@ -138,7 +142,7 @@ def create_tcp_tunnel(run_id, local_port, remote_port):
                         break
                     try:
                         logging.info('Initializing tunnel connection...')
-                        tunnel_socket = http_proxy_tunnel_connect(proxy_endpoint, target_endpoint, 5)
+                        tunnel_socket = http_proxy_tunnel_connect(proxy_endpoint, target_endpoint, tunnel_timeout)
                     except KeyboardInterrupt:
                         raise
                     except:
@@ -176,6 +180,29 @@ def create_tcp_tunnel(run_id, local_port, remote_port):
         for input in inputs:
             input.close()
         logging.info('Exiting...')
+
+
+def create_background_tunnel(log_file, timeout):
+    import subprocess
+    import os
+    import platform
+    with open(log_file or os.devnull, 'w') as output:
+        if platform.system() == 'Windows':
+            # See https://docs.microsoft.com/ru-ru/windows/win32/procthread/process-creation-flags
+            DETACHED_PROCESS = 0x00000008
+            CREATE_NEW_PROCESS_GROUP = 0x00000200
+            creationflags = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+        else:
+            creationflags = 0
+        executable = sys.argv + ['-f'] if is_frozen() else [sys.executable] + sys.argv + ['-f']
+        tunnel_proc = subprocess.Popen(executable, stdout=output, stderr=subprocess.STDOUT, cwd=os.getcwd(),
+                                       env=os.environ.copy(), creationflags=creationflags)
+        time.sleep(timeout / 1000)
+        if tunnel_proc.poll() is not None:
+            import click
+            click.echo('Failed to serve tunnel in background. Tunnel command exited with return code: %d'
+                       % tunnel_proc.returncode, err=True)
+            sys.exit(1)
 
 
 def run_ssh(run_id, command, retries=10):
