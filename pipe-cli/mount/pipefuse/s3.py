@@ -140,20 +140,19 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
         self._max_part_size = 5 * GB
 
     def _generate_s3_client(self, bucket, pipe):
-        session = self._generate_aws_session(bucket, pipe)
-        return session.client('s3', config=Config())
+        bucket_object = pipe.get_storage(bucket)
+        session = self._generate_aws_session(bucket, pipe, bucket_object)
+        return session.client('s3', config=Config(), region_name=bucket_object.region_name)
 
-    def _generate_aws_session(self, bucket, pipe):
+    def _generate_aws_session(self, bucket, pipe, bucket_object):
         def refresh():
             logging.info('Refreshing temporary credentials for data storage %s' % bucket)
-            bucket_object = pipe.get_storage(bucket)
             credentials = pipe.get_temporary_credentials(bucket_object)
             return dict(
                 access_key=credentials.access_key_id,
                 secret_key=credentials.secret_key,
                 token=credentials.session_token,
                 expiry_time=credentials.expiration,
-                region_name=credentials.region,
                 write_allowed=bucket_object.is_write_allowed())
 
         fresh_metadata = refresh()
@@ -167,7 +166,7 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
 
         s = get_session()
         s._credentials = session_credentials
-        return Session(botocore_session=s, region_name=fresh_metadata['region_name'])
+        return Session(botocore_session=s)
 
     def is_available(self):
         # TODO 05.09.2019: Check AWS API for availability
