@@ -1226,14 +1226,37 @@ def ssh(ctx, run_id, retries):
 @click.argument('run-id', required=True, type=int)
 @click.option('-lp', '--local-port', required=True, type=int, help='Local port')
 @click.option('-rp', '--remote-port', required=True, type=int, help='Remote port')
+@click.option('-l', '--log-file', required=False, help='Log file for tunnel')
+@click.option('-v', '--log-level', required=False, help='Log level for tunnel: '
+                                                        'CRITICAL, ERROR, WARNING, INFO or DEBUG')
+@click.option('-f', '--foreground', required=False, is_flag=True, default=False,
+              help='Launches tunnel process in foreground mode. '
+                   'By default it is launched as a background process.')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token
-def create_tunnel(run_id, local_port, remote_port):
+def create_tunnel(run_id, local_port, remote_port, log_file, log_level, foreground):
     """
     Establishes tcp tunnel for the specified job run between specified local port and remote port.
     """
     try:
-        create_tcp_tunnel(run_id, local_port, remote_port)
+        if foreground:
+            create_tcp_tunnel(run_id, local_port, remote_port)
+        else:
+            import subprocess
+            import os
+            import platform
+            executable = [(sys.executable)] + sys.argv + ['-f']
+            if platform.system() == 'Windows':
+                # https://docs.microsoft.com/ru-ru/windows/win32/procthread/process-creation-flags?redirectedfrom=MSDN
+                CREATE_NEW_PROCESS_GROUP = 0x00000200
+                DETACHED_PROCESS = 0x00000008
+
+                with open(log_file or os.devnull, 'w') as output:
+                    subprocess.Popen(executable, stdout=output, stderr=subprocess.STDOUT, env=os.environ.copy(),
+                                     creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP)
+            else:
+                with open(log_file or os.devnull, 'w') as output:
+                    subprocess.Popen(executable, stdout=output, stderr=subprocess.STDOUT, env=os.environ.copy())
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
         sys.exit(1)
