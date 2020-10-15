@@ -44,10 +44,6 @@ from src.utilities.storage.common import StorageOperations, AbstractListingManag
 from src.config import Config
 
 
-import boto3
-boto3.set_stream_logger(name='botocore')
-
-
 class StorageItemManager(object):
 
     def __init__(self, session, bucket=None, region_name=None, cross_region=False):
