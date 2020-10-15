@@ -661,10 +661,22 @@ class S3BucketOperations(object):
         if cls.__config__ is None:
             cls.__config__ = Config.instance()
         if cls.__config__.proxy is None:
+            if cross_region:
+                return AwsConfig(proxies=cls._build_no_proxy_config())
             return None
         else:
-            return AwsConfig(proxies=cls.__config__.resolve_proxy(target_url=cls.S3_ENDPOINT_URL,
-                                                                  cross_region=cross_region))
+            return AwsConfig(proxies=cls.__config__.resolve_proxy(target_url=cls.S3_ENDPOINT_URL))
+
+    @classmethod
+    def _build_no_proxy_config(cls):
+        result = {}
+        if os.environ.get('http_proxy'):
+            result.update({'http': os.environ.get('http_proxy')})
+        if os.environ.get('https_proxy'):
+            result.update({'https': os.environ.get('https_proxy')})
+        if not result:
+            return None
+        return result
 
     @classmethod
     def _get_client(cls, session, region_name=None):
@@ -958,5 +970,3 @@ class S3BucketOperations(object):
             client.delete_objects(Bucket=bucket, Delete=dict(Objects=delete_us['Objects'][:limit]))
             return dict(Objects=delete_us['Objects'][limit:])
         return delete_us
-
-
