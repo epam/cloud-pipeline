@@ -1245,18 +1245,20 @@ def create_tunnel(run_id, local_port, remote_port, log_file, log_level, foregrou
             import subprocess
             import os
             import platform
-            executable = [(sys.executable)] + sys.argv + ['-f']
             if platform.system() == 'Windows':
+                executable = sys.argv + ['-f']
                 # https://docs.microsoft.com/ru-ru/windows/win32/procthread/process-creation-flags?redirectedfrom=MSDN
                 CREATE_NEW_PROCESS_GROUP = 0x00000200
                 DETACHED_PROCESS = 0x00000008
 
                 with open(log_file or os.devnull, 'w') as output:
-                    subprocess.Popen(executable, stdout=output, stderr=subprocess.STDOUT, env=os.environ.copy(),
-                                     creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP)
+                    subprocess.Popen(executable, stdout=output, stderr=subprocess.STDOUT, cwd=os.getcwd(),
+                                     env=os.environ.copy(), creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP)
             else:
+                executable = [(sys.executable)] + sys.argv + ['-f']
                 with open(log_file or os.devnull, 'w') as output:
-                    subprocess.Popen(executable, stdout=output, stderr=subprocess.STDOUT, env=os.environ.copy())
+                    subprocess.Popen(executable, stdout=output, stderr=subprocess.STDOUT, cwd=os.getcwd(),
+                                     env=os.environ.copy())
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
         sys.exit(1)
