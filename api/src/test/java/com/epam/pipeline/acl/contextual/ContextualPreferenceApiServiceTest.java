@@ -32,10 +32,19 @@ import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_LIST;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 
 public class ContextualPreferenceApiServiceTest extends AbstractAclTest {
+
+    private final ContextualPreference contextualPreference =
+            ContextualPreferenceCreatorUtils.getContextualPreference();
+    private final List<ContextualPreference> preferenceList = Collections.singletonList(contextualPreference);
+    private final ContextualPreferenceExternalResource externalResource =
+            ContextualPreferenceCreatorUtils.getCPExternalResource();
+    private final ContextualPreferenceVO contextualPreferenceVO =
+            ContextualPreferenceCreatorUtils.getContextualPreferenceVO();
 
     @Autowired
     private ContextualPreferenceApiService preferenceApiService;
@@ -43,61 +52,47 @@ public class ContextualPreferenceApiServiceTest extends AbstractAclTest {
     @Autowired
     private ContextualPreferenceManager mockPreferenceManager;
 
-    private final ContextualPreference contextualPreference =
-            ContextualPreferenceCreatorUtils.getContextualPreference();
-
-    private final List<ContextualPreference> preferenceList = Collections.singletonList(contextualPreference);
-
-    private final ContextualPreferenceExternalResource cpeResource =
-            ContextualPreferenceCreatorUtils.getCPExternalResource();
-
-    private final ContextualPreferenceVO contextualPreferenceVO =
-            ContextualPreferenceCreatorUtils.getContextualPreferenceVO();
-
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadAllContextualPreferencesForAdmin() {
         doReturn(preferenceList).when(mockPreferenceManager).loadAll();
 
-        List<ContextualPreference> resultPreferenceList = preferenceApiService.loadAll();
+        List<ContextualPreference> loadedPreferences = preferenceApiService.loadAll();
 
-        assertThat(resultPreferenceList.size()).isEqualTo(1);
-        assertThat(resultPreferenceList.get(0)).isEqualTo(contextualPreference);
+        assertThat(loadedPreferences.size()).isEqualTo(1);
+        assertThat(loadedPreferences.get(0)).isEqualTo(contextualPreference);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(roles = SIMPLE_USER_ROLE)
     public void shouldDenyLoadingAllContextualPreferencesForNotAdmin() {
         doReturn(preferenceList).when(mockPreferenceManager).loadAll();
 
-        preferenceApiService.loadAll();
+        assertThrows(AccessDeniedException.class, () -> preferenceApiService.loadAll());
     }
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadContextualPreferenceForAdmin() {
-        doReturn(contextualPreference).when(mockPreferenceManager).load(TEST_STRING, cpeResource);
+        doReturn(contextualPreference).when(mockPreferenceManager).load(TEST_STRING, externalResource);
 
-        ContextualPreference resultPreference = preferenceApiService.load(TEST_STRING, cpeResource);
-
-        assertThat(resultPreference).isEqualTo(contextualPreference);
-    }
-
-    @Test(expected = AccessDeniedException.class)
-    @WithMockUser(roles = SIMPLE_USER_ROLE)
-    public void shouldDenyLoadingContextualPreferenceForNotAdmin() {
-        doReturn(contextualPreference).when(mockPreferenceManager).load(TEST_STRING, cpeResource);
-
-        preferenceApiService.load(TEST_STRING, cpeResource);
+        assertThat(preferenceApiService.load(TEST_STRING, externalResource)).isEqualTo(contextualPreference);
     }
 
     @Test
+    @WithMockUser(roles = SIMPLE_USER_ROLE)
+    public void shouldDenyLoadingContextualPreferenceForNotAdmin() {
+        doReturn(contextualPreference).when(mockPreferenceManager).load(TEST_STRING, externalResource);
+
+        assertThrows(AccessDeniedException.class, () -> preferenceApiService.load(TEST_STRING, externalResource));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
     public void shouldSearchContextualPreference() {
-        doReturn(contextualPreference).when(mockPreferenceManager).search(TEST_STRING_LIST, cpeResource);
+        doReturn(contextualPreference).when(mockPreferenceManager).search(TEST_STRING_LIST, externalResource);
 
-        ContextualPreference resultPreference = preferenceApiService.search(TEST_STRING_LIST, cpeResource);
-
-        assertThat(resultPreference).isEqualTo(contextualPreference);
+        assertThat(preferenceApiService.search(TEST_STRING_LIST, externalResource)).isEqualTo(contextualPreference);
     }
 
     @Test
@@ -105,9 +100,7 @@ public class ContextualPreferenceApiServiceTest extends AbstractAclTest {
     public void shouldUpsertContextualPreferenceForAdmin() {
         doReturn(contextualPreference).when(mockPreferenceManager).upsert(contextualPreferenceVO);
 
-        ContextualPreference resultPreference = preferenceApiService.upsert(contextualPreferenceVO);
-
-        assertThat(resultPreference).isEqualTo(contextualPreference);
+        assertThat(preferenceApiService.upsert(contextualPreferenceVO)).isEqualTo(contextualPreference);
     }
 
     @Test(expected = AccessDeniedException.class)
@@ -121,18 +114,16 @@ public class ContextualPreferenceApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldDeleteContextualPreferenceForAdmin() {
-        doReturn(contextualPreference).when(mockPreferenceManager).delete(TEST_STRING, cpeResource);
+        doReturn(contextualPreference).when(mockPreferenceManager).delete(TEST_STRING, externalResource);
 
-        ContextualPreference resultPreference = preferenceApiService.delete(TEST_STRING, cpeResource);
-
-        assertThat(resultPreference).isEqualTo(contextualPreference);
+        assertThat(preferenceApiService.delete(TEST_STRING, externalResource)).isEqualTo(contextualPreference);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(roles = SIMPLE_USER_ROLE)
     public void shouldDenyDeletionContextualPreferenceForNotAdmin() {
-        doReturn(contextualPreference).when(mockPreferenceManager).delete(TEST_STRING, cpeResource);
+        doReturn(contextualPreference).when(mockPreferenceManager).delete(TEST_STRING, externalResource);
 
-        preferenceApiService.delete(TEST_STRING, cpeResource);
+        assertThrows(AccessDeniedException.class, () -> preferenceApiService.delete(TEST_STRING, externalResource));
     }
 }
