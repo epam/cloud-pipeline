@@ -18,6 +18,7 @@ import React from 'react';
 import {IndexRoute, Redirect, Route, Router} from 'react-router';
 import HomePageLoader from './home/HomePageLoader';
 import PipelinesLibrary from '../pipelines/PipelinesLibrary';
+import Browser from '../pipelines/browser/Browser';
 import FolderBrowser from '../pipelines/browser/Folder';
 import StorageBrowser from '../pipelines/browser/DataStorage';
 import PipelineBrowser from '../pipelines/browser/Pipeline';
@@ -121,6 +122,12 @@ export default class AppRouter extends React.Component {
         <Route path="/miew" component={MiewPage} />
         <Route path="/library" component={PipelinesLibrary}>
           <IndexRoute component={FolderBrowser} />
+        </Route>
+        <Route path="/pipelines" component={PipelinesLibrary}>
+          <IndexRoute component={Browser} />
+        </Route>
+        <Route path="/storages" component={PipelinesLibrary}>
+          <IndexRoute component={Browser} />
         </Route>
         <Route path="/folder" component={PipelinesLibrary}>
           <Route path=":id" component={FolderBrowser} />

@@ -48,7 +48,22 @@ function generateUrl (item) {
     return '/library';
   }
   switch (item.type) {
-    case ItemTypes.folder: return (item.id && item.id !== 'root') ? `/folder/${item.id}` : '/library';
+    case ItemTypes.folder: {
+      if (!item.id) {
+        return '/library';
+      }
+      const itemId = `${item.id}`.toLowerCase();
+      if (['root', 'pipelines', 'storages'].indexOf(itemId) === -1) {
+        return `/folder/${itemId}`;
+      }
+      switch (item.id.toLowerCase()) {
+        case 'pipelines': return '/pipelines';
+        case 'storages': return '/storages';
+        case 'root':
+        default:
+          return '/library';
+      }
+    }
     case ItemTypes.pipeline: return `/${item.id}`;
     case ItemTypes.version: return `/${item.parentId}/${item.name}`;
     case ItemTypes.storage: return `/storage/${item.id}`;
@@ -61,59 +76,70 @@ function generateUrl (item) {
   }
 }
 
-export function generateTreeData ({
-                                    pipelines,
-                                    childFolders,
-                                    versions,
-                                    storages,
-                                    configurations,
-                                    metadata,
-                                    id,
-                                    objectMetadata,
-                                    fireCloud
-                                  },
-                                  ignoreChildren = false,
-                                  parent = null,
-                                  expandedKeys = [],
-                                  types = undefined,
-                                  filter = (item, type) => true) {
+export function generateTreeData (
+  {
+    pipelines,
+    childFolders,
+    versions,
+    storages,
+    configurations,
+    metadata,
+    id,
+    objectMetadata,
+    fireCloud
+  },
+  ignoreChildren = false,
+  parent = null,
+  expandedKeys = [],
+  types = undefined,
+  filter = (item, type) => true,
+  sortRoot = true
+) {
   const children = [];
   const pipelinesSorted = (pipelines || []).map(f => f);
-  pipelinesSorted.sort((pA, pB) => {
-    if (pA.name.toLowerCase() > pB.name.toLowerCase()) {
-      return 1;
-    } else if (pA.name.toLowerCase() < pB.name.toLowerCase()) {
-      return -1;
-    }
-    return 0;
-  });
+  if (sortRoot) {
+    pipelinesSorted.sort((pA, pB) => {
+      if (pA.name.toLowerCase() > pB.name.toLowerCase()) {
+        return 1;
+      } else if (pA.name.toLowerCase() < pB.name.toLowerCase()) {
+        return -1;
+      }
+      return 0;
+    });
+  }
   const childFoldersSorted = (childFolders || []).map(f => f);
-  childFoldersSorted.sort((fA, fB) => {
-    if (fA.name.toLowerCase() > fB.name.toLowerCase()) {
-      return 1;
-    } else if (fA.name.toLowerCase() < fB.name.toLowerCase()) {
-      return -1;
-    }
-    return 0;
-  });
+  if (sortRoot) {
+    childFoldersSorted.sort((fA, fB) => {
+      if (fA.name.toLowerCase() > fB.name.toLowerCase()) {
+        return 1;
+      } else if (fA.name.toLowerCase() < fB.name.toLowerCase()) {
+        return -1;
+      }
+      return 0;
+    });
+  }
   const childStoragesSorted = (storages || []).map(f => f);
-  childStoragesSorted.sort((fA, fB) => {
-    if (fA.name.toLowerCase() > fB.name.toLowerCase()) {
-      return 1;
-    } else if (fA.name.toLowerCase() < fB.name.toLowerCase()) {
-      return -1;
-    }
-    return 0;
-  });
+  if (sortRoot) {
+    childStoragesSorted.sort((fA, fB) => {
+      if (fA.name.toLowerCase() > fB.name.toLowerCase()) {
+        return 1;
+      } else if (fA.name.toLowerCase() < fB.name.toLowerCase()) {
+        return -1;
+      }
+      return 0;
+    });
+  }
   const configurationsSorted = (configurations || []).map(f => f);
-  configurationsSorted.sort((cA, cB) => {
-    if (cA.name.toLowerCase() > cB.name.toLowerCase()) {
-      return 1;
-    } else if (cA.name.toLowerCase() < cB.name.toLowerCase()) {
-      return -1;
-    }
-    return 0;
-  });
+  if (sortRoot) {
+    configurationsSorted.sort((cA, cB) => {
+      if (cA.name.toLowerCase() > cB.name.toLowerCase()) {
+        return 1;
+      } else if (cA.name.toLowerCase() < cB.name.toLowerCase()) {
+        return -1;
+      }
+      return 0;
+    });
+  }
   if (fireCloud && (!types || types.indexOf(ItemTypes.fireCloud) >= 0)) {
     const fireCloudItem = {
       id: ItemTypes.fireCloud,

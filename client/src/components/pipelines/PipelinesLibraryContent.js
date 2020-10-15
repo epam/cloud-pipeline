@@ -23,7 +23,8 @@ export default class PipelinesLibraryContent extends React.Component {
 
   static propTypes = {
     onReloadTree: PropTypes.func,
-    location: PropTypes.string
+    location: PropTypes.string,
+    style: PropTypes.object
   };
 
   shouldComponentUpdate (nextProps) {
@@ -35,19 +36,26 @@ export default class PipelinesLibraryContent extends React.Component {
       <Card
         id="pipelines-library-content"
         className={styles.libraryCard}
-        bodyStyle={{
-          padding: 5,
-          height: '99%',
-          display: 'flex',
-          flexDirection: 'column',
-          flex: 1
-        }}>
+        bodyStyle={
+          Object.assign(
+            {
+              padding: 5,
+              height: '99%',
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1
+            },
+            this.props.style || {}
+          )
+        }
+      >
         {
           React.Children.map(
             this.props.children,
             (child) => React.cloneElement(
               child, {
-                onReloadTree: this.props.onReloadTree
+                onReloadTree: this.props.onReloadTree,
+                browserLocation: this.props.location
               }
             )
           )
