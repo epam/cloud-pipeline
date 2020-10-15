@@ -17,7 +17,6 @@
 package com.epam.pipeline.controller.contextual;
 
 import com.epam.pipeline.controller.ResponseResult;
-import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.ContextualPreferenceVO;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
@@ -27,7 +26,6 @@ import com.epam.pipeline.manager.contextual.ContextualPreferenceApiService;
 import com.epam.pipeline.test.creator.contextual.ContextualPreferenceCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.epam.pipeline.util.ControllerTestUtils;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,7 +88,7 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
                 ControllerTestUtils.buildExpectedResult(contextualPreferences);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<List<ContextualPreference>>>() { });
+                ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_LIST_TYPE);
     }
 
     @Test
@@ -119,7 +117,7 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
         Mockito.verify(mockContextualPreferenceApiService).load(TEST_STRING, contextualPreferenceExternalResource);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<ContextualPreference>>() { });
+                ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
     }
 
     @Test
@@ -149,7 +147,7 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
                 .search(searchRequest.getPreferences(), searchRequest.getResource());
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<ContextualPreference>>() { });
+                ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
     }
 
     @Test
@@ -178,7 +176,7 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
         Mockito.verify(mockContextualPreferenceApiService).upsert(contextualPreferenceVO);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<ContextualPreference>>() { });
+                ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
     }
 
     @Test
@@ -207,6 +205,6 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
         Mockito.verify(mockContextualPreferenceApiService).delete(TEST_STRING, contextualPreferenceExternalResource);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<ContextualPreference>>() { });
+                ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
     }
 }
