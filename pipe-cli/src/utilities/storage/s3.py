@@ -46,9 +46,11 @@ from src.config import Config
 
 class StorageItemManager(object):
 
-    def __init__(self, session, bucket=None):
+    def __init__(self, session, bucket=None, region_name=None, cross_region=False):
         self.session = session
-        self.s3 = session.resource('s3', config=S3BucketOperations.get_proxy_config())
+        self.region_name = region_name
+        self.s3 = session.resource('s3', config=S3BucketOperations.get_proxy_config(cross_region=cross_region),
+                                   region_name=self.region_name)
         self.s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         if bucket:
@@ -71,7 +73,7 @@ class StorageItemManager(object):
         return '&'.join(formatted_tags)
 
     def _get_client(self):
-        client = self.session.client('s3', config=S3BucketOperations.get_proxy_config())
+        client = self.session.client('s3', config=S3BucketOperations.get_proxy_config(), region_name=self.region_name)
         client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         return client
@@ -95,8 +97,8 @@ class StorageItemManager(object):
 
 class DownloadManager(StorageItemManager, AbstractTransferManager):
 
-    def __init__(self, session, bucket):
-        super(DownloadManager, self).__init__(session, bucket=bucket)
+    def __init__(self, session, bucket, region_name=None):
+        super(DownloadManager, self).__init__(session, bucket=bucket, region_name=region_name)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None,
                  relative_path=None, clean=False, quiet=False, size=None, tags=None, skip_existing=False, lock=None):
@@ -126,8 +128,8 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
 
 class UploadManager(StorageItemManager, AbstractTransferManager):
 
-    def __init__(self, session, bucket):
-        super(UploadManager, self).__init__(session, bucket=bucket)
+    def __init__(self, session, bucket, region_name=None):
+        super(UploadManager, self).__init__(session, bucket=bucket, region_name=region_name)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
                  clean=False, quiet=False, size=None, tags=(), skip_existing=False, lock=None):
@@ -161,8 +163,8 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
 
 class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManager):
 
-    def __init__(self, session, bucket):
-        super(TransferFromHttpOrFtpToS3Manager, self).__init__(session, bucket=bucket)
+    def __init__(self, session, bucket, region_name=None):
+        super(TransferFromHttpOrFtpToS3Manager, self).__init__(session, bucket=bucket, region_name=region_name)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
                  clean=False, quiet=False, size=None, tags=(), skip_existing=False, lock=None):
@@ -201,18 +203,23 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
 
 class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager):
 
-    def __init__(self, session, bucket):
-        super(TransferBetweenBucketsManager, self).__init__(session, bucket=bucket)
+    def __init__(self, session, bucket, region_name=None, cross_region=False):
+        self.cross_region = cross_region
+        super(TransferBetweenBucketsManager, self).__init__(session, bucket=bucket, region_name=region_name,
+                                                            cross_region=cross_region)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
                  quiet=False, size=None, tags=(), skip_existing=False, lock=None):
         # checked is bucket and file
         source_bucket = source_wrapper.bucket.path
+        source_region = source_wrapper.bucket.region
         destination_key = S3BucketOperations.normalize_s3_path(destination_wrapper, relative_path)
         copy_source = {
             'Bucket': source_bucket,
             'Key': path
         }
+        source_client = self.build_source_client(source_region)
+
         if skip_existing:
             from_size = self.get_s3_file_size(source_bucket, path)
             to_size = self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
@@ -220,7 +227,8 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
                 if not quiet:
                     click.echo('Skipping file %s since it exists in the destination %s' % (path, destination_key))
                 return
-        object_tags = ObjectTaggingManager.get_object_tagging(ObjectTaggingManager(self.session, source_bucket), path)
+        object_tags = ObjectTaggingManager.get_object_tagging(
+            ObjectTaggingManager(self.session, source_bucket, source_region), path)
         if not tags and object_tags:
             tags = self.convert_object_tags(object_tags)
         if not self.has_required_tag(tags, 'CP_SOURCE'):
@@ -234,11 +242,20 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         }
         if StorageItemManager.show_progress(quiet, size, lock):
             self.bucket.copy(copy_source, destination_key, Callback=ProgressPercentage(relative_path, size),
-                             ExtraArgs=extra_args)
+                             ExtraArgs=extra_args, SourceClient=source_client)
         else:
-            self.bucket.copy(copy_source, destination_key, ExtraArgs=extra_args)
+            self.bucket.copy(copy_source, destination_key, ExtraArgs=extra_args, SourceClient=source_client)
         if clean:
             source_wrapper.delete_item(path)
+
+    def build_source_client(self, source_region):
+        source_s3 = self.session.resource('s3',
+                                          config=S3BucketOperations.get_proxy_config(
+                                              cross_region=self.cross_region),
+                                          region_name=source_region)
+        source_s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
+            max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
+        return source_s3.meta.client
 
     @classmethod
     def has_required_tag(cls, tags, tag_name):
@@ -258,8 +275,8 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
 
 class RestoreManager(StorageItemManager, AbstractRestoreManager):
 
-    def __init__(self, bucket, session):
-        super(RestoreManager, self).__init__(session)
+    def __init__(self, bucket, session, region_name=None):
+        super(RestoreManager, self).__init__(session, region_name=region_name)
         self.bucket = bucket
 
     def restore_version(self, version, exclude=[], include=[], recursive=False):
@@ -362,8 +379,8 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
 
 
 class DeleteManager(StorageItemManager, AbstractDeleteManager):
-    def __init__(self, bucket, session):
-        super(DeleteManager, self).__init__(session)
+    def __init__(self, bucket, session, region_name=None):
+        super(DeleteManager, self).__init__(session, region_name=region_name)
         self.bucket = bucket
 
     def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
@@ -406,8 +423,8 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
 class ListingManager(StorageItemManager, AbstractListingManager):
     DEFAULT_PAGE_SIZE = StorageOperations.DEFAULT_PAGE_SIZE
 
-    def __init__(self, bucket, session, show_versions=False):
-        super(ListingManager, self).__init__(session)
+    def __init__(self, bucket, session, show_versions=False, region_name=None):
+        super(ListingManager, self).__init__(session, region_name=region_name)
         self.bucket = bucket
         self.show_versions = show_versions
 
@@ -585,7 +602,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         return S3BucketOperations.get_items(self.bucket, session=self.session)
 
     def get_file_tags(self, relative_path):
-        return ObjectTaggingManager.get_object_tagging(ObjectTaggingManager(self.session, self.bucket), relative_path)
+        return ObjectTaggingManager.get_object_tagging(ObjectTaggingManager(
+            self.session, self.bucket, self.region_name), relative_path)
 
     @staticmethod
     def need_to_stop_paging(page, page_size, items_count):
@@ -598,8 +616,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
 
 class ObjectTaggingManager(StorageItemManager):
 
-    def __init__(self, session, bucket):
-        super(ObjectTaggingManager, self).__init__(session)
+    def __init__(self, session, bucket, region_name=None):
+        super(ObjectTaggingManager, self).__init__(session, region_name=region_name)
         self.bucket = bucket
 
     def get_object_tagging(self, source):
@@ -619,17 +637,19 @@ class S3BucketOperations(object):
     __config__ = None
 
     @classmethod
-    def get_proxy_config(cls):
+    def get_proxy_config(cls, cross_region=False):
         if cls.__config__ is None:
             cls.__config__ = Config.instance()
         if cls.__config__.proxy is None:
+            if cross_region:
+                os.environ['no_proxy'] = ''
             return None
         else:
             return AwsConfig(proxies=cls.__config__.resolve_proxy(target_url=cls.S3_ENDPOINT_URL))
 
     @classmethod
-    def _get_client(cls, session):
-        client = session.client('s3', config=S3BucketOperations.get_proxy_config())
+    def _get_client(cls, session, region_name=None):
+        client = session.client('s3', config=S3BucketOperations.get_proxy_config(), region_name=region_name)
         client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         return client
@@ -647,7 +667,7 @@ class S3BucketOperations(object):
         if session is None:
             session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'cp', versioning=versioning)
             storage_wrapper.session = session
-        client = cls._get_client(session)
+        client = cls._get_client(session, storage_wrapper.bucket.region)
         if versioning:
             paginator = client.get_paginator('list_object_versions')
         else:
@@ -705,7 +725,7 @@ class S3BucketOperations(object):
             session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'cp')
 
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
-        client = cls._get_client(session)
+        client = cls._get_client(session, storage_wrapper.bucket.region)
         paginator = client.get_paginator('list_objects_v2')
         operation_parameters = {
             'Bucket': storage_wrapper.bucket.path,
@@ -734,7 +754,7 @@ class S3BucketOperations(object):
                 prefix = prefix + delimiter + relative_path
         if session is None:
             session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'cp')
-        client = cls._get_client(session)
+        client = cls._get_client(session, storage_wrapper.bucket.region)
         paginator = client.get_paginator('list_objects_v2')
         operation_parameters = {
             'Bucket': storage_wrapper.bucket.path,
@@ -768,23 +788,24 @@ class S3BucketOperations(object):
     @classmethod
     def get_list_manager(cls, source_wrapper, show_versions=False):
         session = cls.assumed_session(source_wrapper.bucket.identifier, None, 'ls', versioning=show_versions)
-        return ListingManager(source_wrapper, session, show_versions=show_versions)
+        return ListingManager(source_wrapper, session, show_versions=show_versions,
+                              region_name=source_wrapper.bucket.region)
 
     @classmethod
     def get_delete_manager(cls, source_wrapper, versioning=False):
         session = cls.assumed_session(source_wrapper.bucket.identifier, None, 'mv', versioning=versioning)
-        return DeleteManager(source_wrapper, session)
+        return DeleteManager(source_wrapper, session, source_wrapper.bucket.region)
 
     @classmethod
     def get_restore_manager(cls, source_wrapper):
         session = cls.assumed_session(source_wrapper.bucket.identifier, None, 'mv', versioning=True)
-        return RestoreManager(source_wrapper, session)
+        return RestoreManager(source_wrapper, session, source_wrapper.bucket.region)
 
     @classmethod
     def delete_item(cls, storage_wrapper, relative_path, session=None):
         if session is None:
             session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'mv')
-        client = cls._get_client(session)
+        client = cls._get_client(session, storage_wrapper.bucket.region)
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
         bucket = storage_wrapper.bucket.path
         if relative_path:
@@ -831,7 +852,9 @@ class S3BucketOperations(object):
         # replace session to be able to delete source for move
         source_wrapper.session = session
         destination_bucket = destination_wrapper.bucket.path
-        return TransferBetweenBucketsManager(session, destination_bucket)
+        cross_region = destination_wrapper.bucket.region != source_wrapper.bucket.region
+        return TransferBetweenBucketsManager(session, destination_bucket, destination_wrapper.bucket.region,
+                                             cross_region)
 
     @classmethod
     def get_download_manager(cls, source_wrapper, destination_wrapper, command):
@@ -840,21 +863,21 @@ class S3BucketOperations(object):
         # replace session to be able to delete source for move
         source_wrapper.session = session
         source_bucket = source_wrapper.bucket.path
-        return DownloadManager(session, source_bucket)
+        return DownloadManager(session, source_bucket, source_wrapper.bucket.region)
 
     @classmethod
     def get_upload_manager(cls, source_wrapper, destination_wrapper, command):
         destination_id = destination_wrapper.bucket.identifier
         session = cls.assumed_session(None, destination_id, command)
         destination_bucket = destination_wrapper.bucket.path
-        return UploadManager(session, destination_bucket)
+        return UploadManager(session, destination_bucket, destination_wrapper.bucket.region)
 
     @classmethod
     def get_transfer_from_http_or_ftp_manager(cls, source_wrapper, destination_wrapper, command):
         destination_id = destination_wrapper.bucket.identifier
         session = cls.assumed_session(None, destination_id, command)
         destination_bucket = destination_wrapper.bucket.path
-        return TransferFromHttpOrFtpToS3Manager(session, destination_bucket)
+        return TransferFromHttpOrFtpToS3Manager(session, destination_bucket, destination_wrapper.bucket.region)
 
     @classmethod
     def get_full_path(cls, path, param):
@@ -916,5 +939,3 @@ class S3BucketOperations(object):
             client.delete_objects(Bucket=bucket, Delete=dict(Objects=delete_us['Objects'][:limit]))
             return dict(Objects=delete_us['Objects'][limit:])
         return delete_us
-
-
