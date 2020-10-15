@@ -17,7 +17,6 @@
 package com.epam.pipeline.controller.cluster;
 
 import com.epam.pipeline.controller.ResponseResult;
-import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
@@ -30,7 +29,6 @@ import com.epam.pipeline.manager.cluster.ClusterApiService;
 import com.epam.pipeline.test.creator.cluster.NodeCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.epam.pipeline.util.ControllerTestUtils;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -123,7 +121,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
         final ResponseResult<List<MasterNode>> expectedResult = ControllerTestUtils.buildExpectedResult(masterNodes);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<List<MasterNode>>>() { });
+                NodeCreatorUtils.MASTER_NODE_LIST_TYPE);
     }
 
     @Test
@@ -151,7 +149,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
                 ControllerTestUtils.buildExpectedResult(nodeInstances);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<List<NodeInstance>>>() { });
+                NodeCreatorUtils.NODE_INSTANCE_LIST_TYPE);
 
     }
 
@@ -183,7 +181,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
                 ControllerTestUtils.buildExpectedResult(nodeInstances);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<List<NodeInstance>>>() { });
+                NodeCreatorUtils.NODE_INSTANCE_LIST_TYPE);
     }
 
     @Test
@@ -211,7 +209,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
                 ControllerTestUtils.buildExpectedResult(nodeInstance);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<NodeInstance>>() { });
+                NodeCreatorUtils.NODE_INSTANCE_TYPE);
     }
 
     @Test
@@ -244,7 +242,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
                 ControllerTestUtils.buildExpectedResult(nodeInstance);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<NodeInstance>>() { });
+                NodeCreatorUtils.NODE_INSTANCE_TYPE);
     }
 
     @Test
@@ -272,7 +270,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
                 ControllerTestUtils.buildExpectedResult(nodeInstance);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<NodeInstance>>() { });
+                NodeCreatorUtils.NODE_INSTANCE_TYPE);
     }
 
     @Test
@@ -303,7 +301,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
                 ControllerTestUtils.buildExpectedResult(instanceTypes);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<List<InstanceType>>>() { });
+                NodeCreatorUtils.INSTANCE_TYPE_LIST_TYPE);
     }
 
     @Test
@@ -327,7 +325,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
                 ControllerTestUtils.buildExpectedResult(instanceTypes);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<List<InstanceType>>>() { });
+                NodeCreatorUtils.INSTANCE_TYPE_LIST_TYPE);
     }
 
     @Test
@@ -362,7 +360,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
                 ControllerTestUtils.buildExpectedResult(allowedInstanceAndPriceTypes);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<AllowedInstanceAndPriceTypes>>() { });
+                NodeCreatorUtils.ALLOWED_INSTANCE_TYPE);
     }
 
     @Test
@@ -395,7 +393,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
                 ControllerTestUtils.buildExpectedResult(monitoringStats);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<List<MonitoringStats>>>() { });
+                NodeCreatorUtils.MONITORING_STATS_TYPE);
     }
 
     @Test
@@ -453,6 +451,6 @@ public class ClusterControllerTest extends AbstractControllerTest {
         final ResponseResult<List<NodeDisk>> expectedResult = ControllerTestUtils.buildExpectedResult(nodeDisks);
 
         ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<List<NodeDisk>>>() { });
+                NodeCreatorUtils.NODE_DISK_TYPE);
     }
 }

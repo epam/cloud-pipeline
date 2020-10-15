@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.test.creator.cluster;
 
+import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
@@ -24,6 +25,8 @@ import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
+import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeSpec;
 import io.fabric8.kubernetes.api.model.NodeStatus;
@@ -41,6 +44,20 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_
 
 public final class NodeCreatorUtils {
 
+    public static final TypeReference<Result<List<MasterNode>>> MASTER_NODE_LIST_TYPE =
+            new TypeReference<Result<List<MasterNode>>>() { };
+    public static final TypeReference<Result<List<NodeInstance>>> NODE_INSTANCE_LIST_TYPE =
+            new TypeReference<Result<List<NodeInstance>>>() { };
+    public static final TypeReference<Result<NodeInstance>> NODE_INSTANCE_TYPE =
+            new TypeReference<Result<NodeInstance>>() { };
+    public static final TypeReference<Result<List<InstanceType>>> INSTANCE_TYPE_LIST_TYPE =
+            new TypeReference<Result<List<InstanceType>>>() { };
+    public static final TypeReference<Result<AllowedInstanceAndPriceTypes>> ALLOWED_INSTANCE_TYPE =
+            new TypeReference<Result<AllowedInstanceAndPriceTypes>>() { };
+    public static final TypeReference<Result<List<MonitoringStats>>> MONITORING_STATS_TYPE =
+            new TypeReference<Result<List<MonitoringStats>>>() { };
+    public static final TypeReference<Result<List<NodeDisk>>> NODE_DISK_TYPE =
+            new TypeReference<Result<List<NodeDisk>>>() { };
     private static final List<InstanceType> INSTANCE_TYPES = Collections.singletonList(getDefaultInstanceType());
     private static final String UUID = "1fb7aff6-03bf-11eb-adc1-0242ac120002";
     private static final LocalDateTime LDT =
