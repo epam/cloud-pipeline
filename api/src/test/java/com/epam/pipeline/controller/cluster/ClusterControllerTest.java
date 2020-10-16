@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.controller.cluster;
 
-import com.epam.pipeline.controller.ResponseResult;
 import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
@@ -28,15 +27,15 @@ import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.manager.cluster.ClusterApiService;
 import com.epam.pipeline.test.creator.cluster.NodeCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import com.epam.pipeline.util.ControllerTestUtils;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -74,31 +73,19 @@ public class ClusterControllerTest extends AbstractControllerTest {
     private static final String TEST_DATA = "test_data";
     private static final String FROM_STRING = "2019-04-01T09:08:07";
     private static final String TO_STRING = "2020-05-02T12:11:10";
-    private NodeInstance nodeInstance;
-    private List<NodeInstance> nodeInstances;
-    private List<InstanceType> instanceTypes;
-    private LocalDateTime from;
-    private LocalDateTime to;
+    private final NodeInstance nodeInstance = NodeCreatorUtils.getDefaultNodeInstance();
+    private final List<NodeInstance> nodeInstances = Collections.singletonList(nodeInstance);
+    private final List<InstanceType>
+            instanceTypes = Collections.singletonList(NodeCreatorUtils.getDefaultInstanceType());
+    private final LocalDateTime from = LocalDateTime.parse(FROM_STRING, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+    private final LocalDateTime to = LocalDateTime.parse(TO_STRING, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
     @Autowired
     private ClusterApiService mockClusterApiService;
 
-    @Before
-    public void setUp() throws Exception {
-        nodeInstance = NodeCreatorUtils.getDefaultNodeInstance();
-        nodeInstances = Collections.singletonList(nodeInstance);
-
-        instanceTypes = Collections.singletonList(NodeCreatorUtils.getDefaultInstanceType());
-
-        from = LocalDateTime.parse(FROM_STRING, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-        to = LocalDateTime.parse(TO_STRING, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-    }
-
     @Test
     public void shouldFailLoadMasterNodesForUnauthorizedUser() throws Exception {
-        mvc().perform(get(MASTER_NODES_URL)
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(get(MASTER_NODES_URL));
     }
 
     @Test
@@ -109,26 +96,16 @@ public class ClusterControllerTest extends AbstractControllerTest {
 
         Mockito.doReturn(masterNodes).when(mockClusterApiService).getMasterNodes();
 
-        final MvcResult mvcResult = mvc().perform(get(MASTER_NODES_URL)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(get(MASTER_NODES_URL));
 
         Mockito.verify(mockClusterApiService).getMasterNodes();
 
-        final ResponseResult<List<MasterNode>> expectedResult = ControllerTestUtils.buildExpectedResult(masterNodes);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                NodeCreatorUtils.MASTER_NODE_LIST_TYPE);
+        assertResponse(mvcResult, masterNodes, NodeCreatorUtils.MASTER_NODE_LIST_TYPE);
     }
 
     @Test
     public void shouldFailLoadNodesForUnauthorizedUser() throws Exception {
-        mvc().perform(get(LOAD_NODES_URL)
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(get(LOAD_NODES_URL));
     }
 
     @Test
@@ -136,59 +113,36 @@ public class ClusterControllerTest extends AbstractControllerTest {
     public void shouldLoadNodes() throws Exception {
         Mockito.doReturn(nodeInstances).when(mockClusterApiService).getNodes();
 
-        final MvcResult mvcResult = mvc().perform(get(LOAD_NODES_URL)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(get(LOAD_NODES_URL));
 
         Mockito.verify(mockClusterApiService).getNodes();
 
-        final ResponseResult<List<NodeInstance>> expectedResult =
-                ControllerTestUtils.buildExpectedResult(nodeInstances);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                NodeCreatorUtils.NODE_INSTANCE_LIST_TYPE);
-
+        assertResponse(mvcResult, nodeInstances, NodeCreatorUtils.NODE_INSTANCE_LIST_TYPE);
     }
 
     @Test
     public void shouldFailFilterNodesForUnauthorizedUser() throws Exception {
-        mvc().perform(post(FILTER_NODES_URL)
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(post(FILTER_NODES_URL));
     }
 
     @Test
     @WithMockUser
     public void shouldFilterNodes() throws Exception {
         final FilterNodesVO filterNodesVO = NodeCreatorUtils.getDefaultFilterNodesVO();
+        final String content = getObjectMapper().writeValueAsString(filterNodesVO);
 
         Mockito.doReturn(nodeInstances).when(mockClusterApiService).filterNodes(Mockito.refEq(filterNodesVO));
 
-        final MvcResult mvcResult = mvc().perform(post(FILTER_NODES_URL)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE)
-                .content(getObjectMapper().writeValueAsString(filterNodesVO)))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(post(FILTER_NODES_URL).content(content));
 
         Mockito.verify(mockClusterApiService).filterNodes(Mockito.refEq(filterNodesVO));
 
-        final ResponseResult<List<NodeInstance>> expectedResult =
-                ControllerTestUtils.buildExpectedResult(nodeInstances);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                NodeCreatorUtils.NODE_INSTANCE_LIST_TYPE);
+        assertResponse(mvcResult, nodeInstances, NodeCreatorUtils.NODE_INSTANCE_LIST_TYPE);
     }
 
     @Test
     public void shouldFailLoadNodeForUnauthorizedUser() throws Exception {
-        mvc().perform(get(String.format(LOAD_NODE_URL, NAME))
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(get(String.format(LOAD_NODE_URL, NAME)));
     }
 
     @Test
@@ -196,60 +150,38 @@ public class ClusterControllerTest extends AbstractControllerTest {
     public void shouldLoadNode() throws Exception {
         Mockito.doReturn(nodeInstance).when(mockClusterApiService).getNode(NAME);
 
-        final MvcResult mvcResult = mvc().perform(get(String.format(LOAD_NODE_URL, NAME))
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(get(String.format(LOAD_NODE_URL, NAME)));
 
         Mockito.verify(mockClusterApiService).getNode(NAME);
 
-        final ResponseResult<NodeInstance> expectedResult =
-                ControllerTestUtils.buildExpectedResult(nodeInstance);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                NodeCreatorUtils.NODE_INSTANCE_TYPE);
+        assertResponse(mvcResult, nodeInstance, NodeCreatorUtils.NODE_INSTANCE_TYPE);
     }
 
     @Test
     public void shouldFailLoadNodeFilteredForUnauthorizedUser() throws Exception {
-        mvc().perform(post(String.format(LOAD_NODE_URL, NAME))
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(post(LOAD_NODES_URL, NAME));
     }
 
     @Test
     @WithMockUser
     public void shouldLoadNodeFiltered() throws Exception {
         final FilterPodsRequest filterPodsRequest = NodeCreatorUtils.getDefaultFilterPodsRequest();
+        final String content = getObjectMapper().writeValueAsString(filterPodsRequest);
 
         Mockito.doReturn(nodeInstance).when(mockClusterApiService)
                 .getNode(Mockito.eq(NAME), Mockito.refEq(filterPodsRequest));
 
-        final MvcResult mvcResult = mvc().perform(post(String.format(LOAD_NODE_URL, NAME))
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE)
-                .content(getObjectMapper().writeValueAsString(filterPodsRequest)))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(post(String.format(LOAD_NODE_URL, NAME)).content(content));
 
         Mockito.verify(mockClusterApiService)
                 .getNode(Mockito.eq(NAME), Mockito.refEq(filterPodsRequest));
 
-        final ResponseResult<NodeInstance> expectedResult =
-                ControllerTestUtils.buildExpectedResult(nodeInstance);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                NodeCreatorUtils.NODE_INSTANCE_TYPE);
+        assertResponse(mvcResult, nodeInstance, NodeCreatorUtils.NODE_INSTANCE_TYPE);
     }
 
     @Test
     public void shouldFailTerminateNodeForUnauthorizedUser() throws Exception {
-        mvc().perform(delete(String.format(NODE_NAME_URL, NAME))
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(delete(NODE_NAME_URL, NAME));
     }
 
     @Test
@@ -257,158 +189,114 @@ public class ClusterControllerTest extends AbstractControllerTest {
     public void shouldTerminateNode() throws Exception {
         Mockito.doReturn(nodeInstance).when(mockClusterApiService).terminateNode(NAME);
 
-        final MvcResult mvcResult = mvc().perform(delete(String.format(NODE_NAME_URL, NAME))
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(delete(String.format(NODE_NAME_URL, NAME)));
 
         Mockito.verify(mockClusterApiService).terminateNode(NAME);
 
-        final ResponseResult<NodeInstance> expectedResult =
-                ControllerTestUtils.buildExpectedResult(nodeInstance);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                NodeCreatorUtils.NODE_INSTANCE_TYPE);
+        assertResponse(mvcResult, nodeInstance, NodeCreatorUtils.NODE_INSTANCE_TYPE);
     }
 
     @Test
     public void shouldFailLoadAllInstanceTypesForUnauthorizedUser() throws Exception {
-        mvc().perform(get(LOAD_INSTANCE_TYPES_URL)
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(get(LOAD_INSTANCE_TYPES_URL));
     }
 
     @Test
     @WithMockUser
     public void shouldLoadAllowedInstanceTypes() throws Exception {
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("regionId", "1");
+        params.add("toolInstances", "false");
+        params.add("spot", "true");
+
         Mockito.doReturn(instanceTypes).when(mockClusterApiService).getAllowedInstanceTypes(ID, true);
 
-        final MvcResult mvcResult = mvc().perform(get(LOAD_INSTANCE_TYPES_URL)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE)
-                .param("regionId", "1")
-                .param("toolInstances", "false")
-                .param("spot", "true"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(get(LOAD_INSTANCE_TYPES_URL).params(params));
 
         Mockito.verify(mockClusterApiService).getAllowedInstanceTypes(ID, true);
 
-        final ResponseResult<List<InstanceType>> expectedResult =
-                ControllerTestUtils.buildExpectedResult(instanceTypes);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                NodeCreatorUtils.INSTANCE_TYPE_LIST_TYPE);
+        assertResponse(mvcResult, instanceTypes, NodeCreatorUtils.INSTANCE_TYPE_LIST_TYPE);
     }
 
     @Test
     @WithMockUser
     public void shouldLoadAllowedToolInstanceTypes() throws Exception {
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("regionId", "1");
+        params.add("toolInstances", "true");
+        params.add("spot", "false");
+
         Mockito.doReturn(instanceTypes).when(mockClusterApiService).getAllowedToolInstanceTypes(ID, false);
 
-        final MvcResult mvcResult = mvc().perform(get(LOAD_INSTANCE_TYPES_URL)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE)
-                .param("regionId", "1")
-                .param("toolInstances", "true")
-                .param("spot", "false"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(get(LOAD_INSTANCE_TYPES_URL).params(params));
 
         Mockito.verify(mockClusterApiService).getAllowedToolInstanceTypes(ID, false);
 
-        final ResponseResult<List<InstanceType>> expectedResult =
-                ControllerTestUtils.buildExpectedResult(instanceTypes);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                NodeCreatorUtils.INSTANCE_TYPE_LIST_TYPE);
+        assertResponse(mvcResult, instanceTypes, NodeCreatorUtils.INSTANCE_TYPE_LIST_TYPE);
     }
 
     @Test
     public void shouldFailLoadAllowedInstanceAndPriceTypesForUnauthorizedUser() throws Exception {
-        mvc().perform(get(LOAD_ALLOWED_INSTANCE_TYPES_URL)
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(get(LOAD_ALLOWED_INSTANCE_TYPES_URL));
     }
 
     @Test
     @WithMockUser
     public void shouldLoadAllowedInstanceAndPriceTypes() throws Exception {
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("toolId", "1");
+        params.add("regionId", "1");
+        params.add("spot", "false");
+
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
                 NodeCreatorUtils.getDefaultAllowedInstanceAndPriceTypes();
 
         Mockito.doReturn(allowedInstanceAndPriceTypes).when(mockClusterApiService)
                 .getAllowedInstanceAndPriceTypes(ID, ID, false);
 
-        final MvcResult mvcResult = mvc().perform(get(LOAD_ALLOWED_INSTANCE_TYPES_URL)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE)
-                .param("toolId", "1")
-                .param("regionId", "1")
-                .param("spot", "false"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(get(LOAD_ALLOWED_INSTANCE_TYPES_URL).params(params));
 
         Mockito.verify(mockClusterApiService).getAllowedInstanceAndPriceTypes(ID, ID, false);
 
-        final ResponseResult<AllowedInstanceAndPriceTypes> expectedResult =
-                ControllerTestUtils.buildExpectedResult(allowedInstanceAndPriceTypes);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                NodeCreatorUtils.ALLOWED_INSTANCE_TYPE);
+        assertResponse(mvcResult, allowedInstanceAndPriceTypes, NodeCreatorUtils.ALLOWED_INSTANCE_TYPE);
     }
 
     @Test
     public void shouldFailGetNodeUsageStatisticsForUnauthorizedUser() throws Exception {
-        mvc().perform(get(String.format(NODE_USAGE_URL, NAME))
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(get(String.format(NODE_USAGE_URL, NAME)));
     }
 
     @Test
     @WithMockUser
     public void shouldGetNodeUsageStatistics() throws Exception {
         final List<MonitoringStats> monitoringStats = Collections.singletonList(new MonitoringStats());
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("from", FROM_STRING.replace('T', ' '));
+        params.add("to", TO_STRING.replace('T', ' '));
 
         Mockito.doReturn(monitoringStats).when(mockClusterApiService)
                 .getStatsForNode(NAME, from, to);
 
-        final MvcResult mvcResult = mvc().perform(get(String.format(NODE_USAGE_URL, NAME))
-                .servletPath(SERVLET_PATH)
-                .content(EXPECTED_CONTENT_TYPE)
-                .param("from", FROM_STRING.replace('T', ' '))
-                .param("to", TO_STRING.replace('T', ' ')))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(get(String.format(NODE_USAGE_URL, NAME)).params(params));
 
         Mockito.verify(mockClusterApiService).getStatsForNode(NAME, from, to);
 
-        final ResponseResult<List<MonitoringStats>> expectedResult =
-                ControllerTestUtils.buildExpectedResult(monitoringStats);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                NodeCreatorUtils.MONITORING_STATS_TYPE);
+        assertResponse(mvcResult, monitoringStats, NodeCreatorUtils.MONITORING_STATS_TYPE);
     }
 
     @Test
     public void shouldFailDownloadNodeUsageStatisticsReportForUnauthorizedUser() throws Exception {
-        mvc().perform(get(String.format(NODE_STATISTICS_URL, NAME))
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(get(String.format(NODE_STATISTICS_URL, NAME)));
     }
 
     @Test
     @WithMockUser
     public void shouldDownloadNodeUsageStatisticsReport() throws Exception {
         final InputStream inputStream = new ByteArrayInputStream(TEST_DATA.getBytes());
+
         Mockito.doReturn(inputStream).when(mockClusterApiService)
                 .getUsageStatisticsFile(NAME, from, to, Duration.ofHours(1));
+
         final MvcResult mvcResult = mvc().perform(get(String.format(NODE_STATISTICS_URL, NAME))
                 .servletPath(SERVLET_PATH)
                 .contentType("application/octet-stream")
@@ -427,9 +315,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
 
     @Test
     public void shouldFailLoadNodeDisksForUnauthorizedUser() throws Exception {
-        mvc().perform(get(String.format(NODE_DISKS_URL, NAME))
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(get(String.format(NODE_DISKS_URL, NAME)));
     }
 
     @Test
@@ -439,18 +325,10 @@ public class ClusterControllerTest extends AbstractControllerTest {
 
         Mockito.doReturn(nodeDisks).when(mockClusterApiService).loadNodeDisks(NAME);
 
-        final MvcResult mvcResult = mvc().perform(get(String.format(NODE_DISKS_URL, NAME))
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(get(String.format(NODE_DISKS_URL, NAME)));
 
         Mockito.verify(mockClusterApiService).loadNodeDisks(NAME);
 
-        final ResponseResult<List<NodeDisk>> expectedResult = ControllerTestUtils.buildExpectedResult(nodeDisks);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                NodeCreatorUtils.NODE_DISK_TYPE);
+        assertResponse(mvcResult, nodeDisks, NodeCreatorUtils.NODE_DISK_TYPE);
     }
 }
