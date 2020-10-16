@@ -17,16 +17,13 @@
 package com.epam.pipeline.controller.billing;
 
 import com.epam.pipeline.acl.billing.BillingApiService;
-import com.epam.pipeline.controller.ResponseResult;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import com.epam.pipeline.util.ControllerTestUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
-import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,8 +37,6 @@ import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = BillingController.class)
 public class BillingControllerTest extends AbstractControllerTest {
@@ -59,30 +54,19 @@ public class BillingControllerTest extends AbstractControllerTest {
                                                 "\"loadDetails\":true," +
                                                 "\"pageSize\":5," +
                                                 "\"pageNum\":1}";
-    private BillingChartRequest billingChartRequest;
-    private List<BillingChartInfo> billingChartInfos;
+    private final BillingChartInfo billingChartInfo = BillingChartInfo.builder().cost(COST).build();
+    private final BillingChartRequest billingChartRequest = new BillingChartRequest(
+            LocalDate.MIN, LocalDate.MAX, Collections.singletonMap("test", Collections.singletonList("test")),
+            DateHistogramInterval.DAY, BillingGrouping.BILLING_CENTER, true, 5L, 1L
+    );
+    private final List<BillingChartInfo> billingChartInfos = Collections.singletonList(billingChartInfo);
 
     @Autowired
     private BillingApiService mockBillingApiService;
 
-    @Before
-    public void setUp() {
-        final BillingChartInfo billingChartInfo = BillingChartInfo.builder()
-                .cost(COST)
-                .build();
-        billingChartRequest = new BillingChartRequest(
-                LocalDate.MIN, LocalDate.MAX, Collections.singletonMap("test", Collections.singletonList("test")),
-                DateHistogramInterval.DAY, BillingGrouping.BILLING_CENTER, true, 5L, 1L
-        );
-
-        billingChartInfos = Collections.singletonList(billingChartInfo);
-    }
-
     @Test
     public void shouldFailGetBillingChartInfoForUnauthorizedUser() throws Exception {
-        mvc().perform(post(GET_BILLING_CHART_INFO_URL)
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(post(GET_BILLING_CHART_INFO_URL));
     }
 
     @Test
@@ -90,28 +74,16 @@ public class BillingControllerTest extends AbstractControllerTest {
     public void shouldReturnBillingChartInfo() throws Exception {
         Mockito.doReturn(billingChartInfos).when(mockBillingApiService).getBillingChartInfo(billingChartRequest);
 
-        final MvcResult mvcResult = mvc().perform(post(GET_BILLING_CHART_INFO_URL)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE)
-                .content(REQUEST_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(post(GET_BILLING_CHART_INFO_URL).content(REQUEST_JSON));
 
         Mockito.verify(mockBillingApiService).getBillingChartInfo(billingChartRequest);
 
-        final ResponseResult<List<BillingChartInfo>> expectedResult =
-                ControllerTestUtils.buildExpectedResult(billingChartInfos);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<List<BillingChartInfo>>>() { });
+        assertResponse(mvcResult, billingChartInfos, new TypeReference<Result<List<BillingChartInfo>>>() { });
     }
 
     @Test
     public void shouldFailGetBillingChartInfoPaginatedForUnauthorizedUser() throws Exception {
-        mvc().perform(post(GET_BILLING_CHART_INFO_PAGINATED_URL)
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(post(GET_BILLING_CHART_INFO_PAGINATED_URL));
     }
 
     @Test
@@ -120,28 +92,16 @@ public class BillingControllerTest extends AbstractControllerTest {
         Mockito.doReturn(billingChartInfos).when(mockBillingApiService)
                 .getBillingChartInfoPaginated(billingChartRequest);
 
-        final MvcResult mvcResult = mvc().perform(post(GET_BILLING_CHART_INFO_PAGINATED_URL)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE)
-                .content(REQUEST_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(post(GET_BILLING_CHART_INFO_PAGINATED_URL).content(REQUEST_JSON));
 
         Mockito.verify(mockBillingApiService).getBillingChartInfoPaginated(billingChartRequest);
 
-        final ResponseResult<List<BillingChartInfo>> expectedResult =
-                ControllerTestUtils.buildExpectedResult(billingChartInfos);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<List<BillingChartInfo>>>() { });
+        assertResponse(mvcResult, billingChartInfos, new TypeReference<Result<List<BillingChartInfo>>>() { });
     }
 
     @Test
     public void shouldFailGetAllBillingCentersForUnauthorizedUser() throws Exception {
-        mvc().perform(get(GET_BILLING_CENTERS)
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(get(GET_BILLING_CENTERS));
     }
 
     @Test
@@ -151,18 +111,10 @@ public class BillingControllerTest extends AbstractControllerTest {
 
         Mockito.doReturn(centers).when(mockBillingApiService).getAllBillingCenters();
 
-        final MvcResult mvcResult = mvc().perform(get(GET_BILLING_CENTERS)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(get(GET_BILLING_CENTERS));
 
         Mockito.verify(mockBillingApiService).getAllBillingCenters();
 
-        final ResponseResult<List<String>> expectedResult = ControllerTestUtils.buildExpectedResult(centers);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<List<String>>>() { });
+        assertResponse(mvcResult, centers, new TypeReference<Result<List<String>>>() { });
     }
 }

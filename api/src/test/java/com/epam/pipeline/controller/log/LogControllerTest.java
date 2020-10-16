@@ -18,24 +18,19 @@ package com.epam.pipeline.controller.log;
 
 import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import com.epam.pipeline.controller.ResponseResult;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
-import com.epam.pipeline.util.ControllerTestUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = LogController.class)
 public class LogControllerTest extends AbstractControllerTest {
@@ -49,9 +44,7 @@ public class LogControllerTest extends AbstractControllerTest {
 
     @Test
     public void shouldFailForUnauthorizedUserGet() throws Exception {
-        mvc().perform(get(LOG_ENDPOINT)
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(get(LOG_ENDPOINT));
     }
 
     @Test
@@ -59,26 +52,16 @@ public class LogControllerTest extends AbstractControllerTest {
     public void shouldReturnLogFilter() throws Exception {
         logFilter.setSortOrder("ASC");
         Mockito.doReturn(logFilter).when(mockLogApiService).getFilters();
-        final MvcResult mvcResult = mvc().perform(get(LOG_ENDPOINT)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE))
-                .andExpect(status().isOk()).andReturn();
+        final MvcResult mvcResult = performRequest(get(LOG_ENDPOINT));
 
         Mockito.verify(mockLogApiService).getFilters();
 
-        final ResponseResult<LogFilter> expectedResult = ControllerTestUtils.buildExpectedResult(logFilter);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<LogFilter>>() { });
+        assertResponse(mvcResult, logFilter, new TypeReference<Result<LogFilter>>() { });
     }
 
     @Test
     public void shouldFailForUnauthorizedUserPost() throws Exception {
-        mvc().perform(post(LOG_ENDPOINT)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE)
-                .content(getObjectMapper().writeValueAsString(logFilter)))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(post(LOG_ENDPOINT));
     }
 
     @Test
@@ -87,21 +70,12 @@ public class LogControllerTest extends AbstractControllerTest {
         final LogPagination logPagination = LogPagination.builder().pageSize(5).build();
         logFilter.setMessage(TEST_MESSAGE);
         Mockito.doReturn(logPagination).when(mockLogApiService).filter(logFilter);
-        final MvcResult mvcResult = mvc().perform(post(LOG_ENDPOINT)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE)
-                .content(getObjectMapper().writeValueAsString(logFilter)))
-                .andExpect(status().isOk()).andReturn();
+        final String content = getObjectMapper().writeValueAsString(logFilter);
+
+        final MvcResult mvcResult = performRequest(post(LOG_ENDPOINT).content(content));
 
         Mockito.verify(mockLogApiService).filter(logFilter);
 
-        final ArgumentCaptor<LogFilter> logFilterCaptor = ArgumentCaptor.forClass(LogFilter.class);
-        Mockito.verify(mockLogApiService).filter(logFilterCaptor.capture());
-        assertThat(logFilterCaptor.getValue().getMessage()).isEqualTo(TEST_MESSAGE);
-
-        final ResponseResult<LogPagination> expectedResult = ControllerTestUtils.buildExpectedResult(logPagination);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                new TypeReference<Result<LogPagination>>() { });
+        assertResponse(mvcResult, logPagination, new TypeReference<Result<LogPagination>>() { });
     }
 }

@@ -16,15 +16,25 @@
 
 package com.epam.pipeline.test.web;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotNull;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.controller.ResponseResult;
+import com.epam.pipeline.controller.Result;
+import com.fasterxml.jackson.core.type.TypeReference;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -60,4 +70,50 @@ public abstract class AbstractControllerTest {
         return objectMapper;
     }
 
+    public <T> ResponseResult<T> buildExpectedResult(final T payload) {
+        final ResponseResult<T> expectedResult = new ResponseResult<>();
+        expectedResult.setStatus("OK");
+        expectedResult.setPayload(payload);
+        return expectedResult;
+    }
+
+    public <T> void assertResponse(final MvcResult mvcResult,
+                                   final JsonMapper objectMapper,
+                                   final ResponseResult<T> expectedResult,
+                                   final TypeReference<Result<T>> typeReference) throws Exception {
+        final String actual = mvcResult.getResponse().getContentAsString();
+        Assert.assertTrue(StringUtils.isNotBlank(actual));
+        assertThat(actual).isEqualToIgnoringWhitespace(objectMapper.writeValueAsString(expectedResult));
+
+        final Result<T> actualResult = JsonMapper.parseData(actual, typeReference);
+        Assert.assertEquals(expectedResult.getPayload(), actualResult.getPayload());
+    }
+
+    public <T> void assertResponse(final MvcResult mvcResult,
+                                   final T payload,
+                                   final TypeReference<Result<T>> typeReference) throws Exception {
+        final ResponseResult<T> expectedResult = buildExpectedResult(payload);
+
+        final String actual = mvcResult.getResponse().getContentAsString();
+        Assert.assertTrue(StringUtils.isNotBlank(actual));
+        assertThat(actual).isEqualToIgnoringWhitespace(objectMapper.writeValueAsString(expectedResult));
+
+        final Result<T> actualResult = JsonMapper.parseData(actual, typeReference);
+        Assert.assertEquals(expectedResult.getPayload(), actualResult.getPayload());
+    }
+
+    public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder) throws Exception {
+        mockMvc.perform(requestBuilder
+                .servletPath(SERVLET_PATH))
+                .andExpect(status().isUnauthorized());
+    }
+
+    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder) throws Exception {
+        return mockMvc.perform(requestBuilder
+                .servletPath(SERVLET_PATH)
+                .contentType(EXPECTED_CONTENT_TYPE))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.content().contentType(EXPECTED_CONTENT_TYPE))
+                .andReturn();
+    }
 }
