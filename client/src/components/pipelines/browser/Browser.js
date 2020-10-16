@@ -240,6 +240,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         dataIndex: 'name',
         key: 'name',
         title: 'Name',
+        className: styles.treeItemRow,
         render: (name, item) => {
           const nameSearch = highlightText(name, filter);
           let nameComponent;
@@ -311,6 +312,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         key: 'owner',
         dataIndex: 'owner',
         width: 150,
+        className: styles.treeItemRow,
         render: (owner) => <UserName userName={owner} />
       },
       isStorages
@@ -318,6 +320,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         : {
           key: 'actions',
           width: 75,
+          className: styles.treeItemRow,
           render: (item) => this.renderTreeItemActions(item)
         }
     ].filter(Boolean);
