@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.controller.contextual;
 
-import com.epam.pipeline.controller.ResponseResult;
 import com.epam.pipeline.controller.vo.ContextualPreferenceVO;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
@@ -25,23 +24,22 @@ import com.epam.pipeline.entity.contextual.ContextualPreferenceSearchRequest;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceApiService;
 import com.epam.pipeline.test.creator.contextual.ContextualPreferenceCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import com.epam.pipeline.util.ControllerTestUtils;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.util.Collections;
 import java.util.List;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = ContextualPreferenceController.class)
 public class ContextualPreferenceControllerTest extends AbstractControllerTest {
@@ -53,8 +51,6 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
     private static final ContextualPreferenceLevel PREFERENCE_LEVEL = ContextualPreferenceLevel.ROLE;
     private final ContextualPreference contextualPreference =
             ContextualPreferenceCreatorUtils.getContextualPreference();
-    private final ResponseResult<ContextualPreference> expectedResult =
-            ControllerTestUtils.buildExpectedResult(contextualPreference);
     private final ContextualPreferenceExternalResource contextualPreferenceExternalResource =
             ContextualPreferenceCreatorUtils.getCPExternalResource();
 
@@ -63,9 +59,7 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
 
     @Test
     public void shouldFailLoadAllForUnauthorizedUser() throws Exception {
-        mvc().perform(get(LOAD_ALL_URL)
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(get(LOAD_ALL_URL));
     }
 
     @Test
@@ -75,86 +69,57 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
 
         Mockito.doReturn(contextualPreferences).when(mockContextualPreferenceApiService).loadAll();
 
-        final MvcResult mvcResult = mvc().perform(get(LOAD_ALL_URL)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(get(LOAD_ALL_URL));
 
         Mockito.verify(mockContextualPreferenceApiService).loadAll();
 
-        final ResponseResult<List<ContextualPreference>> expectedResult =
-                ControllerTestUtils.buildExpectedResult(contextualPreferences);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
+        assertResponse(mvcResult, contextualPreferences,
                 ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_LIST_TYPE);
     }
 
     @Test
     public void shouldFailLoadForUnauthorizedUser() throws Exception {
-        mvc().perform(get(LOAD_URL)
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(get(LOAD_URL));
     }
 
     @Test
     @WithMockUser
     public void shouldLoad() throws Exception {
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("name", TEST_STRING);
+        params.add("level", PREFERENCE_LEVEL.name());
+        params.add("resourceId", TEST_STRING);
+
         Mockito.doReturn(contextualPreference).when(mockContextualPreferenceApiService)
                 .load(TEST_STRING, contextualPreferenceExternalResource);
 
-        final MvcResult mvcResult = mvc().perform(get(LOAD_URL)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE)
-                .param("name", TEST_STRING)
-                .param("level", PREFERENCE_LEVEL.toString())
-                .param("resourceId", TEST_STRING))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(get(LOAD_URL).params(params));
 
-        Mockito.verify(mockContextualPreferenceApiService).load(TEST_STRING, contextualPreferenceExternalResource);
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
+        assertResponse(mvcResult, contextualPreference, ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
     }
 
     @Test
     public void shouldFailSearchForUnauthorizedUser() throws Exception {
-        mvc().perform(post(CONTEXTUAL_URL)
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(post(CONTEXTUAL_URL));
     }
 
     @Test
     @WithMockUser
     public void shouldSearch() throws Exception {
         final ContextualPreferenceSearchRequest searchRequest = ContextualPreferenceCreatorUtils.getCPSearchRequest();
+        final String content = getObjectMapper().writeValueAsString(searchRequest);
 
         Mockito.doReturn(contextualPreference).when(mockContextualPreferenceApiService)
                 .search(searchRequest.getPreferences(), searchRequest.getResource());
 
-        final MvcResult mvcResult = mvc().perform(post(CONTEXTUAL_URL)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE)
-                .content(getObjectMapper().writeValueAsString(searchRequest)))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(post(CONTEXTUAL_URL).content(content));
 
-        Mockito.verify(mockContextualPreferenceApiService)
-                .search(searchRequest.getPreferences(), searchRequest.getResource());
-
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
+        assertResponse(mvcResult, contextualPreference, ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
     }
 
     @Test
     public void shouldFailUpdateForUnauthorizedUser() throws Exception {
-        mvc().perform(put(CONTEXTUAL_URL)
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(put(CONTEXTUAL_URL));
     }
 
     @Test
@@ -162,49 +127,37 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
     public void shouldUpdate() throws Exception {
         final ContextualPreferenceVO contextualPreferenceVO =
                 ContextualPreferenceCreatorUtils.getContextualPreferenceVO();
+        final String content = getObjectMapper().writeValueAsString(contextualPreferenceVO);
 
         Mockito.doReturn(contextualPreference).when(mockContextualPreferenceApiService).upsert(contextualPreferenceVO);
 
-        final MvcResult mvcResult = mvc().perform(put(CONTEXTUAL_URL)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE)
-                .content(getObjectMapper().writeValueAsString(contextualPreferenceVO)))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(put(CONTEXTUAL_URL).content(content));
 
         Mockito.verify(mockContextualPreferenceApiService).upsert(contextualPreferenceVO);
 
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
+        assertResponse(mvcResult, contextualPreference, ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
     }
 
     @Test
     public void shouldFailDeleteForUnauthorizedUser() throws Exception {
-        mvc().perform(MockMvcRequestBuilders.delete(CONTEXTUAL_URL)
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(delete(CONTEXTUAL_URL));
     }
 
     @Test
     @WithMockUser
     public void shouldDelete() throws Exception {
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("name", TEST_STRING);
+        params.add("level", PREFERENCE_LEVEL.name());
+        params.add("resourceId", TEST_STRING);
+
         Mockito.doReturn(contextualPreference).when(mockContextualPreferenceApiService)
                 .delete(TEST_STRING, contextualPreferenceExternalResource);
 
-        final MvcResult mvcResult = mvc().perform(MockMvcRequestBuilders.delete(CONTEXTUAL_URL)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE)
-                .param("name", TEST_STRING)
-                .param("level", PREFERENCE_LEVEL.toString())
-                .param("resourceId", TEST_STRING))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(delete(CONTEXTUAL_URL).params(params));
 
         Mockito.verify(mockContextualPreferenceApiService).delete(TEST_STRING, contextualPreferenceExternalResource);
 
-        ControllerTestUtils.assertResponse(mvcResult, getObjectMapper(), expectedResult,
-                ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
+        assertResponse(mvcResult, contextualPreference, ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
     }
 }
