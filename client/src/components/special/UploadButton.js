@@ -23,7 +23,6 @@ import {
   Upload,
   Button,
   Icon,
-  message,
   Modal,
   Progress,
   Col,
@@ -101,7 +100,6 @@ class UploadButton extends React.Component {
         .catch((e) => {
           this.s3Storage = undefined;
           this.s3StorageError = e.toString();
-          message.error(e.toString(), 5);
         });
     } else {
       this.s3Storage = undefined;
