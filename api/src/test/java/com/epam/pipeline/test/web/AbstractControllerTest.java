@@ -79,8 +79,10 @@ public abstract class AbstractControllerTest {
 
     public <T> void assertResponse(final MvcResult mvcResult,
                                    final JsonMapper objectMapper,
-                                   final ResponseResult<T> expectedResult,
+                                   final T payload,
                                    final TypeReference<Result<T>> typeReference) throws Exception {
+        final ResponseResult<T> expectedResult = buildExpectedResult(payload);
+
         final String actual = mvcResult.getResponse().getContentAsString();
         Assert.assertTrue(StringUtils.isNotBlank(actual));
         assertThat(actual).isEqualToIgnoringWhitespace(objectMapper.writeValueAsString(expectedResult));

@@ -17,13 +17,11 @@
 package com.epam.pipeline.controller.configuration;
 
 import com.epam.pipeline.config.JsonMapper;
-import com.epam.pipeline.controller.ResponseResult;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.manager.configuration.RunConfigurationApiService;
 import com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import com.epam.pipeline.util.ControllerTestUtils;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,8 +37,6 @@ import java.util.List;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = ConfigurationController.class)
 public class ConfigurationControllerTest extends AbstractControllerTest {
@@ -50,9 +46,8 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
     private static final String CONFIGURATION_BY_ID_URL = CONFIGURATION_URL + "/%d";
     private static final String ALL_CONFIGURATIONS_URL = CONFIGURATION_URL + "/loadAll";
     private JsonMapper mapper;
-    private RunConfiguration runConfiguration;
-    private RunConfigurationVO runConfigurationVO;
-    private ResponseResult<RunConfiguration> expectedResult;
+    private final RunConfiguration runConfiguration = ConfigurationCreatorUtils.getRunConfiguration();
+    private final RunConfigurationVO runConfigurationVO = ConfigurationCreatorUtils.getRunConfigurationVO();
 
     @Autowired
     private RunConfigurationApiService mockRunConfigurationApiService;
@@ -61,66 +56,46 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
     public void setUp() {
         mapper = getObjectMapper();
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-
-        runConfigurationVO = ConfigurationCreatorUtils.getRunConfigurationVO();
-        runConfiguration = ConfigurationCreatorUtils.getRunConfiguration();
-
-        expectedResult = ControllerTestUtils.buildExpectedResult(runConfiguration);
     }
 
     @Test
     public void shouldFailSaveConfigurationForUnauthorizedUser() throws Exception {
-        mvc().perform(post(CONFIGURATION_URL)
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(post(CONFIGURATION_URL));
     }
 
     @Test
     @WithMockUser
     public void shouldSaveConfiguration() throws Exception {
+        final String content = getObjectMapper().writeValueAsString(runConfigurationVO);
+
         Mockito.doReturn(runConfiguration).when(mockRunConfigurationApiService).save(Mockito.refEq(runConfigurationVO));
 
-        final MvcResult mvcResult = mvc().perform(post(CONFIGURATION_URL)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE)
-                .content(getObjectMapper().writeValueAsString(runConfigurationVO)))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(post(CONFIGURATION_URL).content(content));
 
         Mockito.verify(mockRunConfigurationApiService).save(Mockito.refEq(runConfigurationVO));
 
-        ControllerTestUtils.assertResponse(mvcResult, mapper, expectedResult,
-                ConfigurationCreatorUtils.RUN_CONFIGURATION_TYPE);
+        assertResponse(mvcResult, mapper, runConfiguration, ConfigurationCreatorUtils.RUN_CONFIGURATION_TYPE);
     }
 
     @Test
     @WithMockUser
     public void shouldUpdateConfiguration() throws Exception {
         runConfigurationVO.setId(ID);
+        final String content = getObjectMapper().writeValueAsString(runConfigurationVO);
 
         Mockito.doReturn(runConfiguration).when(mockRunConfigurationApiService)
                 .update(Mockito.refEq(runConfigurationVO));
 
-        final MvcResult mvcResult = mvc().perform(post(CONFIGURATION_URL)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE)
-                .content(getObjectMapper().writeValueAsString(runConfigurationVO)))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(post(CONFIGURATION_URL).content(content));
 
         Mockito.verify(mockRunConfigurationApiService).update(Mockito.refEq(runConfigurationVO));
 
-        ControllerTestUtils.assertResponse(mvcResult, mapper, expectedResult,
-                ConfigurationCreatorUtils.RUN_CONFIGURATION_TYPE);
+        assertResponse(mvcResult, mapper, runConfiguration, ConfigurationCreatorUtils.RUN_CONFIGURATION_TYPE);
     }
 
     @Test
     public void shouldFailDeleteConfigurationForUnauthorizedUser() throws Exception {
-        mvc().perform(delete(String.format(CONFIGURATION_BY_ID_URL, ID))
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(delete(String.format(CONFIGURATION_BY_ID_URL, ID)));
     }
 
     @Test
@@ -128,24 +103,16 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
     public void shouldDeleteConfiguration() throws Exception {
         Mockito.doReturn(runConfiguration).when(mockRunConfigurationApiService).delete(ID);
 
-        final MvcResult mvcResult = mvc().perform(delete(String.format(CONFIGURATION_BY_ID_URL, ID))
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(delete(String.format(CONFIGURATION_BY_ID_URL, ID)));
 
         Mockito.verify(mockRunConfigurationApiService).delete(ID);
 
-        ControllerTestUtils.assertResponse(mvcResult, mapper, expectedResult,
-                ConfigurationCreatorUtils.RUN_CONFIGURATION_TYPE);
+        assertResponse(mvcResult, mapper, runConfiguration, ConfigurationCreatorUtils.RUN_CONFIGURATION_TYPE);
     }
 
     @Test
     public void shouldFailLoadConfigurationForUnauthorizedUser() throws Exception {
-        mvc().perform(get(String.format(CONFIGURATION_BY_ID_URL, ID))
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(get(String.format(CONFIGURATION_BY_ID_URL, ID)));
     }
 
     @Test
@@ -153,24 +120,16 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
     public void shouldLoadConfiguration() throws Exception {
         Mockito.doReturn(runConfiguration).when(mockRunConfigurationApiService).load(ID);
 
-        final MvcResult mvcResult = mvc().perform(get(String.format(CONFIGURATION_BY_ID_URL, ID))
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(get(String.format(CONFIGURATION_BY_ID_URL, ID)));
 
         Mockito.verify(mockRunConfigurationApiService).load(ID);
 
-        ControllerTestUtils.assertResponse(mvcResult, mapper, expectedResult,
-                ConfigurationCreatorUtils.RUN_CONFIGURATION_TYPE);
+        assertResponse(mvcResult, mapper, runConfiguration, ConfigurationCreatorUtils.RUN_CONFIGURATION_TYPE);
     }
 
     @Test
     public void shouldFailLoadAllConfigurationsForUnauthorizedUser() throws Exception {
-        mvc().perform(get(ALL_CONFIGURATIONS_URL)
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        performUnauthorizedRequest(get(ALL_CONFIGURATIONS_URL));
     }
 
     @Test
@@ -179,19 +138,10 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
         final List<RunConfiguration> runConfigurations = Collections.singletonList(runConfiguration);
         Mockito.doReturn(runConfigurations).when(mockRunConfigurationApiService).loadAll();
 
-        final MvcResult mvcResult = mvc().perform(get(ALL_CONFIGURATIONS_URL)
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(get(ALL_CONFIGURATIONS_URL));
 
         Mockito.verify(mockRunConfigurationApiService).loadAll();
 
-        final ResponseResult<List<RunConfiguration>> expectedResult
-                = ControllerTestUtils.buildExpectedResult(runConfigurations);
-
-        ControllerTestUtils.assertResponse(mvcResult, mapper, expectedResult,
-                ConfigurationCreatorUtils.RUN_CONFIGURATION_LIST_TYPE);
+        assertResponse(mvcResult, mapper, runConfigurations, ConfigurationCreatorUtils.RUN_CONFIGURATION_LIST_TYPE);
     }
 }
