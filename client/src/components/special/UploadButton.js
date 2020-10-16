@@ -528,7 +528,7 @@ class UploadButton extends React.Component {
 
     return (
       <div style={{display: 'inline'}}>
-        <Upload {...uploadProps}>
+        <Upload {...uploadProps} disabled={this.props.uploadToS3 && !!this.s3StorageError}>
           {
             this.props.uploadToS3 && this.s3StorageError && !this.props.uploadToNFS &&
             <Tooltip
