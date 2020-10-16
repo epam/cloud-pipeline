@@ -50,6 +50,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.LABELS;
 import static com.epam.pipeline.autotests.ao.Primitive.LABEL_INPUT_FIELD;
 import static com.epam.pipeline.autotests.ao.Primitive.NEW_ENDPOINT;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
+import static com.epam.pipeline.autotests.ao.Primitive.SENSITIVE_STORAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.SETTINGS;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
@@ -79,7 +80,9 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                         .find(byClassName("ant-select-selection__rendered"))),
                 entry(PRICE_TYPE, context().find(byText("Price type")).closest(".ant-row")
                         .find(byClassName("ant-select-selection__rendered"))),
-                entry(SAVE, context().find(button("SAVE")))
+                entry(SAVE, context().find(button("SAVE"))),
+                entry(SENSITIVE_STORAGE, context().$(byText("Allow sensitive storages"))
+                        .parent().find(By.xpath("following-sibling::div//span")))
         );
     }
 
@@ -124,19 +127,15 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings disableAllowSensitiveStorage() {
-        SelenideElement checkbox = context().$(byText("Allow sensitive storages"))
-                .parent().find(By.xpath("following-sibling::div//span"));
-        if (checkbox.has(cssClass("ant-checkbox-checked"))) {
-            checkbox.click();
+        if (get(SENSITIVE_STORAGE).has(cssClass("ant-checkbox-checked"))) {
+            get(SENSITIVE_STORAGE).click();
         }
         return this;
     }
 
     public ToolSettings enableAllowSensitiveStorage() {
-        SelenideElement checkbox = context().$(byText("Allow sensitive storages"))
-                .parent().find(By.xpath("following-sibling::div//span"));
-        if (!checkbox.has(cssClass("ant-checkbox-checked"))) {
-            checkbox.click();
+        if (!get(SENSITIVE_STORAGE).has(cssClass("ant-checkbox-checked"))) {
+            get(SENSITIVE_STORAGE).click();
         }
         return this;
     }

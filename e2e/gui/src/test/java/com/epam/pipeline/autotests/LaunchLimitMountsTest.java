@@ -77,14 +77,12 @@ public class LaunchLimitMountsTest extends AbstractAutoRemovingPipelineRunningTe
                 .selectStorage(storage1)
                 .validateHeader(storage1);
 
-        String url = WebDriverRunner.getWebDriver().getCurrentUrl();
-        storageID = url.substring(url.lastIndexOf("/") + 1);
+        storageID = Utils.entityIDfromURL();
         library()
                 .selectStorage(storageSensitive)
                 .validateHeader(storageSensitive);
 
-        url = WebDriverRunner.getWebDriver().getCurrentUrl();
-        sensitiveStorageID = url.substring(url.lastIndexOf("/") + 1);
+        sensitiveStorageID = Utils.entityIDfromURL();
         tools()
                 .performWithin(registry, group, tool, tool ->
                         tool.settings()
@@ -186,7 +184,7 @@ public class LaunchLimitMountsTest extends AbstractAutoRemovingPipelineRunningTe
         runsMenu()
                 .showLog(getRunId())
                 .logContainsMessage(logMess, " available storage(s). Checking mount options.")
-                .checkAvailableStoragesCount(logMess,2)
+                .checkAvailableStoragesCount(logMess, 2)
                 .logNotContainsMessage(logMess, "Run is launched with mount limits")
                 .logContainsMessage(logMess, mountStorageMessage(storage1))
                 .logContainsMessage(logMess, mountStorageMessage(storage2))

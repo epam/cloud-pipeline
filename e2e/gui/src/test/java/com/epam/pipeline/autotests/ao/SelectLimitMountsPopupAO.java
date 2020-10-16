@@ -102,10 +102,9 @@ public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, 
     }
 
     public SelectLimitMountsPopupAO searchStorage(String storage) {
-        return //setSearchStorage(storage)
-                clear(SEARCH_INPUT)
-        .setValue(SEARCH_INPUT, storage)
-        .pressEnter();
+        return clear(SEARCH_INPUT)
+                .setValue(SEARCH_INPUT, storage)
+                .pressEnter();
     }
 
     public SelectLimitMountsPopupAO selectStorage(final String storage) {

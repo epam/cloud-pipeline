@@ -383,12 +383,12 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO logContainsMessage(Set<String> logMess, final String message) {
-        assertTrue(logMess.stream().anyMatch(mes -> mes.contains(message)), format("Message '%s' isn't cantained in log", message));
+        assertTrue(logMess.stream().anyMatch(mes -> mes.contains(message)), format("Message '%s' isn't contained in log", message));
         return this;
     }
 
     public LogAO logNotContainsMessage(Set<String> logMess, final String message) {
-        assertTrue(logMess.stream().noneMatch(mes -> mes.contains(message)), format("Message '%s' isn't cantained in log", message));
+        assertTrue(logMess.stream().noneMatch(mes -> mes.contains(message)), format("Message '%s' is contained in log", message));
         return this;
     }
 
@@ -396,10 +396,10 @@ public class LogAO implements AccessObject<LogAO> {
         String str = logMess.stream().filter(Pattern.compile("\\d+ available storage\\(s\\)\\. Checking mount options\\.")
                         .asPredicate()).findFirst().toString();
         Matcher matcher = Pattern.compile(" \\d* ").matcher(str);
-        matcher.find();
+        assert matcher.find();
         int res = Integer.parseInt(matcher.group().replace(" ", ""));
         assertTrue(res >= count,
-                format("Available storages count (actual %s) should be more or equals %s", res, count));
+               format("Available storages count (actual %s) should be more or equal %s", res, count));
         return this;
     }
 
