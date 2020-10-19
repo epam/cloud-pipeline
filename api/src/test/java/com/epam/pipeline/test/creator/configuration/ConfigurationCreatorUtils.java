@@ -43,6 +43,16 @@ public final class ConfigurationCreatorUtils {
 
     }
 
+    public static RunConfiguration getRunConfiguration() {
+        final RunConfiguration runConfiguration = new RunConfiguration();
+        runConfiguration.setName(TEST_STRING);
+        runConfiguration.setParent(new Folder(ID));
+        runConfiguration.setDescription(TEST_STRING);
+        runConfiguration.setOwner(TEST_STRING);
+        runConfiguration.setEntries(ENTRIES);
+        return runConfiguration;
+    }
+
     public static RunConfiguration getRunConfiguration(Long id, String owner, Folder parent) {
         final RunConfiguration runConfiguration = new RunConfiguration();
         runConfiguration.setId(id);
@@ -52,6 +62,15 @@ public final class ConfigurationCreatorUtils {
         runConfiguration.setOwner(owner);
         runConfiguration.setEntries(ENTRIES);
         return runConfiguration;
+    }
+
+    public static RunConfigurationVO getRunConfigurationVO() {
+        final RunConfigurationVO runConfigurationVO = new RunConfigurationVO();
+        runConfigurationVO.setName(TEST_STRING);
+        runConfigurationVO.setDescription(TEST_STRING);
+        runConfigurationVO.setParentId(ID);
+        runConfigurationVO.setEntries(ENTRIES);
+        return runConfigurationVO;
     }
 
     public static RunConfigurationVO getRunConfigurationVO(Long id, String owner) {

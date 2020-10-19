@@ -45,7 +45,7 @@ public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
     private final RunConfiguration runConfiguration =
             ConfigurationCreatorUtils.getRunConfiguration(1L, SIMPLE_USER, null);
     private final RunConfigurationVO runConfigurationVO =
-            ConfigurationCreatorUtils.getRunConfigurationVO(2L, SIMPLE_USER);
+            ConfigurationCreatorUtils.getRunConfigurationVO(1L, SIMPLE_USER);
 
     @Autowired
     private ServerlessConfigurationApiService serverlessConfigurationApiService;
