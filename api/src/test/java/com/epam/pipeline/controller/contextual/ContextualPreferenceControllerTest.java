@@ -66,13 +66,11 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldLoadAll() throws Exception {
         final List<ContextualPreference> contextualPreferences = Collections.singletonList(contextualPreference);
-
         Mockito.doReturn(contextualPreferences).when(mockContextualPreferenceApiService).loadAll();
 
         final MvcResult mvcResult = performRequest(get(LOAD_ALL_URL));
 
         Mockito.verify(mockContextualPreferenceApiService).loadAll();
-
         assertResponse(mvcResult, contextualPreferences,
                 ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_LIST_TYPE);
     }
@@ -89,12 +87,12 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
         params.add("name", TEST_STRING);
         params.add("level", PREFERENCE_LEVEL.name());
         params.add("resourceId", TEST_STRING);
-
         Mockito.doReturn(contextualPreference).when(mockContextualPreferenceApiService)
                 .load(TEST_STRING, contextualPreferenceExternalResource);
 
         final MvcResult mvcResult = performRequest(get(LOAD_URL).params(params));
 
+        Mockito.verify(mockContextualPreferenceApiService).load(TEST_STRING, contextualPreferenceExternalResource);
         assertResponse(mvcResult, contextualPreference, ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
     }
 
@@ -108,12 +106,13 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
     public void shouldSearch() throws Exception {
         final ContextualPreferenceSearchRequest searchRequest = ContextualPreferenceCreatorUtils.getCPSearchRequest();
         final String content = getObjectMapper().writeValueAsString(searchRequest);
-
         Mockito.doReturn(contextualPreference).when(mockContextualPreferenceApiService)
                 .search(searchRequest.getPreferences(), searchRequest.getResource());
 
         final MvcResult mvcResult = performRequest(post(CONTEXTUAL_URL).content(content));
 
+        Mockito.verify(mockContextualPreferenceApiService)
+                .search(searchRequest.getPreferences(), searchRequest.getResource());
         assertResponse(mvcResult, contextualPreference, ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
     }
 
@@ -128,13 +127,11 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
         final ContextualPreferenceVO contextualPreferenceVO =
                 ContextualPreferenceCreatorUtils.getContextualPreferenceVO();
         final String content = getObjectMapper().writeValueAsString(contextualPreferenceVO);
-
         Mockito.doReturn(contextualPreference).when(mockContextualPreferenceApiService).upsert(contextualPreferenceVO);
 
         final MvcResult mvcResult = performRequest(put(CONTEXTUAL_URL).content(content));
 
         Mockito.verify(mockContextualPreferenceApiService).upsert(contextualPreferenceVO);
-
         assertResponse(mvcResult, contextualPreference, ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
     }
 
@@ -150,14 +147,12 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
         params.add("name", TEST_STRING);
         params.add("level", PREFERENCE_LEVEL.name());
         params.add("resourceId", TEST_STRING);
-
         Mockito.doReturn(contextualPreference).when(mockContextualPreferenceApiService)
                 .delete(TEST_STRING, contextualPreferenceExternalResource);
 
         final MvcResult mvcResult = performRequest(delete(CONTEXTUAL_URL).params(params));
 
         Mockito.verify(mockContextualPreferenceApiService).delete(TEST_STRING, contextualPreferenceExternalResource);
-
         assertResponse(mvcResult, contextualPreference, ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
     }
 }
