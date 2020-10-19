@@ -121,7 +121,6 @@ import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.acls.domain.AclAuthorizationStrategy;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.model.AclCache;
-import org.springframework.security.acls.model.SidRetrievalStrategy;
 
 import javax.sql.DataSource;
 import java.util.concurrent.Executor;
@@ -233,9 +232,6 @@ public class AclTestBeans {
 
     @MockBean
     protected MessageHelper mockMessageHelper;
-
-    @MockBean
-    protected SidRetrievalStrategy mockSidRetrievalStrategy;
 
     @MockBean
     protected AclAuthorizationStrategy mockAclAuthorizationStrategy;
