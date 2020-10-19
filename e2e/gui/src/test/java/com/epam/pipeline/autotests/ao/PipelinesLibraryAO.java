@@ -58,7 +58,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
      * Useful when you need to describe any tree item, for instance, when you need all of them, get first one
      * or get one by index.
      */
-    public static final By treeItem = byXpath(".//li[contains(@class, 'pipelines-library-tree-node')]");
+    public static final By treeItem = byXpath(".//li[contains(@class, 'pipelines-library-tree-node-folder_root')]");
 
     /**
      * Selects search input in tree view.
