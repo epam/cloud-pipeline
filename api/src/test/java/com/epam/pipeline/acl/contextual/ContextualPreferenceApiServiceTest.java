@@ -30,7 +30,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import java.util.Collections;
 import java.util.List;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_LIST;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,6 +45,7 @@ public class ContextualPreferenceApiServiceTest extends AbstractAclTest {
             ContextualPreferenceCreatorUtils.getContextualPreferenceVO();
 
     private final List<ContextualPreference> preferenceList = Collections.singletonList(contextualPreference);
+    private final String TEST_STRING = "TEST_STRING";
 
     @Autowired
     private ContextualPreferenceApiService preferenceApiService;
@@ -62,7 +62,7 @@ public class ContextualPreferenceApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(roles = SIMPLE_USER_ROLE)
+    @WithMockUser
     public void shouldDenyLoadingAllContextualPreferencesForNotAdmin() {
         doReturn(preferenceList).when(mockPreferenceManager).loadAll();
 
@@ -78,7 +78,7 @@ public class ContextualPreferenceApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(roles = SIMPLE_USER_ROLE)
+    @WithMockUser
     public void shouldDenyLoadingContextualPreferenceForNotAdmin() {
         doReturn(contextualPreference).when(mockPreferenceManager).load(TEST_STRING, externalResource);
 
@@ -86,7 +86,7 @@ public class ContextualPreferenceApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(username = SIMPLE_USER)
+    @WithMockUser
     public void shouldSearchContextualPreference() {
         doReturn(contextualPreference).when(mockPreferenceManager).search(TEST_STRING_LIST, externalResource);
 
@@ -102,7 +102,7 @@ public class ContextualPreferenceApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(roles = SIMPLE_USER_ROLE)
+    @WithMockUser
     public void shouldDenyUpsertContextualPreferenceForNotAdmin() {
         doReturn(contextualPreference).when(mockPreferenceManager).upsert(contextualPreferenceVO);
 
@@ -118,7 +118,7 @@ public class ContextualPreferenceApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(roles = SIMPLE_USER_ROLE)
+    @WithMockUser
     public void shouldDenyDeletionContextualPreferenceForNotAdmin() {
         doReturn(contextualPreference).when(mockPreferenceManager).delete(TEST_STRING, externalResource);
 
