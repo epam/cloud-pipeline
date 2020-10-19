@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.manager.datastorage.leakagepolicy.SensitiveStorageOperation;
+import com.epam.pipeline.manager.datastorage.leakagepolicy.StorageWriteOperation;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -109,6 +110,7 @@ public class StorageProviderManager {
         return getStorageProvider(dataStorage).generateDownloadURL(dataStorage, path, version, contentDisposition);
     }
 
+    @StorageWriteOperation
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(AbstractDataStorage dataStorage,
                                                                        String path) {
         return getStorageProvider(dataStorage).generateDataStorageItemUploadUrl(dataStorage, path);
@@ -119,31 +121,37 @@ public class StorageProviderManager {
         return getStorageProvider(dataStorage).createFile(dataStorage, path, contents);
     }
 
+    @StorageWriteOperation
     public DataStorageFile createFile(AbstractDataStorage dataStorage, String path, InputStream contentStream)
             throws DataStorageException {
         return getStorageProvider(dataStorage).createFile(dataStorage, path, contentStream);
     }
 
+    @StorageWriteOperation
     public DataStorageFolder createFolder(AbstractDataStorage dataStorage, String path)
             throws DataStorageException {
         return getStorageProvider(dataStorage).createFolder(dataStorage, path);
     }
 
+    @StorageWriteOperation
     public void deleteFile(AbstractDataStorage dataStorage, String path, String version, Boolean totally)
             throws DataStorageException {
         getStorageProvider(dataStorage).deleteFile(dataStorage, path, version, totally);
     }
 
+    @StorageWriteOperation
     public void deleteFolder(AbstractDataStorage dataStorage, String path, Boolean totally)
             throws DataStorageException {
         getStorageProvider(dataStorage).deleteFolder(dataStorage, path, totally);
     }
 
+    @StorageWriteOperation
     public DataStorageFile moveFile(AbstractDataStorage dataStorage, String oldPath, String newPath)
             throws DataStorageException {
         return getStorageProvider(dataStorage).moveFile(dataStorage, oldPath, newPath);
     }
 
+    @StorageWriteOperation
     public DataStorageFolder moveFolder(AbstractDataStorage dataStorage, String oldPath, String newPath)
             throws DataStorageException {
         return getStorageProvider(dataStorage).moveFolder(dataStorage, oldPath, newPath);
