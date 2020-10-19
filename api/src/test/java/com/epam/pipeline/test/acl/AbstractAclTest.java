@@ -69,7 +69,7 @@ public abstract class AbstractAclTest {
     @Autowired
     protected PermissionFactory permissionFactory;
 
-    protected void createAclEntity(AbstractSecuredEntity entity, Permission permission) {
+    protected void initAclEntity(AbstractSecuredEntity entity, Permission permission) {
         initAclEntity(entity,
                 Collections.singletonList(new UserPermission(SIMPLE_USER, permission.getMask())));
     }
