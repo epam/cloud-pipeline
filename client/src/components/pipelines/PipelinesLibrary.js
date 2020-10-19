@@ -699,7 +699,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       await this.props.pipelinesLibrary.fetch();
       const rootElements = [{
         id: 'pipelines',
-        name: 'All pipelines'
+        name: `All ${this.localizedString('pipeline')}s`
       }, {
         id: 'storages',
         name: 'All storages'
