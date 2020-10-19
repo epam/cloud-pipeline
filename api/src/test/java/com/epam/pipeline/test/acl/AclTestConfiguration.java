@@ -39,10 +39,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @ContextConfiguration(classes = {AclTestBeans.class, AclSecurityConfiguration.class})
-@ComponentScan(basePackages = {"com.epam.pipeline.security.acl",
-        "com.epam.pipeline.security.run",
-        "com.epam.pipeline.manager.security",
-        })
+@ComponentScan(basePackages = {"com.epam.pipeline.security.acl", "com.epam.pipeline.manager.security"})
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 @TestPropertySource(value = {"classpath:test-application.properties"})

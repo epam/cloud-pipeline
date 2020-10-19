@@ -28,6 +28,7 @@ import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.domain.PrincipalSid;
+import org.springframework.security.acls.model.Permission;
 import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -67,6 +68,11 @@ public abstract class AbstractAclTest {
 
     @Autowired
     protected PermissionFactory permissionFactory;
+
+    protected void createAclEntity(AbstractSecuredEntity entity, Permission permission) {
+        initAclEntity(entity,
+                Collections.singletonList(new UserPermission(SIMPLE_USER, permission.getMask())));
+    }
 
     protected void initAclEntity(AbstractSecuredEntity entity) {
         initAclEntity(entity, Collections.emptyList());

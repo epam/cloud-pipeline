@@ -18,7 +18,6 @@ package com.epam.pipeline.test.creator.contextual;
 
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.ContextualPreferenceVO;
-import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
@@ -65,9 +64,5 @@ public final class ContextualPreferenceCreatorUtils {
 
     public static List<ContextualPreference> getContextualPreferenceList() {
         return Collections.singletonList(getContextualPreference());
-    }
-
-    public static MonitoringStats getMonitoringStats() {
-        return new MonitoringStats();
     }
 }

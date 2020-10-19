@@ -14,28 +14,24 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.test.creator.pipeline;
+package com.epam.pipeline.test.creator.cluster;
 
+import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
-public final class PipelineCreatorUtils {
+public final class ClusterCreatorUtils {
 
-    public static PipelineRun getPipelineRunWithPermission() {
-        PipelineRun pipelineRun = new PipelineRun();
-        pipelineRun.setId(ID);
-        pipelineRun.setOwner("SIMPLE_USER");
+    public static PipelineRun getPipelineRun(Long id, String owner) {
+        final PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setId(id);
+        pipelineRun.setOwner(owner);
+        pipelineRun.setName(TEST_STRING);
         return pipelineRun;
     }
 
-    public static PipelineRun getPipelineRunWithoutPermission() {
-        PipelineRun pipelineRun = new PipelineRun();
-        pipelineRun.setId(ID_2);
-        pipelineRun.setOwner(TEST_STRING);
-        pipelineRun.setName(TEST_STRING);
-        return pipelineRun;
+    public static MonitoringStats getMonitoringStats() {
+        return new MonitoringStats();
     }
 }
