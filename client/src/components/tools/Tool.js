@@ -73,6 +73,7 @@ import LoadToolAttributes from '../../models/tools/LoadToolAttributes';
 import LoadToolScanPolicy from '../../models/tools/LoadToolScanPolicy';
 import UpdateToolVersionWhiteList from '../../models/tools/UpdateToolVersionWhiteList';
 import ToolScan from '../../models/tools/ToolScan';
+import AllowedInstanceTypes from '../../models/utils/AllowedInstanceTypes';
 import VersionScanResult from './elements/VersionScanResult';
 import {submitsRun, modifyPayloadForAllowedInstanceTypes, run, runPipelineActions} from '../runs/actions';
 import InstanceTypesManagementForm
@@ -117,7 +118,6 @@ const DEFAULT_FILE_SIZE_KB = 50;
 @inject('awsRegions')
 @inject(({allowedInstanceTypes, dockerRegistries, authenticatedUserInfo, preferences}, {params}) => {
   return {
-    allowedInstanceTypes: allowedInstanceTypes.getAllowedTypes(params.id),
     allowedInstanceTypesCache: allowedInstanceTypes,
     toolId: params.id,
     tool: new LoadTool(params.id),
@@ -247,7 +247,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     } else {
       this.defaultVersionSettings && await this.defaultVersionSettings.fetch();
       this.props.versionSettings && await this.props.versionSettings.fetch();
-      await this.props.allowedInstanceTypes.fetch();
       await this.props.tool.fetch();
     }
   };
@@ -1278,12 +1277,117 @@ export default class Tool extends localization.LocalizedReactComponent {
     );
   };
 
-  runToolDefault = async (version, payload) => {
+  runToolDefault = async (version) => {
+    const parameterIsNotEmpty = (parameter, additionalCriteria) =>
+      parameter !== null &&
+      parameter !== undefined &&
+      `${parameter}`.trim().length > 0 &&
+      (!additionalCriteria || additionalCriteria(parameter));
+    const [versionSettings] = (this.props.versionSettings.value || [])
+      .filter(v => v.version === version);
+    const [defaultVersionSettings] = (this.props.versionSettings.value || [])
+      .filter(v => v.version === this.defaultTag);
+    const versionSettingValue = (settingName) => {
+      if (versionSettings &&
+        versionSettings.settings &&
+        versionSettings.settings.length &&
+        versionSettings.settings[0].configuration) {
+        return versionSettings.settings[0].configuration[settingName];
+      }
+      if (defaultVersionSettings &&
+        defaultVersionSettings.settings &&
+        defaultVersionSettings.settings.length &&
+        defaultVersionSettings.settings[0].configuration) {
+        return defaultVersionSettings.settings[0].configuration[settingName];
+      }
+      return null;
+    };
+    const chooseDefaultValue = (
+      versionSettingsValue,
+      toolValue,
+      settingsValue,
+      additionalCriteria
+    ) => {
+      if (parameterIsNotEmpty(versionSettingsValue, additionalCriteria)) {
+        return versionSettingsValue;
+      }
+      if (parameterIsNotEmpty(toolValue, additionalCriteria)) {
+        return toolValue;
+      }
+      return settingsValue;
+    };
+    const [registry] = !this.props.docker.loaded
+      ? [null]
+      : (this.props.docker.value.registries || [])
+        .filter(r => r.id === this.props.tool.value.registryId);
+    const prepareParameters = (parameters) => {
+      const result = {};
+      for (let key in parameters) {
+        if (parameters.hasOwnProperty(key)) {
+          result[key] = {
+            type: parameters[key].type,
+            value: parameters[key].value,
+            required: parameters[key].required,
+            defaultValue: parameters[key].defaultValue
+          };
+        }
+      }
+      return result;
+    };
+    const cloudRegionIdValue = parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
+      ? versionSettingValue('cloudRegionId')
+      : this.defaultCloudRegionId;
+    const isSpotValue = parameterIsNotEmpty(versionSettingValue('is_spot'))
+      ? versionSettingValue('is_spot')
+      : this.props.preferences.useSpot;
+    const allowedInstanceTypesRequest = new AllowedInstanceTypes(
+      this.props.toolId,
+      cloudRegionIdValue,
+      isSpotValue
+    );
+    await allowedInstanceTypesRequest.fetch();
+    const payload = modifyPayloadForAllowedInstanceTypes({
+      instanceType:
+        chooseDefaultValue(
+          versionSettingValue('instance_size'),
+          this.props.tool.value.instanceType,
+          this.props.preferences.getPreferenceValue('cluster.instance.type')
+        ),
+      hddSize: +chooseDefaultValue(
+        versionSettingValue('instance_disk'),
+        this.props.tool.value.disk,
+        this.props.preferences.getPreferenceValue('cluster.instance.hdd'),
+        p => +p > 0
+      ),
+      timeout: +(this.props.tool.value.timeout || 0),
+      cmdTemplate: chooseDefaultValue(
+        versionSettingValue('cmd_template'),
+        this.props.tool.value.defaultCommand,
+        this.props.preferences.getPreferenceValue('launch.cmd.template')
+      ),
+      dockerImage: registry
+        ? `${registry.path}/${this.props.tool.value.image}${version ? `:${version}` : ''}`
+        : `${this.props.tool.value.image}${version ? `:${version}` : ''}`,
+      params: parameterIsNotEmpty(versionSettingValue('parameters'))
+        ? prepareParameters(versionSettingValue('parameters'))
+        : {},
+      isSpot: isSpotValue,
+      nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))
+        ? +versionSettingValue('node_count')
+        : undefined,
+      cloudRegionId: cloudRegionIdValue
+    }, allowedInstanceTypesRequest);
     const title = version
       ? `Are you sure you want to launch tool (version ${version}) with default settings?`
       : 'Are you sure you want to launch tool with default settings?';
     const info = this.getVersionRunningInformation(version || this.defaultTag);
-    if (await run(this)(payload, true, title, info.launchTooltip, this.props.allowedInstanceTypes)) {
+    if (await run(this)(
+      payload,
+      true,
+      title,
+      info.launchTooltip,
+      allowedInstanceTypesRequest
+    )) {
       SessionStorageWrapper.navigateToActiveRuns(this.props.router);
     }
   };
@@ -1376,12 +1480,14 @@ export default class Tool extends localization.LocalizedReactComponent {
 
   renderRunButton = (version) => {
     const parameterIsNotEmpty = (parameter, additionalCriteria) =>
-    parameter !== null &&
-    parameter !== undefined &&
-    `${parameter}`.trim().length > 0 &&
-    (!additionalCriteria || additionalCriteria(parameter));
-    const [versionSettings] = (this.props.versionSettings.value || []).filter(v => v.version === (version || this.defaultTag));
-    const [defaultVersionSettings] = (this.props.versionSettings.value || []).filter(v => v.version === this.defaultTag);
+      parameter !== null &&
+      parameter !== undefined &&
+      `${parameter}`.trim().length > 0 &&
+      (!additionalCriteria || additionalCriteria(parameter));
+    const [versionSettings] = (this.props.versionSettings.value || [])
+      .filter(v => v.version === (version || this.defaultTag));
+    const [defaultVersionSettings] = (this.props.versionSettings.value || [])
+      .filter(v => v.version === this.defaultTag);
     const versionSettingValue = (settingName) => {
       if (versionSettings &&
         versionSettings.settings &&
@@ -1408,7 +1514,10 @@ export default class Tool extends localization.LocalizedReactComponent {
     const diskIsNotEmpty =
       parameterIsNotEmpty(versionSettingValue('instance_disk'), p => +p > 0) ||
       parameterIsNotEmpty(this.props.tool.value.disk, p => +p > 0) ||
-      parameterIsNotEmpty(this.props.preferences.getPreferenceValue('cluster.instance.hdd'), p => +p > 0);
+      parameterIsNotEmpty(
+        this.props.preferences.getPreferenceValue('cluster.instance.hdd'),
+        p => +p > 0
+      );
     if ((!this.defaultTag && !version) ||
       !defaultCommandIsNotEmpty ||
       !instanceTypeIsNotEmpty ||
@@ -1437,71 +1546,7 @@ export default class Tool extends localization.LocalizedReactComponent {
         </Tooltip>
       );
     }
-
-    const chooseDefaultValue = (versionSettingsValue, toolValue, settingsValue, additionalCriteria) => {
-      if (parameterIsNotEmpty(versionSettingsValue, additionalCriteria)) {
-        return versionSettingsValue;
-      }
-      if (parameterIsNotEmpty(toolValue, additionalCriteria)) {
-        return toolValue;
-      }
-      return settingsValue;
-    };
-
-    const [registry] = !this.props.docker.loaded
-      ? [null]
-      : (this.props.docker.value.registries || []).filter(r => r.id === this.props.tool.value.registryId);
-
     version = version || this.defaultTag;
-    const prepareParameters = (parameters) => {
-      const result = {};
-      for (let key in parameters) {
-        if (parameters.hasOwnProperty(key)) {
-          result[key] = {
-            type: parameters[key].type,
-            value: parameters[key].value,
-            required: parameters[key].required,
-            defaultValue: parameters[key].defaultValue
-          };
-        }
-      }
-      return result;
-    };
-    const defaultPayload = modifyPayloadForAllowedInstanceTypes({
-      instanceType:
-        chooseDefaultValue(
-          versionSettingValue('instance_size'),
-          this.props.tool.value.instanceType,
-          this.props.preferences.getPreferenceValue('cluster.instance.type')
-        ),
-      hddSize: +chooseDefaultValue(
-        versionSettingValue('instance_disk'),
-        this.props.tool.value.disk,
-        this.props.preferences.getPreferenceValue('cluster.instance.hdd'),
-        p => +p > 0
-      ),
-      timeout: +(this.props.tool.value.timeout || 0),
-      cmdTemplate: chooseDefaultValue(
-        versionSettingValue('cmd_template'),
-        this.props.tool.value.defaultCommand,
-        this.props.preferences.getPreferenceValue('launch.cmd.template')
-      ),
-      dockerImage: registry
-        ? `${registry.path}/${this.props.tool.value.image}${version ? `:${version}` : ''}`
-        : `${this.props.tool.value.image}${version ? `:${version}` : ''}`,
-      params: parameterIsNotEmpty(versionSettingValue('parameters'))
-        ? prepareParameters(versionSettingValue('parameters'))
-        : {},
-      isSpot: parameterIsNotEmpty(versionSettingValue('is_spot'))
-        ? versionSettingValue('is_spot')
-        : this.props.preferences.useSpot,
-      nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))
-        ? +versionSettingValue('node_count')
-        : undefined,
-      cloudRegionId: parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
-        ? versionSettingValue('cloudRegionId')
-        : this.defaultCloudRegionId
-    }, this.props.allowedInstanceTypes);
     const {allowedToExecute, tooltip, notLoaded} = this.getVersionRunningInformation(version);
     if (!allowedToExecute) {
       return (
@@ -1517,7 +1562,7 @@ export default class Tool extends localization.LocalizedReactComponent {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              return this.runToolDefault(version, defaultPayload);
+              return this.runToolDefault(version);
             }}>
             {
               tooltip && !notLoaded
@@ -1533,7 +1578,7 @@ export default class Tool extends localization.LocalizedReactComponent {
       const runCustomKey = 'custom';
       const onSelect = ({key}) => {
         switch (key) {
-          case runDefaultKey: this.runToolDefault(version, defaultPayload); break;
+          case runDefaultKey: this.runToolDefault(version); break;
           case runCustomKey: this.runTool(version); break;
         }
       };
@@ -1584,7 +1629,7 @@ export default class Tool extends localization.LocalizedReactComponent {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  return this.runToolDefault(version, defaultPayload);
+                  return this.runToolDefault(version);
                 }}>
                 {
                   tooltip && !notLoaded
@@ -1783,8 +1828,7 @@ export default class Tool extends localization.LocalizedReactComponent {
   render () {
     if ((!this.props.tool.loaded && this.props.tool.pending) ||
       (!this.props.docker.loaded && this.props.docker.pending) ||
-      (!this.props.versionSettings.loaded && this.props.versionSettings.pending) ||
-      (!this.props.allowedInstanceTypes.loaded && this.props.allowedInstanceTypes.pending)) {
+      (!this.props.versionSettings.loaded && this.props.versionSettings.pending)) {
       return <LoadingView />;
     }
     if (this.props.tool.error) {

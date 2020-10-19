@@ -354,9 +354,12 @@ export default class PersonalToolsPanel extends React.Component {
           }
           return result;
         };
+        const cloudRegionIdValue = parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
+          ? versionSettingValue('cloudRegionId')
+          : this.defaultCloudRegionId;
         const allowedInstanceTypesRequest = new AllowedInstanceTypes(
           tool.id,
-          null,
+          cloudRegionIdValue,
           parameterIsNotEmpty(versionSettingValue('is_spot'))
             ? versionSettingValue('is_spot')
             : this.props.preferences.useSpot
@@ -405,9 +408,7 @@ export default class PersonalToolsPanel extends React.Component {
           nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))
             ? +versionSettingValue('node_count')
             : undefined,
-          cloudRegionId: parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
-            ? versionSettingValue('cloudRegionId')
-            : this.defaultCloudRegionId
+          cloudRegionId: cloudRegionIdValue
         }, allowedInstanceTypesRequest);
         const parts = (tool.image || '').toLowerCase().split('/');
         const [image] = parts[parts.length - 1].split(':');
