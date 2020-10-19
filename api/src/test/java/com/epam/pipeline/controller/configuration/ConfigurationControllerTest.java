@@ -67,13 +67,11 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldSaveConfiguration() throws Exception {
         final String content = getObjectMapper().writeValueAsString(runConfigurationVO);
-
         Mockito.doReturn(runConfiguration).when(mockRunConfigurationApiService).save(Mockito.refEq(runConfigurationVO));
 
         final MvcResult mvcResult = performRequest(post(CONFIGURATION_URL).content(content));
 
         Mockito.verify(mockRunConfigurationApiService).save(Mockito.refEq(runConfigurationVO));
-
         assertResponse(mvcResult, mapper, runConfiguration, ConfigurationCreatorUtils.RUN_CONFIGURATION_TYPE);
     }
 
@@ -82,14 +80,12 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
     public void shouldUpdateConfiguration() throws Exception {
         runConfigurationVO.setId(ID);
         final String content = getObjectMapper().writeValueAsString(runConfigurationVO);
-
         Mockito.doReturn(runConfiguration).when(mockRunConfigurationApiService)
                 .update(Mockito.refEq(runConfigurationVO));
 
         final MvcResult mvcResult = performRequest(post(CONFIGURATION_URL).content(content));
 
         Mockito.verify(mockRunConfigurationApiService).update(Mockito.refEq(runConfigurationVO));
-
         assertResponse(mvcResult, mapper, runConfiguration, ConfigurationCreatorUtils.RUN_CONFIGURATION_TYPE);
     }
 
@@ -102,11 +98,9 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldDeleteConfiguration() throws Exception {
         Mockito.doReturn(runConfiguration).when(mockRunConfigurationApiService).delete(ID);
-
         final MvcResult mvcResult = performRequest(delete(String.format(CONFIGURATION_BY_ID_URL, ID)));
 
         Mockito.verify(mockRunConfigurationApiService).delete(ID);
-
         assertResponse(mvcResult, mapper, runConfiguration, ConfigurationCreatorUtils.RUN_CONFIGURATION_TYPE);
     }
 
@@ -119,11 +113,9 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldLoadConfiguration() throws Exception {
         Mockito.doReturn(runConfiguration).when(mockRunConfigurationApiService).load(ID);
-
         final MvcResult mvcResult = performRequest(get(String.format(CONFIGURATION_BY_ID_URL, ID)));
 
         Mockito.verify(mockRunConfigurationApiService).load(ID);
-
         assertResponse(mvcResult, mapper, runConfiguration, ConfigurationCreatorUtils.RUN_CONFIGURATION_TYPE);
     }
 
@@ -141,7 +133,6 @@ public class ConfigurationControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(get(ALL_CONFIGURATIONS_URL));
 
         Mockito.verify(mockRunConfigurationApiService).loadAll();
-
         assertResponse(mvcResult, mapper, runConfigurations, ConfigurationCreatorUtils.RUN_CONFIGURATION_LIST_TYPE);
     }
 }

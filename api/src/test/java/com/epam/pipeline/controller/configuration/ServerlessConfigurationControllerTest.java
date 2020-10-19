@@ -58,7 +58,6 @@ public class ServerlessConfigurationControllerTest extends AbstractControllerTes
         );
 
         Mockito.verify(mockServerlessConfigurationApiService).generateUrl(ID, TEST_CONFIG);
-
         assertResponse(mvcResult, RESULT, STRING_TYPE);
     }
 
