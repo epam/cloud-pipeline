@@ -106,17 +106,20 @@ def run_ssh_session(channel):
 def create_tunnel(run_id, local_port, remote_port, log_file, log_level, timeout, foreground,
                   server_delay=0.0001, tunnel_timeout=5, chunk_size=4096):
     if foreground:
-        server_tunnel(run_id, local_port, remote_port, log_file, log_level, server_delay, tunnel_timeout, chunk_size)
+        create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_level,
+                                 server_delay, tunnel_timeout, chunk_size)
     else:
         create_background_tunnel(log_file, timeout)
 
 
-def server_tunnel(run_id, local_port, remote_port, log_file, log_level, server_delay, tunnel_timeout, chunk_size):
+def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_level,
+                             server_delay, tunnel_timeout, chunk_size):
     logging.basicConfig(level=log_level or logging.ERROR)
     conn_info = get_conn_info(run_id)
     proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]),
                       int(os.getenv('CP_CLI_TUNNEL_PROXY_PORT', conn_info.ssh_proxy[1])))
-    target_endpoint = (conn_info.ssh_endpoint[0], remote_port)
+    target_endpoint = (os.getenv('CP_CLI_TUNNEL_TARGET_HOST', conn_info.ssh_endpoint[0]),
+                       remote_port)
     logging.info('Initializing tunnel %s:pipeline-%s:%s...', local_port, run_id, remote_port)
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(('0.0.0.0', local_port))
