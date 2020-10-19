@@ -1235,21 +1235,25 @@ def ssh(ctx, run_id):
 @Config.validate_access_token
 def tunnel(run_id, local_port, remote_port, log_file, log_level, timeout, foreground):
     """
-    Establishes tunnel connection to specified run instance port and server it as a local port.
+    Establishes tunnel connection to specified run instance port and serves it as a local port.
 
-    It allows to transfer any tcp traffic from local machine to run instance.
+    It allows to transfer any tcp traffic from local machine to run instance and works both on Linux and Windows.
 
     For example it can be used to allow ssh connections to run instance.
 
     \b
-    First of all establish tunnel connection from run #12345 instance ssh port (22) to some local port (4567).
+    First of all establish tunnel connection from run (12345) instance ssh port (22) to some local port (4567).
         pipe tunnel -lp 4567 -rp 22 12345
 
     \b
     Then connect to run instance using regular ssh client on the configured local port (4567).
         ssh -p 4567 root@localhost
 
-    Its works both on Linux and Windows. On windows git bash can be used for ssh.
+    \b
+    Additionally the following environment variables can be used to specify the exact tunnel properties.
+        CP_CLI_TUNNEL_PROXY_HOST
+        CP_CLI_TUNNEL_PROXY_PORT
+        CP_CLI_TUNNEL_TARGET_HOST
     """
     try:
         create_tunnel(run_id, local_port, remote_port, log_file, log_level, timeout, foreground)
