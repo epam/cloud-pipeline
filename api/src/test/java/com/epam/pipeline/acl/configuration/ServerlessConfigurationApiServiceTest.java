@@ -74,7 +74,7 @@ public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldReturnUrlWhenPermissionIsGranted() {
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
-        createAclEntity(runConfigurationVO.toEntity(), AclPermission.EXECUTE);
+        initAclEntity(runConfigurationVO.toEntity(), AclPermission.EXECUTE);
         doReturn(TEST_STRING).when(mockServerlessConfigurationManager).generateUrl(1L, TEST_STRING);
 
         assertThat(serverlessConfigurationApiService.generateUrl(1L, TEST_STRING)).isEqualTo(TEST_STRING);
@@ -107,7 +107,7 @@ public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldRunWhenPermissionIsGranted() {
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
-        createAclEntity(runConfiguration, AclPermission.EXECUTE);
+        initAclEntity(runConfiguration, AclPermission.EXECUTE);
         doReturn(runConfiguration).when(mockRunConfigurationManager).load(anyLong());
         doReturn(TEST_STRING).when(mockServerlessConfigurationManager).run(1L, TEST_STRING, request);
 
