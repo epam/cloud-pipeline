@@ -18,14 +18,12 @@ package com.epam.pipeline.test.creator.folder;
 
 import com.epam.pipeline.entity.pipeline.Folder;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
-
 public final class FolderCreatorUtils {
 
-    public static Folder getFolder() {
+    public static Folder getFolder(Long id, String owner) {
         Folder folder = new Folder();
-        folder.setId(ID);
-        folder.setOwner("SIMPLE_USER");
+        folder.setId(id);
+        folder.setOwner(owner);
         return folder;
     }
 }

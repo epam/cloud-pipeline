@@ -35,19 +35,19 @@ import org.springframework.security.test.context.support.WithMockUser;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 
 public class RunConfigurationApiServiceTest extends AbstractAclTest {
 
+    private final String TEST_STRING = "Test";
     private final RunConfiguration runConfiguration =
             ConfigurationCreatorUtils.getRunConfiguration(1L, SIMPLE_USER, null);
     private final RunConfigurationVO runConfigurationVO =
             ConfigurationCreatorUtils.getRunConfigurationVO(1L, SIMPLE_USER);
     private final RunConfigurationEntry runConfigurationEntry = ConfigurationCreatorUtils.getRunConfigurationEntry();
-    private final Folder folder = FolderCreatorUtils.getFolder();
+    private final Folder folder = FolderCreatorUtils.getFolder(1L, SIMPLE_USER);
 
     @Autowired
     private RunConfigurationApiService runConfigurationApiService;
@@ -73,15 +73,21 @@ public class RunConfigurationApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER, roles = CONFIGURATION_MANAGER_ROLE)
     public void shouldSaveRunConfigurationWhenPermissionIsGranted() {
+        RunConfiguration runConfiguration =
+                ConfigurationCreatorUtils.getRunConfiguration(1L, TEST_STRING, null);
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         initAclEntity(folder, AclPermission.WRITE);
+        initAclEntity(runConfiguration, AclPermission.WRITE);
         doReturn(runConfiguration).when(mockRunConfigurationManager).create(runConfigurationVO);
 
-        assertThat(runConfigurationApiService.save(runConfigurationVO)).isEqualTo(runConfiguration);
+        final RunConfiguration returnedRunConfiguration = runConfigurationApiService.save(runConfigurationVO);
+
+        assertThat(returnedRunConfiguration).isEqualTo(runConfiguration);
+        assertThat(returnedRunConfiguration.getMask()).isEqualTo(2);
     }
 
     @Test
-    @WithMockUser(username = SIMPLE_USER, roles = CONFIGURATION_MANAGER_ROLE)
+    @WithMockUser(roles = CONFIGURATION_MANAGER_ROLE)
     public void shouldDenySavingRunConfigurationWhenParentIdIsNull() {
         runConfigurationVO.setParentId(null);
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
@@ -92,7 +98,7 @@ public class RunConfigurationApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(username = SIMPLE_USER, roles = SIMPLE_USER_ROLE)
+    @WithMockUser
     public void shouldDenySavingRunConfigurationWithInvalidRole() {
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         initAclEntity(folder, AclPermission.WRITE);
@@ -102,7 +108,7 @@ public class RunConfigurationApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(username = SIMPLE_USER, roles = CONFIGURATION_MANAGER_ROLE)
+    @WithMockUser(roles = CONFIGURATION_MANAGER_ROLE)
     public void shouldDenySavingRunConfigurationWithInvalidAclPermission() {
         folder.setOwner(TEST_STRING);
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
@@ -113,7 +119,7 @@ public class RunConfigurationApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(username = SIMPLE_USER, roles = CONFIGURATION_MANAGER_ROLE)
+    @WithMockUser(roles = CONFIGURATION_MANAGER_ROLE)
     public void shouldDenySavingRunConfigurationWithInvalidPermissionToConfiguration() {
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         initAclEntity(folder, AclPermission.WRITE);
@@ -136,15 +142,20 @@ public class RunConfigurationApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldUpdateRunConfigurationWhenPermissionIsGranted() {
+        RunConfiguration runConfiguration =
+                ConfigurationCreatorUtils.getRunConfiguration(1L, TEST_STRING, null);
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         initAclEntity(runConfiguration, AclPermission.WRITE);
         doReturn(runConfiguration).when(mockRunConfigurationManager).update(runConfigurationVO);
 
-        assertThat(runConfigurationApiService.update(runConfigurationVO)).isEqualTo(runConfiguration);
+        final RunConfiguration returnedRunConfiguration = runConfigurationApiService.update(runConfigurationVO);
+
+        assertThat(returnedRunConfiguration).isEqualTo(runConfiguration);
+        assertThat(returnedRunConfiguration.getMask()).isEqualTo(2);
     }
 
     @Test
-    @WithMockUser(username = SIMPLE_USER)
+    @WithMockUser
     public void shouldDenyUpdateRunConfigurationWhenPermissionIsNotGranted() {
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         initAclEntity(runConfiguration);
@@ -174,7 +185,7 @@ public class RunConfigurationApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(username = SIMPLE_USER)
+    @WithMockUser
     public void shouldDenyDeletionRunConfigurationWhenPermissionIsNotGranted() {
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         initAclEntity(runConfiguration);
@@ -194,15 +205,20 @@ public class RunConfigurationApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadRunConfigurationWhenPermissionIsGranted() {
+        RunConfiguration runConfiguration =
+                ConfigurationCreatorUtils.getRunConfiguration(1L, TEST_STRING, null);
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         initAclEntity(runConfiguration, AclPermission.READ);
         doReturn(runConfiguration).when(mockRunConfigurationManager).load(1L);
 
-        assertThat(runConfigurationApiService.load(1L)).isEqualTo(runConfiguration);
+        final RunConfiguration returnedRunConfiguration = runConfigurationApiService.load(1L);
+
+        assertThat(returnedRunConfiguration).isEqualTo(runConfiguration);
+        assertThat(returnedRunConfiguration.getMask()).isEqualTo(1);
     }
 
     @Test
-    @WithMockUser(username = SIMPLE_USER)
+    @WithMockUser
     public void shouldDenyLoadingRunConfigurationWhenPermissionIsNotGranted() {
         runConfiguration.setOwner(TEST_STRING);
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
@@ -224,11 +240,16 @@ public class RunConfigurationApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadAllRunConfigurationWhenPermissionIsGranted() {
+        RunConfiguration runConfiguration =
+                ConfigurationCreatorUtils.getRunConfiguration(1L, TEST_STRING, null);
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         initAclEntity(runConfiguration, AclPermission.READ);
         doReturn(initSingleRunConfigurationList()).when(mockRunConfigurationManager).loadAll();
 
-        assertThat(runConfigurationApiService.loadAll()).hasSize(1).contains(runConfiguration);
+        final List<RunConfiguration> returnedRunConfiguration = runConfigurationApiService.loadAll();
+
+        assertThat(returnedRunConfiguration).hasSize(1).contains(runConfiguration);
+        assertThat(returnedRunConfiguration.get(0).getMask()).isEqualTo(1);
     }
 
     @Test
@@ -249,7 +270,7 @@ public class RunConfigurationApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(username = SIMPLE_USER)
+    @WithMockUser
     public void shouldDenyLoadingAllRunConfigurationWhichPermissionIsNotGranted() {
         runConfiguration.setOwner(TEST_STRING);
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
