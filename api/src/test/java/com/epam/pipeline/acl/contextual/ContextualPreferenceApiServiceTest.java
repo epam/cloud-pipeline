@@ -40,11 +40,12 @@ public class ContextualPreferenceApiServiceTest extends AbstractAclTest {
 
     private final ContextualPreference contextualPreference =
             ContextualPreferenceCreatorUtils.getContextualPreference();
-    private final List<ContextualPreference> preferenceList = Collections.singletonList(contextualPreference);
     private final ContextualPreferenceExternalResource externalResource =
             ContextualPreferenceCreatorUtils.getCPExternalResource();
     private final ContextualPreferenceVO contextualPreferenceVO =
             ContextualPreferenceCreatorUtils.getContextualPreferenceVO();
+
+    private final List<ContextualPreference> preferenceList = Collections.singletonList(contextualPreference);
 
     @Autowired
     private ContextualPreferenceApiService preferenceApiService;
@@ -57,10 +58,7 @@ public class ContextualPreferenceApiServiceTest extends AbstractAclTest {
     public void shouldLoadAllContextualPreferencesForAdmin() {
         doReturn(preferenceList).when(mockPreferenceManager).loadAll();
 
-        List<ContextualPreference> loadedPreferences = preferenceApiService.loadAll();
-
-        assertThat(loadedPreferences.size()).isEqualTo(1);
-        assertThat(loadedPreferences.get(0)).isEqualTo(contextualPreference);
+        assertThat(preferenceApiService.loadAll()).hasSize(1).contains(contextualPreference);
     }
 
     @Test
@@ -103,12 +101,12 @@ public class ContextualPreferenceApiServiceTest extends AbstractAclTest {
         assertThat(preferenceApiService.upsert(contextualPreferenceVO)).isEqualTo(contextualPreference);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(roles = SIMPLE_USER_ROLE)
     public void shouldDenyUpsertContextualPreferenceForNotAdmin() {
         doReturn(contextualPreference).when(mockPreferenceManager).upsert(contextualPreferenceVO);
 
-        preferenceApiService.upsert(contextualPreferenceVO);
+        assertThrows(AccessDeniedException.class, () ->  preferenceApiService.upsert(contextualPreferenceVO));
     }
 
     @Test
