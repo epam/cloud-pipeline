@@ -48,8 +48,6 @@ import java.util.List;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = ClusterController.class)
 public class ClusterControllerTest extends AbstractControllerTest {
@@ -73,6 +71,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
     private static final String TEST_DATA = "test_data";
     private static final String FROM_STRING = "2019-04-01T09:08:07";
     private static final String TO_STRING = "2020-05-02T12:11:10";
+    private static final String OCTET_STREAM_CONTENT_TYPE = "application/octet-stream";
     private final NodeInstance nodeInstance = NodeCreatorUtils.getDefaultNodeInstance();
     private final List<NodeInstance> nodeInstances = Collections.singletonList(nodeInstance);
     private final List<InstanceType>
@@ -93,13 +92,11 @@ public class ClusterControllerTest extends AbstractControllerTest {
     public void shouldLoadMasterNodes() throws Exception {
         final List<MasterNode> masterNodes = Collections.singletonList(MasterNode.fromNode(
                 NodeCreatorUtils.getDefaultNode(), PORT));
-
         Mockito.doReturn(masterNodes).when(mockClusterApiService).getMasterNodes();
 
         final MvcResult mvcResult = performRequest(get(MASTER_NODES_URL));
 
         Mockito.verify(mockClusterApiService).getMasterNodes();
-
         assertResponse(mvcResult, masterNodes, NodeCreatorUtils.MASTER_NODE_LIST_TYPE);
     }
 
@@ -116,7 +113,6 @@ public class ClusterControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(get(LOAD_NODES_URL));
 
         Mockito.verify(mockClusterApiService).getNodes();
-
         assertResponse(mvcResult, nodeInstances, NodeCreatorUtils.NODE_INSTANCE_LIST_TYPE);
     }
 
@@ -130,13 +126,11 @@ public class ClusterControllerTest extends AbstractControllerTest {
     public void shouldFilterNodes() throws Exception {
         final FilterNodesVO filterNodesVO = NodeCreatorUtils.getDefaultFilterNodesVO();
         final String content = getObjectMapper().writeValueAsString(filterNodesVO);
-
         Mockito.doReturn(nodeInstances).when(mockClusterApiService).filterNodes(Mockito.refEq(filterNodesVO));
 
         final MvcResult mvcResult = performRequest(post(FILTER_NODES_URL).content(content));
 
         Mockito.verify(mockClusterApiService).filterNodes(Mockito.refEq(filterNodesVO));
-
         assertResponse(mvcResult, nodeInstances, NodeCreatorUtils.NODE_INSTANCE_LIST_TYPE);
     }
 
@@ -153,7 +147,6 @@ public class ClusterControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(get(String.format(LOAD_NODE_URL, NAME)));
 
         Mockito.verify(mockClusterApiService).getNode(NAME);
-
         assertResponse(mvcResult, nodeInstance, NodeCreatorUtils.NODE_INSTANCE_TYPE);
     }
 
@@ -167,7 +160,6 @@ public class ClusterControllerTest extends AbstractControllerTest {
     public void shouldLoadNodeFiltered() throws Exception {
         final FilterPodsRequest filterPodsRequest = NodeCreatorUtils.getDefaultFilterPodsRequest();
         final String content = getObjectMapper().writeValueAsString(filterPodsRequest);
-
         Mockito.doReturn(nodeInstance).when(mockClusterApiService)
                 .getNode(Mockito.eq(NAME), Mockito.refEq(filterPodsRequest));
 
@@ -175,7 +167,6 @@ public class ClusterControllerTest extends AbstractControllerTest {
 
         Mockito.verify(mockClusterApiService)
                 .getNode(Mockito.eq(NAME), Mockito.refEq(filterPodsRequest));
-
         assertResponse(mvcResult, nodeInstance, NodeCreatorUtils.NODE_INSTANCE_TYPE);
     }
 
@@ -192,7 +183,6 @@ public class ClusterControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(delete(String.format(NODE_NAME_URL, NAME)));
 
         Mockito.verify(mockClusterApiService).terminateNode(NAME);
-
         assertResponse(mvcResult, nodeInstance, NodeCreatorUtils.NODE_INSTANCE_TYPE);
     }
 
@@ -208,13 +198,11 @@ public class ClusterControllerTest extends AbstractControllerTest {
         params.add("regionId", "1");
         params.add("toolInstances", "false");
         params.add("spot", "true");
-
         Mockito.doReturn(instanceTypes).when(mockClusterApiService).getAllowedInstanceTypes(ID, true);
 
         final MvcResult mvcResult = performRequest(get(LOAD_INSTANCE_TYPES_URL).params(params));
 
         Mockito.verify(mockClusterApiService).getAllowedInstanceTypes(ID, true);
-
         assertResponse(mvcResult, instanceTypes, NodeCreatorUtils.INSTANCE_TYPE_LIST_TYPE);
     }
 
@@ -225,13 +213,11 @@ public class ClusterControllerTest extends AbstractControllerTest {
         params.add("regionId", "1");
         params.add("toolInstances", "true");
         params.add("spot", "false");
-
         Mockito.doReturn(instanceTypes).when(mockClusterApiService).getAllowedToolInstanceTypes(ID, false);
 
         final MvcResult mvcResult = performRequest(get(LOAD_INSTANCE_TYPES_URL).params(params));
 
         Mockito.verify(mockClusterApiService).getAllowedToolInstanceTypes(ID, false);
-
         assertResponse(mvcResult, instanceTypes, NodeCreatorUtils.INSTANCE_TYPE_LIST_TYPE);
     }
 
@@ -247,17 +233,14 @@ public class ClusterControllerTest extends AbstractControllerTest {
         params.add("toolId", "1");
         params.add("regionId", "1");
         params.add("spot", "false");
-
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
                 NodeCreatorUtils.getDefaultAllowedInstanceAndPriceTypes();
-
         Mockito.doReturn(allowedInstanceAndPriceTypes).when(mockClusterApiService)
                 .getAllowedInstanceAndPriceTypes(ID, ID, false);
 
         final MvcResult mvcResult = performRequest(get(LOAD_ALLOWED_INSTANCE_TYPES_URL).params(params));
 
         Mockito.verify(mockClusterApiService).getAllowedInstanceAndPriceTypes(ID, ID, false);
-
         assertResponse(mvcResult, allowedInstanceAndPriceTypes, NodeCreatorUtils.ALLOWED_INSTANCE_TYPE);
     }
 
@@ -273,14 +256,12 @@ public class ClusterControllerTest extends AbstractControllerTest {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("from", FROM_STRING.replace('T', ' '));
         params.add("to", TO_STRING.replace('T', ' '));
-
         Mockito.doReturn(monitoringStats).when(mockClusterApiService)
                 .getStatsForNode(NAME, from, to);
 
         final MvcResult mvcResult = performRequest(get(String.format(NODE_USAGE_URL, NAME)).params(params));
 
         Mockito.verify(mockClusterApiService).getStatsForNode(NAME, from, to);
-
         assertResponse(mvcResult, monitoringStats, NodeCreatorUtils.MONITORING_STATS_TYPE);
     }
 
@@ -293,23 +274,19 @@ public class ClusterControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldDownloadNodeUsageStatisticsReport() throws Exception {
         final InputStream inputStream = new ByteArrayInputStream(TEST_DATA.getBytes());
-
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("from", FROM_STRING.replace('T', ' '));
+        params.add("to", TO_STRING.replace('T', ' '));
+        params.add("interval", "PT1H");
         Mockito.doReturn(inputStream).when(mockClusterApiService)
                 .getUsageStatisticsFile(NAME, from, to, Duration.ofHours(1));
 
-        final MvcResult mvcResult = mvc().perform(get(String.format(NODE_STATISTICS_URL, NAME))
-                .servletPath(SERVLET_PATH)
-                .contentType("application/octet-stream")
-                .param("from", FROM_STRING.replace('T', ' '))
-                .param("to", TO_STRING.replace('T', ' '))
-                .param("interval", "PT1H"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType("application/octet-stream"))
-                .andReturn();
+        final MvcResult mvcResult = performRequest(
+                get(String.format(NODE_STATISTICS_URL, NAME)).params(params), OCTET_STREAM_CONTENT_TYPE
+        );
 
         Mockito.verify(mockClusterApiService).getUsageStatisticsFile(NAME, from, to, Duration.ofHours(1));
-
-        String actualResponseData = mvcResult.getResponse().getContentAsString();
+        final String actualResponseData = mvcResult.getResponse().getContentAsString();
         Assert.assertEquals(TEST_DATA, actualResponseData);
     }
 
@@ -322,13 +299,11 @@ public class ClusterControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldLoadNodeDisks() throws Exception {
         final List<NodeDisk> nodeDisks = Collections.singletonList(NodeCreatorUtils.getDefaultNodeDisk());
-
         Mockito.doReturn(nodeDisks).when(mockClusterApiService).loadNodeDisks(NAME);
 
         final MvcResult mvcResult = performRequest(get(String.format(NODE_DISKS_URL, NAME)));
 
         Mockito.verify(mockClusterApiService).loadNodeDisks(NAME);
-
         assertResponse(mvcResult, nodeDisks, NodeCreatorUtils.NODE_DISK_TYPE);
     }
 }

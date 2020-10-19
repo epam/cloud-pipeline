@@ -109,11 +109,16 @@ public abstract class AbstractControllerTest {
     }
 
     public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder) throws Exception {
+        return performRequest(requestBuilder, EXPECTED_CONTENT_TYPE);
+    }
+
+    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder, String contentType)
+            throws Exception {
         return mockMvc.perform(requestBuilder
                 .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE))
+                .contentType(contentType))
                 .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.content().contentType(EXPECTED_CONTENT_TYPE))
+                .andExpect(MockMvcResultMatchers.content().contentType(contentType))
                 .andReturn();
     }
 }
