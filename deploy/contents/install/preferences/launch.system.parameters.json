@@ -269,6 +269,13 @@
         "passToWorkers": true
     },
     {
+        "name": "CP_CAP_SHARE_FS_SIZE",
+        "type": "int",
+        "description": "Allows to specify shared file system size (supported for luster FS only)",
+        "defaultValue": "1200",
+        "passToWorkers": false
+    },
+    {
         "name": "CP_CAP_HW_ADDR",
         "type": "string",
         "description": "Allows to override the MAC address of the instance, running a job. Format: XX:XX:XX:XX:XX:XX",
