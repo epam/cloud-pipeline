@@ -275,7 +275,9 @@ else
     fi
 
     print_info "Logging docker into $CP_DOCKER_DIST_SRV as $CP_DOCKER_DIST_USER"
-    docker login -u $CP_DOCKER_DIST_USER -p $CP_DOCKER_DIST_PASS
+    docker login "$CP_DOCKER_DIST_SRV" \
+                -u "$CP_DOCKER_DIST_USER" \
+                -p "$CP_DOCKER_DIST_PASS"
     if [ $? -ne 0 ]; then
         print_err "Error occured while logging into the distr docker regsitry, exiting"
         exit 1
