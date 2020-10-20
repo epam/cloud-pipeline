@@ -1,8 +1,11 @@
 # Cloud Pipeline v.0.17 - Release notes
 
 - [Billing reports enhancements](#billing-reports-enhancements)
+- [System dictionaries](#system-dictionaries)
 - [Allowed price types for a cluster master node](#allowed-price-types-for-a-cluster-master-node)
 - ["Max" data series in the resources Monitoring](#max-data-series-at-the-resource-monitoring-dashboard)
+- [Export custom user's attributes](#export-custom-users-attributes)
+- [User management and export in read-only mode](#user-management-and-export-in-read-only-mode)
 
 ***
 
@@ -145,6 +148,30 @@ Format of the report is being selected before the export:
 Example of the report broken by the user:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_13.png)
 
+## System dictionaries
+
+Often admins have to set attributes (metadata) for "general" users manually. In case, when such metadata keys aren't different for each user and has certain amount of values, it is convenient to select these values from the predefined values list, not to specify them manually each time.
+
+In the current version, the ability to create **System Dictionaries** was implemented.
+Each **dictionary** is the categorical attribute. I.e. it is attribute which values are predefined.  
+Each **dictionary** has its name and values, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemDictionaries_01.png)
+
+If the dictionary exists in the system, then admins can use it when specifying attributes for any Platform object (**`Pipeline`**, **`Folder`**, **`Storage`**, **`Project`**, **`Tool`**), and also for **`User`**, **`Group`** or **`Role`**. In this case, it is enough to specify only the dictionary name as the attribute key, the list of dictionary values will appear automatically in the value field:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemDictionaries_02.png)
+
+Also, the different dictionaries may be connected (linked). I.e. admins can create two dictionaries, which values are mapped `1-1` or `1-many`, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemDictionaries_03.png)
+
+In the GUI, such connection is being handled in the following way:
+
+1. Admin specifies the links between the dictionaries items (e.g. for the example above _`ProjectID`:`BRCA1`_ -> _`DataStorage`:`<path>`_).
+2. Links have the "autofill" attribute. If the admin selects the source key (_`ProjectID`:`BRCA1`_) as attribute key for any object - the destination key will be specified automatically (_`DataStorage`_ will be added with the _`<path>`_ selection):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemDictionaries_04.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemDictionaries_05.png)
+
+For more details see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-dictionaries).
+
 ## Allowed price types for a cluster master node
 
 Previously, **Cloud Pipeline** allowed the user to choose whether the cluster master node be a `spot` or `on-demand` instance.  
@@ -177,6 +204,36 @@ For example:
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_ResourceMonitoring_1.png)
 
 For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md).
+
+## Export custom user's attributes
+
+Previously, user's metadata attributes couldn't be exported in an automatic way.
+
+In the current version, such feature is implemented.  
+Now, before the users export, there is the ability to select which user's metadata attributes shall be exported. Previous export settings remain the same.
+
+- Click the "**Export users**" button at the **USER MANAGEMENT** tab of the **System Settings**. Select the "Custom configuration":  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CustomUserExport_1.png)
+- In the export pop-up, select additional metadata keys you wish to export with general user's info:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CustomUserExport_2.png)
+- Exported metadata will be included into the export file as separate columns, e.g. (part of the output):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CustomUserExport_3.png)
+
+For more details about users export see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#export-users).
+
+## User management and export in read-only mode
+
+Previously, only admins had access to the users info/metadata.
+In the current version, a new "built-in" role **_ROLE\_USER\_READER_** was added.  
+This role allows:
+
+- read-only access to the `API` endpoints, responsible for the users, groups, roles information
+- in the `GUI`, users with this role can:
+    - get "general" user/groups information in read-only mode - name/email/etc. - **without** users' metadata
+    - get access to the user management tab in read-only mode - **without** users' metadata and launch options
+    - export users list - **including** users' metadata
+
+For more details about user roles see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#roles).
 
 ***
 
