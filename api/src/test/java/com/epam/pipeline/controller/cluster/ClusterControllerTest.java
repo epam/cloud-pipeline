@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.manager.cluster.ClusterApiService;
 import com.epam.pipeline.test.creator.cluster.NodeCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -69,15 +70,23 @@ public class ClusterControllerTest extends AbstractControllerTest {
     private static final String PORT = "7367";
     private static final String NAME = "testName";
     private static final String TEST_DATA = "test_data";
+    private static final String OCTET_STREAM_CONTENT_TYPE = "application/octet-stream";
+    private static final String TOOL_INSTANCES = "toolInstances";
+    private static final String REGION_ID = "regionId";
+    private static final String SPOT = "spot";
+    private static final String TOOL_ID = "toolId";
+    private static final String FROM = "from";
+    private static final String TO = "to";
     private static final String FROM_STRING = "2019-04-01T09:08:07";
     private static final String TO_STRING = "2020-05-02T12:11:10";
-    private static final String OCTET_STREAM_CONTENT_TYPE = "application/octet-stream";
+    private static final DateTimeFormatter REQUEST_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter DEFAULT_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    private final LocalDateTime from = LocalDateTime.parse(FROM_STRING, DEFAULT_FORMATTER);
+    private final LocalDateTime to = LocalDateTime.parse(TO_STRING, DEFAULT_FORMATTER);
     private final NodeInstance nodeInstance = NodeCreatorUtils.getDefaultNodeInstance();
     private final List<NodeInstance> nodeInstances = Collections.singletonList(nodeInstance);
     private final List<InstanceType>
             instanceTypes = Collections.singletonList(NodeCreatorUtils.getDefaultInstanceType());
-    private final LocalDateTime from = LocalDateTime.parse(FROM_STRING, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-    private final LocalDateTime to = LocalDateTime.parse(TO_STRING, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
     @Autowired
     private ClusterApiService mockClusterApiService;
@@ -195,9 +204,9 @@ public class ClusterControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldLoadAllowedInstanceTypes() throws Exception {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("regionId", "1");
-        params.add("toolInstances", "false");
-        params.add("spot", "true");
+        params.add(REGION_ID, String.valueOf(ID));
+        params.add(TOOL_INSTANCES, String.valueOf(false));
+        params.add(SPOT, String.valueOf(true));
         Mockito.doReturn(instanceTypes).when(mockClusterApiService).getAllowedInstanceTypes(ID, true);
 
         final MvcResult mvcResult = performRequest(get(LOAD_INSTANCE_TYPES_URL).params(params));
@@ -210,9 +219,9 @@ public class ClusterControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldLoadAllowedToolInstanceTypes() throws Exception {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("regionId", "1");
-        params.add("toolInstances", "true");
-        params.add("spot", "false");
+        params.add(REGION_ID, String.valueOf(ID));
+        params.add(TOOL_INSTANCES, String.valueOf(true));
+        params.add(SPOT, String.valueOf(false));
         Mockito.doReturn(instanceTypes).when(mockClusterApiService).getAllowedToolInstanceTypes(ID, false);
 
         final MvcResult mvcResult = performRequest(get(LOAD_INSTANCE_TYPES_URL).params(params));
@@ -230,9 +239,9 @@ public class ClusterControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldLoadAllowedInstanceAndPriceTypes() throws Exception {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("toolId", "1");
-        params.add("regionId", "1");
-        params.add("spot", "false");
+        params.add(TOOL_ID, String.valueOf(ID));
+        params.add(REGION_ID, String.valueOf(ID));
+        params.add(SPOT, String.valueOf(false));
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
                 NodeCreatorUtils.getDefaultAllowedInstanceAndPriceTypes();
         Mockito.doReturn(allowedInstanceAndPriceTypes).when(mockClusterApiService)
@@ -254,8 +263,8 @@ public class ClusterControllerTest extends AbstractControllerTest {
     public void shouldGetNodeUsageStatistics() throws Exception {
         final List<MonitoringStats> monitoringStats = Collections.singletonList(new MonitoringStats());
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("from", FROM_STRING.replace('T', ' '));
-        params.add("to", TO_STRING.replace('T', ' '));
+        params.add(FROM, from.format(REQUEST_FORMATTER));
+        params.add(TO, to.format(REQUEST_FORMATTER));
         Mockito.doReturn(monitoringStats).when(mockClusterApiService)
                 .getStatsForNode(NAME, from, to);
 
@@ -275,8 +284,9 @@ public class ClusterControllerTest extends AbstractControllerTest {
     public void shouldDownloadNodeUsageStatisticsReport() throws Exception {
         final InputStream inputStream = new ByteArrayInputStream(TEST_DATA.getBytes());
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("from", FROM_STRING.replace('T', ' '));
-        params.add("to", TO_STRING.replace('T', ' '));
+        final String expectedFileName = "testName_2019-04-01T09:08:07-2020-05-02T12:11:10-PT1H.csv";
+        params.add(FROM, from.format(REQUEST_FORMATTER));
+        params.add(TO, to.format(REQUEST_FORMATTER));
         params.add("interval", "PT1H");
         Mockito.doReturn(inputStream).when(mockClusterApiService)
                 .getUsageStatisticsFile(NAME, from, to, Duration.ofHours(1));
@@ -287,7 +297,9 @@ public class ClusterControllerTest extends AbstractControllerTest {
 
         Mockito.verify(mockClusterApiService).getUsageStatisticsFile(NAME, from, to, Duration.ofHours(1));
         final String actualResponseData = mvcResult.getResponse().getContentAsString();
+        final String contentDispositionHeader = mvcResult.getResponse().getHeader("Content-Disposition");
         Assert.assertEquals(TEST_DATA, actualResponseData);
+        Assertions.assertThat(contentDispositionHeader).contains(expectedFileName);
     }
 
     @Test
@@ -304,6 +316,6 @@ public class ClusterControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(get(String.format(NODE_DISKS_URL, NAME)));
 
         Mockito.verify(mockClusterApiService).loadNodeDisks(NAME);
-        assertResponse(mvcResult, nodeDisks, NodeCreatorUtils.NODE_DISK_TYPE);
+        assertResponse(mvcResult, nodeDisks, NodeCreatorUtils.NODE_DISK_LIST_TYPE);
     }
 }

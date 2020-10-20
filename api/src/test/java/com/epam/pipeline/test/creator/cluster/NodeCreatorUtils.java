@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_LIST;
 
@@ -56,7 +57,7 @@ public final class NodeCreatorUtils {
             new TypeReference<Result<AllowedInstanceAndPriceTypes>>() { };
     public static final TypeReference<Result<List<MonitoringStats>>> MONITORING_STATS_TYPE =
             new TypeReference<Result<List<MonitoringStats>>>() { };
-    public static final TypeReference<Result<List<NodeDisk>>> NODE_DISK_TYPE =
+    public static final TypeReference<Result<List<NodeDisk>>> NODE_DISK_LIST_TYPE =
             new TypeReference<Result<List<NodeDisk>>>() { };
     private static final List<InstanceType> INSTANCE_TYPES = Collections.singletonList(getDefaultInstanceType());
     private static final String UUID = "1fb7aff6-03bf-11eb-adc1-0242ac120002";
@@ -86,15 +87,15 @@ public final class NodeCreatorUtils {
     public static InstanceType getDefaultInstanceType() {
         return InstanceType.builder()
                 .name(TEST_STRING)
-                .gpu(4)
+                .gpu(TEST_INT)
                 .instanceFamily(TEST_STRING)
-                .memory(4)
+                .memory(TEST_INT)
                 .memoryUnit(TEST_STRING)
                 .operatingSystem(TEST_STRING)
                 .regionId(ID)
                 .sku(TEST_STRING)
                 .termType(TEST_STRING)
-                .vCPU(4)
+                .vCPU(TEST_INT)
                 .build();
     }
 
