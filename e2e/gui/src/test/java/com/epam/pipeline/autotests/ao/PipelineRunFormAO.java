@@ -26,6 +26,7 @@ import com.epam.pipeline.autotests.utils.Utils;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+
 import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.*;
@@ -34,6 +35,7 @@ import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.tagName;
@@ -67,7 +69,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
             entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
-            entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]")).closest(".ant-row").find(by("role", "combobox")))
+            entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]")).closest(".ant-row").find(by("role", "combobox"))),
+            entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input")))
     );
     private final String pipelineName;
     private int parameterIndex = 0;
@@ -338,6 +341,11 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     public String getCPU() {
         String cpu = $(byXpath(".//b[.='CPU']")).parent().getText();
         return cpu.substring(0, cpu.indexOf(" "));
+    }
+
+    public SelectLimitMountsPopupAO selectDataStoragesToLimitMounts() {
+        click(LIMIT_MOUNTS);
+        return new SelectLimitMountsPopupAO(this).sleep(2, SECONDS);
     }
 
     @Override

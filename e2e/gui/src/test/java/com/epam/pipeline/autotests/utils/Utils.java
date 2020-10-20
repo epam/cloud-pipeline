@@ -19,6 +19,7 @@ package com.epam.pipeline.autotests.utils;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.RunPipelineTest;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import org.openqa.selenium.By;
@@ -387,5 +388,10 @@ public class Utils {
     public static void assertStringContainsList(final String str, final String... subStrings) {
          Arrays.stream(subStrings).forEach(substr -> assertTrue(str.contains(substr),
                  format("'%s' doesn't exist in string", substr)));
+    }
+
+    public static String entityIDfromURL() {
+        String url = WebDriverRunner.getWebDriver().getCurrentUrl();
+        return url.substring(url.lastIndexOf("/") + 1);
     }
 }
