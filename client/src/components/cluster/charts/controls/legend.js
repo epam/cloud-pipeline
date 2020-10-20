@@ -118,7 +118,7 @@ class Legend extends React.Component {
     const top = chartArea.top;
     return (
       <g>
-        {plots.map(this.renderLegendItem(top, width))}
+        {plots.map(this.renderLegendItem(top / 2.0, width))}
       </g>
     );
   }
