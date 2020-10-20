@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.preference;
 
+import com.amazonaws.services.fsx.model.LustreDeploymentType;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
@@ -659,7 +660,9 @@ public class SystemPreferences {
             "lustre.fs.default.throughput", 50, LUSTRE_GROUP, pass);
     public static final StringPreference LUSTRE_FS_MOUNT_OPTIONS = new StringPreference(
             "lustre.fs.mount.options", null, LUSTRE_GROUP, pass);
-
+    public static final StringPreference LUSTRE_FS_DEPLOYMENT_TYPE = new StringPreference(
+            "lustre.fs.deployment.type", LustreDeploymentType.SCRATCH_2.name(), LUSTRE_GROUP,
+            isValidEnum(LustreDeploymentType.class));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

@@ -60,8 +60,10 @@ public class LustreFSManager {
 
     private static final String RUN_ID_TAG_NAME = "RUN_ID";
     private static final String LUSTRE_MOUNT_TEMPLATE = "%s@tcp:/%s";
-    public static final int LUSTRE_MIN_SIZE_GB = 1200;
-    public static final int LUSTRE_SIZE_STEP_GB = 2400;
+    private static final int LUSTRE_MIN_SIZE_GB = 1200;
+    private static final int LUSTRE_SIZE_THRESHOLD_GB = 2400;
+    private static final int LUSTRE_SIZE_STEP_SCRATCH_1 = 3600;
+    private static final int LUSTRE_SIZE_STEP_SCRATCH_2 = 2400;
 
     private final PipelineRunManager runManager;
     private final CloudRegionManager regionManager;
@@ -103,27 +105,49 @@ public class LustreFSManager {
         log.debug("Creating a new lustre fs for run id {}.", runId);
         final PipelineRun pipelineRun = runManager.loadPipelineRun(runId);
         final AwsRegion regionForRun = getRegion(pipelineRun);
-        final CreateFileSystemResult result = fsxClient.createFileSystem(new CreateFileSystemRequest()
+        final LustreDeploymentType deploymentType = getDeploymentType();
+        final CreateFileSystemLustreConfiguration lustreConfiguration = getLustreConfig(deploymentType);
+        final CreateFileSystemRequest createFileSystemRequest = new CreateFileSystemRequest()
                 .withFileSystemType(FileSystemType.LUSTRE)
-                .withStorageCapacity(getFSSize(size))
+                .withStorageCapacity(getFSSize(size, deploymentType))
                 .withStorageType(StorageType.SSD)
                 .withSecurityGroupIds(getSecurityGroups(regionForRun))
                 .withSubnetIds(getSubnetId(pipelineRun, regionForRun))
-                .withKmsKeyId(regionForRun.getKmsKeyArn())
                 .withTags(new Tag().withKey(RUN_ID_TAG_NAME).withValue(String.valueOf(runId)))
-                .withLustreConfiguration(new CreateFileSystemLustreConfiguration()
-                        .withCopyTagsToBackups(false)
-                        .withAutomaticBackupRetentionDays(preferenceManager.getPreference(
-                                SystemPreferences.LUSTRE_FS_BKP_RETENTION_DAYS))
-                        .withDeploymentType(LustreDeploymentType.PERSISTENT_1)
-                        .withPerUnitStorageThroughput(preferenceManager.getPreference(
-                                SystemPreferences.LUSTRE_FS_DEFAULT_THROUGHPUT))));
+                .withLustreConfiguration(lustreConfiguration);
+        if (isPersistent(deploymentType)) {
+            createFileSystemRequest.withKmsKeyId(regionForRun.getKmsKeyArn());
+        }
+        final CreateFileSystemResult result = fsxClient.createFileSystem(createFileSystemRequest);
         final FileSystem fs = result.getFileSystem();
         if (fs.getLifecycle().equals("FAILED")) {
             log.debug("Lustre fs creation failed: {}", fs);
             throw new LustreFSException(messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_NOT_CREATED, runId));
         }
         return convert(fs);
+    }
+
+    private boolean isPersistent(final LustreDeploymentType deploymentType) {
+        return LustreDeploymentType.PERSISTENT_1.equals(deploymentType);
+    }
+
+    private CreateFileSystemLustreConfiguration getLustreConfig(final LustreDeploymentType deploymentType) {
+        final CreateFileSystemLustreConfiguration lustreConfiguration = new CreateFileSystemLustreConfiguration()
+                .withDeploymentType(deploymentType);
+        if (isPersistent(deploymentType)) {
+            lustreConfiguration
+                    .withPerUnitStorageThroughput(preferenceManager.getPreference(
+                            SystemPreferences.LUSTRE_FS_DEFAULT_THROUGHPUT))
+                    .withCopyTagsToBackups(false)
+                    .withAutomaticBackupRetentionDays(preferenceManager.getPreference(
+                            SystemPreferences.LUSTRE_FS_BKP_RETENTION_DAYS));
+        }
+        return lustreConfiguration;
+    }
+
+    private LustreDeploymentType getDeploymentType() {
+        return LustreDeploymentType.valueOf(
+                preferenceManager.getPreference(SystemPreferences.LUSTRE_FS_DEPLOYMENT_TYPE));
     }
 
     private String getSubnetId(final PipelineRun run, final AwsRegion region) {
@@ -146,18 +170,24 @@ public class LustreFSManager {
         return settings.getSecurityGroups();
     }
 
-    private int getFSSize(final Integer size) {
-//        For PERSISTENT_1 SSD deployment types,
-//        valid values are 1200 GiB, 2400 GiB, and increments of 2400 GiB.
+    private int getFSSize(final Integer size, final LustreDeploymentType deploymentType) {
+//        For SCRATCH_2 and PERSISTENT_1 SSD deployment types, valid values are 1200 GiB, 2400 GiB,
+//        and increments of 2400 GiB.
+//        For SCRATCH_1 deployment type, valid values are 1200 GiB, 2400 GiB, and increments of 3600 GiB.
         final Integer initialSize = Optional.ofNullable(size)
                 .orElseGet(() -> preferenceManager.getPreference(SystemPreferences.LUSTRE_FS_DEFAULT_SIZE_GB));
         if (initialSize <= LUSTRE_MIN_SIZE_GB) {
             return LUSTRE_MIN_SIZE_GB;
         }
-        if (initialSize % LUSTRE_SIZE_STEP_GB == 0) {
+        if (initialSize <= LUSTRE_SIZE_THRESHOLD_GB) {
+            return LUSTRE_SIZE_THRESHOLD_GB;
+        }
+        final int sizeStep = deploymentType.equals(LustreDeploymentType.SCRATCH_1) ?
+                LUSTRE_SIZE_STEP_SCRATCH_1 : LUSTRE_SIZE_STEP_SCRATCH_2;
+        if (initialSize % sizeStep == 0) {
             return initialSize;
         }
-        return LUSTRE_SIZE_STEP_GB * (1 + initialSize / LUSTRE_SIZE_STEP_GB);
+        return sizeStep * (1 + initialSize / sizeStep);
     }
 
     private LustreFS convert(final FileSystem lustre) {
