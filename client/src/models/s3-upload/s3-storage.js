@@ -85,10 +85,7 @@ class S3Storage {
     try {
       await request.send([{
         id: this._storage.id,
-        read: true,
-        readVersion: false,
-        write: true,
-        writeVersion: false
+        write: true
       }]);
       if (request.error) {
         tempCredentials = {};
