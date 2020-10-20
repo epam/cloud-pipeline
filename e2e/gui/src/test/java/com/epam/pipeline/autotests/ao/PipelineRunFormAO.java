@@ -246,7 +246,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     private void launch() {
         $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
-        $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(button("Launch")).shouldBe(visible).click();
+        $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(button("Launch")).shouldBe(enabled).click();
     }
 
     public PipelineRunFormAO validateThereIsParameterOfType(String name, String value, ParameterType type, boolean required) {
