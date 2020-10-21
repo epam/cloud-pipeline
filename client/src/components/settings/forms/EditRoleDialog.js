@@ -592,7 +592,7 @@ class EditRoleDialog extends React.Component {
             }
           ]}>
           <div
-            style={{display: 'flex', flexDirection: 'column'}}
+            style={{display: 'flex', flexDirection: 'column', height: '100%'}}
             key={CONTENT_PANEL_KEY}>
             <Row type="flex" style={{marginBottom: 10}} align="middle">
               <span style={{marginRight: 5, fontWeight: 'bold'}}>Default data storage:</span>
