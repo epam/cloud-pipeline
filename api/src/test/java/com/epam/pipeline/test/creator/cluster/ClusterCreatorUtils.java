@@ -17,27 +17,15 @@
 package com.epam.pipeline.test.creator.cluster;
 
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
-import com.epam.pipeline.entity.pipeline.PipelineRun;
 
 import java.util.Collections;
 import java.util.List;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-
 public final class ClusterCreatorUtils {
-
-    public static PipelineRun getPipelineRun(Long id, String owner) {
-        final PipelineRun pipelineRun = new PipelineRun();
-        pipelineRun.setId(id);
-        pipelineRun.setOwner(owner);
-        pipelineRun.setName(TEST_STRING);
-        return pipelineRun;
-    }
 
     public static MonitoringStats getMonitoringStats() {
         return new MonitoringStats();
     }
-
 
     public static List<MonitoringStats> getMonitoringStatsList() {
         return Collections.singletonList(getMonitoringStats());

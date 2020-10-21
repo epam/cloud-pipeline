@@ -35,6 +35,7 @@ import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.cluster.ClusterCreatorUtils;
 import com.epam.pipeline.test.creator.cluster.NodeCreatorUtils;
+import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
@@ -61,7 +62,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     private final FilterPodsRequest filterPodsRequest = NodeCreatorUtils.getDefaultFilterPodsRequest();
     private final NodeInstance nodeInstance = NodeCreatorUtils.getNodeInstance(1L, SIMPLE_USER);
     private final NodeInstance anotherNodeInstance = NodeCreatorUtils.getNodeInstance(2L, TEST_STRING);
-    private final PipelineRun pipelineRun = ClusterCreatorUtils.getPipelineRun(1L, SIMPLE_USER);
+    private final PipelineRun pipelineRun = PipelineCreatorUtils.getPipelineRun(1L, SIMPLE_USER);
     private final FilterNodesVO filterNodesVO = NodeCreatorUtils.getDefaultFilterNodesVO();
     private final NodeDisk nodeDisk = NodeCreatorUtils.getDefaultNodeDisk();
     private final MonitoringStats monitoringStats = ClusterCreatorUtils.getMonitoringStats();
