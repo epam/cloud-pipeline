@@ -572,7 +572,8 @@ class EditRoleDialog extends React.Component {
               key: CONTENT_PANEL_KEY,
               containerStyle: {
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                overflowX: 'hidden'
               },
               size: {
                 priority: 0,
