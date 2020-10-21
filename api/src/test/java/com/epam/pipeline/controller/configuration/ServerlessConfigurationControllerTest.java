@@ -20,14 +20,19 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.manager.configuration.ServerlessConfigurationApiService;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
+
 import static org.mockito.Matchers.eq;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 @WebMvcTest(controllers = ServerlessConfigurationController.class)
 public class ServerlessConfigurationControllerTest extends AbstractControllerTest {
@@ -38,6 +43,7 @@ public class ServerlessConfigurationControllerTest extends AbstractControllerTes
     private static final String SERVERLESS_URL = SERVLET_PATH + "/serverless";
     private static final String GENERATE_URL = SERVERLESS_URL + "/url/%d";
     private static final String RUN_URL = SERVERLESS_URL + "/%d/%s";
+    private static final String CONFIG = "config";
     private static final TypeReference<Result<String>> STRING_TYPE = new TypeReference<Result<String>>() { };
 
     @Autowired
@@ -54,7 +60,7 @@ public class ServerlessConfigurationControllerTest extends AbstractControllerTes
         Mockito.doReturn(RESULT).when(mockServerlessConfigurationApiService).generateUrl(ID, TEST_CONFIG);
 
         final MvcResult mvcResult = performRequest(
-                get(String.format(GENERATE_URL, ID)).param("config", TEST_CONFIG)
+                get(String.format(GENERATE_URL, ID)).param(CONFIG, TEST_CONFIG)
         );
 
         Mockito.verify(mockServerlessConfigurationApiService).generateUrl(ID, TEST_CONFIG);
@@ -69,11 +75,18 @@ public class ServerlessConfigurationControllerTest extends AbstractControllerTes
     @Test
     @WithMockUser
     public void shouldRun() throws Exception {
+        final String expectedResult = "\"" + RESULT + "\"";
         Mockito.doReturn(RESULT).when(mockServerlessConfigurationApiService)
                 .run(eq(ID), eq(TEST_CONFIG), Mockito.any());
 
-        performRequest(get(String.format(RUN_URL, ID, TEST_CONFIG)));
+        final MvcResult mvcResult = performRequest(get(String.format(RUN_URL, ID, TEST_CONFIG)));
+        performRequest(put(String.format(RUN_URL, ID, TEST_CONFIG)));
+        performRequest(post(String.format(RUN_URL, ID, TEST_CONFIG)));
+        performRequest(delete(String.format(RUN_URL, ID, TEST_CONFIG)));
 
-        Mockito.verify(mockServerlessConfigurationApiService).run(eq(ID), eq(TEST_CONFIG), Mockito.any());
+        Mockito.verify(mockServerlessConfigurationApiService, Mockito.times(4))
+                .run(eq(ID), eq(TEST_CONFIG), Mockito.any());
+        final String actualResult = mvcResult.getResponse().getContentAsString();
+        Assert.assertEquals(expectedResult, actualResult);
     }
 }

@@ -25,6 +25,8 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.ResponseResult;
 import com.epam.pipeline.controller.Result;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -81,13 +83,16 @@ public abstract class AbstractControllerTest {
                                    final JsonMapper objectMapper,
                                    final T payload,
                                    final TypeReference<Result<T>> typeReference) throws Exception {
+        final ObjectMapper deserializationMapper = JsonMapper.newInstance();
+        deserializationMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         final ResponseResult<T> expectedResult = buildExpectedResult(payload);
 
         final String actual = mvcResult.getResponse().getContentAsString();
         Assert.assertTrue(StringUtils.isNotBlank(actual));
         assertThat(actual).isEqualToIgnoringWhitespace(objectMapper.writeValueAsString(expectedResult));
 
-        final Result<T> actualResult = JsonMapper.parseData(actual, typeReference);
+        final Result<T> actualResult = JsonMapper.parseData(actual, typeReference, deserializationMapper);
+        assertNotNull(actualResult);
         Assert.assertEquals(expectedResult.getPayload(), actualResult.getPayload());
     }
 
