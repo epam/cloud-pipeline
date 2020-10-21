@@ -17,11 +17,13 @@
 package com.epam.pipeline.entity.datastorage;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@EqualsAndHashCode
 public class DataStorageAction {
 
     private Long id;
