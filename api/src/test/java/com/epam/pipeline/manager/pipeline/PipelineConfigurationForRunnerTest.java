@@ -24,7 +24,7 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.AbstractManagerTest;
-import com.epam.pipeline.manager.datastorage.DataStorageApiService;
+import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.security.PermissionsService;

@@ -14,27 +14,30 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.datastorage;
+package com.epam.pipeline.acl.datastorage;
 
 import com.epam.pipeline.entity.datastorage.FileShareMount;
-import com.epam.pipeline.security.acl.AclExpressions;
-import lombok.RequiredArgsConstructor;
+import com.epam.pipeline.manager.datastorage.FileShareMountManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 public class FileShareMountApiService {
 
-    private final FileShareMountManager fileShareMountManager;
+    @Autowired
+    private FileShareMountManager fileShareMountManager;
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public FileShareMount save(final FileShareMount fileShareMount) {
+    @PreAuthorize("hasRole('ADMIN') OR hasPermission(#fileShareMount.region_id, " +
+            "'com.epam.pipeline.manager.datastorage.FileShareMount', 'WRITE')")
+    public FileShareMount save(FileShareMount fileShareMount) {
         return fileShareMountManager.save(fileShareMount);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public void delete(final Long id) {
+    @PreAuthorize("hasRole('ADMIN') OR hasPermission(#fileShareMount.region_id, " +
+            "'com.epam.pipeline.manager.datastorage.FileShareMount', 'WRITE')")
+    public void delete(Long id) {
         fileShareMountManager.delete(id);
     }
+
 }

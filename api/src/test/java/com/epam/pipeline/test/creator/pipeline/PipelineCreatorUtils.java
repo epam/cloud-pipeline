@@ -16,14 +16,19 @@
 
 package com.epam.pipeline.test.creator.pipeline;
 
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
-public final class PipelineCreatorUtils {
+public class PipelineCreatorUtils {
 
-    private PipelineCreatorUtils() {
-
+    public static Pipeline getPipeline(String owner) {
+        Pipeline pipeline = new Pipeline();
+        pipeline.setId(ID);
+        pipeline.setOwner(owner);
+        return pipeline;
     }
 
     public static PipelineRun getPipelineRun(Long id, String owner) {

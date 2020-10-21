@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.datastorage;
+package com.epam.pipeline.acl.datastorage;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
@@ -40,6 +40,9 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
+import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
+import com.epam.pipeline.manager.datastorage.RunMountService;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskDelegateList;
