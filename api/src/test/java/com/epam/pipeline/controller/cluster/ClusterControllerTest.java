@@ -79,6 +79,12 @@ public class ClusterControllerTest extends AbstractControllerTest {
     private static final String TO = "to";
     private static final String FROM_STRING = "2019-04-01T09:08:07";
     private static final String TO_STRING = "2020-05-02T12:11:10";
+    private static final String ID_AS_STRING = String.valueOf(ID);
+    private static final String TRUE_AS_STRING = String.valueOf(true);
+    private static final String FALSE_AS_STRING = String.valueOf(false);
+    private static final String INTERVAL = "interval";
+    private static final String DURATION_AS_STRING = Duration.ofHours(1).toString();
+    private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
     private static final DateTimeFormatter REQUEST_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter DEFAULT_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private final LocalDateTime from = LocalDateTime.parse(FROM_STRING, DEFAULT_FORMATTER);
@@ -204,9 +210,9 @@ public class ClusterControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldLoadAllowedInstanceTypes() throws Exception {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add(REGION_ID, String.valueOf(ID));
-        params.add(TOOL_INSTANCES, String.valueOf(false));
-        params.add(SPOT, String.valueOf(true));
+        params.add(REGION_ID, ID_AS_STRING);
+        params.add(TOOL_INSTANCES, FALSE_AS_STRING);
+        params.add(SPOT, TRUE_AS_STRING);
         Mockito.doReturn(instanceTypes).when(mockClusterApiService).getAllowedInstanceTypes(ID, true);
 
         final MvcResult mvcResult = performRequest(get(LOAD_INSTANCE_TYPES_URL).params(params));
@@ -219,9 +225,9 @@ public class ClusterControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldLoadAllowedToolInstanceTypes() throws Exception {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add(REGION_ID, String.valueOf(ID));
-        params.add(TOOL_INSTANCES, String.valueOf(true));
-        params.add(SPOT, String.valueOf(false));
+        params.add(REGION_ID, ID_AS_STRING);
+        params.add(TOOL_INSTANCES, TRUE_AS_STRING);
+        params.add(SPOT, FALSE_AS_STRING);
         Mockito.doReturn(instanceTypes).when(mockClusterApiService).getAllowedToolInstanceTypes(ID, false);
 
         final MvcResult mvcResult = performRequest(get(LOAD_INSTANCE_TYPES_URL).params(params));
@@ -239,9 +245,9 @@ public class ClusterControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldLoadAllowedInstanceAndPriceTypes() throws Exception {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add(TOOL_ID, String.valueOf(ID));
-        params.add(REGION_ID, String.valueOf(ID));
-        params.add(SPOT, String.valueOf(false));
+        params.add(TOOL_ID, ID_AS_STRING);
+        params.add(REGION_ID, ID_AS_STRING);
+        params.add(SPOT, FALSE_AS_STRING);
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
                 NodeCreatorUtils.getDefaultAllowedInstanceAndPriceTypes();
         Mockito.doReturn(allowedInstanceAndPriceTypes).when(mockClusterApiService)
@@ -287,7 +293,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
         final String expectedFileName = "testName_2019-04-01T09:08:07-2020-05-02T12:11:10-PT1H.csv";
         params.add(FROM, from.format(REQUEST_FORMATTER));
         params.add(TO, to.format(REQUEST_FORMATTER));
-        params.add("interval", "PT1H");
+        params.add(INTERVAL, DURATION_AS_STRING);
         Mockito.doReturn(inputStream).when(mockClusterApiService)
                 .getUsageStatisticsFile(NAME, from, to, Duration.ofHours(1));
 
@@ -297,7 +303,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
 
         Mockito.verify(mockClusterApiService).getUsageStatisticsFile(NAME, from, to, Duration.ofHours(1));
         final String actualResponseData = mvcResult.getResponse().getContentAsString();
-        final String contentDispositionHeader = mvcResult.getResponse().getHeader("Content-Disposition");
+        final String contentDispositionHeader = mvcResult.getResponse().getHeader(CONTENT_DISPOSITION_HEADER);
         Assert.assertEquals(TEST_DATA, actualResponseData);
         Assertions.assertThat(contentDispositionHeader).contains(expectedFileName);
     }
