@@ -14,6 +14,7 @@ nav:
   - v.0.14: 'release_notes/v.0.14/v.0.14_-_Release_notes.md'
   - v.0.15: 'release_notes/v.0.15/v.0.15_-_Release_notes.md'
   - v.0.16: 'release_notes/v.0.16/v.0.16_-_Release_notes.md'
+  - v.0.17: 'release_notes/v.0.17/v.0.17_-_Release_notes.md'
 - User guide:
   - Contents: 'manual/Cloud_Pipeline_-_Manual.md'
   - 1. Quick start: 'manual/01_Quick_start/1._Quick_start.md'
@@ -87,6 +88,7 @@ nav:
     - 12.10. Manage system-level settings: 'manual/12_Manage_Settings/12.10._Manage_system-level_settings.md'
     - 12.11. Advanced features: 'manual/12_Manage_Settings/12.11._Advanced_features.md'
     - 12.12. System logs: 'manual/12_Manage_Settings/12.12._System_logs.md'
+    - 12.13. System dictionaries: 'manual/12_Manage_Settings/12.13._System_dictionaries.md'
   - 13. Permissions: 'manual/13_Permissions/13._Permissions.md'
   - 14. CLI interface:
     - 14.0. Overview: 'manual/14_CLI/14._Command-line_interface.md'
