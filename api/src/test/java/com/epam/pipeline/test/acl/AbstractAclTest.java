@@ -33,6 +33,7 @@ import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -130,5 +131,11 @@ public abstract class AbstractAclTest {
         public Sid toSid() {
             return new GrantedAuthoritySid(authorityName);
         }
+    }
+
+    protected List<Object> mutableListOf(Object... objects) {
+        List<Object> list = new ArrayList<>();
+        Collections.addAll(list, objects);
+        return list;
     }
 }
