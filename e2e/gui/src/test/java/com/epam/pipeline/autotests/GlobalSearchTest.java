@@ -677,7 +677,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .library()
                 .cd(folder)
                 .createFolder(folderWithExpression);
-        home().sleep(3, MINUTES);
+        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
         search()
                 .search(innerFolder1 + "*")
                 .enter()

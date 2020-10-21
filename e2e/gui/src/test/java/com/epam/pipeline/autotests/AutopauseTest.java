@@ -74,17 +74,17 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         setSystemPreferences("2", "2", "30", "STOP");
         relogin();
 
-        launchTool(onDemand, enabled);
-        launchTool(defaultPriceType, hidden);
+        final String run1 = launchTool(onDemand, enabled);
+        final String run2 = launchTool(defaultPriceType, hidden);
         runsMenu()
                 .activeRuns()
-                .ensure(runWithId(getLastRunId()), visible)
-                .ensure(runWithId(String.valueOf(Integer.parseInt(getLastRunId()) - 1)), visible)
-                .waitForCompletion(getLastRunId())
-                .waitForCompletion(String.valueOf(Integer.parseInt(getLastRunId()) - 1))
+                .ensure(runWithId(run2), visible)
+                .ensure(runWithId(run1), visible)
+                .waitForCompletion(run2)
+                .waitForCompletion(run1)
                 .completedRuns()
-                .ensure(runWithId(getLastRunId()), visible)
-                .ensure(runWithId(String.valueOf(Integer.parseInt(getLastRunId()) - 1)), visible);
+                .ensure(runWithId(run2), visible)
+                .ensure(runWithId(run1), visible);
     }
 
     @Test
@@ -93,20 +93,20 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         setSystemPreferences("2", "2", "30", "PAUSE_OR_STOP");
         relogin();
 
-        launchTool(onDemand, enabled);
-        launchTool(defaultPriceType, hidden);
+        final String run1 = launchTool(onDemand, enabled);
+        final String run2 = launchTool(defaultPriceType, hidden);
         runsMenu()
                 .activeRuns()
-                .waitUntilResumeButtonAppear(String.valueOf(Integer.parseInt(getLastRunId()) - 1))
-                .validateStatus(String.valueOf(Integer.parseInt(getLastRunId()) - 1), LogAO.Status.PAUSED)
-                .waitForCompletion(getLastRunId())
-                .ensure(runWithId(getLastRunId()), hidden)
+                .waitUntilResumeButtonAppear(run1)
+                .validateStatus(run1, LogAO.Status.PAUSED)
+                .waitForCompletion(run2)
+                .ensure(runWithId(run2), hidden)
                 .completedRuns()
-                .ensure(runWithId(getLastRunId()), visible)
+                .ensure(runWithId(run2), visible)
                 .activeRuns()
-                .resume(String.valueOf(Integer.parseInt(getLastRunId()) - 1), getToolName())
-                .waitUntilStopButtonAppear(String.valueOf(Integer.parseInt(getLastRunId()) - 1))
-                .stopRun(String.valueOf(Integer.parseInt(getLastRunId()) - 1));
+                .resume(run1, getToolName())
+                .waitUntilStopButtonAppear(run1)
+                .stopRun(run1);
     }
 
     @Test
@@ -115,24 +115,25 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         setSystemPreferences("2", "2", "30", "PAUSE");
         relogin();
 
-        launchTool(onDemand, enabled);
+        final String runId = launchTool(onDemand, enabled);
 
         runsMenu()
                 .activeRuns()
-                .waitUntilResumeButtonAppear(getLastRunId())
-                .validateStatus(getLastRunId(), LogAO.Status.PAUSED)
-                .resume(getLastRunId(), getToolName())
-                .waitUntilStopButtonAppear(getLastRunId())
-                .stopRun(getLastRunId());
+                .waitUntilResumeButtonAppear(runId)
+                .validateStatus(runId, LogAO.Status.PAUSED)
+                .resume(runId, getToolName())
+                .waitUntilStopButtonAppear(runId)
+                .stopRun(runId);
     }
 
-    private void launchTool(final String priceType, final Condition autoPause) {
+    private String launchTool(final String priceType, final Condition autoPause) {
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setLaunchOptions(diskSize, instanceType, null)
                 .setPriceType(priceType)
                 .ensure(AUTO_PAUSE, autoPause)
                 .launchTool(this, Utils.nameWithoutGroup(tool));
+        return getLastRunId();
     }
 
     private void setSystemPreferences(final String maxIdleTimeout,
