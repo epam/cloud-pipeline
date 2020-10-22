@@ -16,19 +16,26 @@
 
 package com.epam.pipeline.test.creator.contextual;
 
+import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.ContextualPreferenceVO;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceSearchRequest;
 import com.epam.pipeline.entity.preference.PreferenceType;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.Collections;
+import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class ContextualPreferenceCreatorUtils {
 
+    public static final TypeReference<Result<ContextualPreference>> CONTEXTUAL_PREFERENCE_TYPE =
+            new TypeReference<Result<ContextualPreference>>() { };
+    public static final TypeReference<Result<List<ContextualPreference>>> CONTEXTUAL_PREFERENCE_LIST_TYPE =
+            new TypeReference<Result<List<ContextualPreference>>>() { };
     private static final PreferenceType PREFERENCE_TYPE = PreferenceType.STRING;
     private static final ContextualPreferenceLevel PREFERENCE_LEVEL = ContextualPreferenceLevel.ROLE;
 
