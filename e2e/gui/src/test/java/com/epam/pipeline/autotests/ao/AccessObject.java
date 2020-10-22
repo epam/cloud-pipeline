@@ -493,10 +493,22 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     }
 
     default ELEMENT_TYPE checkValueIsInDropDown(final Primitive combobox, final String option) {
+        sleep(1, SECONDS);
         get(combobox).shouldBe(visible).click();
         ElementsCollection listDropDown = SelenideElements.of(byClassName("ant-select-dropdown-menu-item"));
         listDropDown.forEach(row -> row.shouldHave(text(option)));
         return (ELEMENT_TYPE) this;
+    }
+
+    default ELEMENT_TYPE checkDropDownCount(final Primitive combobox, final int count) {
+        get(combobox).shouldBe(visible).click();
+        SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).shouldHaveSize(count);
+        return (ELEMENT_TYPE) this;
+    }
+
+    default int dropDownCount(final Primitive combobox) {
+        get(combobox).shouldBe(visible).click();
+        return SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).size();
     }
 
     default ELEMENT_TYPE exitFromConfigurationWithoutSaved() {

@@ -346,7 +346,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickEditStorageButton()
                 .setAlias(storageAlias)
                 .ok();
-        home().sleep(3, MINUTES);
+        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
         search()
                 .search(storageAlias)
                 .enter()
@@ -381,7 +381,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .launch(this)
                 .showLog(getLastRunId())
                 .waitForCompletion();
-        home().sleep(3, MINUTES);
+        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
         search()
                 .click(RUNS)
                 .search(storage)
@@ -516,7 +516,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         runsMenu()
                 .activeRuns()
                 .stopRun(testRunID_2668);
-        home().sleep(3, MINUTES);
+        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
         search()
                 .click(RUNS)
                 .search(testRunID_2668)
@@ -551,7 +551,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .showIssues()
                 .clickNewIssue()
                 .addNewIssue(title, description);
-        home().sleep(6, MINUTES);
+        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
         search()
                 .search(title)
                 .enter()
@@ -584,7 +584,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         library()
                 .cd(folder)
                 .createFolder(title);
-        home().sleep(5, MINUTES);
+        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
         search()
                 .ensureAll(enabled, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
                 .search(title)
@@ -677,7 +677,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .library()
                 .cd(folder)
                 .createFolder(folderWithExpression);
-        home().sleep(2, MINUTES);
+        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
         search()
                 .search(innerFolder1 + "*")
                 .enter()
@@ -742,7 +742,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     public void searchAfterDeleting() {
         library()
                 .removeNotEmptyFolder(folder)
-                .sleep(5, MINUTES);
+                .sleep(C.SEARCH_TIMEOUT, MINUTES);
         home();
         search()
                 .search(pipeline)

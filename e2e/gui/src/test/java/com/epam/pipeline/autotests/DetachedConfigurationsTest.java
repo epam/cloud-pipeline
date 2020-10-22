@@ -29,6 +29,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.empty;
+import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.focused;
 import static com.codeborne.selenide.Condition.have;
@@ -522,6 +523,7 @@ public class DetachedConfigurationsTest
                             .selectTool(testingTool, "test")
                             .click(OK)
                     )
+                    .ensure(SAVE, enabled)
                     .ensure(IMAGE, valueContains(String.format("%s/%s:test", defaultRegistryUrl, testingTool)))
                     .resetChanges()
             );

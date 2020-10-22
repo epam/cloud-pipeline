@@ -42,6 +42,7 @@ public class C {
         COMPLETION_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.run.completion.timeout"));
         BUCKETS_MOUNTING_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.buckets.mounting.timeout"));
         ENDPOINT_INITIALIZATION_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.endpoint.initialization.timeout"));
+        SEARCH_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.search.timeout.in.minutes"));
         LOGIN_DELAY_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.login.delay.timeout"));
         VALID_ENDPOINT = conf.getProperty("e2e.ui.valid.endpoint");
         LOGIN = conf.getProperty("e2e.ui.login");
@@ -81,6 +82,10 @@ public class C {
         ANONYMOUS_NAME = conf.getProperty("e2e.ui.anonymous.name");
         ANONYMOUS_TOKEN = conf.getProperty("e2e.ui.anonymous.token");
         ANOTHER_ADMIN_TOKEN = conf.getProperty("e2e.ui.another.admin.token");
+        DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES = conf.getProperty("e2e.ui.default.cluster.allowed.instance.types");
+        CLUSTER_ALLOWED_MASKS = conf.getProperty("e2e.ui.cluster.allowed.masks");
+        DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES = conf.getProperty("e2e.ui.default.cluster.allowed.price.types");
+        TEST_DOCKER_IMAGE = conf.getProperty("e2e.ui.test.docker.image");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -91,6 +96,7 @@ public class C {
     public static final int BUCKETS_MOUNTING_TIMEOUT;
     public static final int ENDPOINT_INITIALIZATION_TIMEOUT;
     public static final int LOGIN_DELAY_TIMEOUT;
+    public static final int SEARCH_TIMEOUT;
 
     public static final String LOGIN;
     public static final String PASSWORD;
@@ -125,12 +131,16 @@ public class C {
     public static final String LUIGI_IMAGE;
     public static final String STORAGE_PREFIX;
     public static final String NFS_PREFIX;
+    public static final String TEST_DOCKER_IMAGE;
 
     public static final String DEFAULT_INSTANCE;
     public static final String DEFAULT_INSTANCE_PRICE_TYPE;
     public static final String CLOUD_PROVIDER;
     public static final String ANOTHER_INSTANCE;
     public static final String DEFAULT_INSTANCE_FAMILY_NAME;
+    public static final String DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES;
+    public static final String CLUSTER_ALLOWED_MASKS;
+    public static final String DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES;
 
     public static final String SPOT_PRICE_NAME;
     public static final String AUTH_TOKEN;
