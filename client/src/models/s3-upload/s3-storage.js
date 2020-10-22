@@ -145,10 +145,15 @@ class S3Storage {
     return upload.promise();
   };
 
-  createMultipartUpload = (name) => {
+  createMultipartUpload = (name, tags) => {
+    const tagging = Object.entries(tags)
+      .filter(([, value]) => !!value)
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`);
     let params = {
+      ACL: 'bucket-owner-full-control',
       Bucket: this._storage.path,
-      Key: this.prefix + name
+      Key: this.prefix + name,
+      Tagging: tagging.length > 0 ? tagging.join('&') : undefined
     };
     return this._s3.createMultipartUpload(params).promise();
   };
@@ -170,7 +175,8 @@ class S3Storage {
     const {
       uploadID: currentUploadID,
       partNumber: currentPartNumber,
-      multipartParts = []
+      multipartParts = [],
+      owner
     } = options;
     const {
       onPartError,
@@ -258,7 +264,7 @@ class S3Storage {
         if (file.size > MAX_FILE_SIZE) {
           reject(new Error(`error: Maximum ${MAX_FILE_SIZE_DESCRIPTION} per file`));
         } else {
-          this.createMultipartUpload(file.name)
+          this.createMultipartUpload(file.name, {CP_OWNER: owner})
             .then((data) => {
               resolve(data.UploadId);
             }, reject);
