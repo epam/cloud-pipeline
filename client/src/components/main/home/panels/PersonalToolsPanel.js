@@ -706,7 +706,6 @@ export default class PersonalToolsPanel extends React.Component {
           }
           {
             this.state.runToolInfo &&
-            (this.state.runToolInfo.payload.isSpot || !this.state.runToolInfo.payload.instanceType) &&
               <RunConfirmation
                 cloudRegions={this.props.awsRegions.loaded ? (this.props.awsRegions.value || []).map(r => r) : []}
                 cloudRegionId={this.state.runToolInfo.payload.cloudRegionId}
