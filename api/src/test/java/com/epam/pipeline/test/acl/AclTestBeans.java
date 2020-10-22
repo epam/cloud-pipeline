@@ -26,6 +26,7 @@ import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
+import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStoragePathLoader;
 import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
@@ -309,6 +310,9 @@ public class AclTestBeans {
 
     @MockBean
     protected LustreFSManager mockLustreFSManager;
+
+    @MockBean
+    protected ContextualPreferenceManager mockContextualPreferenceManager;
 
     @Bean
     protected TemplatesScanner mockTemplatesScanner() {

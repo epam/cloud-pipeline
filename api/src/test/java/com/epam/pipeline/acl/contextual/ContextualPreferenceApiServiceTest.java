@@ -27,14 +27,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 
-import java.util.Collections;
 import java.util.List;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_LIST;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 
+@SuppressWarnings("PMD.TooManyStaticImports")
 public class ContextualPreferenceApiServiceTest extends AbstractAclTest {
 
     private final ContextualPreference contextualPreference =
@@ -44,8 +45,8 @@ public class ContextualPreferenceApiServiceTest extends AbstractAclTest {
     private final ContextualPreferenceVO contextualPreferenceVO =
             ContextualPreferenceCreatorUtils.getContextualPreferenceVO();
 
-    private final List<ContextualPreference> preferenceList = Collections.singletonList(contextualPreference);
-    private final String TEST_STRING = "TEST_STRING";
+    private final List<ContextualPreference> preferenceList =
+            ContextualPreferenceCreatorUtils.getContextualPreferenceList();
 
     @Autowired
     private ContextualPreferenceApiService preferenceApiService;
@@ -106,7 +107,7 @@ public class ContextualPreferenceApiServiceTest extends AbstractAclTest {
     public void shouldDenyUpsertContextualPreferenceForNotAdmin() {
         doReturn(contextualPreference).when(mockPreferenceManager).upsert(contextualPreferenceVO);
 
-        assertThrows(AccessDeniedException.class, () ->  preferenceApiService.upsert(contextualPreferenceVO));
+        assertThrows(AccessDeniedException.class, () -> preferenceApiService.upsert(contextualPreferenceVO));
     }
 
     @Test
