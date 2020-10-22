@@ -36,7 +36,7 @@ public class ServerlessConfigurationApiService {
     }
 
     @PreAuthorize("hasRole('ADMIN') OR "
-            + "@grantPermissionManager.hasConfigurationUpdatePermission(#configuration, 'EXECUTE')")
+            + "@grantPermissionManager.hasConfigurationUpdatePermission(#id, 'EXECUTE')")
     public String run(final Long id, final String configName, final HttpServletRequest request) {
         return serverlessConfigurationManager.run(id, configName, request);
     }

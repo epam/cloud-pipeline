@@ -35,14 +35,12 @@ public class RunConfigurationVO {
     private Long id;
     private String name;
     private String description;
-    private String owner;
     private List<AbstractRunConfigurationEntry> entries;
 
     public RunConfiguration toEntity() {
         RunConfiguration configuration = new RunConfiguration();
         configuration.setId(getId());
         configuration.setName(getName());
-        configuration.setOwner(getOwner());
         configuration.setDescription(getDescription());
         if (parentId != null) {
             configuration.setParent(new Folder(getParentId()));

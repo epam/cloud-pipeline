@@ -33,19 +33,19 @@ import org.springframework.security.test.context.support.WithMockUser;
 
 import javax.servlet.http.HttpServletRequest;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 
+@SuppressWarnings("PMD.TooManyStaticImports")
 public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
 
     private final HttpServletRequest request = new MockHttpServletRequest();
-    private final RunConfiguration runConfiguration =
-            ConfigurationCreatorUtils.getRunConfiguration(1L, SIMPLE_USER, null);
-    private final RunConfigurationVO runConfigurationVO =
-            ConfigurationCreatorUtils.getRunConfigurationVO(1L, SIMPLE_USER);
+    private final RunConfiguration runConfiguration = ConfigurationCreatorUtils.getRunConfiguration(ID, SIMPLE_USER);
+    private final RunConfigurationVO runConfigurationVO = ConfigurationCreatorUtils.getRunConfigurationVO(ID, ID);
 
     @Autowired
     private ServerlessConfigurationApiService serverlessConfigurationApiService;
@@ -74,7 +74,7 @@ public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldReturnUrlWhenPermissionIsGranted() {
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
-        initAclEntity(runConfigurationVO.toEntity(), AclPermission.EXECUTE);
+        initAclEntity(runConfiguration, AclPermission.EXECUTE);
         doReturn(TEST_STRING).when(mockServerlessConfigurationManager).generateUrl(1L, TEST_STRING);
 
         assertThat(serverlessConfigurationApiService.generateUrl(1L, TEST_STRING)).isEqualTo(TEST_STRING);
@@ -84,7 +84,7 @@ public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyUrlReturningWhenPermissionIsNotGranted() {
         final RunConfiguration runConfigurationWithoutPermission =
-                ConfigurationCreatorUtils.getRunConfiguration(2L, TEST_STRING, null);
+                ConfigurationCreatorUtils.getRunConfiguration(2L, TEST_STRING);
         runConfigurationWithoutPermission.setId(2L);
         runConfigurationWithoutPermission.setName(TEST_NAME_2);
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
