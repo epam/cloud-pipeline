@@ -6,6 +6,7 @@
 - ["Max" data series in the resources Monitoring](#max-data-series-at-the-resource-monitoring-dashboard)
 - [Export custom user's attributes](#export-custom-users-attributes)
 - [User management and export in read-only mode](#user-management-and-export-in-read-only-mode)
+- ["All pipelines" and "All storages" repositories](#all-pipelines-and-all-storages-repositories)
 
 ***
 
@@ -234,6 +235,26 @@ This role allows:
     - export users list - **including** users' metadata
 
 For more details about user roles see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#roles).
+
+## "All pipelines" and "All storages" repositories
+
+There are several ways for users to find the appropriate storage/pipeline object in the **Cloud Pipeline Platform** - manually via the **Library**, using the **Search** ability or via the corresponding panels of the main Dashboard.
+
+It would be convenient to get all lists of the storages/pipelines accessible to the user in one place with short info about each object and easy access to it.  
+In the current version, such ability was implemented:
+
+- there are two new controls displaying at the **Library** page, above the library-tree - separate "repositories" for storages and pipelines:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_Repositories_01.png)
+- each "repository" displays the full list of the corresponding objects accessible by the current user, e.g. for pipelines:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_Repositories_02.png)
+- for each object in the "repository" are displayed:
+    - object name
+    - object description (if it is available)
+    - `OWNER` user name
+    - _additionally_ for pipelines, the **Run** button - if the pipeline is available for execute for the user
+    - _additionally_ for storages, **Cloud Region**/**Provider** icons for multi-provider deployments
+- if the user clicks any object in the list - its regular page is being opened
+- for each "repository", there is a search field for the quick search over objects list
 
 ***
 
