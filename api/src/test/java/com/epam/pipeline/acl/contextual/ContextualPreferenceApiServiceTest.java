@@ -35,7 +35,6 @@ import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 
-@SuppressWarnings("PMD.TooManyStaticImports")
 public class ContextualPreferenceApiServiceTest extends AbstractAclTest {
 
     private final ContextualPreference contextualPreference =
