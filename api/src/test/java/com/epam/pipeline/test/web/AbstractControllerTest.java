@@ -17,7 +17,9 @@
 package com.epam.pipeline.test.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -28,7 +30,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +48,7 @@ public abstract class AbstractControllerTest {
     protected static final String SERVLET_PATH = "/restapi";
 
     private MockMvc mockMvc;
+    private ObjectMapper deserializationMapper;
 
     @Autowired
     private JsonMapper objectMapper;
@@ -62,6 +64,7 @@ public abstract class AbstractControllerTest {
 
         mockMvc = MockMvcBuilders.webAppContextSetup(wac)
                 .apply(springSecurity()).build();
+        deserializationMapper = JsonMapper.newInstance().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     }
 
     protected final MockMvc mvc() {
@@ -80,33 +83,17 @@ public abstract class AbstractControllerTest {
     }
 
     public <T> void assertResponse(final MvcResult mvcResult,
-                                   final JsonMapper objectMapper,
                                    final T payload,
                                    final TypeReference<Result<T>> typeReference) throws Exception {
-        final ObjectMapper deserializationMapper = JsonMapper.newInstance();
-        deserializationMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         final ResponseResult<T> expectedResult = buildExpectedResult(payload);
 
         final String actual = mvcResult.getResponse().getContentAsString();
-        Assert.assertTrue(StringUtils.isNotBlank(actual));
+        assertTrue(StringUtils.isNotBlank(actual));
         assertThat(actual).isEqualToIgnoringWhitespace(objectMapper.writeValueAsString(expectedResult));
 
         final Result<T> actualResult = JsonMapper.parseData(actual, typeReference, deserializationMapper);
         assertNotNull(actualResult);
-        Assert.assertEquals(expectedResult.getPayload(), actualResult.getPayload());
-    }
-
-    public <T> void assertResponse(final MvcResult mvcResult,
-                                   final T payload,
-                                   final TypeReference<Result<T>> typeReference) throws Exception {
-        final ResponseResult<T> expectedResult = buildExpectedResult(payload);
-
-        final String actual = mvcResult.getResponse().getContentAsString();
-        Assert.assertTrue(StringUtils.isNotBlank(actual));
-        assertThat(actual).isEqualToIgnoringWhitespace(objectMapper.writeValueAsString(expectedResult));
-
-        final Result<T> actualResult = JsonMapper.parseData(actual, typeReference);
-        Assert.assertEquals(expectedResult.getPayload(), actualResult.getPayload());
+        assertEquals(expectedResult.getPayload(), actualResult.getPayload());
     }
 
     public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder) throws Exception {
