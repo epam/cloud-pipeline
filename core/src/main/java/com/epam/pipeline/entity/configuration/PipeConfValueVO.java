@@ -43,6 +43,9 @@ public class PipeConfValueVO {
     @JsonProperty(value = "required")
     private boolean required;
 
+    @JsonProperty(value = "no_override")
+    private Boolean noOverride;
+
     @JsonProperty(value = "enum")
     private List<Object> availableValues;
 
