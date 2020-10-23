@@ -133,8 +133,9 @@ public abstract class AbstractAclTest {
         }
     }
 
-    protected List<Object> mutableListOf(Object... objects) {
-        List<Object> list = new ArrayList<>();
+    @SafeVarargs
+    protected final <T> List<T>  mutableListOf(T... objects) {
+        final List<T> list = new ArrayList<>();
         Collections.addAll(list, objects);
         return list;
     }

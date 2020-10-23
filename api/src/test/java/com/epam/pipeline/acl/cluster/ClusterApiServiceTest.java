@@ -56,7 +56,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 
-@SuppressWarnings("PMD.TooManyStaticImports")
 public class ClusterApiServiceTest extends AbstractAclTest {
 
     private final FilterPodsRequest filterPodsRequest = NodeCreatorUtils.getDefaultFilterPodsRequest();
@@ -105,8 +104,8 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldReturnListWithNodeInstancesWhenPermissionIsGranted() {
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         initAclEntity(nodeInstance, AclPermission.READ);
+        mockUser();
         doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).getNodes();
 
         assertThat(clusterApiService.getNodes()).hasSize(1).contains(nodeInstance);
@@ -115,8 +114,8 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldReturnListWithNodeInstanceWhichPermissionIsGranted() {
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         doReturn(authentication).when(mockAuthManager).getAuthentication();
+        mockUser();
         initAclEntity(nodeInstance, AclPermission.READ);
         initAclEntity(anotherNodeInstance, AclPermission.NO_READ);
         doReturn(mutableListOf(nodeInstance, anotherNodeInstance)).when(mockNodesManager).getNodes();
@@ -144,8 +143,8 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldReturnFilteredNodeInstanceListWhenPermissionIsGranted() {
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         initAclEntity(nodeInstance, AclPermission.READ);
+        mockUser();
         doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).filterNodes(filterNodesVO);
 
         assertThat(clusterApiService.filterNodes(filterNodesVO)).hasSize(1).contains(nodeInstance);
@@ -154,8 +153,8 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldReturnFilteredListWithNodeInstanceWhichPermissionIsGranted() {
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         doReturn(authentication).when(mockAuthManager).getAuthentication();
+        mockUser();
         initAclEntity(nodeInstance, AclPermission.READ);
         initAclEntity(anotherNodeInstance, AclPermission.NO_READ);
         doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).filterNodes(filterNodesVO);
@@ -185,9 +184,9 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldReturnNodeInstanceWhenPermissionIsGranted() {
         final NodeInstance nodeInstance = NodeCreatorUtils.getNodeInstance(1L, TEST_STRING);
         initAclEntity(nodeInstance, AclPermission.READ);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(eq(pipelineRun.getId()));
+        mockRun(pipelineRun);
+        mockUser();
 
         final NodeInstance returnedNodeInstance = clusterApiService.getNode(nodeInstance.getName());
 
@@ -200,7 +199,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldDenyAccessToNodeWhenPermissionIsNotGranted() {
         initAclEntity(nodeInstance);
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(eq(pipelineRun.getId()));
+        mockRun(pipelineRun);
 
         assertThrows(AccessDeniedException.class, () -> clusterApiService.getNode(nodeInstance.getName()));
     }
@@ -218,7 +217,9 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldReturnNodeThroughRequestWhenPermissionIsGranted() {
         final NodeInstance nodeInstance = NodeCreatorUtils.getNodeInstance(1L, TEST_STRING);
         initAclEntity(nodeInstance, AclPermission.READ);
-        initMocksBehavior(true);
+        mockRun(pipelineRun);
+        mockNode(nodeInstance);
+        mockUser();
 
         final NodeInstance returnedNodeInstance = clusterApiService.getNode(nodeInstance.getName(), filterPodsRequest);
 
@@ -230,7 +231,8 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @WithMockUser
     public void shouldDenyAccessToNodeThroughRequestWhenPermissionIsGranted() {
         initAclEntity(nodeInstance);
-        initMocksBehavior(false);
+        mockRun(pipelineRun);
+        mockNode(nodeInstance);
 
         assertThrows(AccessDeniedException.class,
                 () -> clusterApiService.getNode(nodeInstance.getName(), filterPodsRequest));
@@ -249,10 +251,10 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldTerminateNodeWhenPermissionIsGranted() {
         final NodeInstance nodeInstance = NodeCreatorUtils.getNodeInstance(1L, TEST_STRING);
         initAclEntity(nodeInstance, AclPermission.READ);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         doReturn(nodeInstance).when(mockNodesManager).terminateNode(nodeInstance.getName());
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(eq(pipelineRun.getId()));
+        mockRun(pipelineRun);
+        mockUser();
 
         final NodeInstance returnedNodeInstance = clusterApiService.terminateNode(nodeInstance.getName());
 
@@ -266,7 +268,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         initAclEntity(nodeInstance);
         doReturn(nodeInstance).when(mockNodesManager).terminateNode(nodeInstance.getName());
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(eq(pipelineRun.getId()));
+        mockRun(pipelineRun);
 
         assertThrows(AccessDeniedException.class,
                 () -> clusterApiService.terminateNode(nodeInstance.getName()));
@@ -292,7 +294,9 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         initAclEntity(nodeInstance, AclPermission.READ);
         doReturn(statsList).when(mockUsageMonitoringManager).getStatsForNode(
                 nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX);
-        initMocksBehavior(true);
+        mockNode(nodeInstance);
+        mockRun(pipelineRun);
+        mockUser();
 
         final List<MonitoringStats> returnedStatsList =
                 clusterApiService.getStatsForNode(nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX);
@@ -306,7 +310,8 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         initAclEntity(nodeInstance);
         doReturn(statsList).when(mockUsageMonitoringManager)
                 .getStatsForNode(nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX);
-        initMocksBehavior(false);
+        mockNode(nodeInstance);
+        mockRun(pipelineRun);
 
         assertThrows(AccessDeniedException.class,
                 () -> clusterApiService.getStatsForNode(nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX));
@@ -330,7 +335,9 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         initAclEntity(nodeInstance, AclPermission.READ);
         doReturn(inputStream).when(mockUsageMonitoringManager).getStatsForNodeAsInputStream(
                 nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO);
-        initMocksBehavior(true);
+        mockNode(nodeInstance);
+        mockRun(pipelineRun);
+        mockUser();
 
         final InputStream returnedInputStream = clusterApiService.getUsageStatisticsFile(
                 nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO);
@@ -344,7 +351,8 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         initAclEntity(nodeInstance);
         doReturn(inputStream).when(mockUsageMonitoringManager).getStatsForNodeAsInputStream(
                 nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO);
-        initMocksBehavior(false);
+        mockNode(nodeInstance);
+        mockRun(pipelineRun);
 
         assertThrows(AccessDeniedException.class, () -> clusterApiService.getUsageStatisticsFile(
                 nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO));
@@ -401,10 +409,10 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldReturnNodeDisksWhenPermissionIsGranted() {
         initAclEntity(nodeInstance, AclPermission.READ);
         doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.getNodeId());
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeDisk.getNodeId(), filterPodsRequest);
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeDisk.getNodeId());
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(eq(pipelineRun.getId()));
+        mockUser();
+        mockRun(pipelineRun);
 
         assertThat(clusterApiService.loadNodeDisks(nodeDisk.getNodeId())).hasSize(1).contains(nodeDisk);
     }
@@ -416,17 +424,21 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.getNodeId());
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeDisk.getNodeId(), filterPodsRequest);
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeDisk.getNodeId());
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(eq(pipelineRun.getId()));
+        mockRun(pipelineRun);
 
         assertThrows(AccessDeniedException.class, () -> clusterApiService.loadNodeDisks(nodeDisk.getNodeId()));
     }
 
-    private void initMocksBehavior(boolean isAuthorizeNeeded) {
-        if (isAuthorizeNeeded) {
-            doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
-        }
-        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(eq(pipelineRun.getId()));
+    private void mockNode(final NodeInstance nodeInstance) {
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName(), filterPodsRequest);
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
+    }
+
+    private void mockRun(final PipelineRun pipelineRun) {
+        doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(eq(pipelineRun.getId()));
+    }
+
+    protected void mockUser() {
+        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
     }
 }
