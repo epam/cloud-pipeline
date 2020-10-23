@@ -438,7 +438,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         doReturn(pipelineRun).when(mockPipelineRunManager).loadPipelineRun(eq(pipelineRun.getId()));
     }
 
-    protected void mockUser() {
+    private void mockUser() {
         doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
     }
 }
