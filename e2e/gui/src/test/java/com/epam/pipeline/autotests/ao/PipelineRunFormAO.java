@@ -67,7 +67,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
             entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
-            entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]")).closest(".ant-row").find(by("role", "combobox")))
+            entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]")).closest(".ant-row").find(by("role", "combobox"))),
+            entry(FRIENDLY_URL, context().find(byId("advanced.prettyUrl")))
     );
     private final String pipelineName;
     private int parameterIndex = 0;
@@ -265,6 +266,12 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             valueElement.closest("span").find("i").shouldHave(cssClass(type.iconClass));
         }
 
+        return this;
+    }
+
+    public PipelineRunFormAO checkLaunchErrorMessage(String err) {
+        launch();
+        messageShouldAppear(err);
         return this;
     }
 

@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.utils.C;
 
 import java.util.ArrayList;
@@ -34,7 +35,9 @@ import static com.codeborne.selenide.Selenide.switchTo;
 import static com.codeborne.selenide.Selenide.title;
 import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static com.epam.pipeline.autotests.ao.Primitive.TITLE;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertTrue;
 
 public class ToolPageAO implements AccessObject<ToolPageAO> {
 
@@ -77,6 +80,13 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
         $(byXpath("//h3")).shouldHave(text(header));
         return this;
     }
+
+    public ToolPageAO assertURLEndsWith(String str) {
+        assertTrue(WebDriverRunner.getWebDriver().getCurrentUrl().endsWith(str + "/"),
+                format("Link from the address bar doesn't end by the '%s'", str));
+        return this;
+    }
+
 
     @Override
     public Map<Primitive, SelenideElement> elements() {
