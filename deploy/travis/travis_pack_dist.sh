@@ -60,18 +60,23 @@ mv cloud-data-win64.zip $API_STATIC_PATH/cloud-data-win64.zip
 
 # Create distribution tgz
 cd ..
-./gradlew distTar   -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} \
-                    -Pprofile=release \
-                    -x test \
-                    -x client:buildUI \
-                    -x pipe-cli:build \
-                    -x pipe-cli:buildLinux \
-                    -x pipe-cli:buildWin \
-                    -x fs-browser:build \
-                    -x cloud-pipeline-webdav-client:buildLinux \
-                    -x cloud-pipeline-webdav-client:buildWin \
-                    -Pfast \
-                    --no-daemon
+./gradlew api:checkstyleMain \
+          api:pmdMain \
+          api:checkstyleTest \
+          api:pmdTest \
+          distTar \
+          -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} \
+          -Pprofile=release \
+          -x test \
+          -x client:buildUI \
+          -x pipe-cli:build \
+          -x pipe-cli:buildLinux \
+          -x pipe-cli:buildWin \
+          -x fs-browser:build \
+          -x cloud-pipeline-webdav-client:buildLinux \
+          -x cloud-pipeline-webdav-client:buildWin \
+          -Pfast \
+          --no-daemon
 
 if [ "$TRAVIS_REPO_SLUG" == "epam/cloud-pipeline" ]; then
     DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
