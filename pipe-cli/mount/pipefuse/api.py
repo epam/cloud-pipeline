@@ -81,7 +81,7 @@ class DataStorage:
         return self._is_allowed(self._READ_MASK)
 
     def is_write_allowed(self):
-        return not self.ro and not self.sensitive and self._is_allowed(self._WRITE_MASK)
+        return not self.ro and self._is_allowed(self._WRITE_MASK)
 
     def _is_allowed(self, mask):
         return self.mask & mask == mask
