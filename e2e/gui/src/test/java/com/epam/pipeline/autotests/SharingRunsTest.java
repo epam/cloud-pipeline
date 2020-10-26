@@ -100,9 +100,9 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
             logout();
             Utils.restartBrowser(C.ROOT_ADDRESS);
             loginAs(user);
+            sleep(timeout, SECONDS);
             open(endpointsLink, "", user.login, user.password);
             new ToolPageAO(endpointsLink)
-                    .sleep(timeout, SECONDS)
                     .assertPageTitleIs("401 Authorization Required");
         } finally {
             open(C.ROOT_ADDRESS);
@@ -139,9 +139,9 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
             logout();
             Utils.restartBrowser(C.ROOT_ADDRESS);
             loginAs(user);
+            sleep(timeout, SECONDS);
             open(endpointsLink, "", user.login, user.password);
             new ToolPageAO(endpointsLink)
-                    .sleep(timeout, SECONDS)
                     .assertPageTitleIs("401 Authorization Required");
         } finally {
             open(C.ROOT_ADDRESS);
@@ -149,4 +149,5 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
             loginAs(admin);
         }
     }
+
 }
