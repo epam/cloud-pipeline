@@ -39,6 +39,9 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
     private final String friendlyURL = "tool_page1";
     private String runID = "";
     private String errorMessage = "Url '{\"path\":\"%s\"}' is already used for run '%s'.";
+    private String endpointsLink = "";
+    private String userGroup = "ROLE_USER";
+    private int timeout = 30;
 
     @Test
     @TestCase({"EPMCMBIBPC-2674"})
@@ -55,9 +58,12 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
                 .validateEndpointPage(LOGIN)
                 .assertURLEndsWith(friendlyURL)
                 .closeTab();
+        endpointsLink = runsMenu()
+                .showLog(runID)
+                .getEndpointLink();
     }
 
-    @Test(dependsOnMethods = {"validationOfFriendlyURL"})
+    @Test(priority = 1, dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-2677"})
     public void validationOfFriendlyURLNegative() {
         tools()
@@ -67,13 +73,10 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
                         friendlyURL, format("%,d", Integer.parseInt(runID))));
     }
 
-    @Test(dependsOnMethods = {"validationOfFriendlyURLNegative"})
+    @Test(priority = 2, dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-2678"})
     public void shareToolRunWithUser() {
         try {
-            String endpointsLink = runsMenu()
-                    .showLog(runID)
-                    .getEndpointLink();
             runsMenu()
                     .showLog(runID)
                     .shareWithUser(user.login)
@@ -81,7 +84,7 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
             logout();
             Utils.restartBrowser(C.ROOT_ADDRESS);
             loginAs(user);
-            sleep(30, SECONDS);
+            sleep(timeout, SECONDS);
             open(endpointsLink);
             new ToolPageAO(endpointsLink)
                     .validateEndpointPage(user.login)
@@ -91,7 +94,7 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
             loginAs(admin);
             runsMenu()
                     .showLog(runID)
-                    .removeShareUser(user.login)
+                    .removeShareUserGroup(user.login)
                     .sleep(2, SECONDS)
                     .validateShareLink("Not shared (click to configure)");
             logout();
@@ -99,8 +102,7 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
             loginAs(user);
             open(endpointsLink, "", user.login, user.password);
             new ToolPageAO(endpointsLink)
-                    .sleep(5, SECONDS)
-                    .screenshot("test500screenshot")
+                    .sleep(timeout, SECONDS)
                     .assertPageTitleIs("401 Authorization Required");
         } finally {
             open(C.ROOT_ADDRESS);
@@ -108,4 +110,45 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
             loginAs(admin);
         }
     }
+
+    @Test(priority = 2, dependsOnMethods = {"validationOfFriendlyURL"})
+    @TestCase({"EPMCMBIBPC-2679"})
+    public void shareToolRunWithUserGroup() {
+        try {
+            runsMenu()
+                    .log(getLastRunId(), log -> log
+                            .shareWithGroup(userGroup)
+                            .validateShareLink(userGroup.toLowerCase())
+                    );
+            logout();
+            Utils.restartBrowser(C.ROOT_ADDRESS);
+            loginAs(user);
+            sleep(timeout, SECONDS);
+            open(endpointsLink);
+            new ToolPageAO(endpointsLink)
+                    .validateEndpointPage(user.login)
+                    .assertURLEndsWith(friendlyURL);
+            open(C.ROOT_ADDRESS);
+            logout();
+            loginAs(admin);
+            runsMenu()
+                    .showLog(runID)
+                    .removeShareUserGroup(userGroup)
+                    .sleep(2, SECONDS)
+                    .validateShareLink("Not shared (click to configure)");
+            logout();
+            Utils.restartBrowser(C.ROOT_ADDRESS);
+            loginAs(user);
+            open(endpointsLink, "", user.login, user.password);
+            new ToolPageAO(endpointsLink)
+                    .sleep(timeout, SECONDS)
+                    .assertPageTitleIs("401 Authorization Required");
+        } finally {
+            open(C.ROOT_ADDRESS);
+            logout();
+            loginAs(admin);
+        }
+    }
+
+
 }
