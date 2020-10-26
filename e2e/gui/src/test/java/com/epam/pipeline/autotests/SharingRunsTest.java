@@ -41,7 +41,7 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
     private String errorMessage = "Url '{\"path\":\"%s\"}' is already used for run '%s'.";
     private String endpointsLink = "";
     private String userGroup = "ROLE_USER";
-    private int timeout = 30;
+    private int timeout = 60;
 
     @Test
     @TestCase({"EPMCMBIBPC-2674"})
@@ -149,6 +149,4 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
             loginAs(admin);
         }
     }
-
-
 }
