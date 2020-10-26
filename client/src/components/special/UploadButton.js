@@ -29,6 +29,7 @@ import {
   Tooltip
 } from 'antd';
 import S3Storage, {MAX_FILE_SIZE_DESCRIPTION} from '../../models/s3-upload/s3-storage';
+import DataStorageGenerateUploadUrl from '../../models/dataStorage/DataStorageGenerateUploadUrl';
 
 const KB = 1024;
 const MB = 1024 * KB;
@@ -46,7 +47,8 @@ class UploadButton extends React.Component {
     validate: PropTypes.func,
     path: PropTypes.string,
     storageInfo: PropTypes.object,
-    region: PropTypes.string
+    region: PropTypes.string,
+    owner: PropTypes.string
   };
 
   state = {
@@ -451,7 +453,16 @@ class UploadButton extends React.Component {
 
     const doUpload = (uploadID = undefined, partNumber = 0, multipartParts = []) => {
       return new Promise((resolve) => {
-        this.s3Storage.doUpload(file, {uploadID, partNumber, multipartParts}, callbacks)
+        this.s3Storage.doUpload(
+          file,
+          {
+            uploadID,
+            partNumber,
+            multipartParts,
+            owner: this.props.owner
+          },
+          callbacks
+        )
           .then((error) => {
             if (error) {
               onError(error);

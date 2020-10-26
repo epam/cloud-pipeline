@@ -73,26 +73,28 @@ class Filters extends React.Component {
         </div>
         <div className={styles.billingContainer}>
           <div className={styles.periodFilters}>
-            <PeriodFilter
-              filter={this.filterStore.period}
-              range={this.filterStore.range}
-              onChange={this.filterStore.periodNavigation}
-            />
-            <Divider />
-            {
-              roleModel.manager.billing(
-                <RunnerFilter
-                  filter={this.filterStore.runner}
-                  onChange={this.filterStore.buildNavigationFn('runner')}
-                />,
-                'runner filter'
-              )
-            }
-            <Divider />
-            <ProviderFilter
-              filter={this.filterStore.region}
-              onChange={this.filterStore.buildNavigationFn('region')}
-            />
+            <div className={styles.filters}>
+              <PeriodFilter
+                filter={this.filterStore.period}
+                range={this.filterStore.range}
+                onChange={this.filterStore.periodNavigation}
+              />
+              <Divider />
+              {
+                roleModel.manager.billing(
+                  <RunnerFilter
+                    filter={this.filterStore.runner}
+                    onChange={this.filterStore.buildNavigationFn('runner')}
+                  />,
+                  'runner filter'
+                )
+              }
+              <Divider />
+              <ProviderFilter
+                filter={this.filterStore.region}
+                onChange={this.filterStore.buildNavigationFn('region')}
+              />
+            </div>
             <div className={styles.actionsBlock}>
               {
                 roleModel.manager.billing(

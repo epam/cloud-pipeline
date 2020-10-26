@@ -25,6 +25,8 @@ import org.openqa.selenium.WebElement;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -39,6 +41,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.tagName;
+import static org.testng.Assert.assertTrue;
 
 public class LogAO implements AccessObject<LogAO> {
     public static final long SSH_LINK_APPEARING_TIMEOUT = C.SSH_APPEARING_TIMEOUT;
@@ -57,12 +60,13 @@ public class LogAO implements AccessObject<LogAO> {
             entry(COMMIT, $$(tagName("a")).findBy(exactText("COMMIT"))),
             entry(PAUSE, $$(tagName("a")).findBy(exactText("PAUSE"))),
             entry(RESUME, $$(tagName("a")).findBy(exactText("RESUME"))),
+            entry(STOP, $$(tagName("a")).findBy(exactText("STOP"))),
+            entry(RERUN, $$(tagName("a")).findBy(exactText("RERUN"))),
             entry(ENDPOINT, $(withText("Endpoint")).closest("tr").find("a")),
             entry(INSTANCE, context().find(byXpath("//*[.//*[text()[contains(.,'Instance')]] and contains(@class, 'ant-collapse')]"))),
             entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]"))),
             entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find("a")),
             entry(SHARE_WITH, $(withText("Share with:")).closest("tr").find("a"))
-
     );
 
     public LogAO waitForCompletion() {
@@ -156,6 +160,26 @@ public class LogAO implements AccessObject<LogAO> {
                 .sleep(1, SECONDS)
                 .click(button(PAUSE.name()));
         return this;
+    }
+
+    public LogAO clickOnStopButton() {
+        get(STOP).shouldBe(visible).click();
+        return this;
+    }
+
+    public LogAO stop(final String pipelineName) {
+        clickOnStopButton();
+        new ConfirmationPopupAO<>(this)
+                .ensureTitleIs(
+                        format("Stop %s?", pipelineName))
+                .sleep(1, SECONDS)
+                .click(button(STOP.name()));
+        return this;
+    }
+
+    public PipelineRunFormAO clickOnRerunButton() {
+        get(RERUN).shouldBe(visible).click();
+        return new PipelineRunFormAO();
     }
 
     public LogAO assertPausingFinishedSuccessfully() {
@@ -359,8 +383,36 @@ public class LogAO implements AccessObject<LogAO> {
                         ".//td[contains(., '%s')]]", name, value));
     }
 
+    public LogAO checkMountLimitsParameter(String...storages) {
+        Arrays.stream(storages)
+                .forEach(storage -> $(byText("CP_CAP_LIMIT_MOUNTS")).$(By.xpath("following::td"))
+                        .shouldHave(text(storage)));
+        return this;
+    }
+
     public static By log() {
         return byClassName("ReactVirtualized__List");
+    }
+
+    public LogAO logContainsMessage(Set<String> logMess, final String message) {
+        assertTrue(logMess.stream().anyMatch(mes -> mes.contains(message)), format("Message '%s' isn't contained in log", message));
+        return this;
+    }
+
+    public LogAO logNotContainsMessage(Set<String> logMess, final String message) {
+        assertTrue(logMess.stream().noneMatch(mes -> mes.contains(message)), format("Message '%s' is contained in log", message));
+        return this;
+    }
+
+    public LogAO checkAvailableStoragesCount(Set<String> logMess, int count) {
+        String str = logMess.stream().filter(Pattern.compile("\\d+ available storage\\(s\\)\\. Checking mount options\\.")
+                        .asPredicate()).findFirst().toString();
+        Matcher matcher = Pattern.compile(" \\d* ").matcher(str);
+        assert matcher.find();
+        int res = Integer.parseInt(matcher.group().replace(" ", ""));
+        assertTrue(res >= count,
+               format("Available storages count (actual %s) should be more or equal %s", res, count));
+        return this;
     }
 
     public static By logMessage(final String text) {

@@ -512,6 +512,12 @@ class EditRoleDialog extends React.Component {
     return (
       <Modal
         width="80%"
+        style={{
+          top: 20
+        }}
+        bodyStyle={{
+          height: '80vh'
+        }}
         closable={false}
         title={(
           <Row>
@@ -566,7 +572,8 @@ class EditRoleDialog extends React.Component {
               key: CONTENT_PANEL_KEY,
               containerStyle: {
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                overflowX: 'hidden'
               },
               size: {
                 priority: 0,
@@ -585,7 +592,7 @@ class EditRoleDialog extends React.Component {
             }
           ]}>
           <div
-            style={{flex: 1, display: 'flex', flexDirection: 'column'}}
+            style={{display: 'flex', flexDirection: 'column', height: '100%'}}
             key={CONTENT_PANEL_KEY}>
             <Row type="flex" style={{marginBottom: 10}} align="middle">
               <span style={{marginRight: 5, fontWeight: 'bold'}}>Default data storage:</span>
@@ -653,15 +660,7 @@ class EditRoleDialog extends React.Component {
                 </Button>
               </div>
             </Row>
-            <Row type="flex"
-              style={{
-                height: '30vh',
-                overflow: 'auto',
-                display: 'flex',
-                flexDirection: 'column'
-              }}>
-              {this.renderUsersList()}
-            </Row>
+            {this.renderUsersList()}
           </div>
           <SplitPanel
             orientation="vertical"

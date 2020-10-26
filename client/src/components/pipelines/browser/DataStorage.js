@@ -81,11 +81,21 @@ const PAGE_SIZE = 40;
 @connect({
   dataStorages, folders, pipelinesLibrary
 })
+@roleModel.authenticationInfo
 @inject('awsRegions')
-@inject(({routing, dataStorages, folders, pipelinesLibrary, preferences, dataStorageCache }, {params, onReloadTree}) => {
+@inject(({
+  authenticatedUserInfo,
+  routing,
+  dataStorages,
+  folders,
+  pipelinesLibrary,
+  preferences,
+  dataStorageCache
+}, {params, onReloadTree}) => {
   const queryParameters = parseQueryParameters(routing);
   const showVersions = (queryParameters.versions || 'false').toLowerCase() === 'true';
   return {
+    authenticatedUserInfo,
     onReloadTree,
     dataStorageCache,
     storageId: params.id,
@@ -1231,11 +1241,17 @@ export default class DataStorage extends React.Component {
   };
 
   render () {
-    if (!this.props.info.loaded && this.props.info.pending) {
+    if (
+      (!this.props.info.loaded && this.props.info.pending) ||
+      (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending)
+    ) {
       return <LoadingView />;
     }
     if (this.props.info.error) {
       return <Alert message={this.props.info.error} type="error" />;
+    }
+    if (this.props.authenticatedUserInfo.error) {
+      return <Alert message={this.props.authenticatedUserInfo.error} type="error" />;
     }
     let contents;
     if (!this.props.storage.error) {
@@ -1371,6 +1387,11 @@ export default class DataStorage extends React.Component {
                         this.props.storageId,
                         this.props.path
                       )
+                    }
+                    owner={
+                      this.props.authenticatedUserInfo.loaded
+                        ? this.props.authenticatedUserInfo.value.userName
+                        : undefined
                     }
                   />
                 )

@@ -58,7 +58,13 @@ class PermissionHelper:
 
     @classmethod
     def is_storage_writable(cls, storage):
-        return cls.is_permission_set(storage, WRITE_MASK)
+        write_permission_granted = cls.is_permission_set(storage, WRITE_MASK)
+        if not cls.is_run_sensitive():
+            return write_permission_granted
+        if storage.sensitive:
+            return write_permission_granted
+        else:
+            return False
 
     @classmethod
     def is_permission_set(cls, storage, mask):
@@ -275,7 +281,7 @@ class AzureMounter(StorageMounter):
             'tmp_dir': os.path.join(self.fuse_tmp, str(self.storage.id)),
             'account_name': account_id,
             'account_key': account_key,
-            'permissions': 'rw' if PermissionHelper.is_storage_writable(self.storage) and not PermissionHelper.is_run_sensitive() else 'ro',
+            'permissions': 'rw' if PermissionHelper.is_storage_writable(self.storage) else 'ro',
             'mount_options': self.storage.mount_options if self.storage.mount_options else ''
         }
 
@@ -360,7 +366,7 @@ class S3Mounter(StorageMounter):
         path_chunks = self.storage.path.split('/')
         bucket = path_chunks[0]
         relative_path = '/'.join(path_chunks[1:]) if len(path_chunks) > 1 else ''
-        if not PermissionHelper.is_storage_writable(self.storage) or PermissionHelper.is_run_sensitive():
+        if not PermissionHelper.is_storage_writable(self.storage):
             mask = '0554'
             permissions = 'ro'
         return {'mount': mount_point,
@@ -465,7 +471,7 @@ class GCPMounter(StorageMounter):
             creds_named_pipe_path = None
         mask = '0774'
         permissions = 'rw'
-        if not PermissionHelper.is_storage_writable(self.storage) or PermissionHelper.is_run_sensitive():
+        if not PermissionHelper.is_storage_writable(self.storage):
             mask = '0554'
             permissions = 'ro'
         return {'mount': mount_point,
@@ -564,7 +570,7 @@ class NFSMounter(StorageMounter):
 
         permission = 'g+rwx'
         mask = '0774'
-        if not PermissionHelper.is_storage_writable(self.storage) or PermissionHelper.is_run_sensitive():
+        if not PermissionHelper.is_storage_writable(self.storage):
             permission = 'g+rx'
             mask = '0554'
             if not mount_options:

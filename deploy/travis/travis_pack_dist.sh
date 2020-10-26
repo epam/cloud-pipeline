@@ -58,8 +58,15 @@ mv fsbrowser-* $API_STATIC_PATH/fsbrowser.tar.gz
 mv cloud-data-linux.tar.gz $API_STATIC_PATH/cloud-data-linux.tar.gz
 mv cloud-data-win64.zip $API_STATIC_PATH/cloud-data-win64.zip
 
-# Create distribution tgz
+
 cd ..
+# Run Java code checks
+./gradlew api:checkstyleMain \
+          api:pmdMain \
+          api:checkstyleTest \
+          api:pmdTest --no-daemon
+
+# Create distribution tgz
 ./gradlew distTar   -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} \
                     -Pprofile=release \
                     -x test \

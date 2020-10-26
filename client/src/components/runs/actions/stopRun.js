@@ -49,9 +49,7 @@ export function canPauseRun (run) {
     podIP && !(run.nodeCount > 0) &&
     !(run.parentRunId && run.parentRunId > 0) &&
     (pipelineRunParameters || []).filter(r => {
-      return (r.name === 'CP_CAP_AUTOSCALE' && r.value === 'true') ||
-        (r.name === 'CP_CAP_SGE' && r.value === 'true') ||
-        (r.name === 'CP_CAP_SPARK' && r.value === 'true');
+      return (r.name === 'CP_CAP_AUTOSCALE' && r.value === 'true');
     }).length === 0;
 }
 

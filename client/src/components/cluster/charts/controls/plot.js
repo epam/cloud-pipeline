@@ -156,7 +156,7 @@ Plot.defaultProps = {
   dataType: AxisDataType.number,
   chartArea: {
     left: 100,
-    top: 15,
+    top: 30,
     right: 75,
     bottom: 30
   }
