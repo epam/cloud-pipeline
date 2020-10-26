@@ -20,6 +20,10 @@ import com.epam.pipeline.entity.pipeline.Folder;
 
 public final class FolderCreatorUtils {
 
+    private FolderCreatorUtils() {
+
+    }
+
     public static Folder getFolder(Long id, String owner) {
         Folder folder = new Folder();
         folder.setId(id);

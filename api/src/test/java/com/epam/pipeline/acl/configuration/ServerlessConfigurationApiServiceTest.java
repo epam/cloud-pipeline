@@ -91,7 +91,7 @@ public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
         doReturn(TEST_STRING).when(mockServerlessConfigurationManager).generateUrl(2L, TEST_STRING);
 
         assertThrows(AccessDeniedException.class,
-                () -> serverlessConfigurationApiService.generateUrl(2L, TEST_STRING));
+            () -> serverlessConfigurationApiService.generateUrl(2L, TEST_STRING));
     }
 
     @Test
@@ -124,7 +124,7 @@ public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
         doReturn(TEST_STRING).when(mockServerlessConfigurationManager).run(1L, TEST_STRING, request);
 
         assertThrows(AccessDeniedException.class,
-                () -> serverlessConfigurationApiService.run(1L, TEST_STRING, request));
+            () -> serverlessConfigurationApiService.run(1L, TEST_STRING, request));
     }
 
     private void mockUser() {
