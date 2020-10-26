@@ -23,6 +23,10 @@ import java.util.List;
 
 public final class ClusterCreatorUtils {
 
+    private ClusterCreatorUtils() {
+
+    }
+
     public static MonitoringStats getMonitoringStats() {
         return new MonitoringStats();
     }

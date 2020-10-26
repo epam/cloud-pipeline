@@ -235,7 +235,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         mockNode(nodeInstance);
 
         assertThrows(AccessDeniedException.class,
-                () -> clusterApiService.getNode(nodeInstance.getName(), filterPodsRequest));
+            () -> clusterApiService.getNode(nodeInstance.getName(), filterPodsRequest));
     }
 
     @Test
@@ -269,7 +269,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         mockRun(pipelineRun);
 
         assertThrows(AccessDeniedException.class,
-                () -> clusterApiService.terminateNode(nodeInstance.getName()));
+            () -> clusterApiService.terminateNode(nodeInstance.getName()));
     }
 
     @Test
@@ -312,7 +312,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         mockRun(pipelineRun);
 
         assertThrows(AccessDeniedException.class,
-                () -> clusterApiService.getStatsForNode(nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX));
+            () -> clusterApiService.getStatsForNode(nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX));
     }
 
     @Test
