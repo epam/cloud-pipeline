@@ -51,6 +51,7 @@ import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
+import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
@@ -429,6 +430,9 @@ public class AclTestBeans {
 
     @MockBean
     protected UserManager mockUserManager;
+
+    @MockBean
+    protected LustreFSManager mockLustreFSManager;
 
     @Bean
     protected TemplatesScanner mockTemplatesScanner() {
