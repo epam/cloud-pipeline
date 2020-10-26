@@ -40,7 +40,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 
-@SuppressWarnings("PMD.TooManyStaticImports")
 public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
 
     private final HttpServletRequest request = new MockHttpServletRequest();
@@ -73,7 +72,7 @@ public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldReturnUrlWhenPermissionIsGranted() {
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
+        mockUser();
         initAclEntity(runConfiguration, AclPermission.EXECUTE);
         doReturn(TEST_STRING).when(mockServerlessConfigurationManager).generateUrl(1L, TEST_STRING);
 
@@ -87,7 +86,7 @@ public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
                 ConfigurationCreatorUtils.getRunConfiguration(2L, TEST_STRING);
         runConfigurationWithoutPermission.setId(2L);
         runConfigurationWithoutPermission.setName(TEST_NAME_2);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
+        mockUser();
         initAclEntity(runConfigurationWithoutPermission);
         doReturn(TEST_STRING).when(mockServerlessConfigurationManager).generateUrl(2L, TEST_STRING);
 
@@ -106,7 +105,7 @@ public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldRunWhenPermissionIsGranted() {
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
+        mockUser();
         initAclEntity(runConfiguration, AclPermission.EXECUTE);
         doReturn(runConfiguration).when(mockRunConfigurationManager).load(anyLong());
         doReturn(TEST_STRING).when(mockServerlessConfigurationManager).run(1L, TEST_STRING, request);
@@ -117,7 +116,7 @@ public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyRunningWhenPermissionIsNotGranted() {
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
+        mockUser();
         initAclEntity(runConfiguration);
         doReturn(runConfiguration).when(mockRunConfigurationManager).load(anyLong());
         doReturn(true).when(mockConfigurationProviderManager)
@@ -126,6 +125,10 @@ public class ServerlessConfigurationApiServiceTest extends AbstractAclTest {
 
         assertThrows(AccessDeniedException.class,
                 () -> serverlessConfigurationApiService.run(1L, TEST_STRING, request));
+    }
+
+    private void mockUser() {
+        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
     }
 }
 
