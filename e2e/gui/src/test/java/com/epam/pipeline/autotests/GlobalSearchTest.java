@@ -551,7 +551,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .showIssues()
                 .clickNewIssue()
                 .addNewIssue(title, description);
-        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
+        home().sleep(C.SEARCH_TIMEOUT + 2, MINUTES);
         search()
                 .search(title)
                 .enter()

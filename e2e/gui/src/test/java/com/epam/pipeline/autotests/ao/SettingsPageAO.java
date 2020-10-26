@@ -1247,7 +1247,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public void clearFiltersBy(final String name) {
-            $(filterBy(name)).find(byClassName("ant-select-selection__clear")).shouldBe(visible).click();
+            actions().moveToElement($(combobox(name))).build().perform();
+            if ($(filterBy(name)).find(byClassName("ant-select-selection__clear")).isDisplayed()) {
+                $(filterBy(name)).find(byClassName("ant-select-selection__clear")).shouldBe(visible).click();
+            }
         }
     }
 
