@@ -251,8 +251,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldTerminateNodeWhenPermissionIsGranted() {
         final NodeInstance nodeInstance = NodeCreatorUtils.getNodeInstance(1L, TEST_STRING);
         initAclEntity(nodeInstance, AclPermission.READ);
-        doReturn(nodeInstance).when(mockNodesManager).terminateNode(nodeInstance.getName());
-        doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
+        mockNode(nodeInstance);
         mockRun(pipelineRun);
         mockUser();
 
@@ -266,8 +265,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @WithMockUser
     public void shouldDenyAccessToNodeTerminationWhenPermissionIsNotGranted() {
         initAclEntity(nodeInstance);
-        doReturn(nodeInstance).when(mockNodesManager).terminateNode(nodeInstance.getName());
-        doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
+        mockNode(nodeInstance);
         mockRun(pipelineRun);
 
         assertThrows(AccessDeniedException.class,
@@ -409,8 +407,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldReturnNodeDisksWhenPermissionIsGranted() {
         initAclEntity(nodeInstance, AclPermission.READ);
         doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.getNodeId());
-        doReturn(nodeInstance).when(mockNodesManager).getNode(nodeDisk.getNodeId(), filterPodsRequest);
-        doReturn(nodeInstance).when(mockNodesManager).getNode(nodeDisk.getNodeId());
+        mockNode(nodeInstance);
         mockUser();
         mockRun(pipelineRun);
 
@@ -422,9 +419,8 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldDenyAccessToNodeDisksWhenPermissionIsNotGranted() {
         initAclEntity(nodeInstance);
         doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.getNodeId());
-        doReturn(nodeInstance).when(mockNodesManager).getNode(nodeDisk.getNodeId(), filterPodsRequest);
-        doReturn(nodeInstance).when(mockNodesManager).getNode(nodeDisk.getNodeId());
         mockRun(pipelineRun);
+        mockNode(nodeInstance);
 
         assertThrows(AccessDeniedException.class, () -> clusterApiService.loadNodeDisks(nodeDisk.getNodeId()));
     }
@@ -432,6 +428,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     private void mockNode(final NodeInstance nodeInstance) {
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName(), filterPodsRequest);
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
+        doReturn(nodeInstance).when(mockNodesManager).terminateNode(nodeInstance.getName());
     }
 
     private void mockRun(final PipelineRun pipelineRun) {
