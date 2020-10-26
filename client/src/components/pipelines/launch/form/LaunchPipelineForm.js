@@ -1039,7 +1039,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               description: parameter.description,
               enum: parameter.initialEnumeration,
               visible: parameter.visible,
-              validation: parameter.validation
+              validation: parameter.validation,
+              no_override: parameter.noOverride
             };
           }
         }
@@ -1258,7 +1259,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             required: `${parameter.required || false}`.toLowerCase() === 'true',
             enum: parameter.initialEnumeration,
             visible: parameter.visible,
-            validation: parameter.validation
+            validation: parameter.validation,
+            no_override: parameter.noOverride
           };
         }
       }
@@ -1792,6 +1794,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           let type = 'string';
           let required = false;
           let readOnly = false;
+          let noOverride = false;
           let description;
           let enumeration;
           let initialEnumeration;
@@ -1816,12 +1819,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             initialEnumeration = parameter.enum;
             visible = parameter.visible;
             validation = parameter.validation;
+            noOverride = `${parameter.no_override}` === 'true';
             enumeration = parameterUtilities.parseEnumeration({enumeration});
             if (type.toLowerCase() === 'boolean') {
               value = getBooleanValue(value);
             }
             required = parameter.required;
-            readOnly = parameter.readOnly || false;
+            readOnly = !!value && noOverride;
           } else {
             value = parameter;
           }
@@ -1839,7 +1843,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               value: value,
               required: required,
               readOnly: readOnly,
-              system: system
+              system: system,
+              noOverride
             };
         }
       }
@@ -2804,6 +2809,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           let value = parameter ? parameter.value : '';
           let type = parameter ? parameter.type : 'string';
           let readOnly = parameter ? parameter.readOnly : false;
+          const noOverride = parameter ? parameter.noOverride : false;
           const systemParameterValueIsBlocked = isSystemParametersSection &&
             getSystemParameterDisabledState(this, name);
           let required = parameter ? `${parameter.required}` === 'true' : false;
@@ -2887,6 +2893,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     `params.${key}.readOnly`,
                     {initialValue: readOnly}
                   )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.noOverride`,
+                    {initialValue: noOverride}
+                  )(<Input disabled />)
                 }
               </FormItem>
               <FormItem className={styles.hiddenItem}>
