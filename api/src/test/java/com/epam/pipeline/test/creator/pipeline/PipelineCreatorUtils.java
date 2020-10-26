@@ -16,13 +16,18 @@
 
 package com.epam.pipeline.test.creator.pipeline;
 
+import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
-public class PipelineCreatorUtils {
+public final class PipelineCreatorUtils {
+
+    private PipelineCreatorUtils(){
+
+    }
 
     public static Pipeline getPipeline(String owner) {
         Pipeline pipeline = new Pipeline();
@@ -38,4 +43,20 @@ public class PipelineCreatorUtils {
         pipelineRun.setName(TEST_STRING);
         return pipelineRun;
     }
+
+    public static Folder getFolder(String owner) {
+        Folder folder = new Folder();
+        folder.setId(ID);
+        folder.setOwner(owner);
+        return folder;
+    }
+
+//    public static Folder getFolder() {
+//        Folder folder = new Folder();
+//        folder.setId(ID);
+//        folder.setOwner(TEST_STRING);
+//        return folder;
+//    }
+
+
 }
