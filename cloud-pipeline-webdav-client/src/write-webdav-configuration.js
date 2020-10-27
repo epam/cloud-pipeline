@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const {log} = require('./application/models/log');
 
 module.exports = function writeLocalConfiguration(configuration) {
   if (!fs.existsSync(path.join(require('os').homedir(), '.pipe-webdav-client'))) {
@@ -11,6 +12,7 @@ module.exports = function writeLocalConfiguration(configuration) {
   );
   console.log(localConfigPath);
   console.log(configuration);
+  log(`Writing configuration ${localConfigPath}:\n${JSON.stringify(configuration, null, ' ')}`);
   fs.writeFileSync(
     localConfigPath,
     Buffer.from(JSON.stringify(configuration, null, ' ')),

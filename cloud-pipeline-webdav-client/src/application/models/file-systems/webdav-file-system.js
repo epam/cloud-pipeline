@@ -3,6 +3,7 @@ import electron from 'electron';
 import https from 'https';
 import moment from 'moment-timezone';
 import FileSystem from './file-system';
+import {log, error} from '../log';
 import * as utilities from './utilities';
 
 class WebdavFileSystem extends FileSystem {
@@ -28,6 +29,7 @@ class WebdavFileSystem extends FileSystem {
     this.ignoreCertificateErrors = ignoreCertificateErrors;
     this.rootName = 'Cloud Data Root';
     this.separator = '/';
+    log(`Initializing webdav client: URL ${server}; IGNORE CERTIFICATE ERRORS: ${ignoreCertificateErrors}; USER: ${username}`);
   }
   reInitialize() {
     return new Promise((resolve, reject) => {
@@ -53,6 +55,7 @@ class WebdavFileSystem extends FileSystem {
           this.ignoreCertificateErrors = ignoreCertificateErrors;
           this.rootName = 'Cloud Data Root';
           this.separator = '/';
+          log(`Initializing webdav client: URL ${server}; IGNORE CERTIFICATE ERRORS: ${ignoreCertificateErrors}; USER: ${username}`);
           this.initialize()
             .then(resolve)
             .catch(reject);
@@ -61,6 +64,7 @@ class WebdavFileSystem extends FileSystem {
   }
   initialize() {
     if (!this.root) {
+      log('Initializing webdav client ERROR: Cloud Data server url not specified');
       return Promise.reject('Cloud Data server url not specified');
     }
     return new Promise((resolve, reject) => {
@@ -76,7 +80,9 @@ class WebdavFileSystem extends FileSystem {
       }
       try {
         this.webdavClient = createClient(this.root, options);
+        log('webdav client initialized');
       } catch (e) {
+        error(e);
         utilities.rejectError(reject)(e);
       }
       resolve();
@@ -87,11 +93,16 @@ class WebdavFileSystem extends FileSystem {
     return new Promise((resolve, reject) => {
       const directoryCorrected = directory || '';
       if (!this.webdavClient) {
+        error('Cloud Data client was not initialized');
         reject('Cloud Data client was not initialized');
       }
       const parentDirectory = this.joinPath(...this.parsePath(directoryCorrected).slice(0, -1));
+      log(`webdav: fetching directory "${parentDirectory}" contents...`);
       this.webdavClient.getDirectoryContents(directoryCorrected)
         .then(contents => {
+          log(`webdav: fetching directory "${parentDirectory}" contents: ${contents.length} results:`);
+          contents.map(c => log(c.filename));
+          log('');
           resolve(
             (
               directoryCorrected === ''
