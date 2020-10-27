@@ -53,7 +53,7 @@ const REQUEST_TIMEOUT_SECONDS = 10;
 
 function apiGetRequest(api, accessKey, endpoint) {
   return new Promise((resolve, reject) => {
-    log(`Performing API request ${api} with token ${accessKey} to endpoint ${endpoint}...`);
+    log(`Performing API request ${api} with token ${accessKey} to endpoint "${endpoint}"...`);
     const url = URL.resolve(api, endpoint);
     https.get(url, {
       method: 'GET',
@@ -72,13 +72,16 @@ function apiGetRequest(api, accessKey, endpoint) {
       });
       response.on('end', () => {
         try {
-          log(`API request ${api} to endpoint ${endpoint} result: ${data}`);
+          log(`API request ${url}: ${data}`);
           const json = JSON.parse(data);
           if (json && /^ok$/i.test(json.status)) {
             resolve(json.payload);
+          } else {
+            reject(json.message || `Error fetching ${url}`);
+            log(`Error performing API request ${url}: ${json.message}`);
           }
         } catch (e) {
-          log(`Error performing API request ${api} to endpoint ${endpoint}`);
+          log(`Error performing API request ${url}`);
           error(e);
           console.log('Error fetching', url);
           console.log(e);
@@ -87,12 +90,12 @@ function apiGetRequest(api, accessKey, endpoint) {
       });
     })
       .on('error', (e) => {
-        log(`Error performing API request ${api} to endpoint ${endpoint}: ${e.toString()}`);
+        log(`Error performing API request ${url}: ${e.toString()}`);
         error(e);
         reject(new Error(`Request error: ${e.toString()}`));
       })
       .on('timeout', () => {
-        log(`API request ${api} to endpoint ${endpoint} TIME OUT`);
+        log(`API request ${url} TIMEOUT`);
         reject(new Error(`Request ${url} timeout`));
       });
   });
