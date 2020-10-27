@@ -59,7 +59,10 @@ public final class ContextualPreferenceCreatorUtils {
 
     public static ContextualPreferenceVO getContextualPreferenceVO() {
         return new ContextualPreferenceVO(
-                TEST_STRING, TEST_STRING, PREFERENCE_TYPE, getCPExternalResource()
-        );
+                TEST_STRING, TEST_STRING, PREFERENCE_TYPE, getCPExternalResource());
+    }
+
+    public static List<ContextualPreference> getContextualPreferenceList() {
+        return Collections.singletonList(getContextualPreference());
     }
 }

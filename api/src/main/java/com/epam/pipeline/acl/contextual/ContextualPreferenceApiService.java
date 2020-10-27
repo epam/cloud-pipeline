@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.contextual;
+package com.epam.pipeline.acl.contextual;
 
 import com.epam.pipeline.controller.vo.ContextualPreferenceVO;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
+import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.security.acl.AclExpressions;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

@@ -21,7 +21,7 @@ import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceSearchRequest;
-import com.epam.pipeline.manager.contextual.ContextualPreferenceApiService;
+import com.epam.pipeline.acl.contextual.ContextualPreferenceApiService;
 import com.epam.pipeline.test.creator.contextual.ContextualPreferenceCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;
