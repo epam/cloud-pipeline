@@ -1045,13 +1045,16 @@ def main():
 
     try:
 
-        # Redefine default instance image if cloud metadata has specific rules for instance type
-        allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_img)
-        if allowed_instance and allowed_instance["instance_mask"]:
-            pipe_log('Found matching rule {instance_mask}/{ami} for requested instance type {instance_type}'
-                     '\nImage {ami} will be used'.format(instance_mask=allowed_instance["instance_mask"],
-                                                         ami=allowed_instance["instance_mask_ami"], instance_type=ins_type))
-            ins_img = allowed_instance["instance_mask_ami"]
+        if not ins_img or ins_img == 'null':
+            # Redefine default instance image if cloud metadata has specific rules for instance type
+            allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_img)
+            if allowed_instance and allowed_instance["instance_mask"]:
+                pipe_log('Found matching rule {instance_mask}/{ami} for requested instance type {instance_type}'
+                         '\nImage {ami} will be used'.format(instance_mask=allowed_instance["instance_mask"],
+                                                             ami=allowed_instance["instance_mask_ami"], instance_type=ins_type))
+                ins_img = allowed_instance["instance_mask_ami"]
+        else:
+            pipe_log('Specified in configuration image {ami} will be used'.format(ami=ins_img))
 
         ins_id, ins_ip = verify_run_id(run_id)
 
