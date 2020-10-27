@@ -320,7 +320,9 @@ class ClusterNodeMonitor extends React.Component {
     const newStart = moment([
       start.get('year'),
       start.get('month'),
-      start.get('date')
+      start.get('date'),
+      start.get('hour'),
+      start.get('minute')
     ]);
     if (end && newStart >= end) {
       end = moment(newStart);
@@ -349,9 +351,8 @@ class ClusterNodeMonitor extends React.Component {
       end.get('year'),
       end.get('month'),
       end.get('date'),
-      23,
-      59,
-      59
+      end.get('hour'),
+      end.get('minute')
     ]);
     if (start && start >= newEnd) {
       start = moment(newEnd);
