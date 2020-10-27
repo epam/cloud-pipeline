@@ -22,7 +22,7 @@ import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
 import com.epam.pipeline.acl.run.RunApiService;
 import com.epam.pipeline.acl.run.RunScheduleApiService;
-import com.epam.pipeline.manager.cluster.ClusterApiService;
+import com.epam.pipeline.acl.cluster.ClusterApiService;
 import com.epam.pipeline.manager.configuration.RunConfigurationApiService;
 import com.epam.pipeline.manager.configuration.ServerlessConfigurationApiService;
 import com.epam.pipeline.acl.contextual.ContextualPreferenceApiService;

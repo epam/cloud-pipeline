@@ -14,20 +14,24 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.test.creator;
+package com.epam.pipeline.test.creator.cluster;
+
+import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 
 import java.util.Collections;
 import java.util.List;
 
-public final class CommonCreatorConstants {
+public final class ClusterCreatorUtils {
 
-    public static final long ID = 1L;
-    public static final long ID_2 = 2L;
-    public static final int TEST_INT = 4;
-    public static final String TEST_STRING = "TEST";
-    public static final List<String> TEST_STRING_LIST = Collections.singletonList(TEST_STRING);
+    private ClusterCreatorUtils() {
 
-    private CommonCreatorConstants() {
+    }
 
+    public static MonitoringStats getMonitoringStats() {
+        return new MonitoringStats();
+    }
+
+    public static List<MonitoringStats> getMonitoringStatsList() {
+        return Collections.singletonList(getMonitoringStats());
     }
 }
