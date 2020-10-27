@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.configuration;
+package com.epam.pipeline.acl.configuration;
 
 import java.util.List;
 
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
+import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskList;
 import org.springframework.beans.factory.annotation.Autowired;

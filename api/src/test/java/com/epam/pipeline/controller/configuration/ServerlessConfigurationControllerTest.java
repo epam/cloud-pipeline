@@ -17,7 +17,7 @@
 package com.epam.pipeline.controller.configuration;
 
 import com.epam.pipeline.controller.Result;
-import com.epam.pipeline.manager.configuration.ServerlessConfigurationApiService;
+import com.epam.pipeline.acl.configuration.ServerlessConfigurationApiService;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Assert;
