@@ -22,6 +22,7 @@ import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
 import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -308,6 +309,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     private void tableShouldAppear() {
+        screenshot("Completed runs table " + Utils.randomSuffix());
         $(byClassName("ant-table-tbody")).should(Condition.or("table appears", appear, tableIsEmpty));
     }
 
