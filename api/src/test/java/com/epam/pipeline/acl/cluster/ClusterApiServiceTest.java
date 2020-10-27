@@ -50,6 +50,8 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,9 +61,9 @@ import static org.mockito.Mockito.doReturn;
 public class ClusterApiServiceTest extends AbstractAclTest {
 
     private final FilterPodsRequest filterPodsRequest = NodeCreatorUtils.getDefaultFilterPodsRequest();
-    private final NodeInstance nodeInstance = NodeCreatorUtils.getNodeInstance(1L, SIMPLE_USER);
-    private final NodeInstance anotherNodeInstance = NodeCreatorUtils.getNodeInstance(2L, TEST_STRING);
-    private final PipelineRun pipelineRun = PipelineCreatorUtils.getPipelineRun(1L, SIMPLE_USER);
+    private final NodeInstance nodeInstance = NodeCreatorUtils.getNodeInstance(ID, SIMPLE_USER);
+    private final NodeInstance anotherNodeInstance = NodeCreatorUtils.getNodeInstance(ID_2, TEST_STRING);
+    private final PipelineRun pipelineRun = PipelineCreatorUtils.getPipelineRun(ID, SIMPLE_USER);
     private final FilterNodesVO filterNodesVO = NodeCreatorUtils.getDefaultFilterNodesVO();
     private final NodeDisk nodeDisk = NodeCreatorUtils.getDefaultNodeDisk();
     private final MonitoringStats monitoringStats = ClusterCreatorUtils.getMonitoringStats();
@@ -182,7 +184,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldReturnNodeInstanceWhenPermissionIsGranted() {
-        final NodeInstance nodeInstance = NodeCreatorUtils.getNodeInstance(1L, TEST_STRING);
+        final NodeInstance nodeInstance = NodeCreatorUtils.getNodeInstance(ID, TEST_STRING);
         initAclEntity(nodeInstance, AclPermission.READ);
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
         mockRun(pipelineRun);
@@ -215,7 +217,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldReturnNodeThroughRequestWhenPermissionIsGranted() {
-        final NodeInstance nodeInstance = NodeCreatorUtils.getNodeInstance(1L, TEST_STRING);
+        final NodeInstance nodeInstance = NodeCreatorUtils.getNodeInstance(ID, TEST_STRING);
         initAclEntity(nodeInstance, AclPermission.READ);
         mockRun(pipelineRun);
         mockNode(nodeInstance);
@@ -249,7 +251,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldTerminateNodeWhenPermissionIsGranted() {
-        final NodeInstance nodeInstance = NodeCreatorUtils.getNodeInstance(1L, TEST_STRING);
+        final NodeInstance nodeInstance = NodeCreatorUtils.getNodeInstance(ID, TEST_STRING);
         initAclEntity(nodeInstance, AclPermission.READ);
         mockNode(nodeInstance);
         mockRun(pipelineRun);
@@ -359,17 +361,17 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldReturnInstanceTypes() {
-        doReturn(instanceTypes).when(mockInstanceOfferManager).getAllowedInstanceTypes(1L, true);
+        doReturn(instanceTypes).when(mockInstanceOfferManager).getAllowedInstanceTypes(ID, true);
 
-        assertThat(clusterApiService.getAllowedInstanceTypes(1L, true)).isEqualTo(instanceTypes);
+        assertThat(clusterApiService.getAllowedInstanceTypes(ID, true)).isEqualTo(instanceTypes);
     }
 
     @Test
     @WithMockUser
     public void shouldReturnToolInstanceTypes() {
-        doReturn(instanceTypes).when(mockInstanceOfferManager).getAllowedToolInstanceTypes(1L, true);
+        doReturn(instanceTypes).when(mockInstanceOfferManager).getAllowedToolInstanceTypes(ID, true);
 
-        assertThat(clusterApiService.getAllowedToolInstanceTypes(1L, true)).isEqualTo(instanceTypes);
+        assertThat(clusterApiService.getAllowedToolInstanceTypes(ID, true)).isEqualTo(instanceTypes);
     }
 
     @Test
@@ -378,9 +380,9 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
                 NodeCreatorUtils.getDefaultAllowedInstanceAndPriceTypes();
         doReturn(allowedInstanceAndPriceTypes).when(mockInstanceOfferManager)
-                .getAllowedInstanceAndPriceTypes(1L, 2L, true);
+                .getAllowedInstanceAndPriceTypes(ID, ID_2, true);
 
-        assertThat(clusterApiService.getAllowedInstanceAndPriceTypes(1L, 2L, true))
+        assertThat(clusterApiService.getAllowedInstanceAndPriceTypes(ID, ID_2, true))
                 .isEqualTo(allowedInstanceAndPriceTypes);
     }
 
