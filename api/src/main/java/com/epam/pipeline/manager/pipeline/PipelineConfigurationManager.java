@@ -173,14 +173,14 @@ public class PipelineConfigurationManager {
             configuration.setInstanceDisk(defaultConfig.getInstanceDisk());
         }
         if (runVO.getInstanceType() != null) {
-            configuration.setInstanceType(String.valueOf(runVO.getInstanceType()));
+            configuration.setInstanceType(runVO.getInstanceType());
         } else {
             configuration.setInstanceType(defaultConfig.getInstanceType());
         }
-        if (runVO.getTimeout() != null) {
-            configuration.setTimeout(runVO.getTimeout());
+        if (runVO.getInstanceImage() != null) {
+            configuration.setInstanceImage(runVO.getInstanceImage());
         } else {
-            configuration.setTimeout(defaultConfig.getTimeout());
+            configuration.setInstanceImage(defaultConfig.getInstanceImage());
         }
 
         //client always sends actual node-count
