@@ -62,10 +62,10 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
         userCount = conf.size() / 2;
         ArrayList<Object[]> dataList = new ArrayList<>();
         for (int i = 1; i <= userCount; i++) {
-            String login = "e2e.ui.login" + i;
-            String password = "e2e.ui.pass" + i;
+            String login = conf.getProperty("e2e.ui.login" + i);
+            String password = conf.getProperty("e2e.ui.pass" + i);
             System.out.println(String.format("%s::%s", login, password));
-            dataList.add(new Object[]{conf.getProperty(login), conf.getProperty(password)});
+            dataList.add(new Object[]{login, password});
         }
         userList = dataList.toArray(new Object[dataList.size()][]);
     }
@@ -114,6 +114,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
     @AfterClass(alwaysRun=true)
     public void cleanUp(){
         open(C.ROOT_ADDRESS);
+        loginAs(admin);
         library()
                 .removeFolder(PARALLEL_TEST_FOLDER);
     }
