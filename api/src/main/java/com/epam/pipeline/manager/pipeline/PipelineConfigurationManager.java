@@ -177,6 +177,11 @@ public class PipelineConfigurationManager {
         } else {
             configuration.setInstanceType(defaultConfig.getInstanceType());
         }
+        if (runVO.getTimeout() != null) {
+            configuration.setTimeout(runVO.getTimeout());
+        } else {
+            configuration.setTimeout(defaultConfig.getTimeout());
+        }
         if (runVO.getInstanceImage() != null) {
             configuration.setInstanceImage(runVO.getInstanceImage());
         } else {
