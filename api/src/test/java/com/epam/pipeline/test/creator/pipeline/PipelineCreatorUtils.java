@@ -14,20 +14,23 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.test.creator;
+package com.epam.pipeline.test.creator.pipeline;
 
-import java.util.Collections;
-import java.util.List;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 
-public final class CommonCreatorConstants {
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
-    public static final long ID = 1L;
-    public static final long ID_2 = 2L;
-    public static final int TEST_INT = 4;
-    public static final String TEST_STRING = "TEST";
-    public static final List<String> TEST_STRING_LIST = Collections.singletonList(TEST_STRING);
+public final class PipelineCreatorUtils {
 
-    private CommonCreatorConstants() {
+    private PipelineCreatorUtils() {
 
+    }
+
+    public static PipelineRun getPipelineRun(Long id, String owner) {
+        final PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setId(id);
+        pipelineRun.setOwner(owner);
+        pipelineRun.setName(TEST_STRING);
+        return pipelineRun;
     }
 }

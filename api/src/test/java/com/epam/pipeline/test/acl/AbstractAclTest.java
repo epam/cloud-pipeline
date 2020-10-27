@@ -28,10 +28,12 @@ import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.domain.PrincipalSid;
+import org.springframework.security.acls.model.Permission;
 import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -50,8 +52,9 @@ public abstract class AbstractAclTest {
     protected static final String ADMIN_ROLE = "ADMIN";
     protected static final String GENERAL_USER_ROLE = "USER";
     protected static final String SIMPLE_USER_ROLE = "SIMPLE_USER";
-    protected static final String SIMPLE_USER= "SIMPLE_USER";
     protected static final String OWNER_USER = "OWNER";
+    protected static final String SIMPLE_USER = "SIMPLE_USER";
+    protected static final String TEST_NAME = "TEST_NAME";
 
     @Autowired
     protected PermissionGrantingStrategy grantingStrategy;
@@ -64,6 +67,11 @@ public abstract class AbstractAclTest {
 
     @Autowired
     protected PermissionFactory permissionFactory;
+
+    protected void initAclEntity(AbstractSecuredEntity entity, Permission permission) {
+        initAclEntity(entity,
+                Collections.singletonList(new UserPermission(SIMPLE_USER, permission.getMask())));
+    }
 
     protected void initAclEntity(AbstractSecuredEntity entity) {
         initAclEntity(entity, Collections.emptyList());
@@ -121,5 +129,12 @@ public abstract class AbstractAclTest {
         public Sid toSid() {
             return new GrantedAuthoritySid(authorityName);
         }
+    }
+
+    @SafeVarargs
+    protected final <T> List<T>  mutableListOf(T... objects) {
+        final List<T> list = new ArrayList<>();
+        Collections.addAll(list, objects);
+        return list;
     }
 }

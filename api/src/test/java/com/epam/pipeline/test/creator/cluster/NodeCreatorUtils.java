@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeSpec;
@@ -84,6 +85,15 @@ public final class NodeCreatorUtils {
         return nodeInstance;
     }
 
+    public static NodeInstance getNodeInstance(Long id, String owner) {
+        final NodeInstance nodeInstance = new NodeInstance();
+        nodeInstance.setId(id);
+        nodeInstance.setOwner(owner);
+        nodeInstance.setPipelineRun(PipelineCreatorUtils.getPipelineRun(id, owner));
+        nodeInstance.setName(TEST_STRING);
+        return nodeInstance;
+    }
+
     public static InstanceType getDefaultInstanceType() {
         return InstanceType.builder()
                 .name(TEST_STRING)
@@ -106,8 +116,16 @@ public final class NodeCreatorUtils {
                 TEST_STRING, TEST_STRING, objectMeta, new NodeSpec(), new NodeStatus());
     }
 
+    public static Node getEmptyNode() {
+        return new Node();
+    }
+
     public static MasterNode getDefaultMasterNode() {
         return MasterNode.fromNode(getDefaultNode(), TEST_STRING);
+    }
+
+    public static MasterNode getMasterNodeWithEmptyNode() {
+        return MasterNode.fromNode(getEmptyNode(), TEST_STRING);
     }
 
     public static FilterNodesVO getDefaultFilterNodesVO() {
@@ -131,5 +149,13 @@ public final class NodeCreatorUtils {
 
     public static NodeDisk getDefaultNodeDisk() {
         return new NodeDisk(ID, TEST_STRING, LDT);
+    }
+
+    public static List<NodeDisk> getNodeDiskList() {
+        return Collections.singletonList(getDefaultNodeDisk());
+    }
+
+    public static List<InstanceType> getInstanceTypeList() {
+        return Collections.singletonList(getDefaultInstanceType());
     }
 }

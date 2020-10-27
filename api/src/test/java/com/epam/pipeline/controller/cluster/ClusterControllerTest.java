@@ -24,7 +24,7 @@ import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
-import com.epam.pipeline.manager.cluster.ClusterApiService;
+import com.epam.pipeline.acl.cluster.ClusterApiService;
 import com.epam.pipeline.test.creator.cluster.NodeCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.assertj.core.api.Assertions;
