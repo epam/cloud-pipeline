@@ -97,10 +97,10 @@ class WebdavFileSystem extends FileSystem {
         reject('Cloud Data client was not initialized');
       }
       const parentDirectory = this.joinPath(...this.parsePath(directoryCorrected).slice(0, -1));
-      log(`webdav: fetching directory "${parentDirectory}" contents...`);
+      log(`webdav: fetching directory "${directoryCorrected}" contents...`);
       this.webdavClient.getDirectoryContents(directoryCorrected)
         .then(contents => {
-          log(`webdav: fetching directory "${parentDirectory}" contents: ${contents.length} results:`);
+          log(`webdav: fetching directory "${directoryCorrected}" contents: ${contents.length} results:`);
           contents.map(c => log(c.filename));
           log('');
           resolve(
@@ -133,7 +133,14 @@ class WebdavFileSystem extends FileSystem {
               )
           );
         })
-        .catch(utilities.rejectError(reject));
+        .catch(
+          utilities.rejectError(
+            reject,
+            directoryCorrected
+              ? undefined
+              : 'Typically, this means that you don\'t have any data storages available for remote access. Please contact the platform support to create them for you'
+          )
+        );
     });
   }
   parsePath (directory, relativeToRoot = false) {
