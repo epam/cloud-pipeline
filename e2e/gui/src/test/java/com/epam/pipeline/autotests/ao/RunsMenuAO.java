@@ -82,6 +82,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO completedRuns() {
         $(byId("completed-runs-button")).shouldBe(visible).click();
+        sleep(2, SECONDS);
         tableShouldAppear();
         return new RunsMenuAO();
     }

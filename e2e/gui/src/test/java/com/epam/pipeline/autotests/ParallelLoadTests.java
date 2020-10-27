@@ -96,9 +96,9 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
         closeDriverObjects();
     }
 
-    @AfterMethod(alwaysRun=true)
-    public static void closeDriverObjects(){
-        getWebDriver().close();
+    @AfterClass(alwaysRun=true)
+    public static void closeDriverObjects() {
+        getWebDriver().quit();
     }
 
     @BeforeMethod(alwaysRun = true)
