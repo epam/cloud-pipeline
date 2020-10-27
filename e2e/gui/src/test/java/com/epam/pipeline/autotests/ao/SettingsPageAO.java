@@ -497,11 +497,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return this;
             }
 
-            public UsersTabAO setSearchName(String name) {
-                actions().sendKeys(name).perform();
-                return this;
-            }
-
             public UsersTabAO searchUser(String name) {
                 sleep(1, SECONDS);
                 return clickSearch()
