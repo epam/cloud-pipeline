@@ -63,6 +63,15 @@ public final class ConfigurationCreatorUtils {
         return runConfiguration;
     }
 
+    public static RunConfigurationVO getRunConfigurationVO() {
+        final RunConfigurationVO runConfigurationVO = new RunConfigurationVO();
+        runConfigurationVO.setName(TEST_STRING);
+        runConfigurationVO.setDescription(TEST_STRING);
+        runConfigurationVO.setParentId(ID);
+        runConfigurationVO.setEntries(ENTRIES);
+        return runConfigurationVO;
+    }
+
     public static RunConfigurationVO getRunConfigurationVO(Long id, Long parentId) {
         final RunConfigurationVO runConfigurationVO = new RunConfigurationVO();
         runConfigurationVO.setId(id);

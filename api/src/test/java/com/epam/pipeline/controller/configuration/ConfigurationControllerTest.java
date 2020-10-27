@@ -18,7 +18,7 @@ package com.epam.pipeline.controller.configuration;
 
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
-import com.epam.pipeline.manager.configuration.RunConfigurationApiService;
+import com.epam.pipeline.acl.configuration.RunConfigurationApiService;
 import com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;

@@ -167,7 +167,7 @@ public class RunConfigurationApiServiceTest extends AbstractAclTest {
         mockUser(SIMPLE_USER);
         doReturn(authentication).when(mockAuthManager).getAuthentication();
         doReturn(true).when(mockConfigurationProviderManager)
-                .hasNoPermission(runConfigurationEntry, "EXECUTE");
+                .hasNoPermission(runConfigurationEntry, PERMISSION_EXECUTE);
         doReturn(runConfiguration).when(mockRunConfigurationManager).update(runConfigurationVO);
 
         assertThrows(AccessDeniedException.class, () -> runConfigurationApiService.update(runConfigurationVO));
