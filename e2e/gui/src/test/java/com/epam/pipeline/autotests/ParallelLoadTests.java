@@ -23,9 +23,10 @@ import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -75,7 +76,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
         return userList;
     }
 
-    @BeforeClass
+    @BeforeTest
     public void addUsers() {
         setUp();
         loginAs(admin);
@@ -93,10 +94,10 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
                 .set(WRITE, ALLOW)
                 .set(EXECUTE, ALLOW)
                 .closeAll();
-        closeDriverObjects();
+        getWebDriver().close();
     }
 
-    @AfterClass(alwaysRun=true)
+    @AfterTest(alwaysRun=true)
     public static void closeDriverObjects() {
         getWebDriver().quit();
     }
