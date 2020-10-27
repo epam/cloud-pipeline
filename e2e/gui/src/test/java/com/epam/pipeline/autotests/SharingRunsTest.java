@@ -40,6 +40,7 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
     private String runID = "";
     private String errorMessage = "Url '{\"path\":\"%s\"}' is already used for run '%s'.";
     private String endpointsLink = "";
+    private String endpointsName = "";
     private String userGroup = "ROLE_USER";
     private int timeout = 60;
 
@@ -58,12 +59,14 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
                 .validateEndpointPage(LOGIN)
                 .assertURLEndsWith(friendlyURL)
                 .closeTab();
-        endpointsLink = runsMenu()
-                .showLog(runID)
-                .getEndpointLink();
+        runsMenu()
+                .log(getLastRunId(), log -> {
+                        endpointsLink = log.getEndpointLink();
+                        endpointsName = log.getEndpointName();
+                });
     }
 
-    @Test(priority = 1, dependsOnMethods = {"validationOfFriendlyURL"})
+    @Test(dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-2677"})
     public void validationOfFriendlyURLNegative() {
         tools()
@@ -73,7 +76,7 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
                         friendlyURL, format("%,d", Integer.parseInt(runID))));
     }
 
-    @Test(priority = 2, dependsOnMethods = {"validationOfFriendlyURL"})
+    @Test(dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-2678"})
     public void shareToolRunWithUser() {
         try {
@@ -111,7 +114,7 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
         }
     }
 
-    @Test(priority = 2, dependsOnMethods = {"validationOfFriendlyURL"})
+    @Test(dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-2679"})
     public void shareToolRunWithUserGroup() {
         try {
@@ -143,6 +146,30 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
             open(endpointsLink, "", user.login, user.password);
             new ToolPageAO(endpointsLink)
                     .assertPageTitleIs("401 Authorization Required");
+        } finally {
+            open(C.ROOT_ADDRESS);
+            logout();
+            loginAs(admin);
+        }
+    }
+
+    @Test(dependsOnMethods = {"validationOfFriendlyURL"})
+    @TestCase({"EPMCMBIBPC-2680"})
+    public void displayingSharingToolAtServicesPanel() {
+        try {
+            runsMenu()
+                    .showLog(runID)
+                    .shareWithUser(user.login)
+                    .validateShareLink(user.login);
+            logout();
+            Utils.restartBrowser(C.ROOT_ADDRESS);
+            sleep(timeout, SECONDS);
+            loginAs(user);
+            home()
+                    .configureDashboardPopUpOpen()
+                    .markCheckboxByName("Services")
+                    .ok();
+
         } finally {
             open(C.ROOT_ADDRESS);
             logout();

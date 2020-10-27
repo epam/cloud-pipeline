@@ -15,17 +15,25 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.SelenideElement;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
 import java.util.List;
+import java.util.Map;
 
+import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.actions;
+import static com.epam.pipeline.autotests.ao.Primitive.CONFIGURATION;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
+import static org.testng.Assert.fail;
 
 public class NavigationHomeAO implements AccessObject<PipelinesLibraryAO> {
 
@@ -40,10 +48,46 @@ public class NavigationHomeAO implements AccessObject<PipelinesLibraryAO> {
             }
         };
     }
+    private final Map<Primitive, SelenideElement> elements = initialiseElements(
+            entry(CONFIGURATION, $(button("Configure")))
+    );
 
     public GlobalSearchAO globalSearch() {
         actions().sendKeys(Keys.chord(Keys.CONTROL, "F")).perform();
         return new GlobalSearchAO();
     }
 
+    public ConfigureDashboardPopUp configureDashboardPopUpOpen() {
+        click(CONFIGURATION);
+        return new ConfigureDashboardPopUp(this);
+    }
+
+    public NavigationHomeAO checkEndpointsLinkOnServicesPanel(String endpoint) {
+       return this;
+    }
+
+    @Override
+    public Map<Primitive, SelenideElement> elements() {
+        return elements;
+    }
+
+    public static class ConfigureDashboardPopUp extends PopupAO<ConfigureDashboardPopUp, NavigationHomeAO> {
+
+        public ConfigureDashboardPopUp(NavigationHomeAO parentAO) {
+            super(parentAO);
+        }
+
+        public ConfigureDashboardPopUp markCheckboxByName(String name) {
+            if (name.equals("Services")) {
+                SelenideElement checkBox = context()
+                        .find(byXpath(format(".//span[.='%s']/preceding-sibling::span", name)));
+                if(!checkBox.has(cssClass("ant-checkbox-checked"))) {
+                    checkBox.click();
+                }
+            } else {
+                fail("Wrong checkbox name was selected");
+            }
+            return this;
+        }
+    }
 }

@@ -231,6 +231,10 @@ public class LogAO implements AccessObject<LogAO> {
         return get(ENDPOINT).shouldBe(visible).attr("href");
     }
 
+    public String getEndpointName() {
+        return get(ENDPOINT).shouldBe(visible).text();
+    }
+
     public String getEndpointLink(String link){
         return $(withText("Endpoint")).closest("tr").$(byXpath(format(".//a[.='%s']", link)))
                 .shouldBe(visible).attr("href");
