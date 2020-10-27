@@ -18,7 +18,7 @@ package com.epam.pipeline.controller.configuration;
 
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
-import com.epam.pipeline.manager.configuration.ServerlessConfigurationApiService;
+import com.epam.pipeline.acl.configuration.ServerlessConfigurationApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;

@@ -25,6 +25,7 @@ import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
+import com.epam.pipeline.manager.configuration.ServerlessConfigurationManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -182,6 +183,9 @@ public class AclTestConfiguration {
 
     @MockBean
     public BillingManager billingManager;
+
+    @MockBean
+    protected ServerlessConfigurationManager serverlessConfigurationManager;
 
     @MockBean
     protected LustreFSManager lustreFSManager;

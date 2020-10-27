@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.configuration;
 
+import com.epam.pipeline.acl.configuration.RunConfigurationApiService;
 import com.epam.pipeline.app.TestApplicationWithAclSecurity;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.dao.configuration.RunConfigurationDao;
