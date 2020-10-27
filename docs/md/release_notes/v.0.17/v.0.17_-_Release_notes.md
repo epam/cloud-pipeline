@@ -2,6 +2,7 @@
 
 - [Billing reports enhancements](#billing-reports-enhancements)
 - [System dictionaries](#system-dictionaries)
+- [Sending of email notifications enhancements](#sending-of-email-notifications-enhancements)
 - [Allowed price types for a cluster master node](#allowed-price-types-for-a-cluster-master-node)
 - ["Max" data series in the resources Monitoring](#max-data-series-at-the-resource-monitoring-dashboard)
 - [Export custom user's attributes](#export-custom-users-attributes)
@@ -172,6 +173,77 @@ In the GUI, such connection is being handled in the following way:
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemDictionaries_05.png)
 
 For more details see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-dictionaries).
+
+## Sending of email notifications enhancements
+
+Several additions and updates were implemented in the current version for the System Email notifications.  
+You can view the general mechanism of the **Cloud PIpeline** email notifications sending described [here](../../manual/12_Manage_Settings/12.9._Change_email_notification.md#configure-automatic-email-notifications-on-users-runs).
+
+### Additional options for `IDLE`/`HIGH-CONSUMED` runs notifications
+
+Previously, to customize a platform behavior with respect to **_idle_** or **_high-consumed_** runs, admin had to set a number of settings in two different system forms - **Preferences** and **Email Notifications**. It was inconvenient and could confused users.  
+It would be nice to duplicate input fields for some preferences into the **Email Notifications** section - for faster and more convenient input of their values, and to avoid possible confusion and mistakes.
+
+In the current version, it was implemented. Now:
+
+1. For **`HIGH_CONSUMED_RESOURCES`** notification type settings, the following input fields were added:
+    - "_Threshold of disk consume (%)_" that duplicates **`system.disk.consume.threshold`** preference value
+    - "_Threshold of memory consume (%)_" that duplicates **`system.memory.consume.threshold`** preference value  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_01.png)  
+    Saving of the listed values changes at the **Email Notifications** form will automatically change the corresponding values in the **Preferences**, and vice versa.
+2. For **`IDLE_RUN`**, **`IDLE_RUN_PAUSED`**, **`IDLE_RUN_STOPPED`** notification types settings, the following input fields were added:
+    - "_Max duration of idle (min)_" that duplicates **`system.max.idle.timeout.minutes`** preference value
+    - "_Action delay (min)_" that duplicates **`system.idle.action.timeout.minutes`** preference value
+    - "_CPU idle threshold (%)_" that duplicates **`system.idle.cpu.threshold`** preference value
+    - "_Action_" that should duplicates **`system.idle.action`** preference value  
+    These 4 fields are united into a single section for all **_idle_** notification types - you may configure these fields from any **_idle_** notification settings tab.  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_02.png)  
+    Saving of the listed values changes at the **Email Notifications** form will automatically change the corresponding values in the **Preferences**, and vice versa.
+
+For all these fields, help tooltips were added to clarify their destination, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_03.png)
+
+### Notifications for long paused runs
+
+In **`v0.17`**, new email notification types were added:
+
+1. **`LONG_PAUSED`** - the notification that is being sent when the run is in the **_PAUSED_** state for a long time.  
+    This new notification type has the following additional configurable parameters:
+    - _Threshold (sec)_ - it is a time interval of the run **_PAUSED_** state after which the notification will be sent
+    - _Resend delay (sec)_ - it is a delay after which the notification will be sent again, if the run is still in the **_PAUSED_** state  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_04.png)
+2. **`LONG_PAUSED_STOPPED`** - the notification that is being sent when the run that has been in the `PAUSED` state for a long time, has been stopped by the system.  
+    This new notification type has the following additional configurable parameter:
+    - _Threshold (sec)_ - it is a time interval of the run **_PAUSED_** state after which the notification will be sent and the run will be terminated  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_05.png)
+
+There is a common setting for the both described notification types - _Action_. This setting could be only `NOTIFY` or `STOP`. It defines the system behavior with the long paused runs:
+
+- if the _Action_ is `NOTIFY` - for the appropriate run, the notification **`LONG_PAUSED`** will being sent according to its settings
+- if the _Action_ is `STOP` - for the appropriate run, the notification **`LONG_PAUSED_STOPPED`** will be sent once and the run will be terminated
+
+Action type also can be configured via the Systemp preference **`system.long.paused.action`**. Saving of the _Action_ setting value changes at the **Email Notifications** form will automatically change the corresponding value in the **Preferences**, and vice versa.
+
+### "Resend" setting for `IDLE` runs
+
+Previously, **`IDLE_RUN`** notifications were sent only once and then configured action had being performed.  
+In the current version, the ability to resend this notifications was implemented.  
+It could be configured via the corresponding field at the **`IDLE_RUN`** notification type form:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_06.png)  
+If the _Resend delay_ is specified and the _Action_ for the **_idle_** runs is set as `NOTIFY`, then the **`IDLE_RUN`** notification will being resent every appropriate time interval.
+
+### Allow to exclude certain node type from the specific notifications
+
+For quite small/cheap nodes, the users may not want to receive the following email notifications for the run:
+
+- **`IDLE_RUN`**
+- **`LONG_PAUSED`**
+- **`LONG_RUNNING`**
+
+So, a new System preference **`system.notifications.exclude.instance.types`** was implemented to control that behavior.  
+If the node type is specified in this preference, listed above notifications will not be submitted to the jobs, that use this node type.  
+This preference allows a comma-separated list of the node types and wildcards, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_07.png)
 
 ## Allowed price types for a cluster master node
 
