@@ -37,6 +37,10 @@ import java.util.Properties;
 
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
+import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
+import static com.epam.pipeline.autotests.utils.Privilege.READ;
+import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
+import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
 
 public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implements Navigation, Authorization {
 
@@ -44,6 +48,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
     public static final int userCount;
     public static final Object[][] userList;
     private static final String PARALLEL_TEST_FOLDER = "parallelTestFolder";
+    private final String userRoleGroup = "ROLE_USER";
 
     static {
         String propFilePath = System.getProperty(CONF_PATH_PROPERTY, "parallelLoad.conf");
@@ -57,7 +62,10 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
         userCount = conf.size() / 2;
         ArrayList<Object[]> dataList = new ArrayList<>();
         for (int i = 1; i <= userCount; i++) {
-            dataList.add(new Object[]{conf.getProperty("e2e.ui.login" + i), conf.getProperty("e2e.ui.pass" + i)});
+            String login = "e2e.ui.login" + i;
+            String password = "e2e.ui.pass" + i;
+            System.out.println(String.format("%s::%s", login, password));
+            dataList.add(new Object[]{conf.getProperty(login), conf.getProperty(password)});
         }
         userList = dataList.toArray(new Object[dataList.size()][]);
     }
@@ -74,7 +82,17 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
         Arrays.stream(userList)
             .forEach(this::addUser);
         library()
-                .createFolder(PARALLEL_TEST_FOLDER);
+                .createFolder(PARALLEL_TEST_FOLDER)
+                .clickOnFolder(PARALLEL_TEST_FOLDER)
+                .clickEditButton()
+                .clickOnPermissionsTab()
+                .addNewGroup(userRoleGroup)
+                .selectByName(userRoleGroup)
+                .showPermissions()
+                .set(READ, ALLOW)
+                .set(WRITE, ALLOW)
+                .set(EXECUTE, ALLOW)
+                .closeAll();
         closeDriverObjects();
     }
 
@@ -102,6 +120,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
 
     @Test(dataProvider = "openNewBrowser", threadPoolSize = 10)
     public void parallelLoadTest(String name, String pass) {
+        System.out.println(String.format("Name %s - Password %s", name, pass));
         Account testUser = new Account(name, pass);
         loginAs(testUser);
         long testStartTime = System.currentTimeMillis();
