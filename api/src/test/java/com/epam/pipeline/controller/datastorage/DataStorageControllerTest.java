@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.controller.datastorage;
 
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.GenerateDownloadUrlVO;
@@ -50,13 +51,12 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
@@ -65,9 +65,10 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.fileUpload;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = DataStorageController.class)
@@ -136,6 +137,17 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     private static final String EMPTY_STRING = "";
     private static final String PAGE = "page";
     private static final String RUN_ID = "runId";
+    private static final String FILE_NAME = "file.txt";
+    private static final String FILE_SIZE = "0 Kb";
+    private static final String MULTIPART_CONTENT_TYPE =
+            "multipart/form-data; boundary=--------------------------boundary";
+    private static final String MULTIPART_CONTENT = "----------------------------boundary\r\n" +
+            "Content-Disposition: form-data; name=\"file\"; filename=\"file.txt\"\r\n" +
+            "Content-Type: application/octet-stream\r\n" +
+            "\r\n" +
+            TEST +
+            "\r\n" +
+            "----------------------------boundary--";
     private static final ContentDisposition CONTENT_DISPOSITION = ContentDisposition.INLINE;
     private static final Map<String, String> TAGS = Collections.singletonMap(TEST, TEST);
     private static final TypeReference<Result<Integer>> INTEGER_TYPE = new TypeReference<Result<Integer>>() { };
@@ -466,21 +478,23 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldUploadFile() throws Exception {
         final UploadFileMetadata uploadFileMetadata = new UploadFileMetadata();
-        final String contentType = MediaType.MULTIPART_FORM_DATA_VALUE + ";boundary=";
-        final MockMultipartFile file = new MockMultipartFile("data", "file.txt", "text/plain", "some xml".getBytes());
-        final MockMultipartFile feli = new MockMultipartFile("data", "file2.txt", "text/plain", "some xml".getBytes());
-        final MvcResult mvcResult = mvc().perform(fileUpload(String.format(DATASTORAGE_ITEMS_UPLOAD_URL, ID))
-                .file(file)
-                .file(feli)
-                .servletPath(SERVLET_PATH)
-                .contentType(contentType)
-                .param(PATH, TEST))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        Mockito.verify(mockStorageApiService).createDataStorageFile(ID, TEST, TEST, TEST.getBytes());
-
-        assertResponse(mvcResult, uploadFileMetadata, new TypeReference<Result<UploadFileMetadata>>() { });
+        uploadFileMetadata.setFileName(FILE_NAME);
+        uploadFileMetadata.setFileSize(FILE_SIZE);
+        uploadFileMetadata.setFileType(OCTET_STREAM_CONTENT_TYPE);
+        final List<UploadFileMetadata> uploadFileMetadataList = Collections.singletonList(uploadFileMetadata);
+        final MvcResult mvcResult = mvc().perform(post(String.format(DATASTORAGE_ITEMS_UPLOAD_URL, ID))
+                    .content(MULTIPART_CONTENT)
+                    .servletPath(SERVLET_PATH)
+                    .contentType(MULTIPART_CONTENT_TYPE)
+                    .param(PATH, TEST))
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
+                    .andReturn();
+        Mockito.verify(mockStorageApiService).createDataStorageFile(ID, TEST, FILE_NAME, TEST.getBytes());
+        final List<UploadFileMetadata> actualResult = JsonMapper.parseData(
+                mvcResult.getResponse().getContentAsString(), new TypeReference<List<UploadFileMetadata>>() { }
+                );
+        Assert.assertEquals(uploadFileMetadataList, actualResult);
     }
 
     @Test
@@ -491,25 +505,24 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldUploadStream() throws Exception {
-        final UploadFileMetadata uploadFileMetadata = new UploadFileMetadata();
-        final String contentType = MediaType.MULTIPART_FORM_DATA_VALUE + ";boundary=";
-        final MockMultipartFile file =
-                new MockMultipartFile("data", "file.txt", "text/plain", "some xml".getBytes());
-        final MockMultipartFile feli =
-                new MockMultipartFile("data", "file2.txt", "text/plain", "some xml".getBytes());
-        final MvcResult mvcResult = mvc().perform(fileUpload(String.format(DATASTORAGE_ITEMS_UPLOAD_URL, ID))
-                .file(feli)
-                .file(file)
+        final List<DataStorageFile> dataStorageFiles = Collections.singletonList(file);
+        Mockito.doReturn(file).when(mockStorageApiService).createDataStorageFile(
+                Mockito.eq(ID), Mockito.eq(TEST), Mockito.eq(FILE_NAME), (InputStream) Mockito.any()
+        );
+
+        final MvcResult mvcResult = mvc().perform(post(String.format(DATASTORAGE_UPLOAD_STREAM_URL, ID))
+                .content(MULTIPART_CONTENT)
                 .servletPath(SERVLET_PATH)
-                .contentType(contentType)
+                .contentType(MULTIPART_CONTENT_TYPE)
                 .param(PATH, TEST))
                 .andExpect(status().isOk())
+                .andExpect(content().contentType(EXPECTED_CONTENT_TYPE))
                 .andReturn();
 
-
-        Mockito.verify(mockStorageApiService).createDataStorageFile(ID, TEST, TEST, TEST.getBytes());
-
-        assertResponse(mvcResult, uploadFileMetadata, new TypeReference<Result<UploadFileMetadata>>() { });
+        Mockito.verify(mockStorageApiService).createDataStorageFile(
+                Mockito.eq(ID), Mockito.eq(TEST), Mockito.eq(FILE_NAME), (InputStream) Mockito.any()
+        );
+        assertResponse(mvcResult, dataStorageFiles, new TypeReference<Result<List<DataStorageFile>>>() { });
     }
 
     @Test
@@ -601,7 +614,6 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldGenerateItemUrlAndRedirect() throws Exception {
-        final String result = "redirect:/TEST";
         final DataStorageDownloadFileUrl url = DatastorageCreatorUtils.getDataStorageDownloadFileUrl();
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(PATH, TEST_PATH);
@@ -610,13 +622,46 @@ public class DataStorageControllerTest extends AbstractControllerTest {
                 ID, TEST_PATH, null, CONTENT_DISPOSITION
         );
 
-        final MvcResult mvcResult = performRequest(get(String.format(DOWNLOAD_REDIRECT_URL, ID)).params(params));
+        final MvcResult mvcResult = mvc().perform(get(String.format(DOWNLOAD_REDIRECT_URL, ID))
+                        .servletPath(SERVLET_PATH)
+                        .contentType(EXPECTED_CONTENT_TYPE)
+                        .params(params))
+                        .andExpect(status().isFound())
+                        .andExpect(redirectedUrl(TEST))
+                        .andReturn();
 
         Mockito.verify(mockStorageApiService).generateDataStorageItemUrl(
                 ID, TEST_PATH, null, CONTENT_DISPOSITION
         );
-        final String actual = mvcResult.getResponse().getContentAsString();
-        assertThat("\"" + result + "\"").isEqualTo(actual);
+        final String actual = mvcResult.getResponse().getRedirectedUrl();
+        assertThat(actual).isEqualTo(TEST);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldGenerateItemUrlAndRedirectOwner() throws Exception {
+        final DataStorageDownloadFileUrl url = DatastorageCreatorUtils.getDataStorageDownloadFileUrl();
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add(PATH, TEST_PATH);
+        params.add(VERSION, TEST);
+        params.add(CONTENT_DISPOSITION_PARAM, CONTENT_DISPOSITION.name());
+        Mockito.doReturn(url).when(mockStorageApiService).generateDataStorageItemUrlOwner(
+                ID, TEST_PATH, TEST, CONTENT_DISPOSITION
+        );
+
+        final MvcResult mvcResult = mvc().perform(get(String.format(DOWNLOAD_REDIRECT_URL, ID))
+                .servletPath(SERVLET_PATH)
+                .contentType(EXPECTED_CONTENT_TYPE)
+                .params(params))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl(TEST))
+                .andReturn();
+
+        Mockito.verify(mockStorageApiService).generateDataStorageItemUrlOwner(
+                ID, TEST_PATH, TEST, CONTENT_DISPOSITION
+        );
+        final String actual = mvcResult.getResponse().getRedirectedUrl();
+        assertThat(actual).isEqualTo(TEST);
     }
 
     @Test

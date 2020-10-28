@@ -109,7 +109,6 @@ public final class DatastorageCreatorUtils {
     public static final TypeReference<Result<FileShareMount>> FILE_SHARE_MOUNT_TYPE =
             new TypeReference<Result<FileShareMount>>() { };
     private static final String TEST_PATH = "localhost:root/test";
-    private static final String TEST_URL = "/test";
 
     private DatastorageCreatorUtils() {
 
@@ -154,7 +153,7 @@ public final class DatastorageCreatorUtils {
 
     public static DataStorageDownloadFileUrl getDataStorageDownloadFileUrl() {
         final DataStorageDownloadFileUrl url = new DataStorageDownloadFileUrl();
-        url.setUrl(TEST_URL);
+        url.setUrl(TEST_STRING);
         return url;
     }
 
