@@ -28,14 +28,12 @@ public class FileShareMountApiService {
     @Autowired
     private FileShareMountManager fileShareMountManager;
 
-    @PreAuthorize("hasRole('ADMIN') OR hasPermission(#fileShareMount.region_id, " +
-            "'com.epam.pipeline.manager.datastorage.FileShareMount', 'WRITE')")
+    @PreAuthorize("hasRole('ADMIN')")
     public FileShareMount save(FileShareMount fileShareMount) {
         return fileShareMountManager.save(fileShareMount);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR hasPermission(#fileShareMount.region_id, " +
-            "'com.epam.pipeline.manager.datastorage.FileShareMount', 'WRITE')")
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(Long id) {
         fileShareMountManager.delete(id);
     }

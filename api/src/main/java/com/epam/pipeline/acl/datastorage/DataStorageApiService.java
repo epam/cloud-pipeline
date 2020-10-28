@@ -121,13 +121,13 @@ public class DataStorageApiService {
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public DataStorageListing getDataStorageItems(final Long id, final String path,
-            Boolean showVersion, Integer pageSize, String marker) {
+                                                  Boolean showVersion, Integer pageSize, String marker) {
         return dataStorageManager.getDataStorageItems(id, path, showVersion, pageSize, marker);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
     public DataStorageListing getDataStorageItemsOwner(Long id, String path,
-            Boolean showVersion, Integer pageSize, String marker) {
+                                                       Boolean showVersion, Integer pageSize, String marker) {
         return dataStorageManager.getDataStorageItems(id, path, showVersion, pageSize, marker);
     }
 
@@ -157,14 +157,14 @@ public class DataStorageApiService {
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
     public int deleteDataStorageItems(final Long id, List<UpdateDataStorageItemVO> list,
-            Boolean totally)
+                                      Boolean totally)
             throws DataStorageException {
         return dataStorageManager.deleteDataStorageItems(id, list, totally);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
     public int deleteDataStorageItemsOwner(Long id, List<UpdateDataStorageItemVO> list,
-            Boolean totally) throws DataStorageException {
+                                           Boolean totally) throws DataStorageException {
         return dataStorageManager.deleteDataStorageItems(id, list, totally);
     }
 
@@ -248,15 +248,15 @@ public class DataStorageApiService {
     }
 
     @PreAuthorize("(hasRole('ADMIN') OR @grantPermissionManager.listedStoragePermissions(#operations)) "
-                  + "AND @dataStorageApiService.checkStorageShared(#operations)")
+            + "AND @dataStorageApiService.checkStorageShared(#operations)")
     public TemporaryCredentials generateCredentials(final List<DataStorageAction> operations) {
         return temporaryCredentialsManager.generate(operations);
     }
 
     public boolean checkStorageShared(List<DataStorageAction> actions) {
         return ListUtils.emptyIfNull(actions)
-            .stream().findFirst()
-            .map(action -> grantPermissionManager.checkStorageShared(action.getId())).orElse(true);
+                .stream().findFirst()
+                .map(action -> grantPermissionManager.checkStorageShared(action.getId())).orElse(true);
     }
 
     public void validateOperation(List<DataStorageAction> operations) {
@@ -334,6 +334,7 @@ public class DataStorageApiService {
     public StorageUsage getStorageUsage(final String id, final String path) {
         return dataStorageManager.getStorageUsage(id, path);
     }
+
     @PreAuthorize(AclExpressions.RUN_ID_OWNER)
     public StorageMountPath getSharedFSSPathForRun(final Long runId, final boolean createFolder) {
         return runMountService.getSharedFSSPathForRun(runId, createFolder);
