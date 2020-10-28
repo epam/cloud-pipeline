@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -213,6 +213,9 @@ public class PipelineLauncher {
         }
         if (run.getSensitive()) {
             systemParamsWithValue.put(SystemParams.CP_SENSITIVE_RUN, "true");
+        }
+        if (run.getTimeout() != null && run.getTimeout() > 0) {
+            systemParamsWithValue.put(SystemParams.CP_EXEC_TIMEOUT, String.valueOf(run.getTimeout()));
         }
         return systemParamsWithValue;
     }
