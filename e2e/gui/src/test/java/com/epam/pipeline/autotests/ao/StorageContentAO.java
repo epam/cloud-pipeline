@@ -712,7 +712,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
                 entry(SAVE, $(byId("edit-storage-dialog-save-button"))),
                 entry(DELETE, $(byId("edit-storage-dialog-delete-button"))),
                 entry(CANCEL, $(byId("edit-storage-dialog-cancel-button"))),
-                entry(PERMISSIONS, context().find(byText("Permissions")))
+                entry(PERMISSIONS, $(byText("Permissions")))
         );
 
         public EditStoragePopUpAO() {
