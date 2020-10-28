@@ -1,10 +1,12 @@
 const { app, BrowserWindow } = require('electron');
 const {log} = require('./application/models/log');
 const readWebdavConfiguration = require('./read-webdav-configuration');
+const readCustomConfiguration = require('./read-custom-configuration');
 
 const LOGS_ENABLED = app.commandLine.hasSwitch('enable-logs');
 
 global.logsEnabled = LOGS_ENABLED;
+global.settings = readCustomConfiguration();
 
 log('');
 log(`--------------------------------------------`);

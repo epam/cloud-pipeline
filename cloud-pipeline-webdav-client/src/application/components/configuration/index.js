@@ -26,6 +26,7 @@ class Configuration extends React.Component {
 
   updateSettings = () => {
     const cfg = electron.remote.getGlobal('webdavClient');
+    const {name} = electron.remote.getGlobal('settings') || {};
     const {config: webdavClientConfig = {}} = cfg || {};
     this.setState({
       server: webdavClientConfig.server,
@@ -34,6 +35,7 @@ class Configuration extends React.Component {
       ignoreCertificateErrors: webdavClientConfig.ignoreCertificateErrors,
       modified: false,
       version: webdavClientConfig.version,
+      name,
     });
   };
 
@@ -73,6 +75,7 @@ class Configuration extends React.Component {
       username,
       password,
       version,
+      name = 'Cloud Data'
     } = this.state;
     return (
       <Modal
@@ -134,7 +137,7 @@ class Configuration extends React.Component {
           {
             version && (
               <div className="app-version">
-                Cloud Data App Version: <b>{version}</b>
+                {name} App Version: <b>{version}</b>
               </div>
             )
           }
