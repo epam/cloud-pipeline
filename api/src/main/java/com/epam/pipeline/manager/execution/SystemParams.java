@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,8 @@ public enum SystemParams {
     CONTAINER_CPU_RESOURCE("container-cpu-resource", "CP_CONTAINER_CPU_RESOURCE", false, true),
     CONTAINER_MEMORY_RESOURCE_POLICY("container-memory-resource-policy",
             "CP_CONTAINER_MEMORY_RESOURCE_POLICY", false, true),
-    CP_SENSITIVE_RUN("cp-sensitive-run", "CP_SENSITIVE_RUN", false, false);
+    CP_SENSITIVE_RUN("cp-sensitive-run", "CP_SENSITIVE_RUN", false, false),
+    CP_EXEC_TIMEOUT("cp-exec-timeout", "CP_EXEC_TIMEOUT");
 
     public static final String CLOUD_REGION_PREFIX = "CP_ACCOUNT_REGION_";
     public static final String CLOUD_ACCOUNT_PREFIX = "CP_ACCOUNT_ID_";

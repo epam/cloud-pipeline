@@ -1678,7 +1678,15 @@ pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"
 
 echo "Command text:"
 echo "${SCRIPT}"
-bash -c "${SCRIPT}"
+
+if [ ! -z "${CP_EXEC_TIMEOUT}" ] && [ "${CP_EXEC_TIMEOUT}" -gt 0 ];
+then
+  timeout ${CP_EXEC_TIMEOUT}m bash -c "${SCRIPT}"
+  echo "Timeout was elapsed"
+else
+  bash -c "${SCRIPT}"
+fi
+
 CP_EXEC_RESULT=$?
 
 echo "------"
