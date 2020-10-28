@@ -26,7 +26,6 @@ import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -428,6 +427,7 @@ public class UserManager {
         return new UserExporter().exportUsers(attr, users, sensitiveKeys).getBytes(Charset.defaultCharset());
     }
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private Folder createUserDefaultFolder(final PipelineUser user) {
         final Folder folder = new Folder();
         final Long parentId =
