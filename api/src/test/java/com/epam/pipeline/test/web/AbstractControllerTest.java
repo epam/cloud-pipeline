@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.epam.pipeline.config.JsonMapper;
@@ -106,13 +107,34 @@ public abstract class AbstractControllerTest {
         return performRequest(requestBuilder, EXPECTED_CONTENT_TYPE);
     }
 
-    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder, String contentType)
+    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder, final String contentType)
             throws Exception {
         return mockMvc.perform(requestBuilder
                 .servletPath(SERVLET_PATH)
                 .contentType(contentType))
                 .andExpect(status().isOk())
                 .andExpect(MockMvcResultMatchers.content().contentType(contentType))
+                .andReturn();
+    }
+
+    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder,
+                                    final String requestContentType,
+                                    final String responseContentType) throws Exception {
+        return mockMvc.perform(requestBuilder
+                .servletPath(SERVLET_PATH)
+                .contentType(requestContentType))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.content().contentType(responseContentType))
+                .andReturn();
+    }
+
+    public MvcResult performRedirectedRequest(final MockHttpServletRequestBuilder requestBuilder,
+                                              final String redirectUrl) throws Exception {
+        return mvc().perform(requestBuilder
+                .servletPath(SERVLET_PATH)
+                .contentType(EXPECTED_CONTENT_TYPE))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl(redirectUrl))
                 .andReturn();
     }
 }
