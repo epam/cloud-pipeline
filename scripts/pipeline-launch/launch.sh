@@ -1682,12 +1682,15 @@ echo "${SCRIPT}"
 if [ ! -z "${CP_EXEC_TIMEOUT}" ] && [ "${CP_EXEC_TIMEOUT}" -gt 0 ];
 then
   timeout ${CP_EXEC_TIMEOUT}m bash -c "${SCRIPT}"
-  echo "Timeout was elapsed"
+  CP_EXEC_RESULT=$?
+  if [ $CP_EXEC_RESULT -eq 124 ];
+  then
+    echo "Timeout was elapsed"
+  fi
 else
   bash -c "${SCRIPT}"
+  CP_EXEC_RESULT=$?
 fi
-
-CP_EXEC_RESULT=$?
 
 echo "------"
 echo
@@ -1722,7 +1725,7 @@ else
 fi
 
 if [ "$CP_CAP_KEEP_FAILED_RUN" ] && \
-   ([ $CP_EXEC_RESULT -ne 0 ] || \
+   ( ! ([ $CP_EXEC_RESULT -eq 0 ] || [ $CP_EXEC_RESULT -eq 124 ]) || \
    [ $CP_OUTPUTS_RESULT -ne 0 ]); then
       echo "Script execution has failed or the outputs were not tansferred. The job will keep running for $CP_CAP_KEEP_FAILED_RUN"
       sleep $CP_CAP_KEEP_FAILED_RUN
