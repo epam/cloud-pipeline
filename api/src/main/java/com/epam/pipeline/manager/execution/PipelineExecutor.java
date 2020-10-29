@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager.execution;
 
-import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -167,9 +166,6 @@ public class PipelineExecutor {
         spec.setTerminationGracePeriodSeconds(KUBE_TERMINATION_PERIOD);
         spec.setDnsPolicy("ClusterFirst");
         spec.setNodeSelector(nodeSelector);
-        if (run.getTimeout() != null && run.getTimeout() > 0) {
-            spec.setActiveDeadlineSeconds(run.getTimeout() * Constants.SECONDS_IN_MINUTE);
-        }
         if (!StringUtils.isEmpty(secretName)) {
             spec.setImagePullSecrets(Collections.singletonList(new LocalObjectReference(secretName)));
         }

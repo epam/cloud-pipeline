@@ -294,5 +294,12 @@
         "description": "Controls the network interface name, to apply the CP_CAP_HW_ADDR. Default: eth0",
         "defaultValue": "eth0",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_EXEC_TIMEOUT",
+        "type": "int",
+        "description": "If defined - will terminate job when specified duration in minutes is elapsed",
+        "defaultValue": "",
+        "passToWorkers": false
     }
 ]
