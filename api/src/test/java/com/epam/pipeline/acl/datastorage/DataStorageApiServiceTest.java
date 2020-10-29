@@ -19,6 +19,7 @@ package com.epam.pipeline.acl.datastorage;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
+import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.security.UserContext;
@@ -28,6 +29,9 @@ import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
 import org.junit.Test;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
+
+import java.util.Collections;
+import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_ARRAY;
@@ -1287,5 +1291,65 @@ public class DataStorageApiServiceTest extends AbstractDataStorageAclTest {
 
         assertThrows(AccessDeniedException.class, () ->
                 dataStorageApiService.getStorageUsage(TEST_STRING, TEST_STRING));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldGenerateCredentialsForAdmin() {
+        doReturn(context).when(mockAuthManager).getUserContext();
+        doReturn(temporaryCredentials).when(mockTemporaryCredentialsManager).generate(dataStorageActionList);
+
+        assertThat(dataStorageApiService.generateCredentials(dataStorageActionList)).isEqualTo(temporaryCredentials);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldGenerateCredentialsWhenPermissionIsGranted() {
+        initAclEntity(s3bucket);
+        initMocks(SIMPLE_USER, context);
+
+        doReturn(temporaryCredentials).when(mockTemporaryCredentialsManager).generate(dataStorageActionList);
+
+        assertThat(dataStorageApiService.generateCredentials(dataStorageActionList)).isEqualTo(temporaryCredentials);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDenyGenerateCredentialsWhenReadPermissionIsNotGranted() {
+        final DataStorageAction dataStorageAction = DatastorageCreatorUtils.getDataStorageAction();
+        dataStorageAction.setRead(true);
+        final List<DataStorageAction> dataStorageActionList = Collections.singletonList(dataStorageAction);
+        initAclEntity(s3bucket);
+        initMocks(SIMPLE_USER, context);
+        doReturn(temporaryCredentials).when(mockTemporaryCredentialsManager).generate(dataStorageActionList);
+
+        assertThrows(AccessDeniedException.class, () ->
+                dataStorageApiService.generateCredentials(dataStorageActionList));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDenyGenerateCredentialsWhenWritePermissionIsNotGranted() {
+        final DataStorageAction dataStorageAction = DatastorageCreatorUtils.getDataStorageAction();
+        dataStorageAction.setWrite(true);
+        final List<DataStorageAction> dataStorageActionList = Collections.singletonList(dataStorageAction);
+        initAclEntity(s3bucket);
+        initMocks(SIMPLE_USER, context);
+        doReturn(temporaryCredentials).when(mockTemporaryCredentialsManager).generate(dataStorageActionList);
+
+        assertThrows(AccessDeniedException.class, () ->
+                dataStorageApiService.generateCredentials(dataStorageActionList));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDenyGenerateCredentialsWhenStorageNotShared() {
+        context.setExternal(true);
+        initAclEntity(s3bucket);
+        initMocks(SIMPLE_USER, context);
+        doReturn(temporaryCredentials).when(mockTemporaryCredentialsManager).generate(dataStorageActionList);
+
+        assertThrows(AccessDeniedException.class, () ->
+                dataStorageApiService.generateCredentials(dataStorageActionList));
     }
 }

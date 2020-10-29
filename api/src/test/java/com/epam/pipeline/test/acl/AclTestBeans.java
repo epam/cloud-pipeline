@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.HierarchicalEntityManager;
 import com.epam.pipeline.manager.billing.BillingManager;
+import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
@@ -44,12 +45,12 @@ import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.configuration.ServerlessConfigurationManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
-import com.epam.pipeline.manager.datastorage.DataStorageApiService;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStoragePathLoader;
 import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
+import com.epam.pipeline.manager.datastorage.RunMountService;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
@@ -333,9 +334,6 @@ public class AclTestBeans {
     protected ContextualPreferenceManager mockContextualPreferenceManager;
 
     @MockBean
-    protected DataStorageApiService mockDataStorageApiService;
-
-    @MockBean
     protected ToolVersionManager mockToolVersionManager;
 
     @MockBean
@@ -433,6 +431,12 @@ public class AclTestBeans {
 
     @MockBean
     protected LustreFSManager mockLustreFSManager;
+
+    @MockBean
+    protected RunMountService mockRunMountService;
+
+    @MockBean
+    protected TemporaryCredentialsManager mockTemporaryCredentialsManager;
 
     @Bean
     protected TemplatesScanner mockTemplatesScanner() {

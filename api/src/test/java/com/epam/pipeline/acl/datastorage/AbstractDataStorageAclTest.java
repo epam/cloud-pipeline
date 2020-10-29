@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
@@ -29,10 +30,12 @@ import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StorageMountPath;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
+import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
 import com.epam.pipeline.manager.datastorage.RunMountService;
@@ -81,6 +84,7 @@ abstract class AbstractDataStorageAclTest extends AbstractAclTest {
     protected final StorageUsage storageUsage = DatastorageCreatorUtils.getStorageUsage();
     protected final StorageMountPath storageMountPath = DatastorageCreatorUtils.getStorageMountPath();
     protected final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
+    protected final TemporaryCredentials temporaryCredentials = DatastorageCreatorUtils.getTemporaryCredentials();
 
     protected final List<String> testList = Collections.singletonList(TEST_STRING);
     protected final List<UpdateDataStorageItemVO> dataStorageItemVOList =
@@ -89,6 +93,7 @@ abstract class AbstractDataStorageAclTest extends AbstractAclTest {
     protected final List<DataStorageDownloadFileUrl> downloadFileUrlList =
             DatastorageCreatorUtils.getDataStorageDownloadFileUrlList();
     protected final List<DataStorageRule> dataStorageRuleList = DatastorageCreatorUtils.getDataStorageRuleList();
+    protected final List<DataStorageAction> dataStorageActionList = DatastorageCreatorUtils.getDataStorageActionList();
 
     @Autowired
     protected DataStorageApiService dataStorageApiService;
@@ -110,6 +115,9 @@ abstract class AbstractDataStorageAclTest extends AbstractAclTest {
 
     @Autowired
     protected RunMountService mockRunMountService;
+
+    @Autowired
+    protected TemporaryCredentialsManager mockTemporaryCredentialsManager;
 
     protected void initMocks(String user, UserContext context) {
         mockAuthUser(user);
