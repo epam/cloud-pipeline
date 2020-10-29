@@ -136,6 +136,11 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
         return this;
     }
 
+    public PipelineLibraryContentAO assertRunButtonIsNotDisplayed() {
+        $$(tagName("button")).find(text("Run")).shouldNotBe(visible);
+        return this;
+    }
+
     public MetadataSectionAO showMetadata() {
         hover(displayAttributes);
         ensure(attributesMenu, appears);

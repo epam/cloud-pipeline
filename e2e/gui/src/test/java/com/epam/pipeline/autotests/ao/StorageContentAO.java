@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -712,7 +712,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
                 entry(SAVE, $(byId("edit-storage-dialog-save-button"))),
                 entry(DELETE, $(byId("edit-storage-dialog-delete-button"))),
                 entry(CANCEL, $(byId("edit-storage-dialog-cancel-button"))),
-                entry(PERMISSIONS, context().find(byText("Permissions")))
+                entry(PERMISSIONS, $(byText("Permissions")))
         );
 
         public EditStoragePopUpAO() {

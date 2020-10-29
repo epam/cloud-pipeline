@@ -22,6 +22,7 @@ import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -35,7 +36,9 @@ import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.configurationWithName;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.pipelineWithName;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.openqa.selenium.By.className;
 
 public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
 
@@ -47,7 +50,9 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
             entry(CREATE_STORAGE, $(byClassName("create-storage-sub-menu"))),
             entry(CREATE_CONFIGURATION, $(byClassName("create-configuration-button"))),
             entry(ADD_EXISTING_STORAGE, $(byClassName("add-existing-storage-button"))),
-            entry(CREATE_NFS_MOUNT, $(byClassName("create-new-nfs-mount")))
+            entry(CREATE_NFS_MOUNT, $(byClassName("create-new-nfs-mount"))),
+            entry(ALL_PIPELINES, $(byText("All pipelines"))),
+            entry(ALL_STORAGES, $(byText("All storages")))
     );
 
     public static final By tree = byId("pipelines-library-tree");
@@ -119,7 +124,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
 
     public static By treeItem(final String name) {
         final String treeItemClass = "pipelines-library-tree-node";
-        return byXpath(String.format(
+        return byXpath(format(
             ".//li[contains(@class, '%s') and ./span[contains(., '%s')]]", treeItemClass, name
         ));
     }
@@ -140,7 +145,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     public static By browserItem(final String name) {
         final String browserRowClass = "ant-table-row";
         final String nameColumnClass = "browser__tree-item-name";
-        return byXpath(String.format(
+        return byXpath(format(
             ".//tr[contains(@class, '%s') and ./td[@class = '%s' and .//text() = '%s']]",
             browserRowClass, nameColumnClass, name
         ));
@@ -288,6 +293,38 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
                 .click(byText("Delete sub-items"))
                 .click(button("OK"));
         return this;
+    }
+
+    private List<String> allPipelinesStoragesList() {
+        return context().findAll(className("object-name")).texts();
+    }
+
+    public PipelinesLibraryAO ensurePipelineOrStorageIsPresentInTable(String name) {
+        $(byXpath(format(".//span[@class='object-name browser__object-name-bold'][.='%s']", name))).shouldBe(visible);
+         return this;
+    }
+
+    public PipelinesLibraryAO ensurePipelineOrStorageIsNotPresentInTable(String name) {
+        $(byXpath(format(".//span[@class='object-name browser__object-name-bold'][.='%s']", name))).shouldNotBe(visible);
+        return this;
+    }
+
+    public PipelineLibraryContentAO openPipelineFromTable(String name) {
+        $(byXpath(format(".//span[@class='object-name browser__object-name-bold'][.='%s']", name)))
+                .shouldBe(visible).click();
+        return new PipelineLibraryContentAO(name);
+    }
+
+    public PipelineRunFormAO runPipelineFromTable(String name) {
+        $(byXpath(format(".//span[@class='object-name browser__object-name-bold'][.='%s']", name)))
+                .closest("tr").find(byClassName("ant-btn")).click();
+        return new PipelineRunFormAO();
+    }
+
+    public StorageContentAO openStorageFromTable(String name) {
+        $(byXpath(format(".//span[@class='object-name browser__object-name-bold'][.='%s']", name)))
+                .shouldBe(visible).click();
+        return new StorageContentAO();
     }
 
     public PipelinesLibraryAO validateStoragePictogram(final String storage) {
