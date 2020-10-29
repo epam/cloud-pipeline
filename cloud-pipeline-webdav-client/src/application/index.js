@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useState, useLayoutEffect} from 'react';
 import {Button, Layout} from 'antd';
 import {SettingOutlined} from '@ant-design/icons';
 import electron from 'electron';
@@ -54,7 +54,12 @@ function Application() {
     onCancelCreateDirectory,
   } = createDirectory;
   const cfg = electron.remote.getGlobal('webdavClient');
+  const settings = electron.remote.getGlobal('settings');
   const {config: webdavClientConfig = {}} = cfg || {};
+  const {name: appName = 'Cloud Data'} = settings || {};
+  useLayoutEffect(() => {
+    document.title = appName;
+  }, []);
   const [
     configurationTabVisible,
     setConfigurationTabVisible,

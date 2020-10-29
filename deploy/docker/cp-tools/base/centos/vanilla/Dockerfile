@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
+FROM centos:7.7.1908
 
 RUN yum install -y wget \
                    bzip2 \

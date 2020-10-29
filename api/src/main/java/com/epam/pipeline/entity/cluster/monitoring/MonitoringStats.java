@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.cluster.monitoring;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -24,6 +25,7 @@ import java.util.Map;
 
 @Setter
 @Getter
+@EqualsAndHashCode
 public class MonitoringStats {
 
     private String startTime;

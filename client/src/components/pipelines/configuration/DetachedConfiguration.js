@@ -438,7 +438,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
   }
 
   getPipelines = () => {
-    if (this.props.pipelines.pending || this.props.pipelines.error || !this.props.pipelines.value) {
+    if (!this.props.pipelines.loaded || this.props.pipelines.error || !this.props.pipelines.value) {
       return [];
     }
     return this.props.pipelines.value.map(p => p);
@@ -523,7 +523,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       [configuration] = (this.props.configurations.value.entries || []).filter(c => c.default);
     }
     if (configuration && configuration.pipelineId && configuration.pipelineVersion) {
-      const [pipeline] = this.getPipelines().filter(p => p.id === configuration.pipelineId);
+      const pipeline = this.getPipelines()
+        .find(p => `${p.id}` === `${configuration.pipelineId}`);
       if (pipeline) {
         return pipeline;
       } else {
@@ -954,8 +955,9 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
   render () {
     if (
       (!this.props.configurations.loaded && this.props.configurations.pending) ||
-      !this.allowedInstanceTypes
-      ){
+      !this.allowedInstanceTypes ||
+      (this.props.pipelines.pending && !this.props.pipelines.loaded)
+    ) {
       return <LoadingView />;
     }
     if (this.props.configurations.error) {

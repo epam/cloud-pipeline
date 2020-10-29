@@ -243,6 +243,11 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         );
     }
 
+    public PipelineRunFormAO checkLaunchItemName(String name) {
+        context().find(launchItemName()).shouldHave(text(name));
+        return this;
+    }
+
     private By header() {
         return byClassName("launch-pipeline-form__layout-header");
     }

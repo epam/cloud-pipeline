@@ -406,6 +406,12 @@
         </classes>
     </test>
 
+    <test name="PipelinesAndStoragesRepositories">
+        <classes>
+            <class name="com.epam.pipeline.autotests.PipelinesAndStoragesRepositories"/>
+        </classes>
+    </test>
+
     <test name="SharingRunsTest">
         <classes>
             <class name="com.epam.pipeline.autotests.SharingRunsTest"/>

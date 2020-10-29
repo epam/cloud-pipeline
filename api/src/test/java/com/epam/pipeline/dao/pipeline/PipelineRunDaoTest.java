@@ -72,6 +72,7 @@ import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -81,6 +82,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     private static final String TEST_USER = "TEST";
     private static final String TEST_PARAMS = "123 321";
     private static final String TEST_POD_ID = "pod1";
+    private static final String TEST_NODE_IMAGE = "nodeImage";
     private static final int HOURS_23 = 23;
     private static final int MINUTES_59 = 59;
     private static final int TEST_PAGE_SIZE = 10;
@@ -832,6 +834,18 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
 
         final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
         assertTrue(CollectionUtils.isEmpty(loadedRun.getRunSids()));
+    }
+
+    @Test
+    public void shouldCreateRunWithCustomInstanceNodeImage() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId(), null);
+        run.getInstance().setNodeImage(TEST_NODE_IMAGE);
+        pipelineRunDao.createPipelineRun(run);
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        
+        assertNotNull(loadedRun.getInstance());
+        assertThat(loadedRun.getInstance().getNodeImage(), CoreMatchers.is(TEST_NODE_IMAGE));
     }
 
     private PipelineRun createTestPipelineRun() {

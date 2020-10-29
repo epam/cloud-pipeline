@@ -22,7 +22,10 @@ import java.util.List;
 public final class CommonCreatorConstants {
 
     public static final long ID = 1L;
+    public static final long ID_2 = 2L;
+    public static final int TEST_INT = 4;
     public static final String TEST_STRING = "TEST";
+    public static final String TEST_STRING_2 = "TEST_2";
     public static final List<String> TEST_STRING_LIST = Collections.singletonList(TEST_STRING);
 
     private CommonCreatorConstants() {

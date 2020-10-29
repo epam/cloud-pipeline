@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import FolderLoad from './FolderLoadWithMetadata';
+import FolderLoad from './FolderLoad';
+import FolderLoadWithMetadata from './FolderLoadWithMetadata';
 
 class Folders {
   /* eslint-disable */
@@ -38,14 +39,20 @@ class Folders {
   }
 
   _foldersCache = new Map();
+  _folders = new Map();
 
   load (id) {
-    return this.constructor.getCache(this._foldersCache, `${id}`, FolderLoad);
+    return this.constructor.getCache(this._foldersCache, `${id}`, FolderLoadWithMetadata);
   }
 
   invalidateFolder (id) {
     this.constructor.invalidateCache(this._foldersCache, `${id}`);
-    FolderLoad.metadataCache.invalidateMetadata(id, 'FOLDER');
+    this.constructor.invalidateCache(this._folders, `${id}`);
+    FolderLoadWithMetadata.metadataCache.invalidateMetadata(id, 'FOLDER');
+  }
+
+  loadWithoutMetadata (id) {
+    return this.constructor.getCache(this._folders, `${id}`, FolderLoad);
   }
 }
 

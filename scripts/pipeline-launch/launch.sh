@@ -1003,7 +1003,7 @@ SSH_SERVER_EXEC_PATH='/usr/sbin/sshd'
 if ! [ -f $SSH_SERVER_EXEC_PATH ] ;
 then
     # Check which package manager to use for SSH Server installation
-    e=
+    SSH_INSTALL_COMMAND=
     get_install_command_by_current_distr SSH_INSTALL_COMMAND "openssh-server"
 
     if [ -z "$SSH_INSTALL_COMMAND" ] ;
@@ -1067,34 +1067,38 @@ echo
 echo "Installing pipeline packages and code"
 echo "-"
 ######################################################
-if [ -z "$DISTRIBUTION_URL" ] ;
-then
-    echo "[ERROR] Distribution URL is not defined. Exiting"
-    exit 1
-else
-    cd $COMMON_REPO_DIR
-    # Fixed setuptools version to be compatible with the pipe-common package
-    $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
-    download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
-    _DOWNLOAD_RESULT=$?
-    if [ "$_DOWNLOAD_RESULT" -ne 0 ];
-    then
-        echo "[ERROR] Main repository download failed. Exiting"
-        exit "$_DOWNLOAD_RESULT"
-    fi
-    _INSTALL_RESULT=0
-    tar xf pipe-common.tar.gz
-    $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS . -q -I
-    _INSTALL_RESULT=$?
-    if [ "$_INSTALL_RESULT" -ne 0 ];
-    then
-        echo "[ERROR] Main repository install failed. Exiting"
-        exit "$_INSTALL_RESULT"
-    fi
-    # Init path for shell scripts from common repository
-    chmod +x $COMMON_REPO_DIR/shell/*
-    export PATH=$PATH:$COMMON_REPO_DIR/shell
-    cd ..
+CP_PIPE_COMMON_ENABLED=${CP_PIPE_COMMON_ENABLED:-"true"}
+if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
+      if [ -z "$DISTRIBUTION_URL" ]; then
+            echo "[ERROR] Distribution URL is not defined. Exiting"
+            exit 1
+      else
+            cd $COMMON_REPO_DIR
+            # Fixed setuptools version to be compatible with the pipe-common package
+            $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
+            download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
+            _DOWNLOAD_RESULT=$?
+            if [ "$_DOWNLOAD_RESULT" -ne 0 ];
+            then
+                  echo "[ERROR] Main repository download failed. Exiting"
+                  exit "$_DOWNLOAD_RESULT"
+            fi
+            _INSTALL_RESULT=0
+            tar xf pipe-common.tar.gz
+            $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS . -q -I
+            _INSTALL_RESULT=$?
+            if [ "$_INSTALL_RESULT" -ne 0 ];
+            then
+                  echo "[ERROR] Main repository install failed. Exiting"
+                  exit "$_INSTALL_RESULT"
+            fi
+            cd ..
+      fi
+fi
+# Init path for shell scripts from common repository
+if [ -d $COMMON_REPO_DIR/shell ]; then
+      chmod +x $COMMON_REPO_DIR/shell/*
+      export PATH=$PATH:$COMMON_REPO_DIR/shell
 fi
 
 # Install pipe CLI
@@ -1674,8 +1678,19 @@ pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"
 
 echo "Command text:"
 echo "${SCRIPT}"
-bash -c "${SCRIPT}"
-CP_EXEC_RESULT=$?
+
+if [ ! -z "${CP_EXEC_TIMEOUT}" ] && [ "${CP_EXEC_TIMEOUT}" -gt 0 ];
+then
+  timeout ${CP_EXEC_TIMEOUT}m bash -c "${SCRIPT}"
+  CP_EXEC_RESULT=$?
+  if [ $CP_EXEC_RESULT -eq 124 ];
+  then
+    echo "Timeout was elapsed"
+  fi
+else
+  bash -c "${SCRIPT}"
+  CP_EXEC_RESULT=$?
+fi
 
 echo "------"
 echo
@@ -1710,7 +1725,7 @@ else
 fi
 
 if [ "$CP_CAP_KEEP_FAILED_RUN" ] && \
-   ([ $CP_EXEC_RESULT -ne 0 ] || \
+   ( ! ([ $CP_EXEC_RESULT -eq 0 ] || [ $CP_EXEC_RESULT -eq 124 ]) || \
    [ $CP_OUTPUTS_RESULT -ne 0 ]); then
       echo "Script execution has failed or the outputs were not tansferred. The job will keep running for $CP_CAP_KEEP_FAILED_RUN"
       sleep $CP_CAP_KEEP_FAILED_RUN

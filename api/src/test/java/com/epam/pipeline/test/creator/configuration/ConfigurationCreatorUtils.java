@@ -16,20 +16,26 @@
 
 package com.epam.pipeline.test.creator.configuration;
 
+import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.pipeline.Folder;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.Collections;
 import java.util.List;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class ConfigurationCreatorUtils {
 
+    public static final TypeReference<Result<RunConfiguration>> RUN_CONFIGURATION_TYPE =
+            new TypeReference<Result<RunConfiguration>>() { };
+    public static final TypeReference<Result<List<RunConfiguration>>> RUN_CONFIGURATION_LIST_TYPE =
+            new TypeReference<Result<List<RunConfiguration>>>() { };
     private static final List<AbstractRunConfigurationEntry> ENTRIES
             = Collections.singletonList(getRunConfigurationEntry());
 
@@ -47,11 +53,31 @@ public final class ConfigurationCreatorUtils {
         return runConfiguration;
     }
 
+    public static RunConfiguration getRunConfiguration(Long id, String owner) {
+        final RunConfiguration runConfiguration = new RunConfiguration();
+        runConfiguration.setId(id);
+        runConfiguration.setName(TEST_STRING);
+        runConfiguration.setDescription(TEST_STRING);
+        runConfiguration.setOwner(owner);
+        runConfiguration.setEntries(ENTRIES);
+        return runConfiguration;
+    }
+
     public static RunConfigurationVO getRunConfigurationVO() {
         final RunConfigurationVO runConfigurationVO = new RunConfigurationVO();
         runConfigurationVO.setName(TEST_STRING);
         runConfigurationVO.setDescription(TEST_STRING);
         runConfigurationVO.setParentId(ID);
+        runConfigurationVO.setEntries(ENTRIES);
+        return runConfigurationVO;
+    }
+
+    public static RunConfigurationVO getRunConfigurationVO(Long id, Long parentId) {
+        final RunConfigurationVO runConfigurationVO = new RunConfigurationVO();
+        runConfigurationVO.setId(id);
+        runConfigurationVO.setName(TEST_STRING);
+        runConfigurationVO.setDescription(TEST_STRING);
+        runConfigurationVO.setParentId(parentId);
         runConfigurationVO.setEntries(ENTRIES);
         return runConfigurationVO;
     }

@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.configuration;
+package com.epam.pipeline.acl.configuration;
 
+import com.epam.pipeline.manager.configuration.ServerlessConfigurationManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,7 @@ public class ServerlessConfigurationApiService {
     }
 
     @PreAuthorize("hasRole('ADMIN') OR "
-            + "@grantPermissionManager.hasConfigurationUpdatePermission(#configuration, 'EXECUTE')")
+            + "@grantPermissionManager.hasConfigurationUpdatePermission(#id, 'EXECUTE')")
     public String run(final Long id, final String configName, final HttpServletRequest request) {
         return serverlessConfigurationManager.run(id, configName, request);
     }
