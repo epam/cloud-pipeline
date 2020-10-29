@@ -76,7 +76,7 @@ pipe_log_info "Starting kubernetes setup" "$KUBE_MASTER_SETUP_TASK"
 
 export CP_CAP_KUBE_PODS_CIDR="${CP_CAP_KUBE_PODS_CIDR:-172.16.0.0/18}" # Default 16382 IPs:  172.16.0.1 - 172.16.63.254
 export CP_CAP_KUBE_SVC_CIDR="${CP_CAP_KUBE_SVC_CIDR:-172.16.64.0/22}"  # Default 254 IPs:    172.16.64.1 - 172.16.67.254 
-export CP_CAP_KUBE_DOMAIN="${CP_CAP_KUBE_DOMAIN:-$(hostname).cloud-pipeline}"
+export CP_CAP_KUBE_DOMAIN="${CP_CAP_KUBE_DOMAIN:-${RUN_ID}.cp}"
 export CP_CAP_KUBE_CNI_CONFIG="${CP_CAP_KUBE_CNI_CONFIG:-https://raw.githubusercontent.com/epam/cloud-pipeline/6d210f2dd2f376737f97269385ae6a192f0a521c/deploy/contents/k8s/kube-system/canal.yaml}"
 export CP_CAP_KUBE_INSTALL_LOG="${CP_CAP_KUBE_INSTALL_LOG:-/var/log/kube-install/install.log}"
 export CP_CAP_KUBE_MASTER_EXEC_WAIT_ATTEMPTS="${CP_CAP_KUBE_MASTER_EXEC_WAIT_ATTEMPTS:-60}"
