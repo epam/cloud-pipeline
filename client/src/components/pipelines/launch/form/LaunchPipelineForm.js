@@ -1841,7 +1841,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               value = getBooleanValue(value);
             }
             required = parameter.required;
-            readOnly = !!value && noOverride;
+            readOnly = this.props.isDetachedConfiguration && this.props.detached && !!value && noOverride;
           } else {
             value = parameter;
           }
@@ -3599,8 +3599,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         : lines.push(<span>{disk} <b>Gb</b></span>);
     }
     if (lines.length > 0) {
-      return (
-        <div className={styles.summaryContainer}>
+      return [
+        <div key="summary" className={styles.summaryContainer}>
           <div className={styles.summary}>
             {
               lines.map((l, index) => (
@@ -3610,8 +3610,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               ))
             }
           </div>
+        </div>,
+        <div key="hint" style={{width: 30, textAlign: 'center'}}>
+          {hints.renderHint(
+            this.localizedStringWithSpotDictionaryFn,
+            hints.executionEnvironmentSummaryHint
+          )}
         </div>
-      );
+      ];
     } else {
       return null;
     }
@@ -4851,12 +4857,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       {
                         this.renderExecutionEnvironmentSummary()
                       }
-                      <div style={{width: 30, textAlign: 'center'}}>
-                        {hints.renderHint(
-                          this.localizedStringWithSpotDictionaryFn,
-                          hints.executionEnvironmentSummaryHint
-                        )}
-                      </div>
                     </Row>
                   </div>
                 </div>
