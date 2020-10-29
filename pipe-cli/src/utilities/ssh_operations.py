@@ -94,7 +94,7 @@ def run_ssh_session(channel):
     channel.invoke_shell()
     interactive_shell(channel)
 
-def run_ssh(run_id, command):
+def run_ssh(run_id, command, retries=10):
     # Grab the run information from the API to setup the run's IP and EDGE proxy address
     conn_info = get_conn_info(run_id)
 
@@ -102,10 +102,8 @@ def run_ssh(run_id, command):
     channel = None
     transport = None
     try:
-        socket = http_proxy_tunnel_connect(conn_info.ssh_proxy, conn_info.ssh_endpoint, 5)
         setup_paramiko_logging()
-        transport = paramiko.Transport(socket)
-        transport.start_client()
+        transport = setup_paramiko_transport(conn_info, retries)
         # User password authentication, which available only to the OWNER and ROLE_ADMIN users
         sshpass = conn_info.ssh_pass
         sshuser = DEFAULT_SSH_USER
@@ -133,9 +131,28 @@ def run_ssh(run_id, command):
             # Open a remote shell
             run_ssh_session(channel)
             return 0
-        
     finally:
         if channel:
             channel.close()
         if transport:
             transport.close()
+
+
+def setup_paramiko_transport(conn_info, retries):
+    socket = None
+    transport = None
+    try:
+        socket = http_proxy_tunnel_connect(conn_info.ssh_proxy, conn_info.ssh_endpoint, 5)
+        transport = paramiko.Transport(socket)
+        transport.start_client()
+        return transport
+    except Exception as e:
+        if retries >= 1:
+            retries = retries - 1
+            if socket:
+                socket.close()
+            if transport:
+                transport.close()
+            return setup_paramiko_transport(conn_info, retries)
+        else:
+            raise e
