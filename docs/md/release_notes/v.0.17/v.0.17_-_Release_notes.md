@@ -8,6 +8,7 @@
 - [Export custom user's attributes](#export-custom-users-attributes)
 - [User management and export in read-only mode](#user-management-and-export-in-read-only-mode)
 - ["All pipelines" and "All storages" repositories](#all-pipelines-and-all-storages-repositories)
+- [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
 
 ***
 
@@ -327,6 +328,41 @@ In the current version, such ability was implemented:
     - _additionally_ for storages, **Cloud Region**/**Provider** icons for multi-provider deployments
 - if the user clicks any object in the list - its regular page is being opened
 - for each "repository", there is a search field for the quick search over objects list
+
+## Updates of "Limit mounts" for object storages
+
+### Displaying of the `CP_CAP_LIMIT_MOUNTS` in a user-friendly manner
+
+Previously, **Cloud Pipeline** displayed the run-enabled data storages (selected via ["Limit mounts"](../v.0.15/v.0.15_-_Release_notes.md#limit-mounted-storages) feature before the launch) as a list of IDs at the **Run logs** page (as the **`CP_CAP_LIMIT_MOUNTS`** parameter).  
+
+In the current version, this viewing was changed to more "friendly" for users:
+
+- The data storage names are being displayed instead of the IDs
+- Showing names are hyperlinks, pointing to the data storage in the **Cloud Pipeline** GUI
+- "Sensitive" storages are being highlighted appropriately
+
+![CP_v.0.17_ReleaseNotes](attachments/RN017_LimitMountsNames_1.png)
+
+See details [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#example-limit-mounted-storages).
+
+### Warning in case of a risk of `OOM` due to the number of the object storage mounts
+
+If the user has 100+ object storages available - they all are mounted to the jobs, by default. When using rather small nodes - this leads to the `OOM` errors, as the 100+ mount processes may oversubscribe the memory.  
+Even if the memory consumption will be greatly optmized - the user may still face such issues, if the number of object storages grow.  
+So in the current version, a sort of hard-limit was implemented to warn the user if there is risk of `OOM`.
+
+A new **System preference** is introduced - **`storage.mounts.per.gb.ratio`** (_int_).  
+This preference allows to specify the "safe" number of storages per Gb of `RAM` (by default, it is `5` - i.e. "5 storages per each Gb of `RAM`").
+
+When launching a job - the user's available object storages count is being calculated and checked that this count does not exceed the selected instance type `RAM` multiplied by the **`storage.mounts.per.gb.ratio`**.  
+If it's exceeded - the user is being warned with the following wording and asked to reduce a number of mounts via the **Limit mounts** feature, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_LimitMountsWarn_1.png)
+
+**_Note_**:
+
+- Warning does not prohibit the run launching, user can start it at his own discretion changing nothing.
+- If the **`storage.mounts.per.gb.ratio`** is not set - no checks are being performed, no warning appears.
+- Before the launch, only the _object storages_ count is being calculated, _file mounts_ do not introduce this limitation.
 
 ***
 
