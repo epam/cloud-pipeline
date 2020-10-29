@@ -26,9 +26,6 @@ then
     exit 1
 fi
 
-# Install NFS clients
-install_nfs_client
-
 mount_shared_lustre_fs "$MOUNT_DIR" "$RUN_ID" POST "$FS_SETUP_TASK"
 
 if [ $? -ne 0 ]; then

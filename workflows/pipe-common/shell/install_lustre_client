@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+LUSTRE_INSTALL_TASK="InstallLustreClient"
+
+######################################################
+# Check if Lustre client is already installed
+######################################################
+/usr/bin/rpm -q -f /usr/bin/rpm >/dev/null 2>&1
+IS_RPM_BASED=$?
+
+if [[ "$IS_RPM_BASED" = 0 ]]
+then
+    CHECK_LUSTRE_CMD="rpm -qa | grep lustre-client"
+    OS_VERSION_ID=$(. /etc/os-release;echo $VERSION_ID)
+    LUSTRE_VERSION=$([ $OS_VERSION_ID -eq 6 ] && echo "2.10.8-1" || echo "2.12.5-1")
+    LUSTRE_VERSION="$LUSTRE_VERSION.el$OS_VERSION_ID.x86_64"
+    LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
+    read -r -d '' INSTALL_LUSTRE_CMD <<- EOM
+      yum install -y -q wget yum-utils &&
+      wget -q $LUSTRE_CLIENT_URL -O lustre-client.tar.gz &&
+      mkdir -p lustre-client &&
+      tar -xzvf lustre-client.tar.gz -C lustre-client/ &&
+      rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm &&
+      yum install -y -q lustre-client/*.rpm &&
+      package-cleanup --cleandupes -y &&
+      rm -rf lustre-client*
+EOM
+else
+    CHECK_LUSTRE_CMD="dpkg -l | grep lustre-client"
+    LUSTRE_VERSION=$(. /etc/os-release;echo $ID-${VERSION_ID//.})
+    LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/deb/lustre-client-$LUSTRE_VERSION.tar.gz"
+    read -r -d '' INSTALL_LUSTRE_CMD <<- EOM
+      apt-get install wget -y -qq  &&
+      wget -q $LUSTRE_CLIENT_URL -O lustre-client.tar.gz &&
+      mkdir lustre-client-install/ &&
+      tar -C lustre-client-install/ -zxvf lustre-client.tar.gz &&
+      mkdir -p /lib/modules/$(uname -r) &&
+      (dpkg --unpack lustre-client-install/* && rm -rf /var/lib/dpkg/info/lustre* || true) &&
+      apt-get --fix-broken install -y &&
+      rm -rf lustre-client-install/ lustre-client.tar.gz
+EOM
+fi
+
+eval "$CHECK_LUSTRE_CMD"
+IS_LUSTRE_INSTALLED=$?
+
+######################################################
+# If Lustre client is already installed - skip installation, otherwise install
+######################################################
+if [ $IS_LUSTRE_INSTALLED -eq 0 ]
+then
+    pipe_log_info "--> Lustre client is already installed" "$LUSTRE_INSTALL_TASK"
+else
+    pipe_log_info "--> Lustre client not found, proceeding with installation" "$LUSTRE_INSTALL_TASK"
+    if [ "${CLOUD_PROVIDER}" == "AWS" ]
+    then
+        pipe_log_info "--> Installing [lustre] client" "$LUSTRE_INSTALL_TASK"
+        LUSTRE_INSTALLATION_LOG="/var/log/lustre_client_installation.log"
+        eval "$INSTALL_LUSTRE_CMD" > $LUSTRE_INSTALLATION_LOG 2>&1
+        if [ $? -ne 0 ]
+        then
+            pipe_log_fail "Errors occurred during NFS client [lustre] installation, check $LUSTRE_INSTALLATION_LOG for more details" "$LUSTRE_INSTALL_TASK"
+        else
+            pipe_log_info "--> NFS client packages [lustre] installed successfully" "$LUSTRE_INSTALL_TASK"
+        fi
+        pipe_log_info "--> NFS clients installation is finished" "$LUSTRE_INSTALL_TASK"
+    else
+        pipe_log_info "--> NFS client packages [lustre] can be installed for AWS provider only" "$LUSTRE_INSTALL_TASK"
+    fi
+fi
+
+#####################################################
+# Restart Lustre client
+#####################################################
+rpcbind && rpc.statd
+
+pipe_log_success "Finished Lustre client installation" "$LUSTRE_INSTALL_TASK"

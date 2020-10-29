@@ -43,8 +43,10 @@ fi
 
 if [ "$_MOUNT_TYPE" == "NFS" ]; then
     _MOUNT_PROTOCOL="nfs"
+    install_nfs_client
 elif [ "$_MOUNT_TYPE" == "LUSTRE" ]; then
     _MOUNT_PROTOCOL="lustre"
+    install_lustre_client
 else
     pipe_log_fail "Unsupported storage type $_STORAGE_TYPE for shared file system" "$FS_SETUP_TASK"
     exit 1
