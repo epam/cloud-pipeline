@@ -30,6 +30,7 @@ import com.epam.pipeline.controller.Result;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -83,9 +84,10 @@ public abstract class AbstractControllerTest {
         return expectedResult;
     }
 
+    @SneakyThrows
     public <T> void assertResponse(final MvcResult mvcResult,
                                    final T payload,
-                                   final TypeReference<Result<T>> typeReference) throws Exception {
+                                   final TypeReference<Result<T>> typeReference){
         final ResponseResult<T> expectedResult = buildExpectedResult(payload);
 
         final String actual = mvcResult.getResponse().getContentAsString();
@@ -103,10 +105,13 @@ public abstract class AbstractControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder) throws Exception {
+    @SneakyThrows
+    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder) {
         return performRequest(requestBuilder, EXPECTED_CONTENT_TYPE);
     }
 
+
+    @SneakyThrows
     public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder, final String contentType)
             throws Exception {
         return mockMvc.perform(requestBuilder
@@ -117,9 +122,10 @@ public abstract class AbstractControllerTest {
                 .andReturn();
     }
 
+    @SneakyThrows
     public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder,
                                     final String requestContentType,
-                                    final String responseContentType) throws Exception {
+                                    final String responseContentType) {
         return mockMvc.perform(requestBuilder
                 .servletPath(SERVLET_PATH)
                 .contentType(requestContentType))
@@ -130,11 +136,18 @@ public abstract class AbstractControllerTest {
 
     public MvcResult performRedirectedRequest(final MockHttpServletRequestBuilder requestBuilder,
                                               final String redirectUrl) throws Exception {
-        return mvc().perform(requestBuilder
+        return mockMvc.perform(requestBuilder
                 .servletPath(SERVLET_PATH)
                 .contentType(EXPECTED_CONTENT_TYPE))
                 .andExpect(status().isFound())
                 .andExpect(redirectedUrl(redirectUrl))
                 .andReturn();
+    }
+
+    public void performRequestWithoutResponse(final MockHttpServletRequestBuilder requestBuilder) throws Exception {
+        mockMvc.perform(requestBuilder
+                .servletPath(SERVLET_PATH)
+                .contentType(EXPECTED_CONTENT_TYPE))
+                .andExpect(status().isOk());
     }
 }

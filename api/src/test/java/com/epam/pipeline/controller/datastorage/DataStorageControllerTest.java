@@ -24,6 +24,7 @@ import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
@@ -38,9 +39,6 @@ import com.epam.pipeline.entity.datastorage.StorageMountPath;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
-import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
-import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
-import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.manager.datastorage.DataStorageApiService;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
@@ -63,6 +61,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.INTEGER_TYPE;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.OBJECT_TYPE;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.STRING_STRING_MAP_TYPE;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.STRING_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -125,6 +127,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     private static final String TOTALLY = "totally";
     private static final String TEST_PATH = "localhost:root/";
     private static final String CONTENT_DISPOSITION_PARAM = "contentDisposition";
+    private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
     private static final String CLOUD = "cloud";
     private static final String SKIP_POLICY = "skipPolicy";
     private static final String PIPELINE_ID = "pipelineId";
@@ -147,19 +150,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
             "----------------------------boundary--";
     private static final ContentDisposition CONTENT_DISPOSITION = ContentDisposition.INLINE;
     private static final Map<String, String> TAGS = Collections.singletonMap(TEST, TEST);
-    private static final TypeReference<Result<Integer>> INTEGER_TYPE = new TypeReference<Result<Integer>>() { };
-    private static final TypeReference<Result<Object>> OBJECT_TYPE = new TypeReference<Result<Object>>() { };
-    private static final TypeReference<Result<String>> STRING_TYPE = new TypeReference<Result<String>>() { };
-    private static final TypeReference<Result<Map<String, String>>> STRING_STRING_MAP_TYPE =
-            new TypeReference<Result<Map<String, String>>>() { };
     private final DataStorageRule dataStorageRule = DatastorageCreatorUtils.getDataStorageRule();
     private final S3bucketDataStorage s3Bucket = DatastorageCreatorUtils.getS3bucketDataStorage();
-    private final AzureBlobStorage azureBlob = DatastorageCreatorUtils.getAzureBlobStorage();
-    private final GSBucketStorage gsBucket = DatastorageCreatorUtils.getGsBucketStorage();
-    private final NFSDataStorage nfsDataStorage = DatastorageCreatorUtils.getNfsDataStorage();
     private final DataStorageFile file = DatastorageCreatorUtils.getDataStorageFile();
     private final DataStorageFolder folder = DatastorageCreatorUtils.getDataStorageFolder();
     private final UpdateDataStorageItemVO update = DatastorageCreatorUtils.getUpdateDataStorageItemVO();
+    private final Map<AbstractDataStorage, TypeReference> storageTypeReferenceMap =
+            DatastorageCreatorUtils.getRegularTypeStorages();
 
     @Autowired
     private DataStorageApiService mockStorageApiService;
@@ -239,145 +236,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    @WithMockUser
-    public void shouldLoadS3BucketDataStorage() throws Exception {
-        Mockito.doReturn(s3Bucket).when(mockStorageApiService).load(ID);
-
-        final MvcResult mvcResult = performRequest(get(String.format(LOAD_DATASTORAGE, ID)));
-
-        Mockito.verify(mockStorageApiService).load(ID);
-        assertResponse(mvcResult, s3Bucket, DatastorageCreatorUtils.S3_BUCKET_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldLoadAzureBlobStorage() throws Exception {
-        Mockito.doReturn(azureBlob).when(mockStorageApiService).load(ID);
-
-        final MvcResult mvcResult = performRequest(get(String.format(LOAD_DATASTORAGE, ID)));
-
-        Mockito.verify(mockStorageApiService).load(ID);
-        assertResponse(mvcResult, azureBlob, DatastorageCreatorUtils.AZURE_BLOB_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldLoadGSBucketStorage() throws Exception {
-        Mockito.doReturn(gsBucket).when(mockStorageApiService).load(ID);
-
-        final MvcResult mvcResult = performRequest(get(String.format(LOAD_DATASTORAGE, ID)));
-
-        Mockito.verify(mockStorageApiService).load(ID);
-        assertResponse(mvcResult, gsBucket, DatastorageCreatorUtils.GS_BUCKET_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldLoadNFS3DataStorage() throws Exception {
-        Mockito.doReturn(nfsDataStorage).when(mockStorageApiService).load(ID);
-
-        final MvcResult mvcResult = performRequest(get(String.format(LOAD_DATASTORAGE, ID)));
-
-        Mockito.verify(mockStorageApiService).load(ID);
-        assertResponse(mvcResult, nfsDataStorage, DatastorageCreatorUtils.NFS_STORAGE_TYPE);
-    }
-
-    @Test
     public void shouldFailFindDataStorageForUnauthorizedUser() throws Exception {
         performUnauthorizedRequest(get(FIND_URL));
     }
 
     @Test
-    @WithMockUser
-    public void shouldFindS3BucketStorage() throws Exception {
-        Mockito.doReturn(s3Bucket).when(mockStorageApiService).loadByNameOrId(TEST);
-
-        final MvcResult mvcResult = performRequest(get(FIND_URL).param(ID_PARAM, TEST));
-
-        Mockito.verify(mockStorageApiService).loadByNameOrId(TEST);
-        assertResponse(mvcResult, s3Bucket, DatastorageCreatorUtils.S3_BUCKET_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldFindAzureBlobStorage() throws Exception {
-        Mockito.doReturn(azureBlob).when(mockStorageApiService).loadByNameOrId(TEST);
-
-        final MvcResult mvcResult = performRequest(get(FIND_URL).param(ID_PARAM, TEST));
-
-        Mockito.verify(mockStorageApiService).loadByNameOrId(TEST);
-        assertResponse(mvcResult, azureBlob, DatastorageCreatorUtils.AZURE_BLOB_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldFindGSBucketStorage() throws Exception {
-        Mockito.doReturn(gsBucket).when(mockStorageApiService).loadByNameOrId(TEST);
-
-        final MvcResult mvcResult = performRequest(get(FIND_URL).param(ID_PARAM, TEST));
-
-        Mockito.verify(mockStorageApiService).loadByNameOrId(TEST);
-        assertResponse(mvcResult, gsBucket, DatastorageCreatorUtils.GS_BUCKET_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldFindNFSDataStorage() throws Exception {
-        Mockito.doReturn(nfsDataStorage).when(mockStorageApiService).loadByNameOrId(TEST);
-
-        final MvcResult mvcResult = performRequest(get(FIND_URL).param(ID_PARAM, TEST));
-
-        Mockito.verify(mockStorageApiService).loadByNameOrId(TEST);
-        assertResponse(mvcResult, nfsDataStorage, DatastorageCreatorUtils.NFS_STORAGE_TYPE);
-    }
-
-    @Test
     public void shouldFailFindDataStorageByPathForUnauthorizedUser() throws Exception {
         performUnauthorizedRequest(get(FIND_BY_PATH_URL));
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldFindS3BucketStorageByPath() throws Exception {
-        Mockito.doReturn(s3Bucket).when(mockStorageApiService).loadByPathOrId(TEST);
-
-        final MvcResult mvcResult = performRequest(get(FIND_BY_PATH_URL).param(ID_PARAM, TEST));
-
-        Mockito.verify(mockStorageApiService).loadByPathOrId(TEST);
-        assertResponse(mvcResult, s3Bucket, DatastorageCreatorUtils.S3_BUCKET_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldFindAzureBlobStorageByPath() throws Exception {
-        Mockito.doReturn(azureBlob).when(mockStorageApiService).loadByPathOrId(TEST);
-
-        final MvcResult mvcResult = performRequest(get(FIND_BY_PATH_URL).param(ID_PARAM, TEST));
-
-        Mockito.verify(mockStorageApiService).loadByPathOrId(TEST);
-        assertResponse(mvcResult, azureBlob, DatastorageCreatorUtils.AZURE_BLOB_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldFindGSBucketStorageByPath() throws Exception {
-        Mockito.doReturn(gsBucket).when(mockStorageApiService).loadByPathOrId(TEST);
-
-        final MvcResult mvcResult = performRequest(get(FIND_BY_PATH_URL).param(ID_PARAM, TEST));
-
-        Mockito.verify(mockStorageApiService).loadByPathOrId(TEST);
-        assertResponse(mvcResult, gsBucket, DatastorageCreatorUtils.GS_BUCKET_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldFindNFSDataStorageByPath() throws Exception {
-        Mockito.doReturn(nfsDataStorage).when(mockStorageApiService).loadByPathOrId(TEST);
-
-        final MvcResult mvcResult = performRequest(get(FIND_BY_PATH_URL).param(ID_PARAM, TEST));
-
-        Mockito.verify(mockStorageApiService).loadByPathOrId(TEST);
-        assertResponse(mvcResult, nfsDataStorage, DatastorageCreatorUtils.NFS_STORAGE_TYPE);
     }
 
     @Test
@@ -394,9 +259,8 @@ public class DataStorageControllerTest extends AbstractControllerTest {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(PATH, TEST);
         params.add(SHOW_VERSION, FALSE_AS_STRING);
-        Mockito.doReturn(dataStorageListing).when(
-                mockStorageApiService).getDataStorageItems(ID, TEST, false, null, null
-        );
+        Mockito.doReturn(dataStorageListing)
+                .when(mockStorageApiService).getDataStorageItems(ID, TEST, false, null, null);
 
         final MvcResult mvcResult = performRequest(get(String.format(DATASTORAGE_ITEMS_URL, ID)).params(params));
 
@@ -413,9 +277,8 @@ public class DataStorageControllerTest extends AbstractControllerTest {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(PATH, TEST);
         params.add(SHOW_VERSION, TRUE_AS_STRING);
-        Mockito.doReturn(dataStorageListing).when(
-                mockStorageApiService).getDataStorageItemsOwner(ID, TEST, true, null, null
-        );
+        Mockito.doReturn(dataStorageListing)
+                .when(mockStorageApiService).getDataStorageItemsOwner(ID, TEST, true, null, null);
 
         final MvcResult mvcResult = performRequest(get(String.format(DATASTORAGE_ITEMS_URL, ID)).params(params));
 
@@ -437,9 +300,8 @@ public class DataStorageControllerTest extends AbstractControllerTest {
         params.add(SHOW_VERSION, FALSE_AS_STRING);
         params.add(PAGE_SIZE, ID_AS_STRING);
         params.add(MARKER, TEST);
-        Mockito.doReturn(dataStorageListing).when(
-                mockStorageApiService).getDataStorageItems(ID, TEST, false, TEST_INT, TEST
-        );
+        Mockito.doReturn(dataStorageListing)
+                .when(mockStorageApiService).getDataStorageItems(ID, TEST, false, TEST_INT, TEST);
 
         final MvcResult mvcResult = performRequest(get(String.format(DATASTORAGE_LISTING_URL, ID)).params(params));
 
@@ -486,9 +348,9 @@ public class DataStorageControllerTest extends AbstractControllerTest {
         );
 
         Mockito.verify(mockStorageApiService).createDataStorageFile(ID, TEST, FILE_NAME, TEST.getBytes());
-        final List<UploadFileMetadata> actualResult = JsonMapper.parseData(
-                mvcResult.getResponse().getContentAsString(), new TypeReference<List<UploadFileMetadata>>() { }
-                );
+        final List<UploadFileMetadata> actualResult = JsonMapper
+                .parseData(mvcResult.getResponse().getContentAsString(),
+                           new TypeReference<List<UploadFileMetadata>>() { });
         Assert.assertEquals(uploadFileMetadataList, actualResult);
     }
 
@@ -501,18 +363,16 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldUploadStream() throws Exception {
         final List<DataStorageFile> dataStorageFiles = Collections.singletonList(file);
-        Mockito.doReturn(file).when(mockStorageApiService).createDataStorageFile(
-                Mockito.eq(ID), Mockito.eq(TEST), Mockito.eq(FILE_NAME), (InputStream) Mockito.any()
-        );
+        Mockito.doReturn(file).when(mockStorageApiService)
+                .createDataStorageFile(Mockito.eq(ID), Mockito.eq(TEST),
+                                       Mockito.eq(FILE_NAME), (InputStream) Mockito.any());
 
-        final MvcResult mvcResult = performRequest(
-                post(String.format(DATASTORAGE_UPLOAD_STREAM_URL, ID)).content(MULTIPART_CONTENT).param(PATH, TEST),
-                MULTIPART_CONTENT_TYPE, EXPECTED_CONTENT_TYPE
-        );
+        final MvcResult mvcResult = performRequest(post(String.format(DATASTORAGE_UPLOAD_STREAM_URL, ID))
+                .content(MULTIPART_CONTENT).param(PATH, TEST), MULTIPART_CONTENT_TYPE, EXPECTED_CONTENT_TYPE);
 
-        Mockito.verify(mockStorageApiService).createDataStorageFile(
-                Mockito.eq(ID), Mockito.eq(TEST), Mockito.eq(FILE_NAME), (InputStream) Mockito.any()
-        );
+        Mockito.verify(mockStorageApiService)
+                .createDataStorageFile(Mockito.eq(ID), Mockito.eq(TEST),
+                                       Mockito.eq(FILE_NAME), (InputStream) Mockito.any());
         assertResponse(mvcResult, dataStorageFiles, new TypeReference<Result<List<DataStorageFile>>>() { });
     }
 
@@ -531,14 +391,15 @@ public class DataStorageControllerTest extends AbstractControllerTest {
         params.add(VERSION, TEST);
         Mockito.doReturn(dataStorageStreamingContent).when(mockStorageApiService).getStreamingContent(ID, TEST, TEST);
 
-        final MvcResult mvcResult = performRequest(
-                get(String.format(DATASTORAGE_DOWNLOAD_STREAM_URL, ID)).params(params), OCTET_STREAM_CONTENT_TYPE
-        );
+        final MvcResult mvcResult = performRequest(get(String.format(DATASTORAGE_DOWNLOAD_STREAM_URL, ID))
+                .params(params), OCTET_STREAM_CONTENT_TYPE);
 
         Mockito.verify(mockStorageApiService).getStreamingContent(ID, TEST, TEST);
 
         final String actualData = mvcResult.getResponse().getContentAsString();
+        final String contentDispositionHeader = mvcResult.getResponse().getHeader(CONTENT_DISPOSITION_HEADER);
         Assert.assertEquals(TEST, actualData);
+        assertThat(contentDispositionHeader).contains(TEST);
     }
 
     @Test
@@ -549,14 +410,12 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldUploadStorageItem() throws Exception {
-        Mockito.doReturn(file).when(
-                mockStorageApiService).createDataStorageFile(ID, TEST, TEST.getBytes(Charset.defaultCharset())
-        );
+        Mockito.doReturn(file).when(mockStorageApiService)
+                .createDataStorageFile(ID, TEST, TEST.getBytes(Charset.defaultCharset()));
         final String content = getObjectMapper().writeValueAsString(TEST);
 
-        final MvcResult mvcResult = performRequest(
-                post(String.format(DATASTORAGE_ITEMS_CONTENT, ID)).param(PATH, TEST).content(content)
-        );
+        final MvcResult mvcResult = performRequest(post(String.format(DATASTORAGE_ITEMS_CONTENT, ID))
+                .param(PATH, TEST).content(content));
 
         Mockito.verify(mockStorageApiService).createDataStorageFile(ID, TEST, TEST.getBytes(Charset.defaultCharset()));
         assertResponse(mvcResult, file, DatastorageCreatorUtils.DATA_STORAGE_FILE_TYPE);
@@ -574,9 +433,8 @@ public class DataStorageControllerTest extends AbstractControllerTest {
         final String content = getObjectMapper().writeValueAsString(updateList);
         Mockito.doReturn(TEST_INT).when(mockStorageApiService).deleteDataStorageItems(ID, updateList, false);
 
-        final MvcResult mvcResult = performRequest(
-                delete(String.format(DATASTORAGE_ITEMS_URL, ID)).param(TOTALLY, FALSE_AS_STRING).content(content)
-        );
+        final MvcResult mvcResult = performRequest(delete(String.format(DATASTORAGE_ITEMS_URL, ID))
+                .param(TOTALLY, FALSE_AS_STRING).content(content));
 
         Mockito.verify(mockStorageApiService).deleteDataStorageItems(ID, updateList, false);
         assertResponse(mvcResult, TEST_INT, INTEGER_TYPE);
@@ -587,14 +445,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     public void shouldDeleteDataStorageItemsOwner() throws Exception {
         final List<UpdateDataStorageItemVO> updateList = Collections.singletonList(update);
         final String content = getObjectMapper().writeValueAsString(updateList);
-        Mockito.doReturn(1).when(mockStorageApiService).deleteDataStorageItemsOwner(ID, updateList, true);
+        Mockito.doReturn(TEST_INT).when(mockStorageApiService).deleteDataStorageItemsOwner(ID, updateList, true);
 
-        final MvcResult mvcResult = performRequest(
-                delete(String.format(DATASTORAGE_ITEMS_URL, ID)).param(TOTALLY, TRUE_AS_STRING).content(content)
-        );
+        final MvcResult mvcResult = performRequest(delete(String.format(DATASTORAGE_ITEMS_URL, ID))
+                .param(TOTALLY, TRUE_AS_STRING).content(content));
 
         Mockito.verify(mockStorageApiService).deleteDataStorageItemsOwner(ID, updateList, true);
-        assertResponse(mvcResult, 1, INTEGER_TYPE);
+        assertResponse(mvcResult, TEST_INT, INTEGER_TYPE);
     }
 
     @Test
@@ -609,17 +466,14 @@ public class DataStorageControllerTest extends AbstractControllerTest {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(PATH, TEST_PATH);
         params.add(CONTENT_DISPOSITION_PARAM, CONTENT_DISPOSITION.name());
-        Mockito.doReturn(url).when(mockStorageApiService).generateDataStorageItemUrl(
-                ID, TEST_PATH, null, CONTENT_DISPOSITION
-        );
+        Mockito.doReturn(url).when(mockStorageApiService)
+                .generateDataStorageItemUrl(ID, TEST_PATH, null, CONTENT_DISPOSITION);
 
         final MvcResult mvcResult = performRedirectedRequest(
                 get(String.format(DOWNLOAD_REDIRECT_URL, ID)).params(params), TEST
         );
 
-        Mockito.verify(mockStorageApiService).generateDataStorageItemUrl(
-                ID, TEST_PATH, null, CONTENT_DISPOSITION
-        );
+        Mockito.verify(mockStorageApiService).generateDataStorageItemUrl(ID, TEST_PATH, null, CONTENT_DISPOSITION);
         final String actual = mvcResult.getResponse().getRedirectedUrl();
         assertThat(actual).isEqualTo(TEST);
     }
@@ -632,17 +486,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
         params.add(PATH, TEST_PATH);
         params.add(VERSION, TEST);
         params.add(CONTENT_DISPOSITION_PARAM, CONTENT_DISPOSITION.name());
-        Mockito.doReturn(url).when(mockStorageApiService).generateDataStorageItemUrlOwner(
-                ID, TEST_PATH, TEST, CONTENT_DISPOSITION
-        );
+        Mockito.doReturn(url).when(mockStorageApiService)
+                .generateDataStorageItemUrlOwner(ID, TEST_PATH, TEST, CONTENT_DISPOSITION);
 
-        final MvcResult mvcResult = performRedirectedRequest(
-                get(String.format(DOWNLOAD_REDIRECT_URL, ID)).params(params), TEST
-        );
+        final MvcResult mvcResult = performRedirectedRequest(get(String.format(DOWNLOAD_REDIRECT_URL, ID))
+                .params(params), TEST);
 
-        Mockito.verify(mockStorageApiService).generateDataStorageItemUrlOwner(
-                ID, TEST_PATH, TEST, CONTENT_DISPOSITION
-        );
+        Mockito.verify(mockStorageApiService).generateDataStorageItemUrlOwner(ID, TEST_PATH, TEST, CONTENT_DISPOSITION);
         final String actual = mvcResult.getResponse().getRedirectedUrl();
         assertThat(actual).isEqualTo(TEST);
     }
@@ -660,15 +510,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
         params.add(PATH, TEST_PATH);
         params.add(VERSION, TEST);
         params.add(CONTENT_DISPOSITION_PARAM, CONTENT_DISPOSITION.name());
-        Mockito.doReturn(url).when(mockStorageApiService).generateDataStorageItemUrlOwner(
-                ID, TEST_PATH, TEST, CONTENT_DISPOSITION
-        );
+        Mockito.doReturn(url).when(mockStorageApiService)
+                .generateDataStorageItemUrlOwner(ID, TEST_PATH, TEST, CONTENT_DISPOSITION);
 
         final MvcResult mvcResult = performRequest(get(String.format(GENERATE_URL, ID)).params(params));
 
-        Mockito.verify(mockStorageApiService).generateDataStorageItemUrlOwner(
-                ID, TEST_PATH, TEST, CONTENT_DISPOSITION
-        );
+        Mockito.verify(mockStorageApiService)
+                .generateDataStorageItemUrlOwner(ID, TEST_PATH, TEST, CONTENT_DISPOSITION);
 
         assertResponse(mvcResult, url, DatastorageCreatorUtils.DOWNLOAD_FILE_URL_TYPE);
     }
@@ -736,17 +584,15 @@ public class DataStorageControllerTest extends AbstractControllerTest {
         final List<DataStorageDownloadFileUrl> urls = Collections.singletonList(url);
         final GenerateDownloadUrlVO generateDownloadUrlVO = DatastorageCreatorUtils.getGenerateDownloadUrlVO();
         final String content = getObjectMapper().writeValueAsString(generateDownloadUrlVO);
-        Mockito.doReturn(urls).when(mockStorageApiService).generateDataStorageItemUrl(
-                ID, generateDownloadUrlVO.getPaths(), generateDownloadUrlVO.getPermissions(),
-                generateDownloadUrlVO.getHours()
-        );
+        Mockito.doReturn(urls).when(mockStorageApiService)
+                .generateDataStorageItemUrl(ID, generateDownloadUrlVO.getPaths(),
+                                            generateDownloadUrlVO.getPermissions(), generateDownloadUrlVO.getHours());
 
         final MvcResult mvcResult = performRequest(post(String.format(GENERATE_URL, ID)).content(content));
 
-        Mockito.verify(mockStorageApiService).generateDataStorageItemUrl(
-                ID, generateDownloadUrlVO.getPaths(), generateDownloadUrlVO.getPermissions(),
-                generateDownloadUrlVO.getHours()
-        );
+        Mockito.verify(mockStorageApiService)
+                .generateDataStorageItemUrl(ID, generateDownloadUrlVO.getPaths(),
+                                            generateDownloadUrlVO.getPermissions(), generateDownloadUrlVO.getHours());
         assertResponse(mvcResult, urls, DatastorageCreatorUtils.DOWNLOAD_FILE_URL_LIST_TYPE);
     }
 
@@ -794,140 +640,8 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    @WithMockUser
-    public void shouldRegisterS3BucketDataStorage() throws Exception {
-        final SecuredEntityWithAction<S3bucketDataStorage> securedS3bucket = new SecuredEntityWithAction<>();
-        securedS3bucket.setEntity(s3Bucket);
-        final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
-        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add(CLOUD, TRUE_AS_STRING);
-        params.add(SKIP_POLICY, TRUE_AS_STRING);
-        final String content = getObjectMapper().writeValueAsString(dataStorageVO);
-        Mockito.doReturn(securedS3bucket).when(
-                mockStorageApiService).create(Mockito.refEq(dataStorageVO), Mockito.eq(true), Mockito.eq(true)
-        );
-
-        final MvcResult mvcResult = performRequest(post(DATASTORAGE_SAVE_URL).params(params).content(content));
-
-        Mockito.verify(mockStorageApiService).create(Mockito.refEq(dataStorageVO), Mockito.eq(true), Mockito.eq(true));
-        assertResponse(mvcResult, securedS3bucket, DatastorageCreatorUtils.SECURED_S3_BUCKET_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldRegisterAzureBlobStorage() throws Exception {
-        final SecuredEntityWithAction<AzureBlobStorage> securedAzureStorage = new SecuredEntityWithAction<>();
-        securedAzureStorage.setEntity(azureBlob);
-        final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
-        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add(CLOUD, TRUE_AS_STRING);
-        params.add(SKIP_POLICY, TRUE_AS_STRING);
-        final String content = getObjectMapper().writeValueAsString(dataStorageVO);
-        Mockito.doReturn(securedAzureStorage).when(
-                mockStorageApiService).create(Mockito.refEq(dataStorageVO), Mockito.eq(true), Mockito.eq(true)
-        );
-
-        final MvcResult mvcResult = performRequest(post(DATASTORAGE_SAVE_URL).params(params).content(content));
-
-        Mockito.verify(mockStorageApiService).create(Mockito.refEq(dataStorageVO), Mockito.eq(true), Mockito.eq(true));
-        assertResponse(mvcResult, securedAzureStorage, DatastorageCreatorUtils.SECURED_AZURE_BLOB_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldRegisterGSBucketStorage() throws Exception {
-        final SecuredEntityWithAction<GSBucketStorage> securedGSbucket = new SecuredEntityWithAction<>();
-        securedGSbucket.setEntity(gsBucket);
-        final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
-        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add(CLOUD, TRUE_AS_STRING);
-        params.add(SKIP_POLICY, TRUE_AS_STRING);
-        final String content = getObjectMapper().writeValueAsString(dataStorageVO);
-        Mockito.doReturn(securedGSbucket).when(
-                mockStorageApiService).create(Mockito.refEq(dataStorageVO), Mockito.eq(true), Mockito.eq(true)
-        );
-
-        final MvcResult mvcResult = performRequest(post(DATASTORAGE_SAVE_URL).params(params).content(content));
-
-        Mockito.verify(mockStorageApiService).create(Mockito.refEq(dataStorageVO), Mockito.eq(true), Mockito.eq(true));
-        assertResponse(mvcResult, securedGSbucket, DatastorageCreatorUtils.SECURED_GS_BUCKET_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldRegisterNFSStorage() throws Exception {
-        final SecuredEntityWithAction<NFSDataStorage> securedNFSStorage = new SecuredEntityWithAction<>();
-        securedNFSStorage.setEntity(nfsDataStorage);
-        final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
-        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add(CLOUD, TRUE_AS_STRING);
-        params.add(SKIP_POLICY, TRUE_AS_STRING);
-        final String content = getObjectMapper().writeValueAsString(dataStorageVO);
-        Mockito.doReturn(securedNFSStorage).when(
-                mockStorageApiService).create(Mockito.refEq(dataStorageVO), Mockito.eq(true), Mockito.eq(true)
-        );
-
-        final MvcResult mvcResult = performRequest(post(DATASTORAGE_SAVE_URL).params(params).content(content));
-
-        Mockito.verify(mockStorageApiService).create(Mockito.refEq(dataStorageVO), Mockito.eq(true), Mockito.eq(true));
-        assertResponse(mvcResult, securedNFSStorage, DatastorageCreatorUtils.SECURED_NFS_STORAGE_TYPE);
-    }
-
-    @Test
     public void shouldFailUpdateDataStorage() throws Exception {
         performUnauthorizedRequest(post(DATASTORAGE_UPDATE_URL));
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldUpdateS3BucketDataStorage() throws Exception {
-        final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
-        final String content = getObjectMapper().writeValueAsString(dataStorageVO);
-        Mockito.doReturn(s3Bucket).when(mockStorageApiService).update(Mockito.refEq(dataStorageVO));
-
-        final MvcResult mvcResult = performRequest(post(DATASTORAGE_UPDATE_URL).content(content));
-
-        Mockito.verify(mockStorageApiService).update(Mockito.refEq(dataStorageVO));
-        assertResponse(mvcResult, s3Bucket, DatastorageCreatorUtils.S3_BUCKET_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldUpdateAzureBlobStorage() throws Exception {
-        final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
-        final String content = getObjectMapper().writeValueAsString(dataStorageVO);
-        Mockito.doReturn(azureBlob).when(mockStorageApiService).update(Mockito.refEq(dataStorageVO));
-
-        final MvcResult mvcResult = performRequest(post(DATASTORAGE_UPDATE_URL).content(content));
-
-        Mockito.verify(mockStorageApiService).update(Mockito.refEq(dataStorageVO));
-        assertResponse(mvcResult, azureBlob, DatastorageCreatorUtils.AZURE_BLOB_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldUpdateGSBucketStorage() throws Exception {
-        final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
-        final String content = getObjectMapper().writeValueAsString(dataStorageVO);
-        Mockito.doReturn(gsBucket).when(mockStorageApiService).update(Mockito.refEq(dataStorageVO));
-
-        final MvcResult mvcResult = performRequest(post(DATASTORAGE_UPDATE_URL).content(content));
-
-        Mockito.verify(mockStorageApiService).update(Mockito.refEq(dataStorageVO));
-        assertResponse(mvcResult, gsBucket, DatastorageCreatorUtils.GS_BUCKET_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldUpdateNFSStorage() throws Exception {
-        final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
-        final String content = getObjectMapper().writeValueAsString(dataStorageVO);
-        Mockito.doReturn(nfsDataStorage).when(mockStorageApiService).update(Mockito.refEq(dataStorageVO));
-
-        final MvcResult mvcResult = performRequest(post(DATASTORAGE_UPDATE_URL).content(content));
-
-        Mockito.verify(mockStorageApiService).update(Mockito.refEq(dataStorageVO));
-        assertResponse(mvcResult, nfsDataStorage, DatastorageCreatorUtils.NFS_STORAGE_TYPE);
     }
 
     @Test
@@ -936,112 +650,8 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    @WithMockUser
-    public void shouldUpdateS3BucketDataStoragePolicy() throws Exception {
-        final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
-        final String content = getObjectMapper().writeValueAsString(dataStorageVO);
-        Mockito.doReturn(s3Bucket).when(mockStorageApiService).updatePolicy(Mockito.refEq(dataStorageVO));
-
-        final MvcResult mvcResult = performRequest(post(DATASTORAGE_POLICY_URL).content(content));
-
-        Mockito.verify(mockStorageApiService).updatePolicy(Mockito.refEq(dataStorageVO));
-        assertResponse(mvcResult, s3Bucket, DatastorageCreatorUtils.S3_BUCKET_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldUpdateAzureBlobStoragePolicy() throws Exception {
-        final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
-        final String content = getObjectMapper().writeValueAsString(dataStorageVO);
-        Mockito.doReturn(azureBlob).when(mockStorageApiService).updatePolicy(Mockito.refEq(dataStorageVO));
-
-        final MvcResult mvcResult = performRequest(post(DATASTORAGE_POLICY_URL).content(content));
-
-        Mockito.verify(mockStorageApiService).updatePolicy(Mockito.refEq(dataStorageVO));
-        assertResponse(mvcResult, azureBlob, DatastorageCreatorUtils.AZURE_BLOB_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldUpdateGSBucketStoragePolicy() throws Exception {
-        final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
-        final String content = getObjectMapper().writeValueAsString(dataStorageVO);
-        Mockito.doReturn(gsBucket).when(mockStorageApiService).updatePolicy(Mockito.refEq(dataStorageVO));
-
-        final MvcResult mvcResult = performRequest(post(DATASTORAGE_POLICY_URL).content(content));
-
-        Mockito.verify(mockStorageApiService).updatePolicy(Mockito.refEq(dataStorageVO));
-        assertResponse(mvcResult, gsBucket, DatastorageCreatorUtils.GS_BUCKET_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldUpdateNFSStoragePolicy() throws Exception {
-        final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
-        final String content = getObjectMapper().writeValueAsString(dataStorageVO);
-        Mockito.doReturn(nfsDataStorage).when(mockStorageApiService).updatePolicy(Mockito.refEq(dataStorageVO));
-
-        final MvcResult mvcResult = performRequest(post(DATASTORAGE_POLICY_URL).content(content));
-
-        Mockito.verify(mockStorageApiService).updatePolicy(Mockito.refEq(dataStorageVO));
-        assertResponse(mvcResult, nfsDataStorage, DatastorageCreatorUtils.NFS_STORAGE_TYPE);
-    }
-
-    @Test
     public void shouldDeleteDataStorageForUnauthorizedUser() throws Exception {
         performUnauthorizedRequest(delete(DATASTORAGE_DELETE_URL, ID));
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldDeleteS3bucketDataStorage() throws Exception {
-        Mockito.doReturn(s3Bucket).when(mockStorageApiService).delete(ID, true);
-
-        final MvcResult mvcResult = performRequest(
-                delete(String.format(DATASTORAGE_DELETE_URL, ID)).param(CLOUD, TRUE_AS_STRING)
-        );
-
-        Mockito.verify(mockStorageApiService).delete(ID, true);
-        assertResponse(mvcResult, s3Bucket, DatastorageCreatorUtils.S3_BUCKET_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldDeleteAzureBlobStorage() throws Exception {
-        Mockito.doReturn(azureBlob).when(mockStorageApiService).delete(ID, true);
-
-        final MvcResult mvcResult = performRequest(
-                delete(String.format(DATASTORAGE_DELETE_URL, ID)).param(CLOUD, TRUE_AS_STRING)
-        );
-
-        Mockito.verify(mockStorageApiService).delete(ID, true);
-        assertResponse(mvcResult, azureBlob, DatastorageCreatorUtils.AZURE_BLOB_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldDeleteGSbucketStorage() throws Exception {
-        Mockito.doReturn(gsBucket).when(mockStorageApiService).delete(ID, true);
-
-        final MvcResult mvcResult = performRequest(
-                delete(String.format(DATASTORAGE_DELETE_URL, ID)).param(CLOUD, TRUE_AS_STRING)
-        );
-
-        Mockito.verify(mockStorageApiService).delete(ID, true);
-        assertResponse(mvcResult, gsBucket, DatastorageCreatorUtils.GS_BUCKET_TYPE);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldDeleteNFSStorage() throws Exception {
-        Mockito.doReturn(nfsDataStorage).when(mockStorageApiService).delete(ID, true);
-
-        final MvcResult mvcResult = performRequest(
-                delete(String.format(DATASTORAGE_DELETE_URL, ID)).param(CLOUD, TRUE_AS_STRING)
-        );
-
-        Mockito.verify(mockStorageApiService).delete(ID, true);
-        assertResponse(mvcResult, nfsDataStorage, DatastorageCreatorUtils.NFS_STORAGE_TYPE);
     }
 
     @Test
@@ -1287,9 +897,8 @@ public class DataStorageControllerTest extends AbstractControllerTest {
         params.add(PAGE, ID_AS_STRING);
         params.add(PAGE_SIZE, ID_AS_STRING);
         params.add(FILTER_MASK, ID_AS_STRING);
-        Mockito.doReturn(entityWithPermissionVO).when(
-                mockStorageApiService).getStoragePermission(TEST_INT, TEST_INT, TEST_INT
-        );
+        Mockito.doReturn(entityWithPermissionVO)
+                .when(mockStorageApiService).getStoragePermission(TEST_INT, TEST_INT, TEST_INT);
 
         final MvcResult mvcResult = performRequest(get(PERMISSION_URL).params(params));
 
@@ -1363,12 +972,120 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldGetSharedFSSPathForRun() throws Exception {
         final StorageMountPath storageMountPath = DatastorageCreatorUtils.getStorageMountPath();
-
         Mockito.doReturn(storageMountPath).when(mockStorageApiService).getSharedFSSPathForRun(ID, false);
 
         final MvcResult mvcResult = performRequest(get(SHARED_STORAGE_URL).param(RUN_ID, ID_AS_STRING));
 
         Mockito.verify(mockStorageApiService).getSharedFSSPathForRun(ID, false);
         assertResponse(mvcResult, storageMountPath, DatastorageCreatorUtils.STORAGE_MOUNT_PATH_TYPE);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldFindAnyDataStorage() {
+        storageTypeReferenceMap.keySet().forEach(dataStorage -> {
+            Mockito.doReturn(dataStorage).when(mockStorageApiService).loadByNameOrId(TEST);
+            final MvcResult mvcResult = performRequest(get(FIND_URL).param(ID_PARAM, TEST));
+
+            Assert.assertNotNull(mvcResult);
+            assertResponse(mvcResult, dataStorage, storageTypeReferenceMap.get(dataStorage));
+        });
+        Mockito.verify(mockStorageApiService, Mockito.times(storageTypeReferenceMap.size())).loadByNameOrId(TEST);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldRegisterAnyDataStorage() throws Exception {
+        final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
+        final String content = getObjectMapper().writeValueAsString(dataStorageVO);
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        final Map<AbstractDataStorage, TypeReference> map = DatastorageCreatorUtils.getSecuredTypeStoragesMap();
+        params.add(CLOUD, TRUE_AS_STRING);
+        params.add(SKIP_POLICY, TRUE_AS_STRING);
+        map.keySet().forEach(dataStorage -> {
+            final SecuredEntityWithAction<AbstractDataStorage> securedDataStorage = new SecuredEntityWithAction<>();
+            securedDataStorage.setEntity(dataStorage);
+            Mockito.doReturn(securedDataStorage).when(mockStorageApiService)
+                    .create(Mockito.refEq(dataStorageVO), Mockito.eq(true), Mockito.eq(true));
+
+            final MvcResult mvcResult = performRequest(post(DATASTORAGE_SAVE_URL).params(params).content(content));
+
+            assertResponse(mvcResult, securedDataStorage, map.get(dataStorage));
+        });
+
+        Mockito.verify(mockStorageApiService, Mockito.times(map.size()))
+                .create(Mockito.refEq(dataStorageVO), Mockito.eq(true), Mockito.eq(true));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldUpdateAnyDataStorage() throws Exception {
+        final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
+        final String content = getObjectMapper().writeValueAsString(dataStorageVO);
+
+        storageTypeReferenceMap.keySet().forEach(dataStorage -> {
+            Mockito.doReturn(dataStorage).when(mockStorageApiService).update(Mockito.refEq(dataStorageVO));
+            final MvcResult mvcResult = performRequest(post(DATASTORAGE_UPDATE_URL).content(content));
+
+            assertResponse(mvcResult, dataStorage, storageTypeReferenceMap.get(dataStorage));
+        });
+
+        Mockito.verify(mockStorageApiService, Mockito.times(storageTypeReferenceMap.size()))
+                .update(Mockito.refEq(dataStorageVO));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDeleteAnyDataStorage() {
+        storageTypeReferenceMap.keySet().forEach(dataStorage -> {
+            Mockito.doReturn(dataStorage).when(mockStorageApiService).delete(ID, true);
+            final MvcResult mvcResult = performRequest(delete(String.format(DATASTORAGE_DELETE_URL, ID))
+                    .param(CLOUD, TRUE_AS_STRING));
+
+            assertResponse(mvcResult, dataStorage, storageTypeReferenceMap.get(dataStorage));
+        });
+        Mockito.verify(mockStorageApiService, Mockito.times(storageTypeReferenceMap.size())).delete(ID, true);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldLoadAnyDataStorage() {
+        storageTypeReferenceMap.keySet().forEach(dataStorage -> {
+            Mockito.doReturn(s3Bucket).when(mockStorageApiService).load(ID);
+            final MvcResult mvcResult = performRequest(get(String.format(LOAD_DATASTORAGE, ID)));
+
+            assertResponse(mvcResult, s3Bucket, DatastorageCreatorUtils.S3_BUCKET_TYPE);
+        });
+
+        Mockito.verify(mockStorageApiService, Mockito.times(storageTypeReferenceMap.size())).load(ID);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldFindAnyStorageByPath() {
+        storageTypeReferenceMap.keySet().forEach(dataStorage -> {
+            Mockito.doReturn(dataStorage).when(mockStorageApiService).loadByPathOrId(TEST);
+            final MvcResult mvcResult = performRequest(get(FIND_BY_PATH_URL).param(ID_PARAM, TEST));
+
+            assertResponse(mvcResult, dataStorage, storageTypeReferenceMap.get(dataStorage));
+        });
+
+        Mockito.verify(mockStorageApiService, Mockito.times(storageTypeReferenceMap.size())).loadByPathOrId(TEST);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldUpdateAnyDataStoragePolicy() throws Exception {
+        final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
+        final String content = getObjectMapper().writeValueAsString(dataStorageVO);
+        storageTypeReferenceMap.keySet().forEach(dataStorage -> {
+            Mockito.doReturn(dataStorage).when(mockStorageApiService).updatePolicy(Mockito.refEq(dataStorageVO));
+            final MvcResult mvcResult = performRequest(post(DATASTORAGE_POLICY_URL).content(content));
+
+            assertResponse(mvcResult, dataStorage, storageTypeReferenceMap.get(dataStorage));
+        });
+
+        Mockito.verify(mockStorageApiService, Mockito.times(storageTypeReferenceMap.size()))
+                .updatePolicy(Mockito.refEq(dataStorageVO));
     }
 }

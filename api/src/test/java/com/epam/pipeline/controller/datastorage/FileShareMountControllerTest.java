@@ -29,7 +29,6 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = FileShareMountController.class)
 public class FileShareMountControllerTest extends AbstractControllerTest {
@@ -67,10 +66,7 @@ public class FileShareMountControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldDelete() throws Exception {
-        mvc().perform(delete(String.format(FILESHAREMOUNT_ID_URL, ID))
-                .servletPath(SERVLET_PATH)
-                .contentType(EXPECTED_CONTENT_TYPE))
-                .andExpect(status().isOk());
+        performRequestWithoutResponse(delete(String.format(FILESHAREMOUNT_ID_URL, ID)));
 
         Mockito.verify(mockFileShareMountApiService).delete(ID);
     }

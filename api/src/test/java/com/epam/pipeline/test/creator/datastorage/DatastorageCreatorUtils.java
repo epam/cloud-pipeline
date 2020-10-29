@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.GenerateDownloadUrlVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
@@ -47,7 +48,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
@@ -219,5 +222,23 @@ public final class DatastorageCreatorUtils {
     public static DataStorageStreamingContent getDataStorageStreamingContent() {
         final InputStream inputStream = new ByteArrayInputStream(TEST_STRING.getBytes());
         return new DataStorageStreamingContent(inputStream, TEST_STRING);
+    }
+
+    public static Map<AbstractDataStorage, TypeReference> getRegularTypeStorages() {
+        Map<AbstractDataStorage, TypeReference> map = new HashMap<>();
+        map.put(getS3bucketDataStorage(), DatastorageCreatorUtils.S3_BUCKET_TYPE);
+        map.put(getAzureBlobStorage(), DatastorageCreatorUtils.AZURE_BLOB_TYPE);
+        map.put(getGsBucketStorage(), DatastorageCreatorUtils.GS_BUCKET_TYPE);
+        map.put(getNfsDataStorage(), DatastorageCreatorUtils.NFS_STORAGE_TYPE);
+        return map;
+    }
+
+    public static Map<AbstractDataStorage, TypeReference> getSecuredTypeStoragesMap() {
+        final Map<AbstractDataStorage, TypeReference> map = new HashMap<>();
+        map.put(getS3bucketDataStorage(), DatastorageCreatorUtils.SECURED_S3_BUCKET_TYPE);
+        map.put(getAzureBlobStorage(), DatastorageCreatorUtils.SECURED_AZURE_BLOB_TYPE);
+        map.put(getGsBucketStorage(), DatastorageCreatorUtils.SECURED_GS_BUCKET_TYPE);
+        map.put(getNfsDataStorage(), DatastorageCreatorUtils.SECURED_NFS_STORAGE_TYPE);
+        return map;
     }
 }
