@@ -60,7 +60,7 @@ public class ElasticsearchAgentService {
                                      final Optional<Set<ElasticsearchSynchronizer>> synchronizers,
                                      final @Value("${sync.last.synchronization.file}")
                                          String lastSynchronizationTimeFilePath,
-                                     final @Value("${sync.billing.start.date:}") String startDateStringValue) {
+                                     final @Value("${sync.billing.initial.date:}") String startDateStringValue) {
         this.elasticsearchAgentThreadPool = elasticsearchAgentThreadPool;
         this.synchronizers = synchronizers.orElse(Collections.emptySet());
         this.lastSynchronizationTimeFilePath = lastSynchronizationTimeFilePath;
