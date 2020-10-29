@@ -272,11 +272,11 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
 
     private boolean storageExistsOnBillingDate(final EntityContainer<AbstractDataStorage> storageContainer,
                                                final LocalDateTime reportDate) {
-        return reportDate.minusDays(1).isAfter(storageContainer.getEntity()
-                                                   .getCreatedDate()
-                                                   .toInstant()
-                                                   .atZone(ZoneId.systemDefault())
-                                                   .toLocalDateTime());
+        return reportDate.isAfter(storageContainer.getEntity()
+                                      .getCreatedDate()
+                                      .toInstant()
+                                      .atZone(ZoneId.systemDefault())
+                                      .toLocalDateTime());
     }
 
     private List<DocWriteRequest> buildRequestsForGivenDate(final EntityContainer<AbstractDataStorage> storageContainer,

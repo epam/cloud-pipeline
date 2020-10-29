@@ -61,9 +61,11 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -369,6 +371,7 @@ public class StorageToRequestConverterTest {
                 storage = s3bucketDataStorage;
                 break;
         }
+        storage.setCreatedDate(Date.from(SYNC_START.atZone(ZoneId.systemDefault()).toInstant()));
         return EntityContainer.<AbstractDataStorage>builder()
             .entity(storage)
             .owner(testUserWithMetadata)
