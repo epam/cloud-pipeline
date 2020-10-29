@@ -591,8 +591,11 @@ function add_self_to_no_proxy() {
       # -- hostname -I: prints the addresses with the trailing whitespace, so "echo" it to remove any leading/trailing spaces
       # -- Also "sed" is used to remove trailing comma, as this breakes "pipe storage ls/cp/etc."
       local _self_ips=$(echo $(hostname -I))
-      local _new_no_proxy="${no_proxy},${_self_hostname},${_self_ips// /,}"
-      export no_proxy=$(echo $_new_no_proxy | sed 's/,$//g')
+      local _self_no_proxy="${no_proxy},${_self_hostname},${_self_ips// /,}"
+      _self_no_proxy=$(echo $_self_no_proxy | sed 's/,$//g')
+      # "Embedded" Kube services domain is added to "no_proxy" as well
+      local _kube_no_proxy="${CP_CAP_KUBE_DOMAIN:-.cp}"
+      export no_proxy="${_self_no_proxy},${_kube_no_proxy}"
 }
 ######################################################
 
