@@ -27,6 +27,7 @@ import com.epam.pipeline.billingreportagent.service.impl.converter.FileShareMoun
 import com.epam.pipeline.billingreportagent.service.impl.converter.GcpStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.PriceLoadingMode;
 import com.epam.pipeline.billingreportagent.service.impl.converter.StoragePricingService;
+import com.epam.pipeline.billingreportagent.service.impl.loader.CloudRegionLoader;
 import com.epam.pipeline.billingreportagent.service.impl.synchronizer.PipelineRunSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.synchronizer.StorageSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.converter.StorageToBillingRequestConverter;
@@ -184,15 +185,14 @@ public class CommonSyncConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = "sync.storage.azure-blob.disable", matchIfMissing = true, havingValue = FALSE)
-    public StorageSynchronizer azureSynchronizer(final @Value("${sync.storage.azure.auth.file}") String authFile,
-                                                 final @Value("${sync.storage.azure.offer.id}") String offerId,
-                                                 final StorageLoader loader,
+    public StorageSynchronizer azureSynchronizer(final StorageLoader loader,
                                                  final ElasticIndexService indexService,
-                                                 final ElasticsearchServiceClient elasticsearchClient) {
+                                                 final ElasticsearchServiceClient elasticsearchClient,
+                                                 final CloudRegionLoader regionLoader) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.AZ_BLOB_STORAGE,
                 billingCenterKey);
         final StoragePricingService pricingService =
-                new StoragePricingService(new AzureStoragePriceListLoader(offerId, authFile));
+                new StoragePricingService(new AzureStoragePriceListLoader(regionLoader));
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
                 storageIndexName,
