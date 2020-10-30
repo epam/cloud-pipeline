@@ -18,6 +18,7 @@ package com.epam.pipeline.acl.datastorage;
 
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
+import com.epam.pipeline.security.acl.AclExpressions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -28,12 +29,12 @@ public class FileShareMountApiService {
     @Autowired
     private FileShareMountManager fileShareMountManager;
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public FileShareMount save(FileShareMount fileShareMount) {
         return fileShareMountManager.save(fileShareMount);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public void delete(Long id) {
         fileShareMountManager.delete(id);
     }

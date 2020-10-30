@@ -36,7 +36,7 @@ import static org.mockito.Mockito.verify;
 
 public class FileShareMountApiServiceTest extends AbstractAclTest {
 
-    FileShareMount fileShareMount = DatastorageCreatorUtils.getFileShareMount();
+    private final FileShareMount fileShareMount = DatastorageCreatorUtils.getFileShareMount();
 
     @Autowired
     private FileShareMountApiService fileShareMountApiService;

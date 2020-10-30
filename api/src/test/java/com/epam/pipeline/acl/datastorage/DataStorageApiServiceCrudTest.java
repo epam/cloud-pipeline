@@ -52,7 +52,7 @@ public class DataStorageApiServiceCrudTest extends AbstractDataStorageAclTest {
         initAclEntity(s3bucket, AclPermission.READ);
         doReturn(mutableListOf(s3bucket)).when(mockDataStorageManager).getDataStorages();
 
-        List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getDataStorages();
+        final List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getDataStorages();
 
         assertThat(dataStorageApiService.getDataStorages()).hasSize(1).contains(s3bucket);
         assertThat(returnedDataStorages.get(0).getMask()).isEqualTo(1);
@@ -92,7 +92,7 @@ public class DataStorageApiServiceCrudTest extends AbstractDataStorageAclTest {
                 new UserPermission(SIMPLE_USER, AclPermission.WRITE.getMask())));
         doReturn(mutableListOf(s3bucket)).when(mockDataStorageManager).getDataStorages();
 
-        List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getWritableStorages();
+        final List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getWritableStorages();
 
         assertThat(returnedDataStorages).hasSize(1).contains(s3bucket);
         assertThat(returnedDataStorages.get(0).getMask()).isEqualTo(3);
@@ -169,7 +169,7 @@ public class DataStorageApiServiceCrudTest extends AbstractDataStorageAclTest {
         initAclEntity(s3bucket, AclPermission.READ);
         doReturn(mutableListOf(s3bucket)).when(mockDataStorageManager).getDataStorages();
 
-        List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getAvailableStorages();
+        final List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getAvailableStorages();
 
         assertThat(returnedDataStorages).hasSize(1).contains(s3bucket);
         assertThat(returnedDataStorages.get(0).getMask()).isEqualTo(1);
@@ -181,7 +181,7 @@ public class DataStorageApiServiceCrudTest extends AbstractDataStorageAclTest {
         initAclEntity(s3bucket, AclPermission.WRITE);
         doReturn(mutableListOf(s3bucket)).when(mockDataStorageManager).getDataStorages();
 
-        List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getAvailableStorages();
+        final List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getAvailableStorages();
 
         assertThat(returnedDataStorages).hasSize(1).contains(s3bucket);
         assertThat(returnedDataStorages.get(0).getMask()).isEqualTo(2);
@@ -194,7 +194,7 @@ public class DataStorageApiServiceCrudTest extends AbstractDataStorageAclTest {
         initAclEntity(anotherS3bucket);
         doReturn(mutableListOf(s3bucket, anotherS3bucket)).when(mockDataStorageManager).getDataStorages();
 
-        List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getAvailableStorages();
+        final List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getAvailableStorages();
 
         assertThat(returnedDataStorages).hasSize(1).contains(s3bucket);
         assertThat(returnedDataStorages.get(0).getMask()).isEqualTo(1);
@@ -227,7 +227,7 @@ public class DataStorageApiServiceCrudTest extends AbstractDataStorageAclTest {
         doReturn(s3bucket).when(mockDataStorageManager).load(ID);
         initMocks(OWNER_USER, context);
 
-        AbstractDataStorage returnedDataStorage = dataStorageApiService.load(ID);
+        final AbstractDataStorage returnedDataStorage = dataStorageApiService.load(ID);
 
         assertThat(returnedDataStorage).isEqualTo(s3bucket);
         assertThat(returnedDataStorage.getMask()).isEqualTo(1);
@@ -270,7 +270,7 @@ public class DataStorageApiServiceCrudTest extends AbstractDataStorageAclTest {
         initAclEntity(s3bucket, AclPermission.READ);
         doReturn(s3bucket).when(mockDataStorageManager).loadByNameOrId(TEST_STRING);
 
-        AbstractDataStorage returnedDataStorage = dataStorageApiService.loadByNameOrId(TEST_STRING);
+        final AbstractDataStorage returnedDataStorage = dataStorageApiService.loadByNameOrId(TEST_STRING);
 
         assertThat(returnedDataStorage).isEqualTo(s3bucket);
         assertThat(returnedDataStorage.getMask()).isEqualTo(1);
@@ -299,7 +299,7 @@ public class DataStorageApiServiceCrudTest extends AbstractDataStorageAclTest {
         initAclEntity(s3bucket, AclPermission.READ);
         doReturn(s3bucket).when(mockDataStorageManager).loadByPathOrId(TEST_STRING);
 
-        AbstractDataStorage returnedDataStorage = dataStorageApiService.loadByPathOrId(TEST_STRING);
+        final AbstractDataStorage returnedDataStorage = dataStorageApiService.loadByPathOrId(TEST_STRING);
 
         assertThat(returnedDataStorage).isEqualTo(s3bucket);
         assertThat(returnedDataStorage.getMask()).isEqualTo(1);

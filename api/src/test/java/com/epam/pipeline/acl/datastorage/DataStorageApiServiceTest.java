@@ -20,7 +20,6 @@ import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
-import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.acl.AclPermission;
@@ -60,10 +59,8 @@ public class DataStorageApiServiceTest extends AbstractDataStorageAclTest {
                 .getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING);
         initMocks(OWNER_USER, context);
 
-        DataStorageListing returnedDataStorageListing =
-                dataStorageApiService.getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING);
-
-        assertThat(returnedDataStorageListing).isEqualTo(dataStorageListing);
+        assertThat(dataStorageApiService.getDataStorageItems(
+                ID, TEST_STRING, true, TEST_INT, TEST_STRING)).isEqualTo(dataStorageListing);
     }
 
     @Test
@@ -1184,7 +1181,7 @@ public class DataStorageApiServiceTest extends AbstractDataStorageAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldGetStoragePermissionForAdmin() {
-        EntityWithPermissionVO entityWithPermissionVO = grantPermissionManager.loadAllEntitiesPermissions(
+        final EntityWithPermissionVO entityWithPermissionVO = grantPermissionManager.loadAllEntitiesPermissions(
                 AclClass.DATA_STORAGE, TEST_INT, TEST_INT, true, TEST_INT);
 
         assertThat(dataStorageApiService.getStoragePermission(TEST_INT, TEST_INT, TEST_INT))
@@ -1307,7 +1304,6 @@ public class DataStorageApiServiceTest extends AbstractDataStorageAclTest {
     public void shouldGenerateCredentialsWhenPermissionIsGranted() {
         initAclEntity(s3bucket);
         initMocks(SIMPLE_USER, context);
-
         doReturn(temporaryCredentials).when(mockTemporaryCredentialsManager).generate(dataStorageActionList);
 
         assertThat(dataStorageApiService.generateCredentials(dataStorageActionList)).isEqualTo(temporaryCredentials);
