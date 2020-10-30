@@ -108,7 +108,7 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
                                            region.getName()));
                     return null;
                 }
-                return new SimpleEntry<>(region.getName(),storagePricing);
+                return new SimpleEntry<>(region.getName(), storagePricing);
             });
     }
 
