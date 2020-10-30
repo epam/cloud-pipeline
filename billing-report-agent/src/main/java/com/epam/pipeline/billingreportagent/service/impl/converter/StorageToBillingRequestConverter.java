@@ -72,13 +72,16 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
     private final StoragePricingService storagePricing;
     private final String esFileIndexPattern;
     private final Optional<FileShareMountsService> fileshareMountsService;
+    private boolean enableStorageHistoricalBillingGeneration;
 
     public StorageToBillingRequestConverter(final AbstractEntityMapper<StorageBillingInfo> mapper,
                                             final ElasticsearchServiceClient elasticsearchService,
                                             final StorageType storageType,
                                             final StoragePricingService storagePricing,
-                                            final String esFileIndexPattern) {
-        this(mapper, elasticsearchService, storageType, storagePricing, esFileIndexPattern, null);
+                                            final String esFileIndexPattern,
+                                            final boolean enableStorageHistoricalBillingGeneration) {
+        this(mapper, elasticsearchService, storageType, storagePricing, esFileIndexPattern, null,
+             enableStorageHistoricalBillingGeneration);
     }
 
     public StorageToBillingRequestConverter(final AbstractEntityMapper<StorageBillingInfo> mapper,
@@ -86,13 +89,15 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                             final StorageType storageType,
                                             final StoragePricingService storagePricing,
                                             final String esFileIndexPattern,
-                                            final FileShareMountsService fileshareMountsService) {
+                                            final FileShareMountsService fileshareMountsService,
+                                            final boolean enableStorageHistoricalBillingGeneration) {
         this.mapper = mapper;
         this.elasticsearchService = elasticsearchService;
         this.storageType = storageType;
         this.storagePricing = storagePricing;
         this.esFileIndexPattern = esFileIndexPattern;
         this.fileshareMountsService = Optional.ofNullable(fileshareMountsService);
+        this.enableStorageHistoricalBillingGeneration = enableStorageHistoricalBillingGeneration;
     }
 
     @Override
@@ -103,12 +108,11 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
         final Long storageId = storageContainer.getEntity().getId();
         final DataStorageType storageType = storageContainer.getEntity().getType();
         return requestSumAggregationForStorage(storageId, storageType)
-            .map(searchResponse -> Stream.iterate(previousSync.plusDays(1L), date -> date.plusDays(1))
-                .limit(ChronoUnit.DAYS.between(previousSync, syncStart))
-                .filter(reportDate -> storageExistsOnBillingDate(storageContainer, reportDate))
-                .map(date -> buildRequestsForGivenDate(storageContainer, indexPrefix, searchResponse, date))
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList()))
+            .map(searchResponse -> enableStorageHistoricalBillingGeneration
+                                   ? buildRequestsForGivenPeriod(storageContainer, indexPrefix, previousSync, syncStart,
+                                                                 searchResponse)
+                                   : buildRequestsForGivenDate(storageContainer, indexPrefix, searchResponse,
+                                                               syncStart))
             .orElse(Collections.emptyList());
     }
 
@@ -268,6 +272,19 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
         } else {
             throw new IllegalArgumentException("Unknown storage type!");
         }
+    }
+
+    private List<DocWriteRequest> buildRequestsForGivenPeriod(final EntityContainer<AbstractDataStorage> container,
+                                                              final String indexPrefix,
+                                                              final LocalDateTime previousSync,
+                                                              final LocalDateTime syncStart,
+                                                              final SearchResponse searchResponse) {
+        return Stream.iterate(previousSync.plusDays(1L), date -> date.plusDays(1))
+            .limit(ChronoUnit.DAYS.between(previousSync, syncStart))
+            .filter(reportDate -> storageExistsOnBillingDate(container, reportDate))
+            .map(date -> buildRequestsForGivenDate(container, indexPrefix, searchResponse, date))
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
     }
 
     private boolean storageExistsOnBillingDate(final EntityContainer<AbstractDataStorage> storageContainer,

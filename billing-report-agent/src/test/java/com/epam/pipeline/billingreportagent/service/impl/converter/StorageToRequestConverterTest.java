@@ -155,26 +155,30 @@ public class StorageToRequestConverterTest {
             elasticsearchClient,
             StorageType.OBJECT_STORAGE,
             testStoragePricing,
-            StringUtils.EMPTY);
+            StringUtils.EMPTY,
+            false);
         nfsConverter = new StorageToBillingRequestConverter(
             new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, BILLING_CENTER_KEY),
             elasticsearchClient,
             StorageType.FILE_STORAGE,
             testStoragePricing,
             StringUtils.EMPTY,
-            fileShareMountsService);
+            fileShareMountsService,
+            false);
         gcpConverter = new StorageToBillingRequestConverter(
             new StorageBillingMapper(SearchDocumentType.GS_STORAGE, BILLING_CENTER_KEY),
             elasticsearchClient,
             StorageType.OBJECT_STORAGE,
             testStoragePricing,
-            StringUtils.EMPTY);
+            StringUtils.EMPTY,
+            false);
         azureConverter = new StorageToBillingRequestConverter(
             new StorageBillingMapper(SearchDocumentType.AZ_BLOB_STORAGE, BILLING_CENTER_KEY),
             elasticsearchClient,
             StorageType.OBJECT_STORAGE,
             testStoragePricing,
-            StringUtils.EMPTY);
+            StringUtils.EMPTY,
+            false);
     }
 
     @Test

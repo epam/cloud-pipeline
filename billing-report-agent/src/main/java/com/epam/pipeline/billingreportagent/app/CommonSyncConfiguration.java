@@ -67,6 +67,9 @@ public class CommonSyncConfiguration {
     @Value("${sync.storage.file.index.pattern}")
     private String fileIndexPattern;
 
+    @Value("${sync.storage.historical.billing.generation:false}")
+    private boolean enableStorageHistoricalBillingGeneration;
+
     @Bean
     public BulkRequestSender bulkRequestSender(
             final ElasticsearchServiceClient elasticsearchClient) {
@@ -118,7 +121,8 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
-                        fileIndexPattern),
+                        fileIndexPattern,
+                        enableStorageHistoricalBillingGeneration),
                 DataStorageType.S3);
     }
 
@@ -149,7 +153,8 @@ public class CommonSyncConfiguration {
                         StorageType.FILE_STORAGE,
                         pricingService,
                         fileIndexPattern,
-                        fileShareMountsService),
+                        fileShareMountsService,
+                        enableStorageHistoricalBillingGeneration),
                 DataStorageType.NFS);
     }
 
@@ -172,7 +177,8 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
-                        fileIndexPattern),
+                        fileIndexPattern,
+                        enableStorageHistoricalBillingGeneration),
                 DataStorageType.GS);
     }
 
@@ -198,7 +204,8 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
-                        fileIndexPattern),
+                        fileIndexPattern,
+                        enableStorageHistoricalBillingGeneration),
                 DataStorageType.AZ);
     }
 }
