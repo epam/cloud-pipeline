@@ -43,7 +43,8 @@ from src.version import __version__
 MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000
 USER_OPTION_DESCRIPTION = 'The user name to perform operation from specified user. Available for admins only'
-RETRIES_OPTION_DESCRIPTION = 'Number of retries to connect to specified pipeline run. Default is 10.'
+RETRIES_OPTION_DESCRIPTION = 'Number of retries to connect to specified pipeline run. Default is 10'
+TRACE_OPTION_DESCRIPTION = 'Enables error stack traces displaying'
 
 
 def silent_print_api_version():
@@ -1236,11 +1237,11 @@ def ssh(ctx, run_id, retries):
               help='Time period in ms for background tunnel process health check')
 @click.option('-f', '--foreground', required=False, is_flag=True, default=False,
               help='Establishes tunnel in foreground mode')
-@click.option('--trace', required=False, is_flag=True, default=False,
-              help='Enables error stack traces')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
-def tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, foreground, trace):
+def tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, foreground, retries, trace):
     """
     Establishes tunnel connection to specified run instance port and serves it as a local port.
 
@@ -1267,10 +1268,10 @@ def tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, f
         CP_CLI_TUNNEL_TARGET_HOST
     """
     if trace:
-        create_tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, foreground)
+        create_tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, foreground, retries)
     else:
         try:
-            create_tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, foreground)
+            create_tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, foreground, retries)
         except Exception as runtime_error:
             click.echo('Error: {}'.format(str(runtime_error)), err=True)
             sys.exit(1)
