@@ -124,6 +124,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
         loginAs(testUser);
         long testStartTime = System.currentTimeMillis();
         for (int i = 1; i <= 10; i++) {
+            String runId;
             long startTime = System.currentTimeMillis();
             navigationMenu()
                     .library()
@@ -142,13 +143,13 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
             tools()
                     .perform(C.DEFAULT_REGISTRY, C.DEFAULT_GROUP, C.TESTING_TOOL_NAME, ToolTab::runWithCustomSettings)
                     .launch(this)
-                    .showLog(getLastRunId())
+                    .showLog(runId = getLastRunId())
                     .shouldHaveRunningStatus();
             executionTime("Running tool", name, startTime);
 
             startTime = System.currentTimeMillis();
             runsMenu()
-                    .stopRun(getLastRunId());
+                    .stopRun(runId);
             executionTime("Stop tool", name, startTime);
             startTime = System.currentTimeMillis();
             navigationMenu()
