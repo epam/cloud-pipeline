@@ -43,6 +43,7 @@ from src.version import __version__
 MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000
 USER_OPTION_DESCRIPTION = 'The user name to perform operation from specified user. Available for admins only'
+RETRIES_OPTION_DESCRIPTION = 'Number of retries to connect to specified pipeline run. Default is 10.'
 
 
 def silent_print_api_version():
@@ -1205,15 +1206,16 @@ def chown(user_name, entity_class, entity_name):
     allow_extra_args=True))
 @click.argument('run-id', required=True, type=int)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.pass_context
 @Config.validate_access_token
-def ssh(ctx, run_id):
+def ssh(ctx, run_id, retries):
     """Runs a single command or an interactive session over the SSH protocol for the specified job run\n
     Arguments:\n
     - run-id: ID of the job running in the platform to establish SSH connection with
     """
     try:
-        ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args))
+        ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries)
         sys.exit(ssh_exit_code)
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
