@@ -111,7 +111,8 @@ public class AzureStoragePriceListLoader implements StoragePriceListLoader {
         final List<StoragePricing.StoragePricingEntity> pricing = rates.entrySet().stream()
             .map(e -> {
                 final long rangeStart = Float.valueOf(e.getKey()).longValue();
-                final BigDecimal cost = BigDecimal.valueOf(e.getValue().doubleValue());
+                final BigDecimal cost = BigDecimal.valueOf(e.getValue().doubleValue())
+                    .multiply(BigDecimal.valueOf(CENTS_IN_DOLLAR));
                 return new StoragePricing.StoragePricingEntity(rangeStart * BYTES_TO_GB, null, cost);
             })
             .sorted(Comparator.comparing(StoragePricing.StoragePricingEntity::getBeginRangeBytes))
