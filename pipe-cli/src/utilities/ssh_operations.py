@@ -126,6 +126,7 @@ def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_leve
     server_socket.listen(5)
     inputs = []
     channel = {}
+    configure_graceful_exiting()
     logging.info('Serving tunnel...')
     try:
         inputs.append(server_socket)
@@ -183,6 +184,15 @@ def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_leve
         for input in inputs:
             input.close()
         logging.info('Exiting...')
+
+
+def configure_graceful_exiting():
+    def throw_keyboard_interrupt(signum, frame):
+        logging.info('Killed...')
+        raise KeyboardInterrupt()
+
+    import signal
+    signal.signal(signal.SIGTERM, throw_keyboard_interrupt)
 
 
 def create_background_tunnel(log_file, timeout):
