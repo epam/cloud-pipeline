@@ -24,7 +24,6 @@ import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
@@ -65,7 +64,6 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
         for (int i = 1; i <= userCount; i++) {
             String login = conf.getProperty("e2e.ui.login" + i);
             String password = conf.getProperty("e2e.ui.pass" + i);
-            System.out.println(String.format("%s::%s", login, password));
             dataList.add(new Object[]{login, password});
         }
         userList = dataList.toArray(new Object[dataList.size()][]);
@@ -122,7 +120,6 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
 
     @Test(dataProvider = "openNewBrowser", threadPoolSize = 10)
     public void parallelLoadTest(String name, String pass) {
-        System.out.println(String.format("Name %s - Password %s", name, pass));
         Account testUser = new Account(name, pass);
         loginAs(testUser);
         long testStartTime = System.currentTimeMillis();
@@ -142,19 +139,22 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
                     .completedRuns();
             executionTime("Open completed runs", name, startTime);
             startTime = System.currentTimeMillis();
-            runsMenu()
-                    .completedRuns()
-                    .nextPageCompletedRuns();
-            executionTime("Open 2nd page completed runs", name, startTime);
-            startTime = System.currentTimeMillis();
-            runsMenu()
-                    .completedRuns()
-                    .switchAllPagesCompletedRuns();
-            executionTime("Switch between all pages completed runs", name, startTime);
-            startTime = System.currentTimeMillis();
             tools()
-                    .perform(C.DEFAULT_REGISTRY, C.DEFAULT_GROUP, C.TESTING_TOOL_NAME, ToolTab::runWithCustomSettings);
-            executionTime("Open tool", name, startTime);
+                    .perform(C.DEFAULT_REGISTRY, C.DEFAULT_GROUP, C.TESTING_TOOL_NAME, ToolTab::runWithCustomSettings)
+                    .launch(this)
+                    .showLog(getLastRunId())
+                    .shouldHaveRunningStatus();
+            executionTime("Running tool", name, startTime);
+
+            startTime = System.currentTimeMillis();
+            runsMenu()
+                    .stopRun(getLastRunId());
+            executionTime("Stop tool", name, startTime);
+            startTime = System.currentTimeMillis();
+            navigationMenu()
+                    .runs()
+                    .completedRuns();
+            executionTime("Open completed runs", name, startTime);
         }
         executionTime("Summary time ", name, testStartTime);
     }
