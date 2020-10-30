@@ -53,21 +53,22 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class AzureStoragePriceListLoader implements StoragePriceListLoader {
+public abstract class AbstractAzureStoragePriceListLoader implements StoragePriceListLoader {
+
+    protected static final String GB_MONTH_UNIT = "1 GB/Month";
+    protected static final String STORAGE_CATEGORY = "Storage";
+    protected static final String DATA_STORE_METER_TEMPLATE = "%s Data Stored";
 
     private static final int READ_TIMEOUT = 30;
     private static final int CONNECT_TIMEOUT = 30;
     private static final String API_VERSION = "2016-08-31-preview";
-    private static final String GB_MONTH_UNIT = "1 GB/Month";
     private static final String AUTH_TOKEN_TEMPLATE = "Bearer %s";
-    private static final String STORAGE_SUBCATEGORY_BLOCK_BLOB = "General Block Blob";
-    private static final String REDUNDANCY_TYPE = "Hot LRS Data Stored";
     private static final String FILTER_TEMPLATE =
         "OfferDurableId eq '%s' and Currency eq 'USD' and Locale eq 'en-US' and RegionInfo eq 'US'";
 
     private CloudRegionLoader regionLoader;
 
-    public AzureStoragePriceListLoader(final CloudRegionLoader regionLoader) {
+    public AbstractAzureStoragePriceListLoader(final CloudRegionLoader regionLoader) {
         this.regionLoader = regionLoader;
     }
 
@@ -96,11 +97,37 @@ public class AzureStoragePriceListLoader implements StoragePriceListLoader {
             .collect(Collectors.toMap(AbstractCloudRegion::getRegionCode,
                 region -> {
                     final String offerAndSubscription = getRegionOfferAndSubscription(region);
-                    return getStringStoragePricingForRegion(
-                    azureRegionPricing.get(offerAndSubscription),
-                    region.getMeterRegionName());
+                    return getStoragePricingForRegion(azureRegionPricing.get(offerAndSubscription),
+                                                      region.getMeterRegionName());
                 },
                 (region1, region2) -> region1));
+    }
+
+    protected abstract Map<String, StoragePricing> extractPrices(List<AzurePricingMeter> pricingMeters);
+
+    protected StoragePricing convertAzurePricing(final AzurePricingMeter azurePricing) {
+        return convertAzurePricing(azurePricing, 1);
+    }
+
+    protected StoragePricing convertAzurePricing(final AzurePricingMeter azurePricing, final int scaleFactor) {
+        final Map<String, Float> rates = azurePricing.getMeterRates();
+        final StoragePricing storagePricing = new StoragePricing();
+        final List<StoragePricing.StoragePricingEntity> pricing = rates.entrySet().stream()
+            .map(e -> {
+                final long rangeStart = Float.valueOf(e.getKey()).longValue();
+                final BigDecimal cost = BigDecimal.valueOf(e.getValue().doubleValue() * scaleFactor * CENTS_IN_DOLLAR);
+                final long beginRangeBytes = rangeStart * BYTES_TO_GB;
+                return new StoragePricing.StoragePricingEntity(beginRangeBytes, null, cost);
+            })
+            .sorted(Comparator.comparing(StoragePricing.StoragePricingEntity::getBeginRangeBytes))
+            .collect(Collectors.toList());
+        final int pricingSize = pricing.size();
+        for (int i = 0; i < pricingSize - 1; i++) {
+            pricing.get(i).setEndRangeBytes(pricing.get(i + 1).getBeginRangeBytes());
+        }
+        pricing.get(pricingSize - 1).setEndRangeBytes(Long.MAX_VALUE);
+        storagePricing.getPrices().addAll(pricing);
+        return storagePricing;
     }
 
     private void assertOffersAndRegionMetersAreUnique(final List<AzureRegion> activeAzureRegions) {
@@ -147,23 +174,18 @@ public class AzureStoragePriceListLoader implements StoragePriceListLoader {
         return String.join(",", region.getPriceOfferId(), region.getSubscription());
     }
 
-    private StoragePricing getStringStoragePricingForRegion(
-        final Response<AzurePricingResult> pricingResponse,
-        final String meterRegion) {
-        return Optional.ofNullable(pricingResponse.body()).orElseGet(() -> {
-            final AzurePricingResult azurePricingResult = new AzurePricingResult();
-            azurePricingResult.setMeters(Collections.emptyList());
-            return azurePricingResult;
-        }).getMeters()
-            .stream()
-            .filter(meter -> GB_MONTH_UNIT.equals(meter.getUnit()))
-            .filter(meter -> meter.getMeterSubCategory().startsWith(STORAGE_SUBCATEGORY_BLOCK_BLOB))
-            .filter(meter -> meter.getMeterName().startsWith(REDUNDANCY_TYPE))
-            .filter(meter -> meterRegion.equals(meter.getMeterRegion()))
-            .findFirst()
-            .map(this::convertAzurePricing)
-            .orElseThrow(() -> new IllegalArgumentException(
-                String.format("No [%s] region is presented in prices retrieved!", meterRegion)));
+    private StoragePricing getStoragePricingForRegion(final Response<AzurePricingResult> pricingResponse,
+                                                      final String meterRegion) {
+        final List<AzurePricingMeter> azurePricingMeters = Optional.ofNullable(pricingResponse.body())
+            .map(AzurePricingResult::getMeters)
+            .orElse(Collections.emptyList());
+        final Map<String, StoragePricing> fullStoragePricingMap = extractPrices(azurePricingMeters);
+        final StoragePricing storagePricing = fullStoragePricingMap.get(meterRegion);
+        if (storagePricing == null) {
+            throw new IllegalArgumentException(String.format("No [%s] region is presented in prices retrieved!",
+                                                             meterRegion));
+        }
+        return storagePricing;
     }
 
     private Response<AzurePricingResult> getAzurePricing(final AzureRegion region) throws IOException {
@@ -180,28 +202,6 @@ public class AzureStoragePriceListLoader implements StoragePriceListLoader {
                                                           region.getId()));
         }
         return pricingResponse;
-    }
-
-    private StoragePricing convertAzurePricing(final AzurePricingMeter azurePricing) {
-        final Map<String, Float> rates = azurePricing.getMeterRates();
-        log.debug("Reading price from {}", azurePricing);
-        final StoragePricing storagePricing = new StoragePricing();
-        final List<StoragePricing.StoragePricingEntity> pricing = rates.entrySet().stream()
-            .map(e -> {
-                final long rangeStart = Float.valueOf(e.getKey()).longValue();
-                final BigDecimal cost = BigDecimal.valueOf(e.getValue().doubleValue())
-                    .multiply(BigDecimal.valueOf(CENTS_IN_DOLLAR));
-                return new StoragePricing.StoragePricingEntity(rangeStart * BYTES_TO_GB, null, cost);
-            })
-            .sorted(Comparator.comparing(StoragePricing.StoragePricingEntity::getBeginRangeBytes))
-            .collect(Collectors.toList());
-        final int pricingSize = pricing.size();
-        for (int i = 0; i < pricingSize - 1; i++) {
-            pricing.get(i).setEndRangeBytes(pricing.get(i + 1).getBeginRangeBytes());
-        }
-        pricing.get(pricingSize - 1).setEndRangeBytes(Long.MAX_VALUE);
-        storagePricing.getPrices().addAll(pricing);
-        return storagePricing;
     }
 
     private AzurePricingClient buildRetrofitClient(final String azureApiUrl) {

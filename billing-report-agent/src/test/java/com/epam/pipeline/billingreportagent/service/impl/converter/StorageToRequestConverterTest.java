@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.GSBucketStorage;
+import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.datastorage.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.S3bucketDataStorage;
 import com.epam.pipeline.entity.search.SearchDocumentType;
@@ -164,6 +165,7 @@ public class StorageToRequestConverterTest {
             testStoragePricing,
             StringUtils.EMPTY,
             fileShareMountsService,
+            MountType.NFS,
             false);
         gcpConverter = new StorageToBillingRequestConverter(
             new StorageBillingMapper(SearchDocumentType.GS_STORAGE, BILLING_CENTER_KEY),
