@@ -157,18 +157,20 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     private final UpdateDataStorageItemVO update = DatastorageCreatorUtils.getUpdateDataStorageItemVO();
     private final Map<AbstractDataStorage, TypeReference> storageTypeReferenceMap =
             DatastorageCreatorUtils.getRegularTypeStorages();
+    private final Map<AbstractDataStorage, TypeReference> securedStorageTypeReferenceMap =
+            DatastorageCreatorUtils.getSecuredTypeStoragesMap();
 
     @Autowired
     private DataStorageApiService mockStorageApiService;
 
     @Test
-    public void shouldFaiGetDataStoragesForUnauthorizedUser() throws Exception {
+    public void shouldFaiGetDataStoragesForUnauthorizedUser() {
         performUnauthorizedRequest(get(LOAD_ALL_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldGetDataStorages() throws Exception {
+    public void shouldGetDataStorages() {
         final List<S3bucketDataStorage> dataStorages = Collections.singletonList(s3Bucket);
         Mockito.doReturn(dataStorages).when(mockStorageApiService).getDataStorages();
 
@@ -179,13 +181,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGetAvailableStoragesForUnauthorizedUser() throws Exception {
+    public void shouldFailGetAvailableStoragesForUnauthorizedUser() {
         performUnauthorizedRequest(get(LOAD_AVAILABLE_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldGetAvailableStorages() throws Exception {
+    public void shouldGetAvailableStorages() {
         final List<S3bucketDataStorage> dataStorages = Collections.singletonList(s3Bucket);
         Mockito.doReturn(dataStorages).when(mockStorageApiService).getAvailableStorages();
 
@@ -196,13 +198,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGetAvailableStoragesWithMountObjectsForUnauthorizedUser() throws Exception {
+    public void shouldFailGetAvailableStoragesWithMountObjectsForUnauthorizedUser() {
         performUnauthorizedRequest(get(LOAD_AVAILABLE_WITH_MOUNTS));
     }
 
     @Test
     @WithMockUser
-    public void shouldGetAvailableStoragesWithMountObjects() throws Exception {
+    public void shouldGetAvailableStoragesWithMountObjects() {
         final List<DataStorageWithShareMount> storagesWithShareMounts =
                 Collections.singletonList(DatastorageCreatorUtils.getDataStorageWithShareMount());
         Mockito.doReturn(storagesWithShareMounts).when(mockStorageApiService).getAvailableStoragesWithShareMount(ID);
@@ -214,13 +216,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGetWritableDataStoragesForUnauthorizedUser() throws Exception {
+    public void shouldFailGetWritableDataStoragesForUnauthorizedUser() {
         performUnauthorizedRequest(get(LOAD_WRITABLE_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldGetWritableDataStorages() throws Exception {
+    public void shouldGetWritableDataStorages() {
         final List<S3bucketDataStorage> dataStorages = Collections.singletonList(s3Bucket);
         Mockito.doReturn(dataStorages).when(mockStorageApiService).getWritableStorages();
 
@@ -231,28 +233,28 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadDataStorageForUnauthorizedUser() throws Exception {
+    public void shouldFailLoadDataStorageForUnauthorizedUser() {
         performUnauthorizedRequest(get(String.format(LOAD_DATASTORAGE, ID)));
     }
 
     @Test
-    public void shouldFailFindDataStorageForUnauthorizedUser() throws Exception {
+    public void shouldFailFindDataStorageForUnauthorizedUser() {
         performUnauthorizedRequest(get(FIND_URL));
     }
 
     @Test
-    public void shouldFailFindDataStorageByPathForUnauthorizedUser() throws Exception {
+    public void shouldFailFindDataStorageByPathForUnauthorizedUser() {
         performUnauthorizedRequest(get(FIND_BY_PATH_URL));
     }
 
     @Test
-    public void shouldFailGetDataStorageItemsForUnauthorizedUser() throws Exception {
+    public void shouldFailGetDataStorageItemsForUnauthorizedUser() {
         performUnauthorizedRequest(get(String.format(DATASTORAGE_ITEMS_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldGetDataStorageFolder() throws Exception {
+    public void shouldGetDataStorageFolder() {
         final DataStorageListing dataStorageListing = DatastorageCreatorUtils.getDataStorageListing();
         final List<DataStorageFolder> folders = Collections.singletonList(folder);
         dataStorageListing.setResults(Collections.singletonList(folder));
@@ -270,7 +272,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldGetDataStorageOwnerFile() throws Exception {
+    public void shouldGetDataStorageOwnerFile() {
         final DataStorageListing dataStorageListing = DatastorageCreatorUtils.getDataStorageListing();
         final List<DataStorageFile> files = Collections.singletonList(file);
         dataStorageListing.setResults(Collections.singletonList(file));
@@ -287,13 +289,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGetDataStorageItemsListingForUnauthorizedUser() throws Exception {
+    public void shouldFailGetDataStorageItemsListingForUnauthorizedUser() {
         performUnauthorizedRequest(get(String.format(DATASTORAGE_LISTING_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldGetDataStorageItems() throws Exception {
+    public void shouldGetDataStorageItems() {
         final DataStorageListing dataStorageListing = DatastorageCreatorUtils.getDataStorageListing();
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(PATH, TEST);
@@ -310,7 +312,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailUpdateDataStorageItemsForUnauthorizedUser() throws Exception {
+    public void shouldFailUpdateDataStorageItemsForUnauthorizedUser() {
         performUnauthorizedRequest(post(String.format(DATASTORAGE_ITEMS_URL, ID)));
     }
 
@@ -329,7 +331,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailUploadFileForUnauthorizedUser() throws Exception {
+    public void shouldFailUploadFileForUnauthorizedUser() {
         performUnauthorizedRequest(post(String.format(DATASTORAGE_ITEMS_UPLOAD_URL, ID)));
     }
 
@@ -355,13 +357,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailUploadStreamForUnauthorizedUser() throws Exception {
+    public void shouldFailUploadStreamForUnauthorizedUser() {
         performUnauthorizedRequest(post(String.format(DATASTORAGE_UPLOAD_STREAM_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldUploadStream() throws Exception {
+    public void shouldUploadStream() {
         final List<DataStorageFile> dataStorageFiles = Collections.singletonList(file);
         Mockito.doReturn(file).when(mockStorageApiService)
                 .createDataStorageFile(Mockito.eq(ID), Mockito.eq(TEST),
@@ -377,7 +379,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailDownloadStreamForUnauthorizedUser() throws Exception {
+    public void shouldFailDownloadStreamForUnauthorizedUser() {
         performUnauthorizedRequest(get(String.format(DATASTORAGE_DOWNLOAD_STREAM_URL, ID)));
     }
 
@@ -403,7 +405,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailUploadStorageItemForUnauthorizedUser() throws Exception {
+    public void shouldFailUploadStorageItemForUnauthorizedUser() {
         performUnauthorizedRequest(post(String.format(DATASTORAGE_ITEMS_CONTENT, ID)));
     }
 
@@ -422,7 +424,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailDeleteDataStorageItemForUnauthorizedUser() throws Exception {
+    public void shouldFailDeleteDataStorageItemForUnauthorizedUser() {
         performUnauthorizedRequest(delete(String.format(DATASTORAGE_ITEMS_URL, ID)));
     }
 
@@ -455,13 +457,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGenerateItemUrlAndRedirectForUnauthorizedUser() throws Exception {
+    public void shouldFailGenerateItemUrlAndRedirectForUnauthorizedUser() {
         performUnauthorizedRequest(get(String.format(DOWNLOAD_REDIRECT_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldGenerateItemUrlAndRedirect() throws Exception {
+    public void shouldGenerateItemUrlAndRedirect() {
         final DataStorageDownloadFileUrl url = DatastorageCreatorUtils.getDataStorageDownloadFileUrl();
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(PATH, TEST_PATH);
@@ -480,7 +482,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldGenerateItemUrlAndRedirectOwner() throws Exception {
+    public void shouldGenerateItemUrlAndRedirectOwner() {
         final DataStorageDownloadFileUrl url = DatastorageCreatorUtils.getDataStorageDownloadFileUrl();
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(PATH, TEST_PATH);
@@ -498,13 +500,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGenerateDataStorageItemUrl() throws Exception {
+    public void shouldFailGenerateDataStorageItemUrl() {
         performUnauthorizedRequest(get(String.format(GENERATE_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldGenerateDataStorageItemUrlOwner() throws Exception {
+    public void shouldGenerateDataStorageItemUrlOwner() {
         final DataStorageDownloadFileUrl url = DatastorageCreatorUtils.getDataStorageDownloadFileUrl();
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(PATH, TEST_PATH);
@@ -522,13 +524,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGenerateDataStorageItemUploadUrlForUnauthorizedUser() throws Exception {
+    public void shouldFailGenerateDataStorageItemUploadUrlForUnauthorizedUser() {
         performUnauthorizedRequest(get(String.format(GENERATE_UPLOAD_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldGenerateDataStorageItemUploadUrl() throws Exception {
+    public void shouldGenerateDataStorageItemUploadUrl() {
         final DataStorageDownloadFileUrl url = DatastorageCreatorUtils.getDataStorageDownloadFileUrl();
         Mockito.doReturn(url).when(mockStorageApiService).generateDataStorageItemUploadUrl(ID, TEST);
 
@@ -539,13 +541,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGetDataStorageItemContentForUnauthorizedUser() throws Exception {
+    public void shouldFailGetDataStorageItemContentForUnauthorizedUser() {
         performUnauthorizedRequest(get(String.format(CONTENT_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldGetDataStorageItemContent() throws Exception {
+    public void shouldGetDataStorageItemContent() {
         final DataStorageItemContent dataStorageItemContent = DatastorageCreatorUtils.getDataStorageItemContent();
         Mockito.doReturn(dataStorageItemContent).when(mockStorageApiService)
                 .getDataStorageItemContent(ID, TEST, null);
@@ -558,7 +560,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldGetDataStorageItemContentOwner() throws Exception {
+    public void shouldGetDataStorageItemContentOwner() {
         final DataStorageItemContent dataStorageItemContent = DatastorageCreatorUtils.getDataStorageItemContent();
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(PATH, TEST);
@@ -573,7 +575,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGenerateDataStorageItemsUrlsForUnauthorizedUser() throws Exception {
+    public void shouldFailGenerateDataStorageItemsUrlsForUnauthorizedUser() {
         performUnauthorizedRequest(post(String.format(GENERATE_URL, ID)));
     }
 
@@ -597,7 +599,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGenerateDataStorageItemsUploadUrlsForUnauthorizedUser() throws Exception {
+    public void shouldFailGenerateDataStorageItemsUploadUrlsForUnauthorizedUser() {
         performUnauthorizedRequest(post(String.format(GENERATE_UPLOAD_URL, ID)));
     }
 
@@ -617,13 +619,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailRestoreFileVersionForUnauthorizedUser() throws Exception {
+    public void shouldFailRestoreFileVersionForUnauthorizedUser() {
         performUnauthorizedRequest(post(String.format(RESTORE_VERSION_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldRestoreFileVersion() throws Exception {
+    public void shouldRestoreFileVersion() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(PATH, TEST);
         params.add(VERSION, TEST);
@@ -635,27 +637,27 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailRegisterDataStorage() throws Exception {
+    public void shouldFailRegisterDataStorage() {
         performUnauthorizedRequest(post(DATASTORAGE_SAVE_URL));
     }
 
     @Test
-    public void shouldFailUpdateDataStorage() throws Exception {
+    public void shouldFailUpdateDataStorage() {
         performUnauthorizedRequest(post(DATASTORAGE_UPDATE_URL));
     }
 
     @Test
-    public void shouldFailUpdateStoragePolicyForUnauthorizedUser() throws Exception {
+    public void shouldFailUpdateStoragePolicyForUnauthorizedUser() {
         performUnauthorizedRequest(post(DATASTORAGE_POLICY_URL));
     }
 
     @Test
-    public void shouldDeleteDataStorageForUnauthorizedUser() throws Exception {
+    public void shouldDeleteDataStorageForUnauthorizedUser() {
         performUnauthorizedRequest(delete(DATASTORAGE_DELETE_URL, ID));
     }
 
     @Test
-    public void shouldFailSaveDataStorageRuleForUnauthorizedUser() throws Exception {
+    public void shouldFailSaveDataStorageRuleForUnauthorizedUser() {
         performUnauthorizedRequest(post(SAVE_RULE_URL));
     }
 
@@ -672,13 +674,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadDataStorageRuleForUnauthorizedUser() throws Exception {
+    public void shouldFailLoadDataStorageRuleForUnauthorizedUser() {
         performUnauthorizedRequest(get(LOAD_RULES_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldLoadDataStorageRule() throws Exception {
+    public void shouldLoadDataStorageRule() {
         final List<DataStorageRule> dataStorageRules = Collections.singletonList(dataStorageRule);
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(PIPELINE_ID, ID_AS_STRING);
@@ -692,13 +694,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailDeleteDataStorageRuleForUnauthorizedUser() throws Exception {
+    public void shouldFailDeleteDataStorageRuleForUnauthorizedUser() {
         performUnauthorizedRequest(delete(DELETE_RULES_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldDeleteDataStorageRule() throws Exception {
+    public void shouldDeleteDataStorageRule() {
         Mockito.doReturn(dataStorageRule).when(mockStorageApiService).deleteRule(ID, TEST);
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(ID_PARAM, ID_AS_STRING);
@@ -711,7 +713,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGenerateTemporaryCredentialsForUnauthorizedUser() throws Exception {
+    public void shouldFailGenerateTemporaryCredentialsForUnauthorizedUser() {
         performUnauthorizedRequest(post(TEMP_CREDENTIALS_URL));
     }
 
@@ -731,7 +733,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailUpdateTagsForUnauthorizedUser() throws Exception {
+    public void shouldFailUpdateTagsForUnauthorizedUser() {
         performUnauthorizedRequest(post(String.format(TAGS_URL, ID)));
     }
 
@@ -752,13 +754,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadTagsByIdForUnauthorizedUser() throws Exception {
+    public void shouldFailLoadTagsByIdForUnauthorizedUser() {
         performUnauthorizedRequest(get(String.format(TAGS_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldLoadTagsByIdOwner() throws Exception {
+    public void shouldLoadTagsByIdOwner() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(PATH, TEST);
         params.add(VERSION, TEST);
@@ -772,7 +774,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldLoadTagsById() throws Exception {
+    public void shouldLoadTagsById() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(PATH, TEST);
         params.add(VERSION, EMPTY_STRING);
@@ -785,7 +787,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailDeleteTagsByIdForUnauthorizedUser() throws Exception {
+    public void shouldFailDeleteTagsByIdForUnauthorizedUser() {
         performUnauthorizedRequest(delete(String.format(TAGS_URL, ID)));
     }
 
@@ -806,13 +808,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGetDataStorageItemsWithTagsForUnauthorizedUser() throws Exception {
+    public void shouldFailGetDataStorageItemsWithTagsForUnauthorizedUser() {
         performUnauthorizedRequest(get(TAGS_LIST_URL, ID));
     }
 
     @Test
     @WithMockUser
-    public void shouldGetDataStorageFileWithTags() throws Exception {
+    public void shouldGetDataStorageFileWithTags() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(ID_PARAM, ID_AS_STRING);
         params.add(PATH, TEST);
@@ -826,7 +828,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldGetDataStorageFileOwnerWithTags() throws Exception {
+    public void shouldGetDataStorageFileOwnerWithTags() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(ID_PARAM, ID_AS_STRING);
         params.add(PATH, TEST);
@@ -841,7 +843,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldGetDataStorageFolderWithTags() throws Exception {
+    public void shouldGetDataStorageFolderWithTags() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(ID_PARAM, ID_AS_STRING);
         params.add(PATH, TEST);
@@ -855,7 +857,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldGetDataStorageFolderOwnerWithTags() throws Exception {
+    public void shouldGetDataStorageFolderOwnerWithTags() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(ID_PARAM, ID_AS_STRING);
         params.add(PATH, TEST);
@@ -869,13 +871,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGetDataStorageSharedLinkForUnauthorizedUser() throws Exception {
+    public void shouldFailGetDataStorageSharedLinkForUnauthorizedUser() {
         performUnauthorizedRequest(get(String.format(SHARED_LINK_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldGetDataStorageSharedLink() throws Exception {
+    public void shouldGetDataStorageSharedLink() {
         Mockito.doReturn(TEST).when(mockStorageApiService).getDataStorageSharedLink(ID);
 
         final MvcResult mvcResult = performRequest(get(String.format(SHARED_LINK_URL, ID)));
@@ -885,13 +887,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGetDataStoragePermissionsForUnauthorizedUser() throws Exception {
+    public void shouldFailGetDataStoragePermissionsForUnauthorizedUser() {
         performUnauthorizedRequest(get(PERMISSION_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldGetStoragePermissions() throws Exception {
+    public void shouldGetStoragePermissions() {
         final EntityWithPermissionVO entityWithPermissionVO = DatastorageCreatorUtils.getEntityWithPermissionVO();
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(PAGE, ID_AS_STRING);
@@ -907,7 +909,7 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGetDataSizesForUnauthorizedUser() throws Exception {
+    public void shouldFailGetDataSizesForUnauthorizedUser() {
         performUnauthorizedRequest(post(PATH_SIZE_URL));
     }
 
@@ -927,13 +929,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGetDataStorageUsageForUnauthorizedUser() throws Exception {
+    public void shouldFailGetDataStorageUsageForUnauthorizedUser() {
         performUnauthorizedRequest(get(PATH_USAGE_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldGetStorageUsage() throws Exception {
+    public void shouldGetStorageUsage() {
         final StorageUsage storageUsage = DatastorageCreatorUtils.getStorageUsage();
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(ID_PARAM, TEST);
@@ -947,13 +949,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailCreateSharedFSSPathForRunForUnauthorizedUser() throws Exception {
+    public void shouldFailCreateSharedFSSPathForRunForUnauthorizedUser() {
         performUnauthorizedRequest(post(SHARED_STORAGE_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldCreateSharedFSSPathForRun() throws Exception {
+    public void shouldCreateSharedFSSPathForRun() {
         final StorageMountPath storageMountPath = DatastorageCreatorUtils.getStorageMountPath();
         Mockito.doReturn(storageMountPath).when(mockStorageApiService).getSharedFSSPathForRun(ID, true);
 
@@ -964,13 +966,13 @@ public class DataStorageControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailGetSharedFSSPathForRunForUnauthorizedUser() throws Exception {
+    public void shouldFailGetSharedFSSPathForRunForUnauthorizedUser() {
         performUnauthorizedRequest(get(SHARED_STORAGE_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldGetSharedFSSPathForRun() throws Exception {
+    public void shouldGetSharedFSSPathForRun() {
         final StorageMountPath storageMountPath = DatastorageCreatorUtils.getStorageMountPath();
         Mockito.doReturn(storageMountPath).when(mockStorageApiService).getSharedFSSPathForRun(ID, false);
 
@@ -999,10 +1001,9 @@ public class DataStorageControllerTest extends AbstractControllerTest {
         final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
         final String content = getObjectMapper().writeValueAsString(dataStorageVO);
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        final Map<AbstractDataStorage, TypeReference> map = DatastorageCreatorUtils.getSecuredTypeStoragesMap();
         params.add(CLOUD, TRUE_AS_STRING);
         params.add(SKIP_POLICY, TRUE_AS_STRING);
-        map.keySet().forEach(dataStorage -> {
+        securedStorageTypeReferenceMap.keySet().forEach(dataStorage -> {
             final SecuredEntityWithAction<AbstractDataStorage> securedDataStorage = new SecuredEntityWithAction<>();
             securedDataStorage.setEntity(dataStorage);
             Mockito.doReturn(securedDataStorage).when(mockStorageApiService)
@@ -1010,10 +1011,10 @@ public class DataStorageControllerTest extends AbstractControllerTest {
 
             final MvcResult mvcResult = performRequest(post(DATASTORAGE_SAVE_URL).params(params).content(content));
 
-            assertResponse(mvcResult, securedDataStorage, map.get(dataStorage));
+            assertResponse(mvcResult, securedDataStorage, securedStorageTypeReferenceMap.get(dataStorage));
         });
 
-        Mockito.verify(mockStorageApiService, Mockito.times(map.size()))
+        Mockito.verify(mockStorageApiService, Mockito.times(securedStorageTypeReferenceMap.size()))
                 .create(Mockito.refEq(dataStorageVO), Mockito.eq(true), Mockito.eq(true));
     }
 

@@ -99,7 +99,8 @@ public abstract class AbstractControllerTest {
         assertEquals(expectedResult.getPayload(), actualResult.getPayload());
     }
 
-    public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder) throws Exception {
+    @SneakyThrows
+    public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder) {
         mockMvc.perform(requestBuilder
                 .servletPath(SERVLET_PATH))
                 .andExpect(status().isUnauthorized());
@@ -112,8 +113,7 @@ public abstract class AbstractControllerTest {
 
 
     @SneakyThrows
-    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder, final String contentType)
-            throws Exception {
+    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder, final String contentType) {
         return mockMvc.perform(requestBuilder
                 .servletPath(SERVLET_PATH)
                 .contentType(contentType))
@@ -134,8 +134,9 @@ public abstract class AbstractControllerTest {
                 .andReturn();
     }
 
+    @SneakyThrows
     public MvcResult performRedirectedRequest(final MockHttpServletRequestBuilder requestBuilder,
-                                              final String redirectUrl) throws Exception {
+                                              final String redirectUrl) {
         return mockMvc.perform(requestBuilder
                 .servletPath(SERVLET_PATH)
                 .contentType(EXPECTED_CONTENT_TYPE))
@@ -144,7 +145,8 @@ public abstract class AbstractControllerTest {
                 .andReturn();
     }
 
-    public void performRequestWithoutResponse(final MockHttpServletRequestBuilder requestBuilder) throws Exception {
+    @SneakyThrows
+    public void performRequestWithoutResponse(final MockHttpServletRequestBuilder requestBuilder) {
         mockMvc.perform(requestBuilder
                 .servletPath(SERVLET_PATH)
                 .contentType(EXPECTED_CONTENT_TYPE))

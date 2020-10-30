@@ -41,7 +41,7 @@ public class FileShareMountControllerTest extends AbstractControllerTest {
     private FileShareMountApiService mockFileShareMountApiService;
 
     @Test
-    public void shouldFailSaveForUnauthorizedUser() throws Exception {
+    public void shouldFailSaveForUnauthorizedUser() {
         performUnauthorizedRequest(post(FILESHAREMOUNT_URL));
     }
 
@@ -59,13 +59,13 @@ public class FileShareMountControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailDeleteForUnauthorizedUser() throws Exception {
+    public void shouldFailDeleteForUnauthorizedUser() {
         performUnauthorizedRequest(delete(String.format(FILESHAREMOUNT_ID_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldDelete() throws Exception {
+    public void shouldDelete() {
         performRequestWithoutResponse(delete(String.format(FILESHAREMOUNT_ID_URL, ID)));
 
         Mockito.verify(mockFileShareMountApiService).delete(ID);
