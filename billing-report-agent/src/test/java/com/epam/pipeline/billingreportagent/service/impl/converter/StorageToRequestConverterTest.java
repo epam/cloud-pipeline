@@ -61,9 +61,11 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -153,26 +155,30 @@ public class StorageToRequestConverterTest {
             elasticsearchClient,
             StorageType.OBJECT_STORAGE,
             testStoragePricing,
-            StringUtils.EMPTY);
+            StringUtils.EMPTY,
+            false);
         nfsConverter = new StorageToBillingRequestConverter(
             new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, BILLING_CENTER_KEY),
             elasticsearchClient,
             StorageType.FILE_STORAGE,
             testStoragePricing,
             StringUtils.EMPTY,
-            fileShareMountsService);
+            fileShareMountsService,
+            false);
         gcpConverter = new StorageToBillingRequestConverter(
             new StorageBillingMapper(SearchDocumentType.GS_STORAGE, BILLING_CENTER_KEY),
             elasticsearchClient,
             StorageType.OBJECT_STORAGE,
             testStoragePricing,
-            StringUtils.EMPTY);
+            StringUtils.EMPTY,
+            false);
         azureConverter = new StorageToBillingRequestConverter(
             new StorageBillingMapper(SearchDocumentType.AZ_BLOB_STORAGE, BILLING_CENTER_KEY),
             elasticsearchClient,
             StorageType.OBJECT_STORAGE,
             testStoragePricing,
-            StringUtils.EMPTY);
+            StringUtils.EMPTY,
+            false);
     }
 
     @Test
@@ -369,6 +375,7 @@ public class StorageToRequestConverterTest {
                 storage = s3bucketDataStorage;
                 break;
         }
+        storage.setCreatedDate(Date.from(SYNC_START.atZone(ZoneId.systemDefault()).toInstant()));
         return EntityContainer.<AbstractDataStorage>builder()
             .entity(storage)
             .owner(testUserWithMetadata)
