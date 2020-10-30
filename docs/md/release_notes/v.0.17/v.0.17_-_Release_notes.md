@@ -9,6 +9,7 @@
 - [User management and export in read-only mode](#user-management-and-export-in-read-only-mode)
 - ["All pipelines" and "All storages" repositories](#all-pipelines-and-all-storages-repositories)
 - [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
+- [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
 ***
 
@@ -364,6 +365,17 @@ If it's exceeded - the user is being warned with the following wording and asked
 - If the **`storage.mounts.per.gb.ratio`** is not set - no checks are being performed, no warning appears.
 - Before the launch, only the _object storages_ count is being calculated, _file mounts_ do not introduce this limitation.
 
+## AWS: transfer objects between AWS regions using `pipe storage cp`/`mv` commands
+
+Previously, `pipe storage cp`/`pipe storage mv` commands allowed to transfer objects only within one `AWS` region.  
+In the current version, the ability to transfer objects between storages from different `AWS` regions is implemented.  
+The commands themselves remain the same.
+
+Example:
+
+- ![CP_v.0.17_ReleaseNotes](attachments/RN017_TransferBetweenRegions_1.png)
+- ![CP_v.0.17_ReleaseNotes](attachments/RN017_TransferBetweenRegions_2.png)
+
 ***
 
 ## Notable Bug fixes
@@ -429,3 +441,10 @@ Previously, when tried to rerun any run - the default region was being set in th
 [#998](https://github.com/epam/cloud-pipeline/issues/998)
 
 Previously, `PAUSE` and `COMMIT` operations failed with the `NullPointerException` error for the jobs with an autoscaled disk.
+
+### Broken layouts
+
+[#1504](https://github.com/epam/cloud-pipeline/issues/1504), [#1505](https://github.com/epam/cloud-pipeline/issues/1505)
+
+- In **Groups**/**Roles** membership view, the vertical scrollbar was shown even if there was a plenty of space below the list. Currently, the list size is increased to the pop up size.
+- At the **Billing reports** page, if the whole header menu didn't not fit the screen width - the "discounts" links overflew the regions selector. Currently, row breaks feature is implemeted for this page.
