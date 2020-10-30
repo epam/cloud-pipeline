@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.CollectionCondition;
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.WebDriverRunner;
@@ -41,6 +42,7 @@ import static com.codeborne.selenide.Condition.appears;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
@@ -124,6 +126,13 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
 
     default ELEMENT_TYPE clear(Primitive primitive) {
         get(primitive).shouldBe(visible, enabled).clear();
+        return (ELEMENT_TYPE) this;
+    }
+
+    default ELEMENT_TYPE clearByKey(final By qualifier) {
+        $(qualifier).click();
+        $(qualifier).sendKeys(Keys.chord(Keys.CONTROL, "a"));
+        $(qualifier).sendKeys(Keys.DELETE);
         return (ELEMENT_TYPE) this;
     }
 
@@ -250,15 +259,6 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
             selenideElement.click();
         }
         selenideElement.shouldBe(expandedTab);
-        return (ELEMENT_TYPE) this;
-    }
-
-    /**
-     * @deprecated Use {@link #expandTabs(By...)} instead.
-     */
-    @Deprecated
-    default ELEMENT_TYPE expandTabs(final Primitive... elements) {
-        Arrays.stream(elements).forEach(this::expandTab);
         return (ELEMENT_TYPE) this;
     }
 
@@ -489,6 +489,32 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     default ELEMENT_TYPE selectValue(final Primitive combobox, final By optionQualifier) {
         get(combobox).shouldBe(visible).click();
         $(visible(byClassName("ant-select-dropdown"))).find(optionQualifier).shouldBe(visible).click();
+        return (ELEMENT_TYPE) this;
+    }
+
+    default ELEMENT_TYPE checkValueIsInDropDown(final Primitive combobox, final String option) {
+        sleep(1, SECONDS);
+        get(combobox).shouldBe(visible).click();
+        ElementsCollection listDropDown = SelenideElements.of(byClassName("ant-select-dropdown-menu-item"));
+        listDropDown.forEach(row -> row.shouldHave(text(option)));
+        return (ELEMENT_TYPE) this;
+    }
+
+    default ELEMENT_TYPE checkDropDownCount(final Primitive combobox, final int count) {
+        get(combobox).shouldBe(visible).click();
+        SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).shouldHaveSize(count);
+        return (ELEMENT_TYPE) this;
+    }
+
+    default int dropDownCount(final Primitive combobox) {
+        get(combobox).shouldBe(visible).click();
+        return SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).size();
+    }
+
+    default ELEMENT_TYPE exitFromConfigurationWithoutSaved() {
+        new ConfirmationPopupAO<>(this)
+                .ensureTitleIs("You have unsaved changes. Continue?")
+                .ok();
         return (ELEMENT_TYPE) this;
     }
 

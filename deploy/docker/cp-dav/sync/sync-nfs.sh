@@ -53,3 +53,6 @@ python $SYNC_HOME/nfs-roles-management/syncnfs.py sync \
                                 --key=$API_TOKEN \
                                 --users-root=$CP_DAV_SERVE_DIR \
                                 --nfs-root=$CP_DAV_MOUNT_POINT >> $SYNC_LOG_DIR/sync-nfs.log 2>&1
+
+# need to remove it here because blobfuse will inherit parent lock and next cron execution will be deadlocked
+rm -rf /var/run/sync-nfs.lock

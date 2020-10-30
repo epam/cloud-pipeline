@@ -229,7 +229,7 @@ export default class PipelineRunPreview extends React.Component {
   renderDescription = () => {
     if (this.props.runInfo && this.props.runInfo.loaded) {
       const run = this.props.runInfo.value;
-      const {instance} = run;
+      const {instance, sensitive} = run;
       const details = [];
       if (instance) {
         if (RunTags.shouldDisplayTags(run, true)) {
@@ -291,6 +291,13 @@ export default class PipelineRunPreview extends React.Component {
           const [, , imageName] = run.dockerImage.split('/');
           details.push({key: 'Docker image', value: imageName});
         }
+      }
+      if (sensitive) {
+        details.push({
+          key: 'sensitive',
+          additionalStyle: {backgroundColor: '#ff5c33', fontWeight: 'bold', color: '#222'},
+          value: 'Sensitive'
+        });
       }
       if (details.length > 0) {
         return (

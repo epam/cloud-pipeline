@@ -37,6 +37,11 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Pod file system requester.
+ * 
+ * Doesn't work with btrfs file system docker driver because cAdvisor stops reporting pod container file system stats.
+ */
 public class PodFSRequester extends FSRequester {
 
     public static final String FILESYSTEM = "filesystem";
@@ -61,7 +66,6 @@ public class PodFSRequester extends FSRequester {
                                       final LocalDateTime from,
                                       final LocalDateTime to,
                                       final Map <String, String> additional) {
-
         throw new UnsupportedOperationException();
     }
 

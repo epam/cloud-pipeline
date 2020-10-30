@@ -16,17 +16,18 @@
 
 export {default as CSV} from './csv';
 export {default as billingCentersComposer} from './billing-centers-composer';
-export {default as defaultComposer} from './default-composer';
 export {default as summaryComposer} from './summary-composer';
-export {default as resourcesComposer} from './resources-composer';
+export {default as tableComposer} from './table-composer';
+export {default as discountsComposer} from './discounts-composer';
+export {default as usersComposers} from './users-composer';
 
-function buildCascadeComposers (composers = []) {
+function buildCascadeComposers (composers = [], discounts = {}, ...exportOptions) {
   function build (index = 0) {
     if (index < composers.length) {
       const next = build(index + 1);
       const {composer, options = []} = composers[index];
       return (csv) => new Promise((resolve, reject) => {
-        composer(csv, ...options)
+        composer(csv, discounts, exportOptions, ...options)
           .then(() => {
             next(csv)
               .then(resolve)

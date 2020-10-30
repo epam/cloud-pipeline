@@ -39,6 +39,7 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
+import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 import com.epam.pipeline.manager.cloud.aws.S3TemporaryCredentialsGenerator;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
@@ -50,19 +51,23 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     private final AuthManager authManager;
@@ -85,8 +90,13 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
             s3Helper.createS3Bucket(datastoragePath.getRoot());
         }
         if (StringUtils.hasText(prefix)) {
-            s3Helper.createFile(datastoragePath.getRoot(), ProviderUtils.withTrailingDelimiter(prefix),
-                    new byte[]{}, authManager.getAuthorizedUser());
+            try {
+                s3Helper.createFile(datastoragePath.getRoot(), ProviderUtils.withTrailingDelimiter(prefix),
+                        new byte[]{}, authManager.getAuthorizedUser());
+            } catch (DataStorageException e) {
+                log.debug("Failed to create file {}.", prefix);
+                log.debug(e.getMessage(), e);
+            }
         }
         return storage.getPath();
     }
@@ -112,9 +122,9 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
         final List<CORSRule> corsPolicyRules = JsonMapper.parseData(awsRegion.getCorsRules(),
                 new TypeReference<List<CORSRule>>() {}, corsRulesMapper);
-
+        final String kmsKeyId = AWSUtils.getKeyArnValue(storage, awsRegion);
         return getS3Helper(storage).postCreationProcessing(storage.getRoot(), awsRegion.getPolicy(),
-                storage.getAllowedCidrs(), corsPolicyRules, awsRegion, storage.isShared(), tags);
+                storage.getAllowedCidrs(), corsPolicyRules, awsRegion, storage.isShared(), kmsKeyId, tags);
     }
 
     @Override
@@ -177,15 +187,23 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
                                                           String path, String version,
                                                           ContentDisposition contentDisposition) {
         final TemporaryCredentials credentials = getStsCredentials(dataStorage, version, false);
-        return getS3Helper(credentials).generateDownloadURL(dataStorage.getRoot(),
+        return getS3Helper(credentials, getAwsRegion(dataStorage)).generateDownloadURL(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path), version, contentDisposition);
     }
 
     @Override
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(S3bucketDataStorage dataStorage, String path) {
         final TemporaryCredentials credentials = getStsCredentials(dataStorage, null, true);
-        return getS3Helper(credentials).generateDataStorageItemUploadUrl(
+        return getS3Helper(credentials, getAwsRegion(dataStorage)).generateDataStorageItemUploadUrl(
                 dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), authManager.getAuthorizedUser());
+    }
+
+    @Override
+    public DataStorageDownloadFileUrl generateUrl(final S3bucketDataStorage dataStorage,
+                                                  final String path,
+                                                  final List<String> permissions,
+                                                  final Duration duration) {
+        return generateDownloadURL(dataStorage, path, null, null);
     }
 
     @Override public DataStorageFile createFile(S3bucketDataStorage dataStorage, String path,
@@ -248,10 +266,15 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         if (!exists) {
             return false;
         }
-        if (StringUtils.hasText(datastoragePath.getPath())) {
-            s3Helper.createFile(datastoragePath.getRoot(),
+        if (!dataStorage.isSensitive() && StringUtils.hasText(datastoragePath.getPath())) {
+            try {
+                s3Helper.createFile(datastoragePath.getRoot(),
                     ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
                     new byte[]{}, authManager.getAuthorizedUser());
+            } catch (DataStorageException e) {
+                log.debug("Failed to create file {}.", datastoragePath.getPath());
+                log.debug(e.getMessage(), e);
+            }
         }
         return true;
     }
@@ -300,11 +323,16 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {
         AwsRegion region = getAwsRegion(dataStorage);
+        if (dataStorage.isUseAssumedCredentials()) {
+            final String roleArn = Optional.ofNullable(dataStorage.getTempCredentialsRole())
+                    .orElse(region.getTempCredentialsRole());
+            return new AssumedCredentialsS3Helper(roleArn, region, messageHelper);
+        }
         return new RegionAwareS3Helper(region, messageHelper);
     }
 
-    public S3Helper getS3Helper(final TemporaryCredentials credentials) {
-        return new TemporaryCredentialsS3Helper(credentials, messageHelper);
+    public S3Helper getS3Helper(final TemporaryCredentials credentials, final AwsRegion region) {
+        return new TemporaryCredentialsS3Helper(credentials, messageHelper, region);
     }
 
     private AwsRegion getAwsRegion(S3bucketDataStorage dataStorage) {
@@ -324,6 +352,6 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         action.setWrite(write);
         action.setWriteVersion(useVersion);
         return stsCredentialsGenerator
-                .generate(Collections.singletonList(action), dataStorage);
+                .generate(Collections.singletonList(action), Collections.singletonList(dataStorage));
     }
 }

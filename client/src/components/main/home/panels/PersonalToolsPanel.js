@@ -43,7 +43,7 @@ import {
   RunConfirmation
 } from '../../../runs/actions';
 import {autoScaledClusterEnabled} from '../../../pipelines/launch/form/utilities/launch-cluster';
-import {LIMIT_MOUNTS_PARAMETER} from '../../../pipelines/launch/form/LimitMountsInput';
+import {CP_CAP_LIMIT_MOUNTS} from '../../../pipelines/launch/form/utilities/parameters';
 import CardsPanel from './components/CardsPanel';
 import {getDisplayOnlyFavourites} from '../utils/favourites';
 import styles from './Panel.css';
@@ -207,9 +207,9 @@ export default class PersonalToolsPanel extends React.Component {
         payload.params = {};
       }
       if (this.state.runToolInfo.limitMounts.value) {
-        payload.params[LIMIT_MOUNTS_PARAMETER] = this.state.runToolInfo.limitMounts;
-      } else if (payload.params[LIMIT_MOUNTS_PARAMETER]) {
-        delete payload.params[LIMIT_MOUNTS_PARAMETER];
+        payload.params[CP_CAP_LIMIT_MOUNTS] = this.state.runToolInfo.limitMounts;
+      } else if (payload.params[CP_CAP_LIMIT_MOUNTS]) {
+        delete payload.params[CP_CAP_LIMIT_MOUNTS];
       }
     }
     if (await run(this)(payload, false)) {
@@ -354,9 +354,12 @@ export default class PersonalToolsPanel extends React.Component {
           }
           return result;
         };
+        const cloudRegionIdValue = parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
+          ? versionSettingValue('cloudRegionId')
+          : this.defaultCloudRegionId;
         const allowedInstanceTypesRequest = new AllowedInstanceTypes(
           tool.id,
-          null,
+          cloudRegionIdValue,
           parameterIsNotEmpty(versionSettingValue('is_spot'))
             ? versionSettingValue('is_spot')
             : this.props.preferences.useSpot
@@ -405,9 +408,7 @@ export default class PersonalToolsPanel extends React.Component {
           nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))
             ? +versionSettingValue('node_count')
             : undefined,
-          cloudRegionId: parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
-            ? versionSettingValue('cloudRegionId')
-            : this.defaultCloudRegionId
+          cloudRegionId: cloudRegionIdValue
         }, allowedInstanceTypesRequest);
         const parts = (tool.image || '').toLowerCase().split('/');
         const [image] = parts[parts.length - 1].split(':');
@@ -705,7 +706,6 @@ export default class PersonalToolsPanel extends React.Component {
           }
           {
             this.state.runToolInfo &&
-            (this.state.runToolInfo.payload.isSpot || !this.state.runToolInfo.payload.instanceType) &&
               <RunConfirmation
                 cloudRegions={this.props.awsRegions.loaded ? (this.props.awsRegions.value || []).map(r => r) : []}
                 cloudRegionId={this.state.runToolInfo.payload.cloudRegionId}
@@ -728,8 +728,8 @@ export default class PersonalToolsPanel extends React.Component {
                 }
                 limitMounts={
                   this.state.runToolInfo.payload.params &&
-                  this.state.runToolInfo.payload.params[LIMIT_MOUNTS_PARAMETER]
-                    ? this.state.runToolInfo.payload.params[LIMIT_MOUNTS_PARAMETER].value
+                  this.state.runToolInfo.payload.params[CP_CAP_LIMIT_MOUNTS]
+                    ? this.state.runToolInfo.payload.params[CP_CAP_LIMIT_MOUNTS].value
                     : undefined
                 }
                 onChangeLimitMounts={this.onChangeLimitMounts}
@@ -738,6 +738,7 @@ export default class PersonalToolsPanel extends React.Component {
                 hddSize={this.state.runToolInfo.payload.hddSize}
                 parameters={this.state.runToolInfo.payload.params}
                 permissionErrors={this.state.runToolInfo.permissionErrors}
+                preferences={this.props.preferences}
               />
           }
           {

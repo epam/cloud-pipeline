@@ -38,28 +38,45 @@ import EditToolFormParameters from './EditToolFormParameters';
 import styles from '../Tools.css';
 import {names} from '../../../models/utils/ContextualPreference';
 import {
-  LIMIT_MOUNTS_PARAMETER,
   LimitMountsInput
 } from '../../pipelines/launch/form/LimitMountsInput';
 import {
   autoScaledClusterEnabled,
   hybridAutoScaledClusterEnabled,
-  CP_CAP_SGE,
-  CP_CAP_SPARK,
-  CP_CAP_SLURM,
-  CP_CAP_AUTOSCALE,
-  CP_CAP_AUTOSCALE_WORKERS,
-  CP_CAP_AUTOSCALE_HYBRID,
-  CP_CAP_AUTOSCALE_PRICE_TYPE,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState,
   gridEngineEnabled,
   sparkEnabled,
   slurmEnabled,
+  kubeEnabled,
   getAutoScaledPriceTypeValue
 } from '../../pipelines/launch/form/utilities/launch-cluster';
+import {
+  CP_CAP_LIMIT_MOUNTS,
+  CP_CAP_SGE,
+  CP_CAP_SPARK,
+  CP_CAP_SLURM,
+  CP_CAP_KUBE,
+  CP_CAP_DIND_CONTAINER,
+  CP_CAP_SYSTEMD_CONTAINER,
+  CP_CAP_MODULES,
+  CP_CAP_AUTOSCALE,
+  CP_CAP_AUTOSCALE_WORKERS,
+  CP_CAP_AUTOSCALE_HYBRID,
+  CP_CAP_AUTOSCALE_PRICE_TYPE,
+  CP_CAP_SINGULARITY,
+  CP_CAP_DESKTOP_NM
+} from '../../pipelines/launch/form/utilities/parameters';
 import AWSRegionTag from '../../special/AWSRegionTag';
+import RunCapabilities, {
+  dinDEnabled,
+  noMachineEnabled,
+  singularityEnabled,
+  systemDEnabled,
+  moduleEnabled,
+  RUN_CAPABILITIES
+} from '../../pipelines/launch/form/utilities/run-capabilities';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -72,6 +89,7 @@ const regionNotConfiguredValue = 'not_configured';
 
 @Form.create()
 @inject(
+  'preferences',
   'awsRegions',
   'allowedInstanceTypes',
   'dataStorageAvailable',
@@ -133,7 +151,13 @@ export default class EditToolForm extends React.Component {
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
-    launchCluster: false
+    kubeEnabled: false,
+    launchCluster: false,
+    dinD: false,
+    singularity: false,
+    systemD: false,
+    noMachine: false,
+    module: false
   };
 
   @observable defaultLimitMounts;
@@ -190,7 +214,7 @@ export default class EditToolForm extends React.Component {
           params.push(...this.toolFormParameters.getValues(), ...this.toolFormSystemParameters.getValues());
           if (values.limitMounts) {
             params.push({
-              name: LIMIT_MOUNTS_PARAMETER,
+              name: CP_CAP_LIMIT_MOUNTS,
               value: values.limitMounts
             });
           }
@@ -242,6 +266,58 @@ export default class EditToolForm extends React.Component {
           if (this.state.launchCluster && this.state.slurmEnabled) {
             params.push({
               name: CP_CAP_SLURM,
+              type: 'boolean',
+              value: true
+            });
+          }
+          if (this.state.launchCluster && this.state.kubeEnabled) {
+            params.push({
+              name: CP_CAP_KUBE,
+              type: 'boolean',
+              value: true
+            });
+            params.push({
+              name: CP_CAP_DIND_CONTAINER,
+              type: 'boolean',
+              value: true
+            });
+            params.push({
+              name: CP_CAP_SYSTEMD_CONTAINER,
+              type: 'boolean',
+              value: true
+            });
+          }
+          if (this.state.dinD) {
+            params.push({
+              name: CP_CAP_DIND_CONTAINER,
+              type: 'boolean',
+              value: true
+            });
+          }
+          if (this.state.systemD) {
+            params.push({
+              name: CP_CAP_SYSTEMD_CONTAINER,
+              type: 'boolean',
+              value: true
+            });
+          }
+          if (this.state.singularity) {
+            params.push({
+              name: CP_CAP_SINGULARITY,
+              type: 'boolean',
+              value: true
+            });
+          }
+          if (this.state.noMachine) {
+            params.push({
+              name: CP_CAP_DESKTOP_NM,
+              type: 'boolean',
+              value: true
+            });
+          }
+          if (this.state.module) {
+            params.push({
+              name: CP_CAP_MODULES,
               type: 'boolean',
               value: true
             });
@@ -333,7 +409,7 @@ export default class EditToolForm extends React.Component {
       this.props.configuration && this.props.configuration.is_spot !== undefined
         ? `${this.props.configuration.is_spot}`
         : `${this.props.defaultPriceTypeIsSpot}`
-    )
+    );
   };
 
   getDiskInitialValue = () => {
@@ -377,6 +453,7 @@ export default class EditToolForm extends React.Component {
     if (props.configuration) {
       (async () => {
         await this.props.runDefaultParameters.fetchIfNeededOrWait();
+        await this.props.dataStorageAvailable.fetchIfNeededOrWait();
         state.maxNodesCount = props.configuration && props.configuration.parameters &&
           props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS]
             ? +props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS].value
@@ -388,9 +465,15 @@ export default class EditToolForm extends React.Component {
         state.gridEngineEnabled = props.configuration && gridEngineEnabled(props.configuration.parameters);
         state.sparkEnabled = props.configuration && sparkEnabled(props.configuration.parameters);
         state.slurmEnabled = props.configuration && slurmEnabled(props.configuration.parameters);
+        state.kubeEnabled = props.configuration && kubeEnabled(props.configuration.parameters);
         state.autoScaledPriceType = props.configuration &&
           getAutoScaledPriceTypeValue(props.configuration.parameters);
         state.launchCluster = state.nodesCount > 0 || state.autoScaledCluster;
+        state.dinD = dinDEnabled(props.configuration.parameters);
+        state.singularity = singularityEnabled(props.configuration.parameters);
+        state.systemD = systemDEnabled(props.configuration.parameters);
+        state.noMachine = noMachineEnabled(props.configuration.parameters);
+        state.module = moduleEnabled(props.configuration.parameters);
         this.defaultCommand = props.configuration && props.configuration.cmd_template
           ? props.configuration.cmd_template
           : this.defaultCommand;
@@ -400,8 +483,18 @@ export default class EditToolForm extends React.Component {
               getSystemParameterDisabledState(this, key)) {
               continue;
             }
-            if (key === LIMIT_MOUNTS_PARAMETER) {
-              this.defaultLimitMounts = props.configuration.parameters[LIMIT_MOUNTS_PARAMETER].value;
+            if (key === CP_CAP_LIMIT_MOUNTS) {
+              if (this.props.dataStorageAvailable.loaded) {
+                const availableMounts = new Set((this.props.dataStorageAvailable.value || [])
+                  .map(d => +d.id));
+                this.defaultLimitMounts = (props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value || '')
+                  .split(',')
+                  .map(o => +o)
+                  .filter(o => availableMounts.has(o))
+                  .join(',');
+              } else {
+                this.defaultLimitMounts = props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value;
+              }
               continue;
             }
             if (this.props.runDefaultParameters.loaded &&
@@ -569,18 +662,25 @@ export default class EditToolForm extends React.Component {
 
   @computed
   get allowedPriceTypes () {
-    let priceTypes = [true, false];
+    let availableMasterNodeTypes = [true, false];
+    if (this.state.launchCluster && this.props.preferences.loaded) {
+      availableMasterNodeTypes = this.props.preferences.allowedMasterPriceTypes;
+    }
+    let priceTypes = availableMasterNodeTypes.slice();
     if (this.props.allowedInstanceTypes.loaded && this.props.allowedInstanceTypes.value[names.allowedPriceTypes]) {
       priceTypes = [];
       for (let i = 0; i < (this.props.allowedInstanceTypes.value[names.allowedPriceTypes] || []).length; i++) {
         const isSpot = this.props.allowedInstanceTypes.value[names.allowedPriceTypes][i].toLowerCase() === 'spot';
-        priceTypes.push(isSpot);
+        if (availableMasterNodeTypes.indexOf(isSpot) >= 0) {
+          priceTypes.push(isSpot);
+        }
       }
     }
     return priceTypes.map(isSpot => ({
       isSpot,
       name: getSpotTypeName(isSpot, this.getCloudProvider())
-    }));
+    }))
+      .filter(v => availableMasterNodeTypes.indexOf(v.isSpot) >= 0);
   }
 
   @computed
@@ -606,6 +706,19 @@ export default class EditToolForm extends React.Component {
       return 1;
     }
   }
+
+  @computed
+  get selectedRunCapabilities () {
+    const {dinD, singularity, systemD, noMachine, module} = this.state;
+
+    return [
+      dinD ? RUN_CAPABILITIES.dinD : false,
+      singularity ? RUN_CAPABILITIES.singularity : false,
+      systemD ? RUN_CAPABILITIES.systemD : false,
+      noMachine ? RUN_CAPABILITIES.noMachine : false,
+      module ? RUN_CAPABILITIES.module : false
+    ].filter(Boolean);
+  };
 
   modified = () => {
     const arrayIsNullOrEmpty = (array) => {
@@ -651,7 +764,11 @@ export default class EditToolForm extends React.Component {
       return toolCommandValue !== formCommandValue;
     };
     const limitMountsFieldChanged = () => {
-      return this.defaultLimitMounts !== this.props.form.getFieldValue('limitMounts');
+      const fieldValue = this.props.form.getFieldValue('limitMounts');
+      if (!this.defaultLimitMounts && !fieldValue) {
+        return false;
+      }
+      return this.defaultLimitMounts !== fieldValue;
     };
     const cloudRegionFieldChanged = () => {
       return this.getCloudRegionInitialValue() !== this.props.form.getFieldValue('cloudRegionId');
@@ -674,9 +791,24 @@ export default class EditToolForm extends React.Component {
       sparkEnabled(this.props.configuration.parameters);
     const slurmEnabledValue = this.props.configuration &&
       slurmEnabled(this.props.configuration.parameters);
+    const kubeEnabledValue = this.props.configuration &&
+      kubeEnabled(this.props.configuration.parameters);
     const autoScaledPriceTypeValue = this.props.configuration &&
       getAutoScaledPriceTypeValue(this.props.configuration.parameters);
     const launchCluster = nodesCount > 0 || autoScaledCluster;
+    const additionalCapabilitiesChanged = () => {
+      const dinD = dinDEnabled(this.props.configuration.parameters);
+      const singularity = singularityEnabled(this.props.configuration.parameters);
+      const systemD = systemDEnabled(this.props.configuration.parameters);
+      const noMachine = noMachineEnabled(this.props.configuration.parameters)
+      const module = moduleEnabled(this.props.configuration.parameters);
+      return dinD !== this.state.dinD ||
+        singularity !== this.state.singularity ||
+        systemD !== this.state.systemD ||
+        noMachine !== this.state.noMachine ||
+        module !== this.state.module;
+    };
+
     return configurationFormFieldChanged('is_spot') ||
       configurationFormFieldChanged('instance_size', 'instanceType') ||
       configurationFormFieldChanged('instance_disk', 'disk') ||
@@ -692,10 +824,11 @@ export default class EditToolForm extends React.Component {
       !!gridEngineEnabledValue !== !!this.state.gridEngineEnabled ||
       !!sparkEnabledValue !== !!this.state.sparkEnabled ||
       !!slurmEnabledValue !== !!this.state.slurmEnabled ||
+      !!kubeEnabledValue !== !!this.state.kubeEnabled ||
       autoScaledPriceTypeValue !== this.state.autoScaledPriceType ||
       (this.state.launchCluster && nodesCount !== this.state.nodesCount) ||
       (this.state.launchCluster && this.state.autoScaledCluster && maxNodesCount !== this.state.maxNodesCount) ||
-      limitMountsFieldChanged() || cloudRegionFieldChanged();
+      limitMountsFieldChanged() || cloudRegionFieldChanged() || additionalCapabilitiesChanged();
   };
 
   initializeEndpointsControl = (control) => {
@@ -740,8 +873,14 @@ export default class EditToolForm extends React.Component {
       gridEngineEnabled,
       sparkEnabled,
       slurmEnabled,
+      kubeEnabled,
       autoScaledPriceType
     } = configuration;
+    let {dinD, systemD} = this.state;
+    if (kubeEnabled) {
+      dinD = true;
+      systemD = true;
+    }
     this.setState({
       launchCluster,
       nodesCount,
@@ -751,8 +890,17 @@ export default class EditToolForm extends React.Component {
       gridEngineEnabled,
       sparkEnabled,
       slurmEnabled,
-      autoScaledPriceType
-    }, this.closeConfigureClusterDialog);
+      kubeEnabled,
+      autoScaledPriceType,
+      dinD,
+      systemD
+    }, () => {
+      this.closeConfigureClusterDialog();
+      const priceType = this.props.form.getFieldValue('is_spot') || this.getPriceTypeInitialValue();
+      this.props.form.setFieldsValue({
+        is_spot: this.correctPriceTypeValue(priceType)
+      });
+    });
   };
 
   renderExecutionEnvironmentSummary = () => {
@@ -916,6 +1064,16 @@ export default class EditToolForm extends React.Component {
         onCancel: cancel
       });
     }
+  };
+
+  onRunCapabilitiesSelect = (capabilities) => {
+    this.setState({
+      dinD: capabilities.includes(RUN_CAPABILITIES.dinD),
+      singularity: capabilities.includes(RUN_CAPABILITIES.singularity),
+      systemD: capabilities.includes(RUN_CAPABILITIES.systemD),
+      noMachine: capabilities.includes(RUN_CAPABILITIES.noMachine),
+      module: capabilities.includes(RUN_CAPABILITIES.module)
+    });
   };
 
   renderExecutionEnvironment = () => {
@@ -1129,6 +1287,16 @@ export default class EditToolForm extends React.Component {
                   </Select>
                 )}
               </Form.Item>
+              <Form.Item
+                {...this.formItemLayout}
+                label="Run capabilities"
+                style={{marginTop: 10, marginBottom: 10}}
+              >
+                <RunCapabilities
+                  values={this.selectedRunCapabilities}
+                  onChange={this.onRunCapabilitiesSelect}
+                />
+              </Form.Item>
               <ConfigureClusterDialog
                 instanceName={this.props.form.getFieldValue('instanceType')}
                 launchCluster={this.state.launchCluster}
@@ -1139,6 +1307,7 @@ export default class EditToolForm extends React.Component {
                 gridEngineEnabled={this.state.gridEngineEnabled}
                 sparkEnabled={this.state.sparkEnabled}
                 slurmEnabled={this.state.slurmEnabled}
+                kubeEnabled={this.state.kubeEnabled}
                 nodesCount={this.state.nodesCount}
                 maxNodesCount={+this.state.maxNodesCount || 1}
                 onClose={this.closeConfigureClusterDialog}
@@ -1177,7 +1346,7 @@ export default class EditToolForm extends React.Component {
             getSystemParameterDisabledState={
               (parameterName) => getSystemParameterDisabledState(this, parameterName)
             }
-            skippedSystemParameters={getSkippedSystemParametersList(this) || []}
+            skippedSystemParameters={getSkippedSystemParametersList(this)}
             value={this.defaultSystemProperties}
             onInitialized={this.onEditToolFormSystemParametersInitialized} />
           {this.renderSeparator('Custom parameters')}

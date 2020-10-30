@@ -39,6 +39,7 @@ rm -rf /root/.ssh/
 rm -rf /code-repository
 rm -rf /common
 rm -rf /cloud-data
+rm -rf /root/.pipe/
 
 PARAM_TYPE_SUFFIX="_PARAM_TYPE"
 ENV_TO_CLEAN_COUNT=$(env | grep ${PARAM_TYPE_SUFFIX} | wc -l)

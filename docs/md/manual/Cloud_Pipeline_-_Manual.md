@@ -34,6 +34,7 @@
     - [8.6. Delete Files and Folders from Storage](08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage.md)
     - [8.7. Create shared file system](08_Manage_Data_Storage/8.7._Create_shared_file_system.md)
     - [8.8. Data sharing](08_Manage_Data_Storage/8.8._Data_sharing.md)
+    - [8.9. Mapping storages](08_Manage_Data_Storage/8.9._Mapping_storages.md)
 - [9. Manage Cluster nodes](09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md)
 - [10. Manage Tools](10_Manage_Tools/10._Manage_Tools.md)
     - [10.1. Add/Edit a Docker registry](10_Manage_Tools/10.1._Add_Edit_a_Docker_registry.md)
@@ -43,10 +44,12 @@
     - [10.5. Launch a Tool](10_Manage_Tools/10.5._Launch_a_Tool.md)
     - [10.6. Tool security check](10_Manage_Tools/10.6._Tool_security_check.md)
     - [10.7. Tool version menu](10_Manage_Tools/10.7._Tool_version_menu.md)
+    - [10.8. "Symlinked" tools](10_Manage_Tools/10.8._Symlinks_between_tools.md)
 - [11. Manage Runs](11_Manage_Runs/11._Manage_Runs.md)
     - [11.1. Manage runs lifecycles](11_Manage_Runs/11.1._Manage_runs_lifecycles.md)
     - [11.2. Auto-commit Docker image](11_Manage_Runs/11.2._Auto-commit_Docker_image.md)
     - [11.3. Sharing with other users or groups of users](11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users.md)
+    - [11.4. Automatic labels and actions for the runs](11_Manage_Runs/11.4._Automatic_actions_after_notifications.md)
 - [12. Manage Settings](12_Manage_Settings/12._Manage_Settings.md)
     - [12.1. Add a new system event](12_Manage_Settings/12.1._Add_a_new_system_event.md)
     - [12.2. Edit a system event](12_Manage_Settings/12.2._Edit_a_system_event.md)
@@ -59,6 +62,8 @@
     - [12.9. Change email notification](12_Manage_Settings/12.9._Change_email_notification.md)
     - [12.10. Manage system-level settings](12_Manage_Settings/12.10._Manage_system-level_settings.md)
     - [12.11. Advanced features](12_Manage_Settings/12.11._Advanced_features.md)
+    - [12.12. System logs](12_Manage_Settings/12.12._System_logs.md)
+    - [12.13. System dictionaries](12_Manage_Settings/12.13._System_dictionaries.md)
 - [13. Permissions](13_Permissions/13._Permissions.md)
 - [14. Command-line interface (CLI)](14_CLI/14._Command-line_interface.md)
     - [14.1. Install and setup CLI](14_CLI/14.1._Install_and_setup_CLI.md)
@@ -82,6 +87,7 @@
 - [Appendix C. Working with autoscaled cluster runs](Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md)
 - [Appendix D. Costs management](Appendix_D/Appendix_D._Costs_management.md)
 - [Appendix E. Pipeline objects concept](Appendix_E/Appendix_E._Pipeline_objects_concept.md)
+- [Appendix F. Сomparison of using different FS storage types](Appendix_F/Appendix_F._Сomparison_of_using_different_FS_storages_(FSx_for_Lustre_vs_EFS_in_AWS).md)
 
 [1. Quick start](01_Quick_start/1._Quick_start.md)  
 This chapter will give you a basic knowledge of pipeline running procedure.
@@ -151,3 +157,6 @@ Get details about costs management concept.
 
 [Appendix E. Pipeline objects concept](Appendix_E/Appendix_E._Pipeline_objects_concept.md)  
 Get details about the Pipeline objects concept in Cloud Pipeline environment.
+
+[Appendix F. Сomparison of using different FS storage types](Appendix_F/Appendix_F._Сomparison_of_using_different_FS_storages_(FSx_for_Lustre_vs_EFS_in_AWS).md)  
+Get details about the comparison of using different FS storage types (**FSx** for `Lustre` / **EFS** in `AWS` / **BTRFS** on `EBS` / **LizardFS** on `EBS`) in Cloud Pipeline environment.

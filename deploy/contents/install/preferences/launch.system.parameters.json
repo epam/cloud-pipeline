@@ -56,9 +56,15 @@
         "defaultValue": "2.4.3"
     },
     {
+        "name": "CP_CAP_KUBE",
+        "type": "boolean",
+        "description": "Enables Kubernetes for a current run (1.15.4), supported for Centos only",
+        "defaultValue": "true"
+    },
+    {
         "name": "CP_S3_FUSE_TYPE",
         "type": "string",
-        "description": "Allows to select which FUSE implementation to use for S3 buckets mounting. Allowed values are: goofys and s3fs",
+        "description": "Allows to select which FUSE implementation to use for S3 buckets mounting. Allowed values are: goofys, s3fs and pipefuse",
         "defaultValue": "goofys",
         "passToWorkers": true
     },
@@ -82,6 +88,31 @@
         "description": "Applied to goofys FUSE. How long to cache name -> file/dir mappings in directory. Set this to 0 if you are experiencing issues with files consistency",
         "defaultValue": "1m0s",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_GCS_FUSE_TYPE",
+        "type": "string",
+        "description": "Allows to select which FUSE implementation to use for GCS buckets mounting. Allowed values are: gcsfuse and pipefuse",
+        "defaultValue": "gcsfuse",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_PIPE_FUSE_PERSIST_LOGS",
+        "type": "boolean",
+        "description": "Enables pipefuse logging persistence for a current run",
+        "defaultValue": true
+    },
+    {
+        "name": "CP_PIPE_FUSE_DEBUG_LIBFUSE",
+        "type": "boolean",
+        "description": "Enables pipefuse low level logging for a current run",
+        "defaultValue": false
+    },
+    {
+        "name": "CP_PIPE_FUSE_LOGGING_LEVEL",
+        "type": "string",
+        "description": "Declares pipefuse logging level (CRITICAL, ERROR, WARN, INFO or DEBUG)",
+        "defaultValue": "ERROR"
     },
     {
         "name": "CP_CAP_SGE_MASTER_CORES",
@@ -213,14 +244,62 @@
     {
         "name": "CP_CAP_SYSTEMD_CONTAINER",
         "type": "boolean",
-        "description": "Enable systemd for a current run if it meets requirements",
+        "description": "Enable systemd for a current run (supported for Centos only)",
         "defaultValue": "true",
         "passToWorkers": true
     },
     {
         "name": "CP_CAP_KEEP_FAILED_RUN",
         "type": "string",
-        "description": "Any job, that is failed due to the \"command\" or output upload errors, will be kept for this amount of time before terminated. \"sleep\" format is accepted",
+        "description": "Any job, that is failed due to the <command> or output upload errors, will be kept for this amount of time before terminated. <sleep> format is accepted",
         "defaultValue": "36000s"
+    },
+    {
+        "name": "CP_CAP_SINGULARITY",
+        "type": "boolean",
+        "description": "Enable singularity for a current run",
+        "defaultValue": "true",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_TZ",
+        "type": "string",
+        "description": "Overwrites standard UTC timezone on pipeline run node",
+        "defaultValue": "/usr/share/zoneinfo/UTC",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_SHARE_FS_TYPE",
+        "type": "string",
+        "description": "Defines which file system shall be used as shared for cluster runs",
+        "defaultValue": "lfs",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_SHARE_FS_SIZE",
+        "type": "int",
+        "description": "Allows to specify shared file system size (supported for luster FS only)",
+        "defaultValue": "1200",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_HW_ADDR",
+        "type": "string",
+        "description": "Allows to override the MAC address of the instance, running a job. Format: XX:XX:XX:XX:XX:XX",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_HW_NAME",
+        "type": "string",
+        "description": "Controls the network interface name, to apply the CP_CAP_HW_ADDR. Default: eth0",
+        "defaultValue": "eth0",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_EXEC_TIMEOUT",
+        "type": "int",
+        "description": "If defined - will terminate job when specified duration in minutes is elapsed",
+        "defaultValue": "",
+        "passToWorkers": false
     }
 ]

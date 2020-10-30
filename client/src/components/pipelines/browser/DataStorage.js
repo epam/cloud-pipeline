@@ -50,6 +50,7 @@ import DataStorageItemUpdateContent from '../../../models/dataStorage/DataStorag
 import DataStorageItemDelete from '../../../models/dataStorage/DataStorageItemDelete';
 import GenerateDownloadUrlRequest from '../../../models/dataStorage/GenerateDownloadUrl';
 import GenerateDownloadUrlsRequest from '../../../models/dataStorage/GenerateDownloadUrls';
+import GenerateFolderDownloadUrl from '../../../models/dataStorage/GenerateFolderDownloadUrl';
 import EditItemForm from './forms/EditItemForm';
 import {DataStorageEditDialog, ServiceTypes} from './forms/DataStorageEditDialog';
 import DataStorageNavigation from './forms/DataStorageNavigation';
@@ -80,16 +81,32 @@ const PAGE_SIZE = 40;
 @connect({
   dataStorages, folders, pipelinesLibrary
 })
-@inject(({routing, dataStorages, folders, pipelinesLibrary, preferences, dataStorageCache }, {params, onReloadTree}) => {
+@roleModel.authenticationInfo
+@inject('awsRegions')
+@inject(({
+  authenticatedUserInfo,
+  routing,
+  dataStorages,
+  folders,
+  pipelinesLibrary,
+  preferences,
+  dataStorageCache
+}, {params, onReloadTree}) => {
   const queryParameters = parseQueryParameters(routing);
   const showVersions = (queryParameters.versions || 'false').toLowerCase() === 'true';
   return {
+    authenticatedUserInfo,
     onReloadTree,
     dataStorageCache,
     storageId: params.id,
-    path: queryParameters.path,
+    path: decodeURIComponent(queryParameters.path || ''),
     showVersions: showVersions,
-    storage: new DataStorageRequest(params.id, queryParameters.path, showVersions, PAGE_SIZE),
+    storage: new DataStorageRequest(
+      params.id,
+      decodeURIComponent(queryParameters.path || ''),
+      showVersions,
+      PAGE_SIZE
+    ),
     info: dataStorages.load(params.id),
     dataStorages,
     pipelinesLibrary,
@@ -103,6 +120,8 @@ export default class DataStorage extends React.Component {
   state = {
     editDialogVisible: false,
     downloadUrlModalVisible: false,
+    downloadFolderUrlModal: false,
+    generateFolderUrlWriteAccess: false,
     selectedItems: [],
     renameItem: null,
     createFolder: false,
@@ -119,12 +138,46 @@ export default class DataStorage extends React.Component {
   @observable
   _shareStorageLink = null;
 
+  @observable generateDownloadUrls;
+
   @computed
   get showMetadata () {
     if (this.state.metadata === undefined && this.props.info.loaded) {
       return this.props.info.value.hasMetadata && roleModel.readAllowed(this.props.info.value);
     }
     return !!this.state.metadata;
+  }
+
+  @computed
+  get region () {
+    if (this.props.info && this.props.info.loaded && this.props.awsRegions.loaded) {
+      const {regionId} = this.props.info.value;
+      return (this.props.awsRegions.value || []).find(r => +r.id === +regionId);
+    }
+    return null;
+  }
+
+  @computed
+  get provider () {
+    const region = this.region;
+    if (region) {
+      return region.provider;
+    }
+    return null;
+  }
+
+  @computed
+  get regionName () {
+    const region = this.region;
+    if (region) {
+      return region.regionId || region.name;
+    }
+    return null;
+  }
+
+  @computed
+  get generateFolderURLAvailable () {
+    return /^azure$/i.test(this.provider);
   }
 
   @computed
@@ -214,7 +267,9 @@ export default class DataStorage extends React.Component {
   };
 
   closeEditDialog = () => {
-    this.setState({editDialogVisible: false});
+    this.setState({editDialogVisible: false}, () => {
+      this.props.info.fetch();
+    });
   };
 
   @computed
@@ -387,11 +442,37 @@ export default class DataStorage extends React.Component {
     } else {
       this.generateDownloadUrls = null;
     }
-    this.setState({downloadUrlModalVisible});
+    this.setState({downloadUrlModalVisible, downloadFolderUrlModal: false});
+  };
+
+  showGenerateFolderDownloadUrlsModalFn = () => {
+    if (this.props.info && this.props.info.loaded && this.generateFolderURLAvailable) {
+      const writeAllowed = roleModel.writeAllowed(this.props.info.value);
+      this.setState({
+        generateFolderUrlWriteAccess: writeAllowed,
+        downloadUrlModalVisible: true,
+        downloadFolderUrlModal: true
+      }, this.generateFolderDownloadUrl);
+    }
+  };
+
+  generateFolderDownloadUrl = async () => {
+    const hide = message.loading('Generating url...', 0);
+    const {generateFolderUrlWriteAccess} = this.state;
+    this.generateDownloadUrls = new GenerateFolderDownloadUrl(this.props.storageId);
+    let path = this.props.path || '';
+    if (path.length > 0 && !path.endsWith('/')) {
+      path += '/';
+    }
+    await this.generateDownloadUrls.send({
+      paths: [path],
+      permissions: ['READ', generateFolderUrlWriteAccess ? 'WRITE' : undefined].filter(Boolean)
+    });
+    hide();
   };
 
   closeDownloadUrlModal = () => {
-    this.setState({downloadUrlModalVisible: false});
+    this.setState({downloadUrlModalVisible: false, downloadFolderUrlModal: false});
   };
 
   openRenameItemDialog = (event, item) => {
@@ -419,7 +500,7 @@ export default class DataStorage extends React.Component {
     }
     const payload = [{
       oldPath: this.state.renameItem.path,
-      path: decodeURIComponent(`${path}${name}`),
+      path: `${path}${name}`,
       type: this.state.renameItem.type,
       action: 'Move'
     }];
@@ -461,7 +542,7 @@ export default class DataStorage extends React.Component {
       path += '/';
     }
     const payload = [{
-      path: decodeURIComponent(`${path}${trimmedName}`),
+      path: `${path}${trimmedName}`,
       type: 'Folder',
       action: 'Create'
     }];
@@ -484,7 +565,7 @@ export default class DataStorage extends React.Component {
       path += '/';
     }
     const payload = [{
-      path: decodeURIComponent(`${path}${trimmedName}`),
+      path: `${path}${trimmedName}`,
       type: 'File',
       contents: content ? btoa(content) : '',
       action: 'Create'
@@ -1118,7 +1199,7 @@ export default class DataStorage extends React.Component {
 
   showFilesVersionsChanged = (e) => {
     if (this.props.path) {
-      this.props.router.push(`/storage/${this.props.storageId}?path=${this.props.path}&versions=${e.target.checked}`);
+      this.props.router.push(`/storage/${this.props.storageId}?path=${encodeURIComponent(this.props.path)}&versions=${e.target.checked}`);
     } else {
       this.props.router.push(`/storage/${this.props.storageId}?versions=${e.target.checked}`);
     }
@@ -1160,11 +1241,17 @@ export default class DataStorage extends React.Component {
   };
 
   render () {
-    if (!this.props.info.loaded && this.props.info.pending) {
+    if (
+      (!this.props.info.loaded && this.props.info.pending) ||
+      (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending)
+    ) {
       return <LoadingView />;
     }
     if (this.props.info.error) {
       return <Alert message={this.props.info.error} type="error" />;
+    }
+    if (this.props.authenticatedUserInfo.error) {
+      return <Alert message={this.props.authenticatedUserInfo.error} type="error" />;
     }
     let contents;
     if (!this.props.storage.error) {
@@ -1290,10 +1377,22 @@ export default class DataStorage extends React.Component {
                     title={'Upload'}
                     storageId={this.props.storageId}
                     path={this.props.path}
+                    storageInfo={this.props.info.value}
+                    region={this.regionName}
                     // synchronous
                     uploadToS3={this.props.info.value.type === 'S3'}
                     uploadToNFS={this.props.info.value.type === 'NFS'}
-                    action={DataStorageItemUpdate.uploadUrl(this.props.storageId, this.props.path)}
+                    action={
+                      DataStorageItemUpdate.uploadUrl(
+                        this.props.storageId,
+                        this.props.path
+                      )
+                    }
+                    owner={
+                      this.props.authenticatedUserInfo.loaded
+                        ? this.props.authenticatedUserInfo.value.userName
+                        : undefined
+                    }
                   />
                 )
               }
@@ -1386,6 +1485,7 @@ export default class DataStorage extends React.Component {
               iconClassName={`${styles.editableControl} ${storageTitleClassName}`}
               lock={this.props.info.value.locked}
               lockClassName={`${styles.editableControl} ${storageTitleClassName}`}
+              sensitive={this.props.info.value.sensitive}
               displayTextEditableField={
                 <span>
                     {this.props.info.value.name}
@@ -1405,6 +1505,16 @@ export default class DataStorage extends React.Component {
           </Col>
           <Col>
             <Row type="flex" justify="end" className={styles.currentFolderActions}>
+              {
+                this.generateFolderURLAvailable && (
+                  <Button
+                    id="generate-folder-url"
+                    size="small"
+                    onClick={this.showGenerateFolderDownloadUrlsModalFn}>
+                    Generate URL
+                  </Button>
+                )
+              }
               <Button
                 id={this.showMetadata ? 'hide-metadata-button' : 'show-metadata-button'}
                 size="small"
@@ -1546,15 +1656,49 @@ export default class DataStorage extends React.Component {
               OK
             </Button>
           }>
-          {this.generateDownloadUrls && (!this.generateDownloadUrls.pending
-            ? (
+          {
+            this.generateDownloadUrls &&
+            this.generateDownloadUrls.pending &&
+            !this.generateDownloadUrls.loaded && (
+              <div>
+                <Row type="flex" justify="center">
+                  <br />
+                  <Spin />
+                </Row>
+              </div>
+            )
+          }
+          {
+            this.generateDownloadUrls && this.generateDownloadUrls.loaded && (
               <Input
                 type="textarea"
                 className={styles.generateDownloadUrlInput}
                 rows={10}
                 value={this.generateDownloadUrls.value.map(u => u.url).join('\n')} />
             )
-            : <div><Row type="flex" justify="center"><br /><Spin /></Row></div>)
+          }
+          {
+            this.generateDownloadUrls && this.generateDownloadUrls.error && (
+              <Alert type="error" message={this.generateDownloadUrls.error} />
+            )
+          }
+          {
+            this.generateFolderURLAvailable && this.state.downloadFolderUrlModal && (
+              <Row style={{marginTop: 10}}>
+                <Checkbox
+                  checked={this.state.generateFolderUrlWriteAccess}
+                  disabled={!roleModel.writeAllowed(this.props.info.value)}
+                  onChange={
+                    (e) => this.setState({
+                      generateFolderUrlWriteAccess: e.target.checked
+                    }, this.generateFolderDownloadUrl
+                    )
+                  }
+                >
+                  Write access
+                </Checkbox>
+              </Row>
+            )
           }
         </Modal>
         <Modal

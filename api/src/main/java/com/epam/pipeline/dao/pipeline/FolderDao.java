@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -182,6 +182,9 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         DATASTORAGE_REGION_ID,
         DATASTORAGE_FILE_SHARE_MOUNT_ID,
         DATASTORAGE_SENSITIVE,
+        DATASTORAGE_S3_KMS_KEY_ARN,
+        DATASTORAGE_S3_USE_ASSUMED_CREDS,
+        DATASTORAGE_S3_TEMP_CREDS_ROLE,
         ENABLE_VERSIONING,
         BACKUP_DURATION,
         STS_DURATION,
@@ -255,6 +258,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                                 new Date(rs.getTimestamp(PIPELINE_CREATED_DATE.name()).getTime()));
                         pipeline.setLocked(rs.getBoolean(PIPELINE_LOCKED.name()));
                         pipeline.setParentFolderId(folderId);
+                        pipeline.setOwner(rs.getString(OWNER.name()));
                         folder.getPipelines().add(pipeline);
                     }
                     Long dataStorageId = rs.getLong(DATASTORAGE_ID.name());
@@ -285,7 +289,10 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                                         rs.getString(DATASTORAGE_MOUNT_POINT.name()),
                                         allowedCidrs,
                                         regionId,
-                                        fileShareMountId);
+                                        fileShareMountId,
+                                        rs.getString(DATASTORAGE_S3_KMS_KEY_ARN.name()),
+                                        rs.getString(DATASTORAGE_S3_TEMP_CREDS_ROLE.name()),
+                                        rs.getBoolean(DATASTORAGE_S3_USE_ASSUMED_CREDS.name()));
                         dataStorage.setDescription(rs.getString(DATASTORAGE_DESCRIPTION.name()));
                         dataStorage.setCreatedDate(
                                 new Date(rs.getTimestamp(DATASTORAGE_CREATED_DATE.name()).getTime())
@@ -296,6 +303,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                         dataStorage.setLocked(rs.getBoolean(DATASTORAGE_LOCKED.name()));
                         dataStorage.setShared(rs.getBoolean(DATASTORAGE_SHARED.name()));
                         dataStorage.setSensitive(rs.getBoolean(DATASTORAGE_SENSITIVE.name()));
+                        dataStorage.setOwner(rs.getString(OWNER.name()));
                         folder.getStorages().add(dataStorage);
                     }
                     rs.getLong(CONFIG_ID.name());

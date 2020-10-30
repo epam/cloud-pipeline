@@ -27,57 +27,57 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
+import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.UserContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+@RequiredArgsConstructor
+@Slf4j
 public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
-    private static final Logger LOGGER = LoggerFactory.getLogger(JwtFilterAuthenticationFilter.class);
 
-    private JwtTokenVerifier tokenVerifier;
-
-    public JwtFilterAuthenticationFilter(JwtTokenVerifier tokenVerifier) {
-        this.tokenVerifier = tokenVerifier;
-    }
+    private final JwtTokenVerifier tokenVerifier;
+    private final UserAccessService accessService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-            FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(final HttpServletRequest request,
+                                    final HttpServletResponse response,
+                                    final FilterChain filterChain) throws ServletException, IOException {
         final JwtRawToken rawToken = fetchJwtRawToken(request);
         try {
             if (!StringUtils.isEmpty(rawToken)) {
                 JwtTokenClaims claims = tokenVerifier.readClaims(rawToken.getToken());
-                UserContext context = new UserContext(rawToken, claims);
+                UserContext context = accessService.getJwtUser(rawToken, claims);
                 JwtAuthenticationToken token = new JwtAuthenticationToken(context, context.getAuthorities());
                 token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(token);
-                LOGGER.info("Successfully authenticate user with name: " + context.getUsername());
+                log.info("Successfully authenticate user with name: " + context.getUsername());
             }
         } catch (TokenVerificationException e) {
-            LOGGER.info("JWT authentication failed!", e);
+            log.info("JWT authentication failed!", e);
         }
         filterChain.doFilter(request, response);
     }
 
-    private JwtRawToken fetchJwtRawToken(HttpServletRequest request) throws UnsupportedEncodingException {
+    private JwtRawToken fetchJwtRawToken(final HttpServletRequest request) throws UnsupportedEncodingException {
         JwtRawToken rawToken = null;
         String authorizationHeader = extractAuthHeader(request);
         Cookie authCookie = extractAuthCookie(request);
         try {
             if (!StringUtils.isEmpty(authorizationHeader)) { // attempt obtain JWT token from HTTP header
                 rawToken = JwtRawToken.fromHeader(authorizationHeader);
-                LOGGER.trace("Extracted JWT token from authorization HTTP header");
+                log.trace("Extracted JWT token from authorization HTTP header");
             } else if (!StringUtils.isEmpty(authCookie)) {   // else try to get token from cookies
                 rawToken = JwtRawToken.fromCookie(authCookie);
-                LOGGER.trace("Extracted JWT token from authorization cookie");
+                log.trace("Extracted JWT token from authorization cookie");
             }
         } catch (AuthenticationServiceException e) {
-            LOGGER.trace(e.getMessage(), e);
+            log.trace(e.getMessage(), e);
         }
         return rawToken;
     }

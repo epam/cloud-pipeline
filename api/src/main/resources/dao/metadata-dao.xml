@@ -84,6 +84,15 @@
                 ]]>
             </value>
         </property>
+        <property name="loadMetadataKeysQuery">
+            <value>
+                <![CDATA[
+                    SELECT DISTINCT jsonb_object_keys(data) as key
+                    FROM pipeline.metadata as m
+                    WHERE m.entity_class = ?
+                ]]>
+            </value>
+        </property>
         <property name="loadMetadataItemsQuery">
             <value>
                 <![CDATA[
@@ -184,6 +193,17 @@
             <value>
                 <![CDATA[
                     SELECT DISTINCT data -> :KEY -> :VALUE AS data FROM pipeline.metadata WHERE entity_class = :ENTITY_CLASS
+                ]]>
+            </value>
+        </property>
+        <property name="createMetadataDictionary">
+            <value>
+                <![CDATA[
+                    SELECT DISTINCT _metadata.key AS key, trim(_metadata_details.value::text, '"') as value
+                    FROM pipeline.metadata
+                    CROSS JOIN LATERAL jsonb_each(data) _metadata
+                    CROSS JOIN LATERAL jsonb_each(value) _metadata_details
+                    WHERE _metadata_details.key='value' and _metadata.key NOT IN (:list)
                 ]]>
             </value>
         </property>

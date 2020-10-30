@@ -25,7 +25,7 @@ public class ToolOSVersionView {
     private final String version;
     private final Boolean isAllowed;
 
-    private ToolOSVersionView(String distribution, String version, Boolean isAllowed) {
+    public ToolOSVersionView(String distribution, String version, Boolean isAllowed) {
         this.distribution = distribution;
         this.version = version;
         this.isAllowed = isAllowed;

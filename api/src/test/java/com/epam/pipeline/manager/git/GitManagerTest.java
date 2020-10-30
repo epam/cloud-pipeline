@@ -125,6 +125,7 @@ public class GitManagerTest extends AbstractManagerTest {
     private static final GitlabUser USER = GitlabUser.builder().id(1L).username("root").build();
     private static final GitToken USER_TOKEN = GitToken.builder().id(1L).token("token-123").expires(new Date()).build();
     private static final String PROJECTS_ROOT = "/api/v3/projects/";
+    private static final String PROJECT_ROOT_V4 = "/api/v4/projects/";
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
@@ -276,7 +277,6 @@ public class GitManagerTest extends AbstractManagerTest {
     @Test
     public void shouldFetchRevision() throws GitClientException {
         final Pipeline pipeline = testingPipeline();
-        final long pageSize = 1;
         final List<GitTagEntry> tags = Collections.emptyList();
         givenThat(
             get(urlPathEqualTo(api(REPOSITORY_TAGS)))
@@ -290,7 +290,7 @@ public class GitManagerTest extends AbstractManagerTest {
             get(urlPathEqualTo(api(REPOSITORY_COMMITS)))
                 .willReturn(okJson(with(commits)))
         );
-        final List<Revision> revisions = gitManager.getPipelineRevisions(pipeline, pageSize);
+        final List<Revision> revisions = gitManager.getPipelineRevisions(pipeline);
         assertFalse(revisions.isEmpty());
     }
 
@@ -302,7 +302,7 @@ public class GitManagerTest extends AbstractManagerTest {
         bla.setType(BLOB_TYPE);
         final List<GitRepositoryEntry> tree = singletonList(bla);
         givenThat(
-            get(urlPathEqualTo(api(REPOSITORY_TREE)))
+            get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
                 .withQueryParam(REF, equalTo(TEST_REVISION))
                 .withQueryParam(PATH, equalTo(DOCS + "/"))
                 .withQueryParam(RECURSIVE, equalTo(String.valueOf(false)))
@@ -387,7 +387,7 @@ public class GitManagerTest extends AbstractManagerTest {
         repositoryEntry.setType(BLOB_TYPE);
         final List<GitRepositoryEntry> tree = singletonList(repositoryEntry);
         givenThat(
-            get(urlPathEqualTo(api(REPOSITORY_TREE)))
+            get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
                 .withQueryParam(REF, equalTo(GIT_MASTER_REPOSITORY))
                 .withQueryParam(PATH, equalTo(DOCS))
                 .withQueryParam(RECURSIVE, equalTo(String.valueOf(true)))
@@ -637,6 +637,14 @@ public class GitManagerTest extends AbstractManagerTest {
 
     private static String api(final String url) {
         return api() + url;
+    }
+
+    private static String apiV4() {
+        return PROJECT_ROOT_V4 + PROJECT_PATH;
+    }
+
+    private static String apiV4(final String url) {
+        return apiV4() + url;
     }
 
     private void mockFileContentRequest(final String filePath, final String ref, final String content) {

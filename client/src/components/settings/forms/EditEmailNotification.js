@@ -18,10 +18,22 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
+import {
+  message,
+  Button,
+  Checkbox,
+  Col,
+  Form,
+  Icon,
+  Input,
+  Row,
+  Select
+} from 'antd';
 import CodeEditor from '../../special/CodeEditor';
 import compareArrays from '../../../utils/compareArrays';
 import EmailPreview from './EmailPreview';
-import {Button, Checkbox, Col, Form, Icon, Input, Row, Select} from 'antd';
+import NotificationPreferences from './edit-email-notification-preferences';
+import PreferencesUpdate from '../../../models/preferences/PreferencesUpdate';
 import styles from './EditEmailNotification.css';
 
 const statuses = [
@@ -74,7 +86,12 @@ export default class EditEmailNotification extends React.Component {
   };
 
   state = {
-    previewMode: false
+    previewMode: false,
+    preferences: {
+      values: [],
+      modified: false
+    },
+    preferencesSession: 0
   };
 
   @computed
@@ -92,7 +109,8 @@ export default class EditEmailNotification extends React.Component {
       return !compareArrays((this.props.template[prop] || []).map(i => i),
         this.props.form.getFieldValue(prop), comparerFn);
     };
-    return checkPropModified('enabled') ||
+    return this.state.preferences.modified ||
+      checkPropModified('enabled') ||
       checkPropModified('keepInformedAdmins') ||
       checkPropModified('keepInformedOwner') ||
       checkPropModified('subject', '') ||
@@ -105,15 +123,34 @@ export default class EditEmailNotification extends React.Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
+    this.props.form.validateFieldsAndScroll(async (err, values) => {
       if (!err) {
         this.props.onSubmit && this.props.onSubmit(values);
+        if (this.state.preferences.modified) {
+          const request = new PreferencesUpdate();
+          await request.send(this.state.preferences.values);
+          if (request.error) {
+            message.error(request.error, 5);
+          }
+        }
+        this.setState({
+          preferencesSession: this.state.preferencesSession + 1
+        });
       }
     });
   };
 
   bodyValueChanged = (code) => {
     this.props.form.setFieldsValue({body: code});
+  };
+
+  preferencesChanged = (preferences, modified) => {
+    this.setState({
+      preferences: {
+        values: preferences,
+        modified
+      }
+    });
   };
 
   setPreviewMode = (preview) => {
@@ -128,11 +165,19 @@ export default class EditEmailNotification extends React.Component {
     }
     const renderThresholdAndDelay = this.props.template.type === 'LONG_INIT' ||
       this.props.template.type === 'LONG_RUNNING' ||
-      this.props.template.type === 'LONG_STATUS';
+      this.props.template.type === 'LONG_STATUS' ||
+      this.props.template.type === 'LONG_PAUSED';
+    const renderThreshold = this.props.template.type === 'LONG_PAUSED_STOPPED';
+    const renderDelay = this.props.template.type === 'IDLE_RUN';
     const renderStatusesToInform = this.props.template.type === 'PIPELINE_RUN_STATUS';
     const {getFieldDecorator, resetFields} = this.props.form;
     return (
       <div style={{width: '100%', overflowY: 'auto'}}>
+        <NotificationPreferences
+          type={this.props.template.type}
+          session={this.state.preferencesSession}
+          onChange={this.preferencesChanged}
+        />
         <Form className="edit-email-notification-form" layout="horizontal">
           <Form.Item
             style={{marginBottom: 0}}
@@ -220,7 +265,7 @@ export default class EditEmailNotification extends React.Component {
           <Form.Item
             style={{
               marginBottom: 0,
-              display: renderThresholdAndDelay ? 'inherit' : 'none'
+              display: renderThresholdAndDelay || renderThreshold ? 'inherit' : 'none'
             }}
             label="Threshold (sec)"
             className="edit-email-notification-threshold-container">
@@ -248,7 +293,7 @@ export default class EditEmailNotification extends React.Component {
           <Form.Item
             style={{
               marginBottom: 0,
-              display: renderThresholdAndDelay ? 'inherit' : 'none'
+              display: renderThresholdAndDelay || renderDelay ? 'inherit' : 'none'
             }}
             label="Resend delay (sec)"
             className="edit-email-notification-threshold-container">
@@ -368,7 +413,12 @@ export default class EditEmailNotification extends React.Component {
             id="edit-email-notification-form-cancel-button"
             disabled={!this.modified}
             size="small"
-            onClick={() => resetFields()}>Revert</Button>
+            onClick={() => {
+              resetFields();
+              this.setState({
+                preferencesSession: this.state.preferencesSession + 1
+              });
+            }}>Revert</Button>
           <Button
             id="edit-email-notification-form-ok-button"
             disabled={!this.modified}
@@ -391,6 +441,9 @@ export default class EditEmailNotification extends React.Component {
     props = props || this.props;
     props.form && props.form.resetFields();
     this.editor && this.editor.setValue(props.template ? props.template.body || '' : '');
+    this.setState({
+      preferencesSession: this.state.preferencesSession + 1
+    });
   };
 
   componentDidUpdate (prevProps) {

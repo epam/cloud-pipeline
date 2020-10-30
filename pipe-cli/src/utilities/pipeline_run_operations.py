@@ -365,7 +365,7 @@ class PipelineRunOperations(object):
         parts = path.split('/')
         if len(parts) > 2:
             click.echo("Pretty URL has an incorrect format. Expected formats: <domain>/<path> or <path>.", err=True)
-            exit(1)
+            sys.exit(1)
         if len(parts) == 1:
             return '{"path":"%s"}' % parts[0]
         return '{"domain":"%s","path":"%s"}' % (parts[0], parts[1])

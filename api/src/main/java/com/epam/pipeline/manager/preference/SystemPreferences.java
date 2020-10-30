@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.preference;
 
+import com.amazonaws.services.fsx.model.LustreDeploymentType;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
@@ -26,6 +27,7 @@ import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
+import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.search.SearchDocumentType;
@@ -103,6 +105,7 @@ public class SystemPreferences {
     private static final String GRID_ENGINE_AUTOSCALING_GROUP = "Grid engine autoscaling";
     private static final String GCP_GROUP = "GCP";
     private static final String BILLING_GROUP = "Billing Reports";
+    private static final String LUSTRE_GROUP = "Lustre FS";
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
 
@@ -125,6 +128,8 @@ public class SystemPreferences {
         "storage.max.download.size", 10000, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference DATA_STORAGE_TEMP_CREDENTIALS_DURATION = new IntPreference(
         "storage.temp.credentials.duration", 3600, DATA_STORAGE_GROUP, isGreaterThan(0));
+    public static final IntPreference STORAGE_MOUNTS_PER_GB_RATIO = new IntPreference(
+            "storage.mounts.per.gb.ratio", null, DATA_STORAGE_GROUP, isNullOrGreaterThan(0));
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'
@@ -138,6 +143,11 @@ public class SystemPreferences {
      */
     public static final StringPreference DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME = new StringPreference(
         "storage.system.storage.name", null, DATA_STORAGE_GROUP, null);
+
+    public static final StringPreference DATA_STORAGE_RUN_SHARED_STORAGE_NAME = new StringPreference(
+            "storage.system.run.shared.storage.name", null, DATA_STORAGE_GROUP, pass);
+    public static final StringPreference DATA_STORAGE_RUN_SHARED_FOLDER_PATTERN = new StringPreference(
+            "storage.system.run.shared.folder.pattern", null, DATA_STORAGE_GROUP, pass);
 
     public static final LongPreference STORAGE_SYSTEM_TRANSFER_PIPELINE_ID = new LongPreference(
             "storage.transfer.pipeline.id", null, DATA_STORAGE_GROUP, pass);
@@ -181,6 +191,10 @@ public class SystemPreferences {
             "git.repository.indexing.enabled", true, GIT_GROUP, pass);
     public static final StringPreference GIT_REPOSITORY_HOOK_URL = new StringPreference(
             "git.repository.hook.url", null, GIT_GROUP, PreferenceValidators.isValidUrl);
+    public static final IntPreference GIT_FORK_WAIT_TIMEOUT = new IntPreference("git.fork.wait.timeout", 500,
+            GIT_GROUP, isGreaterThan(0));
+    public static final IntPreference GIT_FORK_RETRY_COUNT = new IntPreference("git.fork.retry.count", 5,
+            GIT_GROUP, isGreaterThan(0));
 
     // DOCKER_SECURITY_GROUP
     /**
@@ -259,6 +273,9 @@ public class SystemPreferences {
             PreferenceValidators.isNotBlank);
     public static final StringPreference CLUSTER_ALLOWED_PRICE_TYPES = new StringPreference(
             "cluster.allowed.price.types", String.format("%s,%s", PriceType.SPOT, PriceType.ON_DEMAND),
+            CLUSTER_GROUP, PreferenceValidators.isNotBlank);
+    public static final StringPreference CLUSTER_ALLOWED_MASTER_PRICE_TYPES = new StringPreference(
+            "cluster.allowed.price.types.master", String.format("%s,%s", PriceType.SPOT, PriceType.ON_DEMAND),
             CLUSTER_GROUP, PreferenceValidators.isNotBlank);
     public static final StringPreference CLUSTER_INSTANCE_TYPE = new StringPreference("cluster.instance.type",
         "m5.large", CLUSTER_GROUP, PreferenceValidators.isClusterInstanceTypeAllowed, CLUSTER_ALLOWED_INSTANCE_TYPES);
@@ -384,6 +401,14 @@ public class SystemPreferences {
             LAUNCH_GROUP, isValidEnum(ContainerMemoryResourcePolicy.class));
     public static final IntPreference LAUNCH_CONTAINER_MEMORY_RESOURCE_REQUEST = new IntPreference(
             "launch.container.memory.resource.request", 1, LAUNCH_GROUP, isGreaterThan(0));
+    public static final IntPreference LAUNCH_SERVERLESS_WAIT_COUNT = new IntPreference(
+            "launch.serverless.wait.count", 20, LAUNCH_GROUP, isGreaterThan(0));
+    public static final IntPreference LAUNCH_SERVERLESS_STOP_TIMEOUT = new IntPreference(
+            "launch.serverless.stop.timeout", 60, LAUNCH_GROUP, isGreaterThan(0));
+    public static final IntPreference LAUNCH_SERVERLESS_ENDPOINT_WAIT_COUNT = new IntPreference(
+            "launch.serverless.endpoint.wait.count", 40, LAUNCH_GROUP, isGreaterThan(0));
+    public static final IntPreference LAUNCH_SERVERLESS_ENDPOINT_WAIT_TIME = new IntPreference(
+            "launch.serverless.endpoint.wait.time", 20000, LAUNCH_GROUP, isGreaterThan(0));
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",
@@ -442,6 +467,9 @@ public class SystemPreferences {
             true, UI_GROUP, pass);
     public static final StringPreference UI_LAUNCH_TEMPLATE = new StringPreference("ui.launch.command.template",
             "", UI_GROUP, pass);
+    public static final ObjectPreference<Map<String, String>> UI_PIPE_FILE_BROWSER_APP = new ObjectPreference<>(
+            "ui.pipe.file.browser.app", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
+            isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
@@ -517,10 +545,26 @@ public class SystemPreferences {
     public static final StringPreference SYSTEM_IDLE_ACTION = new StringPreference("system.idle.action",
                                    IdleRunAction.NOTIFY.name(), SYSTEM_GROUP, PreferenceValidators.isValidIdleAction);
     /**
+     * Controls which action will be performed after action threshold for long paused runs.
+     * Can take values from {@link LongPausedRunAction} only.
+     */
+    public static final StringPreference SYSTEM_LONG_PAUSED_ACTION = new StringPreference("system.long.paused.action",
+            LongPausedRunAction.NOTIFY.name(), SYSTEM_GROUP, PreferenceValidators.isValidLongPauseRunAction);
+    /**
      * Controls how long resource monitoring stats are being kept, in days
      */
     public static final IntPreference SYSTEM_RESOURCE_MONITORING_STATS_RETENTION_PERIOD = new IntPreference(
         "system.resource.monitoring.stats.retention.period", 3, SYSTEM_GROUP, isGreaterThanOrEquals(0));
+    /**
+     * Specifies if interactive run ssh sessions should use root as a default user.
+     */
+    public static final BooleanPreference SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED = new BooleanPreference(
+            "system.ssh.default.root.user.enabled", true, SYSTEM_GROUP, pass);
+    /**
+     * Controls which instance types will be excluded from notification list.
+     */
+    public static final StringPreference SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES = new StringPreference(
+            "system.notifications.exclude.instance.types", null, SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
@@ -553,6 +597,9 @@ public class SystemPreferences {
     public static final StringPreference MISC_SYSTEM_EVENTS_CONFIRMATION_METADATA_KEY = new StringPreference(
             "system.events.confirmation.metadata.key", "confirmed_notifications", MISC_GROUP,
             PreferenceValidators.isNotBlank);
+    public static final ObjectPreference<List<String>> MISC_METADATA_SENSITIVE_KEYS = new ObjectPreference<>(
+            "misc.metadata.sensitive.keys", null, new TypeReference<List<String>>() {}, MISC_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}));
 
     // Search
     public static final StringPreference SEARCH_ELASTIC_SCHEME = new StringPreference("search.elastic.scheme",
@@ -618,6 +665,21 @@ public class SystemPreferences {
             "billing.reports.user.name.attribute", null, BILLING_GROUP, pass);
     public static final BooleanPreference BILLING_REPORTS_ENABLED = new BooleanPreference(
             "billing.reports.enabled", true, BILLING_GROUP, pass);
+    public static final BooleanPreference BILLING_REPORTS_ENABLED_ADMINS = new BooleanPreference(
+            "billing.reports.enabled.admins", true, BILLING_GROUP, pass);
+
+    // Lustre FS
+    public static final IntPreference LUSTRE_FS_DEFAULT_SIZE_GB = new IntPreference(
+            "lustre.fs.default.size.gb", 1200, LUSTRE_GROUP, pass);
+    public static final IntPreference LUSTRE_FS_BKP_RETENTION_DAYS = new IntPreference(
+            "lustre.fs.backup.retention.days", 7, LUSTRE_GROUP, pass);
+    public static final IntPreference LUSTRE_FS_DEFAULT_THROUGHPUT = new IntPreference(
+            "lustre.fs.default.throughput", 50, LUSTRE_GROUP, pass);
+    public static final StringPreference LUSTRE_FS_MOUNT_OPTIONS = new StringPreference(
+            "lustre.fs.mount.options", null, LUSTRE_GROUP, pass);
+    public static final StringPreference LUSTRE_FS_DEPLOYMENT_TYPE = new StringPreference(
+            "lustre.fs.deployment.type", LustreDeploymentType.SCRATCH_2.name(), LUSTRE_GROUP,
+            isValidEnum(LustreDeploymentType.class));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

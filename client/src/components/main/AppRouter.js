@@ -18,6 +18,7 @@ import React from 'react';
 import {IndexRoute, Redirect, Route, Router} from 'react-router';
 import HomePageLoader from './home/HomePageLoader';
 import PipelinesLibrary from '../pipelines/PipelinesLibrary';
+import Browser from '../pipelines/browser/Browser';
 import FolderBrowser from '../pipelines/browser/Folder';
 import StorageBrowser from '../pipelines/browser/DataStorage';
 import PipelineBrowser from '../pipelines/browser/Pipeline';
@@ -47,6 +48,7 @@ import Preferences from '../settings/Preferences';
 import AWSRegionsForm from '../settings/AWSRegionsForm';
 import SystemLogs from '../settings/system-logs';
 import SystemEvents from '../settings/SystemEvents';
+import SystemDictionaries from '../settings/SystemDictionaries';
 import AllRuns from '../runs/AllRuns';
 import RunsFilter from '../runs/RunsFilter';
 import RunsSearch from '../runs/RunsSearch';
@@ -79,6 +81,7 @@ export default class AppRouter extends React.Component {
           <Route path="preferences" component={Preferences} />
           <Route path="regions" component={AWSRegionsForm} />
           <Route path="logs" component={SystemLogs} />
+          <Route path="dictionaries(/:currentDictionary)" component={SystemDictionaries} />
         </Route>
         <Route path="/cluster" component={Cluster} />
         <Redirect from="/cluster/:nodeName" to="/cluster/:nodeName/info" />
@@ -119,6 +122,12 @@ export default class AppRouter extends React.Component {
         <Route path="/miew" component={MiewPage} />
         <Route path="/library" component={PipelinesLibrary}>
           <IndexRoute component={FolderBrowser} />
+        </Route>
+        <Route path="/pipelines" component={PipelinesLibrary}>
+          <IndexRoute component={Browser} />
+        </Route>
+        <Route path="/storages" component={PipelinesLibrary}>
+          <IndexRoute component={Browser} />
         </Route>
         <Route path="/folder" component={PipelinesLibrary}>
           <Route path=":id" component={FolderBrowser} />

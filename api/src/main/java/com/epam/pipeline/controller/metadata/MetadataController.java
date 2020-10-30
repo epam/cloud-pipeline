@@ -43,6 +43,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Set;
 
 @Controller
 @Api(value = "Metadata")
@@ -101,6 +102,19 @@ public class MetadataController extends AbstractRestController {
             })
     public Result<List<MetadataEntry>> loadMetadataItems(@RequestBody List<EntityVO> entities) {
         return Result.success(metadataApiService.listMetadataItems(entities));
+    }
+
+    @RequestMapping(value = "/metadata/keys", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Get list of metadata keys for a class.",
+            notes = "Get list of metadata keys for a class.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<Set<String>> getMetadataKeys(@RequestParam final AclClass entityClass) {
+        return Result.success(metadataApiService.getMetadataKeys(entityClass));
     }
 
     @RequestMapping(value = "/metadata/find", method = RequestMethod.GET)

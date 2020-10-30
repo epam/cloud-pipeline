@@ -63,7 +63,6 @@ public class MonitoringESDao {
 
     public Map<String, Double> loadMetrics(final ELKUsageMetric metric, final Collection<String> resourceIds,
                                            final LocalDateTime from, final LocalDateTime to) {
-
         if (CollectionUtils.isEmpty(resourceIds)) {
             return Collections.emptyMap();
         }

@@ -234,6 +234,9 @@ public final class MessageConstants {
             "error.sensitive.request.wrong.context";
     public static final String ERROR_SENSITIVE_WRITE_FORBIDDEN = "error.sensitive.datastorage.write.forbidden";
     public static final String ERROR_SENSITIVE_RUN_NOT_ALLOWED_FOR_TOOL = "error.sensitive.tool.forbidden";
+    public static final String ERROR_SHARED_STORAGE_IS_NOT_CONFIGURED = "error.share.storage.not.configured";
+    public static final String ERROR_DATASTORAGES_TYPES_NOT_SAME = "error.datastorages.types.not.same";
+    public static final String ERROR_DATASTORAGES_NOT_FOUND = "error.datastorages.not.found";
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
@@ -504,6 +507,10 @@ public final class MessageConstants {
     public static final String ERROR_GCP_INSTANCE_NOT_RUNNING = "error.gcp.instance.not.running";
     public static final String ERROR_GCP_INSTANCE_NOT_FOUND = "error.gcp.instance.not.found";
 
+    //AWS
+    public static final String ERROR_AWS_PROFILE_UNIQUENESS = "error.aws.profile.uniqueness";
+    public static final String ERROR_AWS_S3_ROLE_UNIQUENESS = "error.aws.s3.role.uniqueness";
+
     //Billing
     public static final String ERROR_BILLING_FIELD_DATE_GROUPING_NOT_SUPPORTED =
         "error.billing.date.field.grouping.not.supported";
@@ -519,8 +526,19 @@ public final class MessageConstants {
     public static final String ERROR_DISK_SIZE_MISSING = "error.disk.size.missing";
     public static final String ERROR_DISK_SIZE_INVALID = "error.disk.size.invalid";
 
+    //System dictionaries
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_DOESNT_EXIST = "categorical.attribute.not.exist";
+    public static final String ERROR_CATEGORICAL_ATTRIBUTE_INVALID_LINK = "categorical.attribute.invalid.link";
+
     //Other
     public static final String ERROR_KEEP_ALIVE_POLICY_NOT_SUPPORTED = "error.keep.alive.policy.not.supported";
+
+    //Lustre
+    public static final String ERROR_LUSTRE_NOT_FOUND = "error.lustre.not.found.for.run";
+    public static final String ERROR_LUSTRE_NOT_CREATED = "error.lustre.not.created.for.run";
+    public static final String ERROR_LUSTRE_REGION_NOT_SUPPORTED = "error.lustre.region.not.supported";
+    public static final String ERROR_LUSTRE_MISSING_CONFIG = "error.lustre.missing.config";
+    public static final String ERROR_LUSTRE_MISSING_INSTANCE = "error.lustre.missing.instance";
 
     private MessageConstants() {
         // no-op

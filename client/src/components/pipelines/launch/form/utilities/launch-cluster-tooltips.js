@@ -83,6 +83,19 @@ const ENABLE_SLURM_TOOLTIP = (
     </Row>
   </div>
 );
+const ENABLE_KUBE_TOOLTIP = (
+  <div>
+    <Row>
+      Setting this checkbox will enable the <b>KUBERNETES</b> scheduler for the cluster.
+    </Row>
+    <Row>
+      This checkbox is a convenience option for the <b>"CP_CAP_KUBE=true"</b> parameter.
+    </Row>
+    <Row>
+      This also enables <b>"CP_CAP_DIND_CONTAINER"</b> and <b>"CP_CAP_SYSTEMD_CONTAINER"</b> parameters.
+    </Row>
+  </div>
+);
 const AUTOSCALED_CLUSTER_UP_TO_TOOLTIP = (
   <div>
     <Row>
@@ -128,7 +141,8 @@ export const LaunchClusterTooltip = {
   cluster: {
     enableGridEngine: 'enable grid engine',
     enableSpark: 'enable spark',
-    enableSlurm: 'enable slurm'
+    enableSlurm: 'enable slurm',
+    enableKube: 'enable kube'
   },
   autoScaledCluster: {
     autoScaledUpTo: 'up to',
@@ -147,6 +161,8 @@ const tooltips = {
     ENABLE_SPARK_TOOLTIP,
   [LaunchClusterTooltip.cluster.enableSlurm]:
     ENABLE_SLURM_TOOLTIP,
+  [LaunchClusterTooltip.cluster.enableKube]:
+    ENABLE_KUBE_TOOLTIP,
   [LaunchClusterTooltip.autoScaledCluster.autoScaledUpTo]:
     AUTOSCALED_CLUSTER_UP_TO_TOOLTIP,
   [LaunchClusterTooltip.autoScaledCluster.defaultNodesCount]:

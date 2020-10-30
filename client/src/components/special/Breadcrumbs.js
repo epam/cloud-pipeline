@@ -44,6 +44,7 @@ export default class Breadcrumbs extends React.Component {
     iconClassName: PropTypes.string,
     lock: PropTypes.bool,
     lockClassName: PropTypes.string,
+    sensitive: PropTypes.bool,
     subject: PropTypes.object
   };
 
@@ -102,6 +103,7 @@ export default class Breadcrumbs extends React.Component {
       items[0].iconClassName = this.props.iconClassName;
       items[0].lock = this.props.lock;
       items[0].lockClassName = this.props.lockClassName;
+      items[0].sensitive = this.props.sensitive;
     }
     return items || [];
   }
@@ -147,7 +149,12 @@ export default class Breadcrumbs extends React.Component {
                       <Icon
                         type={item.icon}
                         className={item.iconClassName}
-                        style={{marginRight: 5}}
+                        style={
+                          Object.assign(
+                            {marginRight: 5},
+                            item.sensitive ? {color: '#ff5c33'} : {}
+                          )
+                        }
                       />
                     ) : null
                   }
@@ -156,7 +163,12 @@ export default class Breadcrumbs extends React.Component {
                       <Icon
                         type="lock"
                         className={item.lockClassName}
-                        style={{marginRight: 5}}
+                        style={
+                          Object.assign(
+                            {marginRight: 5},
+                            item.sensitive ? {color: '#ff5c33'} : {}
+                          )
+                        }
                       />
                     ) : null
                   }
@@ -197,7 +209,12 @@ export default class Breadcrumbs extends React.Component {
                         <Icon
                           type={item.icon}
                           className={item.iconClassName}
-                          style={{marginRight: 5}}
+                          style={
+                            Object.assign(
+                              {marginRight: 5},
+                              item.sensitive ? {color: '#ff5c33'} : {}
+                            )
+                          }
                         />
                       ) : null
                     }
@@ -206,7 +223,12 @@ export default class Breadcrumbs extends React.Component {
                         <Icon
                           type="lock"
                           className={item.lockClassName}
-                          style={{marginRight: 5}}
+                          style={
+                            Object.assign(
+                              {marginRight: 5},
+                              item.sensitive ? {color: '#ff5c33'} : {}
+                            )
+                          }
                         />
                       ) : null
                     }
@@ -236,7 +258,12 @@ export default class Breadcrumbs extends React.Component {
                       <Icon
                         type={item.icon}
                         className={item.iconClassName}
-                        style={{marginRight: 5}}
+                        style={
+                          Object.assign(
+                            {marginRight: 5},
+                            item.sensitive ? {color: '#ff5c33'} : {}
+                          )
+                        }
                       />
                     ) : null
                   }
@@ -245,7 +272,12 @@ export default class Breadcrumbs extends React.Component {
                       <Icon
                         type="lock"
                         className={item.lockClassName}
-                        style={{marginRight: 5}}
+                        style={
+                          Object.assign(
+                            {marginRight: 5},
+                            item.sensitive ? {color: '#ff5c33'} : {}
+                          )
+                        }
                       />
                     ) : null
                   }

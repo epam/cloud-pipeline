@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,11 @@ package com.epam.pipeline.security.acl;
 public final class AclExpressions {
 
     private static final String OR = " OR ";
+    private static final String AND = " AND ";
 
     public static final String ADMIN_ONLY = "hasRole('ADMIN')";
+
+    public static final String OR_USER_READER = OR + "hasRole('USER_READER')";
 
     public static final String PIPELINE_ID_READ =
             "hasRole('ADMIN') OR hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Pipeline', 'READ')";
@@ -53,17 +56,29 @@ public final class AclExpressions {
     public static final String RUN_ID_SSH =
             "hasRole('ADMIN') OR @runPermissionManager.isRunSshAllowed(#runId)";
 
+    public static final String STORAGE_SHARED = "@grantPermissionManager.checkStorageShared(#id)";
+
     public static final String STORAGE_ID_READ =
             "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'READ')) "
-            + "AND @grantPermissionManager.checkStorageShared(#id)";
+            + AND + STORAGE_SHARED;
 
     public static final String STORAGE_ID_WRITE =
             "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'WRITE')) "
-            + "AND @grantPermissionManager.checkStorageShared(#id)";
+            + AND + STORAGE_SHARED;
 
     public static final String STORAGE_ID_OWNER =
             "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'OWNER')) "
-            + "AND @grantPermissionManager.checkStorageShared(#id)";
+            + AND + STORAGE_SHARED;
+
+    public static final String STORAGE_ID_PERMISSIONS =
+            "(" 
+                + "hasRole('ADMIN') "
+                    + "OR (" 
+                        + "@grantPermissionManager.storagePermission(#id, 'READ') "
+                        + "AND @grantPermissionManager.storagePermissions(#id, #permissions) "
+                    + ") "
+            + ") "
+            + AND + STORAGE_SHARED;
 
     public static final String STORAGE_PATHS_READ = ADMIN_ONLY + OR +
             "@grantPermissionManager.hasDataStoragePathsPermission(returnObject, 'READ')";
@@ -97,7 +112,7 @@ public final class AclExpressions {
     public static final String ISSUE_CREATE = ADMIN_ONLY + " OR (@grantPermissionManager.metadataPermission(" +
             "#issueVO.entity.entityId, #issueVO.entity.entityClass, 'READ'))";
 
-    public static final String DTS_REGISTRY_PERMISSIONS = "hasRole('ADMIN') OR hasRole('ROLE_USER')";
+    public static final String ADMIN_OR_GENERAL_USER = "hasRole('ADMIN') OR hasRole('ROLE_USER')";
 
     public static final String NODE_READ = ADMIN_ONLY + OR +
             "@grantPermissionManager.nodePermission(#name, 'READ')";
@@ -107,6 +122,9 @@ public final class AclExpressions {
     
     public static final String NODE_STOP = ADMIN_ONLY + OR +
             "@grantPermissionManager.nodeStopPermission(#name, 'EXECUTE')";
+
+    public static final String TOOL_READ = ADMIN_ONLY + OR +
+            "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')";
 
     private AclExpressions() {
         // no op

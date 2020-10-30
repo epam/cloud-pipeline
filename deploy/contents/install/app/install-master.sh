@@ -68,8 +68,9 @@ yum install -y  docker-ce-18.03* \
                 containerd.io
 if [ $? -ne 0 ]; then
   echo "Unable to install docker from the official repository, trying to use default docker-18.03*"
-
+  
   # Otherwise try to install default docker (e.g. if it's amazon linux)
+  rm -f /etc/yum.repos.d/docker-ce.repo
   yum install -y docker-18.03*
   if [ $? -ne 0 ]; then
     echo "Unable to install default docker-18.03* too, exiting"
@@ -217,6 +218,8 @@ else
     kubectl apply -f "$entry"
   done
 fi
+# label kube-system namespace, label is required for sensitive network policy
+kubectl label namespace kube-system name=kube-system
 
 #12
 kubectl create clusterrolebinding owner-cluster-admin-binding \

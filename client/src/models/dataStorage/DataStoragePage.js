@@ -16,6 +16,10 @@
 
 import Remote from '../basic/Remote';
 
+function isEncodedString (str) {
+  return decodeURIComponent(str) !== str;
+}
+
 class DataStoragePage extends Remote {
   url;
 

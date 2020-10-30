@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.epam.pipeline.cmd.CmdExecutor;
 import com.epam.pipeline.cmd.EnvironmentCmdExecutor;
 import com.epam.pipeline.cmd.PlainCmdExecutor;
 import com.epam.pipeline.cmd.QsubCmdExecutor;
+import com.epam.pipeline.cmd.ImpersonatingCmdExecutor;
 import com.epam.pipeline.dts.transfer.service.CmdExecutorsProvider;
 
 import java.util.Map;
@@ -28,6 +29,11 @@ public class CmdExecutorsProviderImpl implements CmdExecutorsProvider {
     @Override
     public CmdExecutor getCmdExecutor() {
         return new PlainCmdExecutor();
+    }
+
+    @Override
+    public CmdExecutor getImpersonatingCmdExecutor(final CmdExecutor cmdExecutor) {
+        return new ImpersonatingCmdExecutor(cmdExecutor);
     }
 
     @Override

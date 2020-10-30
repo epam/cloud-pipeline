@@ -54,8 +54,19 @@ mv pipe-cli/dist/win/pipe.zip $API_STATIC_PATH/
 # Untar fsbrowser and move it to the pipeline.jar static assets
 mv fsbrowser-* $API_STATIC_PATH/fsbrowser.tar.gz
 
-# Create distribution tgz
+# Move cloud-data client distributions to the pipeline.jar static assets
+mv cloud-data-linux.tar.gz $API_STATIC_PATH/cloud-data-linux.tar.gz
+mv cloud-data-win64.zip $API_STATIC_PATH/cloud-data-win64.zip
+
+
 cd ..
+# Run Java code checks
+./gradlew api:checkstyleMain \
+          api:pmdMain \
+          api:checkstyleTest \
+          api:pmdTest --no-daemon
+
+# Create distribution tgz
 ./gradlew distTar   -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} \
                     -Pprofile=release \
                     -x test \
@@ -64,6 +75,8 @@ cd ..
                     -x pipe-cli:buildLinux \
                     -x pipe-cli:buildWin \
                     -x fs-browser:build \
+                    -x cloud-pipeline-webdav-client:buildLinux \
+                    -x cloud-pipeline-webdav-client:buildWin \
                     -Pfast \
                     --no-daemon
 
@@ -75,7 +88,7 @@ if [ "$TRAVIS_REPO_SLUG" == "epam/cloud-pipeline" ]; then
 
     # Publish repackaged distribution tgz to S3 into builds/ prefix
     # Only if it is one of the allowed branches and it is a push (not PR)
-    if ([ "$TRAVIS_BRANCH" == "develop" ] || [ "$TRAVIS_BRANCH" == "master" ] || [[ "$TRAVIS_BRANCH" == "release/"* ]]) && \
+    if ([ "$TRAVIS_BRANCH" == "develop" ] || [ "$TRAVIS_BRANCH" == "master" ] || [[ "$TRAVIS_BRANCH" == "release/"* ]] || [[ "$TRAVIS_BRANCH" == "stage/"* ]]) && \
         ([ "$TRAVIS_EVENT_TYPE" == "push" ] || [ "$TRAVIS_EVENT_TYPE" == "api" ]); then
             aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/latest/${TRAVIS_BRANCH}/cloud-pipeline.latest.tgz
             aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${TRAVIS_BRANCH}/

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@
                         node_ip,
                         node_id,
                         node_name,
+                        node_image,
                         node_cloud_region,
                         docker_image,
                         actual_docker_image,
@@ -86,6 +87,7 @@
                         :NODE_IP,
                         :NODE_ID,
                         :NODE_NAME,
+                        :NODE_IMAGE,
                         :NODE_CLOUD_REGION,
                         :DOCKER_IMAGE,
                         :ACTUAL_DOCKER_IMAGE,
@@ -450,6 +452,7 @@
                         node_ip = :NODE_IP,
                         node_id = :NODE_ID,
                         node_name = :NODE_NAME,
+                        node_image = :NODE_IMAGE,
                         node_cloud_region = :NODE_CLOUD_REGION,
                         docker_image = :DOCKER_IMAGE,
                         actual_docker_image = :ACTUAL_DOCKER_IMAGE,

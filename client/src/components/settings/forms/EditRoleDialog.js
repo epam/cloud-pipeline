@@ -55,7 +55,8 @@ class EditRoleDialog extends React.Component {
       name: PropTypes.string,
       predefined: PropTypes.bool
     }),
-    onClose: PropTypes.func
+    onClose: PropTypes.func,
+    readOnly: PropTypes.bool
   };
 
   state = {
@@ -232,6 +233,7 @@ class EditRoleDialog extends React.Component {
 
   renderUsersList = () => {
     const {users: roleUsers, usersInitialized} = this.state;
+    const {readOnly} = this.props;
     if (!usersInitialized) {
       return null;
     }
@@ -253,25 +255,27 @@ class EditRoleDialog extends React.Component {
           return this.renderUserName(user);
         }
       },
-      {
-        key: 'action',
-        className: 'user-actions-column',
-        render: (user) => {
-          return (
-            <Row type="flex" justify="end">
-              <Button
-                id="delete-user-button"
-                size="small"
-                type="danger"
-                onClick={() => this.removeRole(user.id)}
-              >
-                <Icon type="delete" />
-              </Button>
-            </Row>
-          );
+      readOnly
+        ? undefined
+        : {
+          key: 'action',
+          className: 'user-actions-column',
+          render: (user) => {
+            return (
+              <Row type="flex" justify="end">
+                <Button
+                  id="delete-user-button"
+                  size="small"
+                  type="danger"
+                  onClick={() => this.removeRole(user.id)}
+                >
+                  <Icon type="delete"/>
+                </Button>
+              </Row>
+            );
+          }
         }
-      }
-    ];
+    ].filter(Boolean);
     return (
       <Table
         rowKey="id"
@@ -499,6 +503,7 @@ class EditRoleDialog extends React.Component {
     if (!this.props.roleInfo) {
       return null;
     }
+    const {readOnly} = this.props;
     let blocked = false;
     if (this.props.roleInfo.loaded) {
       blocked = this.props.roleInfo.value.blocked;
@@ -506,7 +511,13 @@ class EditRoleDialog extends React.Component {
     const {metadata} = this.state;
     return (
       <Modal
-        width="50%"
+        width="80%"
+        style={{
+          top: 20
+        }}
+        bodyStyle={{
+          height: '80vh'
+        }}
         closable={false}
         title={(
           <Row>
@@ -529,6 +540,7 @@ class EditRoleDialog extends React.Component {
         footer={
           <Row type="flex" justify="space-between">
             <Button
+              disabled={readOnly}
               id="edit-user-form-block-unblock"
               type="danger"
               onClick={this.operationWrapper(this.blockUnblockClicked)}>
@@ -536,6 +548,7 @@ class EditRoleDialog extends React.Component {
             </Button>
             <div>
               <Button
+                disabled={readOnly}
                 id="revert-changes-edit-user-form"
                 onClick={() => this.revertChanges()}
                 disabled={!this.modified}
@@ -559,12 +572,13 @@ class EditRoleDialog extends React.Component {
               key: CONTENT_PANEL_KEY,
               containerStyle: {
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                overflowX: 'hidden'
               },
               size: {
                 priority: 0,
                 percentMinimum: 33,
-                percentDefault: 75
+                percentDefault: 60
               }
             },
             {
@@ -572,20 +586,20 @@ class EditRoleDialog extends React.Component {
               size: {
                 keepPreviousSize: true,
                 priority: 2,
-                percentDefault: 25,
+                percentDefault: 40,
                 pxMinimum: 200
               }
             }
           ]}>
           <div
-            style={{flex: 1, display: 'flex', flexDirection: 'column'}}
+            style={{display: 'flex', flexDirection: 'column', height: '100%'}}
             key={CONTENT_PANEL_KEY}>
             <Row type="flex" style={{marginBottom: 10}} align="middle">
               <span style={{marginRight: 5, fontWeight: 'bold'}}>Default data storage:</span>
               <Select
                 allowClear
                 showSearch
-                disabled={this.state.operationInProgress}
+                disabled={this.state.operationInProgress || readOnly}
                 value={this.defaultStorageId}
                 style={{flex: 1}}
                 onChange={this.onChangeDefaultStorageId}
@@ -614,7 +628,7 @@ class EditRoleDialog extends React.Component {
             <Row type="flex" style={{marginBottom: 10}} align="middle">
               <div style={{flex: 1}} id="find-user-autocomplete-container">
                 <AutoComplete
-                  disabled={this.state.operationInProgress}
+                  disabled={this.state.operationInProgress || readOnly}
                   size="small"
                   style={{width: '100%'}}
                   placeholder="Search user"
@@ -639,21 +653,14 @@ class EditRoleDialog extends React.Component {
                   disabled={
                     this.state.selectedUser === null ||
                     this.state.selectedUser === undefined ||
-                    this.state.operationInProgress
+                    this.state.operationInProgress ||
+                    readOnly
                   }>
                   <Icon type="plus" /> Add user
                 </Button>
               </div>
             </Row>
-            <Row type="flex"
-              style={{
-                height: '30vh',
-                overflow: 'auto',
-                display: 'flex',
-                flexDirection: 'column'
-              }}>
-              {this.renderUsersList()}
-            </Row>
+            {this.renderUsersList()}
           </div>
           <SplitPanel
             orientation="vertical"
@@ -689,7 +696,7 @@ class EditRoleDialog extends React.Component {
               }
             ]}>
             <Metadata
-              readOnly={this.state.operationInProgress}
+              readOnly={this.state.operationInProgress || readOnly}
               key={METADATA_PANEL_KEY}
               entityId={this.props.role.id}
               entityClass="ROLE"
@@ -698,7 +705,7 @@ class EditRoleDialog extends React.Component {
               onChange={this.onChangeMetadata}
             />
             <InstanceTypesManagementForm
-              disabled={this.state.operationInProgress}
+              disabled={this.state.operationInProgress || readOnly}
               key="INSTANCE_MANAGEMENT"
               resourceId={this.props.roleId}
               level="ROLE"

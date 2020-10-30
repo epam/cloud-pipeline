@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.MapUtils;
 
 @RequiredArgsConstructor
 public class EnvironmentCmdExecutor implements CmdExecutor {
@@ -28,34 +29,25 @@ public class EnvironmentCmdExecutor implements CmdExecutor {
     private final Map<String, String> envVars;
 
     @Override
-    public String executeCommand(final String command) {
-        return executor.executeCommand(command, envVars, null);
-    }
-
-    @Override
-    public String executeCommand(final String command,
-                                 final Map<String, String> environmentVariables) {
-        return executeCommand(command, environmentVariables, null);
-    }
-
-    @Override
     public String executeCommand(final String command,
                                  final Map<String, String> environmentVariables,
-                                 final File file) {
-        return executor.executeCommand(command, withDefaults(environmentVariables), file);
+                                 final File workDir,
+                                 final String username) {
+        return executor.executeCommand(command, withDefaults(environmentVariables), workDir, username);
     }
 
     @Override
     public Process launchCommand(final String command,
                                  final Map<String, String> environmentVariables,
-                                 final File workDir) {
-        return executor.launchCommand(command, withDefaults(environmentVariables), workDir);
+                                 final File workDir,
+                                 final String username) {
+        return executor.launchCommand(command, withDefaults(environmentVariables), workDir, username);
     }
 
     private Map<String, String> withDefaults(final Map<String, String> environmentVariables) {
         final Map<String, String> mergedEnvVars = new HashMap<>();
         mergedEnvVars.putAll(envVars);
-        mergedEnvVars.putAll(environmentVariables);
+        mergedEnvVars.putAll(MapUtils.emptyIfNull(environmentVariables));
         return mergedEnvVars;
     }
 }

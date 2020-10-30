@@ -34,16 +34,19 @@ if os.path.exists(libfuse_path):
 
 
 from pipefuse.fuseutils import MB, GB
-from pipefuse.cache import CachingFileSystemClient
+from pipefuse.cache import CachingFileSystemClient, ListingCache, ThreadSafeListingCache
 from pipefuse.buff import BufferedFileSystemClient
 from pipefuse.trunc import CopyOnDownTruncateFileSystemClient, \
     WriteNullsOnUpTruncateFileSystemClient, \
     WriteLastNullOnUpTruncateFileSystemClient
-from pipefuse.api import CloudPipelineClient
+from pipefuse.api import CloudPipelineClient, CloudType
+from pipefuse.gcp import GoogleStorageLowLevelFileSystemClient
 from pipefuse.webdav import CPWebDavClient
-from pipefuse.s3 import S3Client
+from pipefuse.s3 import S3StorageLowLevelClient
+from pipefuse.storage import StorageHighLevelFileSystemClient
 from pipefuse.pipefs import PipeFS
 from pipefuse.record import RecordingFS, RecordingFileSystemClient
+from pipefuse.path import PathExpandingStorageFileSystemClient
 from pipefuse.fslock import get_lock
 import ctypes
 import fuse
@@ -71,19 +74,38 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
     api = os.environ.get('API', '')
     bearer = os.environ.get('API_TOKEN', '')
     chunk_size = os.environ.get('CP_PIPE_FUSE_CHUNK_SIZE', chunk_size)
+    bucket_type = None
+    root_path = None
     if not bearer:
-        raise RuntimeError("Cloud Pipeline API_TOKEN should be specified.")
+        raise RuntimeError('Cloud Pipeline API_TOKEN should be specified.')
     if webdav:
         client = CPWebDavClient(webdav_url=webdav, bearer=bearer)
     else:
         if not api:
-            raise RuntimeError("Cloud Pipeline API should be specified.")
+            raise RuntimeError('Cloud Pipeline API should be specified.')
         pipe = CloudPipelineClient(api=api, token=bearer)
-        client = S3Client(bucket, pipe=pipe, chunk_size=chunk_size)
+        path_chunks = bucket.rstrip('/').split('/')
+        bucket_name = path_chunks[0]
+        root_path = '/'.join(path_chunks[1:])
+        bucket_object = pipe.get_storage(bucket)
+        bucket_type = bucket_object.type
+        if bucket_type == CloudType.S3:
+            client = S3StorageLowLevelClient(bucket_name, pipe=pipe, chunk_size=chunk_size, storage_path=bucket)
+        elif bucket_type == CloudType.GS:
+            client = GoogleStorageLowLevelFileSystemClient(bucket_name, pipe=pipe, chunk_size=chunk_size,
+                                                           storage_path=bucket)
+        else:
+            raise RuntimeError('Cloud storage type %s is not supported.' % bucket_object.type)
+        client = StorageHighLevelFileSystemClient(client)
     if recording:
         client = RecordingFileSystemClient(client)
+    if bucket_type in [CloudType.S3, CloudType.GS]:
+        client = PathExpandingStorageFileSystemClient(client, root_path=root_path)
     if cache_ttl > 0 and cache_size > 0:
-        cache = TTLCache(maxsize=cache_size, ttl=cache_ttl)
+        cache_implementation = TTLCache(maxsize=cache_size, ttl=cache_ttl)
+        cache = ListingCache(cache_implementation)
+        if threads:
+            cache = ThreadSafeListingCache(cache)
         client = CachingFileSystemClient(client, cache)
     else:
         logging.info('Caching is disabled.')
@@ -95,14 +117,19 @@ def start(mountpoint, webdav, bucket, buffer_size, trunc_buffer_size, chunk_size
         if webdav:
             client = CopyOnDownTruncateFileSystemClient(client, capacity=trunc_buffer_size)
             client = WriteLastNullOnUpTruncateFileSystemClient(client)
-        else:
+        elif bucket_type == CloudType.S3:
+            client = WriteNullsOnUpTruncateFileSystemClient(client, capacity=trunc_buffer_size)
+        elif bucket_type == CloudType.GS:
+            client = CopyOnDownTruncateFileSystemClient(client, capacity=trunc_buffer_size)
             client = WriteNullsOnUpTruncateFileSystemClient(client, capacity=trunc_buffer_size)
     else:
         logging.info('Truncating support is disabled.')
+    logging.info('File system clients pipeline: %s', client.stats())
     fs = PipeFS(client=client, lock=get_lock(threads, monitoring_delay=monitoring_delay), mode=int(default_mode, 8))
     if recording:
         fs = RecordingFS(fs)
 
+    logging.info('Initializing file system.')
     enable_fallocate_support()
     FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=client.is_read_only(), **mount_options)
 
@@ -189,7 +216,7 @@ if __name__ == '__main__':
     if not args.webdav and not args.bucket:
         parser.error('Either --webdav or --bucket parameter should be specified.')
     if args.bucket and (args.chunk_size < 5 * MB or args.chunk_size > 5 * GB):
-        parser.error('Chunk size can vary from 5 MB to 5 GB due to AWS s3 multipart upload limitations.')
+        parser.error('Chunk size can vary from 5 MB to 5 GB due to AWS S3 multipart upload limitations.')
     if args.logging_level not in _allowed_logging_levels:
         parser.error('Only the following logging level are allowed: %s.' % _allowed_logging_levels_string)
     recording = args.logging_level in [_info_logging_level, _debug_logging_level]

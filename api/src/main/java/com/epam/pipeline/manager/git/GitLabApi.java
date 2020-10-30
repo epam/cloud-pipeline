@@ -105,7 +105,7 @@ public interface GitLabApi {
      * @param reference (optional) - The name of a repository branch or tag or if not given the default branch
      * @param recursive (optional) - Boolean value used to get a recursive tree (false by default)
      */
-    @GET("api/v3/projects/{project}/repository/tree")
+    @GET("api/v4/projects/{project}/repository/tree")
     Call<List<GitRepositoryEntry>> getRepositoryTree(@Path(PROJECT) String idOrName,
                                                      @Query(PATH) String path,
                                                      @Query(REF) String reference,

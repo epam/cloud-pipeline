@@ -39,13 +39,13 @@ const DTS_ENVIRONMENT = 'DTS';
     preferences,
     runDefaultParameters
   } = stores;
-  const [configId, entryName] = `${params.item.id}`.split('-');
+  const [configId, ...restName] = `${params.item.id}`.split('-');
   const configuration = configurations.getConfiguration(configId);
 
   return {
     cloudProviders,
     configuration,
-    entryName,
+    entryName: restName.join('-'),
     dtsList,
     pipelines,
     preferences,

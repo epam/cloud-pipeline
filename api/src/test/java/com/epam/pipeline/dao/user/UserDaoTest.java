@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ public class UserDaoTest extends AbstractSpringTest {
     private static final String ATTRIBUTES_KEY = "email";
     private static final String ATTRIBUTES_VALUE = "test_email";
     private static final String ATTRIBUTES_VALUE2 = "Mail@epam.com";
-    private static final int EXPECTED_DEFAULT_ROLES_NUMBER = 9;
+    private static final int EXPECTED_DEFAULT_ROLES_NUMBER = 11;
 
     @Autowired
     private UserDao userDao;

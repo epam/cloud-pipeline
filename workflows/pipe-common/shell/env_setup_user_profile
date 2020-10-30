@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+_OWNER_ATTRIBUTES_ENV_FILE="$1"
+_OWNER_ATTRIBUTES_BLACKLIST="confirmed_notifications ssh_prv ssh_pub"
+
+echo "Starting env setup from the user profile"
+
+if [ -z "$_OWNER_ATTRIBUTES_ENV_FILE" ]; then
+    echo "[ERROR] Result env file path is not provided"
+    exit 1
+fi
+
+if [ -f "$_OWNER_ATTRIBUTES_ENV_FILE" ]; then
+    echo "[WARN] $_OWNER_ATTRIBUTES_ENV_FILE already exists, it will be overwritten"
+    rm -f "$_OWNER_ATTRIBUTES_ENV_FILE"
+fi
+
+echo "Getting owner ($OWNER) user id"
+_OWNER_ID=$(curl -s \
+            --max-time 30 \
+            -X GET \
+            --insecure \
+            --header "Accept: application/json" \
+            --header "Authorization: Bearer $API_TOKEN" \
+            "$API/whoami" | jq -r '.payload.id // 0')
+
+if [ "$_OWNER_ID" == 0 ]; then
+    echo "Cannot determine owner's user id (current owner is $OWNER)"
+    exit 1
+fi
+echo "Owner ($OWNER) user id is: $_OWNER_ID"
+
+_OWNER_ATTRIBUTES="$(curl -s \
+                    --max-time 30 \
+                    -X POST \
+                    --insecure \
+                    --header 'Content-Type: application/json' \
+                    --header 'Accept: application/json' \
+                    --header "Authorization: Bearer $API_TOKEN" \
+                    -d "[ { \"entityId\": $_OWNER_ID, \"entityClass\": \"PIPELINE_USER\" } ]" \
+                    "$API/metadata/load")"
+
+
+_OWNER_ATTRIBUTES_NAMES=$(echo $_OWNER_ATTRIBUTES | jq '.payload[].data | keys[]' -r)
+for _ATTRIBUTE_NAME in $_OWNER_ATTRIBUTES_NAMES; do
+    if [[ " ${_OWNER_ATTRIBUTES_BLACKLIST[@]} " =~ " ${_ATTRIBUTE_NAME} " ]]; then
+        continue
+    fi
+    _ATTRIBUTE_ENV_NAME=${_ATTRIBUTE_NAME//[^a-zA-Z_0-9]/_}
+    _ATTRIBUTE_ENV_VALUE=$(echo $_OWNER_ATTRIBUTES | jq ".payload[].data.\"$_ATTRIBUTE_NAME\".value" -r)
+
+    if [ "${!_ATTRIBUTE_ENV_NAME}" ]; then
+        echo "[WARN] Variable $_ATTRIBUTE_ENV_NAME is already set from the outside, skipping it"
+        continue
+    fi
+
+    if [ -z "$CP_OWNER_ATTRIBUTES_WHITELIST" ] || \
+        ( [ "$CP_OWNER_ATTRIBUTES_WHITELIST" ] && [[ " $CP_OWNER_ATTRIBUTES_WHITELIST " == *" ${_ATTRIBUTE_NAME} "* ]] ); then
+        # Escape double quotes with a backslash
+        _ATTRIBUTE_ENV_VALUE=$(echo "$_ATTRIBUTE_ENV_VALUE" | sed -E ':a;N;$!ba;s/\r{0,1}\n/\\n/g' | sed 's/"/\\"/g')
+        echo "export ${_ATTRIBUTE_ENV_NAME}=\"${_ATTRIBUTE_ENV_VALUE}\"" >> "$_OWNER_ATTRIBUTES_ENV_FILE"
+    else
+        echo "[WARN] Variable $_ATTRIBUTE_ENV_NAME is not in the whitelist, skipping it"
+        continue
+    fi
+done
+
+echo "Done writing user profile env to $_OWNER_ATTRIBUTES_ENV_FILE"

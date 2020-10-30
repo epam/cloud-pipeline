@@ -12,7 +12,11 @@ import java.io.IOException;
 import java.nio.file.Paths;
 
 @Slf4j
-public class AzureHelper {
+public final class AzureHelper {
+
+    private AzureHelper() {
+        //no op
+    }
 
     private static final String CP_CLOUD_CREDENTIALS_LOCATION = "/root/.cloud";
 

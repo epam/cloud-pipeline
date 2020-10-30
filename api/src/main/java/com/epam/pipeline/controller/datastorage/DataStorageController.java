@@ -37,6 +37,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.MountCommand;
 import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.entity.datastorage.StorageMountPath;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
@@ -457,7 +458,9 @@ public class DataStorageController extends AbstractRestController {
             @PathVariable(value = ID) final Long id,
             @RequestBody final GenerateDownloadUrlVO generateDownloadUrlVO) {
         return Result.success(dataStorageApiService
-                .generateDataStorageItemUrl(id, generateDownloadUrlVO.getPaths()));
+                .generateDataStorageItemUrl(id, generateDownloadUrlVO.getPaths(),
+                        generateDownloadUrlVO.getPermissions(),
+                        generateDownloadUrlVO.getHours()));
     }
 
     @PostMapping("/datastorage/{id}/generateUploadUrl")
@@ -728,6 +731,32 @@ public class DataStorageController extends AbstractRestController {
     public Result<StorageUsage> getStorageUsage(@RequestParam final String id,
                                                 @RequestParam(required = false) final String path) {
         return Result.success(dataStorageApiService.getStorageUsage(id, path));
+    }
+
+    @PostMapping(value = "/datastorage/sharedStorage")
+    @ResponseBody
+    @ApiOperation(
+            value = "Creates and returns storage to be used as shared folder of a Pipeline Run.",
+            notes = "Creates and returns storage to be used as shared folder of a Pipeline Run.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<StorageMountPath> createSharedFSSPathForRun(@RequestParam final Long runId) {
+        return Result.success(dataStorageApiService.getSharedFSSPathForRun(runId, true));
+    }
+
+    @GetMapping(value = "/datastorage/sharedStorage")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns storage to be used as shared folder of a Pipeline Run.",
+            notes = "Returns storage to be used as shared folder of a Pipeline Run.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<StorageMountPath> getSharedFSSPathForRun(@RequestParam final Long runId) {
+        return Result.success(dataStorageApiService.getSharedFSSPathForRun(runId, false));
     }
 
     @GetMapping(value = "/datastorage/{id}/mountCmd")

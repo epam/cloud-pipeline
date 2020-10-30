@@ -83,6 +83,30 @@ class PreferencesLoad extends Remote {
     return value && `${value}`.toLowerCase() === 'true';
   }
 
+  @computed
+  get billingAdminsEnabled () {
+    const value = this.getPreferenceValue('billing.reports.enabled.admins');
+    return value && `${value}`.toLowerCase() === 'true';
+  }
+
+  @computed
+  get allowedMasterPriceTypes () {
+    const value = this.getPreferenceValue('cluster.allowed.price.types.master') || '';
+    if (!value) {
+      return [true, false];
+    }
+    return value.split(',').map(v => /^spot$/i.test(v));
+  }
+
+  @computed
+  get storageMountsPerGBRatio () {
+    const value = this.getPreferenceValue('storage.mounts.per.gb.ratio');
+    if (!value || Number.isNaN(value)) {
+      return undefined;
+    }
+    return Number(value);
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
@@ -107,7 +131,6 @@ class PreferencesLoad extends Remote {
     }
     return string;
   };
-
 }
 
 export default new PreferencesLoad();

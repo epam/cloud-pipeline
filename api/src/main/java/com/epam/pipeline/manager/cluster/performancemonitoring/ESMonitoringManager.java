@@ -42,6 +42,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -56,7 +57,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private static final Duration FALLBACK_MONITORING_PERIOD = Duration.ofHours(1);
     private static final Duration FALLBACK_MINIMAL_INTERVAL = Duration.ofMinutes(1);
     private static final int FALLBACK_INTERVALS_NUMBER = 10;
-    public static final int TWO = 2;
+    private static final int TWO = 2;
+    private static final String SWAP_FILESYSTEM = "tmpfs";
 
     private final RestHighLevelClient client;
     private final MonitoringESDao monitoringDao;
@@ -101,27 +103,31 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     }
 
     @Override
-    public long getPodDiskSpaceAvailable(final String nodeName, final String podId, final String dockerImage) {
+    public long getDiskSpaceAvailable(final String nodeName, final String podId, final String dockerImage) {
         final Duration duration = minimalDuration();
         final MonitoringStats.DisksUsage.DiskStats diskStats =
-                AbstractMetricRequester.getStatsRequester(ELKUsageMetric.POD_FS, client)
+                AbstractMetricRequester.getStatsRequester(ELKUsageMetric.FS, client)
                         .requestStats(nodeName,
                                 DateUtils.nowUTC().minus(duration.multipliedBy(Math.max(numberOfIntervals(), TWO))),
                                 DateUtils.nowUTC(),
                                 duration
                         )
                         .stream()
+                        .collect(Collectors.groupingBy(MonitoringStats::getStartTime,
+                                Collectors.reducing(this::mergeStats)))
+                        .values()
+                        .stream()
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
                         .max(Comparator.comparing(MonitoringStats::getStartTime,
-                                Comparator.comparing(this::asDateTime)))
+                                Comparator.comparing(this::asMonitoringDateTime)))
                         .map(MonitoringStats::getDisksUsage)
                         .map(MonitoringStats.DisksUsage::getStatsByDevices)
-                        //get disks stats (in fact here only one stats for one disk)
                         .orElse(Collections.emptyMap())
-                        .values().stream()
-                        //get stats for the only Pod disk
-                        .findFirst()
-                        .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
-                                MessageConstants.ERROR_GET_NODE_STAT, nodeName)));
+                        .entrySet().stream()
+                        .filter(it -> !SWAP_FILESYSTEM.equalsIgnoreCase(it.getKey()))
+                        .map(Map.Entry::getValue)
+                        .reduce(new MonitoringStats.DisksUsage.DiskStats(), this::merged);
         return diskStats.getCapacity() - diskStats.getUsableSpace();
     }
 
@@ -220,11 +226,6 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         return LocalDateTime.parse(dateTimeString, MonitoringConstants.FORMATTER);
     }
 
-    private LocalDateTime asDateTime(final String dateTimeString) {
-        return LocalDateTime.parse(dateTimeString, MonitoringConstants.DATE_TIME_FORMATTER);
-    }
-
-
     private Optional<MonitoringStats> statsWithinRegion(final MonitoringStats stats, final LocalDateTime regionStart,
                                               final LocalDateTime regionEnd, final Duration interval) {
         final LocalDateTime intervalStart = asMonitoringDateTime(stats.getStartTime());
@@ -239,5 +240,13 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         stats.setEndTime(MonitoringConstants.FORMATTER.format(end));
         stats.setMillsInPeriod(actualInterval.toMillis());
         return Optional.of(stats);
+    }
+
+    private MonitoringStats.DisksUsage.DiskStats merged(final MonitoringStats.DisksUsage.DiskStats s1,
+                                                        final MonitoringStats.DisksUsage.DiskStats s2) {
+        final MonitoringStats.DisksUsage.DiskStats s3 = new MonitoringStats.DisksUsage.DiskStats();
+        s3.setCapacity(s1.getCapacity() + s2.getCapacity());
+        s3.setUsableSpace(s1.getUsableSpace() + s2.getUsableSpace());
+        return s3;
     }
 }

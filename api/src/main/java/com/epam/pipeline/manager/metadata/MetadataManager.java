@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.dao.metadata.MetadataDao;
+import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
@@ -30,6 +31,8 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.metadata.parser.MetadataLineProcessor;
 import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.utils.MetadataParsingUtils;
@@ -37,6 +40,7 @@ import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.google.common.io.CharStreams;
 import com.google.common.io.LineProcessor;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +88,9 @@ public class MetadataManager {
 
     @Autowired
     private MetadataEntryMapper metadataEntryMapper;
+
+    @Autowired
+    private PreferenceManager preferenceManager;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public MetadataEntry updateMetadataItemKey(MetadataVO metadataVO) {
@@ -272,6 +279,20 @@ public class MetadataManager {
                                                            final String value) {
         Map<String, PipeConfValue> indicator = Collections.singletonMap(key, new PipeConfValue(null, value));
         return metadataDao.searchMetadataByClassAndKeyValue(entityClass, indicator);
+    }
+
+    public List<CategoricalAttribute> buildFullMetadataDict() {
+        final List<String> sensitiveKeys = preferenceManager.getPreference(
+                SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
+        return metadataDao.buildFullMetadataDict(sensitiveKeys);
+    }
+
+    public Set<String> getMetadataKeys(final AclClass entityClass) {
+        final List<String> sensitiveKeys = preferenceManager.getPreference(
+                SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
+        Set<String> keys = metadataDao.loadMetadataKeys(entityClass);
+        keys.removeAll(ListUtils.emptyIfNull(sensitiveKeys));
+        return keys;
     }
 
     Map<String, PipeConfValue> convertFileContentToMetadata(MultipartFile file) {

@@ -31,8 +31,6 @@ function update_nameserver {
       fi
     fi
 
-    # /etc/resolv.conf will be overwritten by DHCP client after reboot
-    # As a quick fix - make /etc/resolv.conf immutable
     chattr -i /etc/resolv.conf
     sed -i '/nameserver/d' /etc/resolv.conf
     echo "nameserver $nameserver" >> /etc/resolv.conf
@@ -80,11 +78,9 @@ function setup_swap_device {
     fi
 }
 
-# Setup swap device configuration
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
 
-# Mount all drives that do not have mount points yet. Each drive will be mounted to /ebsN folder (N is a number of a drive)
 UNMOUNTED_DRIVES=$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }')
 DRIVE_NUM=0
 for DRIVE_NAME in $UNMOUNTED_DRIVES
@@ -94,7 +90,6 @@ do
   PARTITION_RESULT=$(sfdisk -d $DRIVE_NAME 2>&1)
   if [[ $PARTITION_RESULT == "" ]]; then
       (echo o; echo n; echo p; echo; echo; echo; echo w) | fdisk $DRIVE_NAME
-      #we created partition ${DRIVE_NAME}1 and now should use it as DRIVE_NAME
       DRIVE_NAME="${DRIVE_NAME}1"
   elif [[ $PARTITION_RESULT == *"No such device or address"* ]]; then
       continue
@@ -118,25 +113,19 @@ do
  
 done
 
-# Stop docker if it is running
 systemctl stop docker
-# Move any existing docker configuration to the mounted directory (if we have any existing docker images)
 if [ -d "/var/lib/docker" ] && [ ! -d "/ebs/docker" ]; then
   mv /var/lib/docker /ebs/
 fi
 
 mkdir -p /etc/docker
-# Check nvidia drivers are installed
 if check_installed "nvidia-smi"; then
-  # Fix nvidia-smi performance
   nvidia-persistenced --persistence-mode
 
-# We are still using overlay2 storage driver over the btrfs backing filesystem, as it is proved to work correctly
-# If btrfs is used as a storage driver - this confuses cadvisor and kubelet (filesystem can't be enumerated within a container)
 cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "/ebs/docker",
-  "storage-driver": "overlay2",
+  "storage-driver": "btrfs",
   "max-concurrent-uploads": 1,
   "default-runtime": "nvidia",
    "runtimes": {
@@ -148,11 +137,10 @@ cat <<EOT > /etc/docker/daemon.json
 }
 EOT
 else
-  # Setup docker config for non-gpu
 cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "/ebs/docker",
-  "storage-driver": "overlay2",
+  "storage-driver": "btrfs",
   "max-concurrent-uploads": 1
 }
 EOT
@@ -162,7 +150,6 @@ echo "STORAGE_DRIVER=" >> /etc/sysconfig/docker-storage-setup
 mkdir -p /etc/docker/certs.d/
 @DOCKER_CERTS@
 
-# Setup docker cli location for DinD
 docker_cli_bin="/bin/docker"
 if [ ! -f "$docker_cli_bin" ]; then
   docker_cli_location="$(command -v docker)"
@@ -173,14 +160,11 @@ if [ ! -f "$docker_cli_bin" ]; then
   fi
 fi
 
-# Load NFS module
 modprobe nfs
 modprobe nfsd
 
 chmod +x /etc/rc.d/rc.local
 
-# Prepare to tag cloud-specific info
-## Get instance metadata information
 cloud=$(curl --head -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep Server | cut -f2 -d:)
 gcloud_header=$(curl --head -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep Metadata-Flavor | cut -f2 -d:)
 
@@ -193,7 +177,6 @@ if [[ $cloud == *"EC2"* ]]; then
     _CLOUD_PROVIDER=AWS
     _KUBE_NODE_NAME="$_CLOUD_INSTANCE_ID"
 
-    # Create user for cloud pipeline access, this is required only for AWS. Other cloud providers will create appropriate user automatically
     useradd pipeline
     cp -r /home/ec2-user/.ssh /home/pipeline/.ssh
     chown -R pipeline. /home/pipeline/.ssh
@@ -205,7 +188,7 @@ elif [[ $cloud == *"Microsoft"* ]]; then
     _CLOUD_INSTANCE_AZ=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/zone?api-version=2018-10-01&format=text')
     _CLOUD_INSTANCE_ID="$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/name?api-version=2018-10-01&format=text')"
     _CLOUD_INSTANCE_TYPE=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/vmSize?api-version=2018-10-01&format=text')
-    _KUBE_NODE_NAME="$(hostname)"
+    _KUBE_NODE_NAME=$(echo "$_CLOUD_INSTANCE_ID" | grep -xE "[a-zA-Z0-9\-]{1,256}" &> /dev/null && echo $_CLOUD_INSTANCE_ID || hostname)
 
     _CLOUD_INSTANCE_IMAGE_ID="$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/publisher?api-version=2018-10-01&format=text'):$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/product?api-version=2018-10-01&format=text'):$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/name?api-version=2018-10-01&format=text')"
     if [[ "$_CLOUD_INSTANCE_IMAGE_ID" == '::' ]]; then
@@ -215,7 +198,6 @@ elif [[ $cloud == *"Microsoft"* ]]; then
 
     CHECK_AZURE_EVENTS_COMMAND="curl -k -H Metadata:true http://169.254.169.254/metadata/scheduledevents?api-version=2017-11-01 2> /dev/null | grep -q Preempt && kubectl label node $(hostname) cloud-pipeline/preempted=true --kubeconfig='/etc/kubernetes/kubelet.conf'"
 
-    # run 3 cron jobs to be able to check events each 20 seconds
     crontab -l | { cat ; echo -e "* * * * * $CHECK_AZURE_EVENTS_COMMAND \n* * * * * sleep 20 && $CHECK_AZURE_EVENTS_COMMAND \n* * * * * sleep 40 && $CHECK_AZURE_EVENTS_COMMAND" ; } | crontab -
 
 elif [[ $gcloud_header == *"Google"* ]]; then
@@ -228,11 +210,8 @@ elif [[ $gcloud_header == *"Google"* ]]; then
     _KUBE_NODE_NAME="$_CLOUD_INSTANCE_ID"
 fi
 
-# Setup well-know hostnames
-# This will be replaced by "echo {IP} {HOSTNAME} >> /etc/hosts" in nodeup.py
 @WELL_KNOWN_HOSTS@
 
-# Setup proxies for a current region
 nameserver_val="@dns_proxy@"
 nameserver_post_val="@dns_proxy_post@"
 http_proxy_val="@http_proxy@"
@@ -264,7 +243,6 @@ EOL
 
 fi
 
-## Build kubelet node-labels string, so all the tags will be applied at a node join time
 _KUBE_NODE_INSTANCE_LABELS="--node-labels=cloud_provider=$_CLOUD_PROVIDER,cloud_region=$_CLOUD_REGION,cloud_ins_id=$_CLOUD_INSTANCE_ID,cloud_ins_type=$_CLOUD_INSTANCE_TYPE"
 
 if [[ $_CLOUD_INSTANCE_AZ != "" ]]; then
@@ -275,7 +253,6 @@ if [[ $_CLOUD_INSTANCE_IMAGE_ID != "" ]]; then
     _KUBE_NODE_INSTANCE_LABELS=$_KUBE_NODE_INSTANCE_LABELS",cloud_image=$_CLOUD_INSTANCE_IMAGE_ID"
 fi
 
-## Configure kubelet to write logs to the file
 _KUBELET_LOG_PATH=/var/log/kubelet
 mkdir -p $_KUBELET_LOG_PATH
 _KUBE_LOG_ARGS="--logtostderr=false --log-dir=$_KUBELET_LOG_PATH"
@@ -286,34 +263,25 @@ _KUBE_NODE_NAME_ARGS="--hostname-override $_KUBE_NODE_NAME"
 _KUBELET_INITD_DROPIN_PATH="/etc/systemd/system/kubelet.service.d/20-kubelet-labels.conf"
 rm -f $_KUBELET_INITD_DROPIN_PATH
 
-## Configure kubelet reservations
 ## FIXME: shall be moved to the preferences
 
-## Here we calculate reservation for RAM, depending on the machine size
-## By default, we reserve 5% of the available RAM, but not less that 500Mi and not more than 2000Mi
 _KUBE_RESERVED_RATIO=5
 _KUBE_RESERVED_MIN_MB=500
 _KUBE_RESERVED_MAX_MB=2000
-### Getting total RAM in Mb
 _KUBE_NODE_MEM_TOTAL_MB=$(awk '/MemTotal/ { printf "%.0f", $2/1024 }' /proc/meminfo)
-### Calculate 5% reservation for each of the two system services (kubelet and system)
 _KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_TOTAL_MB * $_KUBE_RESERVED_RATIO / 100 / 2 ))
-### Apply upper and lower limits restrictions (500 and 2000)
 _KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_RESERVED_MB > $_KUBE_RESERVED_MAX_MB ? $_KUBE_RESERVED_MAX_MB : $_KUBE_NODE_MEM_RESERVED_MB ))
 _KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_RESERVED_MB < $_KUBE_RESERVED_MIN_MB ? $_KUBE_RESERVED_MIN_MB : $_KUBE_NODE_MEM_RESERVED_MB ))
-### Setup the  calculated values into the kubelet args
 _KUBE_RESERVED_ARGS="--kube-reserved cpu=500m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,storage=1Gi"
 _KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=500m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,storage=1Gi"
 _KUBE_EVICTION_ARGS="--eviction-hard= --eviction-soft= --eviction-soft-grace-period="
 
-## Append extra kube-config to the systemd config
 cat > $_KUBELET_INITD_DROPIN_PATH <<EOF
 [Service]
 Environment="KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS $_KUBE_EVICTION_ARGS"
 EOF
 chmod +x $_KUBELET_INITD_DROPIN_PATH
 
-# Start docker and kubelet
 systemctl enable docker
 systemctl enable kubelet
 systemctl start docker
@@ -347,17 +315,12 @@ EOL
 systemctl enable fsautoscale
 systemctl start fsautoscale
 
-# Setup the scripts to restore the state of the "paused" job
-#   1. NVIDIA-specific scripts for GPU nodes
-#     - Enable nvidia persistence mode
-#     - Call nvidia-smi to cache the devices listings
 if check_installed "nvidia-smi"; then
   cat >> /etc/rc.local << EOF
 nvidia-persistenced --persistence-mode
 nvidia-smi
 EOF
 fi
-#   2. All other nodes: add support for joining node to kube cluster after starting the "paused" job
 cat >> /etc/rc.local << EOF
 systemctl start docker
 kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks --node-name $_KUBE_NODE_NAME

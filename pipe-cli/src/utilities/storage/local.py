@@ -1,4 +1,21 @@
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
+
+from src.utilities.storage.common import AbstractTransferManager
+
 try:
     from urllib.request import urlopen  # Python 3
 except ImportError:
@@ -17,7 +34,7 @@ class TransferFromHttpOrFtpToLocal(object):
         pass
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), skip_existing=False):
+                 quiet=False, size=None, tags=(), skip_existing=False, lock=None):
         """
         Transfers data from remote resource (only ftp(s) or http(s) protocols supported) to local file system.
         :param source_wrapper: wrapper for ftp or http resource
@@ -31,6 +48,8 @@ class TransferFromHttpOrFtpToLocal(object):
         :param size: the size of the source file
         :param tags: not needed for this kind of transfer
         :param skip_existing: indicates --skip_existing option
+        :param lock: The lock object if multithreaded transfer is requested
+        :type lock: multiprocessing.Lock
         """
         if clean:
             raise AttributeError("Cannot perform 'mv' operation due to deletion remote files "
@@ -50,11 +69,9 @@ class TransferFromHttpOrFtpToLocal(object):
                 if not quiet:
                     click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
                 return
-        dir_path = os.path.dirname(destination_key)
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
+        AbstractTransferManager.create_local_folder(destination_key, lock)
         file_stream = urlopen(source_key)
-        if StorageItemManager.show_progress(quiet, size):
+        if StorageItemManager.show_progress(quiet, size, lock):
             progress_bar = ProgressPercentage(relative_path, size)
         with open(destination_key, 'wb') as f:
             while True:
@@ -62,7 +79,7 @@ class TransferFromHttpOrFtpToLocal(object):
                 if not chunk:
                     break
                 f.write(chunk)
-                if StorageItemManager.show_progress(quiet, size):
+                if StorageItemManager.show_progress(quiet, size, lock):
                     progress_bar.__call__(len(chunk))
         file_stream.close()
 

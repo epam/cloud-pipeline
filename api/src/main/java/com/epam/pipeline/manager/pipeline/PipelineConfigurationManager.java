@@ -173,7 +173,7 @@ public class PipelineConfigurationManager {
             configuration.setInstanceDisk(defaultConfig.getInstanceDisk());
         }
         if (runVO.getInstanceType() != null) {
-            configuration.setInstanceType(String.valueOf(runVO.getInstanceType()));
+            configuration.setInstanceType(runVO.getInstanceType());
         } else {
             configuration.setInstanceType(defaultConfig.getInstanceType());
         }
@@ -181,6 +181,11 @@ public class PipelineConfigurationManager {
             configuration.setTimeout(runVO.getTimeout());
         } else {
             configuration.setTimeout(defaultConfig.getTimeout());
+        }
+        if (runVO.getInstanceImage() != null) {
+            configuration.setInstanceImage(runVO.getInstanceImage());
+        } else {
+            configuration.setInstanceImage(defaultConfig.getInstanceImage());
         }
 
         //client always sends actual node-count
@@ -211,12 +216,16 @@ public class PipelineConfigurationManager {
      * @return True if this is a cluster configuration.
      */
     public boolean initClusterConfiguration(PipelineConfiguration configuration, boolean isNFS) {
-        if ((configuration.getNodeCount() == null || configuration.getNodeCount() <= 0)
-                && !hasBooleanParameter(configuration, GE_AUTOSCALING)) {
+        if (!isClusterConfiguration(configuration)) {
             return false;
         }
         updateMasterConfiguration(configuration, isNFS);
         return true;
+    }
+
+    public static boolean isClusterConfiguration(final PipelineConfiguration configuration) {
+        return !(configuration.getNodeCount() == null || configuration.getNodeCount() <= 0)
+                || hasBooleanParameter(configuration, GE_AUTOSCALING);
     }
 
     public void updateMasterConfiguration(PipelineConfiguration configuration, boolean isNFS) {
@@ -264,7 +273,7 @@ public class PipelineConfigurationManager {
         return hasBooleanParameter(entry, NFS_CLUSTER_ROLE);
     }
 
-    private boolean hasBooleanParameter(PipelineConfiguration entry, String parameterName) {
+    private static boolean hasBooleanParameter(PipelineConfiguration entry, String parameterName) {
         return entry.getParameters().entrySet().stream().anyMatch(e ->
                 e.getKey().equals(parameterName) && e.getValue().getValue() != null
                         && e.getValue().getValue().equalsIgnoreCase("true"));

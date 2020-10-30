@@ -40,7 +40,7 @@ const SettingsTabs = [
     key: 'user',
     path: '/settings/user',
     title: 'User management',
-    available: (user) => user ? user.admin : false
+    available: (user) => user ? roleModel.userHasRole(user, 'ROLE_USER_READER') : false
   },
   {
     key: 'email',
@@ -58,6 +58,12 @@ const SettingsTabs = [
     key: 'regions',
     path: '/settings/regions',
     title: 'Cloud regions',
+    available: (user) => user ? user.admin : false
+  },
+  {
+    key: 'dictionaries',
+    path: '/settings/dictionaries',
+    title: 'System Dictionaries',
     available: (user) => user ? user.admin : false
   },
   {
@@ -84,7 +90,7 @@ export default class extends React.Component {
   renderSettingsNavigation = () => {
     const {router: {location}} = this.props;
     const tabs = SettingsTabs.filter(tab => tab.available(this.currentUser));
-    const activeTab = location.pathname.split('/').pop();
+    const activeTab = location.pathname.split('/').filter(Boolean)[1];
     return (
       <Row
         gutter={16}

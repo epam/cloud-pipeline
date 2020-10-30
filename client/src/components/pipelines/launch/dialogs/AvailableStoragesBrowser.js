@@ -21,8 +21,7 @@ import PropTypes from 'prop-types';
 import {Button, Checkbox, Input, Modal, Row, Table} from 'antd';
 import {SensitiveBucketsWarning} from '../../../runs/actions';
 import styles from './Browser.css';
-
-export const LIMIT_MOUNTS_PARAMETER = 'CP_CAP_LIMIT_MOUNTS';
+import {CP_CAP_LIMIT_MOUNTS} from '../form/utilities/parameters';
 
 function sensitiveSorter (a, b) {
   return a.sensitive - b.sensitive;
@@ -45,7 +44,7 @@ export default class AvailableStoragesBrowser extends Component {
 
   get limitMountsParameter () {
     return {
-      [LIMIT_MOUNTS_PARAMETER]: {
+      [CP_CAP_LIMIT_MOUNTS]: {
         value: this.state.selectedStorages.join(',')
       }
     };

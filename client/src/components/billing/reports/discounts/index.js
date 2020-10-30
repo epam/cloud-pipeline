@@ -74,16 +74,13 @@ class DiscountsStore {
 }
 
 function SingleDiscountsSliderComponent ({value, onChange, title}) {
-  const parser = value => {
-    return value ? `${value}`.replace(/ %$/g, '') : '0';
-  };
   return (
     <div className={styles.subContainer}>
       <span className={styles.label}>
         {title}:
       </span>
       <Slider
-        min={0}
+        min={-100}
         max={100}
         onChange={onChange}
         value={value}
@@ -94,12 +91,12 @@ function SingleDiscountsSliderComponent ({value, onChange, title}) {
         className={styles.input}
         value={value}
         onChange={onChange}
-        min={0}
+        min={-100}
         max={100}
         step={1}
-        formatter={value => `${value || 0} %`}
-        parser={parser}
+        style={{width: 70}}
       />
+      <span style={{marginLeft: 5}}>%</span>
     </div>
   );
 }
@@ -194,7 +191,7 @@ class ButtonComponent extends React.Component {
     const classNames = [className, styles.button].filter(Boolean).join(' ');
     const parts = [];
     const round = a => Math.round(a * 100.0) / 100.0;
-    if (discounts.compute > 0) {
+    if (discounts.compute !== 0) {
       parts.push((
         <div key="compute">
           <b>{round(discounts.compute)}%</b>
@@ -202,7 +199,7 @@ class ButtonComponent extends React.Component {
         </div>
       ));
     }
-    if (discounts.storage > 0) {
+    if (discounts.storage !== 0) {
       parts.push((
         <div key="storage">
           <b>{round(discounts.storage)}%</b>

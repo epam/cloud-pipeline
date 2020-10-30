@@ -66,15 +66,15 @@ public interface UsageMonitoringManager {
                                              Duration interval);
 
     /**
-     * Retrieves number of bytes that available on a pod disk .
+     * Retrieves number of bytes that available on a pod or node disk.
      *
      * @param nodeName Cluster node name.
      * @param podId
      * @param dockerImage of the container of the pod.
      * @return available bytes amount.
      */
-    long getPodDiskSpaceAvailable(String nodeName,
-                                  String podId,
-                                  String dockerImage);
+    long getDiskSpaceAvailable(String nodeName,
+                               String podId,
+                               String dockerImage);
 
 }

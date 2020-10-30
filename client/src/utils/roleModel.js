@@ -134,6 +134,13 @@ const hasRole = (roleName) => ({props}) => {
   return false;
 };
 
+const userHasRole = (user, roleName) => {
+  if (user && user.roles && user.roles.length > 0 && roleName) {
+    return user.admin || (user.roles || []).find(r => r.name === roleName);
+  }
+  return false;
+};
+
 const authenticationInfo = (...opts) => inject('authenticatedUserInfo')(...opts);
 
 const refreshAuthenticationInfo = async ({props}) => {
@@ -151,7 +158,8 @@ const manager = {
   configuration: management('ROLE_CONFIGURATION_MANAGER'),
   storage: management('ROLE_STORAGE_MANAGER'),
   toolGroup: management('ROLE_TOOL_GROUP_MANAGER'),
-  entities: management('ROLE_ENTITIES_MANAGER')
+  entities: management('ROLE_ENTITIES_MANAGER'),
+  billing: management('ROLE_BILLING_MANAGER')
 };
 
 const isManager = {
@@ -160,7 +168,8 @@ const isManager = {
   configuration: hasRole('ROLE_CONFIGURATION_MANAGER'),
   storage: hasRole('ROLE_STORAGE_MANAGER'),
   toolGroup: hasRole('ROLE_TOOL_GROUP_MANAGER'),
-  entities: hasRole('ROLE_ENTITIES_MANAGER')
+  entities: hasRole('ROLE_ENTITIES_MANAGER'),
+  billing: hasRole('ROLE_BILLING_MANAGER')
 };
 
 export default {
@@ -175,6 +184,8 @@ export default {
   collapseMask,
   manager,
   isManager,
+  hasRole,
+  userHasRole,
   authenticationInfo,
   refreshAuthenticationInfo
 };

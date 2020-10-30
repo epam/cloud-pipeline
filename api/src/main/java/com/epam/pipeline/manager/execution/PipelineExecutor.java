@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager.execution;
 
-import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -78,6 +77,7 @@ public class PipelineExecutor {
             .name("host-cgroups")
             .hostPath("/sys/fs/cgroup")
             .mountPath("/sys/fs/cgroup").build();
+    private static final String DOMAIN_DELIMITER = "@";
 
     private final PreferenceManager preferenceManager;
     private final String kubeNamespace;
@@ -106,6 +106,7 @@ public class PipelineExecutor {
             Map<String, String> labels = new HashMap<>();
             labels.put("spawned_by", "pipeline-api");
             labels.put("pipeline_id", pipelineId);
+            labels.put("owner", normalizeOwner(run.getOwner()));
             if (Boolean.TRUE.equals(run.getSensitive())) {
                 labels.put("sensitive", "true");
             }
@@ -137,6 +138,14 @@ public class PipelineExecutor {
         }
     }
 
+    private String normalizeOwner(final String owner) {
+        return splitName(owner).replaceAll(KubernetesConstants.KUBE_NAME_FULL_REGEXP, "-");
+    }
+
+    private String splitName(final String owner) {
+        return owner.split(DOMAIN_DELIMITER)[0];
+    }
+
     private void addWorkerLabel(final String clusterId, final Map<String, String> labels, final PipelineRun run) {
         final String clusterLabel = getChildLabel(clusterId, run);
         if (StringUtils.isNotBlank(clusterLabel)) {
@@ -157,13 +166,11 @@ public class PipelineExecutor {
         spec.setTerminationGracePeriodSeconds(KUBE_TERMINATION_PERIOD);
         spec.setDnsPolicy("ClusterFirst");
         spec.setNodeSelector(nodeSelector);
-        if (run.getTimeout() != null && run.getTimeout() > 0) {
-            spec.setActiveDeadlineSeconds(run.getTimeout() * Constants.SECONDS_IN_MINUTE);
-        }
         if (!StringUtils.isEmpty(secretName)) {
             spec.setImagePullSecrets(Collections.singletonList(new LocalObjectReference(secretName)));
         }
-        boolean isDockerInDockerEnabled = authManager.isAdmin() && isParameterEnabled(envVars, KubernetesConstants.CP_CAP_DIND_NATIVE);
+        boolean isDockerInDockerEnabled = authManager.isAdmin() && isParameterEnabled(envVars,
+                KubernetesConstants.CP_CAP_DIND_NATIVE);
         boolean isSystemdEnabled = isParameterEnabled(envVars, KubernetesConstants.CP_CAP_SYSTEMD_CONTAINER);
 
         spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled));

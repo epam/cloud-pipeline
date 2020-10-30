@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ import static org.junit.Assert.*;
 @Transactional
 public class RoleDaoTest extends AbstractSpringTest {
 
-    private static final int EXPECTED_DEFAULT_ROLES_NUMBER = 9;
+    private static final int EXPECTED_DEFAULT_ROLES_NUMBER = 11;
     private static final String TEST_USER1 = "test_user1";
     private static final String TEST_ROLE = "ROLE_TEST";
     private static final String TEST_ROLE_UPDATED = "NEW_ROLE";

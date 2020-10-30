@@ -57,6 +57,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
@@ -197,6 +198,9 @@ public class PipelineRunManager {
 
     @Autowired
     private PipelineRunCRUDService runCRUDService;
+
+    @Autowired
+    private StopServerlessRunManager stopServerlessRunManager;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -404,27 +408,31 @@ public class PipelineRunManager {
         final PriceType priceType = configuration.getIsSpot() != null && configuration.getIsSpot()
                 ? PriceType.SPOT
                 : PriceType.ON_DEMAND;
+        final boolean isMaster = PipelineConfigurationManager.isClusterConfiguration(configuration);
         if (pipeline != null) {
-            validatePipelineInstanceAndPriceTypes(instanceType, priceType, region.getId());
+            validatePipelineInstanceAndPriceTypes(instanceType, priceType, region.getId(), isMaster);
         } else {
-            validateToolInstanceAndPriceTypes(instanceType, priceType,  region.getId(), configuration.getDockerImage());
+            validateToolInstanceAndPriceTypes(instanceType, priceType,  region.getId(), configuration.getDockerImage(),
+                                              isMaster);
         }
     }
 
     private void validatePipelineInstanceAndPriceTypes(final String instanceType,
                                                        final PriceType priceType,
-                                                       final Long regionId) {
+                                                       final Long regionId,
+                                                       final boolean isMasterNode) {
         Assert.isTrue(!StringUtils.hasText(instanceType)
                         || instanceOfferManager.isInstanceAllowed(instanceType, regionId, priceType == PriceType.SPOT),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, instanceType));
-        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), null),
+        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), null, isMasterNode),
                 messageHelper.getMessage(MessageConstants.ERROR_PRICE_TYPE_IS_NOT_ALLOWED, priceType));
     }
 
     private void validateToolInstanceAndPriceTypes(final String instanceType,
                                                    final PriceType priceType,
                                                    final Long regionId,
-                                                   final String dockerImage) {
+                                                   final String dockerImage,
+                                                   final boolean isMasterNode) {
         final Tool tool = toolManager.loadByNameOrId(dockerImage);
         final ContextualPreferenceExternalResource toolResource =
                 new ContextualPreferenceExternalResource(ContextualPreferenceLevel.TOOL, tool.getId().toString());
@@ -432,7 +440,7 @@ public class PipelineRunManager {
                         || instanceOfferManager.isToolInstanceAllowed(instanceType, toolResource,
                                                     regionId, priceType == PriceType.SPOT),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, instanceType));
-        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), toolResource),
+        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), toolResource, isMasterNode),
                 messageHelper.getMessage(MessageConstants.ERROR_PRICE_TYPE_IS_NOT_ALLOWED, priceType));
     }
 
@@ -602,6 +610,13 @@ public class PipelineRunManager {
         PipelineRun run = loadPipelineRun(id);
         List<RestartRun> restartedRuns = restartRunManager.loadRestartedRunsForInitialRun(id);
         run.setRestartedRuns(restartedRuns);
+        run.setRunStatuses(runStatusManager.loadRunStatus(id));
+        return run;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun loadPipelineRunWithStatuses(final Long id) {
+        final PipelineRun run = loadPipelineRun(id);
         run.setRunStatuses(runStatusManager.loadRunStatus(id));
         return run;
     }
@@ -893,6 +908,8 @@ public class PipelineRunManager {
         }
         Tool tool = toolManager.loadByNameOrId(pipelineRun.getDockerImage());
         pipelineRun.setStatus(TaskStatus.RESUMING);
+        // prolong the run here in order to get rid off idle notification right after resume
+        prolongIdleRun(pipelineRun.getId());
         runCRUDService.updateRunStatus(pipelineRun);
         dockerContainerOperationManager.resumeRun(pipelineRun, tool.getEndpoints());
         return pipelineRun;
@@ -1028,7 +1045,7 @@ public class PipelineRunManager {
         final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
         Assert.notNull(pipelineRun,
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
-        final long availableDisk = usageMonitoringManager.getPodDiskSpaceAvailable(
+        final long availableDisk = usageMonitoringManager.getDiskSpaceAvailable(
                 pipelineRun.getInstance().getNodeName(), pipelineRun.getPodId(), pipelineRun.getDockerImage());
         final long requiredImageSize = (long)Math.ceil(
                 (double)toolManager.getCurrentImageSize(pipelineRun.getDockerImage())
@@ -1155,6 +1172,12 @@ public class PipelineRunManager {
                 .collect(Collectors.toList()));
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void stopServerlessRun(final Long runId) {
+        stop(runId);
+        stopServerlessRunManager.deleteByRunId(runId);
+    }
+
     private int getTotalSize(final List<InstanceDisk> disks) {
         return (int) disks.stream().mapToLong(InstanceDisk::getSize).sum();
     }
@@ -1241,7 +1264,7 @@ public class PipelineRunManager {
     // PodId should contain only a-z 0-9 and -, it also should be smaller then 63 characters
     private String normalizePodName(String name, String runId) {
         String podName = name.trim().toLowerCase();
-        podName = podName.replaceAll("[^a-z0-9\\-]+", "-");
+        podName = podName.replaceAll(KubernetesConstants.KUBE_NAME_REGEXP, "-");
         if (podName.length() + runId.length() + 1 > POD_ID_LENGTH) {
             podName = podName.substring(0, POD_ID_LENGTH - runId.length() - 1);
         }
@@ -1313,7 +1336,7 @@ public class PipelineRunManager {
         }
     }
 
-    List<PipelineRunParameter> replaceParametersWithEnvVars(List<PipelineRunParameter> params,
+    public List<PipelineRunParameter> replaceParametersWithEnvVars(List<PipelineRunParameter> params,
                                                             Map<String, String> envVars) {
         if (CollectionUtils.isEmpty(params) || MapUtils.isEmpty(envVars)) {
             return params;

@@ -43,6 +43,7 @@ from src.version import __version__
 MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000
 USER_OPTION_DESCRIPTION = 'The user name to perform operation from specified user. Available for admins only'
+RETRIES_OPTION_DESCRIPTION = 'Number of retries to connect to specified pipeline run. Default is 10.'
 
 
 def silent_print_api_version():
@@ -115,7 +116,10 @@ def cli():
 @click.option('-np', '--proxy-ntlm-pass',
               help='Password of the user, specified by the "--proxy-ntlm-user"',
               default=None)
-def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass):
+@click.option('-c', '--codec',
+              help='Encoding that shall be used',
+              default=None)
+def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec):
     """Configures CLI parameters
     """
     if proxy_ntlm and not proxy_ntlm_user:
@@ -132,7 +136,8 @@ def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, pro
                  proxy_ntlm,
                  proxy_ntlm_user,
                  proxy_ntlm_domain,
-                 proxy_ntlm_pass)
+                 proxy_ntlm_pass,
+                 codec)
 
 
 def echo_title(title, line=True):
@@ -247,7 +252,7 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
                 click.echo('No storage rules are configured for pipeline')
 
         if permissions:
-            permissions_list = User.get_permissions(pipeline_model.identifier, 'pipeline')
+            permissions_list = User.get_permissions(pipeline_model.identifier, 'pipeline')[0]
             echo_title('Permissions', line=False)
             if len(permissions_list) > 0:
                 permissions_table = prettytable.PrettyTable()
@@ -882,15 +887,18 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
               "follow - follow symlinks (default); "
               "skip - do not follow symlinks; "
               "filter - follow symlinks but check for cyclic links")
+@click.option('-n', '--threads', type=int, required=False,
+              help='The number of threads that will work to perform operation. Allowed for folders only. '
+                   'Use to move a huge number of small files. Not supported for Windows OS. Progress bar is disabled')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks):
+                      symlinks, threads):
     """ Moves a file or a folder from one datastorage to another one
     or between the local filesystem and a datastorage (in both directions)
     """
     DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
-                             symlinks, clean=True, skip_existing=skip_existing)
+                             symlinks, threads, clean=True, skip_existing=skip_existing)
 
 
 @storage.command('cp')
@@ -918,15 +926,18 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
               "follow - follow symlinks (default); "
               "skip - do not follow symlinks; "
               "filter - follow symlinks but check for cyclic links")
+@click.option('-n', '--threads', type=int, required=False,
+              help='The number of threads that will work to perform operation. Allowed for folders only. '
+                   'Use to copy a huge number of small files. Not supported for Windows OS. Progress bar is disabled')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks):
+                      symlinks, threads):
     """ Copies files from one datastorage to another one
     or between the local filesystem and a datastorage (in both directions)
     """
     DataStorageOperations.cp(source, destination, recursive, force,
-                             exclude, include, quiet, tags, file_list, symlinks, skip_existing=skip_existing)
+                             exclude, include, quiet, tags, file_list, symlinks, threads, skip_existing=skip_existing)
 
 
 @storage.command('du')
@@ -1195,15 +1206,16 @@ def chown(user_name, entity_class, entity_name):
     allow_extra_args=True))
 @click.argument('run-id', required=True, type=int)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.pass_context
 @Config.validate_access_token
-def ssh(ctx, run_id):
+def ssh(ctx, run_id, retries):
     """Runs a single command or an interactive session over the SSH protocol for the specified job run\n
     Arguments:\n
     - run-id: ID of the job running in the platform to establish SSH connection with
     """
     try:
-        ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args))
+        ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries)
         sys.exit(ssh_exit_code)
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)

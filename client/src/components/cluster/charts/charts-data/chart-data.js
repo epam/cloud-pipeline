@@ -216,7 +216,8 @@ class ChartData {
         const values = rules.map(({field, valueFn}) => ({
           field,
           value: valueFn(item)
-        }));
+        }))
+          .filter(v => v.value !== undefined);
         group.min = Math.min(...values.map(v => v.value), group.min);
         group.max = Math.max(...values.map(v => v.value), group.max);
         group.data.push({
@@ -242,6 +243,10 @@ class CPUUsageData extends ChartData {
       field: 'cpu',
       group: 'default',
       valueFn: o => o.cpuUsage.load
+    }, {
+      field: 'cpuMax',
+      group: 'default',
+      valueFn: o => o.cpuUsage.max
     }];
   }
 }
@@ -256,6 +261,18 @@ class MemoryUsageData extends ChartData {
       field: 'percent',
       group: 'percent',
       valueFn: o => o.memoryUsage.usage / o.memoryUsage.capacity * 100.0
+    }, {
+      field: 'memoryMax',
+      group: 'default',
+      valueFn: o => o.memoryUsage.max
+        ? o.memoryUsage.max / (1024 ** 2)
+        : undefined
+    }, {
+      field: 'percentMax',
+      group: 'percent',
+      valueFn: o => o.memoryUsage.max
+        ? o.memoryUsage.max / o.memoryUsage.capacity * 100.0
+        : undefined
     }, {
       field: 'usage',
       group: 'capacity',

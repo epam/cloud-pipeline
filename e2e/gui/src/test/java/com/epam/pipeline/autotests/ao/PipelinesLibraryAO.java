@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
-import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -36,7 +36,9 @@ import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.configurationWithName;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.pipelineWithName;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.openqa.selenium.By.className;
 
 public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
 
@@ -48,7 +50,9 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
             entry(CREATE_STORAGE, $(byClassName("create-storage-sub-menu"))),
             entry(CREATE_CONFIGURATION, $(byClassName("create-configuration-button"))),
             entry(ADD_EXISTING_STORAGE, $(byClassName("add-existing-storage-button"))),
-            entry(CREATE_NFS_MOUNT, $(byClassName("create-new-nfs-mount")))
+            entry(CREATE_NFS_MOUNT, $(byClassName("create-new-nfs-mount"))),
+            entry(ALL_PIPELINES, $(byText("All pipelines"))),
+            entry(ALL_STORAGES, $(byText("All storages")))
     );
 
     public static final By tree = byId("pipelines-library-tree");
@@ -59,7 +63,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
      * Useful when you need to describe any tree item, for instance, when you need all of them, get first one
      * or get one by index.
      */
-    public static final By treeItem = byXpath(".//li[contains(@class, 'pipelines-library-tree-node')]");
+    public static final By treeItem = byXpath(".//li[contains(@class, 'pipelines-library-tree-node-folder_root')]");
 
     /**
      * Selects search input in tree view.
@@ -120,7 +124,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
 
     public static By treeItem(final String name) {
         final String treeItemClass = "pipelines-library-tree-node";
-        return byXpath(String.format(
+        return byXpath(format(
             ".//li[contains(@class, '%s') and ./span[contains(., '%s')]]", treeItemClass, name
         ));
     }
@@ -141,7 +145,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     public static By browserItem(final String name) {
         final String browserRowClass = "ant-table-row";
         final String nameColumnClass = "browser__tree-item-name";
-        return byXpath(String.format(
+        return byXpath(format(
             ".//tr[contains(@class, '%s') and ./td[@class = '%s' and .//text() = '%s']]",
             browserRowClass, nameColumnClass, name
         ));
@@ -291,8 +295,36 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
         return this;
     }
 
-    public ElementsCollection getStorages() {
-        return $$("[class^=pipelines-library-tree-node-storage]");
+    private List<String> allPipelinesStoragesList() {
+        return context().findAll(className("object-name")).texts();
+    }
+
+    public PipelinesLibraryAO ensurePipelineOrStorageIsPresentInTable(String name) {
+        $(byXpath(format(".//span[@class='object-name browser__object-name-bold'][.='%s']", name))).shouldBe(visible);
+         return this;
+    }
+
+    public PipelinesLibraryAO ensurePipelineOrStorageIsNotPresentInTable(String name) {
+        $(byXpath(format(".//span[@class='object-name browser__object-name-bold'][.='%s']", name))).shouldNotBe(visible);
+        return this;
+    }
+
+    public PipelineLibraryContentAO openPipelineFromTable(String name) {
+        $(byXpath(format(".//span[@class='object-name browser__object-name-bold'][.='%s']", name)))
+                .shouldBe(visible).click();
+        return new PipelineLibraryContentAO(name);
+    }
+
+    public PipelineRunFormAO runPipelineFromTable(String name) {
+        $(byXpath(format(".//span[@class='object-name browser__object-name-bold'][.='%s']", name)))
+                .closest("tr").find(byClassName("ant-btn")).click();
+        return new PipelineRunFormAO();
+    }
+
+    public StorageContentAO openStorageFromTable(String name) {
+        $(byXpath(format(".//span[@class='object-name browser__object-name-bold'][.='%s']", name)))
+                .shouldBe(visible).click();
+        return new StorageContentAO();
     }
 
     public PipelinesLibraryAO validateStoragePictogram(final String storage) {
@@ -413,10 +445,5 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;
-    }
-
-    public void ensurePopupIsClosed() {
-        sleep(2, SECONDS);
-        $(byClassName("ant-modal-body")).shouldNotBe(visible);
     }
 }

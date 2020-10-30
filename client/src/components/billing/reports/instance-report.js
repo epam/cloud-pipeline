@@ -22,7 +22,7 @@ import {
   BillingTable,
   Summary
 } from './charts';
-import Filters, {RUNNER_SEPARATOR} from './filters';
+import Filters, {RUNNER_SEPARATOR, REGION_SEPARATOR} from './filters';
 import {Period, getPeriod} from './periods';
 import InstanceFilter, {InstanceFilters} from './filters/instance-filter';
 import Discounts, {discounts} from './discounts';
@@ -34,18 +34,18 @@ import {
   GetGroupedTools,
   GetGroupedToolsWithPrevious,
   GetGroupedPipelines,
-  GetGroupedPipelinesWithPrevious
+  GetGroupedPipelinesWithPrevious, GetGroupedFileStorages
 } from '../../../models/billing';
 import {
   numberFormatter,
   costTickFormatter,
   DisplayUser,
-  ResizableContainer
+  ResizableContainer, getPeriodMonths
 } from './utilities';
 import {InstanceReportLayout, Layout} from './layout';
 import styles from './reports.css';
 
-const tablePageSize = 6;
+const tablePageSize = 10;
 
 function injection (stores, props) {
   const {location, params} = props;
@@ -54,21 +54,48 @@ function injection (stores, props) {
     user: userQ,
     group: groupQ,
     period = Period.month,
-    range
+    range,
+    region: regionQ
   } = location.query;
   const periodInfo = getPeriod(period, range);
   const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
   const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
+  const cloudRegionId = regionQ && regionQ.length ? regionQ.split(REGION_SEPARATOR) : undefined;
   const filters = {
     group,
     user,
     type,
+    cloudRegionId,
     ...periodInfo
   };
   const pagination = {
     pageSize: tablePageSize,
     pageNum: 0
   };
+  const periods = getPeriodMonths(periodInfo);
+  const exportInstances = [];
+  const exportPipelines = [];
+  const exportTools = [];
+  if (periods && periods.length > 0) {
+    exportInstances.push(...periods.map(p => (
+      new GetGroupedInstances(
+        {...filters, ...p, name: Period.month},
+        pagination
+      )
+    )));
+    exportPipelines.push(...periods.map(p => (
+      new GetGroupedPipelines(
+        {...filters, ...p, name: Period.month},
+        pagination
+      )
+    )));
+    exportTools.push(...periods.map(p => (
+      new GetGroupedTools(
+        {...filters, ...p, name: Period.month},
+        pagination
+      )
+    )));
+  }
   const instances = new GetGroupedInstancesWithPrevious(filters, pagination);
   instances.fetch();
   const instancesTable = new GetGroupedInstances(filters, pagination);
@@ -81,6 +108,9 @@ function injection (stores, props) {
   pipelines.fetch();
   const pipelinesTable = new GetGroupedPipelines(filters, pagination);
   pipelinesTable.fetch();
+  exportInstances.push(instances);
+  exportPipelines.push(pipelines);
+  exportTools.push(tools);
   let filterBy = GetBillingData.FILTER_BY.compute;
   if (/^cpu$/i.test(type)) {
     filterBy = GetBillingData.FILTER_BY.cpu;
@@ -99,7 +129,10 @@ function injection (stores, props) {
     tools,
     toolsTable,
     pipelines,
-    pipelinesTable
+    pipelinesTable,
+    exportInstances,
+    exportPipelines,
+    exportTools
   };
 }
 
@@ -287,43 +320,110 @@ class InstanceReport extends React.Component {
       pipelines,
       instancesTable,
       toolsTable,
-      pipelinesTable
+      pipelinesTable,
+      exportInstances,
+      exportPipelines,
+      exportTools
     } = this.props;
     const {dataSample, previousDataSample} = this.state;
     const composers = [
       {
-        composer: ExportComposers.summaryComposer,
-        options: [summary]
+        composer: ExportComposers.discountsComposer,
       },
       {
-        composer: ExportComposers.defaultComposer,
+        composer: ExportComposers.tableComposer,
         options: [
-          instances,
+          exportInstances,
+          `Instances (TOP ${tablePageSize})`,
+          [],
+          [
+            {
+              key: 'usage',
+              title: 'Usage (hours)'
+            },
+            {
+              key: 'runsCount',
+              title: 'Runs count'
+            },
+            {
+              key: 'value',
+              title: 'Cost',
+              formatter: costTickFormatter,
+              applyDiscounts: ({compute}) => compute
+            }
+          ],
+          'Instance',
           {
-            usage: 'usage',
-            runs_count: 'runsCount'
+            key: 'value',
+            top: tablePageSize
           }
         ]
       },
       {
-        composer: ExportComposers.defaultComposer,
+        composer: ExportComposers.tableComposer,
         options: [
-          tools,
+          exportPipelines,
+          `Pipelines (TOP ${tablePageSize})`,
+          [
+            {
+              key: 'owner',
+              title: 'Owner'
+            }
+          ],
+          [
+            {
+              key: 'usage',
+              title: 'Usage (hours)'
+            },
+            {
+              key: 'runsCount',
+              title: 'Runs count'
+            },
+            {
+              key: 'value',
+              title: 'Cost',
+              formatter: costTickFormatter,
+              applyDiscounts: ({compute}) => compute
+            }
+          ],
+          'Pipeline',
           {
-            owner: 'owner',
-            usage: 'usage',
-            runs_count: 'runsCount'
+            key: 'value',
+            top: tablePageSize
           }
         ]
       },
       {
-        composer: ExportComposers.defaultComposer,
+        composer: ExportComposers.tableComposer,
         options: [
-          pipelines,
+          exportTools,
+          `Tools (TOP ${tablePageSize})`,
+          [
+            {
+              key: 'owner',
+              title: 'Owner'
+            }
+          ],
+          [
+            {
+              key: 'usage',
+              title: 'Usage (hours)'
+            },
+            {
+              key: 'runsCount',
+              title: 'Runs count'
+            },
+            {
+              key: 'value',
+              title: 'Cost',
+              formatter: costTickFormatter,
+              applyDiscounts: ({compute}) => compute
+            }
+          ],
+          'Tool',
           {
-            owner: 'owner',
-            usage: 'usage',
-            runs_count: 'runsCount'
+            key: 'value',
+            top: tablePageSize
           }
         ]
       }

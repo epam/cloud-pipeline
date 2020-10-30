@@ -19,9 +19,10 @@ package com.epam.pipeline.controller.region;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
+import com.epam.pipeline.entity.info.CloudRegionInfo;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.manager.region.CloudRegionApiService;
+import com.epam.pipeline.acl.region.CloudRegionApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -73,6 +74,19 @@ public class CloudRegionController extends AbstractRestController {
             })
     public Result<List<? extends AbstractCloudRegion>> loadAll() {
         return Result.success(cloudRegionApiService.loadAll());
+    }
+
+    @GetMapping("/info")
+    @ApiOperation(
+        value = "Lists all regions' brief information.",
+        notes = "Lists all regions, but instead of providing detailed description only the general information "
+                + "is returned.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        })
+    public Result<List<CloudRegionInfo>> loadAllRegionsInfo() {
+        return Result.success(cloudRegionApiService.loadAllRegionsInfo());
     }
 
     @GetMapping(REGION_ID_URL)

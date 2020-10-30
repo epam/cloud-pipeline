@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -84,6 +84,7 @@ ${DEPLOY_DIR}/pipectl install \
                       -env CP_KUBE_MASTER_ETCD_HOST_PATH="${CP_AZURE_KUBE_MASTER_ETCD_HOST_PATH}" \
                       -env CP_KUBE_MIN_DNS_REPLICAS=3 \
                       -env CP_PREF_CLUSTER_ALLOWED_PRICE_TYPES="${CP_PREF_CLUSTER_ALLOWED_PRICE_TYPES}" \
+                      -env CP_PREF_CLUSTER_ALLOWED_MASTER_PRICE_TYPES="${CP_PREF_CLUSTER_ALLOWED_MASTER_PRICE_TYPES}" \
                       -env CP_PREF_CLUSTER_SPOT="${CP_PREF_CLUSTER_SPOT}" \
                       -m \
                       -demo  ${DOLLAR}_SERVICES_TO_INSTALL ${DOLLAR}_ERASE_DATA

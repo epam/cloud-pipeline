@@ -33,7 +33,7 @@ import VersionScanResult from '../../tools/elements/VersionScanResult';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 
-const MarkdownRenderer = new Remarkable('commonmark', {
+const MarkdownRenderer = new Remarkable('full', {
   html: true,
   xhtmlOut: true,
   breaks: false,

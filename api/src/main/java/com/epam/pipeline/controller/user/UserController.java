@@ -21,6 +21,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.controller.vo.RouteType;
+import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
@@ -218,6 +219,20 @@ public class UserController extends AbstractRestController {
         return Result.success(userApiService.loadUsers());
     }
 
+    @GetMapping(value = "/users/info")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads all users' brief information.",
+            notes = "Loads all registered users, but instead of providing detailed description only the general "
+                    + "information is returned.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<UserInfo>> loadUsersInfo() {
+        return Result.success(userApiService.loadUsersInfo());
+    }
+
     @RequestMapping(value = "/user/controls", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(
@@ -337,5 +352,19 @@ public class UserController extends AbstractRestController {
             })
     public Result<GroupStatus> deleteGroupBlockingStatus(@PathVariable final String groupName) {
         return Result.success(userApiService.deleteGroupBlockingStatus(groupName));
+    }
+
+    @GetMapping(value = "/groups/block")
+    @ResponseBody
+    @ApiOperation(
+        value = "Load all available blocking statuses all over the groups.",
+        notes = "Load all available blocking statuses all over the groups. "
+                + "Returns all statuses presented in the corresponding DB table",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        })
+    public Result<List<GroupStatus>> loadGroupsBlockingStatuses() {
+        return Result.success(userApiService.loadAllGroupsBlockingStatuses());
     }
 }

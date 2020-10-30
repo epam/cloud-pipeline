@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,9 +40,12 @@ GCP_SCHEME = 'gs://'
 FUSE_GOOFYS_ID = 'goofys'
 FUSE_S3FS_ID = 's3fs'
 FUSE_PIPE_ID = 'pipefuse'
+FUSE_GCSFUSE_ID = 'gcsfuse'
 FUSE_NA_ID = None
 AZURE_PROVIDER = 'AZURE'
 S3_PROVIDER = 'S3'
+READ_ONLY_MOUNT_OPT = 'ro'
+
 
 class PermissionHelper:
 
@@ -55,7 +58,13 @@ class PermissionHelper:
 
     @classmethod
     def is_storage_writable(cls, storage):
-        return cls.is_permission_set(storage, WRITE_MASK)
+        write_permission_granted = cls.is_permission_set(storage, WRITE_MASK)
+        if not cls.is_run_sensitive():
+            return write_permission_granted
+        if storage.sensitive:
+            return write_permission_granted
+        else:
+            return False
 
     @classmethod
     def is_permission_set(cls, storage, mask):
@@ -90,10 +99,6 @@ class MountStorageTask:
             # filtering nfs storages in order to fetch only nfs from the same region
             available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.storage_type != NFS_TYPE
                                               or x.file_share_mount.region_id == cloud_region_id]
-            if not available_storages_with_mounts:
-                Logger.success('No remote storages are available', task_name=self.task_name)
-                return
-            Logger.info('Found {} available storage(s). Checking mount options.'.format(len(available_storages_with_mounts)), task_name=self.task_name)
 
             limited_storages = os.getenv('CP_CAP_LIMIT_MOUNTS')
             if limited_storages:
@@ -108,6 +113,11 @@ class MountStorageTask:
                     Logger.info('Run is launched with mount limits ({}) Only {} storages will be mounted'.format(limited_storages, len(available_storages_with_mounts)), task_name=self.task_name)
                 except Exception as limited_storages_ex:
                     Logger.warn('Unable to parse CP_CAP_LIMIT_MOUNTS value({}) with error: {}.'.format(limited_storages, str(limited_storages_ex.message)), task_name=self.task_name)
+
+            if not available_storages_with_mounts:
+                Logger.success('No remote storages are available', task_name=self.task_name)
+                return
+            Logger.info('Found {} available storage(s). Checking mount options.'.format(len(available_storages_with_mounts)), task_name=self.task_name)
 
             for mounter in [mounter for mounter in self.mounters.values()]:
                 storage_count_by_type = len(filter((lambda dsm: dsm.storage.storage_type == mounter.type()), available_storages_with_mounts))
@@ -271,7 +281,7 @@ class AzureMounter(StorageMounter):
             'tmp_dir': os.path.join(self.fuse_tmp, str(self.storage.id)),
             'account_name': account_id,
             'account_key': account_key,
-            'permissions': 'rw' if PermissionHelper.is_storage_writable(self.storage) and not PermissionHelper.is_run_sensitive() else 'ro',
+            'permissions': 'rw' if PermissionHelper.is_storage_writable(self.storage) else 'ro',
             'mount_options': self.storage.mount_options if self.storage.mount_options else ''
         }
 
@@ -356,7 +366,7 @@ class S3Mounter(StorageMounter):
         path_chunks = self.storage.path.split('/')
         bucket = path_chunks[0]
         relative_path = '/'.join(path_chunks[1:]) if len(path_chunks) > 1 else ''
-        if not PermissionHelper.is_storage_writable(self.storage) or PermissionHelper.is_run_sensitive():
+        if not PermissionHelper.is_storage_writable(self.storage):
             mask = '0554'
             permissions = 'ro'
         return {'mount': mount_point,
@@ -379,12 +389,22 @@ class S3Mounter(StorageMounter):
 
     def build_mount_command(self, params):
         if params['aws_token'] is not None or params['fuse_type'] == FUSE_PIPE_ID:
-            return 'pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} -o allow_other'.format(**params)
+            persist_logs = os.getenv('CP_PIPE_FUSE_PERSIST_LOGS', 'false').lower() == 'true'
+            debug_libfuse = os.getenv('CP_PIPE_FUSE_DEBUG_LIBFUSE', 'false').lower() == 'true'
+            logging_level = os.getenv('CP_PIPE_FUSE_LOGGING_LEVEL')
+            if logging_level:
+                params['logging_level'] = logging_level
+            return ('pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} '
+                    + ('-l /var/log/fuse_{storage_id}.log ' if persist_logs else '')
+                    + ('-v {logging_level} ' if logging_level else '')
+                    + ('-o allow_other,debug ' if debug_libfuse else '-o allow_other ')
+                    ).format(**params)
         elif params['fuse_type'] == FUSE_GOOFYS_ID:
             params['path'] = '{bucket}:{relative_path}'.format(**params) if params['relative_path'] else params['path']
             return 'AWS_ACCESS_KEY_ID={aws_key_id} AWS_SECRET_ACCESS_KEY={aws_secret} nohup goofys ' \
                    '--dir-mode {mask} --file-mode {mask} -o {permissions} -o allow_other ' \
                     '--stat-cache-ttl {stat_cache} --type-cache-ttl {type_cache} ' \
+                    '--acl "bucket-owner-full-control" ' \
                     '-f --gid 0 --region "{region_name}" {path} {mount} > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
         elif params['fuse_type'] == FUSE_S3FS_ID:
             params['path'] = '{bucket}:/{relative_path}'.format(**params) if params['relative_path'] else params['path']
@@ -393,14 +413,15 @@ class S3Mounter(StorageMounter):
             return 'AWSACCESSKEYID={aws_key_id} AWSSECRETACCESSKEY={aws_secret} s3fs {path} {mount} -o use_cache={tmp_dir} ' \
                     '-o umask=0000 -o {permissions} -o allow_other -o enable_noobj_cache ' \
                     '-o endpoint="{region_name}" -o url="https://s3.{region_name}.amazonaws.com" {ensure_diskfree_option} ' \
+                    '-o default_acl="bucket-owner-full-control" ' \
                     '-o dbglevel="info" -f > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
         else:
             return 'exit 1'
 
 
 class GCPMounter(StorageMounter):
-    available = False
     credentials = None
+    fuse_type = FUSE_NA_ID
     fuse_tmp = '/tmp'
 
     @staticmethod
@@ -413,12 +434,24 @@ class GCPMounter(StorageMounter):
 
     @staticmethod
     def check_or_install(task_name):
-        AzureMounter.available = StorageMounter.execute_and_check_command('install_gcsfuse')
-        GCPMounter.available = True
+        GCPMounter.fuse_type = GCPMounter._check_or_install(task_name)
+
+    @staticmethod
+    def _check_or_install(task_name):
+        fuse_type = os.getenv('CP_GCS_FUSE_TYPE', FUSE_GCSFUSE_ID)
+        if fuse_type == FUSE_GCSFUSE_ID:
+            fuse_installed = StorageMounter.execute_and_check_command('install_gcsfuse', task_name=task_name)
+            return FUSE_GCSFUSE_ID if fuse_installed else FUSE_NA_ID
+        elif fuse_type == FUSE_PIPE_ID:
+            return FUSE_PIPE_ID
+        else:
+            Logger.warn("FUSE {fuse_type} type is not defined for GSC fuse".format(fuse_type=fuse_type),
+                        task_name=task_name)
+            return FUSE_NA_ID
 
     @staticmethod
     def is_available():
-        return GCPMounter.available
+        return GCPMounter.fuse_type is not None
 
     @staticmethod
     def init_tmp_dir(tmp_dir, task_name):
@@ -430,15 +463,15 @@ class GCPMounter(StorageMounter):
         super(GCPMounter, self).mount(mount_root, task_name)
 
     def build_mount_params(self, mount_point):
+        mount_timeout = os.getenv('CP_PIPE_FUSE_TIMEOUT', 500)
         gcp_creds_content, _ = self._get_credentials(self.storage)
-        if not gcp_creds_content:
-            print("GCP credentials is not available, GCP file storage won't be mounted")
-            return {}
-
-        creds_named_pipe_path = "<(echo \'{gcp_creds_content}\')".format(gcp_creds_content=gcp_creds_content)
+        if gcp_creds_content:
+            creds_named_pipe_path = "<(echo \'{gcp_creds_content}\')".format(gcp_creds_content=gcp_creds_content)
+        else:
+            creds_named_pipe_path = None
         mask = '0774'
         permissions = 'rw'
-        if not PermissionHelper.is_storage_writable(self.storage) or PermissionHelper.is_run_sensitive():
+        if not PermissionHelper.is_storage_writable(self.storage):
             mask = '0554'
             permissions = 'ro'
         return {'mount': mount_point,
@@ -446,20 +479,32 @@ class GCPMounter(StorageMounter):
                 'path': self.get_path(),
                 'mask': mask,
                 'permissions': permissions,
+                'fuse_type': self.fuse_type,
                 'tmp_dir': self.fuse_tmp,
-                'credentials': creds_named_pipe_path
+                'credentials': creds_named_pipe_path,
+                'mount_timeout': mount_timeout
                 }
 
     def build_mount_command(self, params):
-        if not params:
-            return ""
-        return 'nohup gcsfuse --foreground -o {permissions} --key-file {credentials} --temp-dir {tmp_dir} ' \
-               '--dir-mode {mask} --file-mode {mask} --implicit-dirs {path} {mount} > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
+        if not params['credentials'] or params['fuse_type'] == FUSE_PIPE_ID:
+            persist_logs = os.getenv('CP_PIPE_FUSE_PERSIST_LOGS', 'false').lower() == 'true'
+            debug_libfuse = os.getenv('CP_PIPE_FUSE_DEBUG_LIBFUSE', 'false').lower() == 'true'
+            logging_level = os.getenv('CP_PIPE_FUSE_LOGGING_LEVEL')
+            if logging_level:
+                params['logging_level'] = logging_level
+            return ('pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} '
+                    + ('-l /var/log/fuse_{storage_id}.log ' if persist_logs else '')
+                    + ('-v {logging_level} ' if logging_level else '')
+                    + ('-o allow_other,debug ' if debug_libfuse else '-o allow_other ')
+                    ).format(**params)
+        else:
+            return 'nohup gcsfuse --foreground -o {permissions} -o allow_other --key-file {credentials} --temp-dir {tmp_dir} ' \
+                   '--dir-mode {mask} --file-mode {mask} --implicit-dirs {path} {mount} > /var/log/fuse_{storage_id}.log 2>&1 &'.format(**params)
 
     def _get_credentials(self, storage):
         account_region = os.getenv('CP_ACCOUNT_REGION_{}'.format(storage.region_id))
         account_cred_file_content = os.getenv('CP_CREDENTIALS_FILE_CONTENT_{}'.format(storage.region_id))
-        if not account_cred_file_content or not account_region:
+        if not account_region:
             raise RuntimeError('Account information wasn\'t found in the environment for account with id={}.'
                                .format(storage.region_id))
         return account_cred_file_content, account_region
@@ -518,19 +563,28 @@ class NFSMounter(StorageMounter):
             command = command.format(protocol="cifs")
             if not params['path'].startswith("//"):
                 params['path'] = '//' + params['path']
+        elif self.share_mount.mount_type == "LUSTRE":
+            command = command.format(protocol="lustre")
         else:
             command = command.format(protocol="nfs")
 
         permission = 'g+rwx'
-        if not PermissionHelper.is_storage_writable(self.storage) or PermissionHelper.is_run_sensitive():
+        mask = '0774'
+        if not PermissionHelper.is_storage_writable(self.storage):
             permission = 'g+rx'
+            mask = '0554'
             if not mount_options:
-                mount_options = 'ro'
+                mount_options = READ_ONLY_MOUNT_OPT
             else:
                 options = mount_options.split(',')
-                if 'ro' not in options:
-                    mount_options += ',ro'
-
+                if READ_ONLY_MOUNT_OPT not in options:
+                    mount_options += ',{0}'.format(READ_ONLY_MOUNT_OPT)
+        if self.share_mount.mount_type == "SMB":
+            file_mode_options = 'file_mode={mode},dir_mode={mode}'.format(mode=mask)
+            if not mount_options:
+                mount_options = file_mode_options
+            else:
+                mount_options += ',' + file_mode_options
         if mount_options:
             command += ' -o {}'.format(mount_options)
         command += ' {path} {mount}'.format(**params)

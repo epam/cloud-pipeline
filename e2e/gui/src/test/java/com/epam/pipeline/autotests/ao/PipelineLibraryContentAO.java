@@ -136,6 +136,11 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
         return this;
     }
 
+    public PipelineLibraryContentAO assertRunButtonIsNotDisplayed() {
+        $$(tagName("button")).find(text("Run")).shouldNotBe(visible);
+        return this;
+    }
+
     public MetadataSectionAO showMetadata() {
         hover(displayAttributes);
         ensure(attributesMenu, appears);
@@ -220,7 +225,8 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
     }
 
     public class DeletionConfirmationPopupAO {
-        private final SelenideElement element = $$(className("ant-modal")).findBy(text("Do you want to delete a pipeline with repository or only unregister it?"));
+        private final SelenideElement element = $$(className("ant-modal"))
+                .findBy(text("Do you want to delete a pipeline with repository or only unregister it?"));
         private final ElementsCollection buttons = element.findAll(className("ant-btn"));
         private final SelenideElement cancelButton = buttons.findBy(text("Cancel"));
         private final SelenideElement unregisterButton = $(byId("edit-pipeline-delete-dialog-unregister-button"));

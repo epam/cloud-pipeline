@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,6 +85,7 @@ public class MemoryRequester extends AbstractMetricRequester {
                         .size(0)
                         .aggregation(dateHistogram(MEMORY_HISTOGRAM, interval)
                                 .subAggregation(average(AVG_AGGREGATION + MEMORY_UTILIZATION, WORKING_SET))
+                                .subAggregation(max(MAX_AGGREGATION + MEMORY_UTILIZATION, WORKING_SET))
                                 .subAggregation(average(AVG_AGGREGATION + MEMORY_CAPACITY, NODE_CAPACITY))));
     }
 
@@ -109,10 +110,12 @@ public class MemoryRequester extends AbstractMetricRequester {
         final MonitoringStats monitoringStats = new MonitoringStats();
         Optional.ofNullable(bucket.getKeyAsString()).ifPresent(monitoringStats::setStartTime);
         final List<Aggregation> aggregations = aggregations(bucket);
-        final Optional<Long> utilization = longValue(aggregations, AVG_AGGREGATION + MEMORY_UTILIZATION);
+        final Optional<Long> avgUtilization = longValue(aggregations, AVG_AGGREGATION + MEMORY_UTILIZATION);
+        final Optional<Long> maxUtilization = longValue(aggregations, MAX_AGGREGATION + MEMORY_UTILIZATION);
         final Optional<Long> capacity = longValue(aggregations, AVG_AGGREGATION + MEMORY_CAPACITY);
         final MonitoringStats.MemoryUsage memoryUsage = new MonitoringStats.MemoryUsage();
-        utilization.ifPresent(memoryUsage::setUsage);
+        avgUtilization.ifPresent(memoryUsage::setUsage);
+        maxUtilization.ifPresent(memoryUsage::setMax);
         capacity.ifPresent(memoryUsage::setCapacity);
         monitoringStats.setMemoryUsage(memoryUsage);
         final MonitoringStats.ContainerSpec containerSpec = new MonitoringStats.ContainerSpec();

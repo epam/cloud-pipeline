@@ -94,7 +94,7 @@ function install_pip_package {
             echo "[ERROR] ${_DIST_NAME} download failed. Exiting"
             exit "$_DOWNLOAD_RESULT"
         fi
-    $CP_PYTHON2_PATH -m pip install ${_DIST_NAME}.tar.gz -q -I
+    $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS ${_DIST_NAME}.tar.gz -q -I
     _INSTALL_RESULT=$?
     rm -f ${_DIST_NAME}.tar.gz
     if [ "$_INSTALL_RESULT" -ne 0 ];
@@ -172,7 +172,8 @@ function cp_cap_publish {
       _MASTER_CAP_INIT_PATH="$CP_CAP_SCRIPTS_DIR/master"
       _WORKER_CAP_INIT_PATH="$CP_CAP_SCRIPTS_DIR/worker"
 
-      if check_cp_cap "CP_CAP_DIND_CONTAINER"
+      # We force DIND capability if the CP_CAP_KUBE is specified
+      if check_cp_cap "CP_CAP_DIND_CONTAINER" || check_cp_cap "CP_CAP_KUBE"
       then
             echo "set -e" >> $_MASTER_CAP_INIT_PATH
             echo "set -e" >> $_WORKER_CAP_INIT_PATH
@@ -183,7 +184,7 @@ function cp_cap_publish {
 
             sed -i "/$_DIND_CONTAINER_INIT/d" $_MASTER_CAP_INIT_PATH
             echo "$_DIND_CONTAINER_INIT" >> $_MASTER_CAP_INIT_PATH
-            
+
             sed -i "/$_DIND_CONTAINER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_DIND_CONTAINER_INIT" >> $_WORKER_CAP_INIT_PATH
       fi
@@ -241,6 +242,24 @@ function cp_cap_publish {
             sed -i "/$_SPARK_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_SPARK_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
       fi
+
+      if check_cp_cap "CP_CAP_KUBE"
+      then
+            echo "set -e" >> $_MASTER_CAP_INIT_PATH
+            echo "set -e" >> $_WORKER_CAP_INIT_PATH
+
+            _KUBE_MASTER_INIT="kube_setup_master"
+            _KUBE_WORKER_INIT="kube_setup_worker"
+            echo "Requested Kubernetes capability, setting init scripts:"
+            echo "--> Master: $_KUBE_MASTER_INIT"
+            echo "--> Worker: $_KUBE_WORKER_INIT"
+
+            sed -i "/$_KUBE_MASTER_INIT/d" $_MASTER_CAP_INIT_PATH
+            echo "$_KUBE_MASTER_INIT" >> $_MASTER_CAP_INIT_PATH
+            
+            sed -i "/$_KUBE_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
+            echo "$_KUBE_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
+      fi
 }
 
 function cp_cap_init {
@@ -287,7 +306,7 @@ function check_installed {
 # Verifies that a package is installed into the package manager's db (might not be an executable and exposed to $PATH)
 function check_package_installed {
       local _PACKAGE_TO_CHECK="$1"
-      
+
       if [ "${CP_IGNORE_INSTALLED_PACKAGES,,}" == 'true' ] || [ "${CP_IGNORE_INSTALLED_PACKAGES,,}" == 'yes' ]; then
             return 1
       fi
@@ -298,7 +317,7 @@ function check_package_installed {
       elif check_installed "rpm"; then
             rpm -q "$_PACKAGE_TO_CHECK"  &> /dev/null
             return $?
-      else 
+      else
             # For the "unknown" managers - report that a package is not installed
             return 1
       fi
@@ -362,31 +381,42 @@ function configure_package_manager {
       fi
 
       # Add a Cloud Pipeline repo, which contains the required runtime packages
+      CP_REPO_RETRY_COUNT=${CP_REPO_RETRY_COUNT:-3}
       if [ "${CP_REPO_ENABLED,,}" == 'true' ]; then
+            # System package manager setup
             local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos}"
             local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
             if [ "$CP_OS" == "centos" ]; then
-                  curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
-                  yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q > /dev/null 2>&1
-                  
-                  if [ $? -ne 0 ]; then
-                        echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the yum, removing the repo"
-                        rm -f /etc/yum.repos.d/cloud-pipeline.repo
-                  fi
+                  for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
+                        curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
+                        yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q > /dev/null 2>&1
+                        
+                        if [ $? -ne 0 ]; then
+                              echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the yum, removing the repo"
+                              rm -f /etc/yum.repos.d/cloud-pipeline.repo
+                        fi
+                  done
             elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
-                  apt-get update -qq -y --allow-insecure-repositories && \
-                  apt-get install curl apt-transport-https gnupg -y -qq && \
-                  sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
-                  curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
-                  sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
-                  apt-get update -qq -y --allow-insecure-repositories
-                  
-                  if [ $? -ne 0 ]; then
-                        echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
-                        sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
-                  fi
+                  for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
+                        apt-get update -qq -y --allow-insecure-repositories && \
+                        apt-get install curl apt-transport-https gnupg -y -qq && \
+                        sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
+                        curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
+                        sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
+                        apt-get update -qq -y --allow-insecure-repositories
+                        
+                        if [ $? -ne 0 ]; then
+                              echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
+                              sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+                        fi
+                  done
             fi
+            # Pip setup
+            local CP_REPO_PYPI_BASE_URL_DEFAULT="${CP_REPO_PYPI_BASE_URL_DEFAULT:-http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple}"
+            local CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI_TRUSTED_HOST_DEFAULT:-cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com}"
+            export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
       fi
+
 }
 
 # Generates apt-get or yum command to install specified list of packages (second argument)
@@ -435,7 +465,10 @@ function symlink_common_locations {
       local _OWNER_HOME="$2"
 
       # Grant OWNER passwordless sudo
-      echo "$_OWNER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+      if check_cp_cap CP_CAP_SUDO_ENABLE || [[ "$_OWNER" == "root" ]]
+      then
+            echo "$_OWNER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+      fi
       user_create_home "$_OWNER" "$_OWNER_HOME"
 
       # Create symlinks to /cloud-data with mounted buckets into account's home dir
@@ -456,6 +489,9 @@ function symlink_common_locations {
       local _REPOSITORY_MOUNT_SRC="${REPOSITORY_MOUNT}/${PIPELINE_NAME}/current"
       local _REPOSITORY_HOME="$_OWNER_HOME/code-repository"
       if [ ! -z "$GIT_REPO" ] && [ -d "$_REPOSITORY_MOUNT_SRC" ]; then
+            if [ -L "$_REPOSITORY_HOME/${PIPELINE_NAME}" ]; then
+                  unlink "$_REPOSITORY_HOME/${PIPELINE_NAME}"
+            fi
             mkdir -p $_REPOSITORY_HOME
             if [ -d "$_REPOSITORY_MOUNT_SRC/src" ]; then
                   ln -s "$_REPOSITORY_MOUNT_SRC/src" "$_REPOSITORY_HOME/${PIPELINE_NAME}"
@@ -515,7 +551,7 @@ function install_private_packages {
       #    We can probably keep it, but it will fail if we need to update a resumed run
       rm -rf "${_install_path}/conda"
       CP_CONDA_DISTRO_URL="${CP_CONDA_DISTRO_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz}"
-      
+
       # Download the distro from a public bucket
       echo "Getting python distro from $CP_CONDA_DISTRO_URL"
       wget -q "${CP_CONDA_DISTRO_URL}" -O "${_tmp_install_dir}/conda.tgz" &> /dev/null
@@ -533,6 +569,37 @@ function install_private_packages {
 function list_storage_mounts() {
     local _MOUNT_ROOT="$1"
     echo $(df -T | awk 'index($2, "fuse")' | awk '{ print $7 }' | grep "^$_MOUNT_ROOT")
+}
+
+function update_user_limits() {
+    local _MAX_NOPEN_LIMIT=$1
+    local _MAX_PROCS_LIMIT=$2
+    ulimit -n "$_MAX_NOPEN_LIMIT" -u "$_MAX_PROCS_LIMIT"
+cat <<EOT >> /etc/security/limits.conf
+* soft nofile $_MAX_NOPEN_LIMIT
+* hard nofile $_MAX_NOPEN_LIMIT
+* soft nproc $_MAX_PROCS_LIMIT
+* hard nproc $_MAX_PROCS_LIMIT
+root soft nofile $_MAX_NOPEN_LIMIT
+root hard nofile $_MAX_NOPEN_LIMIT
+root soft nproc $_MAX_PROCS_LIMIT
+root hard nproc $_MAX_PROCS_LIMIT
+EOT
+}
+
+function add_self_to_no_proxy() {
+      local _self_hostname=$(hostname)
+      # -I option prints all the IPs of the current machine, which are separated by a whitespace
+      # The whitespace is then replaced with a comma
+      # Notes:
+      # -- hostname -I: prints the addresses with the trailing whitespace, so "echo" it to remove any leading/trailing spaces
+      # -- Also "sed" is used to remove trailing comma, as this breakes "pipe storage ls/cp/etc."
+      local _self_ips=$(echo $(hostname -I))
+      local _self_no_proxy="${no_proxy},${_self_hostname},${_self_ips// /,}"
+      _self_no_proxy=$(echo $_self_no_proxy | sed 's/,$//g')
+      # "Embedded" Kube services domain is added to "no_proxy" as well
+      local _kube_no_proxy="${CP_CAP_KUBE_DOMAIN:-.cp}"
+      export no_proxy="${_self_no_proxy},${_kube_no_proxy}"
 }
 
 ######################################################
@@ -557,6 +624,20 @@ then
 else
     echo "Running a child job on the node"
     SINGLE_RUN=false;
+fi
+
+
+######################################################
+# Change Time Zone if configured
+######################################################
+
+echo "Cheking if timezone should be overwritten."
+if [ ! -z "$CP_TZ" ] && [ -f "$CP_TZ" ]; then
+  echo "CP_TZ variable set, and file exists, time zone will be changed to: $CP_TZ"
+  unlink /etc/localtime
+  ln -s "$CP_TZ" /etc/localtime
+else
+  echo "CP_TZ variable is not set, or that file doesn't exist, time zone will not be changed."
 fi
 
 
@@ -598,7 +679,7 @@ eval "$_DEPS_INSTALL_COMMAND"
 
 ### Then Setup directory for any CP-specific binaries/wrapper
 ### and install any "private"/preferred packages
-if [ -z "$CP_USR_BIN" ]; then 
+if [ -z "$CP_USR_BIN" ]; then
         export CP_USR_BIN="/usr/cpbin"
         echo "CP_USR_BIN is not defined, setting to ${CP_USR_BIN}"
 fi
@@ -627,7 +708,7 @@ if [ ! -f "$CP_PYTHON2_PATH" ]; then
                   echo "[ERROR] python2 environment not found, exiting."
                   exit 1
             fi
-      fi    
+      fi
 fi
 echo "Local python interpreter found: $CP_PYTHON2_PATH"
 
@@ -642,6 +723,18 @@ if ! jq --version > /dev/null 2>&1; then
     fi
     chmod +x /usr/bin/jq
 fi
+
+######################################################
+# Configure the dependencies if needed
+######################################################
+# Disable wget's robots.txt default parsing, as it breaks 
+# the recursive download for certain sites
+_CP_WGET_CONFIGS="/etc/wgetrc /usr/local/etc/wgetrc /root/.wgetrc /home/$OWNER/.wgetrc"
+for _CP_WGET_CONF in $_CP_WGET_CONFIGS; do
+      [ ! -f "$_CP_WGET_CONF" ] && continue
+      sed -i '/robots/d' $_CP_WGET_CONF
+      echo "robots = off" >> $_CP_WGET_CONF
+done
 
 echo "------"
 echo
@@ -759,6 +852,7 @@ fi
 echo "Creating default scripts directory at ${SCRIPTS_DIR}. Please use 'SCRIPTS_DIR' variable to run pipeline script"
 create_sys_dir $SCRIPTS_DIR
 
+
 # Setup cluster specific variables directory
 if [ -z "$SHARED_FOLDER" ] ;
     then
@@ -815,18 +909,32 @@ if [ -z "$CP_CAP_ENV_UMASK" ] ;
         echo "CP_CAP_ENV_UMASK is not defined, setting to ${CP_CAP_ENV_UMASK}"
 fi
 
-# Setup max open files and max processes limits for a current session, as default limit is 1024
-# Further this command is also pushed to the "profile" and "bashrc scripts" for SSH sessions
-_CP_ENV_ULIMIT="ulimit -n $MAX_NOPEN_LIMIT -u $MAX_PROCS_LIMIT"
-eval "$_CP_ENV_ULIMIT"
+if [ -z "$CP_CAP_SUDO_ENABLE" ] ;
+    then
+        export CP_CAP_SUDO_ENABLE="true"
+        echo "CP_CAP_SUDO_ENABLE is not defined, setting to ${CP_CAP_SUDO_ENABLE}"
+fi
+
+# Setup max open files and max processes limits for a current session and all ssh sessions, as default limit is 1024
+update_user_limits $MAX_NOPEN_LIMIT $MAX_PROCS_LIMIT
 
 # default 0002 - will result into 775 (dir) and 664 (file) permissions
 _CP_ENV_UMASK="umask ${CP_CAP_ENV_UMASK:-0002}"
 eval "$_CP_ENV_UMASK"
 
+# Current jobs hostname and IPs shall be added to the no_proxy, otherwise any http request to "self" will fail
+add_self_to_no_proxy
+
+# We need to make sure that the DIND and SYSTEMD are available if the Kubernetes is requested
+if check_cp_cap "CP_CAP_KUBE"; then
+      export CP_CAP_DIND_CONTAINER="true"
+      export CP_CAP_SYSTEMD_CONTAINER="true"
+fi
+
 echo "------"
 echo
 ######################################################
+
 
 ######################################################
 echo Configure owner account
@@ -867,6 +975,25 @@ echo
 ######################################################
 
 
+######################################################
+echo Configure sudo
+echo "-"
+######################################################
+
+if check_cp_cap CP_CAP_SUDO_ENABLE
+then
+  SUDO_INSTALL_COMMAND=
+  get_install_command_by_current_distr SUDO_INSTALL_COMMAND "sudo"
+  if [ -z "$SUDO_INSTALL_COMMAND" ] ;
+    then
+        echo "Unable to setup sudo, package manager not found (apt-get/yum/apk)"
+    else
+        # Install sudo
+        eval "$SUDO_INSTALL_COMMAND"
+  fi
+fi
+
+######################################################
 
 ######################################################
 echo Setting up SSH server
@@ -879,7 +1006,7 @@ SSH_SERVER_EXEC_PATH='/usr/sbin/sshd'
 if ! [ -f $SSH_SERVER_EXEC_PATH ] ;
 then
     # Check which package manager to use for SSH Server installation
-    e=
+    SSH_INSTALL_COMMAND=
     get_install_command_by_current_distr SSH_INSTALL_COMMAND "openssh-server"
 
     if [ -z "$SSH_INSTALL_COMMAND" ] ;
@@ -943,34 +1070,38 @@ echo
 echo "Installing pipeline packages and code"
 echo "-"
 ######################################################
-if [ -z "$DISTRIBUTION_URL" ] ;
-then
-    echo "[ERROR] Distribution URL is not defined. Exiting"
-    exit 1
-else
-    cd $COMMON_REPO_DIR
-    # Fixed setuptools version to be comaptible with the pipe-common package
-    pip install -I -q setuptools==44.1.1
-    download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
-    _DOWNLOAD_RESULT=$?
-    if [ "$_DOWNLOAD_RESULT" -ne 0 ];
-    then
-        echo "[ERROR] Main repository download failed. Exiting"
-        exit "$_DOWNLOAD_RESULT"
-    fi
-    _INSTALL_RESULT=0
-    tar xf pipe-common.tar.gz
-    $CP_PYTHON2_PATH -m pip install . -q -I
-    _INSTALL_RESULT=$?
-    if [ "$_INSTALL_RESULT" -ne 0 ];
-    then
-        echo "[ERROR] Main repository install failed. Exiting"
-        exit "$_INSTALL_RESULT"
-    fi
-    # Init path for shell scripts from common repository
-    chmod +x $COMMON_REPO_DIR/shell/*
-    export PATH=$PATH:$COMMON_REPO_DIR/shell
-    cd ..
+CP_PIPE_COMMON_ENABLED=${CP_PIPE_COMMON_ENABLED:-"true"}
+if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
+      if [ -z "$DISTRIBUTION_URL" ]; then
+            echo "[ERROR] Distribution URL is not defined. Exiting"
+            exit 1
+      else
+            cd $COMMON_REPO_DIR
+            # Fixed setuptools version to be compatible with the pipe-common package
+            $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
+            download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
+            _DOWNLOAD_RESULT=$?
+            if [ "$_DOWNLOAD_RESULT" -ne 0 ];
+            then
+                  echo "[ERROR] Main repository download failed. Exiting"
+                  exit "$_DOWNLOAD_RESULT"
+            fi
+            _INSTALL_RESULT=0
+            tar xf pipe-common.tar.gz
+            $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS . -q -I
+            _INSTALL_RESULT=$?
+            if [ "$_INSTALL_RESULT" -ne 0 ];
+            then
+                  echo "[ERROR] Main repository install failed. Exiting"
+                  exit "$_INSTALL_RESULT"
+            fi
+            cd ..
+      fi
+fi
+# Init path for shell scripts from common repository
+if [ -d $COMMON_REPO_DIR/shell ]; then
+      chmod +x $COMMON_REPO_DIR/shell/*
+      export PATH=$PATH:$COMMON_REPO_DIR/shell
 fi
 
 # Install pipe CLI
@@ -979,8 +1110,14 @@ if [ "$CP_PIPELINE_CLI_FROM_DIST_TAR" ]; then
 else
       echo "Installing 'pipe' CLI"
       echo "-"
-      CP_PIPELINE_CLI_BINARY_NAME="${CP_PIPELINE_CLI_BINARY_NAME:-pipe}"
-      download_file "${DISTRIBUTION_URL}${CP_PIPELINE_CLI_BINARY_NAME}"
+      if [ "$CP_PIPELINE_CLI_FROM_TARBALL_INSTALL" ]; then
+        CP_PIPELINE_CLI_NAME="${CP_PIPELINE_CLI_TARBALL_NAME:-pipe.tar.gz}"
+      else
+        CP_PIPELINE_CLI_NAME="${CP_PIPELINE_CLI_BINARY_NAME:-pipe}"
+      fi
+
+      download_file "${DISTRIBUTION_URL}${CP_PIPELINE_CLI_NAME}"
+
       if [ $? -ne 0 ]; then
             echo "[ERROR] 'pipe' CLI download failed. Exiting"
             exit 1
@@ -993,13 +1130,20 @@ else
       rm -f /sbin/pipe
       rm -f /usr/sbin/pipe
       rm -f /usr/local/sbin/pipe
-      rm -f ${CP_USR_BIN}/pipe
+      rm -rf ${CP_USR_BIN}/pipe
 
-      # Install into the PATH locationse
-      cp pipe /usr/bin/
-      cp pipe ${CP_USR_BIN}/
-      chmod +x /usr/bin/pipe ${CP_USR_BIN}/pipe
-      rm -f pipe
+
+      if [ "$CP_PIPELINE_CLI_FROM_TARBALL_INSTALL" ]; then
+        tar -xf "$CP_PIPELINE_CLI_NAME" -C ${CP_USR_BIN}/
+        rm -f "$CP_PIPELINE_CLI_NAME"
+        ln -s ${CP_USR_BIN}/pipe/pipe /usr/bin/pipe
+      else
+        # Install into the PATH locationse
+        cp pipe /usr/bin/
+        cp pipe ${CP_USR_BIN}/
+        chmod +x /usr/bin/pipe ${CP_USR_BIN}/pipe
+        rm -f pipe
+      fi
 fi
 
 # Install FS Browser
@@ -1053,10 +1197,12 @@ else
       fi
 fi
 
+# Apply MAC/networking tweaks if requested
+change_mac
+
 echo "------"
 echo
 ######################################################
-
 
 
 ######################################################
@@ -1064,6 +1210,14 @@ echo "Setting up general motd config"
 echo "-"
 ######################################################
 motd_setup init
+
+if [ "$CP_SENSITIVE_RUN" == "true" ]; then
+      motd_setup add "WARNING: Sensitive data is mounted
+This applies a number of restrictions:
+* No Internet access
+* All the data storages are available in a read-only mode
+* You are not allowed to extract the data from the job's filesystem"
+fi
 
 echo "------"
 echo
@@ -1250,9 +1404,10 @@ echo "-"
 ######################################################
 
 export CP_ENV_FILE_TO_SOURCE="/etc/cp_env.sh"
+export CP_USER_ENV_FILE_TO_SOURCE="/etc/cp_env_user.sh"
 
-#clean all previous saved envs. f.i. if container was committed
-rm -f $CP_ENV_FILE_TO_SOURCE
+# Clean all previous saved envs, e.g. if container was committed
+rm -f $CP_ENV_FILE_TO_SOURCE $CP_USER_ENV_FILE_TO_SOURCE
 
 for var in $(compgen -e)
 do
@@ -1275,6 +1430,13 @@ do
       fi
 	echo "export $var=$_var_value" >> $CP_ENV_FILE_TO_SOURCE
 done
+
+# Read attributes from the user profile and append them to the global env file
+env_setup_user_profile "$CP_USER_ENV_FILE_TO_SOURCE"
+if [ $? -eq 0 ]; then
+      source "$CP_USER_ENV_FILE_TO_SOURCE"
+      cat "$CP_USER_ENV_FILE_TO_SOURCE" >> $CP_ENV_FILE_TO_SOURCE
+fi
 
 _CP_ENV_SOURCE_COMMAND="source $CP_ENV_FILE_TO_SOURCE"
 _CP_ENV_SUDO_ALIAS="alias sudo='sudo -E'"
@@ -1413,7 +1575,10 @@ fi
 echo "Setup Systemd"
 echo "-"
 
-if [ "$CP_CAP_SYSTEMD_CONTAINER" == "true" ] && check_installed "systemctl" && [ "$CP_OS" == "centos" ]; then
+# Force SystemD capability if the Kubernetes is requested
+if ( check_cp_cap "CP_CAP_SYSTEMD_CONTAINER" || check_cp_cap "CP_CAP_KUBE" ) \
+    && check_installed "systemctl" && \
+    [ "$CP_OS" == "centos" ]; then
       _CONTAINER_DOCKER_ENV_EXPORTING="export container=docker"
       _IGNORING_CHROOT_ENV_EXPORTING="export SYSTEMD_IGNORE_CHROOT=1"
       _REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND='(cd /lib/systemd/system/sysinit.target.wants/; \
@@ -1434,6 +1599,11 @@ if [ "$CP_CAP_SYSTEMD_CONTAINER" == "true" ] && check_installed "systemctl" && [
       eval "$_IGNORING_CHROOT_ENV_EXPORTING"
       eval "$_REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND"
       /usr/lib/systemd/systemd --system &
+      
+      # This directory does not exist by default
+      # If it is missing - systemctl will throw "Failed to get D-Bus connection: Operation not permitted"
+      # See: https://serverfault.com/a/925694
+      mkdir /run/systemd/system
 else
     echo "Systemd is not requested, skipping installation"
 fi
@@ -1458,6 +1628,22 @@ fi
 
 ######################################################
 
+
+
+######################################################
+# Setup "Singularity" support
+######################################################
+
+echo "Setup Singularity support"
+echo "-"
+
+if [ "$CP_CAP_SINGULARITY" == "true" ]; then
+      singularity_setup
+else
+    echo "Singularity support is not requested"
+fi
+
+######################################################
 
 
 ######################################################
@@ -1495,8 +1681,19 @@ pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"
 
 echo "Command text:"
 echo "${SCRIPT}"
-bash -c "${SCRIPT}"
-CP_EXEC_RESULT=$?
+
+if [ ! -z "${CP_EXEC_TIMEOUT}" ] && [ "${CP_EXEC_TIMEOUT}" -gt 0 ];
+then
+  timeout ${CP_EXEC_TIMEOUT}m bash -c "${SCRIPT}"
+  CP_EXEC_RESULT=$?
+  if [ $CP_EXEC_RESULT -eq 124 ];
+  then
+    echo "Timeout was elapsed"
+  fi
+else
+  bash -c "${SCRIPT}"
+  CP_EXEC_RESULT=$?
+fi
 
 echo "------"
 echo
@@ -1531,7 +1728,7 @@ else
 fi
 
 if [ "$CP_CAP_KEEP_FAILED_RUN" ] && \
-   ([ $CP_EXEC_RESULT -ne 0 ] || \
+   ( ! ([ $CP_EXEC_RESULT -eq 0 ] || [ $CP_EXEC_RESULT -eq 124 ]) || \
    [ $CP_OUTPUTS_RESULT -ne 0 ]); then
       echo "Script execution has failed or the outputs were not tansferred. The job will keep running for $CP_CAP_KEEP_FAILED_RUN"
       sleep $CP_CAP_KEEP_FAILED_RUN

@@ -1,0 +1,93 @@
+#!/bin/bash
+
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+function set_via_ifconfig() {
+    local _HWNAME="$1"
+    local _HWADDR="$2"
+    ifconfig "$_HWNAME" hw ether "$_HWADDR"
+}
+
+function set_via_ip() {
+    local _HWNAME="$1"
+    local _HWADDR="$2"
+    ip link set dev "$_HWNAME" address "$_HWADDR"
+}
+
+CP_HW_NAME="${CP_CAP_HW_NAME:-eth0}"
+CP_HW_ADDR="$CP_CAP_HW_ADDR"
+
+if [ -z "$CP_HW_NAME" ] || [ -z "$CP_HW_ADDR" ]; then
+    echo "[WARN] Can't set MAC address as the interface name of the address is not specified"
+    exit 1
+fi
+
+# Install net tools, if not available
+check_cmd "ifconfig"
+_ifc_avail=$?
+check_cmd "ip"
+_ip_avail=$?
+
+if [ $_ifc_avail -ne 0 ] && [ $_ip_avail -ne 0 ]; then
+    pkg_manager=$(which_pkg_manager)
+    if [ $? -ne 0 ]; then
+        echo "[WARN] Cannot find package manager to install NET tools"
+        exit 1
+    fi
+
+    if [ "$pkg_manager" == "yum" ]; then
+        yum install iproute net-tools -y -q
+        _install_result=$?
+    elif [ "$pkg_manager" == "apt" ]; then
+        apt-get install iproute2 net-tools -y -qq
+        _install_result=$?
+    else
+        echo "[WARN] Unknown package manager: $pkg_manager"
+        exit 1
+    fi
+
+    if [ $_install_result -ne 0 ]; then
+        echo "[WARN] Cannot install NET tools"
+        exit 1
+    fi
+fi
+
+# Run configuration using any of the available tools
+check_cmd "ifconfig"
+_ifc_avail=$?
+if [ $_ifc_avail -eq 0 ]; then
+    set_via_ifconfig "$CP_HW_NAME" "$CP_HW_ADDR"
+    if [ $? -ne 0 ]; then
+        echo "[WARN] Can't set MAC address via ifconfig"
+    else
+        echo "MAC address is set to $CP_HW_ADDR for $CP_HW_NAME"
+        exit 0
+    fi
+fi
+
+check_cmd "ip"
+_ip_avail=$?
+if [ $_ip_avail -eq 0 ]; then
+    set_via_ip "$CP_HW_NAME" "$CP_HW_ADDR"
+    if [ $? -ne 0 ]; then
+        echo "[WARN] Can't set MAC address via ip"
+    else
+        echo "MAC address is set to $CP_HW_ADDR for $CP_HW_NAME"
+        exit 0
+    fi
+fi
+
+echo "[WARN] Can't find or use ifconfig/ip, MAC address can't be set"
+exit 1

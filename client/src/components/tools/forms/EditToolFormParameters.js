@@ -21,7 +21,7 @@ import {computed} from 'mobx';
 import {Button, Checkbox, Col, Dropdown, Icon, Input, Menu, Row, Select} from 'antd';
 import BucketBrowser from '../../pipelines/launch/dialogs/BucketBrowser';
 import SystemParametersBrowser from '../../pipelines/launch/dialogs/SystemParametersBrowser';
-import {LIMIT_MOUNTS_PARAMETER} from '../../pipelines/launch/form/LimitMountsInput';
+import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
 import styles from './EditToolFormParameters.css';
 
 @observer
@@ -176,8 +176,9 @@ export default class EditToolFormParameters extends React.Component {
         disabled={this.props.readOnly}
         checked={`${parameter.value}` === 'true'}
         style={Object.assign({marginLeft: 5, marginTop: 4}, isError ? {color: 'red'} : {})}
-        onChange={onChange}>
-        {parameter.value ? 'Enabled' : 'Disabled'}
+        onChange={onChange}
+      >
+        Enabled
       </Checkbox>
     );
   };
@@ -353,7 +354,7 @@ export default class EditToolFormParameters extends React.Component {
           }}
           notToShow={[
             ...this.state.parameters.map(p => p.name),
-            LIMIT_MOUNTS_PARAMETER,
+            CP_CAP_LIMIT_MOUNTS,
             ...this.skippedSystemParameters
           ]}
         />
@@ -376,7 +377,7 @@ export default class EditToolFormParameters extends React.Component {
     for (let i = 0; i < parameters.length; i++) {
       if (!parameters[i].name) {
         validation[i].error = 'Parameter name is required';
-      } else if ((parameters[i].name || '').toUpperCase() === LIMIT_MOUNTS_PARAMETER) {
+      } else if ((parameters[i].name || '').toUpperCase() === CP_CAP_LIMIT_MOUNTS) {
         validation[i].error = 'Parameter name is reserved';
       } else if (parameters
           .map(p => (p.name || '').toLowerCase())

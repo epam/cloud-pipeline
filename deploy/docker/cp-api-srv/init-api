@@ -166,11 +166,12 @@ export CP_ERROR_REDIRECT_URL="${CP_ERROR_REDIRECT_URL:-https://$CP_API_SRV_EXTER
 export CP_ERROR_PLATFORM_NAME="${CP_ERROR_PLATFORM_NAME:-$CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME}"
 export CP_ERROR_SUPPORT_EMAIL="${CP_ERROR_SUPPORT_EMAIL:-$CP_DEFAULT_ADMIN_EMAIL}"
 
-# Setup SSO endpoint ID
+# Setup SSO endpoint ID and binding type
 if [ -z "$CP_API_SRV_SSO_ENDPOINT_ID" ]; then
     export CP_API_SRV_SSO_ENDPOINT_ID="https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}${CP_API_SRV_SAML_ID_TRAIL:-/pipeline/}"
     echo "API SSO endpoint URL is not set explicetly, default value will be used: $CP_API_SRV_SSO_ENDPOINT_ID"
 fi
+export CP_API_SRV_SSO_BINDING="${CP_API_SRV_SSO_BINDING:-urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect}"
 
 mkdir -p $CP_API_HOME/keystore/
 
@@ -250,6 +251,11 @@ if [ "$CP_PREF_API_STATIC_DIRECTORY_EXT" ] && ! is_dir_empty "$CP_PREF_API_STATI
 fi
 
 # Configure logging and launch
+API_LOG_HOME="/var/log/cp-api/${CP_API_SRV_INSTANCE_NAME:-$CP_API_CURRENT_NODE_NAME}"
+mkdir -p $API_LOG_HOME
+rm -rf $CP_API_HOME/logs
+ln -s $API_LOG_HOME $CP_API_HOME/logs
+
 API_RUN_TIME_LOG=$CP_API_HOME/logs/runtime.log
 mkdir -p $(dirname $API_RUN_TIME_LOG)
 touch $API_RUN_TIME_LOG

@@ -14,6 +14,7 @@ nav:
   - v.0.14: 'release_notes/v.0.14/v.0.14_-_Release_notes.md'
   - v.0.15: 'release_notes/v.0.15/v.0.15_-_Release_notes.md'
   - v.0.16: 'release_notes/v.0.16/v.0.16_-_Release_notes.md'
+  - v.0.17: 'release_notes/v.0.17/v.0.17_-_Release_notes.md'
 - User guide:
   - Contents: 'manual/Cloud_Pipeline_-_Manual.md'
   - 1. Quick start: 'manual/01_Quick_start/1._Quick_start.md'
@@ -55,6 +56,7 @@ nav:
     - 8.6. Delete Files and Folders from Data Storage: 'manual/08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage.md'
     - 8.7. Create shared file system: 'manual/08_Manage_Data_Storage/8.7._Create_shared_file_system.md'
     - 8.8. Data sharing: 'manual/08_Manage_Data_Storage/8.8._Data_sharing.md'
+    - 8.9. Mapping storages: 'manual/08_Manage_Data_Storage/8.9._Mapping_storages.md'
   - 9. Manage cluster nodes: 'manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md'
   - 10. Manage Tools:
     - 10.0. Overview: 'manual/10_Manage_Tools/10._Manage_Tools.md'
@@ -65,11 +67,13 @@ nav:
     - 10.5. Launch a Tool: 'manual/10_Manage_Tools/10.5._Launch_a_Tool.md'
     - 10.6. Tool security check: 'manual/10_Manage_Tools/10.6._Tool_security_check.md'
     - 10.7. Tool version menu: 'manual/10_Manage_Tools/10.7._Tool_version_menu.md'
+    - 10.8. "Symlinked" tools: 'manual/10_Manage_Tools/10.8._Symlinks_between_tools.md'
   - 11. Manage Runs:
     - 11.0. Overview: 'manual/11_Manage_Runs/11._Manage_Runs.md'
     - 11.1. Manage runs lifecycles: 'manual/11_Manage_Runs/11.1._Manage_runs_lifecycles.md'
     - 11.2. Auto-commit Docker images: 'manual/11_Manage_Runs/11.2._Auto-commit_Docker_image.md'
     - 11.3. Sharing with other users: 'manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users.md'
+    - 11.4. Automatic labels and actions for the runs: 'manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications.md'
   - 12. Manage settings:
     - 12.0. Overview: 'manual/12_Manage_Settings/12._Manage_Settings.md'
     - 12.1. Add a new system event: 'manual/12_Manage_Settings/12.1._Add_a_new_system_event.md'
@@ -83,6 +87,8 @@ nav:
     - 12.9. Change email notification: 'manual/12_Manage_Settings/12.9._Change_email_notification.md'
     - 12.10. Manage system-level settings: 'manual/12_Manage_Settings/12.10._Manage_system-level_settings.md'
     - 12.11. Advanced features: 'manual/12_Manage_Settings/12.11._Advanced_features.md'
+    - 12.12. System logs: 'manual/12_Manage_Settings/12.12._System_logs.md'
+    - 12.13. System dictionaries: 'manual/12_Manage_Settings/12.13._System_dictionaries.md'
   - 13. Permissions: 'manual/13_Permissions/13._Permissions.md'
   - 14. CLI interface:
     - 14.0. Overview: 'manual/14_CLI/14._Command-line_interface.md'
@@ -108,8 +114,15 @@ nav:
   - Appendix C. Working with autoscaled cluster runs: 'manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md'
   - Appendix D. Costs management: 'manual/Appendix_D/Appendix_D._Costs_management.md'
   - Appendix E. Pipeline objects concept: 'manual/Appendix_E/Appendix_E._Pipeline_objects_concept.md'
+  - Appendix F. Сomparison of using different FS storage types: 'manual/Appendix_F/Appendix_F._Сomparison_of_using_different_FS_storages_(FSx_for_Lustre_vs_EFS_in_AWS).md'
 - Cloud Pipeline API:
   - API tutorials: 'api/API_tutorials/API_tutorials.md'
   - Automation via CLI: 'api/API_tutorials/Automation_via_CLI.md'
   - Direct HTTP API implementation: 'api/API_tutorials/Direct_HTTP_API.md'
   - JavaScript example: 'api/API_tutorials/JavaScript_example.md'
+- Cloud Pipeline Installation:
+  - Prerequisites:
+    - General requirements: 'installation/prerequisites/common.md'
+    - AWS: 'installation/prerequisites/aws.md'
+    - Azure: 'installation/prerequisites/azure.md'
+    - GCP: 'installation/prerequisites/gcp.md'

@@ -537,7 +537,7 @@ class GridEngineScaleUpHandler:
 
     def __init__(self, cmd_executor, pipe, grid_engine, host_storage, instance_helper, parent_run_id, default_hostfile, instance_disk,
                  instance_image, price_type, region_id, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
-                 instance_family=None):
+                 instance_family=None, shared_fs_type='lfs'):
         """
         Grid engine scale up implementation. It handles additional nodes launching and hosts configuration (/etc/hosts
         and self.default_hostfile).
@@ -557,6 +557,7 @@ class GridEngineScaleUpHandler:
         :param polling_delay: Polling delay - in seconds.
         :param instance_family: Instance family for launching additional instance,
                 e.g. c5 means that you can run instances like c5.large, c5.xlarge etc.
+        :param shared_fs_type: Type of shared fs to initialize
         """
         self.executor = cmd_executor
         self.pipe = pipe
@@ -572,6 +573,7 @@ class GridEngineScaleUpHandler:
         self.polling_timeout = polling_timeout
         self.polling_delay = polling_delay
         self.instance_family = instance_family
+        self.shared_fs_type = shared_fs_type
 
     def scale_up(self, resource):
         """
@@ -621,8 +623,9 @@ class GridEngineScaleUpHandler:
                            'CP_CAP_AUTOSCALE false ' \
                            'CP_CAP_AUTOSCALE_WORKERS 0 ' \
                            'CP_DISABLE_RUN_ENDPOINTS true ' \
+                           'CP_CAP_SHARE_FS_TYPE %s ' \
                            % (self.instance_disk, instance, self.instance_image, self.parent_run_id,
-                              self._pipe_cli_price_type(self.price_type), self.region_id)
+                              self._pipe_cli_price_type(self.price_type), self.region_id, self.shared_fs_type)
         run_id = int(self.executor.execute_to_lines(pipe_run_command)[0])
         Logger.info('Additional worker run id is %s.' % run_id)
         return run_id
@@ -665,8 +668,7 @@ class GridEngineScaleUpHandler:
         raise ScalingError(error_msg)
 
     def _add_worker_to_master_hosts(self, pod):
-        self.executor.execute('echo "%s\t%s" >> /etc/hosts' % (pod.ip, pod.name))
-        self.executor.execute('echo %s >> %s' % (pod.name, self.default_hostfile))
+        self.executor.execute('add_to_hosts "%s" "%s"' % (pod.name, pod.ip))
 
     def _await_worker_initialization(self, run_id):
         Logger.info('Waiting for additional worker with run_id=%s to initialize.' % run_id)
@@ -692,12 +694,6 @@ class GridEngineScaleUpHandler:
 
 
 class GridEngineScaleDownHandler:
-    # todo: This approach is not interrupt-safe because cp command can end up in a damaged destination file.
-    #  Another approach was to use mv command because it most likely has atomicity on the OS level
-    #  but it ends up with a 'device or resource busy' error every time on /etc/hosts file at least.
-    _REMOVE_LINE_COMMAND = 'cat %(file)s | grep -v "%(line)s" > %(file)s_MODIFIED; ' \
-                           'cp %(file)s_MODIFIED %(file)s; ' \
-                           'rm %(file)s_MODIFIED'
 
     def __init__(self, cmd_executor, grid_engine, default_hostfile):
         """
@@ -735,7 +731,6 @@ class GridEngineScaleDownHandler:
         self._decrease_parallel_environment_slots(child_host_slots)
         self._stop_pipeline(child_host)
         self._remove_host_from_hosts(child_host)
-        self._remove_host_from_default_hostfile(child_host)
         Logger.info('Additional worker with host=%s has been stopped.' % child_host, crucial=True)
         return True
 
@@ -759,16 +754,9 @@ class GridEngineScaleDownHandler:
         host_elements = host.split('-')
         return host_elements[len(host_elements) - 1]
 
-    def _remove_host_from_default_hostfile(self, host):
-        Logger.info('Remove host %s from default hostfile.' % host)
-        self._remove_line_from_file(file=self.default_hostfile, line=host)
-
     def _remove_host_from_hosts(self, host):
-        Logger.info('Remove host %s from /etc/hosts.' % host)
-        self._remove_line_from_file(file='/etc/hosts', line=host)
-
-    def _remove_line_from_file(self, file, line):
-        self.executor.execute(GridEngineScaleDownHandler._REMOVE_LINE_COMMAND % {'file': file, 'line': line})
+        Logger.info('Remove host %s from /etc/hosts and default hostfile.' % host)
+        self.executor.execute('remove_from_hosts "%s"' % host)
 
 
 class MemoryHostStorage:
@@ -1091,7 +1079,6 @@ class GridEngineWorkerValidator:
     def _remove_worker_from_hosts(self, host):
         Logger.info('Remove worker (host=%s) from the well-known hosts.' % host)
         self.scale_down_handler._remove_host_from_hosts(host)
-        self.scale_down_handler._remove_host_from_default_hostfile(host)
 
 
 class CloudPipelineInstanceHelper:
@@ -1341,6 +1328,7 @@ if __name__ == '__main__':
     hybrid_instance_cores = int(os.getenv('CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE', sys.maxint))
     instance_family = os.getenv('CP_CAP_AUTOSCALE_HYBRID_FAMILY',
                                 CloudPipelineInstanceHelper.get_family_from_type(cloud_provider, instance_type))
+    shared_fs_type = os.getenv('CP_CAP_SHARE_FS_TYPE', 'lfs')
 
     # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
     pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(shared_work_dir, '.pipe.log'))
@@ -1378,7 +1366,8 @@ if __name__ == '__main__':
                                                 instance_disk=instance_disk, instance_image=instance_image,
                                                 price_type=price_type, region_id=region_id,
                                                 polling_timeout=scale_up_polling_timeout,
-                                                instance_family=instance_family)
+                                                instance_family=instance_family,
+                                                shared_fs_type=shared_fs_type)
     scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
                                                     default_hostfile=default_hostfile)
     worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,

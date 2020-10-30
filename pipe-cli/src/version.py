@@ -12,5 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__='0.10'
+__version__='0.17'
 __bundle_info__ = { 'bundle_type': 'source', 'build_os_id': 'generic', 'build_os_version_id': 'generic' }

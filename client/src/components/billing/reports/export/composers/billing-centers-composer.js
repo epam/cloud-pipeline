@@ -16,9 +16,21 @@
 
 import {minutesToHours} from '../../../../../models/billing/utils';
 import {Range} from '../../periods';
+import ExportFormats from '../export-formats';
 
-function compose (csv, resources, discounts) {
-  return new Promise((resolve, reject) => {
+function compose (csv, discounts, exportOptions, resources) {
+  const [{format}] = exportOptions;
+  if (format !== ExportFormats.csvCostCenters) {
+    return Promise.resolve();
+  }
+  return new Promise(async (resolve, reject) => {
+    if (resources && resources.length) {
+      try {
+        await Promise.all(resources.map(r => Promise.all(r.map(rr => rr.fetch()))));
+      } catch (e) {
+        reject(e);
+      }
+    }
     if (
       !resources ||
       resources.length === 0 ||
@@ -68,12 +80,12 @@ function compose (csv, resources, discounts) {
       csv.setCellValueByIndex(
         computeDiscountRow,
         0,
-        computeValue > 0 ? `${round(computeValue)} %` : '-'
+        computeValue !== 0 ? `${round(computeValue)} %` : '-'
       );
       csv.setCellValueByIndex(
         storageDiscountRow,
         0,
-        storageValue > 0 ? `${round(storageValue)} %` : '-'
+        storageValue !== 0 ? `${round(storageValue)} %` : '-'
       );
       for (let i = 0; i < resources.length; i++) {
         const [resource] = resources[i];

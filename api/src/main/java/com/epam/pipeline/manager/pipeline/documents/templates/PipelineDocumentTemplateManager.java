@@ -75,7 +75,7 @@ public class PipelineDocumentTemplateManager {
     public PipelineDocumentTemplate loadPipelineDocumentTemplateWithSpecificVersion(Long pipelineId, String version)
             throws GitClientException {
         Pipeline pipeline = pipelineManager.load(pipelineId);
-        List<Revision> revisions = pipelineVersionManager.loadAllVersionFromGit(pipelineId, null);
+        List<Revision> revisions = pipelineVersionManager.loadAllVersionFromGit(pipelineId);
         Optional<Revision> oRevision = revisions.stream().filter(r -> r.getName().equals(version)).findAny();
         PipelineDocumentTemplate template = oRevision.map(revision -> new PipelineDocumentTemplate(pipeline, revision))
                 .orElseGet(() -> new PipelineDocumentTemplate(pipeline));
@@ -96,7 +96,7 @@ public class PipelineDocumentTemplateManager {
     private void applyChangeSummary(PipelineDocumentTemplate template) {
         try {
             List<Revision> revisions = pipelineVersionManager
-                    .loadAllVersionFromGit(template.getPipeline().getId(), null);
+                    .loadAllVersionFromGit(template.getPipeline().getId());
             Revision previousRevision = null;
             for (int i = 0; i < revisions.size(); i++) {
                 if (revisions.get(i).getName().equals(template.getVersion().getName())) {

@@ -353,6 +353,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         }
         configuration.executionEnvironment = opts.executionEnvironment;
         configuration.rootEntityId = opts.rootEntityId;
+        configuration.endpointName = opts.endpointName;
+        configuration.stopAfter = opts.stopAfter;
         opts.pipelineId = undefined;
         opts.pipelineVersion = undefined;
         opts.configName = undefined;
@@ -364,6 +366,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         opts.methodConfigurationSnapshot = undefined;
         opts.methodInputs = undefined;
         opts.methodOutputs = undefined;
+        opts.endpointName = undefined;
+        opts.stopAfter = undefined;
         if (opts.executionEnvironment) {
           opts.executionEnvironment = undefined;
         }
@@ -434,7 +438,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
   }
 
   getPipelines = () => {
-    if (this.props.pipelines.pending || this.props.pipelines.error || !this.props.pipelines.value) {
+    if (!this.props.pipelines.loaded || this.props.pipelines.error || !this.props.pipelines.value) {
       return [];
     }
     return this.props.pipelines.value.map(p => p);
@@ -448,6 +452,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
   };
 
   getParameters = () => {
+    const extractEndpointNameAndStopAfter = (c) => ({
+      endpointName: c.endpointName,
+      stopAfter: c.stopAfter
+    });
     if (this.state.overriddenConfiguration) {
       const parameters = this.state.overriddenConfiguration.configuration
         ? this.state.overriddenConfiguration.configuration.parameters
@@ -457,6 +465,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         currentParam.readOnly = !!currentParam.value;
       }
       return {
+        ...extractEndpointNameAndStopAfter(this.state.overriddenConfiguration),
         ...this.state.overriddenConfiguration.configuration || this.state.overriddenConfiguration,
         parameters
       };
@@ -491,6 +500,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     }
 
     return {
+      ...extractEndpointNameAndStopAfter(configuration),
       ...configuration.configuration || configuration,
       parameters
     };
@@ -513,7 +523,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       [configuration] = (this.props.configurations.value.entries || []).filter(c => c.default);
     }
     if (configuration && configuration.pipelineId && configuration.pipelineVersion) {
-      const [pipeline] = this.getPipelines().filter(p => p.id === configuration.pipelineId);
+      const pipeline = this.getPipelines()
+        .find(p => `${p.id}` === `${configuration.pipelineId}`);
       if (pipeline) {
         return pipeline;
       } else {
@@ -634,6 +645,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         }
         configuration.executionEnvironment = opts.executionEnvironment;
         configuration.rootEntityId = opts.rootEntityId;
+        configuration.endpointName = opts.endpointName;
+        configuration.stopAfter = opts.stopAfter;
         opts.pipelineId = undefined;
         opts.pipelineVersion = undefined;
         opts.configName = undefined;
@@ -646,6 +659,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         opts.methodInputs = undefined;
         opts.methodOutputs = undefined;
         opts.executionEnvironment = undefined;
+        opts.endpointName = undefined;
+        opts.stopAfter = undefined;
         if (configuration.executionEnvironment === DTS_ENVIRONMENT) {
           for (const key in opts) {
             if (opts.hasOwnProperty(key) && opts[key] !== undefined) {
@@ -791,7 +806,9 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
   };
 
   closeEditConfigurationForm = () => {
-    this.setState({editConfigurationFormVisible: false});
+    this.setState({editConfigurationFormVisible: false}, () => {
+      this.props.configurations.fetch();
+    });
   };
 
   editConfiguration = async (opts) => {
@@ -938,8 +955,9 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
   render () {
     if (
       (!this.props.configurations.loaded && this.props.configurations.pending) ||
-      !this.allowedInstanceTypes
-      ){
+      !this.allowedInstanceTypes ||
+      (this.props.pipelines.pending && !this.props.pipelines.loaded)
+    ) {
       return <LoadingView />;
     }
     if (this.props.configurations.error) {
@@ -998,8 +1016,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
                 this.props.configurations.value.entries.length > 1
               }
               onRemoveConfiguration={this.onRemoveConfigurationClicked(this.selectedConfiguration)}
-              detached={true}
-              editConfigurationMode={true}
+              detached
+              editConfigurationMode
               currentConfigurationName={this.selectedConfigurationName}
               currentConfigurationIsDefault={this.selectedConfigurationIsDefault}
               onSetConfigurationAsDefault={this.onSetAsDefault}
@@ -1014,7 +1032,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
               configurations={this.getConfigurations()}
               onLaunch={this.onSaveConfiguration}
               onSelectPipeline={this.onConfigurationSelectPipeline}
-              isDetachedConfiguration={true}
+              isDetachedConfiguration
               configurationId={this.props.configurationId}
               selectedPipelineParametersIsLoading={this.state.selectedPipelineParametersIsLoading}
               fireCloudMethod={this.selectedFireCloudMethod}

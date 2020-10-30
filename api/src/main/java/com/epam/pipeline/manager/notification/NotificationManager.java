@@ -23,16 +23,20 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.notification.NotificationTimestamp;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -45,6 +49,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -100,15 +105,25 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
     @Autowired
     private PreferenceManager preferenceManager;
 
+    private final AntPathMatcher matcher = new AntPathMatcher();
+
     /**
      * Internal method for creating notification message that selecting appropriate email template from db,
      * serialize PipelineRun to key-value object and save it to notification_queue table.
      * @param run
+     * @param duration Running duration of a run in seconds.
      * @param settings defines, if a long initialization or long running message template should be used
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyLongRunningTask(PipelineRun run, NotificationSettings settings) {
+    public void notifyLongRunningTask(PipelineRun run, Long duration, NotificationSettings settings) {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_SUBMITTED, run.getPodId()));
+
+        final String instanceTypesToExclude = preferenceManager.getPreference(SystemPreferences
+                .SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES);
+
+        if (!noneMatchExcludedInstanceType(run, instanceTypesToExclude)) {
+            return;
+        }
 
         NotificationMessage notificationMessage = new NotificationMessage();
 
@@ -125,7 +140,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
                     settings.getTemplateId()));
         }
 
-        notificationMessage.setTemplateParameters(PipelineRunMapper.map(run, settings.getThreshold()));
+        notificationMessage.setTemplateParameters(PipelineRunMapper.map(run, settings.getThreshold(), duration));
         monitoringNotificationDao.createMonitoringNotification(notificationMessage);
     }
 
@@ -259,27 +274,27 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         }
 
         final List<Long> ccUserIds = getCCUsers(idleRunSettings);
-
-
         final Map<String, PipelineUser> pipelineOwners = getPipelinesOwners(pipelineCpuRatePairs);
 
         final double idleCpuLevel = preferenceManager.getPreference(
                 SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT);
-        final List<NotificationMessage> messages = pipelineCpuRatePairs.stream().map(pair -> {
-            NotificationMessage message = new NotificationMessage();
-            message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
-            message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
-            message.getTemplateParameters().put("idleCpuLevel", idleCpuLevel);
-            message.getTemplateParameters().put("cpuRate", pair.getRight() * PERCENT);
-            if (idleRunSettings.isKeepInformedOwner()) {
-                message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
-            }
-            message.setCopyUserIds(ccUserIds);
-            return message;
-        })
-            .collect(Collectors.toList());
+        final String instanceTypesToExclude = preferenceManager.getPreference(SystemPreferences
+                .SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES);
 
+        final List<Pair<PipelineRun, Double>> filtered = pipelineCpuRatePairs.stream()
+                .filter(pair -> shouldNotifyIdleRun(pair.getLeft().getId(), notificationType, idleRunSettings))
+                .filter(pair -> noneMatchExcludedInstanceType(pair.getLeft(), instanceTypesToExclude))
+                .collect(Collectors.toList());
+        final List<NotificationMessage> messages = filtered.stream()
+                .map(pair -> buildMessageForIdleRun(idleRunSettings, ccUserIds, pipelineOwners, idleCpuLevel, pair))
+                .collect(Collectors.toList());
         monitoringNotificationDao.createMonitoringNotifications(messages);
+
+        if (NotificationType.IDLE_RUN.equals(notificationType)) {
+            final List<Long> runIds = filtered.stream()
+                    .map(pair -> pair.getLeft().getId()).collect(Collectors.toList());
+            monitoringNotificationDao.updateNotificationTimestamp(runIds, NotificationType.IDLE_RUN);
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -367,6 +382,35 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
                 });
     }
 
+    /**
+     * Creates notifications for long paused runs.
+     * @param pausedRuns the list of the {@link PipelineRun} objects that in paused state
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void notifyLongPausedRuns(final List<PipelineRun> pausedRuns) {
+        final List<PipelineRun> longPausedRuns = createNotificationsForLongPausedRuns(pausedRuns,
+                NotificationType.LONG_PAUSED);
+
+        if (CollectionUtils.isEmpty(longPausedRuns)) {
+            return;
+        }
+
+        final List<Long> runIds = longPausedRuns.stream()
+                .map(PipelineRun::getId)
+                .collect(Collectors.toList());
+        monitoringNotificationDao.updateNotificationTimestamp(runIds, NotificationType.LONG_PAUSED);
+    }
+
+    /**
+     * Creates notifications for long paused runs that shall be stopped.
+     * @param pausedRuns the list of the {@link PipelineRun} objects that in paused state
+     * @return the list of the {@link PipelineRun} objects that in long paused state
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public List<PipelineRun> notifyLongPausedRunsBeforeStop(final List<PipelineRun> pausedRuns) {
+        return createNotificationsForLongPausedRuns(pausedRuns, NotificationType.LONG_PAUSED_STOPPED);
+    }
+
     private boolean isRunStuckInStatus(final NotificationSettings settings,
                                        final LocalDateTime now,
                                        final Long threshold,
@@ -449,6 +493,15 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
 
     }
 
+    private Map<String, PipelineUser> getPipelinesOwnersFromRuns(final List<PipelineRun> runs) {
+        return userManager
+                .loadUsersByNames(runs.stream()
+                        .map(AbstractSecuredEntity::getOwner)
+                        .collect(Collectors.toList())
+                ).stream()
+                .collect(Collectors.toMap(PipelineUser::getUserName, Function.identity()));
+    }
+
     private List<Long> getCCUsers(final NotificationSettings idleRunSettings) {
         final List<Long> ccUserIds = getKeepInformedUserIds(idleRunSettings);
 
@@ -498,5 +551,96 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         final PipelineUser user = userManager.loadUserByName(username);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, username));
         return user;
+    }
+
+    private NotificationMessage buildMessageForLongPausedRun(final PipelineRun run, final List<Long> ccUsers,
+                                                             final NotificationSettings settings,
+                                                             final Map<String, PipelineUser> pipelineOwners) {
+        LOGGER.debug("Sending long paused run notification for run {}.", run.getId());
+        final NotificationMessage message = new NotificationMessage();
+        if (settings.isKeepInformedOwner()) {
+            message.setToUserId(pipelineOwners.getOrDefault(run.getOwner(), new PipelineUser()).getId());
+        }
+        message.setCopyUserIds(ccUsers);
+        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        message.setTemplateParameters(PipelineRunMapper.map(run, settings.getThreshold()));
+        return message;
+    }
+
+    private List<PipelineRun> createNotificationsForLongPausedRuns(final List<PipelineRun> pausedRuns,
+                                                                   final NotificationType notificationType) {
+        final NotificationSettings settings = notificationSettingsManager.load(notificationType);
+
+        if (settings == null || !settings.isEnabled() || settings.getTemplateId() == 0) {
+            LOGGER.info("No template configured for long paused status notifications or it was disabled!");
+            return Collections.emptyList();
+        }
+
+        final LocalDateTime now = DateUtils.nowUTC();
+        final Long threshold = settings.getThreshold();
+        if (threshold == null || threshold <= 0) {
+            LOGGER.debug("Threshold is not specified for notification type '{}'", notificationType.name());
+            return Collections.emptyList();
+        }
+
+        final String instanceTypesToExclude = preferenceManager.getPreference(SystemPreferences
+                .SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES);
+
+        final List<Long> ccUsers = getCCUsers(settings);
+        final List<PipelineRun> filtered = pausedRuns.stream()
+                .filter(run -> noneMatchExcludedInstanceType(run, instanceTypesToExclude))
+                .filter(run -> isRunStuckInStatus(settings, now, threshold, run))
+                .collect(Collectors.toList());
+        final Map<String, PipelineUser> pipelineOwners = getPipelinesOwnersFromRuns(filtered);
+        final List<NotificationMessage> messages = filtered.stream()
+                .map(run -> buildMessageForLongPausedRun(run, ccUsers, settings, pipelineOwners))
+                .collect(Collectors.toList());
+        monitoringNotificationDao.createMonitoringNotifications(messages);
+
+        return filtered;
+    }
+
+    private boolean noneMatchExcludedInstanceType(final PipelineRun run, final String instanceTypesToExclude) {
+        if (StringUtils.isBlank(instanceTypesToExclude)) {
+            return true;
+        }
+        final RunInstance instance = run.getInstance();
+        if (Objects.isNull(instance)) {
+            LOGGER.debug("Cannot get instance info for run '{}'", run.getId());
+            return true;
+        }
+        final String nodeType = instance.getNodeType();
+        if (StringUtils.isBlank(nodeType)) {
+            LOGGER.debug("Cannot get node type for run '{}'", run.getId());
+            return true;
+        }
+        return Arrays.stream(instanceTypesToExclude.split(","))
+                .noneMatch(pattern -> matcher.match(pattern, nodeType));
+    }
+
+    private NotificationMessage buildMessageForIdleRun(final NotificationSettings idleRunSettings,
+                                                       final List<Long> ccUserIds,
+                                                       final Map<String, PipelineUser> pipelineOwners,
+                                                       final double idleCpuLevel,
+                                                       final Pair<PipelineRun, Double> pair) {
+        LOGGER.debug("Sending idle run notification for run '{}'.", pair.getLeft().getId());
+        final NotificationMessage message = new NotificationMessage();
+        message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
+        message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
+        message.getTemplateParameters().put("idleCpuLevel", idleCpuLevel);
+        message.getTemplateParameters().put("cpuRate", pair.getRight() * PERCENT);
+        if (idleRunSettings.isKeepInformedOwner()) {
+            message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
+        }
+        message.setCopyUserIds(ccUserIds);
+        return message;
+    }
+
+    private boolean shouldNotifyIdleRun(final Long runId, final NotificationType notificationType,
+                                        final NotificationSettings notificationSettings) {
+        if (!NotificationType.IDLE_RUN.equals(notificationType)) {
+            return true;
+        }
+        return shouldNotify(runId, notificationSettings);
     }
 }

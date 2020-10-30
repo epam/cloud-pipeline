@@ -20,6 +20,8 @@ import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.dao.issue.IssueDao;
 import com.epam.pipeline.entity.issue.Issue;
+import com.epam.pipeline.entity.metadata.CategoricalAttribute;
+import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
@@ -30,10 +32,10 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,6 +46,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.Assert.assertThat;
+
+@Transactional
 public class MetadataDaoTest extends AbstractSpringTest {
 
     private static final String AUTHOR = "Author";
@@ -60,6 +66,7 @@ public class MetadataDaoTest extends AbstractSpringTest {
     private static final String DATA_TYPE_2 = "ref";
     private static final String DATA_VALUE_2 = "ADMIN";
     private static final String DATA_KEY_3 = "key";
+    private static final String SENSITIVE_DATA_KEY = "sensitive_metadata_key";
     private static final String NON_EXISTING_DATA_KEY = "no_key";
     private static final String TEXT = "Text";
 
@@ -69,7 +76,6 @@ public class MetadataDaoTest extends AbstractSpringTest {
     private MetadataDao metadataDao;
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testOneMetadata() {
         EntityVO entityVO = new EntityVO(ID_1, CLASS_1);
         Map<String, PipeConfValue> data = new HashMap<>();
@@ -135,7 +141,6 @@ public class MetadataDaoTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testListMetadata() {
         EntityVO entity1 = new EntityVO(ID_1, CLASS_1);
         Map<String, PipeConfValue> data1 = new HashMap<>();
@@ -167,18 +172,7 @@ public class MetadataDaoTest extends AbstractSpringTest {
         Assert.assertNull(createdMetadata);
     }
 
-    private static MetadataEntryWithIssuesCount convertMetadataWithIssues(EntityVO entityVO,
-                                                                          Map<String, PipeConfValue> data,
-                                                                          long issuesCount) {
-        MetadataEntryWithIssuesCount metadataEntryWithIssuesCount = new MetadataEntryWithIssuesCount();
-        metadataEntryWithIssuesCount.setIssuesCount(issuesCount);
-        metadataEntryWithIssuesCount.setData(data);
-        metadataEntryWithIssuesCount.setEntity(entityVO);
-        return metadataEntryWithIssuesCount;
-    }
-
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testMetadataWithIssues() {
         Pair<EntityVO, MetadataEntry> pipelinePair = createItems("pipeline", AclClass.PIPELINE, true);
         Pair<EntityVO, MetadataEntry> folderPair = createItems("folder", AclClass.FOLDER, true);
@@ -198,7 +192,6 @@ public class MetadataDaoTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testShouldSearchMetadataByClassAndKeyValuePair() {
         EntityVO entityVO = new EntityVO(ID_1, CLASS_1);
         Map<String, PipeConfValue> data = new HashMap<>();
@@ -221,7 +214,6 @@ public class MetadataDaoTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testLoadUniqueAttributes() {
         createMetadataForEntity(ID_1, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_1);
         createMetadataForEntity(ID_2, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_1);
@@ -230,17 +222,63 @@ public class MetadataDaoTest extends AbstractSpringTest {
         final List<String> uniqueAttributeValues =
             metadataDao.loadUniqueValuesFromEntitiesAttribute(CLASS_1, DATA_KEY_1);
         Assert.assertEquals(2, uniqueAttributeValues.size());
-        Assert.assertThat(uniqueAttributeValues, CoreMatchers.hasItems(DATA_VALUE_1, DATA_VALUE_2));
+        assertThat(uniqueAttributeValues, CoreMatchers.hasItems(DATA_VALUE_1, DATA_VALUE_2));
         final List<String> emptyValues =
             metadataDao.loadUniqueValuesFromEntitiesAttribute(CLASS_1, NON_EXISTING_DATA_KEY);
         Assert.assertEquals(0, emptyValues.size());
     }
 
+    @Test
+    public void testBuildFullMetadataDict() {
+        createMetadataForEntity(ID_1, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_1);
+        createMetadataForEntity(ID_2, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_2);
+        createMetadataForEntityWithSensitiveValue(ID_3, CLASS_1, DATA_KEY_2, DATA_TYPE_1, DATA_VALUE_1, DATA_VALUE_2);
+        final Map<String, List<String>> metadataDict = metadataDao.buildFullMetadataDict(
+                Collections.singletonList(SENSITIVE_DATA_KEY))
+                .stream()
+                .collect(Collectors.toMap(CategoricalAttribute::getKey,
+                    attribute -> attribute.getValues().stream()
+                        .map(CategoricalAttributeValue::getValue)
+                        .collect(Collectors.toList())));
+        Assert.assertEquals(2, metadataDict.size());
+        assertThat(metadataDict.get(DATA_KEY_1), CoreMatchers.is(Arrays.asList(DATA_VALUE_1, DATA_VALUE_2)));
+        assertThat(metadataDict.get(DATA_KEY_2), CoreMatchers.is(Collections.singletonList(DATA_VALUE_1)));
+        Assert.assertFalse(metadataDict.containsKey(SENSITIVE_DATA_KEY));
+        final MetadataEntry metadataEntryWithSensitiveField = metadataDao.loadMetadataItem(new EntityVO(ID_3, CLASS_1));
+        final Map<String, PipeConfValue> sensitiveEntryData = metadataEntryWithSensitiveField.getData();
+        Assert.assertEquals(2, sensitiveEntryData.size());
+        assertMetadataValue(sensitiveEntryData.get(DATA_KEY_2), DATA_TYPE_1, DATA_VALUE_1);
+        assertMetadataValue(sensitiveEntryData.get(SENSITIVE_DATA_KEY), DATA_TYPE_1, DATA_VALUE_2);
+    }
+
+    @Test
+    public void shouldReturnMetadataKeysForClass() {
+        createMetadataForEntity(ID_1, CLASS_1, DATA_KEY_1, DATA_TYPE_1, DATA_VALUE_1);
+        createMetadataForEntity(ID_2, CLASS_1, DATA_KEY_2, DATA_TYPE_1, DATA_VALUE_2);
+        final Set<String> metadataKeys = metadataDao.loadMetadataKeys(CLASS_1);
+        assertThat(metadataKeys, containsInAnyOrder(DATA_KEY_1, DATA_KEY_2));
+    }
+
+    private void assertMetadataValue(final PipeConfValue sensitivePipeConfValue, final String dataType,
+                                     final String dataValue) {
+        Assert.assertEquals(sensitivePipeConfValue.getType(), dataType);
+        Assert.assertEquals(sensitivePipeConfValue.getValue(), dataValue);
+    }
+
     private void createMetadataForEntity(final Long entityId, final AclClass entityClass,
                                          final String dataKey, final String dataType, final String dataValue) {
+        createMetadataForEntityWithSensitiveValue(entityId, entityClass, dataKey, dataType, dataValue, null);
+    }
+
+    private void createMetadataForEntityWithSensitiveValue(final Long entityId, final AclClass entityClass,
+                                                           final String dataKey, final String dataType,
+                                                           final String dataValue, final String sensitiveDataValue) {
         final EntityVO entityVO = new EntityVO(entityId, entityClass);
         final Map<String, PipeConfValue> data = new HashMap<>();
         data.put(dataKey, new PipeConfValue(dataType, dataValue));
+        if (sensitiveDataValue != null) {
+            data.put(SENSITIVE_DATA_KEY, new PipeConfValue(dataType, sensitiveDataValue));
+        }
         final MetadataEntry metadataToSave = new MetadataEntry();
         metadataToSave.setEntity(entityVO);
         metadataToSave.setData(data);
@@ -267,5 +305,15 @@ public class MetadataDaoTest extends AbstractSpringTest {
             metadataDao.registerMetadataItem(metadataEntry);
         }
         return new ImmutablePair<>(entity, metadataEntry);
+    }
+
+    private static MetadataEntryWithIssuesCount convertMetadataWithIssues(EntityVO entityVO,
+                                                                          Map<String, PipeConfValue> data,
+                                                                          long issuesCount) {
+        MetadataEntryWithIssuesCount metadataEntryWithIssuesCount = new MetadataEntryWithIssuesCount();
+        metadataEntryWithIssuesCount.setIssuesCount(issuesCount);
+        metadataEntryWithIssuesCount.setData(data);
+        metadataEntryWithIssuesCount.setEntity(entityVO);
+        return metadataEntryWithIssuesCount;
     }
 }

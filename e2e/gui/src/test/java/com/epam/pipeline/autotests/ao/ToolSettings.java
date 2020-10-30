@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 import static com.codeborne.selenide.Condition.appear;
+import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.visible;
@@ -49,6 +50,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.LABELS;
 import static com.epam.pipeline.autotests.ao.Primitive.LABEL_INPUT_FIELD;
 import static com.epam.pipeline.autotests.ao.Primitive.NEW_ENDPOINT;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
+import static com.epam.pipeline.autotests.ao.Primitive.SENSITIVE_STORAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.SETTINGS;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
@@ -78,7 +80,9 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                         .find(byClassName("ant-select-selection__rendered"))),
                 entry(PRICE_TYPE, context().find(byText("Price type")).closest(".ant-row")
                         .find(byClassName("ant-select-selection__rendered"))),
-                entry(SAVE, context().find(button("SAVE")))
+                entry(SAVE, context().find(button("SAVE"))),
+                entry(SENSITIVE_STORAGE, context().$(byText("Allow sensitive storages"))
+                        .parent().find(By.xpath("following-sibling::div//span")))
         );
     }
 
@@ -119,6 +123,20 @@ public class ToolSettings extends ToolTab<ToolSettings> {
         SelenideElement defaultCommand = get(DEFAULT_COMMAND);
         Utils.clearTextField(defaultCommand);
         Utils.clickAndSendKeysWithSlashes(defaultCommand, command);
+        return this;
+    }
+
+    public ToolSettings disableAllowSensitiveStorage() {
+        if (get(SENSITIVE_STORAGE).has(cssClass("ant-checkbox-checked"))) {
+            get(SENSITIVE_STORAGE).click();
+        }
+        return this;
+    }
+
+    public ToolSettings enableAllowSensitiveStorage() {
+        if (!get(SENSITIVE_STORAGE).has(cssClass("ant-checkbox-checked"))) {
+            get(SENSITIVE_STORAGE).click();
+        }
         return this;
     }
 

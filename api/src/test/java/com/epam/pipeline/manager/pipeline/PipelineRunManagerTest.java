@@ -212,7 +212,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
                 .isToolInstanceAllowed(anyString(), any(), eq(NOT_ALLOWED_REGION_ID), eq(true))).thenReturn(false);
         when(instanceOfferManager
                 .isInstanceAllowed(anyString(), eq(NON_DEFAULT_REGION_ID), eq(false))).thenReturn(true);
-        when(instanceOfferManager.isPriceTypeAllowed(anyString(), any())).thenReturn(true);
+        when(instanceOfferManager.isPriceTypeAllowed(anyString(), any(), anyBoolean())).thenReturn(true);
         when(instanceOfferManager.getAllInstanceTypesObservable()).thenReturn(BehaviorSubject.create());
         when(instanceOfferManager.getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong()))
                 .thenReturn(price);
@@ -443,7 +443,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     public void testLaunchPipelineValidatesPriceType() {
         launchPipeline(INSTANCE_TYPE);
 
-        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), any());
+        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), any(), anyBoolean());
     }
 
     @Test
@@ -453,17 +453,17 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
         launchPipeline(INSTANCE_TYPE);
 
-        verify(instanceOfferManager).isPriceTypeAllowed(eq(ON_DEMAND), any());
+        verify(instanceOfferManager).isPriceTypeAllowed(eq(ON_DEMAND), any(), anyBoolean());
     }
 
     @Test
     @WithMockUser
     public void testLaunchPipelineFailsOnNotAllowedPriceType() {
-        when(instanceOfferManager.isPriceTypeAllowed(eq(SPOT), any())).thenReturn(false);
+        when(instanceOfferManager.isPriceTypeAllowed(eq(SPOT), any(), anyBoolean())).thenReturn(false);
 
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
             () -> launchPipeline(INSTANCE_TYPE));
-        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), any());
+        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), any(), anyBoolean());
     }
 
     @Test

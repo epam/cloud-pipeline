@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggre
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.ParsedSingleValueNumericMetricsAggregation;
 import org.elasticsearch.search.aggregations.metrics.avg.AvgAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.max.MaxAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.bucketscript.BucketScriptPipelineAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
@@ -98,6 +99,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String POD_CONTAINER = "pod_container";
 
     protected static final String AVG_AGGREGATION = "avg_";
+    protected static final String MAX_AGGREGATION = "max_";
     protected static final String DIVISION_AGGREGATION = "division_";
     protected static final String AGGREGATION_POD_NAME = "pod_name";
     protected static final String FIELD_POD_NAME_RAW = "pod_name.raw";
@@ -106,6 +108,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String AGGREGATION_DISK_NAME = "disk_name";
 
     protected static final String SYNTHETIC_NETWORK_INTERFACE = "summary";
+    protected static final String SWAP_FILESYSTEM = "tmpfs";
 
     private RestHighLevelClient client;
 
@@ -244,6 +247,10 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected AvgAggregationBuilder average(final String name, final String field) {
         return AggregationBuilders.avg(name)
                 .field(field(field));
+    }
+
+    protected MaxAggregationBuilder max(final String name, final String field) {
+        return AggregationBuilders.max(name).field(field(field));
     }
 
     protected PipelineAggregationBuilder division(final String name, final String divider, final String divisor) {

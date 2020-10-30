@@ -35,7 +35,7 @@ function buildRangeString ({start, end}, period) {
       if (!start || !end) {
         return undefined;
       }
-      return `${start.format('YYYY-MM')}|${end.format('YYYY-MM')}`;
+      return `${start.format('YYYY-MM-DD')}|${end.format('YYYY-MM-DD')}`;
     case Period.year:
       if (!start) {
         return undefined;
@@ -55,7 +55,7 @@ function getRangeDescription ({start, end}, period) {
       if (!start || !end) {
         return undefined;
       }
-      return `${start.format('YYYY-MM')} - ${end.format('YYYY-MM')}`;
+      return `${start.format('YYYY-MM-DD')} - ${end.format('YYYY-MM-DD')}`;
     case Period.year:
       if (!start) {
         return undefined;
@@ -69,6 +69,16 @@ function getRangeDescription ({start, end}, period) {
     default:
       if (!start) {
         return undefined;
+      }
+      if (start && end) {
+        const startOfMonthDate = moment(start).startOf('M').date();
+        const endOfMonthDate = moment(end).endOf('M').date();
+        if (startOfMonthDate !== start.date() || endOfMonthDate !== end.date()) {
+          if (start.date() === end.date()) {
+            return start.format('D MMMM YYYY');
+          }
+          return `${start.date()} - ${end.date()} ${start.format('MMMM YYYY')}`;
+        }
       }
       return start.format('MMMM YYYY');
   }
@@ -88,12 +98,12 @@ function parseRangeString (string, period) {
   };
   switch (period) {
     case Period.custom:
-      start = moment.utc(startStr, 'YYYY-MM').startOf('M');
+      start = moment.utc(startStr, 'YYYY-MM-DD').startOf('D');
       isCurrent = false;
       if (endStr) {
-        end = moment.utc(endStr, 'YYYY-MM').endOf('M');
+        end = moment.utc(endStr, 'YYYY-MM-DD').endOf('D');
       } else {
-        end = moment(start).endOf('M');
+        end = moment(start).endOf('D');
       }
       break;
     case Period.year:
@@ -126,7 +136,7 @@ function buildRangeByDate (date, period) {
       end: undefined
     };
   }
-  let unit = 'M';
+  let unit;
   switch (period) {
     case Period.quarter:
       unit = 'Q';
@@ -134,9 +144,11 @@ function buildRangeByDate (date, period) {
     case Period.year:
       unit = 'Y';
       break;
-    default:
     case Period.month:
       unit = 'M';
+      break;
+    default:
+      unit = 'D';
       break;
   }
   const start = moment(date).startOf(unit);

@@ -1,0 +1,70 @@
+.file-system-tab-container {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 2px;
+}
+
+.file-system-tab-container.active {
+  outline: 0;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.8);
+}
+
+.file-system-tab-container.drop-target {
+  outline: 0;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 1);
+}
+
+.spin-container {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.directory-contents-container {
+  overflow: auto;
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.directory-contents-container .directory-contents-header {
+  border-bottom: 1px solid #ddd;
+  margin-right: 12px;
+}
+
+.directory-contents {
+  overflow-y: scroll;
+  flex: 1;
+  position: relative;
+}
+
+.directory-contents::-webkit-scrollbar {
+  width: 12px;
+}
+
+.directory-contents::-webkit-scrollbar-track {
+  background: #fafafa;
+}
+
+.directory-contents::-webkit-scrollbar-thumb {
+  background: #aaa;
+}
+
+.directory-contents::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+.file-system-tab-header {
+  min-height: 30px;
+  line-height: 30px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}

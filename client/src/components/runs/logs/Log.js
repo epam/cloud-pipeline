@@ -62,6 +62,7 @@ import WorkflowGraph from '../../pipelines/version/graph/WorkflowGraph';
 import {graphIsSupportedForLanguage} from '../../pipelines/version/graph/visualization';
 import LoadingView from '../../special/LoadingView';
 import AWSRegionTag from '../../special/AWSRegionTag';
+import DataStorageList from '../controls/data-storage-list';
 import CommitRunDialog from './forms/CommitRunDialog';
 import ShareWithForm from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
@@ -73,7 +74,8 @@ import RemoveRunSchedules from '../../../models/runSchedule/RemoveRunSchedules';
 import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
 import RunSchedulingList from '../run-scheduling/run-sheduling-list';
 import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command';
-import JobEstimatedPriceInfo from "../../special/job-estimated-price-info";
+import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
+import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -401,6 +403,21 @@ class Logs extends localization.LocalizedReactComponent {
           </tr>
         );
       }
+    } else if (runParameter.name === CP_CAP_LIMIT_MOUNTS) {
+      const values = (valueSelector() || '').split(',').map(v => v.trim());
+      return (
+        <tr key={runParameter.name}>
+          <td
+            className={styles.taskParameterName}
+            style={{verticalAlign: 'middle'}}
+          >
+            {runParameter.name}:
+          </td>
+          <td>
+            <DataStorageList identifiers={values} />
+          </td>
+        </tr>
+      );
     } else {
       let values = (valueSelector() || '').split(',').map(v => v.trim());
       if (values.length === 1) {
@@ -1293,6 +1310,7 @@ class Logs extends localization.LocalizedReactComponent {
       const owner = (this.props.run.value.owner || '').toLowerCase();
       const podIP = this.props.run.value.podIP;
       const podStatus = this.props.run.value.podStatus;
+      const sensitive = this.props.run.value.sensitive;
       let endpoints;
       let share;
       if (this.endpointAvailable) {
@@ -1441,6 +1459,13 @@ class Logs extends localization.LocalizedReactComponent {
         <div>
           <table className={styles.runDetailsTable}>
             <tbody>
+              {
+                sensitive ? (
+                  <tr>
+                    <th colSpan={2} style={{color: '#ff5c33'}}>SENSITIVE</th>
+                  </tr>
+                ) : undefined
+              }
               {endpoints}
               {share}
               <tr>

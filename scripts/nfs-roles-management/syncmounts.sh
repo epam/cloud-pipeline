@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -123,13 +123,13 @@ mkdir -p "$_MOUNT_ROOT"
 while IFS='|' read -r mount_id region_id mount_root mount_type mount_options; do
     echo
     echo "[INFO] Staring processing: $mount_root (id: ${mount_id}, region: ${region_id} type: ${mount_type}, options: ${mount_options})"
-    if [ "$mount_type" == "NFS" ] || [ "$mount_type" == "SMB" ]; then
+    if [ "$mount_type" == "NFS" ] || [ "$mount_type" == "SMB" ] || [ "$mount_type" == "LUSTRE" ]; then
 
         # In a SMB paths we have the next structure : {mount_root_srv}/{mount_root_path} without any ':',
         # that is why we need to do such conditional processing
-        mount_root_srv="$( [ ${mount_type} == "NFS" ] && echo "$mount_root" | cut -f1 -d":" || echo "$mount_root" | cut -f1 -d"/")"
+        mount_root_srv="$( [ ${mount_type} != "SMB" ] && echo "$mount_root" | cut -f1 -d":" || echo "$mount_root" | cut -f1 -d"/")"
         mount_root_path="/"
-        if [[ "$mount_type" == "NFS" ]] && [[ "$mount_root" == *":"* ]]; then
+        if [[ "$mount_type" != "SMB" ]] && [[ "$mount_root" == *":"* ]]; then
             mount_root_path="$(echo "$mount_root" | cut -f2 -d":")"
         elif [[ "$mount_type" == "SMB" ]]; then
             mount_root_path="$(echo "$mount_root" | cut -f2 -d"/")"
@@ -147,8 +147,10 @@ while IFS='|' read -r mount_id region_id mount_root mount_type mount_options; do
             mount_options_opt="-o $mount_options"
         fi
         mount_protocol="nfs"
+        remote_nfs_path="${mount_root_srv}:${mount_root_path}"
         if [ "$mount_type" == "SMB" ]; then
             mount_protocol="cifs"
+            remote_nfs_path="//${mount_root_srv}/${mount_root_path}"
             region_cred_file="/root/.cloud/regioncreds/${region_id}"
             if [ ! -f ${region_cred_file} ]; then
                 echo "[ERROR] Cred file for Azure region ${region_id}, not found! CIFS storage ${mount_root_srv}/${mount_root_path} won't be mounted."
@@ -161,11 +163,8 @@ while IFS='|' read -r mount_id region_id mount_root mount_type mount_options; do
             else
               mount_options_opt="-o username=${username:1:-1},password=${password:1:-1}"
             fi
-        fi
-
-        remote_nfs_path="${mount_root_srv}:${mount_root_path}"
-        if [ "$mount_type" == "SMB" ]; then
-            remote_nfs_path="//${mount_root_srv}/${mount_root_path}"
+        elif [ "$mount_type" == "LUSTRE" ]; then
+          mount_protocol="lustre"
         fi
 
         mkdir -p "$mount_root_srv_dir"
@@ -182,6 +181,52 @@ while IFS='|' read -r mount_id region_id mount_root mount_type mount_options; do
         continue
     fi
 done <<< "$fs_mounts"
+echo
+
+storages="$(curl -sfk -H "Authorization: Bearer ${_API_TOKEN}" ${_API_URL%/}/datastorage/loadAll |    \
+             jq -r '.payload[] |  select(.type!="NFS") | "\(.id)|\(.name)|\(.path)|\(.type)|\(.regionId)"')"
+
+if [ $? -ne 0 ]; then
+    echo "[ERROR] Cannot get list of the storages, exiting"
+    exit 1
+fi
+
+while IFS='|' read -r id name path type region_id; do
+     echo
+     echo "[INFO] Staring processing: $mount_root (id: ${id}, name: ${name}, region: ${region_id} type: ${type}, path: ${path})"
+
+     if [ ${type} -ne "AZ" ]; then
+        echo "[ERROR] Storage with id: ${id} and path: ${path} is not a AZ storage, skipping."
+        continue
+     fi
+
+     region_cred_file="/root/.cloud/regioncreds/${region_id}"
+     if [ ! -f ${region_cred_file} ]; then
+        echo "[ERROR] Cred file for Azure region ${region_id}, not found!"
+        continue
+     fi
+     storage_account=$(cat ${region_cred_file} | jq -r .storage_account)
+     storage_key=$(cat ${region_cred_file} | jq -r .storage_key)
+
+     mount_root_srv_dir="${_MOUNT_ROOT}/AZ/${name}"
+     if mountpoint -q "$mount_root_srv_dir"; then
+        echo "[DONE] $mount_root_srv_dir is already mounted, skipping"
+        mounted_dirs+=($(remove_trailing_slashes "$mount_root_srv_dir"))
+        continue
+     fi
+
+     mkdir -p ${mount_root_srv_dir}
+     mkdir -p /mnt/blobfusetmp/${path}
+     export AZURE_STORAGE_ACCOUNT="${storage_account}"
+     export AZURE_STORAGE_ACCESS_KEY="${storage_key}"
+     blobfuse ${mount_root_srv_dir} --container-name=${path} --tmp-path=/mnt/blobfusetmp/${path}
+     if [ $? -ne 0 ]; then
+        echo "[ERROR] Unable to mount $mount_root to $mount_root_srv_dir (id: ${id}, type: ${type}), skipping"
+        continue
+     fi
+     echo "[DONE] $mount_root is mounted to $mount_root_srv_dir (id: ${id}, type: ${type})"
+     mounted_dirs+=($(remove_trailing_slashes "$mount_root_srv_dir"))
+done <<< "$storages"
 echo
 
 echo "Cleaning outdated"

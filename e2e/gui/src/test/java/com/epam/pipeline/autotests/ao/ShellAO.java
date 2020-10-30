@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import org.openqa.selenium.Keys;
+
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
@@ -49,6 +51,11 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
+    public ShellAO assertPageContains(String text1, String text2) {
+        $(withText(text1)).shouldHave(text(text2));
+        return this;
+    }
+
     public ShellAO assertPageDoesNotContain(String text) {
         $(withText(text)).shouldNotBe(visible);
         return this;
@@ -71,6 +78,11 @@ public class ShellAO implements AccessObject<ShellAO> {
     public ShellAO assertOutputDoesNotContain(String... messages) {
         Arrays.stream(messages)
                 .forEach(this::assertPageDoesNotContain);
+        return this;
+    }
+
+    public ShellAO assertPageContainsString(String str) {
+        context().shouldHave(text(str));
         return this;
     }
 

@@ -49,9 +49,20 @@
 
 .period-filters {
   display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  min-height: 30px;
+  margin: 0;
+  padding: 0 6px;
+  position: relative;
+  width: 100%;
+}
+
+.period-filters .filters {
+  display: flex;
   align-items: flex-start;
   justify-content: flex-start;
-  width: 100%;
+  flex-wrap: wrap;
   min-height: 30px;
   margin: 0;
   padding: 0 6px;
@@ -60,10 +71,10 @@
 
 .report-filter {}
 
-.actions-block {
-  position: absolute;
+.period-filters .actions-block {
   right: 10px;
   display: flex;
+  flex-grow: 1;
   flex-direction: row;
   justify-content: flex-end;
   align-items: center;

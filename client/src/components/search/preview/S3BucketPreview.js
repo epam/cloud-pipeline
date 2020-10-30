@@ -128,6 +128,26 @@ export default class S3BucketPreview extends React.Component {
                 regionId={this.props.dataStorageInfo.value.regionId}
                 displayName />
             }
+            {
+              this.props.dataStorageInfo &&
+              this.props.dataStorageInfo.loaded &&
+              this.props.dataStorageInfo.value.sensitive &&
+              (
+                <span
+                  style={{
+                    backgroundColor: '#ff5c33',
+                    fontWeight: 'bold',
+                    color: '#222',
+                    padding: '2px 5px',
+                    borderRadius: 5,
+                    lineHeight: 1,
+                    fontSize: 'smaller'
+                  }}
+                >
+                  sensitive
+                </span>
+              )
+            }
           </Row>
           {
             description &&

@@ -22,15 +22,43 @@ import {
 import {
   autoScaledClusterEnabled,
   hybridAutoScaledClusterEnabled,
-  CP_CAP_AUTOSCALE_WORKERS,
   getSkippedSystemParametersList,
   gridEngineEnabled,
   sparkEnabled,
-  slurmEnabled
+  slurmEnabled,
+  kubeEnabled
 } from './launch-cluster';
-import {LIMIT_MOUNTS_PARAMETER} from '../LimitMountsInput';
+import {
+  CP_CAP_AUTOSCALE_WORKERS,
+  CP_CAP_LIMIT_MOUNTS
+} from './parameters';
+import {
+  dinDEnabled,
+  noMachineEnabled,
+  singularityEnabled,
+  systemDEnabled,
+  moduleEnabled
+} from './run-capabilities';
+
+function formItemInitialized (form, formName) {
+  if (!formName) {
+    return false;
+  }
+  const values = form.getFieldsValue();
+  const names = formName.split('.');
+  const test = (o, keyIndex) => {
+    if (keyIndex >= names.length) {
+      return true;
+    }
+    return o.hasOwnProperty(names[keyIndex]) && test(o[names[keyIndex]], keyIndex + 1);
+  };
+  return values.hasOwnProperty(formName) || test(values, 0);
+}
 
 function modified (form, parameters, formName, parametersName, defaultValue) {
+  if (!formItemInitialized(form, formName)) {
+    return false;
+  }
   return `${form.getFieldValue(formName) || defaultValue}` !==
     `${parameters[parametersName] || defaultValue}`;
 }
@@ -41,12 +69,14 @@ function clusterModified (parameters, state) {
   const gridEngineEnabledValue = gridEngineEnabled(parameters.parameters);
   const sparkEnabledValue = sparkEnabled(parameters.parameters);
   const slurmEnabledValue = slurmEnabled(parameters.parameters);
+  const kubeEnabledValue = kubeEnabled(parameters.parameters);
   const initial = {
     autoScaledCluster,
     hybridAutoScaledClusterEnabled: hybridAutoScaledCluster,
     gridEngineEnabled: gridEngineEnabledValue,
     sparkEnabled: sparkEnabledValue,
     slurmEnabled: slurmEnabledValue,
+    kubeEnabled: kubeEnabledValue,
     launchCluster: +(parameters.node_count) > 0 || autoScaledCluster,
     nodesCount: +(parameters.node_count),
     maxNodesCount: parameters.parameters && parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
@@ -58,6 +88,7 @@ function clusterModified (parameters, state) {
     initial.gridEngineEnabled !== state.gridEngineEnabled ||
     initial.sparkEnabled !== state.sparkEnabled ||
     initial.slurmEnabled !== state.slurmEnabled ||
+    initial.kubeEnabled !== state.kubeEnabled ||
     initial.launchCluster !== state.launchCluster ||
     `${initial.nodesCount || 0}` !== `${state.nodesCount || 0}` ||
     `${initial.maxNodesCount || 0}` !== `${state.maxNodesCount || 0}`;
@@ -124,22 +155,39 @@ function executionEnvironmentCheck (props, state, {execEnvSelectValue}) {
 }
 
 function spotOnDemandCheck (form, {spotInitialValue}) {
+  if (!formItemInitialized(form, `${ADVANCED}.is_spot`)) {
+    return false;
+  }
   return `${form.getFieldValue(`${ADVANCED}.is_spot`)}` !== `${spotInitialValue}`;
 }
 
 function autoPauseCheck (form, state) {
+  if (!formItemInitialized(form, `${ADVANCED}.is_spot`)) {
+    return false;
+  }
   return `${form.getFieldValue(`${ADVANCED}.is_spot`)}` === 'false' && !state.autoPause;
 }
 
 function limitMountsCheck (form, parameters) {
+  if (!formItemInitialized(form, `${ADVANCED}.limitMounts`)) {
+    return false;
+  }
   const getDefaultValue = () => {
-    if (parameters.parameters && parameters.parameters[LIMIT_MOUNTS_PARAMETER]) {
-      return parameters.parameters[LIMIT_MOUNTS_PARAMETER].value;
+    if (parameters.parameters && parameters.parameters[CP_CAP_LIMIT_MOUNTS]) {
+      return parameters.parameters[CP_CAP_LIMIT_MOUNTS].value;
     }
-    return null;
+    return undefined;
   };
+  const isNull = o => o === null || o === undefined;
   const initial = getDefaultValue();
-  return form.getFieldValue(`${ADVANCED}.limitMounts`) !== initial;
+  const formValue = form.getFieldValue(`${ADVANCED}.limitMounts`);
+  if (isNull(formValue) && isNull(initial)) {
+    return false;
+  }
+  if (isNull(formValue) || isNull(initial)) {
+    return true;
+  }
+  return formValue !== initial;
 }
 function cmdTemplateCheck (state, parameters, {cmdTemplateValue, toolDefaultCmd}) {
   let code = cmdTemplateValue;
@@ -155,6 +203,9 @@ function cmdTemplateCheck (state, parameters, {cmdTemplateValue, toolDefaultCmd}
 }
 
 function parametersCheck (form, parameters, state) {
+  if (!formItemInitialized(form, PARAMETERS) || !formItemInitialized(form, SYSTEM_PARAMETERS)) {
+    return false;
+  }
   const formParams = form.getFieldValue(PARAMETERS);
   const formSystemParams = form.getFieldValue(SYSTEM_PARAMETERS);
   const formValue = {};
@@ -188,7 +239,7 @@ function parametersCheck (form, parameters, state) {
   }
   const initialValue = Object.keys(parameters.parameters || {})
     .filter(key => [
-      LIMIT_MOUNTS_PARAMETER,
+      CP_CAP_LIMIT_MOUNTS,
       ...getSkippedSystemParametersList({state})
     ].indexOf(key) === -1)
     .map(key => ({key, value: parameters.parameters[key].value || ''}))
@@ -206,6 +257,17 @@ function parametersCheck (form, parameters, state) {
   return Object.keys(formValue).length !== Object.keys(initialValue).length ||
     check(formValue, initialValue) ||
     check(initialValue, formValue);
+}
+
+function runCapabilitiesCheck (state, parameters) {
+  const dinD = dinDEnabled(parameters.parameters);
+  const singularity = singularityEnabled(parameters.parameters);
+  const systemD = systemDEnabled(parameters.parameters);
+  const noMachine = noMachineEnabled(parameters.parameters);
+  const module = moduleEnabled(parameters.parameters);
+  return dinD !== state.dinD || singularity !== state.singularity ||
+    systemD !== state.systemD || noMachine !== state.noMachine ||
+    module !== state.module;
 }
 
 export default function (props, state, options) {
@@ -245,10 +307,16 @@ export default function (props, state, options) {
     modified(form, parameters, `${ADVANCED}.prettyUrl`, 'prettyUrl') ||
     // timeout check
     modified(form, parameters, `${ADVANCED}.timeout`, 'timeout') ||
+    // stopAfter check
+    modified(form, parameters, `${ADVANCED}.stopAfter`, 'stopAfter') ||
+    // endpointName check
+    modified(form, parameters, `${ADVANCED}.endpointName`, 'endpointName') ||
     // limit mounts check
     limitMountsCheck(form, parameters) ||
     // cmd template check
     cmdTemplateCheck(state, parameters, options) ||
     // check general parameters
-    parametersCheck(form, parameters);
+    parametersCheck(form, parameters) ||
+    // check additional run capabilities
+    runCapabilitiesCheck(state, parameters);
 }

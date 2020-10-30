@@ -417,7 +417,7 @@ export default class BucketBrowser extends React.Component {
   didSelectDataStorageItem = (item) => {
     if (item.type.toLowerCase() === 'folder') {
       this.setState({
-        path: item.path,
+        path: decodeURIComponent(item.path || ''),
         pageMarkers: [null],
         pagePerformed: false,
         currentPage: 0
@@ -774,7 +774,7 @@ export default class BucketBrowser extends React.Component {
             bucket: bucket,
             expandedKeys,
             selectedKeys: [bucketKey],
-            path: pathCorrected,
+            path: decodeURIComponent(pathCorrected || ''),
             selectedItems: (path || '').split(',').map(p => ({name: p.trim()}))
           });
       }
@@ -861,7 +861,7 @@ export default class BucketBrowser extends React.Component {
           bucket,
           expandedKeys,
           selectedKeys: [`storage_${bucket.id}`],
-          path: pathCorrected,
+          path: decodeURIComponent(pathCorrected || ''),
           pageMarkers: [null],
           pagePerformed: false,
           currentPage: 0
@@ -869,7 +869,7 @@ export default class BucketBrowser extends React.Component {
       } else if (this.state.path !== firstItemPath) {
         this.setState({
           selectedKeys: [],
-          path: firstItemPath,
+          path: decodeURIComponent(firstItemPath || ''),
           pageMarkers: [null],
           pagePerformed: false,
           currentPage: 0
@@ -883,7 +883,12 @@ export default class BucketBrowser extends React.Component {
       if (this.state.bucket.type === DTS_ROOT_ITEM_TYPE) {
         this.storage = new DTSRequest(this.state.bucket.id, this.state.bucket.prefix, this.state.path, PAGE_SIZE);
       } else {
-        this.storage = new DataStorageRequest(this.state.bucket.id, this.state.path, false, PAGE_SIZE);
+        this.storage = new DataStorageRequest(
+          this.state.bucket.id,
+          this.state.path,
+          false,
+          PAGE_SIZE
+        );
       }
       this.storage.type = this.state.bucket.type;
       this.storage.fetch();
@@ -896,7 +901,12 @@ export default class BucketBrowser extends React.Component {
       if (this.storage.type === DTS_ROOT_ITEM_TYPE) {
         this.storage = new DTSRequest(this.state.bucket.id, this.state.bucket.prefix, this.state.path, PAGE_SIZE);
       } else {
-        this.storage = new DataStorageRequest(this.state.bucket.id, this.state.path, false, PAGE_SIZE);
+        this.storage = new DataStorageRequest(
+          this.state.bucket.id,
+          this.state.path,
+          false,
+          PAGE_SIZE
+        );
       }
       this.storage.type = this.state.bucket.type;
       this.storage.fetch();

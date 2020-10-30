@@ -18,6 +18,7 @@
 package com.epam.pipeline.manager.user;
 
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
+import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import com.opencsv.CSVWriter;
@@ -45,7 +46,8 @@ public class UserExporter {
     public static final String SPACE = " ";
 
     public String exportUsers(final PipelineUserExportVO exportSettings,
-                              final Collection<PipelineUserWithStoragePath> users) {
+                              final Collection<PipelineUserWithStoragePath> users,
+                              final List<String> sensitiveKeys) {
         final StringWriter writer = new StringWriter();
         final List<String> attributeNames = CollectionUtils.emptyIfNull(users).stream()
                 .map(user -> MapUtils.emptyIfNull(user.getAttributes()).keySet())
@@ -53,22 +55,28 @@ public class UserExporter {
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
-
-        final String[] csvHeader = getColumnMapping(exportSettings, attributeNames);
+        final List<String> metadataColumns = ListUtils.emptyIfNull(exportSettings.getMetadataColumns())
+                .stream()
+                .distinct()
+                .filter(key -> !ListUtils.emptyIfNull(sensitiveKeys).contains(key))
+                .sorted()
+                .collect(Collectors.toList());
+        final String[] csvHeader = getColumnMapping(exportSettings, attributeNames, metadataColumns);
 
         final CSVWriter csvWriter = new CSVWriter(writer);
         if (exportSettings.isIncludeHeader()) {
             csvWriter.writeNext(csvHeader, false);
         }
         CollectionUtils.emptyIfNull(users).stream()
-                .map(user -> userToLine(user, attributeNames, exportSettings))
+                .map(user -> userToLine(user, attributeNames, exportSettings, metadataColumns))
                 .forEach(line -> csvWriter.writeNext(line, false));
         return writer.toString();
     }
 
 
     private String[] getColumnMapping(final PipelineUserExportVO exportSettings,
-                                      final List<String> attributeNames) {
+                                      final List<String> attributeNames,
+                                      final List<String> metadataColumns) {
         final List<String> result = new ArrayList<>();
         if (exportSettings.isIncludeId()) {
             result.add(PipelineUserWithStoragePath.PipelineUserFields.ID.getValue());
@@ -78,6 +86,9 @@ public class UserExporter {
         }
         if (exportSettings.isIncludeAttributes()) {
             result.addAll(ListUtils.emptyIfNull(attributeNames));
+        }
+        if (CollectionUtils.isNotEmpty(metadataColumns)) {
+            result.addAll(metadataColumns);
         }
         if (exportSettings.isIncludeRegistrationDate()) {
             result.add(PipelineUserWithStoragePath.PipelineUserFields.REGISTRATION_DATE.getValue()
@@ -105,7 +116,8 @@ public class UserExporter {
 
     private String[] userToLine(final PipelineUserWithStoragePath user,
                                 final List<String> attributeNames,
-                                final PipelineUserExportVO exportSettings) {
+                                final PipelineUserExportVO exportSettings,
+                                final List<String> metadataColumns) {
         final List<String> result = new ArrayList<>();
         if (exportSettings.isIncludeId()) {
             result.add(String.valueOf(user.getId()));
@@ -119,6 +131,17 @@ public class UserExporter {
                     .map(attribute -> {
                         final Map<String, String> userAttributes = MapUtils.emptyIfNull(user.getAttributes());
                         return userAttributes.getOrDefault(attribute, StringUtils.EMPTY);
+                    })
+                    .collect(Collectors.toList()));
+        }
+        if (CollectionUtils.isNotEmpty(metadataColumns)) {
+            result.addAll(metadataColumns
+                    .stream()
+                    .map(metadataKey -> {
+                        final Map<String, PipeConfValue> metadata = MapUtils.emptyIfNull(user.getMetadata());
+                        return Optional.ofNullable(metadata.get(metadataKey))
+                                .map(value -> StringUtils.defaultIfBlank(value.getValue(), StringUtils.EMPTY))
+                                .orElse(StringUtils.EMPTY);
                     })
                     .collect(Collectors.toList()));
         }

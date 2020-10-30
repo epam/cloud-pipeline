@@ -21,6 +21,7 @@ import os
 import pytz
 import sys
 import tzlocal
+import platform
 from pypac import api as PacAPI
 from pypac.resolver import ProxyResolver as PacProxyResolver
 
@@ -101,11 +102,21 @@ class Config(object):
                         self.proxy_ntlm_pass = None
                 if self.api and self.access_key:
                     self.initialized = True
+                if 'codec' in data:
+                    self.change_encoding(data['codec'])
         elif raise_config_not_found_exception:
             raise ConfigNotFoundError()
+        self.validate_pac_proxy(self.proxy)
 
     def validate(self, print_info=False):
         check_token(self.access_key, self.tz, print_info=print_info)
+
+    @classmethod
+    def validate_pac_proxy(cls, proxy):
+        if proxy and str(proxy).lower() == PROXY_TYPE_PAC and platform.system() != 'Windows':
+            click.echo('"pac" (Proxy Auto Configuration) is not supported in the non-Windows environment. '
+                       'Please set the proxy address explicitly or keep it empty (e.g. --proxy "")', err=True)
+            sys.exit(1)
 
     @classmethod
     def validate_access_token(cls, _func=None, quiet_flag_property_name=None):
@@ -167,11 +178,11 @@ class Config(object):
         return os.path.join(pipe_path, module)
 
     def build_ntlm_module_path(self):
-        self.build_inner_module_path("ntlmaps/ntlmaps")
+        return self.build_inner_module_path("ntlmaps/ntlmaps")
 
     @classmethod
     def store(cls, access_key, api, timezone, proxy,
-              proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass):
+              proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec):
         check_token(access_key, timezone)
         if proxy == PROXY_TYPE_PAC and proxy_ntlm:
             raise ProxyInvalidConfig('NTLM proxy authentication cannot be used for the PAC proxy type'
@@ -180,6 +191,10 @@ class Config(object):
             raise ProxyInvalidConfig('NTLM proxy authentication is supported only for prebuilt CLI binaries.')
         if proxy_ntlm_pass:
             click.secho('Warning: NTLM proxy user password will be stored unencrypted.', fg='yellow')
+        if codec and sys.version_info[0] >= 3:
+            click.echo('Encoding can not be configured with current environment.', err=True)
+            sys.exit(1)
+        cls.validate_pac_proxy(proxy)
         config = {'api': api,
                   'access_key': access_key,
                   'tz': timezone,
@@ -187,7 +202,8 @@ class Config(object):
                   'proxy_ntlm': proxy_ntlm,
                   'proxy_ntlm_user': proxy_ntlm_user,
                   'proxy_ntlm_domain': proxy_ntlm_domain,
-                  'proxy_ntlm_pass': cls.encode_password(proxy_ntlm_pass)
+                  'proxy_ntlm_pass': cls.encode_password(proxy_ntlm_pass),
+                  'codec': codec
                   }
         config_file = cls.config_path()
         # create file
@@ -198,6 +214,15 @@ class Config(object):
         # save
         with open(config_file, 'w+') as config_file_stream:
             json.dump(config, config_file_stream)
+
+    @classmethod
+    def change_encoding(cls, codec):
+        if codec:
+            try:
+                reload(sys)
+                sys.setdefaultencoding(codec)
+            except NameError:
+                pass
 
     @classmethod
     def config_path(cls):

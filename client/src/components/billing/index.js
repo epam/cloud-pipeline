@@ -19,10 +19,24 @@ import {inject, observer} from 'mobx-react';
 // import {Menu} from 'antd';
 // import Quotas from './quotas';
 import * as Reports from './reports';
+import roleModel from '../../utils/roleModel';
 import styles from './billing.css';
 
-function billing ({children, location, router, preferences}) {
-  if (!preferences || !preferences.loaded || !preferences.billingEnabled) {
+function billing ({children, location, router, preferences, authenticatedUserInfo}) {
+  const isBillingPrivilegedUser = authenticatedUserInfo && authenticatedUserInfo.loaded &&
+    roleModel.isManager.billing(this);
+  if (
+    !authenticatedUserInfo ||
+    !authenticatedUserInfo.loaded ||
+    !preferences ||
+    !preferences.loaded
+  ) {
+    return null;
+  }
+  if (
+    (!isBillingPrivilegedUser && !preferences.billingEnabled) ||
+    (isBillingPrivilegedUser && !preferences.billingAdminsEnabled)
+  ) {
     return null;
   }
   // const {pathname = ''} = location;
@@ -62,4 +76,4 @@ export {
   // Quotas as BillingQuotas,
   Reports as BillingReports
 };
-export default inject('preferences')(observer(billing));
+export default inject('preferences')(roleModel.authenticationInfo(observer(billing)));

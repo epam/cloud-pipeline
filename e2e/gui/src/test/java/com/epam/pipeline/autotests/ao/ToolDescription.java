@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,23 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.SelenideElement;
 import java.util.Map;
 import java.util.function.Consumer;
+
+import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.appears;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.attributesMenu;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.showAttributes;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.showInstanceManagement;
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ToolDescription extends ToolTab<ToolDescription> {
 
@@ -62,25 +69,20 @@ public class ToolDescription extends ToolTab<ToolDescription> {
     }
 
     public ToolDescription showMetadata(final Consumer<MetadataSectionAO> action) {
-        hover(SHOW_METADATA);
-        ensure(attributesMenu, appears);
-        performIf(showAttributes, visible,
-                page -> click(showAttributes),
-                page -> resetMouse()
-        );
-        MetadataSectionAO metadata = new MetadataSectionAO(this);
-        action.accept(metadata);
+        showMetadata(showAttributes);
+        action.accept(new MetadataSectionAO(this));
+        return this;
+    }
+
+    public ToolDescription showInstanceManagement(final Consumer<InstanceManagementSectionAO> action) {
+        showMetadata(showInstanceManagement);
+        action.accept(new InstanceManagementSectionAO(this));
         return this;
     }
 
     public PermissionTabAO permissions() {
         hover(TOOL_SETTINGS).click(PERMISSIONS);
-        return new PermissionTabAO(new ClosableAO() {
-            @Override
-            public void closeAll() {
-                $(byClassName("ant-modal-close-x")).shouldBe(visible).click();
-            }
-        });
+        return new PermissionTabAO(() -> $(byClassName("ant-modal-close-x")).shouldBe(visible).click());
     }
 
     public static By editButtonFor(final Primitive primitive) {
@@ -90,12 +92,73 @@ public class ToolDescription extends ToolTab<ToolDescription> {
             case FULL_DESCRIPTION:
                 return byId("description-edit-button");
             default:
-                throw new RuntimeException(String.format("There is no edit button for %s.", primitive));
+                throw new IllegalArgumentException(format("There is no edit button for %s.", primitive));
         }
+    }
+
+    private void showMetadata(final By attribute) {
+        hover(SHOW_METADATA);
+        ensure(attributesMenu, appears);
+        performIf(showAttributes, visible,
+                page -> click(attribute),
+                page -> resetMouse()
+        );
     }
 
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;
+    }
+
+    public class InstanceManagementSectionAO extends PopupAO<InstanceManagementSectionAO, AccessObject> {
+        private final Map<Primitive, SelenideElement> elements = initialiseElements(
+                entry(APPLY, $(byXpath("//button[.='APPLY']"))),
+                entry(PRICE_TYPE, context().find(byXpath(
+                        format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
+        );
+
+        public InstanceManagementSectionAO(AccessObject parentAO) {
+            super(parentAO);
+        }
+
+        public InstanceManagementSectionAO setPriceType(final String priceType) {
+            click(PRICE_TYPE);
+            context().find(byClassName("ant-select-dropdown")).find(byText(priceType))
+                    .shouldBe(visible)
+                    .click();
+            return this;
+        }
+
+        public InstanceManagementSectionAO clearAllowedPriceTypeField() {
+            ensureVisible(PRICE_TYPE);
+            SelenideElement type = context().$(byClassName("ant-select-selection__choice__remove"));
+            while (type.isDisplayed()) {
+                type.click();
+                sleep(1, SECONDS);
+            }
+            if (get(APPLY).isEnabled()) {
+                clickApply();
+            }
+            return this;
+        }
+
+        public InstanceManagementSectionAO addAllowedToolInstanceTypesMask(String mask) {
+            By optionField = byXpath("//div/b[text()='Allowed tool instance types mask']/following::div/input");
+            if (StringUtils.isBlank(mask)) {
+                clearByKey(optionField);
+            }
+            setValue(optionField, mask);
+            return this;
+        }
+
+        public InstanceManagementSectionAO clickApply() {
+            click(APPLY);
+            return this;
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
+        }
     }
 }

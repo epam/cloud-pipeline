@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ public interface PipelineSelectors {
     By showAttributes = confine(byText("Attributes"), attributesMenu,"show attributes");
     By hideAttributes = confine(byText("Hide attributes"), attributesMenu, "hide attributes");
     By showIssues = confine(byText("Issue"), attributesMenu,"show issues");
+    By showInstanceManagement = confine(byText("Instance management"), attributesMenu,"show instance management");
 
     /**
      * Returns {@link By} qualifier of a button with text (case-sensitive full match).
@@ -78,6 +79,15 @@ public interface PipelineSelectors {
     static By metadataWithName(final String name) {
         final String metadataClass = "pipelines-library-tree-node-metadata";
         final String titleClass = "pipelines-library__tree-item-title";
+        return byXpath(String.format(
+                ".//*[contains(@class, '%s') and .//*[contains(@class, '%s') and text() = '%s']]",
+                metadataClass, titleClass, name
+        ));
+    }
+
+    static By folderWithName(final String name) {
+        final String metadataClass = "pipelines-library-tree-node-folder";
+        final String titleClass = "browser__tree-item-title";
         return byXpath(String.format(
                 ".//*[contains(@class, '%s') and .//*[contains(@class, '%s') and text() = '%s']]",
                 metadataClass, titleClass, name

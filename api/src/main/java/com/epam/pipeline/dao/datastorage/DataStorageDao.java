@@ -70,6 +70,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     private String loadStorageWithParentsQuery;
     private String loadDataStorageByPrefixesQuery;
     private String loadDataStoragesByIdsQuery;
+    private String loadDataStoragesFileShareId;
 
     @Autowired
     private DaoHelper daoHelper;
@@ -187,6 +188,11 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 .getRowMapper(), nfsRootPath + POSTGRES_LIKE_CHARACTER);
     }
 
+    public List<AbstractDataStorage> loadDataStoragesByFileShareMountID(Long fileShareId) {
+        return getJdbcTemplate().query(loadDataStoragesFileShareId, DataStorageParameters
+                .getRowMapper(), fileShareId);
+    }
+
     @Required
     public void setLoadDataStoragesByNFSRootPath(String loadDataStoragesByNFSRootPath) {
         this.loadDataStoragesByNFSRootPath = loadDataStoragesByNFSRootPath;
@@ -265,6 +271,10 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         this.loadDataStoragesByIdsQuery = loadDataStoragesByIdsQuery;
     }
 
+    public void setLoadDataStoragesFileShareId(String loadDataStoragesFileShareId) {
+        this.loadDataStoragesFileShareId = loadDataStoragesFileShareId;
+    }
+
     public enum DataStorageParameters {
         DATASTORAGE_ID,
         DATASTORAGE_NAME,
@@ -286,6 +296,9 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
         // S3 specific fields
         ALLOWED_CIDRS,
+        S3_KMS_KEY_ARN,
+        S3_USE_ASSUMED_CREDS,
+        S3_TEMP_CREDS_ROLE,
 
         // NFS specific fields
         MOUNT_OPTIONS,
@@ -323,6 +336,9 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                                   bucket.getAllowedCidrs().stream().collect(Collectors.joining(",")) : null;
                 params.addValue(ALLOWED_CIDRS.name(), cidrsStr);
                 params.addValue(REGION_ID.name(), bucket.getRegionId());
+                params.addValue(S3_KMS_KEY_ARN.name(), bucket.getKmsKeyArn());
+                params.addValue(S3_TEMP_CREDS_ROLE.name(), bucket.getTempCredentialsRole());
+                params.addValue(S3_USE_ASSUMED_CREDS.name(), bucket.isUseAssumedCredentials());
             } else if (dataStorage instanceof AzureBlobStorage) {
                 AzureBlobStorage blob = ((AzureBlobStorage) dataStorage);
                 params.addValue(REGION_ID.name(), blob.getRegionId());
@@ -400,7 +416,10 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                     rs.getString(MOUNT_POINT.name()),
                     allowedCidrs,
                     regionId,
-                    fileShareMountId);
+                    fileShareMountId,
+                    rs.getString(S3_KMS_KEY_ARN.name()),
+                    rs.getString(S3_TEMP_CREDS_ROLE.name()),
+                    rs.getBoolean(S3_USE_ASSUMED_CREDS.name()));
 
             dataStorage.setShared(rs.getBoolean(SHARED.name()));
             dataStorage.setDescription(rs.getString(DESCRIPTION.name()));

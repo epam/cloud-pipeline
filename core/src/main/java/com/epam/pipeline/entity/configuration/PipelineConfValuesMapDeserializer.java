@@ -17,10 +17,15 @@
 package com.epam.pipeline.entity.configuration;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.NullNode;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,16 +34,25 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<String, PipeConfValueVO>> {
 
     private static final String VALUE_FIELD = "value";
     private static final String TYPE_FIELD = "type";
     private static final String REQUIRED_FIELD = "required";
+    private static final String NO_OVERRIDE_FIELD = "no_override";
     private static final String ENUM_FIELD = "enum";
     private static final String DESCRIPTION_FIELD = "description";
+    private static final String VISIBLE_FIELD = "visible";
+    private static final String VALIDATION_FIELD = "validation";
     private static final  NullNode NULL_NODE = NullNode.getInstance();
+    private final ObjectMapper mapper;
 
-
+    public PipelineConfValuesMapDeserializer() {
+        mapper = new ObjectMapper();
+        mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, true);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
 
     @Override
     public Map<String, PipeConfValueVO> deserialize(JsonParser p, DeserializationContext ctxt)
@@ -65,20 +79,48 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
                 if (hasValue(required)) {
                     parameter.setRequired(required.asBoolean());
                 }
-                JsonNode availableValuesNode = child.get(ENUM_FIELD);
-                if (hasValue(availableValuesNode) && availableValuesNode.isArray()) {
-                    List<String> availableValues = new ArrayList<>();
-                    availableValuesNode.forEach(arrayItem -> availableValues.add(arrayItem.asText()));
-                    parameter.setAvailableValues(availableValues);
+                JsonNode noOverride = child.get(NO_OVERRIDE_FIELD);
+                if (hasValue(noOverride)) {
+                    parameter.setNoOverride(noOverride.asBoolean());
                 }
+                parseEnumValues(ctxt, child, parameter);
                 final JsonNode description = child.get(DESCRIPTION_FIELD);
                 if (hasValue(description)) {
                     parameter.setDescription(description.asText());
+                }
+                final JsonNode visible = child.get(VISIBLE_FIELD);
+                if (hasValue(visible)) {
+                    parameter.setVisible(visible.asText());
+                }
+                final JsonNode validation = child.get(VALIDATION_FIELD);
+                if (hasValue(validation) && validation.isArray()) {
+                    parameter.setValidation(mapper.readValue(validation.traverse(),
+                            new TypeReference<List<Map<String, String>>>(){}));
                 }
             }
             parameters.put(name, parameter);
         }
         return parameters;
+    }
+
+    public void parseEnumValues(DeserializationContext ctxt, JsonNode child, PipeConfValueVO parameter) {
+        JsonNode availableValuesNode = child.get(ENUM_FIELD);
+        if (hasValue(availableValuesNode) && availableValuesNode.isArray()) {
+            List<Object> availableValues = new ArrayList<>();
+            availableValuesNode.forEach(arrayItem -> {
+                if (arrayItem.isObject()) {
+                    try {
+                        availableValues.add(mapper.readValue(arrayItem.traverse(),
+                                new TypeReference<Map<String, String>>(){}));
+                    } catch (IOException e) {
+                        log.error(e.getMessage(), e);
+                    }
+                } else {
+                    availableValues.add(arrayItem.asText());
+                }
+            });
+            parameter.setAvailableValues(availableValues);
+        }
     }
 
     private boolean hasValue(final JsonNode required) {

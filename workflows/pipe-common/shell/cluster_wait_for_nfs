@@ -123,6 +123,27 @@ elif [ "$CP_CAP_SHARE_FS_TYPE" == "lfs" ]; then
     else
         pipe_log_info "Successfully mounted LFS folder to worker node" "$FS_SETUP_TASK"
     fi
+
+    setfacl -d -m user::rwx -m group:root:rwx -m other::rx ${SHARED_PATH}
+    setfacl -m user::rwx -m group:root:rwx -m other::rx ${SHARED_PATH}
+elif [ "$CP_CAP_SHARE_FS_TYPE" == "external" ]; then
+    install_nfs_client
+    mount_shared_storage_fs "$SHARED_PATH" "$parent_id" GET "$FS_SETUP_TASK"
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "Failed to setup shared storage FS on worker node" "$FS_SETUP_TASK"
+        exit 1
+    else
+        pipe_log_success "Successfully mounted shared storage FS to worker node" "$FS_SETUP_TASK"
+    fi
+elif [ "$CP_CAP_SHARE_FS_TYPE" == "lustre" ]; then
+    install_nfs_client
+    mount_shared_lustre_fs "$SHARED_PATH" "$parent_id" GET "$FS_SETUP_TASK"
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "Failed to setup Lustre FS on worker node" "$FS_SETUP_TASK"
+        exit 1
+    else
+        pipe_log_success "Successfully mounted Lustre FS to worker node" "$FS_SETUP_TASK"
+    fi
 else
     pipe_log_fail "Shared FS type '${CP_CAP_SHARE_FS_TYPE}' is not supported, exiting" "$FS_SETUP_TASK"
 fi

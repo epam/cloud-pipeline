@@ -23,6 +23,7 @@ import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.billingreportagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AwsStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AzureStoragePriceListLoader;
+import com.epam.pipeline.billingreportagent.service.impl.converter.FileShareMountsService;
 import com.epam.pipeline.billingreportagent.service.impl.converter.GcpStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.PriceLoadingMode;
 import com.epam.pipeline.billingreportagent.service.impl.converter.StoragePricingService;
@@ -65,6 +66,9 @@ public class CommonSyncConfiguration {
 
     @Value("${sync.storage.file.index.pattern}")
     private String fileIndexPattern;
+
+    @Value("${sync.storage.historical.billing.generation:false}")
+    private boolean enableStorageHistoricalBillingGeneration;
 
     @Bean
     public BulkRequestSender bulkRequestSender(
@@ -117,7 +121,8 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
-                        fileIndexPattern),
+                        fileIndexPattern,
+                        enableStorageHistoricalBillingGeneration),
                 DataStorageType.S3);
     }
 
@@ -129,7 +134,8 @@ public class CommonSyncConfiguration {
                                                final @Value("${sync.storage.price.load.mode:api}")
                                                        String priceMode,
                                                final @Value("${sync.aws.json.price.endpoint.template}")
-                                                       String endpointTemplate) {
+                                                       String endpointTemplate,
+                                               final FileShareMountsService fileShareMountsService) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
                 new StoragePricingService(new AwsStoragePriceListLoader("AmazonEFS",
@@ -146,7 +152,9 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.FILE_STORAGE,
                         pricingService,
-                        fileIndexPattern),
+                        fileIndexPattern,
+                        fileShareMountsService,
+                        enableStorageHistoricalBillingGeneration),
                 DataStorageType.NFS);
     }
 
@@ -169,7 +177,8 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
-                        fileIndexPattern),
+                        fileIndexPattern,
+                        enableStorageHistoricalBillingGeneration),
                 DataStorageType.GS);
     }
 
@@ -195,7 +204,8 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
-                        fileIndexPattern),
+                        fileIndexPattern,
+                        enableStorageHistoricalBillingGeneration),
                 DataStorageType.AZ);
     }
 }

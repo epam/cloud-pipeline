@@ -115,26 +115,22 @@ done
 
 systemctl stop docker
 
-_KUBE_SYSTEM_PODS_NEEDS_LOAD=1
-if [ ! -d "/ebs/docker" ]; then
-  _KUBE_SYSTEM_PODS_DISTR_PREFIX="@SYSTEM_PODS_DISTR_PREFIX@"
-  if [ ! "$_KUBE_SYSTEM_PODS_DISTR_PREFIX" ] || [[ "$_KUBE_SYSTEM_PODS_DISTR_PREFIX" == "@"*"@" ]]; then
-    _KUBE_SYSTEM_PODS_DISTR_PREFIX="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker"
-  fi
-  mkdir -p /tmp/system-dockers
-  _WO="--timeout=3 --waitretry=0 --tries=3 -q"
-  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/calico-node-v3.14.1.tar" -O /tmp/system-dockers/calico-node-v3.14.1.tar && \
-  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/calico-pod2daemon-flexvol-v3.14.1.tar" -O /tmp/system-dockers/calico-pod2daemon-flexvol-v3.14.1.tar &&
-  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/calico-cni-v3.14.1.tar" -O /tmp/system-dockers/calico-cni-v3.14.1.tar && \
-  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O /tmp/system-dockers/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
-  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/quay.io-coreos-flannel-v0.11.0.tar" -O /tmp/system-dockers/quay.io-coreos-flannel-v0.11.0.tar && \
-  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR_PREFIX}/k8s.gcr.io-pause-3.1.tar" -O /tmp/system-dockers/k8s.gcr.io-pause-3.1.tar
-  _KUBE_SYSTEM_PODS_NEEDS_LOAD=$?
-  if [ $_KUBE_SYSTEM_PODS_NEEDS_LOAD -ne 0 ]; then
-    if [ -d "/var/lib/docker" ] && [ ! -d "/ebs/docker" ]; then
-      mv /var/lib/docker /ebs/
-    fi
-  fi
+_DOCKER_SYS_IMGS="/ebs/docker-system-images"
+rm -rf $_DOCKER_SYS_IMGS
+_KUBE_SYSTEM_PODS_DISTR="@SYSTEM_PODS_DISTR_PREFIX@"
+if [ ! "$_KUBE_SYSTEM_PODS_DISTR" ] || [[ "$_KUBE_SYSTEM_PODS_DISTR" == "@"*"@" ]]; then
+  _KUBE_SYSTEM_PODS_DISTR="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker"
+fi
+mkdir -p $_DOCKER_SYS_IMGS
+_WO="--timeout=10 --waitretry=1 --tries=10"
+wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-node-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-node-v3.14.1.tar && \
+wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-pod2daemon-flexvol-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-pod2daemon-flexvol-v3.14.1.tar &&
+wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-cni-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-cni-v3.14.1.tar && \
+wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O $_DOCKER_SYS_IMGS/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
+wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/quay.io-coreos-flannel-v0.11.0.tar" -O $_DOCKER_SYS_IMGS/quay.io-coreos-flannel-v0.11.0.tar && \
+wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/k8s.gcr.io-pause-3.1.tar" -O $_DOCKER_SYS_IMGS/k8s.gcr.io-pause-3.1.tar
+if [ $? -ne 0 ]; then
+  _DOCKER_SYS_IMGS="/opt/docker-system-images"
 fi
 
 mkdir -p /etc/docker
@@ -145,7 +141,7 @@ cat <<EOT > /etc/docker/daemon.json
 {
   "exec-opts": ["native.cgroupdriver=systemd"],
   "data-root": "/ebs/docker",
-  "storage-driver": "overlay2",
+  "storage-driver": "btrfs",
   "max-concurrent-uploads": 1,
   "default-runtime": "nvidia",
    "runtimes": {
@@ -161,7 +157,7 @@ cat <<EOT > /etc/docker/daemon.json
 {
   "exec-opts": ["native.cgroupdriver=systemd"],
   "data-root": "/ebs/docker",
-  "storage-driver": "overlay2",
+  "storage-driver": "btrfs",
   "max-concurrent-uploads": 1
 }
 EOT
@@ -210,7 +206,7 @@ elif [[ $cloud == *"Microsoft"* ]]; then
     _CLOUD_INSTANCE_AZ=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/zone?api-version=2018-10-01&format=text')
     _CLOUD_INSTANCE_ID="$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/name?api-version=2018-10-01&format=text')"
     _CLOUD_INSTANCE_TYPE=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/vmSize?api-version=2018-10-01&format=text')
-    _KUBE_NODE_NAME="$(hostname)"
+    _KUBE_NODE_NAME=$(echo "$_CLOUD_INSTANCE_ID" | grep -xE "[a-zA-Z0-9\-]{1,256}" &> /dev/null && echo $_CLOUD_INSTANCE_ID || hostname)
 
     _CLOUD_INSTANCE_IMAGE_ID="$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/publisher?api-version=2018-10-01&format=text'):$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/product?api-version=2018-10-01&format=text'):$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/name?api-version=2018-10-01&format=text')"
     if [[ "$_CLOUD_INSTANCE_IMAGE_ID" == '::' ]]; then
@@ -306,12 +302,10 @@ systemctl enable docker
 systemctl enable kubelet
 systemctl start docker
 
-if [ $_KUBE_SYSTEM_PODS_NEEDS_LOAD -eq 0 ]; then
-  for _KUBE_SYSTEM_POD_FILE in /tmp/system-dockers/*.tar; do
-    docker load -i $_KUBE_SYSTEM_POD_FILE
-    rm -f $_KUBE_SYSTEM_POD_FILE
-  done
-fi
+for _KUBE_SYSTEM_POD_FILE in $_DOCKER_SYS_IMGS/*.tar; do
+  docker load -i $_KUBE_SYSTEM_POD_FILE
+done
+rm -rf $_DOCKER_SYS_IMGS
 
 kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-verification --node-name $_KUBE_NODE_NAME --ignore-preflight-errors all
 systemctl start kubelet
