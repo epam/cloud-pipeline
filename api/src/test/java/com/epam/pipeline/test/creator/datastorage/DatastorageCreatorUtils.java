@@ -44,13 +44,13 @@ import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
@@ -224,21 +224,19 @@ public final class DatastorageCreatorUtils {
         return new DataStorageStreamingContent(inputStream, TEST_STRING);
     }
 
-    public static Map<AbstractDataStorage, TypeReference> getRegularTypeStorages() {
-        Map<AbstractDataStorage, TypeReference> map = new HashMap<>();
-        map.put(getS3bucketDataStorage(), DatastorageCreatorUtils.S3_BUCKET_TYPE);
-        map.put(getAzureBlobStorage(), DatastorageCreatorUtils.AZURE_BLOB_TYPE);
-        map.put(getGsBucketStorage(), DatastorageCreatorUtils.GS_BUCKET_TYPE);
-        map.put(getNfsDataStorage(), DatastorageCreatorUtils.NFS_STORAGE_TYPE);
-        return map;
+    public static List<Pair<AbstractDataStorage, TypeReference>> getRegularTypeStorages() {
+        return Arrays.asList(
+                Pair.of(getS3bucketDataStorage(), S3_BUCKET_TYPE),
+                Pair.of(getAzureBlobStorage(), AZURE_BLOB_TYPE),
+                Pair.of(getGsBucketStorage(), GS_BUCKET_TYPE),
+                Pair.of(getNfsDataStorage(), NFS_STORAGE_TYPE));
     }
 
-    public static Map<AbstractDataStorage, TypeReference> getSecuredTypeStoragesMap() {
-        final Map<AbstractDataStorage, TypeReference> map = new HashMap<>();
-        map.put(getS3bucketDataStorage(), DatastorageCreatorUtils.SECURED_S3_BUCKET_TYPE);
-        map.put(getAzureBlobStorage(), DatastorageCreatorUtils.SECURED_AZURE_BLOB_TYPE);
-        map.put(getGsBucketStorage(), DatastorageCreatorUtils.SECURED_GS_BUCKET_TYPE);
-        map.put(getNfsDataStorage(), DatastorageCreatorUtils.SECURED_NFS_STORAGE_TYPE);
-        return map;
+    public static List<Pair<AbstractDataStorage, TypeReference>> getSecuredTypeStorages() {
+        return Arrays.asList(
+                Pair.of(getS3bucketDataStorage(), SECURED_S3_BUCKET_TYPE),
+                Pair.of(getAzureBlobStorage(), SECURED_AZURE_BLOB_TYPE),
+                Pair.of(getGsBucketStorage(), SECURED_GS_BUCKET_TYPE),
+                Pair.of(getNfsDataStorage(), SECURED_NFS_STORAGE_TYPE));
     }
 }
