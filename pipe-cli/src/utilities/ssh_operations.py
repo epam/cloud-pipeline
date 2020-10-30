@@ -184,24 +184,6 @@ def create_tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, tim
         create_background_tunnel(log_file, timeout)
 
 
-def configure_passwordless_ssh(run_id, local_port, remote_host, log_file, retries,
-                               ssh_config_path, ssh_known_hosts_path,
-                               ssh_public_key_path, ssh_private_key_path):
-    generate_ssh_keys(log_file, ssh_private_key_path)
-    upload_ssh_public_key_to_run(run_id, ssh_public_key_path, retries)
-    add_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path)
-    add_to_ssh_known_hosts(ssh_known_hosts_path, run_id, local_port, log_file, retries)
-
-
-def deconfigure_passwordless_ssh(run_id, local_port, remote_host, log_file, retries,
-                                 ssh_config_path, ssh_known_hosts_path,
-                                 ssh_public_key_path, ssh_private_key_path):
-    remove_ssh_public_key_from_run(run_id, ssh_public_key_path, retries)
-    remove_ssh_keys(ssh_public_key_path, ssh_private_key_path)
-    remove_from_ssh_config(ssh_config_path, remote_host)
-    remove_from_ssh_known_hosts(ssh_known_hosts_path, local_port, log_file)
-
-
 def generate_ssh_keys(log_file, ssh_private_key_path):
     generate_ssh_keys_command = ['ssh-keygen', '-t', 'rsa', '-f', ssh_private_key_path, '-N', '', '-q']
     perform_command(generate_ssh_keys_command, log_file)
@@ -214,24 +196,31 @@ def remove_ssh_keys(ssh_public_key_path, ssh_private_key_path):
         os.remove(ssh_private_key_path)
 
 
-def upload_ssh_public_key_to_run(run_id, ssh_public_key_path, retries):
-    authorized_keys_path = '/root/.ssh/authorized_keys'
+def upload_ssh_public_key_to_run(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths):
     with open(ssh_public_key_path, 'r') as f:
         ssh_public_key = f.read().strip()
-    run_ssh(run_id, 'echo "%s" >> %s' % (ssh_public_key, authorized_keys_path), retries)
+    run_ssh(run_id,
+            'echo "%s" | tee -a %s > /dev/null'
+            % (ssh_public_key, ' '.join(remote_ssh_authorized_keys_paths)), retries)
 
 
-def remove_ssh_public_key_from_run(run_id, ssh_public_key_path, retries):
-    if os.path.exists(ssh_public_key_path):
+def remove_ssh_public_key_from_run(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths):
+    if os.path.exists(ssh_public_key_path) and remote_ssh_authorized_keys_paths:
         with open(ssh_public_key_path, 'r') as f:
             ssh_public_key = f.read().strip()
-        authorized_keys_temp_path = '/root/.ssh/authorized_keys_%s' % random.randint(0, sys.maxsize)
-        authorized_keys = '/root/.ssh/authorized_keys'
-        run_ssh(run_id, 'grep -v "%s" %s > %s; cp %s %s; rm %s'
-                % (ssh_public_key, authorized_keys, authorized_keys_temp_path,
-                   authorized_keys_temp_path, authorized_keys,
-                   authorized_keys_temp_path),
-                retries)
+        remove_ssh_public_keys_from_run_command = ''
+        for remote_ssh_authorized_keys_path in remote_ssh_authorized_keys_paths:
+            remote_ssh_authorized_keys_temp_path = '%s_%s' % (remote_ssh_authorized_keys_path,
+                                                              random.randint(0, sys.maxsize))
+            remove_ssh_public_keys_from_run_command += \
+                'grep -v "{key}" {authorized_keys_path} > {authorized_keys_temp_path};' \
+                'cp {authorized_keys_temp_path} {authorized_keys_path};' \
+                'chmod 600 {authorized_keys_path}' \
+                'rm {authorized_keys_temp_path};' \
+                    .format(key=ssh_public_key,
+                            authorized_keys_path=remote_ssh_authorized_keys_path,
+                            authorized_keys_temp_path=remote_ssh_authorized_keys_temp_path)
+        run_ssh(run_id, remove_ssh_public_keys_from_run_command.rstrip(';'), retries)
 
 
 def add_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path):
@@ -242,7 +231,6 @@ def add_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_
     with open(ssh_config_path, 'a') as f:
         f.write('Host %s\n'
                 '    Hostname 127.0.0.1\n'
-                '    User root\n'
                 '    Port %s\n'
                 '    IdentityFile %s\n'
                 % (remote_host, local_port, ssh_private_key_path))
@@ -265,10 +253,9 @@ def remove_from_ssh_config(ssh_config_path, remote_host):
         f.writelines(updated_ssh_config_lines)
 
 
-def add_to_ssh_known_hosts(ssh_known_hosts_path, run_id, local_port, log_file, retries):
-    run_ssh_public_key_path = '/root/.ssh/id_rsa.pub'
+def add_to_ssh_known_hosts(run_id, local_port, log_file, retries, ssh_known_hosts_path, remote_ssh_public_key_path):
     ssh_known_hosts_temp_path = ssh_known_hosts_path + '_%s' % random.randint(0, sys.maxsize)
-    run_scp_download(run_id, run_ssh_public_key_path, ssh_known_hosts_temp_path, retries)
+    run_scp_download(run_id, remote_ssh_public_key_path, ssh_known_hosts_temp_path, retries)
     with open(ssh_known_hosts_temp_path, 'r') as f:
         public_key = f.read().strip()
     os.remove(ssh_known_hosts_temp_path)
@@ -407,17 +394,22 @@ def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, log_file,
     ssh_private_key_name = 'pipeline-%s-%s-%s' % (run_id, int(time.time()), random.randint(0, sys.maxsize))
     ssh_private_key_path = os.path.join(ssh_keys_path, ssh_private_key_name)
     ssh_public_key_path = ssh_private_key_path + '.pub'
+    conn_info = get_conn_info(run_id)
+    remote_ssh_authorized_keys_paths = ['/root/.ssh/authorized_keys', '/home/%s/.ssh/authorized_keys' % conn_info.owner]
+    remote_ssh_public_key_path = '/root/.ssh/id_rsa.pub'
     if not os.path.exists(ssh_keys_path):
         os.makedirs(ssh_keys_path)
     try:
-        configure_passwordless_ssh(run_id, local_port, remote_host, log_file, retries,
-                                   ssh_config_path, ssh_known_hosts_path,
-                                   ssh_public_key_path, ssh_private_key_path)
+        generate_ssh_keys(log_file, ssh_private_key_path)
+        upload_ssh_public_key_to_run(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths)
+        add_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path)
+        add_to_ssh_known_hosts(run_id, local_port, log_file, retries, ssh_known_hosts_path, remote_ssh_public_key_path)
         create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_level, retries)
     finally:
-        deconfigure_passwordless_ssh(run_id, local_port, remote_host, log_file, retries,
-                                     ssh_config_path, ssh_known_hosts_path,
-                                     ssh_public_key_path, ssh_private_key_path)
+        remove_ssh_public_key_from_run(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths)
+        remove_ssh_keys(ssh_public_key_path, ssh_private_key_path)
+        remove_from_ssh_config(ssh_config_path, remote_host)
+        remove_from_ssh_known_hosts(ssh_known_hosts_path, local_port, log_file)
 
 
 def create_background_tunnel(log_file, timeout):
