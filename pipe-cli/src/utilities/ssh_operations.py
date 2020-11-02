@@ -194,11 +194,16 @@ def create_background_tunnel(log_file, timeout):
             DETACHED_PROCESS = 0x00000008
             CREATE_NEW_PROCESS_GROUP = 0x00000200
             creationflags = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+            stdin = None
         else:
             creationflags = 0
+            import pty
+            _, stdin = pty.openpty()
         executable = sys.argv + ['-f'] if is_frozen() else [sys.executable] + sys.argv + ['-f']
-        tunnel_proc = subprocess.Popen(executable, stdout=output, stderr=subprocess.STDOUT, cwd=os.getcwd(),
-                                       env=os.environ.copy(), creationflags=creationflags)
+        tunnel_proc = subprocess.Popen(executable, stdin=stdin, stdout=output, stderr=subprocess.STDOUT,
+                                       cwd=os.getcwd(), env=os.environ.copy(), creationflags=creationflags)
+        if stdin:
+            os.close(stdin)
         time.sleep(timeout / 1000)
         if tunnel_proc.poll() is not None:
             import click
