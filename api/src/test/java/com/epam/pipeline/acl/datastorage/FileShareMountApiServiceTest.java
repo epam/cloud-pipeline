@@ -30,8 +30,6 @@ import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class FileShareMountApiServiceTest extends AbstractAclTest {
@@ -63,12 +61,11 @@ public class FileShareMountApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldDeleteFileShareMountForAdmin() {
-        final FileShareMountApiService mockFileShareMountApiService = mock(FileShareMountApiService.class);
         doNothing().when(mockFileShareMountManager).delete(ID);
 
-        mockFileShareMountApiService.delete(ID);
+        fileShareMountApiService.delete(ID);
 
-        verify(mockFileShareMountApiService, times(1)).delete(ID);
+        verify(mockFileShareMountManager).delete(ID);
     }
 
     @Test

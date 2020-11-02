@@ -16,10 +16,18 @@
 
 package com.epam.pipeline.acl.datastorage;
 
+import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
+import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
 import com.epam.pipeline.security.acl.AclPermission;
+import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
+import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
+
+import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
@@ -29,12 +37,16 @@ import static org.mockito.Mockito.doReturn;
 
 public class DataStorageApiServiceRuleTest extends AbstractDataStorageAclTest {
 
+    private final DataStorageRule dataStorageRule = DatastorageCreatorUtils.getDataStorageRule();
+    private final Pipeline pipeline = PipelineCreatorUtils.getPipeline(OWNER_USER);
+    private final List<DataStorageRule> dataStorageRuleList = DatastorageCreatorUtils.getDataStorageRuleList();
+
+    @Autowired
+    private DataStorageRuleManager mockDataStorageRuleManager;
+
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldCreateRuleForAdmin() {
-        initAclEntity(pipeline);
-        mockS3bucket();
-        mockAuthUser(OWNER_USER);
         doReturn(dataStorageRule).when(mockDataStorageRuleManager).createRule(dataStorageRule);
 
         assertThat(dataStorageApiService.createRule(dataStorageRule)).isEqualTo(dataStorageRule);
@@ -44,7 +56,7 @@ public class DataStorageApiServiceRuleTest extends AbstractDataStorageAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldCreateRuleWhenPermissionIsGranted() {
         initAclEntity(pipeline, AclPermission.WRITE);
-        mockS3bucket();
+        mockS3bucket(s3bucket);
         mockAuthUser(OWNER_USER);
         doReturn(dataStorageRule).when(mockDataStorageRuleManager).createRule(dataStorageRule);
 
@@ -55,7 +67,7 @@ public class DataStorageApiServiceRuleTest extends AbstractDataStorageAclTest {
     @WithMockUser
     public void shouldDenyCreateRuleWhenPermissionIsNotGranted() {
         initAclEntity(pipeline);
-        mockS3bucket();
+        mockS3bucket(s3bucket);
         mockAuthUser(SIMPLE_USER);
         doReturn(dataStorageRule).when(mockDataStorageRuleManager).createRule(dataStorageRule);
 
