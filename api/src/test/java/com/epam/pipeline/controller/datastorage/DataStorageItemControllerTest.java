@@ -16,14 +16,20 @@
 
 package com.epam.pipeline.controller.datastorage;
 
+import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.GenerateDownloadUrlVO;
+import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
+import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
+import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -31,11 +37,15 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.INTEGER_TYPE;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.OBJECT_TYPE;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.STRING_STRING_MAP_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -406,5 +416,167 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
 
         Mockito.verify(mockStorageApiService).getDataStorageItemOwnerWithTags(ID, TEST, true);
         assertResponse(mvcResult, folder, DatastorageCreatorUtils.DATA_STORAGE_FOLDER_TYPE);
+    }
+
+    @Test
+    public void shouldFailUploadFileForUnauthorizedUser() {
+        performUnauthorizedRequest(post(String.format(DATASTORAGE_ITEMS_UPLOAD_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldUploadFile() throws Exception {
+        final UploadFileMetadata uploadFileMetadata = new UploadFileMetadata();
+        uploadFileMetadata.setFileName(FILE_NAME);
+        uploadFileMetadata.setFileSize(FILE_SIZE);
+        uploadFileMetadata.setFileType(OCTET_STREAM_CONTENT_TYPE);
+        final List<UploadFileMetadata> uploadFileMetadataList = Collections.singletonList(uploadFileMetadata);
+
+        final MvcResult mvcResult = performRequest(
+                post(String.format(DATASTORAGE_ITEMS_UPLOAD_URL, ID)).content(MULTIPART_CONTENT).param(PATH, TEST),
+                MULTIPART_CONTENT_TYPE, EXPECTED_CONTENT_TYPE
+        );
+
+        Mockito.verify(mockStorageApiService).createDataStorageFile(ID, TEST, FILE_NAME, TEST.getBytes());
+        final List<UploadFileMetadata> actualResult = JsonMapper
+                .parseData(mvcResult.getResponse().getContentAsString(),
+                        new TypeReference<List<UploadFileMetadata>>() { });
+        Assert.assertEquals(uploadFileMetadataList, actualResult);
+    }
+
+    @Test
+    public void shouldFailUploadStreamForUnauthorizedUser() {
+        performUnauthorizedRequest(post(String.format(DATASTORAGE_UPLOAD_STREAM_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldUploadStream() {
+        final List<DataStorageFile> dataStorageFiles = Collections.singletonList(file);
+        Mockito.doReturn(file).when(mockStorageApiService)
+                .createDataStorageFile(Mockito.eq(ID), Mockito.eq(TEST),
+                        Mockito.eq(FILE_NAME), (InputStream) Mockito.any());
+
+        final MvcResult mvcResult = performRequest(post(String.format(DATASTORAGE_UPLOAD_STREAM_URL, ID))
+                .content(MULTIPART_CONTENT).param(PATH, TEST), MULTIPART_CONTENT_TYPE, EXPECTED_CONTENT_TYPE);
+
+        Mockito.verify(mockStorageApiService)
+                .createDataStorageFile(Mockito.eq(ID), Mockito.eq(TEST),
+                        Mockito.eq(FILE_NAME), (InputStream) Mockito.any());
+        assertResponse(mvcResult, dataStorageFiles, new TypeReference<Result<List<DataStorageFile>>>() { });
+    }
+
+    @Test
+    public void shouldFailDownloadStreamForUnauthorizedUser() {
+        performUnauthorizedRequest(get(String.format(DATASTORAGE_DOWNLOAD_STREAM_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDownloadStream() throws Exception {
+        final DataStorageStreamingContent dataStorageStreamingContent =
+                DatastorageCreatorUtils.getDataStorageStreamingContent();
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add(PATH, TEST);
+        params.add(VERSION, TEST);
+        Mockito.doReturn(dataStorageStreamingContent).when(mockStorageApiService).getStreamingContent(ID, TEST, TEST);
+
+        final MvcResult mvcResult = performRequest(get(String.format(DATASTORAGE_DOWNLOAD_STREAM_URL, ID))
+                .params(params), OCTET_STREAM_CONTENT_TYPE);
+
+        Mockito.verify(mockStorageApiService).getStreamingContent(ID, TEST, TEST);
+
+        final String actualData = mvcResult.getResponse().getContentAsString();
+        final String contentDispositionHeader = mvcResult.getResponse().getHeader(CONTENT_DISPOSITION_HEADER);
+        Assert.assertEquals(TEST, actualData);
+        assertThat(contentDispositionHeader).contains(TEST);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldRestoreFileVersion() {
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add(PATH, TEST);
+        params.add(VERSION, TEST);
+
+        final MvcResult mvcResult = performRequest(post(String.format(RESTORE_VERSION_URL, ID)).params(params));
+
+        Mockito.verify(mockStorageApiService).restoreFileVersion(ID, TEST, TEST);
+        assertResponse(mvcResult, null, OBJECT_TYPE);
+    }
+
+    @Test
+    public void shouldFailUpdateTagsForUnauthorizedUser() {
+        performUnauthorizedRequest(post(String.format(TAGS_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldUpdateTags() throws Exception {
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add(PATH, TEST);
+        params.add(VERSION, TEST);
+        params.add(REWRITE, TRUE_AS_STRING);
+        final String content = getObjectMapper().writeValueAsString(TAGS);
+        Mockito.doReturn(TAGS).when(mockStorageApiService).updateDataStorageObjectTags(ID, TEST, TAGS, TEST, true);
+
+        final MvcResult mvcResult = performRequest(post(String.format(TAGS_URL, ID)).params(params).content(content));
+
+        Mockito.verify(mockStorageApiService).updateDataStorageObjectTags(ID, TEST, TAGS, TEST, true);
+        assertResponse(mvcResult, TAGS, STRING_STRING_MAP_TYPE);
+    }
+
+    @Test
+    public void shouldFailLoadTagsByIdForUnauthorizedUser() {
+        performUnauthorizedRequest(get(String.format(TAGS_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldLoadTagsByIdOwner() {
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add(PATH, TEST);
+        params.add(VERSION, TEST);
+        Mockito.doReturn(TAGS).when(mockStorageApiService).loadDataStorageObjectTagsOwner(ID, TEST, TEST);
+
+        final MvcResult mvcResult = performRequest(get(String.format(TAGS_URL, ID)).params(params));
+
+        Mockito.verify(mockStorageApiService).loadDataStorageObjectTagsOwner(ID, TEST, TEST);
+        assertResponse(mvcResult, TAGS, STRING_STRING_MAP_TYPE);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldLoadTagsById() {
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add(PATH, TEST);
+        params.add(VERSION, EMPTY_STRING);
+        Mockito.doReturn(TAGS).when(mockStorageApiService).loadDataStorageObjectTags(ID, TEST, EMPTY_STRING);
+
+        final MvcResult mvcResult = performRequest(get(String.format(TAGS_URL, ID)).params(params));
+
+        Mockito.verify(mockStorageApiService).loadDataStorageObjectTags(ID, TEST, EMPTY_STRING);
+        assertResponse(mvcResult, TAGS, STRING_STRING_MAP_TYPE);
+    }
+
+    @Test
+    public void shouldFailDeleteTagsByIdForUnauthorizedUser() {
+        performUnauthorizedRequest(delete(String.format(TAGS_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDeleteTagsById() throws Exception {
+        final Set<String> setTags = Collections.singleton(TEST);
+        final String content = getObjectMapper().writeValueAsString(setTags);
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add(PATH, TEST);
+        params.add(VERSION, TEST);
+        Mockito.doReturn(TAGS).when(mockStorageApiService).deleteDataStorageObjectTags(ID, TEST, setTags, TEST);
+
+        final MvcResult mvcResult = performRequest(delete(String.format(TAGS_URL, ID)).params(params).content(content));
+
+        Mockito.verify(mockStorageApiService).deleteDataStorageObjectTags(ID, TEST, setTags, TEST);
+        assertResponse(mvcResult, TAGS, STRING_STRING_MAP_TYPE);
     }
 }
