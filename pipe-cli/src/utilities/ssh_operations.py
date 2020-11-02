@@ -215,7 +215,7 @@ def remove_ssh_public_key_from_run(run_id, ssh_public_key_path, retries, remote_
             remove_ssh_public_keys_from_run_command += \
                 'grep -v "{key}" {authorized_keys_path} > {authorized_keys_temp_path};' \
                 'cp {authorized_keys_temp_path} {authorized_keys_path};' \
-                'chmod 600 {authorized_keys_path}' \
+                'chmod 600 {authorized_keys_path};' \
                 'rm {authorized_keys_temp_path};' \
                     .format(key=ssh_public_key,
                             authorized_keys_path=remote_ssh_authorized_keys_path,
@@ -262,6 +262,7 @@ def add_to_ssh_known_hosts(run_id, local_port, log_file, retries, ssh_known_host
     with open(ssh_known_hosts_path, 'a') as f:
         f.write('[127.0.0.1]:%s %s' % (local_port, public_key))
     perform_command(['ssh-keygen', '-H', '-f', ssh_known_hosts_path], log_file)
+    perform_command(['rm', ssh_known_hosts_path + '.old'], log_file)
 
 
 def remove_from_ssh_known_hosts(ssh_known_hosts_path, local_port, log_file):
