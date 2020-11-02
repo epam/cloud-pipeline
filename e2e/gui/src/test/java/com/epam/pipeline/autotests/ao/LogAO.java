@@ -267,7 +267,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO waitForLog(final String message) {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 70; i++) {
             refresh();
             if ($(log()).is(matchText(message))) {
                 break;

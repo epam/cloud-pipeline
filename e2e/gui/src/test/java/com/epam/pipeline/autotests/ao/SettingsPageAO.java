@@ -182,6 +182,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public SystemEventsAO deleteAllEntries() {
+            sleep(2, SECONDS);
             List<SelenideElement> entries = getAllEntries();
             if (!entries.isEmpty()) {
                 entries.forEach(this::removeEntry);
@@ -195,7 +196,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         private void removeEntry(SelenideElement entry) {
-            entry.find(byId("delete-notification-button")).shouldBe(visible).click();
+            entry.find(byId("delete-notification-button")).shouldBe(visible, enabled).click();
             new ConfirmationPopupAO<>(this)
                     .ensureTitleIs("Are you sure you want to delete notification")
                     .ok();

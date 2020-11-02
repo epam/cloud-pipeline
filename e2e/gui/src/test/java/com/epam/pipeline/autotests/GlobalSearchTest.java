@@ -548,6 +548,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     public void issueSearch() {
         library()
                 .clickOnFolder(folder)
+                .sleep(2, SECONDS)
                 .showIssues()
                 .clickNewIssue()
                 .addNewIssue(title, description);
