@@ -184,6 +184,143 @@ def create_tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, tim
         create_background_tunnel(log_file, timeout)
 
 
+def create_background_tunnel(log_file, timeout):
+    import subprocess
+    import os
+    import platform
+    with open(log_file or os.devnull, 'w') as output:
+        if platform.system() == 'Windows':
+            # See https://docs.microsoft.com/ru-ru/windows/win32/procthread/process-creation-flags
+            DETACHED_PROCESS = 0x00000008
+            CREATE_NEW_PROCESS_GROUP = 0x00000200
+            creationflags = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+        else:
+            creationflags = 0
+        executable = sys.argv + ['-f'] if is_frozen() else [sys.executable] + sys.argv + ['-f']
+        tunnel_proc = subprocess.Popen(executable, stdout=output, stderr=subprocess.STDOUT, cwd=os.getcwd(),
+                                       env=os.environ.copy(), creationflags=creationflags)
+        time.sleep(timeout / 1000)
+        if tunnel_proc.poll() is not None:
+            import click
+            click.echo('Failed to serve tunnel in background. Tunnel command exited with return code: %d'
+                       % tunnel_proc.returncode, err=True)
+            sys.exit(1)
+
+
+def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, log_file, log_level, retries):
+    import platform
+    if platform.system() == 'Windows':
+        import click
+        click.echo('Passwordless ssh configuration is not support on Windows.', err=True)
+        sys.exit(1)
+    remote_host = 'pipeline-%s' % run_id
+    ssh_config_path = os.path.expanduser('~/.ssh/config')
+    ssh_known_hosts_path = os.path.expanduser('~/.ssh/known_hosts')
+    ssh_keys_path = os.path.expanduser('~/.pipe/.ssh')
+    ssh_private_key_name = 'pipeline-%s-%s-%s' % (run_id, int(time.time()), random.randint(0, sys.maxsize))
+    ssh_private_key_path = os.path.join(ssh_keys_path, ssh_private_key_name)
+    ssh_public_key_path = ssh_private_key_path + '.pub'
+    conn_info = get_conn_info(run_id)
+    remote_ssh_authorized_keys_paths = ['/root/.ssh/authorized_keys', '/home/%s/.ssh/authorized_keys' % conn_info.owner]
+    remote_ssh_public_key_path = '/root/.ssh/id_rsa.pub'
+    if not os.path.exists(ssh_keys_path):
+        os.makedirs(ssh_keys_path)
+    try:
+        generate_ssh_keys(log_file, ssh_private_key_path)
+        upload_ssh_public_key_to_run(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths)
+        add_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path)
+        add_to_ssh_known_hosts(run_id, local_port, log_file, retries, ssh_known_hosts_path, remote_ssh_public_key_path)
+        create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_level, retries)
+    finally:
+        remove_ssh_public_key_from_run(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths)
+        remove_ssh_keys(ssh_public_key_path, ssh_private_key_path)
+        remove_from_ssh_config(ssh_config_path, remote_host)
+        remove_from_ssh_known_hosts(ssh_known_hosts_path, local_port, log_file)
+
+
+def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_level, retries,
+                             server_delay=0.0001, tunnel_timeout=5, chunk_size=4096):
+    logging.basicConfig(level=log_level or logging.ERROR)
+    conn_info = get_conn_info(run_id)
+    proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]),
+                      int(os.getenv('CP_CLI_TUNNEL_PROXY_PORT', conn_info.ssh_proxy[1])))
+    target_endpoint = (os.getenv('CP_CLI_TUNNEL_TARGET_HOST', conn_info.ssh_endpoint[0]),
+                       remote_port)
+    logging.info('Initializing tunnel %s:pipeline-%s:%s...', local_port, run_id, remote_port)
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(('0.0.0.0', local_port))
+    server_socket.listen(5)
+    inputs = []
+    channel = {}
+    configure_graceful_exiting()
+    logging.info('Serving tunnel...')
+    try:
+        inputs.append(server_socket)
+        while True:
+            time.sleep(server_delay)
+            logging.info('Waiting for connections...')
+            inputs_ready, _, _ = select.select(inputs, [], [])
+            for input in inputs_ready:
+                if input == server_socket:
+                    try:
+                        logging.info('Initializing client connection...')
+                        client_socket, address = server_socket.accept()
+                    except KeyboardInterrupt:
+                        raise
+                    except:
+                        logging.exception('Cannot establish client connection')
+                        break
+                    try:
+                        logging.info('Initializing tunnel connection...')
+                        tunnel_socket = http_proxy_tunnel_connect(proxy_endpoint, target_endpoint, tunnel_timeout)
+                    except KeyboardInterrupt:
+                        raise
+                    except:
+                        logging.exception('Cannot establish tunnel connection')
+                        client_socket.close()
+                        break
+                    inputs.append(client_socket)
+                    inputs.append(tunnel_socket)
+                    channel[client_socket] = tunnel_socket
+                    channel[tunnel_socket] = client_socket
+                    break
+
+                logging.debug('Reading data...')
+                data = input.recv(chunk_size)
+                if data:
+                    logging.debug('Writing data...')
+                    channel[input].send(data)
+                else:
+                    logging.info('Closing client and tunnel connections...')
+                    out = channel[input]
+                    inputs.remove(input)
+                    inputs.remove(out)
+                    channel[out].close()
+                    channel[input].close()
+                    del channel[out]
+                    del channel[input]
+                    break
+    except KeyboardInterrupt:
+        logging.info('Interrupted...')
+    except:
+        logging.exception('Errored...')
+        sys.exit(1)
+    finally:
+        logging.info('Closing all sockets...')
+        for input in inputs:
+            input.close()
+        logging.info('Exiting...')
+
+
+def configure_graceful_exiting():
+    def throw_keyboard_interrupt(signum, frame):
+        logging.info('Killed...')
+        raise KeyboardInterrupt()
+
+    import signal
+    signal.signal(signal.SIGTERM, throw_keyboard_interrupt)
+
+
 def generate_ssh_keys(log_file, ssh_private_key_path):
     generate_ssh_keys_command = ['ssh-keygen', '-t', 'rsa', '-f', ssh_private_key_path, '-N', '', '-q']
     perform_command(generate_ssh_keys_command, log_file)
@@ -306,140 +443,3 @@ def run_scp_download(run_id, source, destination, retries):
             scp.close()
         if transport:
             transport.close()
-
-
-def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_level, retries,
-                             server_delay=0.0001, tunnel_timeout=5, chunk_size=4096):
-    logging.basicConfig(level=log_level or logging.ERROR)
-    conn_info = get_conn_info(run_id)
-    proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]),
-                      int(os.getenv('CP_CLI_TUNNEL_PROXY_PORT', conn_info.ssh_proxy[1])))
-    target_endpoint = (os.getenv('CP_CLI_TUNNEL_TARGET_HOST', conn_info.ssh_endpoint[0]),
-                       remote_port)
-    logging.info('Initializing tunnel %s:pipeline-%s:%s...', local_port, run_id, remote_port)
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('0.0.0.0', local_port))
-    server_socket.listen(5)
-    inputs = []
-    channel = {}
-    configure_graceful_exiting()
-    logging.info('Serving tunnel...')
-    try:
-        inputs.append(server_socket)
-        while True:
-            time.sleep(server_delay)
-            logging.info('Waiting for connections...')
-            inputs_ready, _, _ = select.select(inputs, [], [])
-            for input in inputs_ready:
-                if input == server_socket:
-                    try:
-                        logging.info('Initializing client connection...')
-                        client_socket, address = server_socket.accept()
-                    except KeyboardInterrupt:
-                        raise
-                    except:
-                        logging.exception('Cannot establish client connection')
-                        break
-                    try:
-                        logging.info('Initializing tunnel connection...')
-                        tunnel_socket = http_proxy_tunnel_connect(proxy_endpoint, target_endpoint, tunnel_timeout)
-                    except KeyboardInterrupt:
-                        raise
-                    except:
-                        logging.exception('Cannot establish tunnel connection')
-                        client_socket.close()
-                        break
-                    inputs.append(client_socket)
-                    inputs.append(tunnel_socket)
-                    channel[client_socket] = tunnel_socket
-                    channel[tunnel_socket] = client_socket
-                    break
-
-                logging.debug('Reading data...')
-                data = input.recv(chunk_size)
-                if data:
-                    logging.debug('Writing data...')
-                    channel[input].send(data)
-                else:
-                    logging.info('Closing client and tunnel connections...')
-                    out = channel[input]
-                    inputs.remove(input)
-                    inputs.remove(out)
-                    channel[out].close()
-                    channel[input].close()
-                    del channel[out]
-                    del channel[input]
-                    break
-    except KeyboardInterrupt:
-        logging.info('Interrupted...')
-    except:
-        logging.exception('Errored...')
-        sys.exit(1)
-    finally:
-        logging.info('Closing all sockets...')
-        for input in inputs:
-            input.close()
-        logging.info('Exiting...')
-
-
-def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, log_file, log_level, retries):
-    import platform
-    if platform.system() == 'Windows':
-        import click
-        click.echo('Passwordless ssh configuration is not support on Windows.', err=True)
-        sys.exit(1)
-    remote_host = 'pipeline-%s' % run_id
-    ssh_config_path = os.path.expanduser('~/.ssh/config')
-    ssh_known_hosts_path = os.path.expanduser('~/.ssh/known_hosts')
-    ssh_keys_path = os.path.expanduser('~/.pipe/.ssh')
-    ssh_private_key_name = 'pipeline-%s-%s-%s' % (run_id, int(time.time()), random.randint(0, sys.maxsize))
-    ssh_private_key_path = os.path.join(ssh_keys_path, ssh_private_key_name)
-    ssh_public_key_path = ssh_private_key_path + '.pub'
-    conn_info = get_conn_info(run_id)
-    remote_ssh_authorized_keys_paths = ['/root/.ssh/authorized_keys', '/home/%s/.ssh/authorized_keys' % conn_info.owner]
-    remote_ssh_public_key_path = '/root/.ssh/id_rsa.pub'
-    if not os.path.exists(ssh_keys_path):
-        os.makedirs(ssh_keys_path)
-    try:
-        generate_ssh_keys(log_file, ssh_private_key_path)
-        upload_ssh_public_key_to_run(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths)
-        add_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path)
-        add_to_ssh_known_hosts(run_id, local_port, log_file, retries, ssh_known_hosts_path, remote_ssh_public_key_path)
-        create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_level, retries)
-    finally:
-        remove_ssh_public_key_from_run(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths)
-        remove_ssh_keys(ssh_public_key_path, ssh_private_key_path)
-        remove_from_ssh_config(ssh_config_path, remote_host)
-        remove_from_ssh_known_hosts(ssh_known_hosts_path, local_port, log_file)
-
-
-def create_background_tunnel(log_file, timeout):
-    import subprocess
-    import os
-    import platform
-    with open(log_file or os.devnull, 'w') as output:
-        if platform.system() == 'Windows':
-            # See https://docs.microsoft.com/ru-ru/windows/win32/procthread/process-creation-flags
-            DETACHED_PROCESS = 0x00000008
-            CREATE_NEW_PROCESS_GROUP = 0x00000200
-            creationflags = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
-        else:
-            creationflags = 0
-        executable = sys.argv + ['-f'] if is_frozen() else [sys.executable] + sys.argv + ['-f']
-        tunnel_proc = subprocess.Popen(executable, stdout=output, stderr=subprocess.STDOUT, cwd=os.getcwd(),
-                                       env=os.environ.copy(), creationflags=creationflags)
-        time.sleep(timeout / 1000)
-        if tunnel_proc.poll() is not None:
-            import click
-            click.echo('Failed to serve tunnel in background. Tunnel command exited with return code: %d'
-                       % tunnel_proc.returncode, err=True)
-            sys.exit(1)
-
-
-def configure_graceful_exiting():
-    def throw_keyboard_interrupt(signum, frame):
-        logging.info('Killed...')
-        raise KeyboardInterrupt()
-
-    import signal
-    signal.signal(signal.SIGTERM, throw_keyboard_interrupt)

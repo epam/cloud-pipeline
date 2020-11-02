@@ -1247,19 +1247,23 @@ def tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, f
 
     It allows to transfer any tcp traffic from local machine to run instance and works both on Linux and Windows.
 
-    For example it can be used to allow ssh connections to run instance.
+    Additionally it enables passwordless ssh connections if the corresponding option is specified.
+    Once specified ssh is configured both locally and remotely to support passwordless connections.
+    Passwordless ssh configuration is supported only for openssh client on Linux.
+
+    Example of how to use pipe tunnel to establish passwordless ssh connection to run instance is shown below.
 
     \b
     First of all establish tunnel connection from run (12345) instance ssh port (22) to some local port (4567).
-        pipe tunnel -lp 4567 -rp 22 12345
+        pipe tunnel -lp 4567 -rp 22 --ssh 12345
 
     \b
-    Then connect to run instance using regular ssh client on the configured local port (4567).
-        ssh -p 4567 root@localhost
+    Then connect to run instance using regular ssh client.
+        ssh root@pipeline-12345
 
     \b
-    To setup passwordless ssh connections to run instances additional ssh option should be used.
-        pipe tunnel -lp 4567 -rp 22 -s 12345
+    Or transfer some files to and from run instance using regular scp client.
+        scp file.txt root@pipeline-12345:/common/workdir/file.txt
 
     \b
     Additionally the following environment variables can be used to specify the exact tunnel properties.
