@@ -211,7 +211,7 @@ def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, log_file,
     import platform
     if platform.system() == 'Windows':
         import click
-        click.echo('Passwordless ssh configuration is not support on Windows.', err=True)
+        click.echo('Passwordless ssh configuration is not supported on Windows.', err=True)
         sys.exit(1)
     remote_host = 'pipeline-%s' % run_id
     ssh_config_path = os.path.expanduser('~/.ssh/config')

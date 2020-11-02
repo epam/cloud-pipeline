@@ -1251,22 +1251,31 @@ def tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, f
     Once specified ssh is configured both locally and remotely to support passwordless connections.
     Passwordless ssh configuration is supported only for openssh client on Linux.
 
-    Example of how to use pipe tunnel to establish passwordless ssh connection to run instance is shown below.
+    Examples:
 
-    \b
+    I. Example of simple tcp port tunnel connection establishing.
+
+    Establish tunnel connection from run (12345) instance port (4567) to the same local port.
+
+        pipe tunnel -lp 4567 -rp 4567 12345
+
+    II. Example of ssh port tunnel connection establishing with enabled passwordless ssh configuration.
+
     First of all establish tunnel connection from run (12345) instance ssh port (22) to some local port (4567).
+
         pipe tunnel -lp 4567 -rp 22 --ssh 12345
 
-    \b
     Then connect to run instance using regular ssh client.
+
         ssh root@pipeline-12345
 
-    \b
     Or transfer some files to and from run instance using regular scp client.
+
         scp file.txt root@pipeline-12345:/common/workdir/file.txt
 
-    \b
     Additionally the following environment variables can be used to specify the exact tunnel properties.
+
+    \b
         CP_CLI_TUNNEL_PROXY_HOST
         CP_CLI_TUNNEL_PROXY_PORT
         CP_CLI_TUNNEL_TARGET_HOST
