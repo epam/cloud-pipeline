@@ -60,7 +60,7 @@ public class AzureStoragePriceListLoader implements StoragePriceListLoader {
     private static final String GB_MONTH_UNIT = "1 GB/Month";
     private static final String AUTH_TOKEN_TEMPLATE = "Bearer %s";
     private static final String STORAGE_SUBCATEGORY_BLOCK_BLOB = "General Block Blob";
-    private static final String REDUNDANCY_TYPE = "LRS";
+    private static final String REDUNDANCY_TYPE = "LRS Data Stored";
     private static final String FILTER_TEMPLATE =
         "OfferDurableId eq '%s' and Currency eq 'USD' and Locale eq 'en-US' and RegionInfo eq 'US'";
 
@@ -157,7 +157,7 @@ public class AzureStoragePriceListLoader implements StoragePriceListLoader {
             .stream()
             .filter(meter -> GB_MONTH_UNIT.equals(meter.getUnit()))
             .filter(meter -> STORAGE_CATEGORY.equals(meter.getMeterCategory()))
-            .filter(meter -> STORAGE_SUBCATEGORY_BLOCK_BLOB.equals(meter.getMeterSubCategory()))
+            .filter(meter -> meter.getMeterSubCategory().startsWith(STORAGE_SUBCATEGORY_BLOCK_BLOB))
             .filter(meter -> meter.getMeterName().startsWith(REDUNDANCY_TYPE))
             .filter(meter -> meterRegion.equals(meter.getMeterRegion()))
             .findFirst()
