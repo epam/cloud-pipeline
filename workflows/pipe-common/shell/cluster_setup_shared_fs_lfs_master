@@ -50,6 +50,9 @@ pipe_log_info "--> LFS master server installed" "$FS_SETUP_TASK"
 # Configure LFS Master
 ######################################################
 
+rm -rf /var/lib/mfs/metadata.mfs /etc/mfs/mfsexports.cfg /etc/mfs/mfsmaster.cfg /etc/mfs/mfsgoals.cfg
+rm -rf /var/lib/mfs/*lock
+
 cp /var/lib/mfs/metadata.mfs.empty /var/lib/mfs/metadata.mfs
 cp /etc/mfs/mfsexports.cfg.dist /etc/mfs/mfsexports.cfg
 cp /etc/mfs/mfsmaster.cfg.dist /etc/mfs/mfsmaster.cfg
