@@ -28,12 +28,12 @@ INSTANCE_TYPES = 'cluster.allowed.instance.types'
 IMAGE_FULL_NAME_PATTERN = '{registry_url}/{image_name}:{tag}'
 DEFAULT_REGISTRY_PATH_PREFIX = 'cp-docker-registry.default.svc.cluster.local:'
 DOCKER_CERTS_DIR = '/etc/docker/certs.d'
-DOCKER_LOG_IN_REGISTRY_CMD = 'docker login {server} -u {username} -p "{token}"'
-DOCKER_LOG_OUT_REGISTRY_CMD = 'docker logout {server}'
-DOCKER_PULL_CMD = 'docker pull {image}'
-DOCKER_TAG_CMD = 'docker tag {source_image} {target_image}'
-DOCKER_PUSH_CMD = 'docker push {image}'
-DOCKER_REMOVE_IMAGE_CMD = 'docker rmi {images_list}'
+DOCKER_LOG_IN_REGISTRY_CMD = ' login {server} -u {username} -p "{token}"'
+DOCKER_LOG_OUT_REGISTRY_CMD = ' logout {server}'
+DOCKER_PULL_CMD = ' pull {image}'
+DOCKER_TAG_CMD = ' tag {source_image} {target_image}'
+DOCKER_PUSH_CMD = ' push {image}'
+DOCKER_REMOVE_IMAGE_CMD = ' rmi {images_list}'
 MEMORY = 'memory'
 CPU = 'vcpu'
 GPU = 'gpu'
@@ -55,24 +55,8 @@ def execute_shell_cmd(cmd, return_output=False):
         return process.returncode
 
 
-def pull_image(image):
-    return execute_shell_cmd(DOCKER_PULL_CMD.format(image=image))
-
-
-def tag_image(source_image, target_image):
-    return execute_shell_cmd(DOCKER_TAG_CMD.format(source_image=source_image, target_image=target_image))
-
-
-def push_image(image):
-    return execute_shell_cmd(DOCKER_PUSH_CMD.format(image=image))
-
-
-def delete_images(images):
-    return execute_shell_cmd(DOCKER_REMOVE_IMAGE_CMD.format(images_list=' '.join(images)))
-
-
 class ToolSynchronizer(object):
-    def __init__(self, source_api_path, source_access_key, target_api_path, target_access_key, threads_count=1):
+    def __init__(self, source_api_path, source_access_key, target_api_path, target_access_key, docker_cmd):
         self.source_access_key = source_access_key
         self.target_access_key = target_access_key
         self.api_source = ReadOnlyToolSyncAPI(source_api_path, source_access_key)
@@ -81,7 +65,6 @@ class ToolSynchronizer(object):
         self.api_target_users = UserSyncAPI(target_api_path, target_access_key)
         self.target_current_user = self.api_target_users.get_current_user_name()
         self.source_current_user = self.api_source_users.get_current_user_name()
-        self.thread_pool_size = threads_count
         self.source_registries_dict = {}
         self.tool_groups_ids_mapping = {}
         self.tool_ids_mapping = {}
@@ -93,6 +76,20 @@ class ToolSynchronizer(object):
         self.source_allowed_instance_types = {}
         self.allowed_instance_price_types = []
         self.default_instance_type = None
+        self.docker_cmd = docker_cmd
+
+    def pull_image(self, image):
+        return execute_shell_cmd(self.docker_cmd + DOCKER_PULL_CMD.format(image=image))
+
+    def tag_image(self, source_image, target_image):
+        return execute_shell_cmd(self.docker_cmd
+                                 + DOCKER_TAG_CMD.format(source_image=source_image, target_image=target_image))
+
+    def push_image(self, image):
+        return execute_shell_cmd(self.docker_cmd + DOCKER_PUSH_CMD.format(image=image))
+
+    def delete_images(self, images):
+        return execute_shell_cmd(self.docker_cmd + DOCKER_REMOVE_IMAGE_CMD.format(images_list=' '.join(images)))
 
     def transfer_tool(self, tool):
         registry_id = tool['registryId']
@@ -403,36 +400,34 @@ class ToolSynchronizer(object):
                                 tools_dict[tool['image']] = tool
         return groups_dict, tools_dict
 
-    @staticmethod
-    def log_in_registry(server, username, access_token):
-        docker_login_cmd = DOCKER_LOG_IN_REGISTRY_CMD.format(server=server, username=username, token=access_token)
+    def log_in_registry(self, server, username, access_token):
+        docker_login_cmd = self.docker_cmd \
+                           + DOCKER_LOG_IN_REGISTRY_CMD.format(server=server, username=username, token=access_token)
         res, out = execute_shell_cmd(docker_login_cmd, return_output=True)
         return res, out
 
-    @staticmethod
-    def log_out_registry(server):
-        docker_logout_cmd = DOCKER_LOG_OUT_REGISTRY_CMD.format(server=server)
+    def log_out_registry(self, server):
+        docker_logout_cmd = self.docker_cmd + DOCKER_LOG_OUT_REGISTRY_CMD.format(server=server)
         res, out = execute_shell_cmd(docker_logout_cmd, return_output=True)
         return res, out
 
-    @staticmethod
-    def transfer_tool_images(image_name, versions, source_registry_url, target_registry_url):
+    def transfer_tool_images(self, image_name, versions, source_registry_url, target_registry_url):
         images = []
         for version in versions:
             src_image = IMAGE_FULL_NAME_PATTERN.format(registry_url=source_registry_url, image_name=image_name,
                                                        tag=version)
             print_info_message('Pulling {}'.format(src_image))
-            pull_image(src_image)
+            self.pull_image(src_image)
             target_image = IMAGE_FULL_NAME_PATTERN.format(registry_url=target_registry_url, image_name=image_name,
                                                           tag=version)
             print_info_message('Tagging {} as {}'.format(src_image, target_image))
-            tag_image(src_image, target_image)
+            self.tag_image(src_image, target_image)
             print_info_message('Pushing {}'.format(target_image))
-            push_image(target_image)
+            self.push_image(target_image)
             images.append(src_image)
             images.append(target_image)
         print_info_message('Images are transferred for tool [{}], removing them'.format(image_name))
-        delete_images(images)
+        self.delete_images(images)
 
     @staticmethod
     def extract_group_from_tool_name(tool_name):
@@ -440,12 +435,15 @@ class ToolSynchronizer(object):
 
 
 if __name__ == '__main__':
-    if len(sys.argv[1:]) != 4:
+    if len(sys.argv[1:]) != 5:
         raise RuntimeError('Invalid count of an arguments for sync process!')
     else:
         source_api_host_url = sys.argv[1]
         source_api_token = sys.argv[2]
         target_api_host_url = sys.argv[3]
         target_api_token = sys.argv[4]
-    synchronizer = ToolSynchronizer(source_api_host_url, source_api_token, target_api_host_url, target_api_token)
+        docker_cmd = sys.argv[5]
+
+    synchronizer = ToolSynchronizer(source_api_host_url, source_api_token, target_api_host_url, target_api_token,
+                                    docker_cmd)
     synchronizer.sync_tools_routine()
