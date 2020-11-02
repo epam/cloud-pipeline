@@ -125,7 +125,9 @@ public class PipelineEditingTest extends AbstractBfxPipelineTest implements Navi
     @TestCase(value = {"EPMCMBIBPC-292"})
     public void editPipelineTest() {
         library()
+                .sleep(2, SECONDS)
                 .clickOnPipeline(PIPELINE_NAME)
+                .sleep(2, SECONDS)
                 .clickEditButton()
                 .rename(currentPipelineName = RENAMED_PIPELINE_NAME)
                 .save();
