@@ -275,5 +275,6 @@ public enum Primitive {
     SENSITIVE_STORAGE,
     ALL_PIPELINES,
     ALL_STORAGES,
-    FRIENDLY_URL
+    FRIENDLY_URL,
+    SERVICES
 }

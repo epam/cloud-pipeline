@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -26,7 +27,9 @@ import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Primitive.FRIENDLY_URL;
+import static com.epam.pipeline.autotests.ao.Primitive.SERVICES;
 import static com.epam.pipeline.autotests.utils.C.LOGIN;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -42,7 +45,7 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
     private String endpointsLink = "";
     private String endpointsName = "";
     private String userGroup = "ROLE_USER";
-    private int timeout = 60;
+    private int timeout = C.SHARING_TIMEOUT;
 
     @Test
     @TestCase({"EPMCMBIBPC-2674"})
@@ -168,8 +171,31 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
             home()
                     .configureDashboardPopUpOpen()
                     .markCheckboxByName("Services")
-                    .ok();
-
+                    .ok()
+                    .ensureVisible(SERVICES)
+                    .checkEndpointsLinkOnServicesPanel(endpointsName)
+                    .checkServiceToolPath(endpointsName, registry, group, Utils.nameWithoutGroup(tool), runID)
+                    .openEndpointLink(endpointsLink, runID)
+                    .validateEndpointPage(user.login)
+                    .assertURLEndsWith(friendlyURL)
+                    .closeTab();
+            logout();
+            loginAs(admin);
+            runsMenu()
+                    .showLog(runID)
+                    .removeShareUserGroup(user.login)
+                    .sleep(3, SECONDS)
+                    .validateShareLink("Not shared (click to configure)");
+            logout();
+            Utils.restartBrowser(C.ROOT_ADDRESS);
+            loginAs(user);
+            sleep(timeout, SECONDS);
+            home()
+                    .configureDashboardPopUpOpen()
+                    .markCheckboxByName("Services")
+                    .ok()
+                    .ensureVisible(SERVICES)
+                    .checkNoServicesLabel();
         } finally {
             open(C.ROOT_ADDRESS);
             logout();

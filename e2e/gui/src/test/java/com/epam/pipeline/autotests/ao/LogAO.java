@@ -266,9 +266,9 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
-    public LogAO removeShareUserGroup(final String userName) {
+    public LogAO removeShareUserGroup(final String name) {
         click(SHARE_WITH);
-        new ShareWith().removeUserFromShare(userName);
+        new ShareWith().removeUserFromShare(name);
         return this;
     }
 
@@ -567,7 +567,7 @@ public class LogAO implements AccessObject<LogAO> {
 
         public void addGroupToShare(final String groupName) {
             click(ADD_GROUP);
-            setValue(context().find(byClassName("ant-select-search__field")), groupName).enter();
+            setValue(context().find(byClassName("ant-select-search__field")), groupName);
             click(byXpath("//*[contains(@aria-labelledby, 'rcDialogTitle1') and " +
                     ".//*[contains(@class, 'ant-modal-footer')]]//button[. =  'OK']"));
             click(OK);
@@ -575,17 +575,22 @@ public class LogAO implements AccessObject<LogAO> {
 
         public void addUserToShare(final String userName) {
             click(ADD_USER);
-            setValue(context().find(byClassName("ant-select-search__field")), userName).enter();
-            context().find(byXpath(format("//div[.='%s']", userName))).click();
-            context().find(byText("Select user")).parent()
+            setValue($(byClassName("ant-select-search__field")), userName);
+            $(byXpath(format("//div[.='%s']", userName))).click();
+            $(byText("Select user")).parent()
                     .parent().find(byClassName("ant-btn-primary")).click();
             click(OK);
         }
 
         public void removeUserFromShare(final String userName) {
             context().$(byXpath("//div[@class='ant-table-content']")).$$(byText(userName)).first().parent().parent()
-                    .parent().find("button").click();
+                    .parent().find("button").shouldBe(visible).click();
             click(OK);
+        }
+
+        @Override
+        public SelenideElement context() {
+            return Utils.getPopupByTitle("Share with users and groups");
         }
 
         @Override
