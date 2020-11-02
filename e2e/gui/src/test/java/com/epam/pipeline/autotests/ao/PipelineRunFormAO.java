@@ -254,6 +254,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     private void launch() {
         $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
+        $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(byClassName("ob-estimated-price-info__info")).shouldBe(visible);
         $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(button("Launch")).shouldBe(enabled).click();
     }
 
