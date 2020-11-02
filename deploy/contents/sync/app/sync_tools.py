@@ -56,8 +56,7 @@ def execute_shell_cmd(cmd, return_output=False):
 
 
 class ToolSynchronizer(object):
-    def __init__(self, source_api_path, source_access_key, target_api_path, target_access_key, docker_cmd, 
-                 threads_count=1):
+    def __init__(self, source_api_path, source_access_key, target_api_path, target_access_key, docker_cmd):
         self.source_access_key = source_access_key
         self.target_access_key = target_access_key
         self.api_source = ReadOnlyToolSyncAPI(source_api_path, source_access_key)
@@ -66,7 +65,6 @@ class ToolSynchronizer(object):
         self.api_target_users = UserSyncAPI(target_api_path, target_access_key)
         self.target_current_user = self.api_target_users.get_current_user_name()
         self.source_current_user = self.api_source_users.get_current_user_name()
-        self.thread_pool_size = threads_count
         self.source_registries_dict = {}
         self.tool_groups_ids_mapping = {}
         self.tool_ids_mapping = {}
