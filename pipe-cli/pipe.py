@@ -1273,12 +1273,13 @@ def tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, f
 
         scp file.txt root@pipeline-12345:/common/workdir/file.txt
 
-    Additionally the following environment variables can be used to specify the exact tunnel properties.
+    Advanced tunnel configuration environment variables:
 
     \b
-        CP_CLI_TUNNEL_PROXY_HOST
-        CP_CLI_TUNNEL_PROXY_PORT
-        CP_CLI_TUNNEL_TARGET_HOST
+        CP_CLI_TUNNEL_PROXY_HOST - tunnel proxy host
+        CP_CLI_TUNNEL_PROXY_PORT - tunnel proxy port
+        CP_CLI_TUNNEL_TARGET_HOST - tunnel target host
+        CP_CLI_TUNNEL_SSH_PATH - .ssh directory path
     """
     if trace:
         create_tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, foreground, retries)

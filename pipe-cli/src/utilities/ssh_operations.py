@@ -27,6 +27,7 @@ from scp import SCPClient
 
 from src.config import is_frozen
 from src.utilities.pipe_shell import plain_shell, interactive_shell
+from src.utilities.platform_utilities import is_windows, is_wsl
 from src.api.pipeline_run import PipelineRun
 from src.api.preferenceapi import PreferenceAPI
 from urllib.parse import urlparse
@@ -124,8 +125,12 @@ def setup_authenticated_paramiko_transport(run_id, retries):
     # User password authentication, which available only to the OWNER and ROLE_ADMIN users
     sshpass = conn_info.ssh_pass
     sshuser = DEFAULT_SSH_USER
-    ssh_default_root_user_enabled = PreferenceAPI.get_preference('system.ssh.default.root.user.enabled')
-    if ssh_default_root_user_enabled is not None and ssh_default_root_user_enabled.value.lower() != "true":
+    try:
+        ssh_default_root_user_enabled_preference = PreferenceAPI.get_preference('system.ssh.default.root.user.enabled')
+        ssh_default_root_user_enabled = ssh_default_root_user_enabled_preference.value.lower() == "true"
+    except:
+        ssh_default_root_user_enabled = False
+    if not ssh_default_root_user_enabled:
         # split owner by @ in case it represented by email address
         owner_user_name = conn_info.owner.split("@")[0]
         sshpass = owner_user_name
@@ -186,10 +191,8 @@ def create_tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, tim
 
 def create_background_tunnel(log_file, timeout):
     import subprocess
-    import os
-    import platform
     with open(log_file or os.devnull, 'w') as output:
-        if platform.system() == 'Windows':
+        if is_windows():
             # See https://docs.microsoft.com/ru-ru/windows/win32/procthread/process-creation-flags
             DETACHED_PROCESS = 0x00000008
             CREATE_NEW_PROCESS_GROUP = 0x00000200
@@ -207,26 +210,27 @@ def create_background_tunnel(log_file, timeout):
         time.sleep(timeout / 1000)
         if tunnel_proc.poll() is not None:
             import click
-            click.echo('Failed to serve tunnel in background. Tunnel command exited with return code: %d'
-                       % tunnel_proc.returncode, err=True)
+            click.echo('Failed to serve tunnel in background. Tunnel command exited with return code: {}'
+                       .format(tunnel_proc.returncode), err=True)
             sys.exit(1)
 
 
 def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, log_file, log_level, retries):
-    import platform
-    if platform.system() == 'Windows':
+    if is_windows():
         import click
         click.echo('Passwordless ssh configuration is not supported on Windows.', err=True)
         sys.exit(1)
-    remote_host = 'pipeline-%s' % run_id
-    ssh_config_path = os.path.expanduser('~/.ssh/config')
-    ssh_known_hosts_path = os.path.expanduser('~/.ssh/known_hosts')
+    ssh_path = resolve_ssh_path()
+    ssh_config_path = '{}/config'.format(ssh_path)
+    ssh_known_hosts_path = '{}/known_hosts'.format(ssh_path)
     ssh_keys_path = os.path.expanduser('~/.pipe/.ssh')
-    ssh_private_key_name = 'pipeline-%s-%s-%s' % (run_id, int(time.time()), random.randint(0, sys.maxsize))
+    ssh_private_key_name = 'pipeline-{}-{}-{}'.format(run_id, int(time.time()), random.randint(0, sys.maxsize))
     ssh_private_key_path = os.path.join(ssh_keys_path, ssh_private_key_name)
-    ssh_public_key_path = ssh_private_key_path + '.pub'
+    ssh_public_key_path = '{}.pub'.format(ssh_private_key_path)
+    remote_host = 'pipeline-{}'.format(run_id)
     conn_info = get_conn_info(run_id)
-    remote_ssh_authorized_keys_paths = ['/root/.ssh/authorized_keys', '/home/%s/.ssh/authorized_keys' % conn_info.owner]
+    remote_ssh_authorized_keys_paths = ['/root/.ssh/authorized_keys',
+                                        '/home/{}/.ssh/authorized_keys'.format(conn_info.owner)]
     remote_ssh_public_key_path = '/root/.ssh/id_rsa.pub'
     if not os.path.exists(ssh_keys_path):
         os.makedirs(ssh_keys_path)
@@ -241,6 +245,24 @@ def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, log_file,
         remove_ssh_keys(ssh_public_key_path, ssh_private_key_path)
         remove_from_ssh_config(ssh_config_path, remote_host)
         remove_from_ssh_known_hosts(ssh_known_hosts_path, local_port, log_file)
+
+
+def resolve_ssh_path():
+    possible_ssh_paths = []
+    if os.getenv('CP_CLI_TUNNEL_SSH_PATH'):
+        possible_ssh_paths.append(os.getenv('CP_CLI_TUNNEL_SSH_PATH'))
+    possible_ssh_paths.append(os.path.expanduser('~/.ssh'))
+    if is_wsl():
+        command_output = perform_command(['powershell.exe', '$env:UserName'], collect_output=True) or ''
+        windows_user = command_output.strip()
+        if windows_user:
+            possible_ssh_paths.append('/mnt/c/Users/{}/.ssh'.format(windows_user))
+    for possible_ssh_path in possible_ssh_paths:
+        if os.path.exists(possible_ssh_path):
+            return possible_ssh_path
+    raise RuntimeError('Default .ssh directory was not found by the following locations: {}. '
+                       'Default .ssh directory path can be overridden using CP_CLI_TUNNEL_SSH_PATH variable.'
+                       .format(', '.join(possible_ssh_paths)))
 
 
 def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_level, retries,
@@ -342,8 +364,8 @@ def upload_ssh_public_key_to_run(run_id, ssh_public_key_path, retries, remote_ss
     with open(ssh_public_key_path, 'r') as f:
         ssh_public_key = f.read().strip()
     run_ssh(run_id,
-            'echo "%s" | tee -a %s > /dev/null'
-            % (ssh_public_key, ' '.join(remote_ssh_authorized_keys_paths)), retries)
+            'echo "{}" | tee -a {} > /dev/null'
+            .format(ssh_public_key, ' '.join(remote_ssh_authorized_keys_paths)), retries)
 
 
 def remove_ssh_public_key_from_run(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths):
@@ -352,8 +374,8 @@ def remove_ssh_public_key_from_run(run_id, ssh_public_key_path, retries, remote_
             ssh_public_key = f.read().strip()
         remove_ssh_public_keys_from_run_command = ''
         for remote_ssh_authorized_keys_path in remote_ssh_authorized_keys_paths:
-            remote_ssh_authorized_keys_temp_path = '%s_%s' % (remote_ssh_authorized_keys_path,
-                                                              random.randint(0, sys.maxsize))
+            remote_ssh_authorized_keys_temp_path = '{}_{}'.format(remote_ssh_authorized_keys_path,
+                                                                  random.randint(0, sys.maxsize))
             remove_ssh_public_keys_from_run_command += \
                 'grep -v "{key}" {authorized_keys_path} > {authorized_keys_temp_path};' \
                 'cp {authorized_keys_temp_path} {authorized_keys_path};' \
@@ -371,55 +393,63 @@ def add_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_
     if remote_host in ssh_config:
         remove_from_ssh_config(ssh_config_path, remote_host)
     with open(ssh_config_path, 'a') as f:
-        f.write('Host %s\n'
+        f.write('Host {}\n'
                 '    Hostname 127.0.0.1\n'
-                '    Port %s\n'
-                '    IdentityFile %s\n'
-                % (remote_host, local_port, ssh_private_key_path))
+                '    Port {}\n'
+                '    IdentityFile {}\n'
+                .format(remote_host, local_port, ssh_private_key_path))
 
 
 def remove_from_ssh_config(ssh_config_path, remote_host):
-    with open(ssh_config_path, 'r') as f:
-        ssh_config_lines = f.readlines()
-    updated_ssh_config_lines = []
-    skip_host = False
-    for line in ssh_config_lines:
-        if line.startswith('Host '):
-            if line.startswith('Host %s' % remote_host):
-                skip_host = True
-            else:
-                skip_host = False
-        if not skip_host:
-            updated_ssh_config_lines.append(line)
-    with open(ssh_config_path, 'w') as f:
-        f.writelines(updated_ssh_config_lines)
+    if os.path.exists(ssh_config_path):
+        with open(ssh_config_path, 'r') as f:
+            ssh_config_lines = f.readlines()
+        updated_ssh_config_lines = []
+        skip_host = False
+        for line in ssh_config_lines:
+            if line.startswith('Host '):
+                if line.startswith('Host {}'.format(remote_host)):
+                    skip_host = True
+                else:
+                    skip_host = False
+            if not skip_host:
+                updated_ssh_config_lines.append(line)
+        with open(ssh_config_path, 'w') as f:
+            f.writelines(updated_ssh_config_lines)
 
 
 def add_to_ssh_known_hosts(run_id, local_port, log_file, retries, ssh_known_hosts_path, remote_ssh_public_key_path):
-    ssh_known_hosts_temp_path = ssh_known_hosts_path + '_%s' % random.randint(0, sys.maxsize)
+    ssh_known_hosts_temp_path = ssh_known_hosts_path + '_{}'.format(random.randint(0, sys.maxsize))
     run_scp_download(run_id, remote_ssh_public_key_path, ssh_known_hosts_temp_path, retries)
     with open(ssh_known_hosts_temp_path, 'r') as f:
         public_key = f.read().strip()
     os.remove(ssh_known_hosts_temp_path)
     with open(ssh_known_hosts_path, 'a') as f:
-        f.write('[127.0.0.1]:%s %s' % (local_port, public_key))
+        f.write('[127.0.0.1]:{} {}'.format(local_port, public_key))
     perform_command(['ssh-keygen', '-H', '-f', ssh_known_hosts_path], log_file)
     perform_command(['rm', ssh_known_hosts_path + '.old'], log_file)
 
 
 def remove_from_ssh_known_hosts(ssh_known_hosts_path, local_port, log_file):
-    perform_command(['ssh-keygen', '-R', '[127.0.0.1]:%s' % local_port, '-f', ssh_known_hosts_path], log_file)
+    if os.path.exists(ssh_known_hosts_path):
+        perform_command(['ssh-keygen', '-R', '[127.0.0.1]:{}'.format(local_port), '-f', ssh_known_hosts_path], log_file)
 
 
-def perform_command(executable, log_file):
+def perform_command(executable, log_file=None, collect_output=True):
     import subprocess
-    import os
-    with open(log_file or os.devnull, 'w') as output:
-        command_proc = subprocess.Popen(executable, stdout=output, stderr=subprocess.STDOUT, cwd=os.getcwd(),
-                                        env=os.environ.copy())
-        command_proc.wait()
-        if command_proc.returncode != 0:
-            raise RuntimeError('Command "%s" exited with return code: %d' % (executable, command_proc.returncode))
+    with open(log_file or os.devnull, 'a') as output:
+        if collect_output:
+            command_proc = subprocess.Popen(executable, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=os.getcwd(),
+                                            env=os.environ.copy())
+        else:
+            command_proc = subprocess.Popen(executable, stdout=output, stderr=subprocess.STDOUT, cwd=os.getcwd(),
+                                            env=os.environ.copy())
+        out, err = command_proc.communicate()
+        exit_code = command_proc.wait()
+        if exit_code != 0:
+            raise RuntimeError('Command "{}" exited with return code: {}, stdout: {}, stderr: {}'
+                               .format(executable, exit_code, out, err))
+        return out
 
 
 def run_scp_upload(run_id, source, destination, retries):
