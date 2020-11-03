@@ -103,6 +103,10 @@ pipe_log_info "--> LFS master chunk installed" "$FS_SETUP_TASK"
 # Configure LFS Chunk server
 ######################################################
 
+rm -rf /etc/mfs/mfschunkserver.cfg
+rm -rf $_CHUNK_DIR
+rm -rf /var/lib/mfs/*lock
+
 cp /etc/mfs/mfschunkserver.cfg.dist /etc/mfs/mfschunkserver.cfg
 echo "MASTER_HOST=lizardfs-master" >> /etc/mfs/mfschunkserver.cfg
 mkdir -p $_CHUNK_DIR
