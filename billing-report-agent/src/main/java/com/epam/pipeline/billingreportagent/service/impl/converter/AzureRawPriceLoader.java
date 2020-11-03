@@ -35,7 +35,6 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -60,18 +59,15 @@ public class AzureRawPriceLoader {
         this.retentionTimeoutMinutes = retentionTimeoutMinutes;
     }
 
-    public Map<String, Response<AzurePricingResult>> getRawPricesForRegion(final List<AzureRegion> activeAzureRegions)
-        throws IOException {
+    public Response<AzurePricingResult> getRawPricesUsingPipelineRegion(final AzureRegion region) throws IOException {
         final LocalDateTime pricesUpdateStart = LocalDateTime.now();
-        for (final AzureRegion region : activeAzureRegions) {
-            final String offerAndSubscription = getRegionOfferAndSubscription(region);
-            if (!azureRegionPricing.containsKey(offerAndSubscription)
-                || lastPriceUpdate.plus(retentionTimeoutMinutes, ChronoUnit.MINUTES).isBefore(pricesUpdateStart)) {
-                azureRegionPricing.put(offerAndSubscription, getAzurePricing(region));
-                lastPriceUpdate = LocalDateTime.now();
-            }
+        final String offerAndSubscription = getRegionOfferAndSubscription(region);
+        if (!azureRegionPricing.containsKey(offerAndSubscription)
+            || lastPriceUpdate.plus(retentionTimeoutMinutes, ChronoUnit.MINUTES).isBefore(pricesUpdateStart)) {
+            azureRegionPricing.put(offerAndSubscription, getAzurePricing(region));
+            lastPriceUpdate = LocalDateTime.now();
         }
-        return azureRegionPricing;
+        return azureRegionPricing.get(offerAndSubscription);
     }
 
     public String getRegionOfferAndSubscription(final AzureRegion region) {

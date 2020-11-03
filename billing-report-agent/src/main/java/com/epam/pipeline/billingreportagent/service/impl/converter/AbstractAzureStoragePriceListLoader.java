@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 import retrofit2.Response;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Comparator;
@@ -74,18 +75,10 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
             .collect(Collectors.toList());
         Assert.isTrue(CollectionUtils.isNotEmpty(activeAzureRegions), "No Azure regions found in current deployment!");
         assertOffersAndRegionMetersAreUnique(activeAzureRegions);
-        final Map<String, Response<AzurePricingResult>> azureRegionPricing =
-            rawPriceLoader.getRawPricesForRegion(activeAzureRegions);
+        final HashSet<String> regionCodes = new HashSet<>();
         return activeAzureRegions.stream()
-            .collect(Collectors.toMap(AbstractCloudRegion::getRegionCode,
-                region -> {
-                    logger.info("Reading prices for [{}, id={}, meterName={}]",
-                                region.getName(), region.getId(), region.getMeterRegionName());
-                    final String offerAndSubscription = rawPriceLoader.getRegionOfferAndSubscription(region);
-                    return getStoragePricingForRegion(azureRegionPricing.get(offerAndSubscription),
-                                                      region.getMeterRegionName());
-                },
-                (region1, region2) -> region1));
+            .filter(region -> regionCodes.add(region.getRegionCode()))
+            .collect(Collectors.toMap(AbstractCloudRegion::getRegionCode, this::getPricingForSpecificRegion));
     }
 
     protected abstract Map<String, StoragePricing> extractPrices(List<AzurePricingMeter> pricingMeters);
@@ -164,5 +157,16 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
                 String.format("No [%s] region/default value is presented in prices retrieved!", meterRegion));
         }
         return storagePricing;
+    }
+
+    private StoragePricing getPricingForSpecificRegion(final AzureRegion region) {
+        try {
+            final Response<AzurePricingResult> azureRegionPricing =
+                rawPriceLoader.getRawPricesUsingPipelineRegion(region);
+            logger.info("Reading prices for [{}, meterName={}]", region.getName(), region.getMeterRegionName());
+            return getStoragePricingForRegion(azureRegionPricing, region.getMeterRegionName());
+        } catch (IOException e) {
+            throw new IllegalStateException(String.format("Error during prices loading: %s", e.getMessage()));
+        }
     }
 }
