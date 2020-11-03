@@ -35,6 +35,10 @@ import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResultView;
 import com.epam.pipeline.entity.tool.ToolSymlinkRequest;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.epam.pipeline.controller.vo.docker.DockerRegistryVO;
+import com.epam.pipeline.entity.docker.DockerRegistryList;
+import com.epam.pipeline.entity.pipeline.DockerRegistry;
+import com.epam.pipeline.entity.pipeline.DockerRegistryEventEnvelope;
 
 import java.util.Collections;
 import java.util.List;
@@ -174,6 +178,18 @@ public final class DockerCreatorUtils {
         return dockerRegistry;
     }
 
+    public static DockerRegistry getDockerRegistry(final String owner) {
+        final DockerRegistry dockerRegistry = new DockerRegistry();
+        dockerRegistry.setOwner(owner);
+        dockerRegistry.setCaCert(TEST_STRING);
+        dockerRegistry.setId(ID);
+        dockerRegistry.setDescription(TEST_STRING);
+        dockerRegistry.setExternalUrl(TEST_STRING);
+        dockerRegistry.setHasMetadata(true);
+        dockerRegistry.setPassword(TEST_STRING);
+        return dockerRegistry;
+    }
+
     public static DockerRegistryVO getDockerRegistryVO() {
         final DockerRegistryVO dockerRegistryVO = new DockerRegistryVO();
         dockerRegistryVO.setId(ID);
@@ -189,7 +205,12 @@ public final class DockerCreatorUtils {
     }
 
     public static DockerRegistryList getDockerRegistryList() {
-        return new DockerRegistryList(Collections.singletonList(getDockerRegistry()));
+        final List<DockerRegistry> dockerRegistries = Collections.singletonList(getDockerRegistry());
+        return new DockerRegistryList(dockerRegistries);
+    }
+
+    public static DockerRegistryList getDockerRegistryList(final DockerRegistry dockerRegistry) {
+        return new DockerRegistryList(Collections.singletonList(dockerRegistry));
     }
 
     public static DockerRegistryEventEnvelope getDockerRegistryEventEnvelope() {
