@@ -24,7 +24,9 @@ import com.epam.pipeline.billingreportagent.service.impl.loader.CloudRegionLoade
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
 import retrofit2.Response;
 
@@ -90,6 +92,7 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
 
     protected StoragePricing convertAzurePricing(final AzurePricingMeter azurePricing, final int scaleFactor) {
         final Map<String, Float> rates = azurePricing.getMeterRates();
+        log.debug("Reading price from {}", azurePricing);
         final StoragePricing storagePricing = new StoragePricing();
         final List<StoragePricing.StoragePricingEntity> pricing = rates.entrySet().stream()
             .map(e -> {
@@ -147,10 +150,14 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
             .map(AzurePricingResult::getMeters)
             .orElse(Collections.emptyList());
         final Map<String, StoragePricing> fullStoragePricingMap = extractPrices(azurePricingMeters);
-        final StoragePricing storagePricing = fullStoragePricingMap.get(meterRegion);
+        final StoragePricing storagePricing = fullStoragePricingMap
+            .computeIfAbsent(meterRegion, region -> {
+                log.warn(String.format("No price is found for [%s], searching for the default value.", meterRegion));
+                return fullStoragePricingMap.getOrDefault(StringUtils.EMPTY, null);
+            });
         if (storagePricing == null) {
-            throw new IllegalArgumentException(String.format("No [%s] region is presented in prices retrieved!",
-                                                             meterRegion));
+            throw new IllegalArgumentException(
+                String.format("No [%s] region/default value is presented in prices retrieved!", meterRegion));
         }
         return storagePricing;
     }

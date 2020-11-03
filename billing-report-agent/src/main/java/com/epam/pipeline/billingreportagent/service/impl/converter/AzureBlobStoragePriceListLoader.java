@@ -19,7 +19,6 @@ package com.epam.pipeline.billingreportagent.service.impl.converter;
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
 import com.epam.pipeline.billingreportagent.model.pricing.AzurePricingMeter;
 import com.epam.pipeline.billingreportagent.service.impl.loader.CloudRegionLoader;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -43,10 +42,8 @@ public class AzureBlobStoragePriceListLoader extends AbstractAzureStoragePriceLi
     protected Map<String, StoragePricing> extractPrices(final List<AzurePricingMeter> pricingMeters) {
         return pricingMeters.stream()
             .filter(meter -> GB_MONTH_UNIT.equals(meter.getUnit()))
-            .filter(meter -> STORAGE_CATEGORY.equals(meter.getMeterCategory()))
             .filter(meter -> meter.getMeterSubCategory().equals(blobStorageCategory))
             .filter(meter -> meter.getMeterName().startsWith(String.format(DATA_STORE_METER_TEMPLATE, redundancyType)))
-            .filter(meter -> StringUtils.isNotEmpty(meter.getMeterRegion()))
             .collect(Collectors.toMap(AzurePricingMeter::getMeterRegion, this::convertAzurePricing));
     }
 }
