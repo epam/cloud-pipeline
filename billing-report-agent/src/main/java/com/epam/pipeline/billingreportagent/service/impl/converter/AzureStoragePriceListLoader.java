@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.credentials.ApplicationTokenCredentials;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.util.Assert;
@@ -51,16 +52,16 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class AzureStoragePriceListLoader implements StoragePriceListLoader {
 
     private static final int READ_TIMEOUT = 30;
     private static final int CONNECT_TIMEOUT = 30;
     private static final String API_VERSION = "2016-08-31-preview";
-    private static final String STORAGE_CATEGORY = "Storage";
     private static final String GB_MONTH_UNIT = "1 GB/Month";
     private static final String AUTH_TOKEN_TEMPLATE = "Bearer %s";
     private static final String STORAGE_SUBCATEGORY_BLOCK_BLOB = "General Block Blob";
-    private static final String REDUNDANCY_TYPE = "LRS Data Stored";
+    private static final String REDUNDANCY_TYPE = "Hot LRS Data Stored";
     private static final String FILTER_TEMPLATE =
         "OfferDurableId eq '%s' and Currency eq 'USD' and Locale eq 'en-US' and RegionInfo eq 'US'";
 
@@ -156,7 +157,6 @@ public class AzureStoragePriceListLoader implements StoragePriceListLoader {
         }).getMeters()
             .stream()
             .filter(meter -> GB_MONTH_UNIT.equals(meter.getUnit()))
-            .filter(meter -> STORAGE_CATEGORY.equals(meter.getMeterCategory()))
             .filter(meter -> meter.getMeterSubCategory().startsWith(STORAGE_SUBCATEGORY_BLOCK_BLOB))
             .filter(meter -> meter.getMeterName().startsWith(REDUNDANCY_TYPE))
             .filter(meter -> meterRegion.equals(meter.getMeterRegion()))
@@ -184,6 +184,7 @@ public class AzureStoragePriceListLoader implements StoragePriceListLoader {
 
     private StoragePricing convertAzurePricing(final AzurePricingMeter azurePricing) {
         final Map<String, Float> rates = azurePricing.getMeterRates();
+        log.debug("Reading price from {}", azurePricing);
         final StoragePricing storagePricing = new StoragePricing();
         final List<StoragePricing.StoragePricingEntity> pricing = rates.entrySet().stream()
             .map(e -> {
