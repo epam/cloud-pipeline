@@ -29,9 +29,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
@@ -40,11 +37,12 @@ import static org.mockito.Mockito.doReturn;
 abstract class AbstractDataStorageAclTest extends AbstractAclTest {
 
     protected final AbstractDataStorage s3bucket = DatastorageCreatorUtils.getS3bucketDataStorage(ID, OWNER_USER);
+
     protected final AbstractDataStorage anotherS3bucket =
             DatastorageCreatorUtils.getS3bucketDataStorage(ID_2, TEST_STRING);
     protected final Authentication authentication = new TestingAuthenticationToken(new Object(), new Object());
     protected final UserContext context = SecurityCreatorUtils.getUserContext();
-    protected final InputStream inputStream = new ByteArrayInputStream(TEST_STRING.getBytes());
+    protected final UserContext externalContext = SecurityCreatorUtils.getUserContext(true);
 
     @Autowired
     protected DataStorageApiService dataStorageApiService;

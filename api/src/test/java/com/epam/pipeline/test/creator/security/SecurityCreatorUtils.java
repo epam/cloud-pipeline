@@ -28,7 +28,7 @@ public final class SecurityCreatorUtils {
         return new UserContext();
     }
 
-    public static UserContext getUserContext(boolean external) {
+    public static UserContext getUserContext(final boolean external) {
         final UserContext context = new UserContext();
         context.setExternal(external);
         return context;

@@ -28,14 +28,14 @@ public final class PipelineCreatorUtils {
 
     }
 
-    public static Pipeline getPipeline(String owner) {
+    public static Pipeline getPipeline(final String owner) {
         Pipeline pipeline = new Pipeline();
         pipeline.setId(ID);
         pipeline.setOwner(owner);
         return pipeline;
     }
 
-    public static PipelineRun getPipelineRun(Long id, String owner) {
+    public static PipelineRun getPipelineRun(final Long id, final String owner) {
         final PipelineRun pipelineRun = new PipelineRun();
         pipelineRun.setId(id);
         pipelineRun.setOwner(owner);

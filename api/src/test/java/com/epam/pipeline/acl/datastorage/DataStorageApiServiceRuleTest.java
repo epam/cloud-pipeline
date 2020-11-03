@@ -56,8 +56,6 @@ public class DataStorageApiServiceRuleTest extends AbstractDataStorageAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldCreateRuleWhenPermissionIsGranted() {
         initAclEntity(pipeline, AclPermission.WRITE);
-        mockS3bucket(s3bucket);
-        mockAuthUser(OWNER_USER);
         doReturn(dataStorageRule).when(mockDataStorageRuleManager).createRule(dataStorageRule);
 
         assertThat(dataStorageApiService.createRule(dataStorageRule)).isEqualTo(dataStorageRule);
@@ -67,8 +65,6 @@ public class DataStorageApiServiceRuleTest extends AbstractDataStorageAclTest {
     @WithMockUser
     public void shouldDenyCreateRuleWhenPermissionIsNotGranted() {
         initAclEntity(pipeline);
-        mockS3bucket(s3bucket);
-        mockAuthUser(SIMPLE_USER);
         doReturn(dataStorageRule).when(mockDataStorageRuleManager).createRule(dataStorageRule);
 
         assertThrows(AccessDeniedException.class, () -> dataStorageApiService.createRule(dataStorageRule));

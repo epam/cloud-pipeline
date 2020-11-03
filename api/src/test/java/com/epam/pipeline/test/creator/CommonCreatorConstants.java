@@ -35,7 +35,7 @@ public final class CommonCreatorConstants {
     public static final List<String> TEST_STRING_LIST = Collections.singletonList(TEST_STRING);
     public static final byte[] TEST_ARRAY = {1, 1, 1};
     public static final Map<String, String> TEST_STRING_MAP = Collections.singletonMap(TEST_STRING, TEST_STRING);
-    public static final Set<String> TEST_STRING_SET = Collections.emptySet();
+    public static final Set<String> TEST_STRING_SET = Collections.singleton(TEST_STRING);
 
     public static final TypeReference<Result<Integer>> INTEGER_TYPE = new TypeReference<Result<Integer>>() { };
     public static final TypeReference<Result<Object>> OBJECT_TYPE = new TypeReference<Result<Object>>() { };
