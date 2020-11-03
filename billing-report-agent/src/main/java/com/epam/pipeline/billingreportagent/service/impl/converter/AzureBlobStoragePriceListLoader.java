@@ -31,9 +31,10 @@ public class AzureBlobStoragePriceListLoader extends AbstractAzureStoragePriceLi
     private final String blobStorageCategory;
 
     public AzureBlobStoragePriceListLoader(final CloudRegionLoader regionLoader,
+                                           final AzureRawPriceLoader rawPriceLoader,
                                            final String blobStorageCategory,
                                            final String redundancyType) {
-        super(regionLoader);
+        super(regionLoader, rawPriceLoader);
         this.redundancyType = redundancyType;
         this.blobStorageCategory = blobStorageCategory;
     }

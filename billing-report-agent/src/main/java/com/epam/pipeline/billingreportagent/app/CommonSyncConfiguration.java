@@ -25,6 +25,7 @@ import com.epam.pipeline.billingreportagent.service.impl.converter.AwsStoragePri
 import com.epam.pipeline.billingreportagent.service.impl.converter.AzureBlobStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AzureFilesStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AzureNetAppStoragePriceListLoader;
+import com.epam.pipeline.billingreportagent.service.impl.converter.AzureRawPriceLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.FileShareMountsService;
 import com.epam.pipeline.billingreportagent.service.impl.converter.GcpStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.PriceLoadingMode;
@@ -194,12 +195,15 @@ public class CommonSyncConfiguration {
         final ElasticIndexService indexService,
         final ElasticsearchServiceClient elasticsearchClient,
         final CloudRegionLoader regionLoader,
+        final AzureRawPriceLoader rawPriceLoader,
         final @Value("${sync.storage.azure-blob.category:General Block Blob}") String blobStorageCategory,
         final @Value("${sync.storage.azure-blob.redundancy:LRS}") String redundancyType) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.AZ_BLOB_STORAGE,
                 billingCenterKey);
         final StoragePricingService pricingService =
-                new StoragePricingService(new AzureBlobStoragePriceListLoader(regionLoader, blobStorageCategory,
+                new StoragePricingService(new AzureBlobStoragePriceListLoader(regionLoader,
+                                                                              rawPriceLoader,
+                                                                              blobStorageCategory,
                                                                               redundancyType));
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
@@ -224,11 +228,12 @@ public class CommonSyncConfiguration {
                                                        final ElasticsearchServiceClient elasticsearchClient,
                                                        final FileShareMountsService fileShareMountsService,
                                                        final CloudRegionLoader regionLoader,
+                                                       final AzureRawPriceLoader rawPriceLoader,
                                                        final @Value("${sync.storage.azure-netapp.tier:Standard}")
                                                                String storageTier) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
-            new StoragePricingService(new AzureNetAppStoragePriceListLoader(regionLoader, storageTier));
+            new StoragePricingService(new AzureNetAppStoragePriceListLoader(regionLoader, rawPriceLoader, storageTier));
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
                 storageIndexName,
@@ -254,11 +259,12 @@ public class CommonSyncConfiguration {
                                                       final ElasticsearchServiceClient elasticsearchClient,
                                                       final FileShareMountsService fileShareMountsService,
                                                       final CloudRegionLoader regionLoader,
+                                                      final AzureRawPriceLoader rawPriceLoader,
                                                       final @Value("${sync.storage.azure-files.tier:Cool LRS}")
                                                               String storageTier) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
-            new StoragePricingService(new AzureFilesStoragePriceListLoader(regionLoader, storageTier));
+            new StoragePricingService(new AzureFilesStoragePriceListLoader(regionLoader, rawPriceLoader, storageTier));
         return new StorageSynchronizer(storageMapping,
                                        commonIndexPrefix,
                                        storageIndexName,

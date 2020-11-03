@@ -34,8 +34,10 @@ public class AzureNetAppStoragePriceListLoader extends AbstractAzureStoragePrice
 
     private final String netAppTier;
 
-    public AzureNetAppStoragePriceListLoader(final CloudRegionLoader regionLoader, final String netAppTier) {
-        super(regionLoader);
+    public AzureNetAppStoragePriceListLoader(final CloudRegionLoader regionLoader,
+                                             final AzureRawPriceLoader rawPriceLoader,
+                                             final String netAppTier) {
+        super(regionLoader, rawPriceLoader);
         this.netAppTier = netAppTier;
     }
 

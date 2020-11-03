@@ -30,8 +30,10 @@ public class AzureFilesStoragePriceListLoader extends AbstractAzureStoragePriceL
 
     private final String storageTier;
 
-    public AzureFilesStoragePriceListLoader(final CloudRegionLoader regionLoader, final String storageTier) {
-        super(regionLoader);
+    public AzureFilesStoragePriceListLoader(final CloudRegionLoader regionLoader,
+                                            final AzureRawPriceLoader rawPriceLoader,
+                                            final String storageTier) {
+        super(regionLoader, rawPriceLoader);
         this.storageTier = storageTier;
     }
 
