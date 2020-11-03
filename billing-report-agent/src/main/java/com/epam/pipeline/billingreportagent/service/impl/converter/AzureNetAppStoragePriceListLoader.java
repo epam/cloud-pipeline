@@ -21,8 +21,6 @@ import com.epam.pipeline.billingreportagent.model.pricing.AzurePricingMeter;
 import com.epam.pipeline.billingreportagent.service.impl.loader.CloudRegionLoader;
 import org.apache.commons.lang3.StringUtils;
 
-import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,7 +29,8 @@ public class AzureNetAppStoragePriceListLoader extends AbstractAzureStoragePrice
 
     private static final String AZURE_NETAPP_CATEGORY = "Azure NetApp Files";
     private static final String AZURE_CAPACITY_METER_TEMPLATE = "%s Capacity";
-    private static final int HRS_PER_DAY = 24;
+    private static final int HRS_PER_MONTH = 730;
+    private static final String GIB_HOUR_UNIT = "1 GiB/Hour";
 
     private final String netAppTier;
 
@@ -43,6 +42,7 @@ public class AzureNetAppStoragePriceListLoader extends AbstractAzureStoragePrice
     @Override
     protected Map<String, StoragePricing> extractPrices(final List<AzurePricingMeter> pricingMeters) {
         return pricingMeters.stream()
+            .filter(meter -> GIB_HOUR_UNIT.equals(meter.getUnit()))
             .filter(meter -> AZURE_NETAPP_CATEGORY.equals(meter.getMeterCategory()))
             .filter(meter -> meter.getMeterName().equals(String.format(AZURE_CAPACITY_METER_TEMPLATE, netAppTier)))
             .filter(meter -> StringUtils.isNotEmpty(meter.getMeterRegion()))
@@ -50,12 +50,6 @@ public class AzureNetAppStoragePriceListLoader extends AbstractAzureStoragePrice
     }
 
     private StoragePricing convertAzurePricingHourlyToMonthly(final AzurePricingMeter azurePricing) {
-        return convertAzurePricing(azurePricing, HRS_PER_DAY * countDaysInCurrentMonth());
-    }
-
-    private int countDaysInCurrentMonth() {
-        final LocalDate date = LocalDate.now();
-        final YearMonth yearMonthObject = YearMonth.of(date.getYear(), date.getMonthValue());
-        return yearMonthObject.lengthOfMonth();
+        return convertAzurePricing(azurePricing, HRS_PER_MONTH);
     }
 }
