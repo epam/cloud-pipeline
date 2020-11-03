@@ -37,6 +37,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -118,6 +119,7 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
                 .token(resultingCredentials.getSessionToken())
                 .expirationTime(TemporaryCredentialsGenerator
                         .expirationTimeWithUTC(resultingCredentials.getExpiration()))
+                .region(buildRegion(storagesWithRegions))
                 .build();
     }
 
@@ -238,5 +240,20 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
         Assert.state(profiles.size() == 1,
                 messageHelper.getMessage(MessageConstants.ERROR_AWS_PROFILE_UNIQUENESS));
         return profiles.get(0);
+    }
+
+    private String buildRegion(final List<Pair<S3bucketDataStorage, AwsRegion>> storagesWithRegions) {
+        if (CollectionUtils.isEmpty(storagesWithRegions)) {
+            return null;
+        }
+        final Pair<S3bucketDataStorage, AwsRegion> firstStorageWithRegion = storagesWithRegions.get(0);
+        final boolean sameRegion = storagesWithRegions.stream()
+                .allMatch(storageWithRegion -> assertRegion(firstStorageWithRegion, storageWithRegion));
+        return sameRegion ? firstStorageWithRegion.getRight().getRegionCode() : null;
+    }
+
+    private boolean assertRegion(final Pair<S3bucketDataStorage, AwsRegion> expected,
+                                 final Pair<S3bucketDataStorage, AwsRegion> actual) {
+        return Objects.equals(expected.getRight().getId(), actual.getRight().getId());
     }
 }
