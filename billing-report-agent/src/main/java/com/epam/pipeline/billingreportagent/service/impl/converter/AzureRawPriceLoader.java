@@ -60,18 +60,23 @@ public class AzureRawPriceLoader {
     }
 
     public Response<AzurePricingResult> getRawPricesUsingPipelineRegion(final AzureRegion region) throws IOException {
-        final LocalDateTime pricesUpdateStart = LocalDateTime.now();
         final String offerAndSubscription = getRegionOfferAndSubscription(region);
-        if (!azureRegionPricing.containsKey(offerAndSubscription)
-            || lastPriceUpdate.plus(retentionTimeoutMinutes, ChronoUnit.MINUTES).isBefore(pricesUpdateStart)) {
-            azureRegionPricing.put(offerAndSubscription, getAzurePricing(region));
-            lastPriceUpdate = LocalDateTime.now();
-        }
+        updatePricesIfRequired(region, offerAndSubscription);
         return azureRegionPricing.get(offerAndSubscription);
     }
 
     public String getRegionOfferAndSubscription(final AzureRegion region) {
         return String.join(",", region.getPriceOfferId(), region.getSubscription());
+    }
+
+    private synchronized void updatePricesIfRequired(final AzureRegion region, final String offerAndSubscription)
+        throws IOException {
+        final LocalDateTime pricesUpdateStart = LocalDateTime.now();
+        if (!azureRegionPricing.containsKey(offerAndSubscription)
+            || lastPriceUpdate.plus(retentionTimeoutMinutes, ChronoUnit.MINUTES).isBefore(pricesUpdateStart)) {
+            azureRegionPricing.put(offerAndSubscription, getAzurePricing(region));
+            lastPriceUpdate = LocalDateTime.now();
+        }
     }
 
     private ApplicationTokenCredentials getCredentialsFromFile(final String credentialsPath) {
