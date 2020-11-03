@@ -1,6 +1,0 @@
-{
-    "short_description": "Nextflow is a workflow framework and a programming DSL that eases the writing of computational pipelines",
-    "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
-    "disk_size": "50",
-    "default_command": "sleep infinity"
-}

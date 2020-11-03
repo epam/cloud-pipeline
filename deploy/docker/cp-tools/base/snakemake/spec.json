@@ -1,6 +1,0 @@
-{
-  "short_description": "The Snakemake workflow management system is a tool to create reproducible and scalable data analyses. Workflows are described via a human readable, Python based language.",
-  "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
-  "disk_size": "50",
-  "default_command": "sleep infinity"
-}

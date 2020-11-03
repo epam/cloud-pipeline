@@ -1,3 +1,0 @@
-requests
-urllib3
-cryptography==2.6.1

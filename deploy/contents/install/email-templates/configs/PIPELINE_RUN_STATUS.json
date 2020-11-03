@@ -1,8 +1,0 @@
-{
-    "keepInformedAdmins":true,
-    "keepInformedOwner":true,
-    "enabled":true,
-    "resendDelay": -1,
-    "threshold": -1,
-    "subject":"Job #$templateParameters[\"id\"] is now $templateParameters[\"status\"]"
-}

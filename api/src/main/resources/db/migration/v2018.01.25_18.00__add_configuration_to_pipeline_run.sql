@@ -1,1 +1,0 @@
-ALTER TABLE pipeline.pipeline_run ADD configuration_id BIGINT;

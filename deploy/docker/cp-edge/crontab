@@ -1,1 +1,0 @@
-* * * * * root flock -w 1 /var/run/sync-routes.lock bash /etc/sync-routes/sync-routes.sh

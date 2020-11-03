@@ -1,9 +1,0 @@
-Package: NegativeTest
-Priority: recommended
-Version: 1.0
-Depends: R (>= 2.5.0), stats
-ByteCompile: yes
-NeedsCompilation: yes
-Packaged: 2015-06-29 08:37:00 UTC; ripley
-Author: Matt Wand [aut],
-  Brian Ripley [trl, cre, ctb] (R port and updates)

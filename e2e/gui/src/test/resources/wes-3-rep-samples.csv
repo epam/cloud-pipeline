@@ -1,4 +1,0 @@
-Sample:ID,SampleName,R1_Fastq:Path,R2_Fastq:Path
-NA12878_D710_3,NA12878_D710_3,prefix://unexisting-storage-path/fastq/3_replicates_of_NA12878/NA12878_D710_L001_R1_001.fastq.gz,prefix://unexisting-storage-path/fastq/3_replicates_of_NA12878/NA12878_D710_L001_R2_001.fastq.gz
-NA12878_D711_3,NA12878_D711_3,prefix://unexisting-storage-path/fastq/3_replicates_of_NA12878/NA12878_D711_L001_R1_001.fastq.gz,prefix://unexisting-storage-path/fastq/3_replicates_of_NA12878/NA12878_D711_L001_R2_001.fastq.gz
-NA12878_D712_3,NA12878_D712_3,prefix://unexisting-storage-path/fastq/3_replicates_of_NA12878/NA12878_D712_L001_R1_001.fastq.gz,prefix://unexisting-storage-path/fastq/3_replicates_of_NA12878/NA12878_D712_L001_R2_001.fastq.gz

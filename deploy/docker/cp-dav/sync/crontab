@@ -1,1 +1,0 @@
-* * * * * root flock -w 1 /var/run/sync-nfs.lock bash ${SYNC_HOME}/sync-nfs.sh

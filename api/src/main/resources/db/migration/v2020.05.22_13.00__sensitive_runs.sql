@@ -1,1 +1,0 @@
-ALTER TABLE pipeline.pipeline_run ADD sensitive BOOLEAN DEFAULT FALSE NOT NULL;

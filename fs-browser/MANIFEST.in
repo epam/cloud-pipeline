@@ -1,3 +1,0 @@
-include fsbrowser/static/*
-include fsbrowser/static/js/*
-include fsbrowser/static/css/*
