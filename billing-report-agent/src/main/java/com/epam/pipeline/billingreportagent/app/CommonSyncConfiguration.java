@@ -189,16 +189,18 @@ public class CommonSyncConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = "sync.storage.azure-blob.disable", matchIfMissing = true, havingValue = FALSE)
-    public StorageSynchronizer azureBlobSynchronizer(final StorageLoader loader,
-                                                     final ElasticIndexService indexService,
-                                                     final ElasticsearchServiceClient elasticsearchClient,
-                                                     final CloudRegionLoader regionLoader,
-                                                     final @Value("${sync.storage.azure-blob.redundancy:LRS}")
-                                                             String redundancyType) {
+    public StorageSynchronizer azureBlobSynchronizer(
+        final StorageLoader loader,
+        final ElasticIndexService indexService,
+        final ElasticsearchServiceClient elasticsearchClient,
+        final CloudRegionLoader regionLoader,
+        final @Value("${sync.storage.azure-blob.category:General Block Blob}") String blobStorageCategory,
+        final @Value("${sync.storage.azure-blob.redundancy:LRS}") String redundancyType) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.AZ_BLOB_STORAGE,
                 billingCenterKey);
         final StoragePricingService pricingService =
-                new StoragePricingService(new AzureBlobStoragePriceListLoader(regionLoader, redundancyType));
+                new StoragePricingService(new AzureBlobStoragePriceListLoader(regionLoader, blobStorageCategory,
+                                                                              redundancyType));
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
                 storageIndexName,

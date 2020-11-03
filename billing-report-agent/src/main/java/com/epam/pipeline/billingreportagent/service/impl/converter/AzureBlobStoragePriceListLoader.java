@@ -27,21 +27,23 @@ import java.util.stream.Collectors;
 
 public class AzureBlobStoragePriceListLoader extends AbstractAzureStoragePriceListLoader {
 
-    private static final String STORAGE_SUBCATEGORY_BLOCK_BLOB = "General Block Blob";
-
     private final String redundancyType;
+    private final String blobStorageCategory;
 
-    public AzureBlobStoragePriceListLoader(final CloudRegionLoader regionLoader, final String redundancyType) {
+    public AzureBlobStoragePriceListLoader(final CloudRegionLoader regionLoader,
+                                           final String blobStorageCategory,
+                                           final String redundancyType) {
         super(regionLoader);
         this.redundancyType = redundancyType;
+        this.blobStorageCategory = blobStorageCategory;
     }
 
     @Override
-    protected Map<String, StoragePricing> extractPrices(List<AzurePricingMeter> pricingMeters) {
+    protected Map<String, StoragePricing> extractPrices(final List<AzurePricingMeter> pricingMeters) {
         return pricingMeters.stream()
             .filter(meter -> GB_MONTH_UNIT.equals(meter.getUnit()))
             .filter(meter -> STORAGE_CATEGORY.equals(meter.getMeterCategory()))
-            .filter(meter -> meter.getMeterSubCategory().startsWith(STORAGE_SUBCATEGORY_BLOCK_BLOB))
+            .filter(meter -> meter.getMeterSubCategory().equals(blobStorageCategory))
             .filter(meter -> meter.getMeterName().startsWith(String.format(DATA_STORE_METER_TEMPLATE, redundancyType)))
             .filter(meter -> StringUtils.isNotEmpty(meter.getMeterRegion()))
             .collect(Collectors.toMap(AzurePricingMeter::getMeterRegion, this::convertAzurePricing));
