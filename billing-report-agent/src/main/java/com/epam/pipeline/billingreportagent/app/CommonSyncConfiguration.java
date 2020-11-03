@@ -23,6 +23,7 @@ import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.billingreportagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AwsStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AzureBlobStoragePriceListLoader;
+import com.epam.pipeline.billingreportagent.service.impl.converter.AzureFilesStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AzureNetAppStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.FileShareMountsService;
 import com.epam.pipeline.billingreportagent.service.impl.converter.GcpStoragePriceListLoader;
@@ -242,5 +243,35 @@ public class CommonSyncConfiguration {
                         MountType.NFS,
                         enableStorageHistoricalBillingGeneration),
                 DataStorageType.NFS);
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "sync.storage.azure-files.disable", matchIfMissing = true, havingValue = FALSE)
+    public StorageSynchronizer azureFilesSynchronizer(final StorageLoader loader,
+                                                      final ElasticIndexService indexService,
+                                                      final ElasticsearchServiceClient elasticsearchClient,
+                                                      final FileShareMountsService fileShareMountsService,
+                                                      final CloudRegionLoader regionLoader,
+                                                      final @Value("${sync.storage.azure-files.tier:Cool LRS}")
+                                                              String storageTier) {
+        final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
+        final StoragePricingService pricingService =
+            new StoragePricingService(new AzureFilesStoragePriceListLoader(regionLoader, storageTier));
+        return new StorageSynchronizer(storageMapping,
+                                       commonIndexPrefix,
+                                       storageIndexName,
+                                       bulkSize,
+                                       insertTimeout,
+                                       elasticsearchClient,
+                                       loader,
+                                       indexService,
+                                       new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                                                                            StorageType.FILE_STORAGE,
+                                                                            pricingService,
+                                                                            fileIndexPattern,
+                                                                            fileShareMountsService,
+                                                                            MountType.SMB,
+                                                                            enableStorageHistoricalBillingGeneration),
+                                       DataStorageType.NFS);
     }
 }
