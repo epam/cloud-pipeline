@@ -24,9 +24,10 @@ import com.epam.pipeline.billingreportagent.service.impl.loader.CloudRegionLoade
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 import retrofit2.Response;
 
@@ -42,7 +43,6 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-@Slf4j
 public abstract class AbstractAzureStoragePriceListLoader implements StoragePriceListLoader {
 
     protected static final String GB_MONTH_UNIT = "1 GB/Month";
@@ -51,11 +51,13 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
 
     private CloudRegionLoader regionLoader;
     private AzureRawPriceLoader rawPriceLoader;
+    private final Logger logger;
 
     public AbstractAzureStoragePriceListLoader(final CloudRegionLoader regionLoader,
                                                final AzureRawPriceLoader rawPriceLoader) {
         this.regionLoader = regionLoader;
         this.rawPriceLoader = rawPriceLoader;
+        this.logger = LoggerFactory.getLogger(this.getClass());
     }
 
     @Override
@@ -77,6 +79,8 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
         return activeAzureRegions.stream()
             .collect(Collectors.toMap(AbstractCloudRegion::getRegionCode,
                 region -> {
+                    logger.info("Reading prices for [{}, id={}, meterName={}]",
+                                region.getName(), region.getId(), region.getMeterRegionName());
                     final String offerAndSubscription = rawPriceLoader.getRegionOfferAndSubscription(region);
                     return getStoragePricingForRegion(azureRegionPricing.get(offerAndSubscription),
                                                       region.getMeterRegionName());
@@ -92,7 +96,7 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
 
     protected StoragePricing convertAzurePricing(final AzurePricingMeter azurePricing, final int scaleFactor) {
         final Map<String, Float> rates = azurePricing.getMeterRates();
-        log.debug("Reading price from {}", azurePricing);
+        logger.debug("Reading price from {}", azurePricing);
         final StoragePricing storagePricing = new StoragePricing();
         final List<StoragePricing.StoragePricingEntity> pricing = rates.entrySet().stream()
             .map(e -> {
@@ -152,7 +156,7 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
         final Map<String, StoragePricing> fullStoragePricingMap = extractPrices(azurePricingMeters);
         final StoragePricing storagePricing = fullStoragePricingMap
             .computeIfAbsent(meterRegion, region -> {
-                log.warn(String.format("No price is found for [%s], searching for the default value.", meterRegion));
+                logger.warn(String.format("No price is found for [%s], searching for the default value.", meterRegion));
                 return fullStoragePricingMap.getOrDefault(StringUtils.EMPTY, null);
             });
         if (storagePricing == null) {
