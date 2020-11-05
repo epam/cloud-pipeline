@@ -417,10 +417,11 @@ def remove_ssh_public_key_from_run(run_id, ssh_public_key_path, retries, remote_
 
 
 def add_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path):
-    with open(ssh_config_path, 'r') as f:
-        ssh_config = f.read()
-    if remote_host in ssh_config:
-        remove_from_ssh_config(ssh_config_path, remote_host)
+    if os.path.exists(ssh_config_path):
+        with open(ssh_config_path, 'r') as f:
+            ssh_config = f.read()
+        if remote_host in ssh_config:
+            remove_from_ssh_config(ssh_config_path, remote_host)
     with open(ssh_config_path, 'a') as f:
         f.write('Host {}\n'
                 '    Hostname 127.0.0.1\n'
