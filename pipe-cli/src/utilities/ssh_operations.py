@@ -47,31 +47,45 @@ def setup_paramiko_logging():
     if paramiko_log_file:
         paramiko.util.log_to_file(paramiko_log_file, paramiko_log_level)
 
-def http_proxy_tunnel_connect(proxy, target, timeout=None):
-    import socket
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(timeout)
-    sock.connect(proxy)
-    cmd_connect = "CONNECT %s:%d HTTP/1.0\r\n\r\n" % target
-    sock.sendall(cmd_connect.encode('UTF-8'))
-    response = []
-    sock.settimeout(2)  # quick hack - replace this with something better performing.
+def http_proxy_tunnel_connect(proxy, target, timeout=None, retries=None):
+    timeout = timeout or None
+    retries = retries or 0
+    sock = None
     try:
-        # in worst case this loop will take 2 seconds if not response was received (sock.timeout)
-        while True:
-            chunk = sock.recv(1024)
-            if not chunk:  # if something goes wrong
-                break
-            response.append(chunk.decode('utf-8'))
-            if "\r\n\r\n" in chunk.decode('utf-8'):  # we do not want to read too far
-                break
-    except socket.error as error:
-        if "timed out" not in error:
-            response = [str(error)]
-    response = ''.join(response)
-    if "200 connection established" not in response.lower():
-        raise RuntimeError("Unable to establish HTTP-Tunnel: %s" % repr(response))
-    return sock
+        import socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect(proxy)
+        cmd_connect = "CONNECT %s:%d HTTP/1.0\r\n\r\n" % target
+        sock.sendall(cmd_connect.encode('UTF-8'))
+        response = []
+        sock.settimeout(2)  # quick hack - replace this with something better performing.
+        try:
+            # in worst case this loop will take 2 seconds if not response was received (sock.timeout)
+            while True:
+                chunk = sock.recv(1024)
+                if not chunk:  # if something goes wrong
+                    break
+                response.append(chunk.decode('utf-8'))
+                if "\r\n\r\n" in chunk.decode('utf-8'):  # we do not want to read too far
+                    break
+        except socket.error as error:
+            if "timed out" not in error:
+                response = [str(error)]
+        response = ''.join(response)
+        if "200 connection established" not in response.lower():
+            raise RuntimeError("Unable to establish HTTP-Tunnel: %s" % repr(response))
+        sock.settimeout(timeout)
+        return sock
+    except KeyboardInterrupt:
+        raise
+    except:
+        if retries >= 1:
+            if sock:
+                sock.close()
+            return http_proxy_tunnel_connect(proxy, target, timeout=timeout, retries=retries - 1)
+        else:
+            raise
 
 def get_conn_info(run_id):
     run_model = PipelineRun.get(run_id)
@@ -96,23 +110,22 @@ def get_conn_info(run_id):
 
 
 def setup_paramiko_transport(conn_info, retries):
-    socket = None
+    sock = None
     transport = None
     try:
-        socket = http_proxy_tunnel_connect(conn_info.ssh_proxy, conn_info.ssh_endpoint, 5)
-        transport = paramiko.Transport(socket)
+        sock = http_proxy_tunnel_connect(conn_info.ssh_proxy, conn_info.ssh_endpoint, timeout=5)
+        transport = paramiko.Transport(sock)
         transport.start_client()
         return transport
-    except Exception as e:
+    except:
         if retries >= 1:
-            retries = retries - 1
-            if socket:
-                socket.close()
+            if sock:
+                sock.close()
             if transport:
                 transport.close()
-            return setup_paramiko_transport(conn_info, retries)
+            return setup_paramiko_transport(conn_info, retries - 1)
         else:
-            raise e
+            raise
 
 
 def setup_authenticated_paramiko_transport(run_id, retries):
@@ -266,16 +279,18 @@ def resolve_ssh_path():
 
 
 def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_level, retries,
-                             server_delay=0.0001, tunnel_timeout=5, chunk_size=4096):
+                             tunnel_timeout=5, chunk_size=4096, server_delay=0.0001):
     logging.basicConfig(level=log_level or logging.ERROR)
     conn_info = get_conn_info(run_id)
     proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]),
                       int(os.getenv('CP_CLI_TUNNEL_PROXY_PORT', conn_info.ssh_proxy[1])))
     target_endpoint = (os.getenv('CP_CLI_TUNNEL_TARGET_HOST', conn_info.ssh_endpoint[0]),
                        remote_port)
+    tunnel_timeout = float(os.getenv('CP_CLI_TUNNEL_CONNECTION_TIMEOUT', tunnel_timeout))
+    server_address = os.getenv('CP_CLI_TUNNEL_SERVER_ADDRESS', '0.0.0.0')
     logging.info('Initializing tunnel %s:pipeline-%s:%s...', local_port, run_id, remote_port)
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('0.0.0.0', local_port))
+    server_socket.bind((server_address, local_port))
     server_socket.listen(5)
     inputs = []
     channel = {}
@@ -299,7 +314,9 @@ def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_leve
                         break
                     try:
                         logging.info('Initializing tunnel connection...')
-                        tunnel_socket = http_proxy_tunnel_connect(proxy_endpoint, target_endpoint, tunnel_timeout)
+                        tunnel_socket = http_proxy_tunnel_connect(proxy_endpoint, target_endpoint,
+                                                                  timeout=tunnel_timeout,
+                                                                  retries=retries)
                     except KeyboardInterrupt:
                         raise
                     except:
@@ -313,11 +330,24 @@ def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_leve
                     break
 
                 logging.debug('Reading data...')
-                data = input.recv(chunk_size)
-                if data:
+                read_data = None
+                sent_data = None
+                try:
+                    read_data = input.recv(chunk_size)
+                except KeyboardInterrupt:
+                    raise
+                except:
+                    logging.exception('Cannot read data from socket')
+                if read_data:
                     logging.debug('Writing data...')
-                    channel[input].send(data)
-                else:
+                    try:
+                        channel[input].send(read_data)
+                        sent_data = read_data
+                    except KeyboardInterrupt:
+                        raise
+                    except:
+                        logging.exception('Cannot write data to socket')
+                if not read_data or not sent_data:
                     logging.info('Closing client and tunnel connections...')
                     out = channel[input]
                     inputs.remove(input)
@@ -331,7 +361,6 @@ def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_leve
         logging.info('Interrupted...')
     except:
         logging.exception('Errored...')
-        sys.exit(1)
     finally:
         logging.info('Closing all sockets...')
         for input in inputs:

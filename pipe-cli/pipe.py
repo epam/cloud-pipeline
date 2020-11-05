@@ -1279,6 +1279,8 @@ def tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, f
         CP_CLI_TUNNEL_PROXY_HOST - tunnel proxy host
         CP_CLI_TUNNEL_PROXY_PORT - tunnel proxy port
         CP_CLI_TUNNEL_TARGET_HOST - tunnel target host
+        CP_CLI_TUNNEL_SERVER_ADDRESS - tunnel server address
+        CP_CLI_TUNNEL_CONNECTION_TIMEOUT - tunnel connection timeout
         CP_CLI_TUNNEL_SSH_PATH - .ssh directory path
     """
     if trace:
