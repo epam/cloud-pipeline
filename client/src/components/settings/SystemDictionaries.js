@@ -242,11 +242,12 @@ class SystemDictionaries extends React.Component {
       dataSource.push({name: 'New dictionary', isNew: true});
     }
     dataSource.push(
-      ...this.dictionariesNames
-        .filter(name => !filter ||
-          (name || '').toLowerCase().indexOf((filter || '').toLowerCase()) >= 0
+      ...this.dictionaries
+        .filter((dict) => !filter ||
+          (dict.values || [])
+            .find(v => (v.value || '').toLowerCase().indexOf((filter || '').toLowerCase()) >= 0)
         )
-        .map(name => ({name}))
+        .map((dict) => ({name: dict.key}))
     );
     const getRowClassName = (group) => {
       if (newDictionary) {
@@ -333,6 +334,7 @@ class SystemDictionaries extends React.Component {
                 maxHeight: '100%'
               }}>
               <SystemDictionaryForm
+                filter={this.state.filter}
                 disabled={this.state.pending}
                 isNew={this.state.newDictionary}
                 onDelete={this.onDictionaryDelete}
