@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.entity.datastorage.MountCommand;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StorageMountPath;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
@@ -89,6 +90,13 @@ public class DataStorageApiService {
     @AclMaskDelegateList
     public List<DataStorageWithShareMount> getAvailableStoragesWithShareMount(final Long fromRegionId) {
         return dataStorageManager.getDataStoragesWithShareMountObject(fromRegionId);
+    }
+
+    @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject.storage, 'READ') OR "
+            + "hasPermission(filterObject.storage, 'WRITE'))")
+    @AclMaskDelegateList
+    public List<DataStorageWithShareMount> getAllStoragesWithShareMount() {
+        return dataStorageManager.getAllStoragesWithShareMountObject();
     }
 
     @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject, 'READ') OR "
@@ -334,5 +342,10 @@ public class DataStorageApiService {
     @PreAuthorize(AclExpressions.RUN_ID_OWNER)
     public StorageMountPath getSharedFSSPathForRun(final Long runId, final boolean createFolder) {
         return runMountService.getSharedFSSPathForRun(runId, createFolder);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public MountCommand buildMontCommand(final Long id, final String rootMountPoint) {
+        return dataStorageManager.buildMontCommand(id, rootMountPoint);
     }
 }

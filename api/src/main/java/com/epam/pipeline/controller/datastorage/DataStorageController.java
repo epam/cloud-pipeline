@@ -24,7 +24,22 @@ import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
-import com.epam.pipeline.entity.datastorage.*;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
+import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
+import com.epam.pipeline.entity.datastorage.DataStorageException;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageListing;
+import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
+import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.entity.datastorage.MountCommand;
+import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.entity.datastorage.StorageMountPath;
+import com.epam.pipeline.entity.datastorage.StorageUsage;
+import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.manager.datastorage.DataStorageApiService;
 import io.swagger.annotations.Api;
@@ -123,6 +138,19 @@ public class DataStorageController extends AbstractRestController {
     public Result<List<DataStorageWithShareMount>> getAvailableStoragesWithMountObjects(
             @RequestParam(value = FROM_REGION, required = false) final Long regionId) {
         return Result.success(dataStorageApiService.getAvailableStoragesWithShareMount(regionId));
+    }
+
+    @GetMapping("/datastorage/allWithMounts")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns all data storages allowed and FileShareMount object.",
+            notes = "Returns all data storages allowed and FileShareMount object.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<DataStorageWithShareMount>> getAllStoragesWithMountObjects() {
+        return Result.success(dataStorageApiService.getAllStoragesWithShareMount());
     }
 
     @RequestMapping(value = "/datastorage/mount", method = RequestMethod.GET)
@@ -430,7 +458,7 @@ public class DataStorageController extends AbstractRestController {
             @PathVariable(value = ID) final Long id,
             @RequestBody final GenerateDownloadUrlVO generateDownloadUrlVO) {
         return Result.success(dataStorageApiService
-                .generateDataStorageItemUrl(id, generateDownloadUrlVO.getPaths(), 
+                .generateDataStorageItemUrl(id, generateDownloadUrlVO.getPaths(),
                         generateDownloadUrlVO.getPermissions(),
                         generateDownloadUrlVO.getHours()));
     }
@@ -729,5 +757,19 @@ public class DataStorageController extends AbstractRestController {
             })
     public Result<StorageMountPath> getSharedFSSPathForRun(@RequestParam final Long runId) {
         return Result.success(dataStorageApiService.getSharedFSSPathForRun(runId, false));
+    }
+
+    @GetMapping(value = "/datastorage/{id}/mountCmd")
+    @ResponseBody
+    @ApiOperation(
+            value = "Builds mount command for NST storage.",
+            notes = "Builds mount command for NST storage.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<MountCommand> buildMontCommand(@PathVariable(value = ID) final Long id,
+                                                 @RequestParam final String root) {
+        return Result.success(dataStorageApiService.buildMontCommand(id, root));
     }
 }

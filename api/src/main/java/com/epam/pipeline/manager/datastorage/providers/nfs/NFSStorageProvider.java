@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.MountType;
+import com.epam.pipeline.entity.datastorage.MountCommand;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -51,6 +52,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,7 +92,6 @@ import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.getN
 @Service
 public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     private static final Logger LOGGER = LoggerFactory.getLogger(NFSStorageProvider.class);
-    private static final String NFS_MOUNT_CMD_PATTERN = "sudo mount -t %s %s %s %s";
 
     /**
      * -l is for "lazy" unmounting: Detach the filesystem from the filesystem hierarchy now, and cleanup all references
@@ -169,22 +170,11 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
             final FileShareMount fileShareMount = shareMountManager.load(dataStorage.getFileShareMountId());
             final File mntDir = getStorageMountRoot(dataStorage, fileShareMount);
             final File rootMount = getShareRootMount(fileShareMount);
-            if(!rootMount.exists()) {
+            if (!rootMount.exists()) {
                 Assert.isTrue(rootMount.mkdirs(), messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT_DIRECTORY_NOT_CREATED));
 
-                final AbstractCloudRegion cloudRegion = regionManager.load(fileShareMount.getRegionId());
-                final String protocol = fileShareMount.getMountType().getProtocol();
-                final AbstractCloudRegionCredentials credentials = cloudRegion.getProvider() == CloudProvider.AZURE ?
-                         regionManager.loadCredentials(cloudRegion) : null;
-
-                final String mountOptions = NFSHelper.getNFSMountOption(cloudRegion, credentials,
-                        dataStorage.getMountOptions(), protocol);
-
-                final String rootNfsPath = formatNfsPath(fileShareMount.getMountRoot(), protocol);
-
-                final String mountCmd = String.format(NFS_MOUNT_CMD_PATTERN, protocol, mountOptions,
-                                                rootNfsPath, rootMount.getAbsolutePath());
+                final String mountCmd = getMountCommand(dataStorage, mntDir).getLeft();
                 try {
                     cmdExecutor.executeCommand(mountCmd);
                 } catch (CmdExecutionException e) {
@@ -564,5 +554,29 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     public PathDescription getDataSize(final NFSDataStorage dataStorage, final String path,
                                        final PathDescription pathDescription) {
         throw new UnsupportedOperationException("Getting item size info is not implemented for NFS storages");
+    }
+
+    @Override
+    public MountCommand buildMountCommand(final NFSDataStorage dataStorage, final String rootMount) {
+        final File mntDir = Paths.get(rootMount, getMountDirName(dataStorage.getPath())).toFile();
+        return getMountCommand(dataStorage, mntDir).getValue();
+    }
+
+    private Pair<String, MountCommand> getMountCommand(final NFSDataStorage dataStorage, final File mntDir) {
+        final FileShareMount fileShareMount = shareMountManager.load(dataStorage.getFileShareMountId());
+
+        final String protocol = fileShareMount.getMountType().getProtocol();
+
+        final AbstractCloudRegion cloudRegion = regionManager.load(fileShareMount.getRegionId());
+        final AbstractCloudRegionCredentials credentials = cloudRegion.getProvider() == CloudProvider.AZURE ?
+                regionManager.loadCredentials(cloudRegion) : null;
+        final String rootNfsPath = formatNfsPath(fileShareMount.getMountRoot(), protocol);
+
+        return NFSHelper.getNFSMountCommand(cloudRegion, credentials, dataStorage.getMountOptions(), protocol,
+                rootNfsPath, mntDir.getAbsolutePath());
+    }
+
+    private String getMountDirName(final String nfsPath) {
+        return getNfsRootPath(nfsPath).replace(":", "/");
     }
 }

@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
+import com.epam.pipeline.entity.datastorage.MountCommand;
 import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
@@ -69,6 +70,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
     private static final String TEST_PATH = "localhost";
     private static final String TEST_STORAGE_NAME = "testStorage";
     private static final String STORAGE_NAME = "bucket";
+    private static final String TEST_ROOT = "/root";
 
     @Mock
     private CmdExecutor mockCmdExecutor;
@@ -166,8 +168,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
     @Test
     public void testCreateDeleteStorage() {
-        NFSDataStorage dataStorage = new NFSDataStorage(0L, TEST_STORAGE_NAME,
-                TEST_PATH + ":root/" + STORAGE_NAME);
+        NFSDataStorage dataStorage = buildNfsDataStorage(TEST_PATH + ":root/" + STORAGE_NAME);
         dataStorage.setFileShareMountId(awsFileShareMount.getId());
         dataStorage.setOwner("test@user.com");
         String path = nfsProvider.createStorage(dataStorage);
@@ -206,8 +207,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
     @Test
     public void testCreateDeleteAzureSmbStorage() {
-        NFSDataStorage dataStorage = new NFSDataStorage(0L, TEST_STORAGE_NAME,
-                TEST_PATH + "/root/" + STORAGE_NAME);
+        NFSDataStorage dataStorage = buildNfsDataStorage(TEST_PATH + "/root/" + STORAGE_NAME);
         dataStorage.setFileShareMountId(azureFileShareMount.getId());
         dataStorage.setOwner("test@user.com");
         String path = nfsProvider.createStorage(dataStorage);
@@ -231,7 +231,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
     @Test
     public void testCreateFileFolderAndList() {
-        NFSDataStorage dataStorage = new NFSDataStorage(0L, TEST_STORAGE_NAME, TEST_PATH + ":/test");
+        NFSDataStorage dataStorage = buildNfsDataStorage();
         dataStorage.setFileShareMountId(awsFileShareMount.getId());
         nfsProvider.createStorage(dataStorage);
         String testFileName = "testFile.txt";
@@ -286,7 +286,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         awsFileShareMount.setRegionId(awsRegionId);
         fileShareMountManager.save(awsFileShareMount);
 
-        NFSDataStorage dataStorage = new NFSDataStorage(0L, "testStorage", rootPath + ":/test");
+        NFSDataStorage dataStorage = buildNfsDataStorage(rootPath + ":/test");
         dataStorage.setFileShareMountId(awsFileShareMount.getId());
         nfsProvider.createStorage(dataStorage);
 
@@ -328,7 +328,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
     @Test
     public void testEditFile() {
-        NFSDataStorage dataStorage = new NFSDataStorage(0L, "testStorage", TEST_PATH + ":/test");
+        NFSDataStorage dataStorage = buildNfsDataStorage();
         dataStorage.setFileShareMountId(awsFileShareMount.getId());
         nfsProvider.createStorage(dataStorage);
 
@@ -351,11 +351,34 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         );
     }
 
+    @Test
+    public void shouldBuildMountCommand() {
+        final NFSDataStorage dataStorage = buildNfsDataStorage();
+        dataStorage.setFileShareMountId(awsFileShareMount.getId());
+        nfsProvider.createStorage(dataStorage);
+
+        final String expectedCmd = String.format("sudo mount -t nfs  %s:/ %s/%s",
+                awsFileShareMount.getMountRoot(), TEST_ROOT, TEST_PATH);
+
+        final MountCommand actualResult = nfsProvider.buildMountCommand(dataStorage, TEST_ROOT);
+
+        Assert.assertFalse(actualResult.isCredentialsRequired());
+        Assert.assertEquals(expectedCmd, actualResult.getCommandPattern());
+    }
+
     private List<CloudRegionHelper> helpers() {
         AzureRegionHelper azure = mock(AzureRegionHelper.class);
         when(azure.getProvider()).thenReturn(CloudProvider.AZURE);
         AwsRegionHelper aws = mock(AwsRegionHelper.class);
         when(aws.getProvider()).thenReturn(CloudProvider.AWS);
         return Arrays.asList(new CloudRegionHelper[]{azure, aws});
+    }
+
+    private NFSDataStorage buildNfsDataStorage(final String path) {
+        return new NFSDataStorage(0L, TEST_STORAGE_NAME, path);
+    }
+
+    private NFSDataStorage buildNfsDataStorage() {
+        return buildNfsDataStorage(TEST_PATH + ":/test");
     }
 }

@@ -39,6 +39,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.entity.datastorage.MountCommand;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.StorageServiceType;
@@ -159,10 +160,19 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public List<DataStorageWithShareMount> getDataStoragesWithShareMountObject(final Long fromRegionId) {
+        return getDataStoragesWithShareMountObject(fromRegionId, false);
+    }
+
+    public List<DataStorageWithShareMount> getAllStoragesWithShareMountObject() {
+        return getDataStoragesWithShareMountObject(null, true);
+    }
+
+    private List<DataStorageWithShareMount> getDataStoragesWithShareMountObject(final Long fromRegionId,
+                                                                                final boolean skipFilter) {
         final AbstractCloudRegion fromRegion = Optional.ofNullable(fromRegionId)
                 .map(cloudRegionManager::load).orElse(null);
         return getDataStorages().stream()
-                .filter(dataStorage -> !dataStorage.isSensitive())
+                .filter(dataStorage -> skipFilter || !dataStorage.isSensitive())
                 .map(storage -> {
                     if (storage.getFileShareMountId() != null) {
                         return new DataStorageWithShareMount(storage,
@@ -170,7 +180,7 @@ public class DataStorageManager implements SecuredEntityManager {
                     } else {
                         return new DataStorageWithShareMount(storage, null);
                     }
-                }).filter(storage -> filterDataStorage(storage, fromRegion))
+                }).filter(storage -> skipFilter || filterDataStorage(storage, fromRegion))
                 .collect(Collectors.toList());
     }
 
@@ -663,6 +673,11 @@ public class DataStorageManager implements SecuredEntityManager {
     public StorageUsage getStorageUsage(final String id, final String path) {
         final AbstractDataStorage dataStorage = loadByNameOrId(id);
         return searchManager.getStorageUsage(dataStorage, path);
+    }
+
+    public MountCommand buildMontCommand(final Long id, final String rootMountPoint) {
+        final AbstractDataStorage dataStorage = load(id);
+        return storageProviderManager.buildMontCommand(dataStorage, rootMountPoint);
     }
 
     private boolean filterDataStorage(DataStorageWithShareMount storage, AbstractCloudRegion region) {
