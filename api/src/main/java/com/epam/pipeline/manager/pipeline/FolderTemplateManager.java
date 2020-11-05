@@ -90,27 +90,13 @@ public class FolderTemplateManager {
     public Folder create(final Folder folder, final String templateName, final boolean failOnExisting) {
         final FolderTemplate folderTemplate = prepareFolderTemplate(folder, templateName, failOnExisting);
         try {
-            final Folder existingFolder =
-                ListUtils.emptyIfNull(crudManager.load(folder.getParentId()).getChildFolders()).stream()
-                    .filter(f -> f.getName().equals(folderTemplate.getName()))
-                    .findAny()
-                    .orElseThrow(IllegalArgumentException::new);
-            final DataStorageWithMetadataVO storageToCreate = folderTemplate.getDatastorages().get(0);
-            storageToCreate.setParentFolderId(existingFolder.getId());
-            final List<AbstractDataStorage> storages = ListUtils.emptyIfNull(existingFolder.getStorages());
-            final boolean hasSuitableStorage = storages.stream()
-                .anyMatch(s -> s.getPath().equals(storageToCreate.getPath()));
-            if (!hasSuitableStorage) {
-                final AbstractDataStorage newStorage =
-                    dataStorageManager.create(storageToCreate, true, true, true).getEntity();
-                storages.add(newStorage);
-                existingFolder.setStorages(storages);
-                crudManager.update(existingFolder);
-            }
-            return existingFolder;
+            return ListUtils.emptyIfNull(crudManager.load(folder.getParentId()).getChildFolders()).stream()
+                .filter(f -> f.getName().equals(folderTemplate.getName()))
+                .findAny()
+                .map(existingFolder -> fillInExistingFolderFromTemplate(existingFolder, folderTemplate))
+                .orElseGet(() -> fillInNewFolderFromTemplate(folder, folderTemplate));
         } catch (IllegalArgumentException e) {
-            createFolderFromTemplate(folder, folderTemplate);
-            return folder;
+            return fillInNewFolderFromTemplate(folder, folderTemplate);
         }
     }
 
@@ -168,6 +154,27 @@ public class FolderTemplateManager {
                 permissionManager.setPermissions(permissionGrantVO);
             });
         }
+    }
+
+    private Folder fillInExistingFolderFromTemplate(final Folder existingFolder, final FolderTemplate folderTemplate) {
+        final DataStorageWithMetadataVO storageToCreate = folderTemplate.getDatastorages().get(0);
+        storageToCreate.setParentFolderId(existingFolder.getId());
+        final List<AbstractDataStorage> storages = ListUtils.emptyIfNull(existingFolder.getStorages());
+        final boolean hasSuitableStorage = storages.stream()
+            .anyMatch(s -> s.getPath().equals(storageToCreate.getPath()));
+        if (!hasSuitableStorage) {
+            final AbstractDataStorage newStorage =
+                dataStorageManager.create(storageToCreate, true, true, true).getEntity();
+            storages.add(newStorage);
+            existingFolder.setStorages(storages);
+            crudManager.update(existingFolder);
+        }
+        return existingFolder;
+    }
+
+    private Folder fillInNewFolderFromTemplate(final Folder folder, final FolderTemplate folderTemplate) {
+        createFolderFromTemplate(folder, folderTemplate);
+        return folder;
     }
 
     private AbstractDataStorage getStorageFromVo(final DataStorageWithMetadataVO storageVO) {

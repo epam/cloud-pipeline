@@ -149,7 +149,7 @@ public class FolderManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public Folder createFromTemplate(final Folder folder, final String templateName, boolean failOnExisting) {
+    public Folder createFromTemplate(final Folder folder, final String templateName, final boolean failOnExisting) {
         return folderTemplateManager.create(folder, templateName, failOnExisting);
     }
 
