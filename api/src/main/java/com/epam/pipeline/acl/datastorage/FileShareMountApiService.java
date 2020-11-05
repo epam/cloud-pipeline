@@ -19,15 +19,15 @@ package com.epam.pipeline.acl.datastorage;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.security.acl.AclExpressions;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class FileShareMountApiService {
 
-    @Autowired
-    private FileShareMountManager fileShareMountManager;
+    private final FileShareMountManager fileShareMountManager;
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public FileShareMount save(final FileShareMount fileShareMount) {

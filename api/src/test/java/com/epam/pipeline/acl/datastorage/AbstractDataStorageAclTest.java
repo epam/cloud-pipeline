@@ -26,21 +26,19 @@ import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.TestingAuthenticationToken;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static org.mockito.Mockito.doReturn;
 
 abstract class AbstractDataStorageAclTest extends AbstractAclTest {
 
     protected final AbstractDataStorage s3bucket = DatastorageCreatorUtils.getS3bucketDataStorage(ID, OWNER_USER);
-
     protected final AbstractDataStorage anotherS3bucket =
-            DatastorageCreatorUtils.getS3bucketDataStorage(ID_2, TEST_STRING);
-    protected final Authentication authentication = new TestingAuthenticationToken(new Object(), new Object());
+            DatastorageCreatorUtils.getS3bucketDataStorage(ID_2, ANOTHER_SIMPLE_USER);
+    protected final AbstractDataStorage notSharedS3bucket =
+            DatastorageCreatorUtils.getS3bucketDataStorage(ID, SIMPLE_USER, false);
     protected final UserContext context = SecurityCreatorUtils.getUserContext();
     protected final UserContext externalContext = SecurityCreatorUtils.getUserContext(true);
 
@@ -66,7 +64,7 @@ abstract class AbstractDataStorageAclTest extends AbstractAclTest {
 
     protected void mockAuthUser(final String user) {
         doReturn(user).when(mockAuthManager).getAuthorizedUser();
-        doReturn(authentication).when(mockAuthManager).getAuthentication();
+        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
     }
 
     protected void mockS3bucket(final AbstractDataStorage entity) {
