@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.contextual.ContextualPreference;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,15 +58,21 @@ public class DefaultContextualPreferenceReducer implements ContextualPreferenceR
     }
 
     private Optional<ContextualPreference> reduceValidPreferences(final List<ContextualPreference> preferences) {
-        return preferenceReducerMap.getOrDefault(preferences.get(0).getName(), fallbackEmptyReducer())
+        return preferenceReducerMap.getOrDefault(preferences.get(0).getName(), defaultReducer())
                 .reduce(preferences);
     }
 
-    private ContextualPreferenceReducer fallbackEmptyReducer() {
+    private ContextualPreferenceReducer defaultReducer() {
         return preferences -> {
-            log.warn(messageHelper.getMessage(MessageConstants.WARN_CONTEXTUAL_PREFERENCE_REDUCER_NOT_FOUND,
+            final Set<String> values = preferences.stream()
+                    .map(ContextualPreference::getValue)
+                    .collect(Collectors.toSet());
+            if (values.size() > 1) {
+                log.warn(messageHelper.getMessage(MessageConstants.WARN_CONTEXTUAL_PREFERENCE_DIFFERENT_VALUES,
                     preferences));
-            return Optional.empty();
+                return Optional.empty();
+            }
+            return Optional.of(preferences.get(0));
         };
     }
 
