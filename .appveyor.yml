@@ -15,7 +15,7 @@ init:
 
 build_script:
 - whoami ;
-  sudo su ;
+  sudo su - ;
   whoami
 
 test: off
