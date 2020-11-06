@@ -13,7 +13,9 @@ stack: node 10, jdk 8
 
 build_script:
 - |-
+  echo $HOME
   sudo -E bash -s <<EOF
+    echo $HOME
     nvm.sh
     echo $PATH
     npm
