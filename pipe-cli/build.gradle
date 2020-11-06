@@ -7,11 +7,11 @@ task clean(type: Delete) {
 task build(type: Exec, dependsOn: ':pipe-cli:test') {
     group = 'build'
     doFirst {
-        setCLIVersion.execute()
+        setCLIVersion()
     }
     commandLine 'python', "$project.rootDir/pipe-cli/setup.py", 'sdist'
     doLast {
-        cleanCLIVersion.execute()
+        cleanCLIVersion()
         delete("$project.rootDir/api/src/main/resources/static/PipelineCLI.tar.gz")
         copy {
             from("$project.rootDir/pipe-cli/dist/PipelineCLI-${version}.tar.gz")
@@ -26,7 +26,7 @@ task build(type: Exec, dependsOn: ':pipe-cli:test') {
 task buildLinux(type: Exec, dependsOn: ':pipe-cli:test') {
     group = 'build'
     doFirst {
-        setCLIVersion.execute()
+        setCLIVersion()
     }
     environment "PIPE_CLI_SOURCES_DIR": "$project.rootDir/pipe-cli"
     environment "PIPE_CLI_DIST_DIR": "$project.rootDir/pipe-cli"
@@ -37,7 +37,7 @@ task buildLinux(type: Exec, dependsOn: ':pipe-cli:test') {
 
     commandLine "bash", "$project.rootDir/pipe-cli/build_linux.sh"
     doLast {
-        cleanCLIVersion.execute()
+        cleanCLIVersion()
         delete("$project.rootDir/api/src/main/resources/static/pipe")
         copy {
             from("$project.rootDir/pipe-cli/dist/dist-file/pipe")
@@ -53,7 +53,7 @@ task buildLinux(type: Exec, dependsOn: ':pipe-cli:test') {
 task buildWin(type: Exec, dependsOn: ':pipe-cli:test') {
     group = 'build'
     doFirst {
-        setCLIVersion.execute()
+        setCLIVersion()
     }
     environment "PIPE_CLI_SOURCES_DIR": "$project.rootDir/pipe-cli"
     environment "PIPE_CLI_WIN_DIST_DIR": "$project.rootDir/pipe-cli/dist/win"
@@ -64,7 +64,7 @@ task buildWin(type: Exec, dependsOn: ':pipe-cli:test') {
 
     commandLine "bash", "$project.rootDir/pipe-cli/build_windows.sh"
     doLast {
-        cleanCLIVersion.execute()
+        cleanCLIVersion()
         delete("$project.rootDir/api/src/main/resources/static/pipe.zip")
         copy {
             from("$project.rootDir/pipe-cli/dist/win/pipe.zip")
@@ -83,25 +83,21 @@ task installPackages(type: Exec) {
     commandLine "pip", "install", "--user", "-r", "$project.rootDir/pipe-cli/requirements.txt"
 }
 
-task setCLIVersion() {
-    doLast {
-        copy {
-            from('src/version.py')
-            into('temp')
-        }
-        def proj = file('src/version.py')
-        def text = proj.getText("UTF-8")
-        text = text.replaceAll(/(__version__='.+')/, "__version__=\'$version\'")
-        proj.write(text, "UTF-8")
+def setCLIVersion() {
+    copy {
+        from('src/version.py')
+        into('temp')
     }
+    def proj = file('src/version.py')
+    def text = proj.getText("UTF-8")
+    text = text.replaceAll(/(__version__='.+')/, "__version__=\'$version\'")
+    proj.write(text, "UTF-8")
 }
 
-task cleanCLIVersion() {
-    doLast {
-        copy {
-            from('temp/version.py')
-            into('src')
-        }
-        delete("$project.rootDir/pipe-cli/temp")
+def cleanCLIVersion() {
+    copy {
+        from('temp/version.py')
+        into('src')
     }
+    delete("$project.rootDir/pipe-cli/temp")
 }
