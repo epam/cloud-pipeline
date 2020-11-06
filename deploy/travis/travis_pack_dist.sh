@@ -28,7 +28,7 @@ mkdir -p $API_STATIC_PATH
 # - fsbrowser.tgz
 mkdir assemble
 cd assemble
-aws s3 cp s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/ ./ --recursive
+aws s3 cp s3://cloud-pipeline-oss-builds/temp/${APPVEYOR_BUILD_NUMBER}/ ./ --recursive
 
 # Untar Web GUI and move it to the pipeline.jar static assets
 tar -zxf client.tgz
@@ -67,7 +67,7 @@ cd ..
           api:pmdTest --no-daemon
 
 # Create distribution tgz
-./gradlew distTar   -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} \
+./gradlew distTar   -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} \
                     -Pprofile=release \
                     -x test \
                     -x client:buildUI \
@@ -80,17 +80,16 @@ cd ..
                     -Pfast \
                     --no-daemon
 
-if [ "$TRAVIS_REPO_SLUG" == "epam/cloud-pipeline" ]; then
+if [ "$APPVEYOR_REPO_NAME" == "epam/cloud-pipeline" ]; then
     DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
 
     # Always publish repackaged distribution tgz to S3 to temp directory, even if this is not a "good" branch or it is a PR
-    aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
+    aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/temp/${APPVEYOR_BUILD_NUMBER}/
 
     # Publish repackaged distribution tgz to S3 into builds/ prefix
     # Only if it is one of the allowed branches and it is a push (not PR)
-    if ([ "$TRAVIS_BRANCH" == "develop" ] || [ "$TRAVIS_BRANCH" == "master" ] || [[ "$TRAVIS_BRANCH" == "release/"* ]] || [[ "$TRAVIS_BRANCH" == "stage/"* ]]) && \
-        ([ "$TRAVIS_EVENT_TYPE" == "push" ] || [ "$TRAVIS_EVENT_TYPE" == "api" ]); then
-            aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/latest/${TRAVIS_BRANCH}/cloud-pipeline.latest.tgz
-            aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${TRAVIS_BRANCH}/
+    if [ "$APPVEYOR_REPO_BRANCH" == "develop" ] || [ "$APPVEYOR_REPO_BRANCH" == "master" ] || [[ "$APPVEYOR_REPO_BRANCH" == "release/"* ]] || [[ "$APPVEYOR_REPO_BRANCH" == "stage/"* ]]; then
+            aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/latest/${APPVEYOR_REPO_BRANCH}/cloud-pipeline.latest.tgz
+            aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${APPVEYOR_REPO_BRANCH}/
     fi
 fi
