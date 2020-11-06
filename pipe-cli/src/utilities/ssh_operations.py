@@ -19,6 +19,7 @@ import os
 import random
 import select
 import socket
+import stat
 import sys
 import time
 
@@ -410,24 +411,23 @@ def remove_ssh_public_key_from_run(run_id, ssh_public_key_path, retries, remote_
                 'cp {authorized_keys_temp_path} {authorized_keys_path};' \
                 'chmod 600 {authorized_keys_path};' \
                 'rm {authorized_keys_temp_path};' \
-                    .format(key=ssh_public_key,
-                            authorized_keys_path=remote_ssh_authorized_keys_path,
-                            authorized_keys_temp_path=remote_ssh_authorized_keys_temp_path)
+                .format(key=ssh_public_key,
+                        authorized_keys_path=remote_ssh_authorized_keys_path,
+                        authorized_keys_temp_path=remote_ssh_authorized_keys_temp_path)
         run_ssh(run_id, remove_ssh_public_keys_from_run_command.rstrip(';'), retries)
 
 
 def add_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path):
-    if os.path.exists(ssh_config_path):
-        with open(ssh_config_path, 'r') as f:
-            ssh_config = f.read()
-        if remote_host in ssh_config:
-            remove_from_ssh_config(ssh_config_path, remote_host)
+    remove_from_ssh_config(ssh_config_path, remote_host)
+    ssh_config_path_existed = os.path.exists(ssh_config_path)
     with open(ssh_config_path, 'a') as f:
         f.write('Host {}\n'
                 '    Hostname 127.0.0.1\n'
                 '    Port {}\n'
                 '    IdentityFile {}\n'
                 .format(remote_host, local_port, ssh_private_key_path))
+    if not ssh_config_path_existed:
+        os.chmod(ssh_config_path, stat.S_IRUSR | stat.S_IWUSR)
 
 
 def remove_from_ssh_config(ssh_config_path, remote_host):
@@ -446,6 +446,7 @@ def remove_from_ssh_config(ssh_config_path, remote_host):
                 updated_ssh_config_lines.append(line)
         with open(ssh_config_path, 'w') as f:
             f.writelines(updated_ssh_config_lines)
+        os.chmod(ssh_config_path, stat.S_IRUSR | stat.S_IWUSR)
 
 
 def add_to_ssh_known_hosts(run_id, local_port, log_file, retries, ssh_known_hosts_path, remote_ssh_public_key_path):
@@ -454,8 +455,11 @@ def add_to_ssh_known_hosts(run_id, local_port, log_file, retries, ssh_known_host
     with open(ssh_known_hosts_temp_path, 'r') as f:
         public_key = f.read().strip()
     os.remove(ssh_known_hosts_temp_path)
+    ssh_known_hosts_path_existed = os.path.exists(ssh_known_hosts_path)
     with open(ssh_known_hosts_path, 'a') as f:
         f.write('[127.0.0.1]:{} {}'.format(local_port, public_key))
+    if not ssh_known_hosts_path_existed:
+        os.chmod(ssh_known_hosts_path, stat.S_IRUSR | stat.S_IWUSR)
     perform_command(['ssh-keygen', '-H', '-f', ssh_known_hosts_path], log_file)
     perform_command(['rm', ssh_known_hosts_path + '.old'], log_file)
 
