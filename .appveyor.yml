@@ -66,21 +66,21 @@ for:
       only:
         - job_name: Build FS Browser
     build_script:
-    - ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release fs-browser:build --no-daemon &&
+    - ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release fs-browser:build --no-daemon ;
       aws s3 mv fs-browser/dist/fsbrowser-*.tar.gz s3://cloud-pipeline-oss-builds/temp/${APPVEYOR_BUILD_NUMBER}/
   -
     matrix:
       only:
         - job_name: Build Cloud Data for Linux
     build_script:
-    - ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release cloud-pipeline-webdav-client:buildLinux --no-daemon &&
+    - ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release cloud-pipeline-webdav-client:buildLinux --no-daemon ;
       aws s3 mv cloud-pipeline-webdav-client/out/cloud-data-linux.tar.gz s3://cloud-pipeline-oss-builds/temp/${APPVEYOR_BUILD_NUMBER}/
   -
     matrix:
       only:
         - job_name: Build Cloud Data for Windows
     build_script:
-    - ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release cloud-pipeline-webdav-client:buildWin --no-daemon &&
+    - ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release cloud-pipeline-webdav-client:buildWin --no-daemon ;
       aws s3 mv cloud-pipeline-webdav-client/out/cloud-data-win64.zip s3://cloud-pipeline-oss-builds/temp/${APPVEYOR_BUILD_NUMBER}/
   -
     matrix:
