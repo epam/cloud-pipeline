@@ -16,7 +16,13 @@
 
 package com.epam.pipeline.test.creator.security;
 
+<<<<<<< HEAD
 import com.epam.pipeline.security.UserContext;
+=======
+import com.epam.pipeline.entity.security.JwtRawToken;
+
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+>>>>>>> Issue #1405: Implemented tests (except one) for docker registry controller layer
 
 public final class SecurityCreatorUtils {
 
@@ -24,6 +30,7 @@ public final class SecurityCreatorUtils {
 
     }
 
+<<<<<<< HEAD
     public static UserContext getUserContext() {
         return new UserContext();
     }
@@ -32,5 +39,9 @@ public final class SecurityCreatorUtils {
         final UserContext context = new UserContext();
         context.setExternal(external);
         return context;
+=======
+    public static JwtRawToken getJwtRawToken() {
+        return new JwtRawToken(TEST_STRING);
+>>>>>>> Issue #1405: Implemented tests (except one) for docker registry controller layer
     }
 }

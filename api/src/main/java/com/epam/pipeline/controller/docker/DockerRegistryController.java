@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.pipeline;
+package com.epam.pipeline.controller.docker;
 
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;

@@ -17,6 +17,7 @@
 package com.epam.pipeline.test.creator.docker;
 
 import com.epam.pipeline.controller.Result;
+<<<<<<< HEAD
 import com.epam.pipeline.entity.docker.ImageDescription;
 import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ToolDescription;
@@ -29,17 +30,32 @@ import com.epam.pipeline.entity.scan.ToolScanResultView;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResultView;
 import com.epam.pipeline.entity.tool.ToolSymlinkRequest;
+=======
+import com.epam.pipeline.controller.vo.docker.DockerRegistryVO;
+import com.epam.pipeline.entity.docker.DockerRegistryList;
+import com.epam.pipeline.entity.pipeline.DockerRegistry;
+import com.epam.pipeline.entity.pipeline.DockerRegistryEventEnvelope;
+import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.security.JwtRawToken;
+>>>>>>> Issue #1405: Implemented tests (except one) for docker registry controller layer
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.Collections;
 import java.util.List;
+<<<<<<< HEAD
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
+=======
+import java.util.Map;
+
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+>>>>>>> Issue #1405: Implemented tests (except one) for docker registry controller layer
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class DockerCreatorUtils {
 
+<<<<<<< HEAD
     public static final TypeReference<Result<ImageDescription>> IMAGE_DESCRIPTION_INSTANCE_TYPE =
             new TypeReference<Result<ImageDescription>>() {};
     public static final TypeReference<Result<ToolDescription>> TOOL_DESCRIPTION_INSTANCE_TYPE =
@@ -65,11 +81,24 @@ public final class DockerCreatorUtils {
             new TypeReference<Result<ToolGroupWithIssues>>() {};
     public static final TypeReference<Result<List<ToolGroup>>> TOOL_GROUP_LIST_TYPE =
             new TypeReference<Result<List<ToolGroup>>>() {};
+=======
+    public static final TypeReference<Result<DockerRegistry>> DOCKER_REGISTRY_INSTANCE_TYPE =
+            new TypeReference<Result<DockerRegistry>>() {  };
+    public static final TypeReference<Result<JwtRawToken>> JWT_RAW_TOKEN_INSTANCE_TYPE =
+            new TypeReference<Result<JwtRawToken>>() {  };
+    public static final TypeReference<Result<DockerRegistryList>> DOCKER_REGISTRY_LIST_INSTANCE_TYPE =
+            new TypeReference<Result<DockerRegistryList>>() {  };
+    public static final TypeReference<Result<Map<String, String>>> STRING_MAP_INSTANCE_TYPE =
+            new TypeReference<Result<Map<String, String>>>() {  };
+    public static final TypeReference<Result<List<Tool>>> TOOL_LIST_INSTANCE_TYPE =
+            new TypeReference<Result<List<Tool>>>() {  };
+>>>>>>> Issue #1405: Implemented tests (except one) for docker registry controller layer
 
     private DockerCreatorUtils() {
 
     }
 
+<<<<<<< HEAD
     public static ImageDescription getImageDescription() {
         return new ImageDescription();
     }
@@ -128,5 +157,43 @@ public final class DockerCreatorUtils {
 
     public static ToolGroupWithIssues getToolGroupWithIssues() {
         return new ToolGroupWithIssues();
+=======
+    public static DockerRegistry getDefaultDockerRegistry() {
+        return new DockerRegistry();
+
+    }
+
+    public static DockerRegistry getDockerRegistry() {
+        DockerRegistry dockerRegistry = new DockerRegistry();
+        dockerRegistry.setPath(TEST_STRING);
+        dockerRegistry.setDescription(TEST_STRING);
+        dockerRegistry.setSecretName(TEST_STRING);
+        dockerRegistry.setUserName(TEST_STRING);
+        dockerRegistry.setPassword(TEST_STRING);
+        dockerRegistry.setCaCert(TEST_STRING);
+        return dockerRegistry;
+    }
+
+    public static DockerRegistryVO getDockerRegistryVO() {
+        DockerRegistryVO dockerRegistryVO = new DockerRegistryVO();
+        dockerRegistryVO.setId(ID);
+        dockerRegistryVO.setPath(TEST_STRING);
+        dockerRegistryVO.setDescription(TEST_STRING);
+        dockerRegistryVO.setUserName(TEST_STRING);
+        dockerRegistryVO.setPassword(TEST_STRING);
+        dockerRegistryVO.setCaCert(TEST_STRING);
+        dockerRegistryVO.setPipelineAuth(true);
+        dockerRegistryVO.setExternalUrl(TEST_STRING);
+        dockerRegistryVO.setSecurityScanEnabled(true);
+        return dockerRegistryVO;
+    }
+
+    public static DockerRegistryList getDockerRegistryList() {
+        return new DockerRegistryList(Collections.singletonList(getDockerRegistry()));
+    }
+
+    public static DockerRegistryEventEnvelope getDockerRegistryEventEnvelope() {
+        return new DockerRegistryEventEnvelope();
+>>>>>>> Issue #1405: Implemented tests (except one) for docker registry controller layer
     }
 }
