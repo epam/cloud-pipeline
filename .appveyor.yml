@@ -2,6 +2,7 @@ version: 0.16.{build}
 
 branches:
   only:
+    - appveyor
     - develop
     - /release\/.*/
 
