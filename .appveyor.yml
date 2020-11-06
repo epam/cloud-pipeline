@@ -1,102 +1,19 @@
-version: 0.17.{build}
+version: 0.16.{build}
 
 branches:
   only:
-    - appveyor
     - develop
     - /release\/.*/
 
 skip_tags: true
 max_jobs: 1
-image: Linux
-build_cloud: OnPrem
+image: Ubuntu1604
 stack: node 10, jdk 8
 init:
-  - python2 -m pip install --user awscli==1.14.56
-matrix:
-  fast_finish: true
+  - python2 -m pip install awscli==1.14.56
 
-environment:
-  matrix:
-  - job_name: Build GUI
-  - job_name: Build CLI Common/Linux
-  - job_name: Build CLI Linux (el6)
-  - job_name: Build CLI Win
-  - job_name: Build FS Browser
-  - job_name: Build Cloud Data for Linux
-  - job_name: Build Cloud Data for Windows
-  - job_name: Pack jars and deploy
-  - job_name: Publish docs
-
-for:
-  -
-    matrix:
-      only:
-        - job_name: Build GUI
-    build_script:
-    - ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release client:buildUI --no-daemon &&
-      tar -zcf client.tgz client/build &&
-      aws s3 mv client.tgz s3://cloud-pipeline-oss-builds/temp/${APPVEYOR_BUILD_NUMBER}/
-
-  -
-    matrix:
-      only:
-        - job_name: Build CLI Common/Linux
-    build_script:
-    - ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release pipe-cli:build --no-daemon ;
-      ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release pipe-cli:buildLinux --no-daemon ;
-      tar -zcf cli-linux.tgz pipe-cli/dist ;
-      aws s3 mv cli-linux.tgz s3://cloud-pipeline-oss-builds/temp/${APPVEYOR_BUILD_NUMBER}/
-  -
-    matrix:
-      only:
-        - job_name: Build CLI Linux (el6)
-    build_script:
-    - _BUILD_DOCKER_IMAGE="lifescience/cloud-pipeline:python2.7-centos6" ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release pipe-cli:buildLinux --no-daemon ;
-      tar -zcf cli-linux-el6.tgz pipe-cli/dist ;
-      aws s3 mv cli-linux-el6.tgz s3://cloud-pipeline-oss-builds/temp/${APPVEYOR_BUILD_NUMBER}/
-  -
-    matrix:
-      only:
-        - job_name: Build CLI Win
-    build_script:
-    - ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release pipe-cli:buildWin --no-daemon ;
-      tar -zcf cli-win.tgz pipe-cli/dist ;
-      aws s3 mv cli-win.tgz s3://cloud-pipeline-oss-builds/temp/${APPVEYOR_BUILD_NUMBER}/
-  -
-    matrix:
-      only:
-        - job_name: Build FS Browser
-    build_script:
-    - ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release fs-browser:build --no-daemon &&
-      aws s3 mv fs-browser/dist/fsbrowser-*.tar.gz s3://cloud-pipeline-oss-builds/temp/${APPVEYOR_BUILD_NUMBER}/
-  -
-    matrix:
-      only:
-        - job_name: Build Cloud Data for Linux
-    build_script:
-    - ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release cloud-pipeline-webdav-client:buildLinux --no-daemon &&
-      aws s3 mv cloud-pipeline-webdav-client/out/cloud-data-linux.tar.gz s3://cloud-pipeline-oss-builds/temp/${APPVEYOR_BUILD_NUMBER}/
-  -
-    matrix:
-      only:
-        - job_name: Build Cloud Data for Windows
-    build_script:
-    - ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release cloud-pipeline-webdav-client:buildWin --no-daemon &&
-      aws s3 mv cloud-pipeline-webdav-client/out/cloud-data-win64.zip s3://cloud-pipeline-oss-builds/temp/${APPVEYOR_BUILD_NUMBER}/
-  -
-    matrix:
-      only:
-        - job_name: Pack jars and deploy
-    build_script:
-    - pip install mkdocs --user
-    - bash deploy/travis/travis_pack_dist.sh
-  -
-    matrix:
-      only:
-        - job_name: Publish docs
-    build_script:
-    - pip install mkdocs --user
-    - bash deploy/travis/travis_publish_docs.sh
+build_script:
+- pip install mkdocs
+- bash deploy/appveyor/appveyor_pack_dist.sh
 
 test: off
