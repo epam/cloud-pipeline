@@ -44,6 +44,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
+import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertTrue;
 
 public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> implements AccessObject<SettingsPageAO> {
@@ -882,7 +883,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 entry(CLUSTER_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Cluster"))),
                 entry(SYSTEM_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("System"))),
                 entry(DOCKER_SECURITY_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Docker security"))),
-                entry(AUTOSCALING_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Grid engine autoscaling")))
+                entry(AUTOSCALING_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Grid engine autoscaling"))),
+                entry(SEARCH,  context().find(byClassName("ant-input-search")).find(tagName("input"))),
+                entry(SAVE, $(byId("edit-preference-form-ok-button")))
         );
 
         PreferencesAO(final PipelinesLibraryAO pipelinesLibraryAO) {
@@ -909,8 +912,29 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return new DockerSecurityAO(parentAO);
         }
 
+        public PreferencesAO setSystemSshDefaultRootUserEnabled() {
+            setValue(SEARCH, "system.ssh.default.root.user.enabled");
+            enter();
+            SelenideElement checkBox = context().shouldBe(visible)
+                    .find(byXpath(".//span[.='Enabled']/preceding-sibling::span"));
+            if(!checkBox.has(cssClass("ant-checkbox-checked"))) {
+                checkBox.click();
+            }
+            if(context().find(byClassName("anticon-eye-o")).isDisplayed()) {
+                context().find(byClassName("anticon-eye-o")).click();
+            }
+            return this;
+        }
+
         public PreferencesAO save() {
-            $(byId("edit-preference-form-ok-button")).shouldBe(visible).click();
+            click(SAVE);
+            return this;
+        }
+
+        public PreferencesAO saveIfNeeded() {
+            if(get(SAVE).isEnabled()) {
+                click(SAVE);
+            }
             return this;
         }
 

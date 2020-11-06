@@ -25,17 +25,19 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
 
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Primitive.FRIENDLY_URL;
+import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SERVICES;
+import static com.epam.pipeline.autotests.ao.Primitive.SHARE_WITH;
 import static com.epam.pipeline.autotests.utils.C.LOGIN;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implements Authorization, Tools {
+public class SharingRunsTest extends AbstractSinglePipelineRunningTest implements Authorization, Tools {
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
     private final String tool = C.TESTING_TOOL_NAME;
@@ -54,16 +56,16 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setValue(FRIENDLY_URL, friendlyURL)
                 .launch(this)
-                .showLog(runID = getLastRunId())
+                .showLog(runID = getRunId())
                 .waitForEndpointLink()
-                .sleep(1, MINUTES)
+                .sleep(timeout, MINUTES)
                 .clickOnEndpointLink()
                 .sleep(3, SECONDS)
                 .validateEndpointPage(LOGIN)
                 .assertURLEndsWith(friendlyURL)
                 .closeTab();
         runsMenu()
-                .log(getLastRunId(), log -> {
+                .log(getRunId(), log -> {
                         endpointsLink = log.getEndpointLink();
                         endpointsName = log.getEndpointName();
                 });
@@ -85,7 +87,7 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
         try {
             runsMenu()
                     .showLog(runID)
-                    .shareWithUser(user.login)
+                    .shareWithUser(user.login, false)
                     .validateShareLink(user.login);
             logout();
             Utils.restartBrowser(C.ROOT_ADDRESS);
@@ -101,8 +103,7 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
             runsMenu()
                     .showLog(runID)
                     .removeShareUserGroup(user.login)
-                    .sleep(2, SECONDS)
-                    .validateShareLink("Not shared (click to configure)");
+                    .ensure(SHARE_WITH, text("Not shared (click to configure)"));
             logout();
             Utils.restartBrowser(C.ROOT_ADDRESS);
             loginAs(user);
@@ -122,7 +123,7 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
     public void shareToolRunWithUserGroup() {
         try {
             runsMenu()
-                    .log(getLastRunId(), log -> log
+                    .log(getRunId(), log -> log
                             .shareWithGroup(userGroup)
                             .validateShareLink(userGroup.toLowerCase())
                     );
@@ -140,8 +141,7 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
             runsMenu()
                     .showLog(runID)
                     .removeShareUserGroup(userGroup)
-                    .sleep(2, SECONDS)
-                    .validateShareLink("Not shared (click to configure)");
+                    .ensure(SHARE_WITH, text("Not shared (click to configure)"));
             logout();
             Utils.restartBrowser(C.ROOT_ADDRESS);
             loginAs(user);
@@ -162,7 +162,7 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
         try {
             runsMenu()
                     .showLog(runID)
-                    .shareWithUser(user.login)
+                    .shareWithUser(user.login, false)
                     .validateShareLink(user.login);
             logout();
             Utils.restartBrowser(C.ROOT_ADDRESS);
@@ -184,8 +184,7 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
             runsMenu()
                     .showLog(runID)
                     .removeShareUserGroup(user.login)
-                    .sleep(3, SECONDS)
-                    .validateShareLink("Not shared (click to configure)");
+                    .ensure(SHARE_WITH, text("Not shared (click to configure)"));
             logout();
             Utils.restartBrowser(C.ROOT_ADDRESS);
             loginAs(user);
@@ -196,6 +195,64 @@ public class SharingRunsTest extends AbstractSeveralPipelineRunningTest implemen
                     .ok()
                     .ensureVisible(SERVICES)
                     .checkNoServicesLabel();
+        } finally {
+            open(C.ROOT_ADDRESS);
+            logout();
+            loginAs(admin);
+        }
+    }
+
+    @Test(dependsOnMethods = {"validationOfFriendlyURL"})
+    @TestCase({"EPMCMBIBPC-3179"})
+    public void shareSSHsession() {
+        try {
+            navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .setSystemSshDefaultRootUserEnabled()
+                    .saveIfNeeded()
+                    .ensure(SAVE, Condition.disabled);
+            runsMenu()
+                    .showLog(runID)
+                    .shareWithUser(user.login, true)
+                    .validateShareLink(user.login)
+                    .ssh(shell -> shell
+                            .waitUntilTextAppears(runID)
+                            .execute("echo 123 > test.file")
+                            .assertPageContains("123")
+                            .close());
+            logout();
+            Utils.restartBrowser(C.ROOT_ADDRESS);
+            sleep(timeout, SECONDS);
+            loginAs(user);
+            home()
+                    .configureDashboardPopUpOpen()
+                    .markCheckboxByName("Services")
+                    .ok()
+                    .ensureVisible(SERVICES)
+                    .checkEndpointsLinkOnServicesPanel(endpointsName)
+                    .checkSSHLinkIsDisplayedOnServicesPanel(runID)
+                    .openSSHLink(runID)
+                    .execute("cat test.file")
+                    .assertOutputContains("123")
+                    .closeTab();
+            logout();
+            Utils.restartBrowser(C.ROOT_ADDRESS);
+            loginAs(admin);
+            runsMenu()
+                    .showLog(runID)
+                    .setEnableSShConnection(user.login);
+            logout();
+            Utils.restartBrowser(C.ROOT_ADDRESS);
+            sleep(timeout, SECONDS);
+            loginAs(user);
+            home()
+                    .configureDashboardPopUpOpen()
+                    .markCheckboxByName("Services")
+                    .ok()
+                    .ensureVisible(SERVICES)
+                    .checkEndpointsLinkOnServicesPanel(endpointsName)
+                    .checkSSHLinkIsNotDisplayedOnServicesPanel(runID);
         } finally {
             open(C.ROOT_ADDRESS);
             logout();

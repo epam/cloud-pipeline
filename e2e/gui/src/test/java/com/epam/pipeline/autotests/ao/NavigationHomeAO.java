@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.codeborne.selenide.Condition.cssClass;
+import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
@@ -92,6 +93,27 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
         serviceCardByRunId(runId).click();
         switchTo().window(1);
         return new ToolPageAO(endpoint);
+    }
+
+    public NavigationHomeAO checkSSHLinkIsDisplayedOnServicesPanel(String runId) {
+        serviceSshLink(runId).shouldBe(visible);
+        return this;
+    }
+
+    public NavigationHomeAO checkSSHLinkIsNotDisplayedOnServicesPanel(String runId) {
+        serviceSshLink(runId).shouldNotBe(visible);
+        return this;
+    }
+
+    public ShellAO openSSHLink(String runId) {
+        serviceSshLink(runId).shouldBe(enabled).click();
+        switchTo().window(1);
+        switchTo().frame(0);
+        return new ShellAO();
+    }
+
+    private SelenideElement serviceSshLink(String runId) {
+        return serviceCardByRunId(runId).hover().find(byXpath("//div[.='SSH']"));
     }
 
     @Override

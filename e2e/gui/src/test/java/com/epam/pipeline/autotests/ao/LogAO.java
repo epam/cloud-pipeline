@@ -260,11 +260,18 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
-    public LogAO shareWithUser(final String userName) {
+    public LogAO shareWithUser(final String userName, boolean sshConnection) {
         click(SHARE_WITH);
-        new ShareWith().addUserToShare(userName);
+        new ShareWith().addUserToShare(userName, sshConnection);
         return this;
     }
+
+    public LogAO setEnableSShConnection(final String name) {
+        click(SHARE_WITH);
+        new ShareWith().selectEnableSShConnection(name);
+        return this;
+    }
+
 
     public LogAO removeShareUserGroup(final String name) {
         click(SHARE_WITH);
@@ -573,13 +580,26 @@ public class LogAO implements AccessObject<LogAO> {
             click(OK);
         }
 
-        public void addUserToShare(final String userName) {
+        public void addUserToShare(final String userName, boolean sshConnection) {
             click(ADD_USER);
             setValue($(byClassName("ant-select-search__field")), userName);
             $(byXpath(format("//div[.='%s']", userName))).click();
             $(byText("Select user")).parent()
                     .parent().find(byClassName("ant-btn-primary")).click();
+            if (sshConnection) {
+                checkEnableSShConnection(userName);
+            }
             click(OK);
+        }
+
+        public void selectEnableSShConnection(final String name) {
+            checkEnableSShConnection(name);
+            click(OK);
+        }
+
+        public void checkEnableSShConnection(final String userName) {
+            $(byXpath("//div[@class='ant-table-content']")).$$(byText(userName)).first().closest("td")
+                    .find(By.xpath("following-sibling::td[.='Enable SSH connection']")).parent().click();
         }
 
         public void removeUserFromShare(final String userName) {
