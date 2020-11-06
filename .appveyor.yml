@@ -14,8 +14,8 @@ stack: node 10, jdk 8
 build_script:
 - |-
   sudo -E bash -s <<EOF
+    nvm.sh
     echo $PATH
-    nvm install v10.23.0
     npm
     node
     java
