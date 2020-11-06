@@ -13,10 +13,11 @@ stack: node 10, jdk 8
 
 build_script:
 - |-
+  sudo ln -s "$NVM_DIR/versions/node/$(nvm version)/bin/node" "/usr/local/bin/node"
+  sudo ln -s "$NVM_DIR/versions/node/$(nvm version)/bin/npm" "/usr/local/bin/npm"
+  echo $PATH
   which node
   which npm
-  which docker
-  which python
   sudo -E bash -s <<EOF
     nvm ls
     java
