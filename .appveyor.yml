@@ -19,7 +19,10 @@ build_script:
   which node
   which npm
   sudo -E bash -s <<EOF
-    nvm ls
+    which node
+    which npm
+    node
+    npm
     java
     python2 -m pip install awscli==1.14.56 mkdocs
     bash deploy/appveyor/appveyor_pack_dist.sh
