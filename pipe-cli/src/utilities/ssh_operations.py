@@ -493,6 +493,40 @@ def perform_command(executable, log_file=None, collect_output=True):
         return out
 
 
+def kill_tunnels(run_id=None, local_port=None, timeout=None, force=False):
+    import signal
+
+    for tunnel_proc in find_tunnel_procs(run_id, local_port):
+        tunnel_proc.send_signal(signal.SIGKILL if force else signal.SIGTERM)
+        tunnel_proc.wait(timeout / 1000 if timeout else None)
+
+
+def find_tunnel_procs(run_id=None, local_port=None):
+    import psutil
+
+    pipe_proc_names = ['pipe', 'pipe.exe']
+    required_args = ['tunnel', 'start'] + ([str(run_id)] if run_id else [])
+    local_port_args = ['-lp', '--local-port']
+    python_proc_prefix = 'python'
+    pipe_script_name = 'pipe.py'
+
+    for proc in psutil.process_iter():
+        proc_name = proc.name()
+        if proc_name not in pipe_proc_names and not proc_name.startswith(python_proc_prefix):
+            continue
+        proc_args = proc.cmdline()
+        if proc_name.startswith(python_proc_prefix) and pipe_script_name not in proc_args:
+            continue
+        if not all(required_arg in proc_args for required_arg in required_args):
+            continue
+        if local_port:
+            for i in range(len(proc_args)):
+                if proc_args[i] in local_port_args and proc_args[i + 1] == str(local_port):
+                    yield proc
+        else:
+            yield proc
+
+
 def run_scp_upload(run_id, source, destination, retries):
     transport = None
     scp = None
