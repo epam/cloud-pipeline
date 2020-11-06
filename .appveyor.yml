@@ -13,6 +13,8 @@ stack: node 10, jdk 8
 
 build_script:
 - |-
+  which node
+  which npm
   sudo -E bash -s <<EOF
     nvm ls
     java
