@@ -7,7 +7,8 @@ branches:
 
 skip_tags: true
 max_jobs: 1
-image: Ubuntu1604
+image: Linux
+build_cloud: OnPrem
 stack: node 10, jdk 8
 init:
   - python2 -m pip install --user awscli==1.14.56
