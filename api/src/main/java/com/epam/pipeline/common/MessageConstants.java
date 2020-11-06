@@ -475,8 +475,6 @@ public final class MessageConstants {
             "error.contextual.preference.external.resource.id.missing";
     public static final String ERROR_CONTEXTUAL_PREFERENCE_EXTERNAL_RESOURCE_NOT_FOUND =
             "error.contextual.preference.external.resource.not.found";
-    public static final String WARN_CONTEXTUAL_PREFERENCE_REDUCER_NOT_FOUND =
-            "warn.contextual.preference.reducer.not.found";
     public static final String WARN_CONTEXTUAL_PREFERENCE_DIFFERENT_VALUES =
             "warn.contextual.preference.reducer.different.values";
     public static final String WARN_CONTEXTUAL_PREFERENCE_REDUCING_FAILED =
