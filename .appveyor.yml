@@ -15,15 +15,7 @@ build_script:
 - |-
   sudo ln -s "$NVM_DIR/versions/node/$(nvm version)/bin/node" "/usr/local/bin/node"
   sudo ln -s "$NVM_DIR/versions/node/$(nvm version)/bin/npm" "/usr/local/bin/npm"
-  echo $PATH
-  which node
-  which npm
   sudo -E bash -s <<EOF
-    which node
-    which npm
-    node
-    npm
-    java
     python2 -m pip install awscli==1.14.56 mkdocs
     bash deploy/appveyor/appveyor_pack_dist.sh
   EOF
