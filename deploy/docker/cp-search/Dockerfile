@@ -20,7 +20,19 @@ RUN yum install -y \
                 curl \
                 java-1.8.0-openjdk \
                 python \
-                unzip
+                unzip \
+                nfs-utils \
+                samba \
+                samba-client \
+                cifs-utils
+
+ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
+ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.rpm"
+ARG LUSTRE_KMOD_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/kmod-lustre-client-$LUSTRE_VERSION.rpm"
+RUN wget -q $LUSTRE_KMOD_URL -O kmod-lustre-client.rpm && \
+    wget -q $LUSTRE_CLIENT_URL -O lustre-client.rpm && \
+    yum install -y -q kmod-lustre-client.rpm lustre-client.rpm && \
+    rm -f *lustre-client.rpm
 
 # API distribution
 ARG CP_API_DIST_URL=""

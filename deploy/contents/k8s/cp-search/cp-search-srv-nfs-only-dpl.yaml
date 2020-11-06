@@ -1,0 +1,74 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-search-srv-nfs-only
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: cp-search-srv-nfs-only
+      namespace: default
+      labels:
+        cloud-pipeline/cp-search-srv: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-search-srv: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      containers:
+        - name: cp-search-srv
+          image: lifescience/cloud-pipeline:search-$CP_VERSION
+          imagePullPolicy: "Always"
+          securityContext:
+            privileged: true
+          command: ["/init"]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CP_SEARCH_SYNC_TIMEOUT
+              value: "86400000"
+            - name: CP_SEARCH_DISABLE_NFS_STORAGE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_RUN
+              value: "true"
+            - name: CP_SEARCH_DISABLE_S3_FILE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_GS_FILE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_GS_STORAGE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_S3_STORAGE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_TOOL
+              value: "true"
+            - name: CP_SEARCH_DISABLE_FOLER
+              value: "true"
+            - name: CP_SEARCH_DISABLE_TOOL_GROUP
+              value: "true"
+            - name: CP_SEARCH_DISABLE_DOCKER_REGISTRY
+              value: "true"
+            - name: CP_SEARCH_DISABLE_ISSUE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_METADATA
+              value: "true"
+            - name: CP_SEARCH_DISABLE_CONFIGURATION
+              value: "true"
+          envFrom:
+            - configMapRef:
+                name: cp-config-global
+          volumeMounts:
+            - mountPath: /opt/search/logs
+              name: search-logs
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: search-logs
+          hostPath:
+            path: /opt/search-nfs-only/logs
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret
