@@ -10,12 +10,11 @@ skip_tags: true
 max_jobs: 1
 image: Ubuntu1604
 stack: node 10, jdk 8
-init:
-  - python2 -m pip install awscli==1.14.56 mkdocs
 
 build_script:
-- whoami ;
-  sudo su - ;
-  whoami
+- sudo -E bash -s <<EOF
+  python2 -m pip install awscli==1.14.56 mkdocs
+  bash deploy/appveyor/appveyor_pack_dist.sh
+EOF
 
 test: off
