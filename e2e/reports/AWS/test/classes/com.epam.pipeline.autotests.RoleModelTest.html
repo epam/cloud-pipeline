@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - Class com.epam.pipeline.autotests.RoleModelTest</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<h1>Class com.epam.pipeline.autotests.RoleModelTest</h1>
+<div class="breadcrumbs">
+<a href="../index.html">all</a> &gt; 
+<a href="../packages/com.epam.pipeline.autotests.html">com.epam.pipeline.autotests</a> &gt; RoleModelTest</div>
+<div id="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox" id="tests">
+<div class="counter">27</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="failures">
+<div class="counter">1</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="ignored">
+<div class="counter">0</div>
+<p>ignored</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="duration">
+<div class="counter">42m1.31s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox failures" id="successRate">
+<div class="percent">96%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="tabs">
+<ul class="tabLinks">
+<li>
+<a href="#tab0">Failed tests</a>
+</li>
+<li>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
+</li>
+</ul>
+<div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="checkBucketEditingByNonAdminUser - EPMCMBIBPC-566"></a>
+<h3 class="failures">checkBucketEditingByNonAdminUser - EPMCMBIBPC-566</h3>
+<span class="code">
+<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'role-model-bucket-for-ds-test-4604799415501310661')]]}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1604718191474.7.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1604718191474.7.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;span id=&quot;pipelines-library-tree-node-storage_30970-name&quot; class=&quot;pipelines-library__tree-item-title&quot;&gt;...&lt;/span&gt; is not clickable at point (171, 953). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy13.click(Unknown Source)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.cd(PipelinesLibraryAO.java:156)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.selectStorage(PipelinesLibraryAO.java:238)
+	at com.epam.pipeline.autotests.DataStoragesTest.createDataStorageAndValidate(DataStoragesTest.java:118)
+	at com.epam.pipeline.autotests.RoleModelTest.checkBucketEditingByNonAdminUser(RoleModelTest.java:515)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;span id=&quot;pipelines-library-tree-node-storage_30970-name&quot; class=&quot;pipelines-library__tree-item-title&quot;&gt;...&lt;/span&gt; is not clickable at point (171, 953). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '299a2c98cdf2', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 3d5a657fe91a03ad67cb2c641b1b9020
+	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 19 more
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
+<h2>Tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Duration</th>
+<th>Result</th>
+</tr>
+</thead>
+<tr>
+<td class="success">checkBucketEditProhibitionForReadOnlyUser - EPMCMBIBPC-563</td>
+<td>29.109s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="failures">checkBucketEditingByNonAdminUser - EPMCMBIBPC-566</td>
+<td>1m49.71s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="success">checkClusterNodesByNonAdminUser - EPMCMBIBPC-567</td>
+<td>6m9.34s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">checkFolderPermissionForReadOnlyUser - EPMCMBIBPC-549</td>
+<td>1m13.14s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">checkFolderPermissionsForReadOnlyUserAndCheckInnerDeniedPipelinePermissions - EPMCMBIBPC-552</td>
+<td>1m28.90s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">checkPermissionsForExecutingPipelines - EPMCMBIBPC-553</td>
+<td>4m37.42s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">checkPipelinePermissionsForGroup - EPMCMBIBPC-578</td>
+<td>32.709s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">checkReadPermissionForBucket - EPMCMBIBPC-562</td>
+<td>53.089s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">checkToolsPageByEditPermissionUser - EPMCMBIBPC-574</td>
+<td>1m39.42s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">checkToolsPageByExecutePermissionUser - EPMCMBIBPC-573</td>
+<td>1m36.49s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">checkToolsPageByReadOnlyUser - EPMCMBIBPC-572</td>
+<td>2m18.12s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">checkWritePermissionForBucket - EPMCMBIBPC-565</td>
+<td>1m0.94s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">editAndExecutePipeline - EPMCMBIBPC-561</td>
+<td>5m5.36s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">givePermissionsToUser - EPMCMBIBPC-537</td>
+<td>1m50.13s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">giveUserReadPermissionForPipeline - EPMCMBIBPC-546</td>
+<td>47.483s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">giveUserWritePermissionForPipeline - EPMCMBIBPC-540</td>
+<td>56.837s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">readOnlyUserIsNotAbleToEditFileInPipeline - EPMCMBIBPC-558</td>
+<td>4.204s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">readOnlyUserIsNotAbleToEditPipeline - EPMCMBIBPC-547</td>
+<td>27.925s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">rerunPipelineWithoutPermissionsForExecute - EPMCMBIBPC-560</td>
+<td>1m9.88s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">setPipelinePermissionsAndCheckItForGroup - EPMCMBIBPC-579</td>
+<td>2m12.87s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">setToolPermissionsAndCheckItForGroup - EPMCMBIBPC-580</td>
+<td>1m32.33s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">tryToNavigateToAnotherBucketByNavigationBar - EPMCMBIBPC-564</td>
+<td>20.970s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">validatePermissionsForEditPipeline - EPMCMBIBPC-556</td>
+<td>1m19.02s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">validatePermissionsForEditPipelineFiles - EPMCMBIBPC-557</td>
+<td>50.847s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">validateSearchForNoUser - EPMCMBIBPC-1581</td>
+<td>23.003s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">validateSearchWithinEditUser - EPMCMBIBPC-1575</td>
+<td>34.428s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">viewUserPermissions - EPMCMBIBPC-539</td>
+<td>37.646s</td>
+<td class="success">passed</td>
+</tr>
+</table>
+</div>
+<div id="tab2" class="tab">
+<h2>Standard output</h2>
+<span class="code">
+<pre>Returns latest run with runId 46524 from [46524]
+Returns latest run with runId 46524 from [46524]
+Returns latest run with runId 46524 from [46524]
+Returns latest run with runId 46525 from [46524, 46525]
+Returns latest run with runId 46525 from [46524, 46525]
+Returns latest run with runId 46525 from [46524, 46525]
+Returns latest run with runId 46526 from [46524, 46525, 46526]
+Returns latest run with runId 46526 from [46524, 46525, 46526]
+Returns latest run with runId 46527 from [46524, 46525, 46526, 46527]
+Returns latest run with runId 46527 from [46524, 46525, 46526, 46527]
+</pre>
+</span>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 7, 2020 4:17:51 PM</p>
+</div>
+</div>
+</body>
+</html>
