@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.controller.docker;
 
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.docker.DockerRegistryVO;
 import com.epam.pipeline.entity.docker.DockerRegistryList;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
@@ -24,10 +25,13 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.manager.docker.DockerRegistryApiService;
 import com.epam.pipeline.security.UserAccessService;
+import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
 import com.epam.pipeline.test.creator.tool.ToolCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
+import com.fasterxml.jackson.core.type.TypeReference;
+import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -36,6 +40,8 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +51,7 @@ import static com.epam.pipeline.controller.docker.DockerRegistryController.DOCKE
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.refEq;
 import static org.mockito.Mockito.doReturn;
@@ -76,16 +83,13 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     private static final String REGISTRY_PATH = "Registry-Path";
     private static final String SERVICE = "service";
     private static final String SCOPE = "scope";
+    private final byte[] bytes = {1, 1, 1};
 
     private final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry();
     private final DockerRegistryVO dockerRegistryVO = DockerCreatorUtils.getDockerRegistryVO();
     private final JwtRawToken jwtRawToken = SecurityCreatorUtils.getJwtRawToken();
     private final DockerRegistryList dockerRegistryList = DockerCreatorUtils.getDockerRegistryList();
     private final DockerRegistryEventEnvelope eventEnvelope = DockerCreatorUtils.getDockerRegistryEventEnvelope();
-    private final Tool tool = ToolCreatorUtils.getTool();
-    private final byte[] bytes = {1, 1, 1};
-
-    private final List<Tool> tools = Collections.singletonList(tool);
 
     @Autowired
     private DockerRegistryApiService mockDockerRegistryApiService;
@@ -145,25 +149,37 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
         performUnauthorizedRequest(post(UPDATE_DOCKER_REGISTRY_CREDS_URL));
     }
 
-//                       UNFINISHED TEST  (AssertionError: Content type not set)
-//    @Test
-//    @WithMockUser
-//    public void shouldOauthEndpoint() throws Exception {
-//        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-//        params.add(SERVICE, TEST_STRING);
-//        params.add(SCOPE, TEST_STRING);
-//        final String encodedString = new String(Base64.getEncoder()
-//                .encode("TEST:TEST".getBytes(StandardCharsets.UTF_8)));
-//        doReturn(new UserContext()).when(mockAccessService).getJwtUser(any(), any());
-//        doReturn(jwtRawToken).when(mockDockerRegistryApiService)
-//                .issueTokenForDockerRegistry(TEST_STRING, TEST_STRING, SERVICE, SCOPE);
-//
-//        final MvcResult mvcResult = performRequest(get(OAUTH_DOCKER_REGISTRY_URL).params(params).header(
-//                "Authorization", "Basic" + encodedString).accept(MediaType.APPLICATION_JSON_UTF8_VALUE));
-//
-//        verify(mockDockerRegistryApiService).issueTokenForDockerRegistry(TEST_STRING, TEST_STRING, SERVICE, SCOPE);
-//        assertResponse(mvcResult, jwtRawToken, DockerCreatorUtils.JWT_RAW_TOKEN_INSTANCE_TYPE);
-//    }
+    @Test
+    @WithMockUser
+    public void shouldOauthEndpoint() throws Exception {
+        final UserContext userContext = SecurityCreatorUtils.getUserContext();
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add(SERVICE, TEST_STRING);
+        params.add(SCOPE, TEST_STRING);
+        final String testNameAndPass = TEST_STRING + ":" + TEST_STRING;
+        final String encodedNameAndPass = new String(Base64.getEncoder()
+                .encode(testNameAndPass.getBytes(StandardCharsets.UTF_8)));
+        doReturn(userContext).when(mockAccessService).getJwtUser(any(), any());
+        doReturn(jwtRawToken).when(mockDockerRegistryApiService)
+                .issueTokenForDockerRegistry(TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING);
+
+        final MvcResult mvcResult = performRequest(get(OAUTH_DOCKER_REGISTRY_URL)
+                .header("Authorization", "Basic" + encodedNameAndPass).params(params));
+
+        verify(mockDockerRegistryApiService)
+                .issueTokenForDockerRegistry(TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING);
+        final JwtRawToken actualResult = JsonMapper.parseData(mvcResult.getResponse().getContentAsString(),
+                new TypeReference<JwtRawToken>() {});
+        Assert.assertEquals(jwtRawToken, actualResult);
+    }
+
+    @Test
+    public void shouldFailOauthEndpoint() throws Exception {
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add(SERVICE, TEST_STRING);
+        params.add(SCOPE, TEST_STRING);
+        performUnauthorizedRequest(get(OAUTH_DOCKER_REGISTRY_URL).params(params));
+    }
 
     @Test
     @WithMockUser
@@ -184,8 +200,8 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadRegistryCertificates() throws Exception {
-        doReturn(dockerRegistryList).when(mockDockerRegistryApiService).listDockerRegistriesWithCerts();
         final Map<String, String> loadedCerts = Collections.singletonMap(TEST_STRING, TEST_STRING);
+        doReturn(dockerRegistryList).when(mockDockerRegistryApiService).listDockerRegistriesWithCerts();
 
         final MvcResult mvcResult = performRequest(get(LOAD_CERTS_REGISTRY_URL));
 
@@ -235,6 +251,8 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldNotifyRegistryEvents() throws Exception {
+        final Tool tool = ToolCreatorUtils.getTool();
+        final List<Tool> tools = Collections.singletonList(tool);
         final String content = getObjectMapper().writeValueAsString(eventEnvelope);
         doReturn(tools).when(mockDockerRegistryApiService)
                 .notifyDockerRegistryEvents(eq(TEST_STRING), refEq(eventEnvelope));
