@@ -34,7 +34,6 @@ import static com.epam.pipeline.autotests.ao.Primitive.SHARE_WITH;
 import static com.epam.pipeline.autotests.utils.C.LOGIN;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SharingRunsTest extends AbstractSinglePipelineRunningTest implements Authorization, Tools {
@@ -58,7 +57,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                 .launch(this)
                 .showLog(runID = getRunId())
                 .waitForEndpointLink()
-                .sleep(timeout, MINUTES)
+                .sleep(timeout, SECONDS)
                 .clickOnEndpointLink()
                 .sleep(3, SECONDS)
                 .validateEndpointPage(LOGIN)
