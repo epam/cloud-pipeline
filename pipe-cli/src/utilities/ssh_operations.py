@@ -241,7 +241,7 @@ def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, log_file,
     ssh_private_key_name = 'pipeline-{}-{}-{}'.format(run_id, int(time.time()), random.randint(0, sys.maxsize))
     ssh_private_key_path = os.path.join(ssh_keys_path, ssh_private_key_name)
     ssh_public_key_path = '{}.pub'.format(ssh_private_key_path)
-    remote_host = 'pipeline-{}'.format(run_id)
+    remote_host = os.getenv('CP_CLI_TUNNEL_SSH_HOST', 'pipeline-{}'.format(run_id))
     conn_info = get_conn_info(run_id)
     remote_ssh_authorized_keys_paths = ['/root/.ssh/authorized_keys',
                                         '/home/{}/.ssh/authorized_keys'.format(conn_info.owner)]

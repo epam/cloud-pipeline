@@ -1282,6 +1282,7 @@ def tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, f
         CP_CLI_TUNNEL_SERVER_ADDRESS - tunnel server address
         CP_CLI_TUNNEL_CONNECTION_TIMEOUT - tunnel connection timeout
         CP_CLI_TUNNEL_SSH_PATH - .ssh directory path
+        CP_CLI_TUNNEL_SSH_HOST - ssh host name
     """
     if trace:
         create_tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, foreground, retries)
