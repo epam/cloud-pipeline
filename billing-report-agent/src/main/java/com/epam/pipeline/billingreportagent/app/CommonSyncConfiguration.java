@@ -22,7 +22,10 @@ import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.billingreportagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AwsStoragePriceListLoader;
-import com.epam.pipeline.billingreportagent.service.impl.converter.AzureStoragePriceListLoader;
+import com.epam.pipeline.billingreportagent.service.impl.converter.AzureBlobStoragePriceListLoader;
+import com.epam.pipeline.billingreportagent.service.impl.converter.AzureFilesStoragePriceListLoader;
+import com.epam.pipeline.billingreportagent.service.impl.converter.AzureNetAppStoragePriceListLoader;
+import com.epam.pipeline.billingreportagent.service.impl.converter.AzureRawPriceLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.FileShareMountsService;
 import com.epam.pipeline.billingreportagent.service.impl.converter.GcpStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.PriceLoadingMode;
@@ -36,6 +39,7 @@ import com.epam.pipeline.billingreportagent.service.impl.loader.StorageLoader;
 import com.epam.pipeline.billingreportagent.service.impl.mapper.RunBillingMapper;
 import com.epam.pipeline.billingreportagent.service.impl.mapper.StorageBillingMapper;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -155,6 +159,7 @@ public class CommonSyncConfiguration {
                         pricingService,
                         fileIndexPattern,
                         fileShareMountsService,
+                        MountType.NFS,
                         enableStorageHistoricalBillingGeneration),
                 DataStorageType.NFS);
     }
@@ -185,14 +190,21 @@ public class CommonSyncConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = "sync.storage.azure-blob.disable", matchIfMissing = true, havingValue = FALSE)
-    public StorageSynchronizer azureSynchronizer(final StorageLoader loader,
-                                                 final ElasticIndexService indexService,
-                                                 final ElasticsearchServiceClient elasticsearchClient,
-                                                 final CloudRegionLoader regionLoader) {
+    public StorageSynchronizer azureBlobSynchronizer(
+        final StorageLoader loader,
+        final ElasticIndexService indexService,
+        final ElasticsearchServiceClient elasticsearchClient,
+        final CloudRegionLoader regionLoader,
+        final AzureRawPriceLoader rawPriceLoader,
+        final @Value("${sync.storage.azure-blob.category:General Block Blob}") String blobStorageCategory,
+        final @Value("${sync.storage.azure-blob.redundancy:LRS}") String redundancyType) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.AZ_BLOB_STORAGE,
                 billingCenterKey);
         final StoragePricingService pricingService =
-                new StoragePricingService(new AzureStoragePriceListLoader(regionLoader));
+                new StoragePricingService(new AzureBlobStoragePriceListLoader(regionLoader,
+                                                                              rawPriceLoader,
+                                                                              blobStorageCategory,
+                                                                              redundancyType));
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
                 storageIndexName,
@@ -207,5 +219,67 @@ public class CommonSyncConfiguration {
                         fileIndexPattern,
                         enableStorageHistoricalBillingGeneration),
                 DataStorageType.AZ);
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "sync.storage.azure-netapp.disable", matchIfMissing = true, havingValue = FALSE)
+    public StorageSynchronizer azureNetAppSynchronizer(final StorageLoader loader,
+                                                       final ElasticIndexService indexService,
+                                                       final ElasticsearchServiceClient elasticsearchClient,
+                                                       final FileShareMountsService fileShareMountsService,
+                                                       final CloudRegionLoader regionLoader,
+                                                       final AzureRawPriceLoader rawPriceLoader,
+                                                       final @Value("${sync.storage.azure-netapp.tier:Standard}")
+                                                               String storageTier) {
+        final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
+        final StoragePricingService pricingService =
+            new StoragePricingService(new AzureNetAppStoragePriceListLoader(regionLoader, rawPriceLoader, storageTier));
+        return new StorageSynchronizer(storageMapping,
+                commonIndexPrefix,
+                storageIndexName,
+                bulkSize,
+                insertTimeout,
+                elasticsearchClient,
+                loader,
+                indexService,
+                new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                        StorageType.FILE_STORAGE,
+                        pricingService,
+                        fileIndexPattern,
+                        fileShareMountsService,
+                        MountType.NFS,
+                        enableStorageHistoricalBillingGeneration),
+                DataStorageType.NFS);
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "sync.storage.azure-files.disable", matchIfMissing = true, havingValue = FALSE)
+    public StorageSynchronizer azureFilesSynchronizer(final StorageLoader loader,
+                                                      final ElasticIndexService indexService,
+                                                      final ElasticsearchServiceClient elasticsearchClient,
+                                                      final FileShareMountsService fileShareMountsService,
+                                                      final CloudRegionLoader regionLoader,
+                                                      final AzureRawPriceLoader rawPriceLoader,
+                                                      final @Value("${sync.storage.azure-files.tier:Cool LRS}")
+                                                              String storageTier) {
+        final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
+        final StoragePricingService pricingService =
+            new StoragePricingService(new AzureFilesStoragePriceListLoader(regionLoader, rawPriceLoader, storageTier));
+        return new StorageSynchronizer(storageMapping,
+                                       commonIndexPrefix,
+                                       storageIndexName,
+                                       bulkSize,
+                                       insertTimeout,
+                                       elasticsearchClient,
+                                       loader,
+                                       indexService,
+                                       new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                                                                            StorageType.FILE_STORAGE,
+                                                                            pricingService,
+                                                                            fileIndexPattern,
+                                                                            fileShareMountsService,
+                                                                            MountType.SMB,
+                                                                            enableStorageHistoricalBillingGeneration),
+                                       DataStorageType.NFS);
     }
 }
