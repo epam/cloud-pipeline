@@ -29,6 +29,10 @@ spec:
           env:
             - name: CP_SEARCH_SYNC_TIMEOUT
               value: "86400000"
+            - name: CP_SEARCH_DISABLE_AZ_BLOB_FILE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_AZ_BLOB_STORAGE
+              value: "true"
             - name: CP_SEARCH_DISABLE_NFS_STORAGE
               value: "true"
             - name: CP_SEARCH_DISABLE_RUN
