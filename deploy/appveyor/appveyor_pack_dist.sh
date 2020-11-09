@@ -16,7 +16,7 @@
 
 # Authenticate to have an increased pull limit
 # https://www.docker.com/increase-rate-limit
-docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
+docker login -u "$DOCKER_USER" -p "$DOCKER_TOKEN"
 
 API_STATIC_PATH=api/src/main/resources/static
 rm -rf ${API_STATIC_PATH}/*
