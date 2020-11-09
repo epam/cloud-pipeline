@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - Class com.epam.pipeline.autotests.VersionControlTest</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<h1>Class com.epam.pipeline.autotests.VersionControlTest</h1>
+<div class="breadcrumbs">
+<a href="../index.html">all</a> &gt; 
+<a href="../packages/com.epam.pipeline.autotests.html">com.epam.pipeline.autotests</a> &gt; VersionControlTest</div>
+<div id="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox" id="tests">
+<div class="counter">13</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="failures">
+<div class="counter">3</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="ignored">
+<div class="counter">0</div>
+<p>ignored</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="duration">
+<div class="counter">10m33.36s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox failures" id="successRate">
+<div class="percent">76%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="tabs">
+<ul class="tabLinks">
+<li>
+<a href="#tab0">Failed tests</a>
+</li>
+<li>
+<a href="#tab1">Tests</a>
+</li>
+</ul>
+<div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="deleteOneOfSiblingsFiles - EPMCMBIBPC-1540"></a>
+<h3 class="failures">deleteOneOfSiblingsFiles - EPMCMBIBPC-1540</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-logout}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1604917624882.64.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1604917624882.64.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;button id=&quot;navigation-button-logout&quot; type=&quot;button&quot; class=&quot;ant-btn navigation__navigation-menu-item&quot;&gt;...&lt;/button&gt; is not clickable at point (32, 429). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy13.click(Unknown Source)
+	at com.epam.pipeline.autotests.ao.NavigationMenuAO.logout(NavigationMenuAO.java:93)
+	at com.epam.pipeline.autotests.mixins.Authorization.logout(Authorization.java:72)
+	at com.epam.pipeline.autotests.VersionControlTest.deleteOneOfSiblingsFiles(VersionControlTest.java:393)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;button id=&quot;navigation-button-logout&quot; type=&quot;button&quot; class=&quot;ant-btn navigation__navigation-menu-item&quot;&gt;...&lt;/button&gt; is not clickable at point (32, 429). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '4d7fcc0658c1', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: c98036faf6fb12e6f4f75ff29b435a69
+	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 18 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="deletingBucketAfterDisablingOfVersioning - EPMCMBIBPC-1502"></a>
+<h3 class="failures">deletingBucketAfterDisablingOfVersioning - EPMCMBIBPC-1502</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-logout}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1604917711199.65.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1604917711199.65.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;button id=&quot;navigation-button-logout&quot; type=&quot;button&quot; class=&quot;ant-btn navigation__navigation-menu-item&quot;&gt;...&lt;/button&gt; is not clickable at point (32, 429). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy13.click(Unknown Source)
+	at com.epam.pipeline.autotests.ao.NavigationMenuAO.logout(NavigationMenuAO.java:93)
+	at com.epam.pipeline.autotests.mixins.Authorization.logout(Authorization.java:72)
+	at com.epam.pipeline.autotests.VersionControlTest.deletingBucketAfterDisablingOfVersioning(VersionControlTest.java:364)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;button id=&quot;navigation-button-logout&quot; type=&quot;button&quot; class=&quot;ant-btn navigation__navigation-menu-item&quot;&gt;...&lt;/button&gt; is not clickable at point (32, 429). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '4d7fcc0658c1', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: c98036faf6fb12e6f4f75ff29b435a69
+	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 18 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="editPermissionTestForBucketWithVersions - EPMCMBIBPC-855"></a>
+<h3 class="failures">editPermissionTestForBucketWithVersions - EPMCMBIBPC-855</h3>
+<span class="code">
+<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'versions-bucket-to-check-edit-permits4600995179246495440')]]}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1604917538598.63.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1604917538598.63.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;span id=&quot;pipelines-library-tree-node-storage_31031-name&quot; class=&quot;pipelines-library__tree-item-title&quot;&gt;...&lt;/span&gt; is not clickable at point (171, 953). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy13.click(Unknown Source)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.cd(PipelinesLibraryAO.java:156)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.selectStorage(PipelinesLibraryAO.java:238)
+	at com.epam.pipeline.autotests.VersionControlTest.editPermissionTestForBucketWithVersions(VersionControlTest.java:336)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;span id=&quot;pipelines-library-tree-node-storage_31031-name&quot; class=&quot;pipelines-library__tree-item-title&quot;&gt;...&lt;/span&gt; is not clickable at point (171, 953). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '4d7fcc0658c1', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: c98036faf6fb12e6f4f75ff29b435a69
+	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 18 more
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
+<h2>Tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Duration</th>
+<th>Result</th>
+</tr>
+</thead>
+<tr>
+<td class="success">checkFilesVersionsAfterUpdate - EPMCMBIBPC-820</td>
+<td>44.782s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">deleteFileByNonAdminUser - EPMCMBIBPC-815</td>
+<td>1m18.56s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">deleteFileThatHasDeleteMarker - EPMCMBIBPC-841</td>
+<td>42.139s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="failures">deleteOneOfSiblingsFiles - EPMCMBIBPC-1540</td>
+<td>1m26.28s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">deletingBucketAfterDisablingOfVersioning - EPMCMBIBPC-1502</td>
+<td>1m26.31s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">editPermissionTestForBucketWithVersions - EPMCMBIBPC-855</td>
+<td>1m47.32s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="success">markToDeleteNotEmptyFolder - EPMCMBIBPC-844</td>
+<td>22.076s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">readPermissionTestForBucketWithVersions - EPMCMBIBPC-854</td>
+<td>57.620s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">validateDeleteEmptyFolder - EPMCMBIBPC-842</td>
+<td>43.196s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">validateDeleteNotEmptyFolder - EPMCMBIBPC-845</td>
+<td>19.760s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">validateRestoreFile - EPMCMBIBPC-816</td>
+<td>6.277s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">validateRestoreSpecifiedFileVersion - EPMCMBIBPC-888</td>
+<td>5.363s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">validateShowFilesVersions - EPMCMBIBPC-813</td>
+<td>33.683s</td>
+<td class="success">passed</td>
+</tr>
+</table>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 9, 2020 6:29:03 PM</p>
+</div>
+</div>
+</body>
+</html>
