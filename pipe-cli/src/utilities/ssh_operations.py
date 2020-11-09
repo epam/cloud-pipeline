@@ -143,7 +143,7 @@ def setup_authenticated_paramiko_transport(run_id, retries):
         ssh_default_root_user_enabled_preference = PreferenceAPI.get_preference('system.ssh.default.root.user.enabled')
         ssh_default_root_user_enabled = ssh_default_root_user_enabled_preference.value.lower() == "true"
     except:
-        ssh_default_root_user_enabled = False
+        ssh_default_root_user_enabled = True
     if not ssh_default_root_user_enabled:
         # split owner by @ in case it represented by email address
         owner_user_name = conn_info.owner.split("@")[0]
