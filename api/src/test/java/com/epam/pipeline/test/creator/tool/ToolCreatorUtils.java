@@ -16,7 +16,11 @@
 
 package com.epam.pipeline.test.creator.tool;
 
+import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
@@ -24,12 +28,15 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class ToolCreatorUtils {
 
+    public static final TypeReference<Result<List<Tool>>> TOOL_LIST_INSTANCE_TYPE =
+            new TypeReference<Result<List<Tool>>>() {};
+
     private ToolCreatorUtils() {
 
     }
 
     public static Tool getTool() {
-        Tool tool = new Tool();
+        final Tool tool = new Tool();
         tool.setId(ID);
         tool.setImage(TEST_STRING);
         tool.setCpu(TEST_STRING);

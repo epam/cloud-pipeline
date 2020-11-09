@@ -21,11 +21,14 @@ import com.epam.pipeline.security.UserContext;
 =======
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.security.UserContext;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 >>>>>>> Issue #1405: Implemented tests (except one) for docker registry controller layer
 
 public final class SecurityCreatorUtils {
+
+    public static final TypeReference<JwtRawToken> JWT_RAW_TOKEN_INSTANCE_TYPE = new TypeReference<JwtRawToken>() {};
 
     private SecurityCreatorUtils() {
 
@@ -46,8 +49,7 @@ public final class SecurityCreatorUtils {
 >>>>>>> Issue #1405: Implemented tests (except one) for docker registry controller layer
     }
 
-    public static UserContext getUserContext(){
-        final UserContext userContext = new UserContext();
-        return userContext;
+    public static UserContext getUserContext() {
+        return new UserContext();
     }
 }

@@ -26,11 +26,11 @@ import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.manager.docker.DockerRegistryApiService;
 import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.UserContext;
+import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
 import com.epam.pipeline.test.creator.tool.ToolCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +46,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static com.epam.pipeline.controller.docker.DockerRegistryController.CERTIFICATE_NAME;
 import static com.epam.pipeline.controller.docker.DockerRegistryController.DOCKER_LOGIN_SCRIPT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
@@ -90,6 +89,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     private final JwtRawToken jwtRawToken = SecurityCreatorUtils.getJwtRawToken();
     private final DockerRegistryList dockerRegistryList = DockerCreatorUtils.getDockerRegistryList();
     private final DockerRegistryEventEnvelope eventEnvelope = DockerCreatorUtils.getDockerRegistryEventEnvelope();
+    private final UserContext userContext = SecurityCreatorUtils.getUserContext();
 
     @Autowired
     private DockerRegistryApiService mockDockerRegistryApiService;
@@ -152,7 +152,6 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldOauthEndpoint() throws Exception {
-        final UserContext userContext = SecurityCreatorUtils.getUserContext();
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(SERVICE, TEST_STRING);
         params.add(SCOPE, TEST_STRING);
@@ -169,7 +168,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
         verify(mockDockerRegistryApiService)
                 .issueTokenForDockerRegistry(TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING);
         final JwtRawToken actualResult = JsonMapper.parseData(mvcResult.getResponse().getContentAsString(),
-                new TypeReference<JwtRawToken>() {});
+                SecurityCreatorUtils.JWT_RAW_TOKEN_INSTANCE_TYPE);
         Assert.assertEquals(jwtRawToken, actualResult);
     }
 
@@ -206,7 +205,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(get(LOAD_CERTS_REGISTRY_URL));
 
         verify(mockDockerRegistryApiService).listDockerRegistriesWithCerts();
-        assertResponse(mvcResult, loadedCerts, DockerCreatorUtils.STRING_MAP_INSTANCE_TYPE);
+        assertResponse(mvcResult, loadedCerts, CommonCreatorConstants.STRING_MAP_INSTANCE_TYPE);
     }
 
     @Test
@@ -261,7 +260,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
                 post(NOTIFY_REGISTRY_URL).header(REGISTRY_PATH, TEST_STRING).content(content));
 
         verify(mockDockerRegistryApiService).notifyDockerRegistryEvents(eq(TEST_STRING), refEq(eventEnvelope));
-        assertResponse(mvcResult, tools, DockerCreatorUtils.TOOL_LIST_INSTANCE_TYPE);
+        assertResponse(mvcResult, tools, ToolCreatorUtils.TOOL_LIST_INSTANCE_TYPE);
     }
 
     @Test
@@ -271,7 +270,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldDownloadPipelineFile() throws Exception {
+    public void shouldDownloadRegistryCertificate() throws Exception {
         doReturn(bytes).when(mockDockerRegistryApiService).getCertificateContent(ID);
 
         final MvcResult mvcResult = performRequest(get(String.format(CERT_REGISTRY_URL, ID)),
@@ -285,7 +284,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailDownloadPipelineFile() throws Exception {
+    public void shouldFailDownloadRegistryCertificate() throws Exception {
         performUnauthorizedRequest(get(String.format(CERT_REGISTRY_URL, ID)));
     }
 
