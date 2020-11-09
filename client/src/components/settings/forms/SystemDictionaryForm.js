@@ -249,7 +249,7 @@ class SystemDictionaryForm extends React.Component {
 
   onItemAdd = () => {
     const {items} = this.state;
-    items.push({value: '', autofill: true, links: []});
+    items.push({value: '', autofill: true, links: [], filtered: true});
     this.setState({
       items: items.slice()
     }, this.afterChange);
