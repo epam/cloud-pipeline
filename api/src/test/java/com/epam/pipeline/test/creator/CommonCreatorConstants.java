@@ -26,6 +26,13 @@ import java.util.Set;
 
 public final class CommonCreatorConstants {
 
+    public static final TypeReference<Result<String>> STRING_INSTANCE_TYPE =
+            new TypeReference<Result<String>>() {};
+    public static final TypeReference<Result<Boolean>> BOOLEAN_INSTANCE_TYPE =
+            new TypeReference<Result<Boolean>>() {};
+    public static final TypeReference<Result<Long>> LONG_INSTANCE_TYPE =
+            new TypeReference<Result<Long>>() {};
+
     public static final long ID = 1L;
     public static final long ID_2 = 2L;
     public static final int TEST_INT = 4;

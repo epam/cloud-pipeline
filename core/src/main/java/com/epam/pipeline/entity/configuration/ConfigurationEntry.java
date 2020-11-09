@@ -17,6 +17,7 @@
 package com.epam.pipeline.entity.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -29,6 +30,7 @@ import org.springframework.util.StringUtils;
 @Getter
 @Setter
 @NoArgsConstructor
+@EqualsAndHashCode
 public class ConfigurationEntry {
 
     public static final String DEFAULT = "default";
