@@ -14,10 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Authenticate to have an increased pull limit
+# https://www.docker.com/increase-rate-limit
+docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
+
 API_STATIC_PATH=api/src/main/resources/static
 rm -rf ${API_STATIC_PATH}/*
 rm -rf build/install/dist/*
-
 
 _BUILD_DOCKER_IMAGE="lifescience/cloud-pipeline:python2.7-centos6" ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release pipe-cli:buildLinux --no-daemon -x :pipe-cli:test
 mv pipe-cli/dist/dist-file/pipe ${API_STATIC_PATH}/pipe-el6
