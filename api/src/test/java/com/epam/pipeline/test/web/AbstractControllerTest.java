@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.epam.pipeline.config.JsonMapper;
@@ -29,6 +30,7 @@ import com.epam.pipeline.controller.Result;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -82,9 +84,10 @@ public abstract class AbstractControllerTest {
         return expectedResult;
     }
 
+    @SneakyThrows
     public <T> void assertResponse(final MvcResult mvcResult,
                                    final T payload,
-                                   final TypeReference<Result<T>> typeReference) throws Exception {
+                                   final TypeReference<Result<T>> typeReference){
         final ResponseResult<T> expectedResult = buildExpectedResult(payload);
 
         final String actual = mvcResult.getResponse().getContentAsString();
@@ -96,23 +99,57 @@ public abstract class AbstractControllerTest {
         assertEquals(expectedResult.getPayload(), actualResult.getPayload());
     }
 
-    public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder) throws Exception {
+    @SneakyThrows
+    public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder) {
         mockMvc.perform(requestBuilder
                 .servletPath(SERVLET_PATH))
                 .andExpect(status().isUnauthorized());
     }
 
-    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder) throws Exception {
+    @SneakyThrows
+    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder) {
         return performRequest(requestBuilder, EXPECTED_CONTENT_TYPE);
     }
 
-    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder, String contentType)
-            throws Exception {
+
+    @SneakyThrows
+    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder, final String contentType) {
         return mockMvc.perform(requestBuilder
                 .servletPath(SERVLET_PATH)
                 .contentType(contentType))
                 .andExpect(status().isOk())
                 .andExpect(MockMvcResultMatchers.content().contentType(contentType))
                 .andReturn();
+    }
+
+    @SneakyThrows
+    public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder,
+                                    final String requestContentType,
+                                    final String responseContentType) {
+        return mockMvc.perform(requestBuilder
+                .servletPath(SERVLET_PATH)
+                .contentType(requestContentType))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.content().contentType(responseContentType))
+                .andReturn();
+    }
+
+    @SneakyThrows
+    public MvcResult performRedirectedRequest(final MockHttpServletRequestBuilder requestBuilder,
+                                              final String redirectUrl) {
+        return mockMvc.perform(requestBuilder
+                .servletPath(SERVLET_PATH)
+                .contentType(EXPECTED_CONTENT_TYPE))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl(redirectUrl))
+                .andReturn();
+    }
+
+    @SneakyThrows
+    public void performRequestWithoutResponse(final MockHttpServletRequestBuilder requestBuilder) {
+        mockMvc.perform(requestBuilder
+                .servletPath(SERVLET_PATH)
+                .contentType(EXPECTED_CONTENT_TYPE))
+                .andExpect(status().isOk());
     }
 }
