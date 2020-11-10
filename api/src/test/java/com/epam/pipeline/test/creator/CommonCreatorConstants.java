@@ -20,8 +20,6 @@ import com.epam.pipeline.controller.Result;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,14 +35,13 @@ public final class CommonCreatorConstants {
     public static final Map<String, String> TEST_STRING_MAP = Collections.singletonMap(TEST_STRING, TEST_STRING);
     public static final Set<String> TEST_STRING_SET = Collections.singleton(TEST_STRING);
 
-    public static final TypeReference<Result<Integer>> INTEGER_TYPE = new TypeReference<Result<Integer>>() { };
-    public static final TypeReference<Result<Object>> OBJECT_TYPE = new TypeReference<Result<Object>>() { };
-    public static final TypeReference<Result<String>> STRING_TYPE = new TypeReference<Result<String>>() { };
+    public static final TypeReference<Result<Integer>> INTEGER_TYPE = new TypeReference<Result<Integer>>() {};
+    public static final TypeReference<Result<Object>> OBJECT_TYPE = new TypeReference<Result<Object>>() {};
+    public static final TypeReference<Result<String>> STRING_TYPE = new TypeReference<Result<String>>() {};
     public static final TypeReference<Result<Map<String, String>>> STRING_STRING_MAP_TYPE =
-            new TypeReference<Result<Map<String, String>>>() { };
+            new TypeReference<Result<Map<String, String>>>() {};
+
     private CommonCreatorConstants() {
 
     }
-
-
 }

@@ -61,10 +61,10 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
 
     private final DataStorageVO dataStorageVO = DatastorageCreatorUtils.getDataStorageVO();
     private final DataStorageWithShareMount storageShareMount =
-            DatastorageCreatorUtils.getDataStorageWithShareMount();
+            DatastorageCreatorUtils.getDefaultDataStorageWithShareMount();
     private final TemporaryCredentials temporaryCredentials = DatastorageCreatorUtils.getTemporaryCredentials();
     private final StorageUsage storageUsage = DatastorageCreatorUtils.getStorageUsage();
-    private final StorageMountPath storageMountPath = DatastorageCreatorUtils.getStorageMountPath();
+    private final StorageMountPath storageMountPath = DatastorageCreatorUtils.getDefaultStorageMountPath();
     private final PipelineRun pipelinerun = PipelineCreatorUtils.getPipelineRun(ID, SIMPLE_USER);
     private final List<DataStorageAction> dataStorageActionList = DatastorageCreatorUtils.getDataStorageActionList();
 

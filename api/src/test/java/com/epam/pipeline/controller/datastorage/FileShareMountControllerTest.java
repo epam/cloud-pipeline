@@ -17,7 +17,7 @@
 package com.epam.pipeline.controller.datastorage;
 
 import com.epam.pipeline.entity.datastorage.FileShareMount;
-import com.epam.pipeline.manager.datastorage.FileShareMountApiService;
+import com.epam.pipeline.acl.datastorage.FileShareMountApiService;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;

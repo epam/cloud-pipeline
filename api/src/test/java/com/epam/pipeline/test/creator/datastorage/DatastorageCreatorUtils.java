@@ -23,6 +23,7 @@ import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
@@ -121,6 +122,19 @@ public final class DatastorageCreatorUtils {
         return new S3bucketDataStorage(ID, TEST_STRING, TEST_STRING);
     }
 
+    public static S3bucketDataStorage getS3bucketDataStorage(final Long id, final String owner) {
+        final S3bucketDataStorage s3bucket = new S3bucketDataStorage(id, TEST_STRING, TEST_STRING);
+        s3bucket.setOwner(owner);
+        return s3bucket;
+    }
+
+    public static S3bucketDataStorage getS3bucketDataStorage(final Long id, final String owner, final boolean shared) {
+        final S3bucketDataStorage s3bucket = new S3bucketDataStorage(id, TEST_STRING, TEST_STRING);
+        s3bucket.setOwner(owner);
+        s3bucket.setShared(shared);
+        return s3bucket;
+    }
+
     public static AzureBlobStorage getAzureBlobStorage() {
         return new AzureBlobStorage(ID, TEST_STRING, TEST_STRING, new StoragePolicy(), TEST_STRING);
     }
@@ -131,6 +145,10 @@ public final class DatastorageCreatorUtils {
 
     public static NFSDataStorage getNfsDataStorage() {
         return new NFSDataStorage(ID, TEST_STRING, TEST_PATH);
+    }
+
+    public static DataStorageWithShareMount getDefaultDataStorageWithShareMount() {
+        return new DataStorageWithShareMount(getS3bucketDataStorage(), new FileShareMount());
     }
 
     public static DataStorageWithShareMount getDataStorageWithShareMount() {
@@ -144,7 +162,6 @@ public final class DatastorageCreatorUtils {
     public static DataStorageListing getDataStorageListing() {
         return new DataStorageListing();
     }
-
 
     public static DataStorageFile getDataStorageFile() {
         return new DataStorageFile();
@@ -176,7 +193,9 @@ public final class DatastorageCreatorUtils {
     }
 
     public static DataStorageVO getDataStorageVO() {
-        return new DataStorageVO();
+        final DataStorageVO dataStorageVO = new DataStorageVO();
+        dataStorageVO.setId(ID);
+        return dataStorageVO;
     }
 
     public static DataStorageRule getDataStorageRule() {
@@ -206,6 +225,10 @@ public final class DatastorageCreatorUtils {
         return new StorageUsage(ID, TEST_STRING, DataStorageType.S3, TEST_PATH, ID, ID);
     }
 
+    public static StorageMountPath getDefaultStorageMountPath() {
+        return new StorageMountPath(TEST_PATH, getS3bucketDataStorage(), new FileShareMount());
+    }
+
     public static StorageMountPath getStorageMountPath() {
         return new StorageMountPath(TEST_PATH, null, new FileShareMount());
     }
@@ -219,8 +242,16 @@ public final class DatastorageCreatorUtils {
         return fileShareMount;
     }
 
+    public static DataStorageItemContent getDefaultDataStorageItemContent() {
+        return new DataStorageItemContent();
+    }
+
     public static DataStorageStreamingContent getDataStorageStreamingContent() {
         final InputStream inputStream = new ByteArrayInputStream(TEST_STRING.getBytes());
+        return new DataStorageStreamingContent(inputStream, TEST_STRING);
+    }
+
+    public static DataStorageStreamingContent getDefaultDataStorageStreamingContent(final InputStream inputStream) {
         return new DataStorageStreamingContent(inputStream, TEST_STRING);
     }
 
@@ -238,5 +269,35 @@ public final class DatastorageCreatorUtils {
                 Pair.of(getAzureBlobStorage(), SECURED_AZURE_BLOB_TYPE),
                 Pair.of(getGsBucketStorage(), SECURED_GS_BUCKET_TYPE),
                 Pair.of(getNfsDataStorage(), SECURED_NFS_STORAGE_TYPE));
+    }
+
+    public static DataStorageAction getDataStorageAction() {
+        final DataStorageAction dataStorageAction = new DataStorageAction();
+        dataStorageAction.setId(ID);
+        return dataStorageAction;
+    }
+
+    public static List<UpdateDataStorageItemVO> getUpdateDataStorageItemVOList() {
+        return Collections.singletonList(getUpdateDataStorageItemVO());
+    }
+
+    public static List<DataStorageFile> getDataStorageFileList() {
+        return Collections.singletonList(getDataStorageFile());
+    }
+
+    public static List<DataStorageDownloadFileUrl> getDataStorageDownloadFileUrlList() {
+        return Collections.singletonList(getDataStorageDownloadFileUrl());
+    }
+
+    public static List<DataStorageRule> getDataStorageRuleList() {
+        return Collections.singletonList(getDataStorageRule());
+    }
+
+    public static List<PathDescription> getPathDescriptionList() {
+        return Collections.singletonList(getPathDescription());
+    }
+
+    public static List<DataStorageAction> getDataStorageActionList() {
+        return Collections.singletonList(getDataStorageAction());
     }
 }
