@@ -278,9 +278,8 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
 
         verify(mockDockerRegistryApiService).getCertificateContent(ID);
         final byte[] actualByteArray = mvcResult.getResponse().getContentAsByteArray();
-        final String contentDispositionHeader = mvcResult.getResponse().getHeader(CONTENT_DISPOSITION_HEADER);
         assertThat(actualByteArray).isEqualTo(bytes);
-        assertThat(contentDispositionHeader).contains(CERTIFICATE_NAME);
+        assertResponseHeader(mvcResult, CONTENT_DISPOSITION_HEADER, CERTIFICATE_NAME);
     }
 
     @Test
