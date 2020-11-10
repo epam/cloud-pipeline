@@ -54,6 +54,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.nio.charset.Charset;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -395,9 +396,26 @@ public class UserManager {
 
     public byte[] exportUsers(final PipelineUserExportVO attr) {
         final Collection<PipelineUserWithStoragePath> users = loadAllUsersWithDataStoragePath();
+        final Collection<PipelineUserWithStoragePath> filteredUsers = filterUsers(users, attr);
         final List<String> sensitiveKeys = preferenceManager.getPreference(
                 SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
-        return new UserExporter().exportUsers(attr, users, sensitiveKeys).getBytes(Charset.defaultCharset());
+        return new UserExporter().exportUsers(attr, filteredUsers, sensitiveKeys).getBytes(Charset.defaultCharset());
+    }
+
+    private Collection<PipelineUserWithStoragePath> filterUsers(final Collection<PipelineUserWithStoragePath> users,
+                                                                final PipelineUserExportVO attr) {
+        return users.stream()
+                .filter(user -> {
+                    final LocalDate registrationDate = user.getRegistrationDate().toLocalDate();
+                    if (attr.getFrom() != null && registrationDate.isBefore(attr.getFrom())) {
+                        return false;
+                    }
+                    if (attr.getTo() != null && registrationDate.isAfter(attr.getTo())) {
+                        return false;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
     }
 
     private void checkAllRolesPresent(List<Long> roles) {
