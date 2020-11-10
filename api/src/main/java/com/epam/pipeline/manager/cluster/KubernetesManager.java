@@ -517,6 +517,17 @@ public class KubernetesManager {
         return name.toLowerCase().replaceAll("[^a-z0-9\\-]+", "-");
     }
 
+    /**
+     * Check if current host is master or not
+     *
+     * @return true - if a host is master or no master found, false - otherwise
+     */
+    public boolean isMasterHost() {
+        return Optional.ofNullable(getMasterPodName())
+                .map(masterName -> masterName.equals(getCurrentPodName()))
+                .orElse(true);
+    }
+
     private ServiceDescription getServiceDescription(final Service service) {
         final Map<String, String> labels = service.getMetadata().getLabels();
         final String scheme = getValueFromLabelsOrDefault(labels, kubeEdgeSchemeLabel, () -> DEFAULT_SVC_SCHEME);

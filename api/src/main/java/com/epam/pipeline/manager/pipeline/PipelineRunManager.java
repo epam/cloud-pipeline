@@ -24,6 +24,7 @@ import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.dao.pipeline.RunLogDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
@@ -42,6 +43,7 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
@@ -106,6 +108,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.entity.configuration.RunConfigurationUtils.getNodeCount;
+import static com.epam.pipeline.manager.docker.DockerContainerOperationManager.PAUSE_RUN_TASK;
 
 @Service
 public class PipelineRunManager {
@@ -200,6 +203,9 @@ public class PipelineRunManager {
 
     @Autowired
     private PipelineRunCRUDService runCRUDService;
+
+    @Autowired
+    private RunLogDao runLogDao;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -1174,6 +1180,62 @@ public class PipelineRunManager {
         return pipelineRunDao.loadRunByPodIP(ip, Arrays.stream(TaskStatus.values())
                 .filter(status -> !status.isFinal())
                 .collect(Collectors.toList()));
+    }
+
+    /**
+     * Reruns pause and resume operations if them still in progress
+     */
+    public void rerunPauseAndResume() {
+        final List<PipelineRun> pausingRuns = loadRunsByStatuses(Collections.singletonList(TaskStatus.PAUSING));
+        ListUtils.emptyIfNull(pausingRuns).forEach(this::rerunPauseRun);
+
+        final List<PipelineRun> resumingRuns = loadRunsByStatuses(Collections.singletonList(TaskStatus.RESUMING));
+        ListUtils.emptyIfNull(resumingRuns).forEach(this::rerunResumeRun);
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private void rerunPauseRun(final PipelineRun run) {
+        try {
+            if (shouldNotRerunPause(run)) {
+                LOGGER.debug("Pipeline run '{}' in pausing state but relaunched operation will be skipped",
+                        run.getId());
+                return;
+            }
+            LOGGER.debug("Pause run operation well be relaunched for run '{}'", run.getId());
+            dockerContainerOperationManager.pauseRun(run);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+        }
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private void rerunResumeRun(final PipelineRun run) {
+        try {
+            LOGGER.debug("Resume run operation well be relaunched for run '{}'", run.getId());
+            final Tool tool = toolManager.loadByNameOrId(run.getDockerImage());
+            dockerContainerOperationManager.resumeRun(run, tool.getEndpoints());
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+        }
+    }
+
+    private boolean shouldNotRerunPause(final PipelineRun run) {
+        final Optional<LocalDateTime> lastPausingRunStatusDate = ListUtils
+                .emptyIfNull(runStatusManager.loadRunStatus(run.getId())).stream()
+                .filter(status -> TaskStatus.PAUSING.equals(status.getStatus()))
+                .map(RunStatus::getTimestamp)
+                .max(LocalDateTime::compareTo);
+        if (!lastPausingRunStatusDate.isPresent()) {
+            return true;
+        }
+        final List<RunLog> runLogs = runLogDao.loadAllLogsForTask(run.getId(), PAUSE_RUN_TASK);
+        final Optional<Date> lastSuccessTaskDate = ListUtils.emptyIfNull(runLogs).stream()
+                .filter(log -> TaskStatus.SUCCESS.equals(log.getStatus()))
+                .map(RunLog::getDate)
+                .max(Date::compareTo);
+        return !lastSuccessTaskDate.isPresent()
+                || DateUtils.convertDateToLocalDateTime(lastSuccessTaskDate.get())
+                .isBefore(lastPausingRunStatusDate.get());
     }
 
     private int getTotalSize(final List<InstanceDisk> disks) {

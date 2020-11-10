@@ -59,6 +59,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -82,8 +83,8 @@ public class DockerContainerOperationManager {
     private static final String PAUSE_COMMAND_DESCRIPTION = "Error is occured during to pause pipeline run";
     private static final String REJOIN_COMMAND_DESCRIPTION = "Error is occured during to resume pipeline run";
     private static final String EMPTY = "";
-    private static final String PAUSE_RUN_TASK = "PausePipelineRun";
     private static final String RESUME_RUN_TASK = "ResumePipelineRun";
+    public static final String PAUSE_RUN_TASK = "PausePipelineRun";
     public static final String DELIMITER = "/";
     public static final int COMMAND_CANNOT_EXECUTE_CODE = 126;
 
@@ -255,6 +256,8 @@ public class DockerContainerOperationManager {
             }
             Assert.state(sshConnection.exitValue() == 0,
                     messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_PAUSE_FAILED, run.getId()));
+            addRunLog(run, "[INFO] Pause run script completed successfully", PAUSE_RUN_TASK,
+                    TaskStatus.SUCCESS);
 
             kubernetesManager.deletePod(run.getPodId());
             cloudFacade.stopInstance(instance.getCloudRegionId(), instance.getNodeId());
@@ -358,11 +361,16 @@ public class DockerContainerOperationManager {
     }
 
     private void addRunLog(final PipelineRun run, final String logMessage, final String taskName) {
+        addRunLog(run, logMessage, taskName, null);
+    }
+
+    private void addRunLog(final PipelineRun run, final String logMessage, final String taskName,
+                           final TaskStatus status) {
         final RunLog runLog = RunLog.builder()
                 .date(DateUtils.now())
                 .runId(run.getId())
                 .instance(run.getPodId())
-                .status(run.getStatus())
+                .status(Objects.isNull(status) ? run.getStatus() : status)
                 .taskName(taskName)
                 .logText(logMessage)
                 .build();
