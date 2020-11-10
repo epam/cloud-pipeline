@@ -18,11 +18,18 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.dao.pipeline.RunLogDao;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
+import org.apache.commons.lang.time.DateUtils;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.Before;
@@ -31,11 +38,20 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 import java.util.function.Predicate;
 
+import static com.epam.pipeline.entity.utils.DateUtils.convertDateToLocalDateTime;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,6 +61,12 @@ public class PipelineRunManagerUnitTest {
     private static final long NOT_EXISTING_RUN_ID = -1L;
     private static final String NODE_NAME = "node_name";
     private static final Long SIZE = 10L;
+    private static final String PAUSE_TASK_NAME = "PausePipelineRun";
+    private static final Date FIRST_DATE = new Date();
+    private static final Date SECOND_DATE = DateUtils.addMinutes(FIRST_DATE, 1);
+    private static final String TEST_NAME = "name";
+    private static final Long TEST_ID = 3L;
+    private static final List<String> TEST_NAMES = Collections.singletonList(TEST_NAME);
 
     @Mock
     private NodesManager nodesManager;
@@ -62,6 +84,18 @@ public class PipelineRunManagerUnitTest {
 
     @InjectMocks
     private PipelineRunManager pipelineRunManager;
+
+    @Mock
+    private RunLogDao runLogDao;
+
+    @Mock
+    private DockerContainerOperationManager dockerContainerOperationManager;
+
+    @Mock
+    private RunStatusManager runStatusManager;
+
+    @Mock
+    private ToolManager toolManager;
 
     @Before
     public void setUp() throws Exception {
@@ -124,6 +158,101 @@ public class PipelineRunManagerUnitTest {
         assertAttachSucceed(run(TaskStatus.RESUMING));
     }
 
+    @Test
+    public void pauseRunShouldBeRelaunched() {
+        final RunLog runningPause = pausingRunLog(FIRST_DATE, TaskStatus.RUNNING);
+        final RunLog firstSuccess = pausingRunLog(FIRST_DATE, TaskStatus.SUCCESS);
+        final RunLog lastSuccess = pausingRunLog(SECOND_DATE, TaskStatus.SUCCESS);
+        final RunStatus firstPausingStatus = pausingRunStatus(convertDateToLocalDateTime(FIRST_DATE));
+        final RunStatus lastPausingStatus = pausingRunStatus(convertDateToLocalDateTime(SECOND_DATE));
+        final PipelineRun run = pipelineRun();
+
+        when(pipelineRunDao.loadRunsByStatuses(Collections.singletonList(TaskStatus.PAUSING)))
+                .thenReturn(Collections.singletonList(run));
+        when(pipelineRunDao.loadRunsByStatuses(Collections.singletonList(TaskStatus.RESUMING)))
+                .thenReturn(Collections.emptyList());
+        when(runStatusManager.loadRunStatus(run.getId()))
+                .thenReturn(Arrays.asList(firstPausingStatus, lastPausingStatus));
+        when(runLogDao.loadAllLogsForTask(run.getId(), PAUSE_TASK_NAME))
+                .thenReturn(Arrays.asList(runningPause, firstSuccess, lastSuccess));
+
+        pipelineRunManager.rerunPauseAndResume();
+
+        verify(dockerContainerOperationManager).pauseRun(run);
+        verify(dockerContainerOperationManager, never()).resumeRun(any(), any());
+    }
+
+    @Test
+    public void resumeRunShouldBeRelaunched() {
+        final PipelineRun run = pipelineRun();
+        run.setDockerImage(TEST_NAME);
+
+        when(pipelineRunDao.loadRunsByStatuses(Collections.singletonList(TaskStatus.PAUSING)))
+                .thenReturn(Collections.emptyList());
+        when(pipelineRunDao.loadRunsByStatuses(Collections.singletonList(TaskStatus.RESUMING)))
+                .thenReturn(Collections.singletonList(run));
+        when(toolManager.loadByNameOrId(TEST_NAME)).thenReturn(tool());
+
+        pipelineRunManager.rerunPauseAndResume();
+
+        verify(toolManager).loadByNameOrId(TEST_NAME);
+        verify(dockerContainerOperationManager).resumeRun(run, TEST_NAMES);
+        verify(dockerContainerOperationManager, never()).pauseRun(any());
+    }
+
+    @Test
+    public void pauseRunShouldNotRelaunch() {
+        final RunLog runningPause = pausingRunLog(FIRST_DATE, TaskStatus.RUNNING);
+        final RunLog firstSuccess = pausingRunLog(FIRST_DATE, TaskStatus.SUCCESS);
+        final RunStatus firstPausingStatus = pausingRunStatus(convertDateToLocalDateTime(FIRST_DATE));
+        final RunStatus lastPausingStatus = pausingRunStatus(convertDateToLocalDateTime(SECOND_DATE));
+        final PipelineRun run = pipelineRun();
+
+        when(pipelineRunDao.loadRunsByStatuses(Collections.singletonList(TaskStatus.PAUSING)))
+                .thenReturn(Collections.singletonList(run));
+        when(pipelineRunDao.loadRunsByStatuses(Collections.singletonList(TaskStatus.RESUMING)))
+                .thenReturn(Collections.emptyList());
+        when(runStatusManager.loadRunStatus(run.getId()))
+                .thenReturn(Arrays.asList(firstPausingStatus, lastPausingStatus));
+        when(runLogDao.loadAllLogsForTask(run.getId(), PAUSE_TASK_NAME))
+                .thenReturn(Arrays.asList(runningPause, firstSuccess));
+
+        pipelineRunManager.rerunPauseAndResume();
+
+        verify(dockerContainerOperationManager, never()).pauseRun(run);
+        verify(dockerContainerOperationManager, never()).resumeRun(any(), any());
+    }
+
+    @Test
+    public void shouldNotFailResumeIfPauseFailed() {
+        final RunLog runningPause = pausingRunLog(FIRST_DATE, TaskStatus.RUNNING);
+        final RunLog firstSuccess = pausingRunLog(FIRST_DATE, TaskStatus.SUCCESS);
+        final RunLog lastSuccess = pausingRunLog(SECOND_DATE, TaskStatus.SUCCESS);
+        final RunStatus firstPausingStatus = pausingRunStatus(convertDateToLocalDateTime(FIRST_DATE));
+        final RunStatus lastPausingStatus = pausingRunStatus(convertDateToLocalDateTime(SECOND_DATE));
+        final PipelineRun runToPause = pipelineRun();
+        final PipelineRun runToResume = pipelineRun();
+        runToResume.setId(TEST_ID);
+        runToResume.setDockerImage(TEST_NAME);
+
+        when(pipelineRunDao.loadRunsByStatuses(Collections.singletonList(TaskStatus.PAUSING)))
+                .thenReturn(Collections.singletonList(runToPause));
+        when(runStatusManager.loadRunStatus(runToPause.getId()))
+                .thenReturn(Arrays.asList(firstPausingStatus, lastPausingStatus));
+        when(runLogDao.loadAllLogsForTask(runToPause.getId(), PAUSE_TASK_NAME))
+                .thenReturn(Arrays.asList(runningPause, firstSuccess, lastSuccess));
+        doThrow(new RuntimeException()).when(dockerContainerOperationManager).pauseRun(any());
+        when(pipelineRunDao.loadRunsByStatuses(Collections.singletonList(TaskStatus.RESUMING)))
+                .thenReturn(Collections.singletonList(runToResume));
+        when(toolManager.loadByNameOrId(TEST_NAME)).thenReturn(tool());
+
+        pipelineRunManager.rerunPauseAndResume();
+
+        verify(dockerContainerOperationManager).pauseRun(any());
+        verify(toolManager).loadByNameOrId(TEST_NAME);
+        verify(dockerContainerOperationManager).resumeRun(runToResume, TEST_NAMES);
+    }
+
     private void assertAttachFails(final DiskAttachRequest request) {
         assertAttachFails(RUN_ID, request);
     }
@@ -181,5 +310,30 @@ public class PipelineRunManagerUnitTest {
                 return test.test((T) item);
             }
         };
+    }
+
+    private RunStatus pausingRunStatus(final LocalDateTime timestamp) {
+        return RunStatus.builder()
+                .timestamp(timestamp)
+                .status(TaskStatus.PAUSING)
+                .build();
+    }
+
+    private RunLog pausingRunLog(final Date date, final TaskStatus status) {
+        return RunLog.builder()
+                .date(date)
+                .status(status)
+                .taskName(PAUSE_TASK_NAME)
+                .build();
+    }
+
+    private PipelineRun pipelineRun() {
+        return ObjectCreatorUtils.createPipelineRun(RUN_ID, null, null, TEST_ID);
+    }
+
+    private Tool tool() {
+        final Tool tool = ObjectCreatorUtils.createTool(TEST_NAME, TEST_ID);
+        tool.setEndpoints(TEST_NAMES);
+        return tool;
     }
 }
