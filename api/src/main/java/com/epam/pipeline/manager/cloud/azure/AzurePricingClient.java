@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.azure;
 
+import com.epam.pipeline.entity.pricing.azure.AzureEAPricingResult;
 import com.epam.pipeline.entity.pricing.azure.AzurePricingResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,14 @@ public interface AzurePricingClient {
                                         @Path("subscription") String subscription,
                                         @Query("$filter") String filter,
                                         @Query("api-version") String apiVersion);
+
+    @GET("subscriptions/{subscription}/providers/Microsoft.Consumption/pricesheets/default")
+    Call<AzureEAPricingResult> getPricesheet(@Header(AUTH_HEADER) String bearer,
+                                             @Path("subscription") String subscription,
+                                             @Query("api-version") String apiVersion,
+                                             @Query("$expand") String expand,
+                                             @Query("$top") int top,
+                                             @Query(value = "$skiptoken", encoded = true) String skiptoken);
 
     static <T> T executeRequest(Call<T> request) {
         try {

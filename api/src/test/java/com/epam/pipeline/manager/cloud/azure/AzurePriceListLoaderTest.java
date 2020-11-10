@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cloud.azure;
 
 import com.epam.pipeline.entity.cluster.InstanceOffer;
+import com.epam.pipeline.entity.pricing.azure.AzureEAPricingMeter;
 import com.epam.pipeline.entity.pricing.azure.AzurePricingMeter;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.microsoft.azure.management.compute.ResourceSkuCapabilities;
@@ -44,17 +45,19 @@ public class AzurePriceListLoaderTest {
     private static final String DISKS_CATEGORY = "Storage";
     private static final String METER_REGION = "US East 2";
     private static final String DISK_UNIT = "1/Month";
+    private static final String DISK_UNIT_2 = "10/Month";
     private static final String VM_METER_SUB_CATEGORY = "Dv2/DSv2 Series";
     private static final String VM_METER_NAME = "D13 v2/DS13 v2";
-    private static final String VM_TYPE = "Standard_DS13_v2";
+    private static final String VM_TYPE = "Standard_D13_v2";
     private static final String VM_FAMILY = "General purpose";
     private static final String PREMIUM_DISK_METER_SUB_CATEGORY = "Premium SSD Managed Disks";
     private static final String DISK_NAME = "P6";
     private static final float DISK_SIZE = 64.0f;
     private static final float OS_DISK_SIZE = 56.0f;
+    private static final String HOURS_UNIT_2 = "10 Hour";
 
     @Test
-    public void shouldCalculateInstancePrices() {
+    public void rateCardShouldCalculateInstancePrices() {
         List<AzurePricingMeter> prices = Arrays.asList(
                 AzurePricingMeter.builder()
                         .meterCategory(VIRTUAL_MACHINES_CATEGORY)
@@ -101,7 +104,7 @@ public class AzurePriceListLoaderTest {
         Map<String, ResourceSkuInner> diskSkus = new HashMap<>();
         diskSkus.put(diskSku1.size(), diskSku1);
 
-        AzurePriceListLoader loader = new AzurePriceListLoader(ANY, ANY, "",
+        AzureRateCardPriceListLoader loader = new AzureRateCardPriceListLoader(ANY, ANY, "",
                 "https://any.com/");
         List<InstanceOffer> actualOffers = loader.mergeSkusWithPrices(prices, vmSkus, diskSkus,
                 METER_REGION, REGION_ID);
@@ -130,6 +133,184 @@ public class AzurePriceListLoaderTest {
                 .sku(DISK_NAME)
                 .currency(CURRENCY)
                 .pricePerUnit(PRICE)
+                .regionId(REGION_ID)
+                .volumeType(CloudInstancePriceService.GENERAL_PURPOSE_VOLUME_TYPE)
+                .memory(DISK_SIZE)
+                .unit(DISK_UNIT)
+                .build());
+
+        assertEquals(2, actualOffers.size());
+        assertOffers(expectedOffers, actualOffers);
+    }
+
+    @Test
+    public void eaPriceLoaderShouldCalculateInstancePrices() {
+        List<AzureEAPricingMeter> prices = Arrays.asList(
+                AzureEAPricingMeter.builder()
+                    .meterRegion(METER_REGION)
+                    .meterSubCategory(VM_METER_SUB_CATEGORY)
+                    .meterCategory(VIRTUAL_MACHINES_CATEGORY)
+                    .meterName(VM_METER_NAME)
+                    .unit("1 Hour")
+                    .unitPrice(PRICE)
+                    .meterId(ANY)
+                    .build(),
+                AzureEAPricingMeter.builder()
+                    .meterId(ANY)
+                    .unitPrice(PRICE)
+                    .unit(DISK_UNIT)
+                    .meterCategory(DISKS_CATEGORY)
+                    .meterSubCategory(PREMIUM_DISK_METER_SUB_CATEGORY)
+                    .meterName(DISK_NAME + " Disks")
+                    .meterRegion(METER_REGION)
+                    .unit(DISK_UNIT)
+                    .build()
+        );
+
+        List<ResourceSkuCapabilities> vmCapabilities1 = Arrays.asList(
+                createResourceSkuCapabilities("MemoryGB", "56"),
+                createResourceSkuCapabilities("vCPUs", "8"),
+                createResourceSkuCapabilities("GPUs", "0"),
+                createResourceSkuCapabilities("PremiumIO", "True"));
+        ResourceSkuInner vmSku1 = createVirtualMachinesSku(VM_TYPE, "standardDSv2Family", vmCapabilities1);
+
+        // should be filtered cause it does not match prices list
+        List<ResourceSkuCapabilities> vmCapabilities2 = Arrays.asList(
+                createResourceSkuCapabilities("MemoryGB", "0.75"),
+                createResourceSkuCapabilities("vCPUs", "1"),
+                createResourceSkuCapabilities("GPUs", "0"),
+                createResourceSkuCapabilities("PremiumIO", "False"));
+        ResourceSkuInner vmSku2 = createVirtualMachinesSku("Basic_A0", "basicAFamily", vmCapabilities2);
+
+        Map<String, ResourceSkuInner> vmSkus = new HashMap<>();
+        vmSkus.put(vmSku1.name(), vmSku1);
+        vmSkus.put(vmSku2.name(), vmSku2);
+
+        List<ResourceSkuCapabilities> diskCapabilities1 = Collections.singletonList(
+                createResourceSkuCapabilities("MaxSizeGiB", "64"));
+        ResourceSkuInner diskSku1 = createDiskSku(DISK_NAME, diskCapabilities1);
+
+        Map<String, ResourceSkuInner> diskSkus = new HashMap<>();
+        diskSkus.put(diskSku1.size(), diskSku1);
+
+        AzureEAPriceListLoader loader = new AzureEAPriceListLoader(ANY, "",
+                "https://any.com/");
+        List<InstanceOffer> actualOffers = loader.mergeSkusWithPrices(prices, vmSkus, diskSkus,
+                METER_REGION, REGION_ID);
+
+        Map<String, InstanceOffer> expectedOffers = new HashMap<>();
+        expectedOffers.put(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY, InstanceOffer.builder()
+                .termType(CloudInstancePriceService.TermType.ON_DEMAND.getName())
+                .tenancy(CloudInstancePriceService.SHARED_TENANCY)
+                .productFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY)
+                .sku(ANY)
+                .currency(CURRENCY)
+                .instanceType(VM_TYPE)
+                .pricePerUnit(PRICE)
+                .regionId(REGION_ID)
+                .unit(HOURS_UNIT)
+                .volumeType("Premium")
+                .operatingSystem(LINUX_OS)
+                .instanceFamily(VM_FAMILY)
+                .vCPU(8)
+                .gpu(0)
+                .memory(OS_DISK_SIZE)
+                .build());
+        expectedOffers.put(CloudInstancePriceService.STORAGE_PRODUCT_FAMILY, InstanceOffer.builder()
+                .tenancy(CloudInstancePriceService.SHARED_TENANCY)
+                .productFamily(CloudInstancePriceService.STORAGE_PRODUCT_FAMILY)
+                .sku(DISK_NAME)
+                .currency(CURRENCY)
+                .pricePerUnit(PRICE)
+                .regionId(REGION_ID)
+                .volumeType(CloudInstancePriceService.GENERAL_PURPOSE_VOLUME_TYPE)
+                .memory(DISK_SIZE)
+                .unit(DISK_UNIT)
+                .build());
+
+        assertEquals(2, actualOffers.size());
+        assertOffers(expectedOffers, actualOffers);
+    }
+
+    @Test
+    public void eaPriceLoaderShouldCalculateInstancePricesWithNonStandardPriceUnit() {
+        List<AzureEAPricingMeter> prices = Arrays.asList(
+                AzureEAPricingMeter.builder()
+                        .meterRegion(METER_REGION)
+                        .meterSubCategory(VM_METER_SUB_CATEGORY)
+                        .meterCategory(VIRTUAL_MACHINES_CATEGORY)
+                        .meterName(VM_METER_NAME)
+                        .unit(HOURS_UNIT_2)
+                        .unitPrice(PRICE)
+                        .meterId(ANY)
+                        .build(),
+                AzureEAPricingMeter.builder()
+                        .meterId(ANY)
+                        .unitPrice(PRICE)
+                        .unit(DISK_UNIT_2)
+                        .meterCategory(DISKS_CATEGORY)
+                        .meterSubCategory(PREMIUM_DISK_METER_SUB_CATEGORY)
+                        .meterName(DISK_NAME + " Disks")
+                        .meterRegion(METER_REGION)
+                        .unit(DISK_UNIT_2)
+                        .build()
+        );
+
+        List<ResourceSkuCapabilities> vmCapabilities1 = Arrays.asList(
+                createResourceSkuCapabilities("MemoryGB", "56"),
+                createResourceSkuCapabilities("vCPUs", "8"),
+                createResourceSkuCapabilities("GPUs", "0"),
+                createResourceSkuCapabilities("PremiumIO", "True"));
+        ResourceSkuInner vmSku1 = createVirtualMachinesSku(VM_TYPE, "standardDSv2Family", vmCapabilities1);
+
+        // should be filtered cause it does not match prices list
+        List<ResourceSkuCapabilities> vmCapabilities2 = Arrays.asList(
+                createResourceSkuCapabilities("MemoryGB", "0.75"),
+                createResourceSkuCapabilities("vCPUs", "1"),
+                createResourceSkuCapabilities("GPUs", "0"),
+                createResourceSkuCapabilities("PremiumIO", "False"));
+        ResourceSkuInner vmSku2 = createVirtualMachinesSku("Basic_A0", "basicAFamily", vmCapabilities2);
+
+        Map<String, ResourceSkuInner> vmSkus = new HashMap<>();
+        vmSkus.put(vmSku1.name(), vmSku1);
+        vmSkus.put(vmSku2.name(), vmSku2);
+
+        List<ResourceSkuCapabilities> diskCapabilities1 = Collections.singletonList(
+                createResourceSkuCapabilities("MaxSizeGiB", "64"));
+        ResourceSkuInner diskSku1 = createDiskSku(DISK_NAME, diskCapabilities1);
+
+        Map<String, ResourceSkuInner> diskSkus = new HashMap<>();
+        diskSkus.put(diskSku1.size(), diskSku1);
+
+        AzureEAPriceListLoader loader = new AzureEAPriceListLoader(ANY, "",
+                "https://any.com/");
+        List<InstanceOffer> actualOffers = loader.mergeSkusWithPrices(prices, vmSkus, diskSkus,
+                METER_REGION, REGION_ID);
+
+        Map<String, InstanceOffer> expectedOffers = new HashMap<>();
+        expectedOffers.put(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY, InstanceOffer.builder()
+                .termType(CloudInstancePriceService.TermType.ON_DEMAND.getName())
+                .tenancy(CloudInstancePriceService.SHARED_TENANCY)
+                .productFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY)
+                .sku(ANY)
+                .currency(CURRENCY)
+                .instanceType(VM_TYPE)
+                .pricePerUnit(PRICE / 10)
+                .regionId(REGION_ID)
+                .unit(HOURS_UNIT)
+                .volumeType("Premium")
+                .operatingSystem(LINUX_OS)
+                .instanceFamily(VM_FAMILY)
+                .vCPU(8)
+                .gpu(0)
+                .memory(OS_DISK_SIZE)
+                .build());
+        expectedOffers.put(CloudInstancePriceService.STORAGE_PRODUCT_FAMILY, InstanceOffer.builder()
+                .tenancy(CloudInstancePriceService.SHARED_TENANCY)
+                .productFamily(CloudInstancePriceService.STORAGE_PRODUCT_FAMILY)
+                .sku(DISK_NAME)
+                .currency(CURRENCY)
+                .pricePerUnit(PRICE / 10)
                 .regionId(REGION_ID)
                 .volumeType(CloudInstancePriceService.GENERAL_PURPOSE_VOLUME_TYPE)
                 .memory(DISK_SIZE)
