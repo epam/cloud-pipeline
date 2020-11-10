@@ -17,29 +17,27 @@
 package com.epam.pipeline.test.creator.docker;
 
 import com.epam.pipeline.controller.Result;
-<<<<<<< HEAD
-import com.epam.pipeline.entity.pipeline.ToolGroup;
-import com.epam.pipeline.entity.pipeline.ToolGroupWithIssues;
-=======
 import com.epam.pipeline.entity.docker.ImageDescription;
 import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.docker.ToolVersion;
->>>>>>> Issue #1405: Implemented tests for Tool controller layer
+import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.scan.ToolScanPolicy;
+import com.epam.pipeline.entity.scan.ToolScanResultView;
+import com.epam.pipeline.entity.scan.ToolVersionScanResult;
+import com.epam.pipeline.entity.scan.ToolVersionScanResultView;
+import com.epam.pipeline.entity.tool.ToolSymlinkRequest;
 import com.fasterxml.jackson.core.type.TypeReference;
 
+import java.util.Collections;
 import java.util.List;
+
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class DockerCreatorUtils {
 
-<<<<<<< HEAD
-    public static final TypeReference<Result<ToolGroup>> TOOL_GROUP_TYPE =
-            new TypeReference<Result<ToolGroup>>() {};
-    public static final TypeReference<Result<ToolGroupWithIssues>> TOOL_GROUP_WITH_ISSUES_TYPE =
-            new TypeReference<Result<ToolGroupWithIssues>>() {};
-    public static final TypeReference<Result<List<ToolGroup>>> TOOL_GROUP_LIST_TYPE =
-            new TypeReference<Result<List<ToolGroup>>>() {};
-=======
     public static final TypeReference<Result<ImageDescription>> IMAGE_DESCRIPTION_INSTANCE_TYPE =
             new TypeReference<Result<ImageDescription>>() {};
     public static final TypeReference<Result<ToolDescription>> TOOL_DESCRIPTION_INSTANCE_TYPE =
@@ -50,20 +48,20 @@ public final class DockerCreatorUtils {
             new TypeReference<Result<List<ImageHistoryLayer>>>() {};
     public static final TypeReference<Result<List<ToolVersion>>> TOOL_VERSION_LIST_INSTANCE_TYPE =
             new TypeReference<Result<List<ToolVersion>>>() {};
->>>>>>> Issue #1405: Implemented tests for Tool controller layer
+    public static final TypeReference<Result<ToolVersionScanResult>> TOOL_VERSION_SCAN_INSTANCE_TYPE =
+            new TypeReference<Result<ToolVersionScanResult>>() {};
+    public static final TypeReference<Result<ToolScanResultView>> SCAN_RESULT_VIEW_INSTANCE_TYPE =
+            new TypeReference<Result<ToolScanResultView>>() {};
+    public static final TypeReference<Result<ToolScanPolicy>> TOOL_SCAN_POLICY_INSTANCE_TYPE =
+            new TypeReference<Result<ToolScanPolicy>>() {};
+    public static final TypeReference<Result<Tool>> TOOL_INSTANCE_TYPE = new TypeReference<Result<Tool>>() {};
+    public static final TypeReference<Result<List<String>>> LIST_STRING_INSTANCE_TYPE =
+            new TypeReference<Result<List<String>>>() {};
 
     private DockerCreatorUtils() {
 
     }
 
-<<<<<<< HEAD
-    public static ToolGroup getToolGroup() {
-        return new ToolGroup();
-    }
-
-    public static ToolGroupWithIssues getToolGroupWithIssues() {
-        return new ToolGroupWithIssues();
-=======
     public static ImageDescription getImageDescription() {
         return new ImageDescription();
     }
@@ -78,6 +76,41 @@ public final class DockerCreatorUtils {
 
     public static ToolVersion getToolVersion() {
         return new ToolVersion();
->>>>>>> Issue #1405: Implemented tests for Tool controller layer
+    }
+
+    public static ToolVersionScanResult getToolVersionScanResult() {
+        final ToolVersionScanResult toolVersionScanResult = new ToolVersionScanResult();
+        toolVersionScanResult.setToolId(ID);
+        toolVersionScanResult.setVersion(TEST_STRING);
+        toolVersionScanResult.setFromWhiteList(true);
+        return toolVersionScanResult;
+    }
+
+    public static ToolScanResultView getToolScanResultView() {
+        return new ToolScanResultView(ID, Collections.singletonMap(TEST_STRING, getToolVersionScanResultView()));
+    }
+
+    public static ToolVersionScanResultView getToolVersionScanResultView() {
+        final ToolVersionScanResultView scanResultView = ToolVersionScanResultView.builder().build();
+        return scanResultView;
+    }
+
+    public static ToolScanPolicy getToolScanPolicy() {
+        return new ToolScanPolicy();
+    }
+
+    public static Tool getTool() {
+        final Tool tool = new Tool();
+        tool.setId(ID);
+        tool.setImage(TEST_STRING);
+        tool.setCpu(TEST_STRING);
+        tool.setRam(TEST_STRING);
+        tool.setInstanceType(TEST_STRING);
+        tool.setDisk(TEST_INT);
+        return tool;
+    }
+
+    public static ToolSymlinkRequest getToolSymlinkRequest() {
+        return new ToolSymlinkRequest(ID, ID);
     }
 }

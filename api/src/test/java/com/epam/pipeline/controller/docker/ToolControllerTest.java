@@ -30,8 +30,6 @@ import com.epam.pipeline.manager.pipeline.ToolApiService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
-import com.epam.pipeline.test.creator.scan.ScanCreatorUtils;
-import com.epam.pipeline.test.creator.tool.ToolCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -39,6 +37,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.util.LinkedMultiValueMap;
@@ -55,7 +54,6 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
-import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -91,20 +89,20 @@ public class ToolControllerTest extends AbstractControllerTest {
     private static final String TAG = "tag";
     private static final String TOOL = "tool";
     private static final String RESCAN = "rescan";
-    private static final String FILE = "file.jpg";
+    private static final String FILE_NAME = "file.jpg";
     private static final String PATH = "path";
     private static final String MULTIPART_CONTENT_TYPE =
             "multipart/form-data; boundary=--------------------------boundary";
     private static final String MULTIPART_CONTENT =
             "----------------------------boundary\r\n" +
-                    "Content-Disposition: form-data; name=\"file\"; filename=\"file.jpg\"\r\n" +
-                    "Content-Type:  image/jpg\r\n" +
-                    "\r\n" +
-                    "file.jpg" +
-                    "\r\n" +
-                    "----------------------------boundary";
+            "Content-Disposition: form-data; name=\"file\"; filename=\"file.jpg\"\r\n" +
+            "Content-Type:  image/jpg\r\n" +
+            "\r\n" +
+            "file.jpg" +
+            "\r\n" +
+            "----------------------------boundary";
 
-    private final Tool tool = ToolCreatorUtils.getTool();
+    private final Tool tool = DockerCreatorUtils.getTool();
     private final ToolVersion toolVersion = DockerCreatorUtils.getToolVersion();
 
     @Autowired
@@ -122,7 +120,7 @@ public class ToolControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(post(REGISTER_TOOL_URL).content(content));
 
         verify(mockToolApiService).create(tool);
-        assertResponse(mvcResult, tool, ToolCreatorUtils.TOOL_INSTANCE_TYPE);
+        assertResponse(mvcResult, tool, DockerCreatorUtils.TOOL_INSTANCE_TYPE);
     }
 
     @Test
@@ -139,7 +137,7 @@ public class ToolControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(post(UPDATE_TOOL_URL).content(content));
 
         verify(mockToolApiService).updateTool(tool);
-        assertResponse(mvcResult, tool, ToolCreatorUtils.TOOL_INSTANCE_TYPE);
+        assertResponse(mvcResult, tool, DockerCreatorUtils.TOOL_INSTANCE_TYPE);
     }
 
     @Test
@@ -150,7 +148,7 @@ public class ToolControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldUpdateWhiteListWithToolVersion() throws Exception {
-        final ToolVersionScanResult toolVersionScanResult = ScanCreatorUtils.getToolVersionScanResult();
+        final ToolVersionScanResult toolVersionScanResult = DockerCreatorUtils.getToolVersionScanResult();
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(TOOL_ID, ID_AS_STRING);
         params.add(VERSION, TEST_STRING);
@@ -160,7 +158,7 @@ public class ToolControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(post(UPDATE_WHITE_LIST_URL).params(params));
 
         verify(mockToolApiService).updateWhiteListWithToolVersion(ID, TEST_STRING, true);
-        assertResponse(mvcResult, toolVersionScanResult, ScanCreatorUtils.TOOL_VERSION_SCAN_INSTANCE_TYPE);
+        assertResponse(mvcResult, toolVersionScanResult, DockerCreatorUtils.TOOL_VERSION_SCAN_INSTANCE_TYPE);
     }
 
     @Test
@@ -179,7 +177,7 @@ public class ToolControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(get(LOAD_TOOL_URL).params(params));
 
         verify(mockToolApiService).loadTool(TEST_STRING, TEST_STRING);
-        assertResponse(mvcResult, tool, ToolCreatorUtils.TOOL_INSTANCE_TYPE);
+        assertResponse(mvcResult, tool, DockerCreatorUtils.TOOL_INSTANCE_TYPE);
     }
 
     @Test
@@ -199,7 +197,7 @@ public class ToolControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(delete(DELETE_TOOL_URL).params(params));
 
         verify(mockToolApiService).delete(TEST_STRING, TEST_STRING, true);
-        assertResponse(mvcResult, tool, ToolCreatorUtils.TOOL_INSTANCE_TYPE);
+        assertResponse(mvcResult, tool, DockerCreatorUtils.TOOL_INSTANCE_TYPE);
     }
 
     @Test
@@ -215,7 +213,7 @@ public class ToolControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(delete(DELETE_TOOL_URL).params(params));
 
         verify(mockToolApiService).deleteToolVersion(TEST_STRING, TEST_STRING, TEST_STRING);
-        assertResponse(mvcResult, tool, ToolCreatorUtils.TOOL_INSTANCE_TYPE);
+        assertResponse(mvcResult, tool, DockerCreatorUtils.TOOL_INSTANCE_TYPE);
     }
 
     @Test
@@ -231,7 +229,7 @@ public class ToolControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(get(String.format(LOAD_IMAGE_TAGS_URL, ID)));
 
         verify(mockToolApiService).loadImageTags(ID);
-        assertResponse(mvcResult, TEST_STRING_LIST, ToolCreatorUtils.LIST_STRING_INSTANCE_TYPE);
+        assertResponse(mvcResult, TEST_STRING_LIST, DockerCreatorUtils.LIST_STRING_INSTANCE_TYPE);
     }
 
     @Test
@@ -340,7 +338,7 @@ public class ToolControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadVulnerabilities() throws Exception {
-        final ToolScanResultView toolScanResultView = ScanCreatorUtils.getToolScanResultView();
+        final ToolScanResultView toolScanResultView = DockerCreatorUtils.getToolScanResultView();
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(REGISTRY, TEST_STRING);
         params.add(TOOL, TEST_STRING);
@@ -349,7 +347,7 @@ public class ToolControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(get(SCAN_TOOL_URL).params(params));
 
         verify(mockToolApiService).loadToolScanResult(TEST_STRING, TEST_STRING);
-        assertResponse(mvcResult, toolScanResultView, ScanCreatorUtils.SCAN_RESULT_VIEW_INSTANCE_TYPE);
+        assertResponse(mvcResult, toolScanResultView, DockerCreatorUtils.SCAN_RESULT_VIEW_INSTANCE_TYPE);
     }
 
     @Test
@@ -360,13 +358,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadSecurityPolicy() throws Exception {
-        final ToolScanPolicy toolScanPolicy = ScanCreatorUtils.getToolScanPolicy();
+        final ToolScanPolicy toolScanPolicy = DockerCreatorUtils.getToolScanPolicy();
         doReturn(toolScanPolicy).when(mockToolApiService).loadSecurityPolicy();
 
         final MvcResult mvcResult = performRequest(get(SCAN_POLICY_TOOL_URL));
 
         verify(mockToolApiService).loadSecurityPolicy();
-        assertResponse(mvcResult, toolScanPolicy, ScanCreatorUtils.TOOL_SCAN_POLICY_INSTANCE_TYPE);
+        assertResponse(mvcResult, toolScanPolicy, DockerCreatorUtils.TOOL_SCAN_POLICY_INSTANCE_TYPE);
     }
 
     @Test
@@ -376,7 +374,7 @@ public class ToolControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldEnabledToolScanning() throws Exception {
+    public void shouldCheckIfToolScanningEnabled() throws Exception {
         doReturn(true).when(mockToolManager).isToolScanningEnabled();
 
         final MvcResult mvcResult = performRequest(get(ENABLE_SCAN_TOOL_URL));
@@ -386,20 +384,20 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailEnabledToolScanning() throws Exception {
+    public void shouldFailCheckToolScanning() throws Exception {
         performUnauthorizedRequest(get(ENABLE_SCAN_TOOL_URL));
     }
 
     @Test
     @WithMockUser
     public void shouldUploadToolIcon() throws Exception {
-        doReturn(ID).when(mockToolApiService).updateToolIcon(ID, FILE, FILE.getBytes());
+        doReturn(ID).when(mockToolApiService).updateToolIcon(ID, FILE_NAME, FILE_NAME.getBytes());
 
         final MvcResult mvcResult = performRequest(
-                post(String.format(ICON_TOOL_URL, ID)).content(MULTIPART_CONTENT).param(PATH, FILE),
+                post(String.format(ICON_TOOL_URL, ID)).content(MULTIPART_CONTENT).param(PATH, FILE_NAME),
                 MULTIPART_CONTENT_TYPE, EXPECTED_CONTENT_TYPE);
 
-        verify(mockToolApiService).updateToolIcon(ID, FILE, FILE.getBytes());
+        verify(mockToolApiService).updateToolIcon(ID, FILE_NAME, FILE_NAME.getBytes());
         assertResponse(mvcResult, ID, CommonCreatorConstants.LONG_INSTANCE_TYPE);
     }
 
@@ -411,16 +409,16 @@ public class ToolControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldDownloadToolIcon() throws Exception {
-        final InputStream inputStream = new ByteArrayInputStream(TEST_STRING.getBytes());
-        Pair<String, InputStream> pair = new ImmutablePair<>(TEST_STRING, inputStream);
+        final InputStream inputStream = new ByteArrayInputStream(FILE_NAME.getBytes());
+        Pair<String, InputStream> pair = new ImmutablePair<>(FILE_NAME, inputStream);
         doReturn(pair).when(mockToolApiService).loadToolIcon(ID);
 
         final MvcResult mvcResult = performRequest(get(String.format(ICON_TOOL_URL, ID)),
-                APPLICATION_OCTET_STREAM_VALUE);
+                MediaType.IMAGE_PNG_VALUE);
 
         verify(mockToolApiService).loadToolIcon(ID);
         final String actualResult = mvcResult.getResponse().getContentAsString();
-        Assert.assertEquals(TEST_STRING, actualResult);
+        Assert.assertEquals(FILE_NAME, actualResult);
     }
 
     @Test
@@ -505,14 +503,14 @@ public class ToolControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldSymlinkTool() throws Exception {
-        final ToolSymlinkRequest request = ToolCreatorUtils.getToolSymlinkRequest();
+        final ToolSymlinkRequest request = DockerCreatorUtils.getToolSymlinkRequest();
         final String content = getObjectMapper().writeValueAsString(request);
         doReturn(tool).when(mockToolApiService).symlink(request);
 
         final MvcResult mvcResult = performRequest(post(SYMLINK_TOOL_URL).content(content));
 
         verify(mockToolApiService).symlink(request);
-        assertResponse(mvcResult, tool, ToolCreatorUtils.TOOL_INSTANCE_TYPE);
+        assertResponse(mvcResult, tool, DockerCreatorUtils.TOOL_INSTANCE_TYPE);
     }
 
     @Test
