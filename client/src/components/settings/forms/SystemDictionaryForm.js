@@ -252,7 +252,14 @@ class SystemDictionaryForm extends React.Component {
     items.push({value: '', autofill: true, links: [], filtered: true});
     this.setState({
       items: items.slice()
-    }, this.afterChange);
+    }, () => {
+      setTimeout(() => {
+        if (this.itemsPanel) {
+          this.itemsPanel.scrollTop = this.itemsPanel.scrollHeight;
+        }
+      });
+      this.afterChange();
+    });
   };
 
   onChangeLinks = (links) => {
@@ -282,6 +289,10 @@ class SystemDictionaryForm extends React.Component {
       }
     }
   };
+
+  onItemsPanelInitialized = (ref) => {
+    this.itemsPanel = ref;
+  }
 
   render () {
     const {disabled, isNew} = this.props;
@@ -322,7 +333,10 @@ class SystemDictionaryForm extends React.Component {
             </div>
           )
         }
-        <div className={styles.items}>
+        <div
+          ref={this.onItemsPanelInitialized}
+          className={styles.items}
+        >
           {
             items.map((item, index) => (
               <div
