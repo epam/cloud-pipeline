@@ -124,7 +124,7 @@ public class ElasticsearchAgentService {
             return LocalDateTime.parse(lastTime, DATE_TIME_FORMATTER);
         } catch (DateTimeParseException e) {
             log.error(e.getMessage(), e);
-            return null;
+            return billingStartDate;
         }
     }
 

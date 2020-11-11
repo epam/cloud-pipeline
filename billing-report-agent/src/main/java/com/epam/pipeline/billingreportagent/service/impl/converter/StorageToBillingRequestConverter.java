@@ -289,7 +289,10 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                                               final LocalDateTime previousSync,
                                                               final LocalDateTime syncStart,
                                                               final SearchResponse searchResponse) {
-        final LocalDateTime previousSyncDayStart = previousSync.toLocalDate().atStartOfDay();
+        final LocalDateTime previousSyncDayStart = Optional.ofNullable(previousSync)
+                .map(LocalDateTime::toLocalDate)
+                .orElse(LocalDate.now())
+                .atStartOfDay();
         return Stream.iterate(previousSyncDayStart, date -> date.plusDays(1))
             .limit(Math.max(1, ChronoUnit.DAYS.between(previousSyncDayStart, syncStart)))
             .filter(reportDate -> storageExistsOnBillingDate(container, reportDate))
