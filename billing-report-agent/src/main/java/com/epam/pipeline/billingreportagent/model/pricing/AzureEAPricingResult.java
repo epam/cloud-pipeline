@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,23 +22,30 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Map;
+import java.util.List;
 
 @NoArgsConstructor
+@AllArgsConstructor
 @Data
 @Builder
-@AllArgsConstructor
-public class AzurePricingMeter {
-    @JsonProperty(value = "MeterCategory")
-    private String meterCategory;
-    @JsonProperty(value = "MeterSubCategory")
-    private String meterSubCategory;
-    @JsonProperty(value = "MeterName")
-    private String meterName;
-    @JsonProperty(value = "Unit")
-    private String unit;
-    @JsonProperty(value = "MeterRates")
-    private Map<String, Float> meterRates;
-    @JsonProperty(value = "MeterRegion")
-    private String meterRegion;
+public class AzureEAPricingResult {
+    @JsonProperty(value = "properties")
+    private PricingProperties properties;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    public static class PricingProperties {
+
+        public PricingProperties(String nextLink, List<AzureEAPricingMeter> pricesheets) {
+            this.nextLink = nextLink;
+            this.pricesheets = pricesheets;
+        }
+
+        @JsonProperty(value = "nextLink")
+        private String nextLink;
+
+        @JsonProperty(value = "pricesheets")
+        private List<AzureEAPricingMeter> pricesheets;
+    }
 }

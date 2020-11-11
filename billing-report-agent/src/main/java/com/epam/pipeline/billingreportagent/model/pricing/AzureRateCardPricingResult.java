@@ -24,7 +24,7 @@ import java.util.List;
 
 @NoArgsConstructor
 @Data
-public class AzurePricingResult {
+public class AzureRateCardPricingResult {
     @JsonProperty(value = "Meters")
-    private List<AzurePricingMeter> meters;
+    private List<AzureRateCardPricingMeter> meters;
 }
