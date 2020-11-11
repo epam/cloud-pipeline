@@ -180,7 +180,17 @@ export default class PermissionsForm extends React.Component {
 
   findUserDataSource = () => {
     if (this.userFind && !this.userFind.pending && !this.userFind.error) {
-      return (this.userFind.value || []).map(user => user);
+      const {permissions = []} = this.props.grant && this.props.grant.loaded
+        ? (this.props.grant.value || {})
+        : {};
+      const existingUsers = new Set(
+        permissions
+          .filter(p => p.sid && p.sid.principal)
+          .map(p => p.sid.name)
+      );
+      return (this.userFind.value || [])
+        .filter(user => !existingUsers.has(user.userName))
+        .map(user => user);
     }
     return [];
   };
@@ -193,9 +203,18 @@ export default class PermissionsForm extends React.Component {
   };
 
   findGroupDataSource = () => {
+    const {permissions = []} = this.props.grant && this.props.grant.loaded
+      ? (this.props.grant.value || {})
+      : {};
+    const existingGroups = new Set(
+      permissions
+        .filter(p => p.sid && !p.sid.principal)
+        .map(p => p.sid.name)
+    );
     const roles = (this.props.roles.loaded && this.state.groupSearchString) ? (
       (this.props.roles.value || [])
         .filter(r => r.name.toLowerCase().indexOf(this.state.groupSearchString.toLowerCase()) >= 0)
+        .filter(r => !existingGroups.has(r.name))
         .map(r => r.predefined ? r.name : this.splitRoleName(r.name))
     ) : [];
     if (this.groupFind && !this.groupFind.pending && !this.groupFind.error) {
@@ -251,6 +270,14 @@ export default class PermissionsForm extends React.Component {
       message.error(request.error);
     } else {
       await this.props.grant.fetch();
+      if (this.props.grant.loaded) {
+        const selectedPermission = (this.props.grant.value.permissions || [])
+          .map(p => p)
+          .find(p => p.sid && p.sid.name === name && p.sid.principal === principal);
+        if (selectedPermission) {
+          this.setState({selectedPermission});
+        }
+      }
     }
   };
 
@@ -266,13 +293,13 @@ export default class PermissionsForm extends React.Component {
     if (request.error) {
       message.error(request.error);
     } else {
+      await this.props.grant.fetch();
       if (this.state.selectedPermission) {
         if (this.state.selectedPermission.sid.name === item.sid.name &&
           this.state.selectedPermission.sid.principal === item.sid.principal) {
-          this.setState({selectedPermission: null});
+          this.setState({selectedPermission: null}, this.selectFirstPermission);
         }
       }
-      this.props.grant.fetch();
     }
   };
 
@@ -618,11 +645,30 @@ export default class PermissionsForm extends React.Component {
     );
   }
 
+  selectFirstPermission = () => {
+    if (this.props.grant) {
+      this.props.grant.fetchIfNeededOrWait()
+        .then(() => {
+          if (this.props.grant.loaded) {
+            const {permissions = []} = this.props.grant.value || {};
+            if (permissions && permissions.length > 0) {
+              const [first] = permissions;
+              this.setState({selectedPermission: first});
+            }
+          }
+        });
+    }
+  };
+
+  componentDidMount () {
+    this.selectFirstPermission();
+  }
+
   componentDidUpdate (prevProps) {
     if (this.props.objectIdentifier !== prevProps.objectIdentifier) {
       this.setState({
         selectedPermission: null
-      });
+      }, this.selectFirstPermission);
     }
   }
 }
