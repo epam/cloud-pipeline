@@ -14,20 +14,23 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.test.creator.folder;
+package com.epam.pipeline.test.creator.security;
 
-import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.security.UserContext;
 
-public final class FolderCreatorUtils {
+public final class SecurityCreatorUtils {
 
-    private FolderCreatorUtils() {
+    private SecurityCreatorUtils() {
 
     }
 
-    public static Folder getFolder(final Long id, final String owner) {
-        Folder folder = new Folder();
-        folder.setId(id);
-        folder.setOwner(owner);
-        return folder;
+    public static UserContext getUserContext() {
+        return new UserContext();
+    }
+
+    public static UserContext getUserContext(final boolean external) {
+        final UserContext context = new UserContext();
+        context.setExternal(external);
+        return context;
     }
 }

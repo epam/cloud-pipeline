@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.datastorage;
+package com.epam.pipeline.acl.datastorage;
 
 import com.epam.pipeline.entity.datastorage.FileShareMount;
+import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -37,4 +38,5 @@ public class FileShareMountApiService {
     public void delete(final Long id) {
         fileShareMountManager.delete(id);
     }
+
 }
