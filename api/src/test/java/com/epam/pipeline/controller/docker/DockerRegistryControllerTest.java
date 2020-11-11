@@ -49,7 +49,6 @@ import java.util.Map;
 import static com.epam.pipeline.controller.docker.DockerRegistryController.DOCKER_LOGIN_SCRIPT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.refEq;
@@ -74,8 +73,8 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     private static final String CERT_REGISTRY_URL = DOCKER_REGISTRY_URL + "/%d/cert";
     private static final String LOGIN_REGISTRY_URL = DOCKER_REGISTRY_URL + "/%d/login";
     private static final String NOTIFY_REGISTRY_URL = DOCKER_REGISTRY_URL + "/notify";
-    private static final String OCTET_STREAM_CONTENT_TYPE = "application/octet-stream";
 
+    private static final String OCTET_STREAM_CONTENT_TYPE = "application/octet-stream";
     private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
     private static final String FORCE = "force";
     private static final String TRUE_AS_STRING = String.valueOf(true);
@@ -277,9 +276,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
                 OCTET_STREAM_CONTENT_TYPE);
 
         verify(mockDockerRegistryApiService).getCertificateContent(ID);
-        final byte[] actualByteArray = mvcResult.getResponse().getContentAsByteArray();
-        assertThat(actualByteArray).isEqualTo(bytes);
-        assertResponseHeader(mvcResult, CONTENT_DISPOSITION_HEADER, CERTIFICATE_NAME);
+        assertFileResponse(mvcResult, CONTENT_DISPOSITION_HEADER, CERTIFICATE_NAME, bytes);
     }
 
     @Test
@@ -296,10 +293,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
                 OCTET_STREAM_CONTENT_TYPE);
 
         verify(mockDockerRegistryApiService).getConfigScript(ID);
-        final byte[] actualByteArray = mvcResult.getResponse().getContentAsByteArray();
-        final String contentDispositionHeader = mvcResult.getResponse().getHeader(CONTENT_DISPOSITION_HEADER);
-        assertThat(actualByteArray).isEqualTo(bytes);
-        assertThat(contentDispositionHeader).contains(DOCKER_LOGIN_SCRIPT);
+        assertFileResponse(mvcResult, CONTENT_DISPOSITION_HEADER, DOCKER_LOGIN_SCRIPT, bytes);
     }
 
     @Test
