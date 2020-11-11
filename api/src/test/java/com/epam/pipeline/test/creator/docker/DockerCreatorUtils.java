@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.test.creator.tool;
+package com.epam.pipeline.test.creator.docker;
 
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
@@ -23,7 +23,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.List;
 
-public final class ToolCreatorUtils {
+public final class DockerCreatorUtils {
 
     public static final TypeReference<Result<ToolGroup>> TOOL_GROUP_TYPE =
             new TypeReference<Result<ToolGroup>>() {};
@@ -32,7 +32,7 @@ public final class ToolCreatorUtils {
     public static final TypeReference<Result<List<ToolGroup>>> TOOL_GROUP_LIST_TYPE =
             new TypeReference<Result<List<ToolGroup>>>() {};
 
-    private ToolCreatorUtils() {
+    private DockerCreatorUtils() {
 
     }
 

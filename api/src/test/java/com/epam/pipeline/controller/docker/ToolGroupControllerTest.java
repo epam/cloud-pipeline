@@ -19,7 +19,7 @@ package com.epam.pipeline.controller.docker;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolGroupWithIssues;
 import com.epam.pipeline.manager.pipeline.ToolGroupApiService;
-import com.epam.pipeline.test.creator.tool.ToolCreatorUtils;
+import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -57,7 +57,7 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
     private static final String TRUE_AS_STRING = String.valueOf(true);
     private static final String FALSE_AS_STRING = String.valueOf(false);
 
-    private final ToolGroup toolGroup = ToolCreatorUtils.getToolGroup();
+    private final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup();
 
     @Autowired
     private ToolGroupApiService mockToolGroupApiService;
@@ -73,7 +73,7 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(get(TOOL_GROUP_LIST_URL).params(params));
 
         Mockito.verify(mockToolGroupApiService).loadByRegistryNameOrId(TEST_STRING);
-        assertResponse(mvcResult, toolGroups, ToolCreatorUtils.TOOL_GROUP_LIST_TYPE);
+        assertResponse(mvcResult, toolGroups, DockerCreatorUtils.TOOL_GROUP_LIST_TYPE);
     }
 
     @Test
@@ -91,7 +91,7 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(post(PRIVATE_TOOL_GROUP_URL).params(params));
 
         Mockito.verify(mockToolGroupApiService).createPrivate(ID);
-        assertResponse(mvcResult, toolGroup, ToolCreatorUtils.TOOL_GROUP_TYPE);
+        assertResponse(mvcResult, toolGroup, DockerCreatorUtils.TOOL_GROUP_TYPE);
     }
 
     @Test
@@ -109,7 +109,7 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(get(TOOL_GROUP_URL).params(params));
 
         Mockito.verify(mockToolGroupApiService).loadByNameOrId(ID_AS_STRING);
-        assertResponse(mvcResult, toolGroup, ToolCreatorUtils.TOOL_GROUP_TYPE);
+        assertResponse(mvcResult, toolGroup, DockerCreatorUtils.TOOL_GROUP_TYPE);
     }
 
     @Test
@@ -120,13 +120,13 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadToolGroupWithIssuesCount() throws Exception {
-        final ToolGroupWithIssues toolGroupWithIssues = ToolCreatorUtils.getToolGroupWithIssues();
+        final ToolGroupWithIssues toolGroupWithIssues = DockerCreatorUtils.getToolGroupWithIssues();
         doReturn(toolGroupWithIssues).when(mockToolGroupApiService).loadToolsWithIssuesCount(ID);
 
         final MvcResult mvcResult = performRequest(get(String.format(ISSUES_COUNT_TOOL_GROUP_URL, ID)));
 
         Mockito.verify(mockToolGroupApiService).loadToolsWithIssuesCount(ID);
-        assertResponse(mvcResult, toolGroupWithIssues, ToolCreatorUtils.TOOL_GROUP_WITH_ISSUES_TYPE);
+        assertResponse(mvcResult, toolGroupWithIssues, DockerCreatorUtils.TOOL_GROUP_WITH_ISSUES_TYPE);
     }
 
     @Test
@@ -143,7 +143,7 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(post(TOOL_GROUP_URL).content(content));
 
         Mockito.verify(mockToolGroupApiService).create(toolGroup);
-        assertResponse(mvcResult, toolGroup, ToolCreatorUtils.TOOL_GROUP_TYPE);
+        assertResponse(mvcResult, toolGroup, DockerCreatorUtils.TOOL_GROUP_TYPE);
     }
 
     @Test
@@ -160,7 +160,7 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(put(TOOL_GROUP_URL).content(content));
 
         Mockito.verify(mockToolGroupApiService).update(toolGroup);
-        assertResponse(mvcResult, toolGroup, ToolCreatorUtils.TOOL_GROUP_TYPE);
+        assertResponse(mvcResult, toolGroup, DockerCreatorUtils.TOOL_GROUP_TYPE);
     }
 
     @Test
@@ -179,7 +179,7 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(delete(TOOL_GROUP_URL).params(params));
 
         Mockito.verify(mockToolGroupApiService).deleteForce(ID_AS_STRING);
-        assertResponse(mvcResult, toolGroup, ToolCreatorUtils.TOOL_GROUP_TYPE);
+        assertResponse(mvcResult, toolGroup, DockerCreatorUtils.TOOL_GROUP_TYPE);
     }
 
     @Test
@@ -193,7 +193,7 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
         final MvcResult mvcResult = performRequest(delete(TOOL_GROUP_URL).params(params));
 
         Mockito.verify(mockToolGroupApiService).delete(ID_AS_STRING);
-        assertResponse(mvcResult, toolGroup, ToolCreatorUtils.TOOL_GROUP_TYPE);
+        assertResponse(mvcResult, toolGroup, DockerCreatorUtils.TOOL_GROUP_TYPE);
     }
 
     @Test
