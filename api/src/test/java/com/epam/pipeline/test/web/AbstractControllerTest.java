@@ -21,7 +21,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.epam.pipeline.config.JsonMapper;
@@ -46,8 +45,10 @@ import org.springframework.web.context.WebApplicationContext;
 @RunWith(SpringRunner.class)
 @WebTestConfiguration
 public abstract class AbstractControllerTest {
+
     protected static final String EXPECTED_CONTENT_TYPE = "application/json;charset=UTF-8";
     protected static final String SERVLET_PATH = "/restapi";
+    protected static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
 
     private MockMvc mockMvc;
     private ObjectMapper deserializationMapper;
@@ -87,7 +88,7 @@ public abstract class AbstractControllerTest {
     @SneakyThrows
     public <T> void assertResponse(final MvcResult mvcResult,
                                    final T payload,
-                                   final TypeReference<Result<T>> typeReference){
+                                   final TypeReference<Result<T>> typeReference) {
         final ResponseResult<T> expectedResult = buildExpectedResult(payload);
 
         final String actual = mvcResult.getResponse().getContentAsString();
@@ -99,8 +100,11 @@ public abstract class AbstractControllerTest {
         assertEquals(expectedResult.getPayload(), actualResult.getPayload());
     }
 
-    @SneakyThrows
-    public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder) {
+    public void assertResponseHeader(final MvcResult mvcResult, final String expected, final String actual) {
+        assertThat(mvcResult.getResponse().getHeader(expected)).contains(actual);
+    }
+
+    public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder) throws Exception {
         mockMvc.perform(requestBuilder
                 .servletPath(SERVLET_PATH))
                 .andExpect(status().isUnauthorized());
