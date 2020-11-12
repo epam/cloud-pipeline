@@ -100,8 +100,17 @@ public abstract class AbstractControllerTest {
         assertEquals(expectedResult.getPayload(), actualResult.getPayload());
     }
 
-    public void assertResponseHeader(final MvcResult mvcResult, final String actual) {
-        assertThat(mvcResult.getResponse().getHeader(CONTENT_DISPOSITION_HEADER)).contains(actual);
+    public void assertFileResponse(final MvcResult mvcResult, final String fileName, final byte[] fileContent) {
+        assertResponseHeader(mvcResult,  fileName);
+        assertContent(mvcResult, fileContent);
+    }
+
+    public void assertResponseHeader(final MvcResult mvcResult, final String fileName) {
+        assertThat(mvcResult.getResponse().getHeader(CONTENT_DISPOSITION_HEADER)).contains(fileName);
+    }
+
+    public void assertContent(final MvcResult mvcResult, final byte[] fileContent) {
+        assertThat(mvcResult.getResponse().getContentAsByteArray()).isEqualTo(fileContent);
     }
 
     public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder) throws Exception {

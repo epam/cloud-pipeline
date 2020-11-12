@@ -409,7 +409,7 @@ public class ToolControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldDownloadToolIcon() throws Exception {
-        final InputStream inputStream = new ByteArrayInputStream(FILE_NAME.getBytes());
+        final InputStream inputStream = new ByteArrayInputStream(TEST_STRING.getBytes());
         Pair<String, InputStream> pair = new ImmutablePair<>(FILE_NAME, inputStream);
         doReturn(pair).when(mockToolApiService).loadToolIcon(ID);
 
@@ -417,9 +417,8 @@ public class ToolControllerTest extends AbstractControllerTest {
                 MediaType.IMAGE_PNG_VALUE);
 
         verify(mockToolApiService).loadToolIcon(ID);
-        final String actualResult = mvcResult.getResponse().getContentAsString();
-        Assert.assertEquals(FILE_NAME, actualResult);
-        assertResponseHeader(mvcResult, FILE_NAME);
+        Assert.assertEquals(TEST_STRING, mvcResult.getResponse().getContentAsString());
+        assertFileResponse(mvcResult, FILE_NAME, TEST_STRING.getBytes());
     }
 
     @Test
