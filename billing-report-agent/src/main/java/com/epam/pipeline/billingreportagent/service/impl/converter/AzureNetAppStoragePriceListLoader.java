@@ -17,8 +17,7 @@
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
-import com.epam.pipeline.billingreportagent.model.pricing.AzureEAPricingMeter;
-import com.epam.pipeline.billingreportagent.model.pricing.AzureRateCardPricingMeter;
+import com.epam.pipeline.billingreportagent.model.pricing.AzurePricingEntity;
 import com.epam.pipeline.billingreportagent.service.impl.loader.CloudRegionLoader;
 import org.apache.commons.lang3.StringUtils;
 
@@ -30,10 +29,7 @@ public class AzureNetAppStoragePriceListLoader extends AbstractAzureStoragePrice
 
     private static final String AZURE_NETAPP_CATEGORY = "Azure NetApp Files";
     private static final String AZURE_CAPACITY_METER_TEMPLATE = "%s Capacity";
-    private static final int HRS_PER_MONTH = 730;
-    private static final String GIB_HOUR_UNIT = "1 GiB/Hour";
-    private static final String TEN_THS_GIB_HOUR_UNIT = "10000 GiB/Hour";
-    private static final float TEN_THS_SCALE_FACTOR = 0.0001f;
+    private static final String GIB_HOUR_UNIT = "GiB/Hour";
 
     private final String netAppTier;
 
@@ -45,29 +41,14 @@ public class AzureNetAppStoragePriceListLoader extends AbstractAzureStoragePrice
         this.netAppTier = netAppTier;
     }
 
-    @Override
-    protected Map<String, StoragePricing> extractRateCardPrices(final List<AzureRateCardPricingMeter> pricingMeters) {
+    protected Map<String, StoragePricing> extractPrices(final List<AzurePricingEntity> pricingMeters) {
         return pricingMeters.stream()
-            .filter(meter -> GIB_HOUR_UNIT.equals(meter.getUnit()))
+            .filter(meter -> GIB_HOUR_UNIT.contains(meter.getUnit()))
             .filter(meter -> AZURE_NETAPP_CATEGORY.equals(meter.getMeterCategory()))
             .filter(meter -> meter.getMeterName().equals(String.format(AZURE_CAPACITY_METER_TEMPLATE, netAppTier)))
             .filter(meter -> StringUtils.isNotEmpty(meter.getMeterRegion()))
-            .collect(Collectors.toMap(AzureRateCardPricingMeter::getMeterRegion, this::convertAzurePricingHourlyToMonthly));
+            .collect(Collectors.toMap(AzurePricingEntity::getMeterRegion,
+                    pricing -> convertPricing(pricing, getScaleFactor(pricing.getUnit()))));
     }
 
-    @Override
-    protected Map<String, StoragePricing> extractEAPrices(List<AzureEAPricingMeter> pricingMeters) {
-        return pricingMeters
-                .stream()
-                .filter(meter -> TEN_THS_GIB_HOUR_UNIT.equals(meter.getUnit()))
-                .filter(meter -> AZURE_NETAPP_CATEGORY.equals(meter.getMeterCategory()))
-                .filter(meter -> meter.getMeterName().equals(String.format(AZURE_CAPACITY_METER_TEMPLATE, netAppTier)))
-                .filter(meter -> StringUtils.isNotEmpty(meter.getMeterRegion()))
-                .collect(Collectors.toMap(AzureEAPricingMeter::getMeterRegion,
-                        pricing -> convertAzureEAPricing(pricing, HRS_PER_MONTH  * TEN_THS_SCALE_FACTOR)));
-    }
-
-    private StoragePricing convertAzurePricingHourlyToMonthly(final AzureRateCardPricingMeter azurePricing) {
-        return convertAzureRateCardPricing(azurePricing, HRS_PER_MONTH);
-    }
 }

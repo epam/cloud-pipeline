@@ -18,6 +18,7 @@ package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
 import com.epam.pipeline.billingreportagent.model.pricing.AzureEAPricingMeter;
+import com.epam.pipeline.billingreportagent.model.pricing.AzurePricingEntity;
 import com.epam.pipeline.billingreportagent.model.pricing.AzureRateCardPricingMeter;
 import com.epam.pipeline.billingreportagent.service.impl.loader.CloudRegionLoader;
 
@@ -40,24 +41,15 @@ public class AzureFilesStoragePriceListLoader extends AbstractAzureStoragePriceL
     }
 
     @Override
-    protected Map<String, StoragePricing> extractRateCardPrices(final List<AzureRateCardPricingMeter> pricingMeters) {
+    protected Map<String, StoragePricing> extractPrices(final List<AzurePricingEntity> pricingMeters) {
         return pricingMeters
             .stream()
-            .filter(meter -> GB_MONTH_UNIT.equals(meter.getUnit()))
+            .filter(meter -> GB_MONTH_UNIT.contains(meter.getUnit()))
             .filter(meter -> STORAGE_CATEGORY.equals(meter.getMeterCategory()))
             .filter(meter -> FILES_SUBCATEGORY.equals(meter.getMeterSubCategory()))
             .filter(meter -> meter.getMeterName().equals(String.format(DATA_STORE_METER_TEMPLATE, storageTier)))
-            .collect(Collectors.toMap(AzureRateCardPricingMeter::getMeterRegion, this::convertAzureRateCardPricing));
+            .collect(Collectors.toMap(AzurePricingEntity::getMeterRegion,
+                    pricing -> convertPricing(pricing, getScaleFactor(pricing.getUnit()))));
     }
 
-    @Override
-    protected Map<String, StoragePricing> extractEAPrices(List<AzureEAPricingMeter> pricingMeters) {
-        return pricingMeters
-                .stream()
-                .filter(meter -> ONE_HND_GB_MONTH_UNIT.equals(meter.getUnit()))
-                .filter(meter -> STORAGE_CATEGORY.equals(meter.getMeterCategory()))
-                .filter(meter -> FILES_SUBCATEGORY.equals(meter.getMeterSubCategory()))
-                .filter(meter -> meter.getMeterName().equals(String.format(DATA_STORE_METER_TEMPLATE, storageTier)))
-                .collect(Collectors.toMap(AzureEAPricingMeter::getMeterRegion, pricing -> convertAzureEAPricing(pricing, 0.01f)));
-    }
 }

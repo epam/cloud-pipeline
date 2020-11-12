@@ -18,6 +18,7 @@ package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
 import com.epam.pipeline.billingreportagent.model.pricing.AzureEAPricingMeter;
+import com.epam.pipeline.billingreportagent.model.pricing.AzurePricingEntity;
 import com.epam.pipeline.billingreportagent.model.pricing.AzureRateCardPricingMeter;
 import com.epam.pipeline.billingreportagent.service.impl.loader.CloudRegionLoader;
 
@@ -42,21 +43,13 @@ public class AzureBlobStoragePriceListLoader extends AbstractAzureStoragePriceLi
     }
 
     @Override
-    protected Map<String, StoragePricing> extractRateCardPrices(final List<AzureRateCardPricingMeter> pricingMeters) {
+    protected Map<String, StoragePricing> extractPrices(final List<AzurePricingEntity> pricingMeters) {
         return pricingMeters.stream()
-            .filter(meter -> GB_MONTH_UNIT.equals(meter.getUnit()))
-            .filter(meter -> meter.getMeterSubCategory().equals(blobStorageCategory))
+            .filter(meter -> GB_MONTH_UNIT.contains(meter.getUnit()))
+            .filter(meter -> meter.getMeterSubCategory().contains(blobStorageCategory))
             .filter(meter -> meter.getMeterName().startsWith(String.format(DATA_STORE_METER_TEMPLATE, redundancyType)))
-            .collect(Collectors.toMap(AzureRateCardPricingMeter::getMeterRegion, this::convertAzureRateCardPricing));
+            .collect(Collectors.toMap(AzurePricingEntity::getMeterRegion,
+                    pricing -> convertPricing(pricing, getScaleFactor(pricing.getUnit()))));
     }
 
-    @Override
-    protected Map<String, StoragePricing> extractEAPrices(List<AzureEAPricingMeter> pricingMeters) {
-        return pricingMeters.stream()
-                .filter(meter -> ONE_THS_GB_MONTH_UNIT.equals(meter.getUnit()))
-                .filter(meter -> meter.getMeterSubCategory().contains(blobStorageCategory))
-                .filter(meter -> meter.getMeterName().startsWith(String.format(DATA_STORE_METER_TEMPLATE, redundancyType)))
-                .collect(Collectors.toMap(AzureEAPricingMeter::getMeterRegion,
-                        azureEAPricingMeter -> convertAzureEAPricing(azureEAPricingMeter, ONE_THS_SCALE_FACTOR)));
-    }
 }

@@ -18,10 +18,7 @@ package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
-import com.epam.pipeline.billingreportagent.model.pricing.AzureEAPricingMeter;
-import com.epam.pipeline.billingreportagent.model.pricing.AzureEAPricingResult;
-import com.epam.pipeline.billingreportagent.model.pricing.AzureRateCardPricingMeter;
-import com.epam.pipeline.billingreportagent.model.pricing.AzureRateCardPricingResult;
+import com.epam.pipeline.billingreportagent.model.pricing.*;
 import com.epam.pipeline.billingreportagent.service.impl.loader.CloudRegionLoader;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
@@ -47,9 +44,10 @@ import java.util.stream.Collectors;
 
 public abstract class AbstractAzureStoragePriceListLoader implements StoragePriceListLoader {
 
-    protected static final String GB_MONTH_UNIT = "1 GB/Month";
-    protected static final String ONE_HND_GB_MONTH_UNIT = "100 GB/Month";
-    protected static final String ONE_THS_GB_MONTH_UNIT = "1000 GB/Month";
+    protected static final String GB_MONTH_UNIT = "GB/Month";
+    private static final int HRS_PER_MONTH = 730;
+    protected static final String GB_HOUR_DIMENSION = "GB/Hour";
+    protected static final String GIB_HOUR_DIMENSION = "GiB/Hour";
     protected static final String STORAGE_CATEGORY = "Storage";
     protected static final String DATA_STORE_METER_TEMPLATE = "%s Data Stored";
 
@@ -88,14 +86,13 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
             .collect(Collectors.toMap(AbstractCloudRegion::getRegionCode, this::getPricingForSpecificRegion));
     }
 
-    protected abstract Map<String, StoragePricing> extractRateCardPrices(List<AzureRateCardPricingMeter> pricingMeters);
-    protected abstract Map<String, StoragePricing> extractEAPrices(List<AzureEAPricingMeter> pricingMeters);
+    protected abstract Map<String, StoragePricing> extractPrices(List<AzurePricingEntity> pricingMeters);
 
-    protected StoragePricing convertAzureRateCardPricing(final AzureRateCardPricingMeter azurePricing) {
-        return convertAzureRateCardPricing(azurePricing, 1);
+    protected StoragePricing convertPricing(final AzurePricingEntity azurePricing) {
+        return convertPricing(azurePricing, 1f);
     }
 
-    protected StoragePricing convertAzureRateCardPricing(final AzureRateCardPricingMeter azurePricing, final int scaleFactor) {
+    protected StoragePricing convertPricing(final AzurePricingEntity azurePricing, final float scaleFactor) {
         final Map<String, Float> rates = azurePricing.getMeterRates();
         logger.debug("Reading RateCard price from {}", azurePricing);
         final StoragePricing storagePricing = new StoragePricing();
@@ -114,20 +111,6 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
         }
         pricing.get(pricingSize - 1).setEndRangeBytes(Long.MAX_VALUE);
         storagePricing.getPrices().addAll(pricing);
-        return storagePricing;
-    }
-
-    protected StoragePricing convertAzureEAPricing(final AzureEAPricingMeter azurePricing) {
-        return convertAzureEAPricing(azurePricing, 1);
-    }
-
-    protected StoragePricing convertAzureEAPricing(final AzureEAPricingMeter azurePricing, final float scaleFactor) {
-        final Float rates = azurePricing.getUnitPrice();
-        logger.debug("Reading EA price from {}", azurePricing);
-        final StoragePricing storagePricing = new StoragePricing();
-        final BigDecimal cost = BigDecimal.valueOf(rates.doubleValue() * scaleFactor * CENTS_IN_DOLLAR);
-        final StoragePricing.StoragePricingEntity pricing = new StoragePricing.StoragePricingEntity(0L, Long.MAX_VALUE, cost);
-        storagePricing.getPrices().add(pricing);
         return storagePricing;
     }
 
@@ -163,12 +146,11 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
                                                Function.identity())));
     }
 
-    private StoragePricing getRateCardStoragePricingForRegion(final AzureRateCardPricingResult pricingResponse,
-                                                              final String meterRegion) {
-        final List<AzureRateCardPricingMeter> azureRateCardPricingMeters = Optional.ofNullable(pricingResponse)
-            .map(AzureRateCardPricingResult::getMeters)
+    private StoragePricing getStoragePricingForRegion(final List<AzurePricingEntity> pricingResponse,
+                                                      final String meterRegion) {
+        final List<AzurePricingEntity> azureRateCardPricingMeters = Optional.ofNullable(pricingResponse)
             .orElse(Collections.emptyList());
-        final Map<String, StoragePricing> fullStoragePricingMap = extractRateCardPrices(azureRateCardPricingMeters);
+        final Map<String, StoragePricing> fullStoragePricingMap = extractPrices(azureRateCardPricingMeters);
         final StoragePricing storagePricing = fullStoragePricingMap
             .computeIfAbsent(meterRegion, region -> {
                 logger.warn(String.format("No price is found for [%s], searching for the default value.", meterRegion));
@@ -181,39 +163,33 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
         return storagePricing;
     }
 
-    private StoragePricing getEAStoragePricingForRegion(final AzureEAPricingResult pricingResponse,
-                                                        final String meterRegion) {
-        final List<AzureEAPricingMeter> azurePricingMeters = Optional.ofNullable(pricingResponse)
-                .map(AzureEAPricingResult::getProperties)
-                .map(AzureEAPricingResult.PricingProperties::getPricesheets)
-                .orElse(Collections.emptyList());
-        final Map<String, StoragePricing> fullStoragePricingMap = extractEAPrices(azurePricingMeters);
-        final StoragePricing storagePricing = fullStoragePricingMap
-                .computeIfAbsent(meterRegion, region -> {
-                    logger.warn(String.format("No price is found for [%s], searching for the default value.", meterRegion));
-                    return fullStoragePricingMap.getOrDefault(StringUtils.EMPTY, null);
-                });
-        if (storagePricing == null) {
-            throw new IllegalArgumentException(
-                    String.format("No [%s] region/default value is presented in prices retrieved!", meterRegion));
-        }
-        return storagePricing;
-    }
-
     private StoragePricing getPricingForSpecificRegion(final AzureRegion region) {
         try {
+            List<AzurePricingEntity> priceList;
             if (region.getPriceOfferId().equals("EA-OFFER")) {
-                AzureEAPricingResult eaAzureRegionPricing = rawEAPriceLoader.getRawPricesUsingPipelineRegion(region);
+                priceList = rawEAPriceLoader.getRawPricesUsingPipelineRegion(region);
                 logger.info("Reading EA prices for [{}, meterName={}]", region.getName(), region.getMeterRegionName());
-                return getEAStoragePricingForRegion(eaAzureRegionPricing, region.getMeterRegionName());
             } else {
-                final AzureRateCardPricingResult azureRegionPricing =
-                        rawPriceLoader.getRawPricesUsingPipelineRegion(region);
+                priceList = rawPriceLoader.getRawPricesUsingPipelineRegion(region);
                 logger.info("Reading RateCard prices for [{}, meterName={}]", region.getName(), region.getMeterRegionName());
-                return getRateCardStoragePricingForRegion(azureRegionPricing, region.getMeterRegionName());
             }
+            return getStoragePricingForRegion(priceList, region.getMeterRegionName());
         } catch (IOException e) {
             throw new IllegalStateException(String.format("Error during prices loading: %s", e.getMessage()));
         }
     }
+    protected float getScaleFactor(String unit) {
+        float scaleFactor = 1f;
+        String[] amountAndDimension = unit.split(" ");
+        int amount = Integer.parseInt(amountAndDimension[0]);
+        if (amount > 1) {
+            scaleFactor = scaleFactor / amount;
+        }
+
+        if (amountAndDimension[1].contains(GB_HOUR_DIMENSION) || amountAndDimension[1].contains(GIB_HOUR_DIMENSION)) {
+            scaleFactor = scaleFactor * HRS_PER_MONTH;
+        }
+        return scaleFactor;
+    }
+
 }
