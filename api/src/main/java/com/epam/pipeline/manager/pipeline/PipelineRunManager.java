@@ -24,7 +24,6 @@ import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
-import com.epam.pipeline.dao.pipeline.RunLogDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
@@ -38,12 +37,10 @@ import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
-import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
-import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
@@ -61,10 +58,7 @@ import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodesManager;
-import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
-import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
-import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.scan.ToolSecurityPolicyCheck;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
@@ -107,7 +101,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.entity.configuration.RunConfigurationUtils.getNodeCount;
-import static com.epam.pipeline.manager.docker.DockerContainerOperationManager.PAUSE_RUN_TASK;
 
 @Service
 public class PipelineRunManager {
@@ -126,12 +119,6 @@ public class PipelineRunManager {
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
-
-    @Autowired
-    private DockerContainerOperationManager dockerContainerOperationManager;
-
-    @Autowired
-    private DockerRegistryManager dockerRegistryManager;
 
     @Autowired
     private PipelineManager pipelineManager;
@@ -191,9 +178,6 @@ public class PipelineRunManager {
     private RunStatusManager runStatusManager;
 
     @Autowired
-    private UsageMonitoringManager usageMonitoringManager;
-
-    @Autowired
     private NodesManager nodesManager;
     
     @Autowired
@@ -204,9 +188,6 @@ public class PipelineRunManager {
 
     @Autowired
     private StopServerlessRunManager stopServerlessRunManager;
-
-    @Autowired
-    private RunLogDao runLogDao;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -737,46 +718,6 @@ public class PipelineRunManager {
 
     /**
      * Commits docker image and push it to a docker registry from specified run
-     * @param id {@link PipelineRun} id for pipeline run to be committed
-     * @param registryId {@link DockerRegistry} id where new image will be pushed
-     * @param deleteFiles if true files from pipeline working directory will be cleaned
-     * @param stopPipeline if true pipeline will be stopped after commit
-     * @param checkSize if true method will check if free disk space is enough for commit operation
-     * @return  {@link PipelineRun} to be committed
-     */
-    @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun commitRun(Long id, Long registryId, String newImageName, boolean deleteFiles,
-                                 boolean stopPipeline, boolean checkSize) {
-        if (checkSize) {
-            Assert.state(checkFreeSpaceAvailable(id),
-                    messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_NOT_ENOUGH));
-        }
-
-        PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(id);
-        DockerRegistry dockerRegistry = dockerRegistryManager.load(registryId);
-        Assert.notNull(pipelineRun,
-                messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, id));
-        Assert.state(pipelineRun.getStatus() == TaskStatus.RUNNING,
-                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_FINISHED, id));
-        Assert.notNull(dockerRegistry,
-                messageHelper.getMessage(MessageConstants.ERROR_REGISTRY_NOT_FOUND, registryId));
-        String dockerImageFromRun = retrieveImageName(pipelineRun);
-        String resolvedImageName = StringUtils.isEmpty(newImageName) ? dockerImageFromRun : newImageName;
-
-        //check that there is no tool with this name in another registry
-        toolManager.assertThatToolUniqueAcrossRegistries(resolvedImageName, dockerRegistry.getPath());
-
-        return dockerContainerOperationManager.commitContainer(
-                pipelineRun,
-                dockerRegistry,
-                resolvedImageName,
-                deleteFiles,
-                stopPipeline
-        );
-    }
-
-    /**
-     * Commits docker image and push it to a docker registry from specified run
      * @param id {@link PipelineRun} id for pipeline run which commit status should be updated
      * @param commitStatus new {@link CommitStatus} of the pipeline run
      * @return updated {@link PipelineRun}
@@ -873,51 +814,6 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun save(PipelineRun pipelineRun) {
         pipelineRunDao.createPipelineRun(pipelineRun);
-        return pipelineRun;
-    }
-
-    /**
-     * Pauses pipeline run for specified {@code runId}.
-     * @param runId {@link PipelineRun} id for pipeline run to be paused
-     * @param checkSize if true method will check if free disk space is enough for commit operation
-     * @return paused {@link PipelineRun}
-     */
-    public PipelineRun pauseRun(Long runId, boolean checkSize) {
-        if (checkSize) {
-            Assert.state(checkFreeSpaceAvailable(runId), MessageConstants.ERROR_INSTANCE_DISK_NOT_ENOUGH);
-        }
-        PipelineRun pipelineRun = loadRunForPauseResume(runId);
-        Assert.isTrue(pipelineRun.getInitialized(),
-                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_NOT_INITIALIZED, runId));
-        Assert.notNull(pipelineRun.getDockerImage(),
-                messageHelper.getMessage(MessageConstants.ERROR_DOCKER_IMAGE_NOT_FOUND, runId));
-        Assert.state(pipelineRun.getStatus() == TaskStatus.RUNNING,
-                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_FINISHED, runId));
-        pipelineRun.setStatus(TaskStatus.PAUSING);
-        runCRUDService.updateRunStatus(pipelineRun);
-        dockerContainerOperationManager.pauseRun(pipelineRun);
-        return pipelineRun;
-    }
-
-    /**
-     * Resumes pipeline run for specified {@code runId}.
-     * @param runId {@link PipelineRun} id for pipeline run to be resumed
-     * @return resumed {@link PipelineRun}
-     */
-    public PipelineRun resumeRun(Long runId) {
-        PipelineRun pipelineRun = loadRunForPauseResume(runId);
-        Assert.state(pipelineRun.getStatus() == TaskStatus.PAUSED,
-                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_NOT_STOPPED, runId));
-        if (StringUtils.isEmpty(pipelineRun.getActualCmd())) {
-            throw new IllegalArgumentException(messageHelper.getMessage(
-                    MessageConstants.ERROR_ACTUAL_CMD_NOT_FOUND, runId));
-        }
-        Tool tool = toolManager.loadByNameOrId(pipelineRun.getDockerImage());
-        pipelineRun.setStatus(TaskStatus.RESUMING);
-        // prolong the run here in order to get rid off idle notification right after resume
-        prolongIdleRun(pipelineRun.getId());
-        runCRUDService.updateRunStatus(pipelineRun);
-        dockerContainerOperationManager.resumeRun(pipelineRun, tool.getEndpoints());
         return pipelineRun;
     }
 
@@ -1043,28 +939,6 @@ public class PipelineRunManager {
     }
 
     /**
-     * Checks that free node space is enough. Calls before commit/pause operations.
-     * @param runId {@link PipelineRun} id for pipeline run
-     * @return true if free space is enough
-     */
-    public Boolean checkFreeSpaceAvailable(final Long runId) {
-        final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
-        Assert.notNull(pipelineRun,
-                messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
-        final long availableDisk = usageMonitoringManager.getDiskSpaceAvailable(
-                pipelineRun.getInstance().getNodeName(), pipelineRun.getPodId(), pipelineRun.getDockerImage());
-        final long requiredImageSize = (long)Math.ceil(
-                (double)toolManager.getCurrentImageSize(pipelineRun.getDockerImage())
-                        * preferenceManager.getPreference(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI) / 2);
-        LOGGER.debug("Run {} available disk: {} required for image size: {}", runId, availableDisk, requiredImageSize);
-        if (availableDisk < requiredImageSize) {
-            LOGGER.warn("Free disk space is not enough");
-            return false;
-        }
-        return true;
-    }
-
-    /**
      * Terminates paused run.
      *
      * It terminates the run cloud instance if it exists and stops the run.
@@ -1182,62 +1056,6 @@ public class PipelineRunManager {
     public void stopServerlessRun(final Long runId) {
         stop(runId);
         stopServerlessRunManager.deleteByRunId(runId);
-    }
-
-    /**
-     * Reruns pause and resume operations if them still in progress
-     */
-    public void rerunPauseAndResume() {
-        final List<PipelineRun> pausingRuns = loadRunsByStatuses(Collections.singletonList(TaskStatus.PAUSING));
-        ListUtils.emptyIfNull(pausingRuns).forEach(this::rerunPauseRun);
-
-        final List<PipelineRun> resumingRuns = loadRunsByStatuses(Collections.singletonList(TaskStatus.RESUMING));
-        ListUtils.emptyIfNull(resumingRuns).forEach(this::rerunResumeRun);
-    }
-
-    @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    private void rerunPauseRun(final PipelineRun run) {
-        try {
-            if (shouldNotRerunPause(run)) {
-                LOGGER.debug("Pipeline run '{}' in pausing state but relaunched operation will be skipped",
-                        run.getId());
-                return;
-            }
-            LOGGER.debug("Pause run operation well be relaunched for run '{}'", run.getId());
-            dockerContainerOperationManager.pauseRun(run);
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
-        }
-    }
-
-    @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    private void rerunResumeRun(final PipelineRun run) {
-        try {
-            LOGGER.debug("Resume run operation well be relaunched for run '{}'", run.getId());
-            final Tool tool = toolManager.loadByNameOrId(run.getDockerImage());
-            dockerContainerOperationManager.resumeRun(run, tool.getEndpoints());
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
-        }
-    }
-
-    private boolean shouldNotRerunPause(final PipelineRun run) {
-        final Optional<LocalDateTime> lastPausingRunStatusDate = ListUtils
-                .emptyIfNull(runStatusManager.loadRunStatus(run.getId())).stream()
-                .filter(status -> TaskStatus.PAUSING.equals(status.getStatus()))
-                .map(RunStatus::getTimestamp)
-                .max(LocalDateTime::compareTo);
-        if (!lastPausingRunStatusDate.isPresent()) {
-            return true;
-        }
-        final List<RunLog> runLogs = runLogDao.loadAllLogsForTask(run.getId(), PAUSE_RUN_TASK);
-        final Optional<Date> lastSuccessTaskDate = ListUtils.emptyIfNull(runLogs).stream()
-                .filter(log -> TaskStatus.SUCCESS.equals(log.getStatus()))
-                .map(RunLog::getDate)
-                .max(Date::compareTo);
-        return !lastSuccessTaskDate.isPresent()
-                || DateUtils.convertDateToLocalDateTime(lastSuccessTaskDate.get())
-                .isBefore(lastPausingRunStatusDate.get());
     }
 
     private int getTotalSize(final List<InstanceDisk> disks) {
@@ -1375,13 +1193,6 @@ public class PipelineRunManager {
         }
     }
 
-    private String retrieveImageName(PipelineRun pipelineRun) {
-        String[] registryAndDockerImageFromRun = pipelineRun.getActualDockerImage().split("/");
-        return registryAndDockerImageFromRun.length == 1
-            ? registryAndDockerImageFromRun[0]
-            : registryAndDockerImageFromRun[1];
-    }
-
     private void checkCommitRunStatus(PipelineRun run) {
         Date currentTime = DateUtils.now();
         long secsFromLastChange = (currentTime.getTime() - run.getLastChangeCommitTime().getTime()) / MILLS_IN_SEC;
@@ -1454,23 +1265,6 @@ public class PipelineRunManager {
         if (projectChildren.containsKey(AclClass.CONFIGURATION)) {
             configurationIds.addAll(projectChildren.get(AclClass.CONFIGURATION));
         }
-    }
-
-    private void verifyPipelineRunForPauseResume(PipelineRun pipelineRun, Long runId) {
-        Assert.notNull(pipelineRun,
-                messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
-        Assert.notNull(pipelineRun.getId(),
-                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_ID_NOT_FOUND, runId));
-        Assert.notNull(pipelineRun.getInstance(), messageHelper.getMessage(
-                MessageConstants.ERROR_INSTANCE_NOT_FOUND, runId));
-        RunInstance instance = pipelineRun.getInstance();
-        Assert.notNull(instance.getNodeId(), messageHelper.getMessage(
-                MessageConstants.ERROR_INSTANCE_ID_NOT_FOUND, runId));
-        Assert.notNull(instance.getNodeIP(), messageHelper.getMessage(
-                MessageConstants.ERROR_INSTANCE_IP_NOT_FOUND, runId));
-        Assert.isTrue(!instance.getSpot(), messageHelper.getMessage(MessageConstants.ERROR_ON_DEMAND_REQUIRED));
-        Assert.notNull(pipelineRun.getPodId(),
-                messageHelper.getMessage(MessageConstants.ERROR_POD_ID_NOT_FOUND, runId));
     }
 
     private void validatePrettyUrlFree(String url) {
@@ -1571,12 +1365,4 @@ public class PipelineRunManager {
             return runInstance;
         }).orElse(new RunInstance());
     }
-
-    private PipelineRun loadRunForPauseResume(Long runId) {
-        PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
-        verifyPipelineRunForPauseResume(pipelineRun, runId);
-        pipelineRun.setSshPassword(pipelineRunDao.loadSshPassword(runId));
-        return pipelineRun;
-    }
-
 }

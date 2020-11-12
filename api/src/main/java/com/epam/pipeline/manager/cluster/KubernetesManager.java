@@ -30,6 +30,7 @@ import io.fabric8.kubernetes.api.model.ContainerStatus;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeCondition;
 import io.fabric8.kubernetes.api.model.NodeList;
+import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretList;
@@ -347,9 +348,12 @@ public class KubernetesManager {
         }
     }
 
-    public void deletePod(String podId) {
-        try(KubernetesClient client = getKubernetesClient()) {
-            client.pods().inNamespace(kubeNamespace).withName(podId).withGracePeriod(0).delete();
+    public void deletePodIfExists(final String podId) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final Pod pod = client.pods().inNamespace(kubeNamespace).withName(podId).get();
+            if (Objects.nonNull(pod)) {
+                deletePod(client, podId);
+            }
         }
     }
 
@@ -459,8 +463,11 @@ public class KubernetesManager {
         }
     }
 
-    public void deleteNode(String nodeName) {
-        getKubernetesClient().nodes().withName(nodeName).delete();
+    public void deleteNodeIfExists(final String nodeName) {
+        final Node node = getKubernetesClient().nodes().withName(nodeName).get();
+        if (Objects.nonNull(node)) {
+            getKubernetesClient().nodes().withName(nodeName).delete();
+        }
     }
 
     /**
@@ -610,4 +617,15 @@ public class KubernetesManager {
                 && condition.getStatus().equals(KubernetesConstants.FALSE);
     }
 
+    private void deletePod(final KubernetesClient client, final String podId) {
+        final Boolean result = client
+                .pods()
+                .inNamespace(kubeNamespace)
+                .withName(podId)
+                .withGracePeriod(0)
+                .delete();
+        if (Objects.isNull(result) || !result) {
+            LOGGER.debug("Failed to delete pod with ID '{}'", podId);
+        }
+    }
 }

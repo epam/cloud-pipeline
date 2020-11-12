@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.CmdExecutionException;
@@ -40,12 +41,14 @@ import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
+import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.CommonUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,10 +59,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -83,8 +89,8 @@ public class DockerContainerOperationManager {
     private static final String PAUSE_COMMAND_DESCRIPTION = "Error is occured during to pause pipeline run";
     private static final String REJOIN_COMMAND_DESCRIPTION = "Error is occured during to resume pipeline run";
     private static final String EMPTY = "";
+    private static final String PAUSE_RUN_TASK = "PausePipelineRun";
     private static final String RESUME_RUN_TASK = "ResumePipelineRun";
-    public static final String PAUSE_RUN_TASK = "PausePipelineRun";
     public static final String DELIMITER = "/";
     public static final int COMMAND_CANNOT_EXECUTE_CODE = 126;
 
@@ -123,6 +129,9 @@ public class DockerContainerOperationManager {
 
     @Autowired
     private RunLogManager runLogManager;
+
+    @Autowired
+    private RunStatusManager runStatusManager;
 
     @Value("${commit.run.scripts.root.url}")
     private String commitScriptsDistributionsUrl;
@@ -209,59 +218,19 @@ public class DockerContainerOperationManager {
     @Async("pauseRunExecutor")
     public void pauseRun(PipelineRun run) {
         try {
-            final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(), 
-                    run.getActualDockerImage());
-            final String apiToken = authManager.issueTokenForCurrentUser().getToken();
-            Assert.notNull(containerId,
-                    messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
-
-            final String pauseRunCommand = DockerPauseCommand.builder()
-                    .runPauseScriptUrl(pauseRunScriptUrl)
-                    .api(preferenceManager.getPreference(SystemPreferences.BASE_API_HOST))
-                    .apiToken(apiToken)
-                    .pauseDistributionUrl(commitScriptsDistributionsUrl)
-                    .distributionUrl(preferenceManager.getPreference(SystemPreferences.BASE_PIPE_DISTR_URL))
-                    .runId(String.valueOf(run.getId()))
-                    .containerId(containerId)
-                    .timeout(String.valueOf(preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT)))
-                    .newImageName(run.getActualDockerImage())
-                    .defaultTaskName(run.getTaskName())
-                    .preCommitCommand(preferenceManager.getPreference(SystemPreferences.PRE_COMMIT_COMMAND_PATH))
-                    .postCommitCommand(preferenceManager.getPreference(SystemPreferences.POST_COMMIT_COMMAND_PATH))
-                    .build()
-                    .getCommand();
-
-            RunInstance instance = run.getInstance();
-            kubernetesManager.addNodeLabel(instance.getNodeName(), KubernetesConstants.PAUSED_NODE_LABEL,
-                    TaskStatus.PAUSED.name());
-
-            run.setPodIP(null);
-            run.setServiceUrl(null);
-            removeUtilizationLevelTags(run);
-            runManager.updateRunInfo(run);
-
-            Process sshConnection = submitCommandViaSSH(instance.getNodeIP(), pauseRunCommand);
-
-            //TODO: change SystemPreferences.COMMIT_TIMEOUT in according to
-            // f_EPMCMBIBPC-2025_add_lastStatusUpdate_time branche
-            boolean isFinished = sshConnection.waitFor(
-                    preferenceManager.getPreference(SystemPreferences.PAUSE_TIMEOUT), TimeUnit.SECONDS);
-
-            if (isFinished && sshConnection.exitValue() == COMMAND_CANNOT_EXECUTE_CODE) {
-                //TODO: change in according to f_EPMCMBIBPC-2025_add_lastStatusUpdate_time branche
-                run.setStatus(TaskStatus.RUNNING);
-                runManager.updatePipelineStatus(run);
-                kubernetesManager.removeNodeLabel(instance.getNodeName(), KubernetesConstants.PAUSED_NODE_LABEL);
-                return;
+            if (needToRerun(run, TaskStatus.PAUSING, PAUSE_RUN_TASK)) {
+                final boolean scriptLaunchedSuccessfully = launchPauseRunScript(run);
+                if (!scriptLaunchedSuccessfully) {
+                    return;
+                }
+                addRunLog(run, "[INFO] Pause run script completed successfully", PAUSE_RUN_TASK,
+                        TaskStatus.SUCCESS);
             }
-            Assert.state(sshConnection.exitValue() == 0,
-                    messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_PAUSE_FAILED, run.getId()));
-            addRunLog(run, "[INFO] Pause run script completed successfully", PAUSE_RUN_TASK,
-                    TaskStatus.SUCCESS);
 
-            kubernetesManager.deletePod(run.getPodId());
-            cloudFacade.stopInstance(instance.getCloudRegionId(), instance.getNodeId());
-            kubernetesManager.deleteNode(instance.getNodeName());
+            final RunInstance instance = run.getInstance();
+            kubernetesManager.deletePodIfExists(run.getPodId());
+            stopInstanceIfExists(instance.getCloudRegionId(), instance.getNodeId());
+            kubernetesManager.deleteNodeIfExists(instance.getNodeName());
             run.setStatus(TaskStatus.PAUSED);
             runManager.updatePipelineStatus(run);
         } catch (Exception e) {
@@ -276,17 +245,23 @@ public class DockerContainerOperationManager {
     public void resumeRun(PipelineRun run, List<String> endpoints) {
         try {
             final AbstractCloudRegion cloudRegion = regionManager.load(run.getInstance().getCloudRegionId());
-            final CloudInstanceOperationResult startInstanceResult = cloudFacade.startInstance(cloudRegion.getId(),
-                    run.getInstance().getNodeId());
-            if (startInstanceResult.getStatus() != CloudInstanceOperationResult.Status.OK) {
-                rollbackRunToPausedState(run, startInstanceResult);
+            final boolean instanceStartedSuccessfully = startInstanceIfNotExists(run, run.getInstance().getNodeId(),
+                    cloudRegion.getId());
+            if (!instanceStartedSuccessfully) {
                 return;
             }
+
             kubernetesManager.waitForNodeReady(run.getInstance().getNodeName(),
                     run.getId().toString(), cloudRegion.getRegionCode());
-            PipelineConfiguration configuration = getResumeConfiguration(run);
-            launcher.launch(run, configuration, endpoints,  run.getId().toString(),
-                    true, run.getPodId(), null, false);
+
+            if (needToRerun(run, TaskStatus.RESUMING, RESUME_RUN_TASK)) {
+                final PipelineConfiguration configuration = getResumeConfiguration(run);
+                launcher.launch(run, configuration, endpoints,  run.getId().toString(),
+                        true, run.getPodId(), null, false);
+                addRunLog(run, "[INFO] Resume run script completed successfully", RESUME_RUN_TASK,
+                        TaskStatus.SUCCESS);
+            }
+
             kubernetesManager.removeNodeLabel(run.getInstance().getNodeName(),
                     KubernetesConstants.PAUSED_NODE_LABEL);
             run.setStatus(TaskStatus.RUNNING);
@@ -383,5 +358,91 @@ public class DockerContainerOperationManager {
             .filter(run::hasTag)
             .forEach(run::removeTag);
     }
-}
 
+    private boolean needToRerun(final PipelineRun run, final TaskStatus runStatus, final String taskName) {
+        final Optional<LocalDateTime> lastStatusUpdateDate = ListUtils
+                .emptyIfNull(runStatusManager.loadRunStatus(run.getId())).stream()
+                .filter(status -> runStatus.equals(status.getStatus()))
+                .map(RunStatus::getTimestamp)
+                .max(LocalDateTime::compareTo);
+        if (!lastStatusUpdateDate.isPresent()) {
+            return false;
+        }
+        final List<RunLog> runLogs = runLogManager.loadAllLogsForTask(run.getId(), taskName);
+        final Optional<Date> lastSuccessTaskDate = ListUtils.emptyIfNull(runLogs).stream()
+                .filter(log -> TaskStatus.SUCCESS.equals(log.getStatus()))
+                .map(RunLog::getDate)
+                .max(Date::compareTo);
+        return !lastSuccessTaskDate.isPresent()
+                || DateUtils.convertDateToLocalDateTime(lastSuccessTaskDate.get())
+                .isAfter(lastStatusUpdateDate.get());
+    }
+
+    private void stopInstanceIfExists(final Long regionId, final String nodeId) {
+        if (cloudFacade.instanceExists(regionId, nodeId)) {
+            cloudFacade.stopInstance(regionId, nodeId);
+        }
+    }
+
+    private boolean startInstanceIfNotExists(final PipelineRun run, final String nodeId, final Long regionId) {
+        if (!cloudFacade.instanceExists(regionId, nodeId)) {
+            final CloudInstanceOperationResult startInstanceResult = cloudFacade.startInstance(regionId, nodeId);
+            if (startInstanceResult.getStatus() != CloudInstanceOperationResult.Status.OK) {
+                rollbackRunToPausedState(run, startInstanceResult);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean launchPauseRunScript(final PipelineRun run) throws IOException, InterruptedException {
+        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(),
+                run.getActualDockerImage());
+        final String apiToken = authManager.issueTokenForCurrentUser().getToken();
+        Assert.notNull(containerId,
+                messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
+
+        final String pauseRunCommand = DockerPauseCommand.builder()
+                .runPauseScriptUrl(pauseRunScriptUrl)
+                .api(preferenceManager.getPreference(SystemPreferences.BASE_API_HOST))
+                .apiToken(apiToken)
+                .pauseDistributionUrl(commitScriptsDistributionsUrl)
+                .distributionUrl(preferenceManager.getPreference(SystemPreferences.BASE_PIPE_DISTR_URL))
+                .runId(String.valueOf(run.getId()))
+                .containerId(containerId)
+                .timeout(String.valueOf(preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT)))
+                .newImageName(run.getActualDockerImage())
+                .defaultTaskName(run.getTaskName())
+                .preCommitCommand(preferenceManager.getPreference(SystemPreferences.PRE_COMMIT_COMMAND_PATH))
+                .postCommitCommand(preferenceManager.getPreference(SystemPreferences.POST_COMMIT_COMMAND_PATH))
+                .build()
+                .getCommand();
+
+        RunInstance instance = run.getInstance();
+        kubernetesManager.addNodeLabel(instance.getNodeName(), KubernetesConstants.PAUSED_NODE_LABEL,
+                TaskStatus.PAUSED.name());
+
+        run.setPodIP(null);
+        run.setServiceUrl(null);
+        removeUtilizationLevelTags(run);
+        runManager.updateRunInfo(run);
+
+        Process sshConnection = submitCommandViaSSH(instance.getNodeIP(), pauseRunCommand);
+
+        //TODO: change SystemPreferences.COMMIT_TIMEOUT in according to
+        // f_EPMCMBIBPC-2025_add_lastStatusUpdate_time branch
+        boolean isFinished = sshConnection.waitFor(
+                preferenceManager.getPreference(SystemPreferences.PAUSE_TIMEOUT), TimeUnit.SECONDS);
+
+        if (isFinished && sshConnection.exitValue() == COMMAND_CANNOT_EXECUTE_CODE) {
+            //TODO: change in according to f_EPMCMBIBPC-2025_add_lastStatusUpdate_time branch
+            run.setStatus(TaskStatus.RUNNING);
+            runManager.updatePipelineStatus(run);
+            kubernetesManager.removeNodeLabel(instance.getNodeName(), KubernetesConstants.PAUSED_NODE_LABEL);
+            return false;
+        }
+        Assert.state(sshConnection.exitValue() == 0,
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_PAUSE_FAILED, run.getId()));
+        return true;
+    }
+}

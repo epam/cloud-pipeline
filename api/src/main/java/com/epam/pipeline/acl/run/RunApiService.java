@@ -42,6 +42,7 @@ import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.filter.WrongFilterException;
+import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.ToolApiService;
@@ -78,6 +79,7 @@ public class RunApiService {
     private final MessageHelper messageHelper;
     private final UtilsManager utilsManager;
     private final ConfigurationRunner configurationLauncher;
+    private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
 
     @AclMask
     public PipelineRun runCmd(PipelineStart runVO) {
@@ -225,7 +227,8 @@ public class RunApiService {
     @AclMask
     public PipelineRun commitRun(Long runId, Long registryId, String imageName, boolean deleteFiles,
                                  boolean stopPipeline, boolean checkSize) {
-        return runManager.commitRun(runId, registryId, imageName, deleteFiles, stopPipeline, checkSize);
+        return pipelineRunDockerOperationManager
+                .commitRun(runId, registryId, imageName, deleteFiles, stopPipeline, checkSize);
     }
 
     @PreAuthorize(RUN_ID_WRITE)
@@ -241,13 +244,13 @@ public class RunApiService {
     @PreAuthorize(RUN_ID_EXECUTE)
     @AclMask
     public PipelineRun pauseRun(Long runId, boolean checkSize) {
-        return runManager.pauseRun(runId, checkSize);
+        return pipelineRunDockerOperationManager.pauseRun(runId, checkSize);
     }
 
     @PreAuthorize(RUN_ID_EXECUTE)
     @AclMask
     public PipelineRun resumeRun(Long runId) {
-        return runManager.resumeRun(runId);
+        return pipelineRunDockerOperationManager.resumeRun(runId);
     }
 
     @AclMaskPage
@@ -269,7 +272,7 @@ public class RunApiService {
 
     @PreAuthorize(RUN_ID_READ)
     public Boolean checkFreeSpaceAvailable(final Long runId) {
-        return runManager.checkFreeSpaceAvailable(runId);
+        return pipelineRunDockerOperationManager.checkFreeSpaceAvailable(runId);
     }
 
     @PreAuthorize(RUN_ID_OWNER)

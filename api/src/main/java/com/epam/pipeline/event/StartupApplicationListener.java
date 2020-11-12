@@ -18,7 +18,7 @@ package com.epam.pipeline.event;
 
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,18 +36,18 @@ public class StartupApplicationListener {
     private final DockerRegistryManager dockerRegistryManager;
     private final CloudRegionManager cloudRegionManager;
     private final KubernetesManager kubernetesManager;
-    private final PipelineRunManager pipelineRunManager;
+    private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
     private final boolean haEnabled;
 
     public StartupApplicationListener(final DockerRegistryManager dockerRegistryManager,
                                       final CloudRegionManager cloudRegionManager,
                                       final KubernetesManager kubernetesManager,
-                                      final PipelineRunManager pipelineRunManager,
+                                      final PipelineRunDockerOperationManager pipelineRunDockerOperationManager,
                                       final @Value("${ha.deploy.enabled:false}") boolean haEnabled) {
         this.dockerRegistryManager = dockerRegistryManager;
         this.cloudRegionManager = cloudRegionManager;
         this.kubernetesManager = kubernetesManager;
-        this.pipelineRunManager = pipelineRunManager;
+        this.pipelineRunDockerOperationManager = pipelineRunDockerOperationManager;
         this.haEnabled = haEnabled;
     }
 
@@ -58,7 +58,7 @@ public class StartupApplicationListener {
                 dockerRegistryManager.checkDockerSecrets();
                 cloudRegionManager.refreshCloudRegionCredKubeSecret();
                 if (isMasterHost()) {
-                    pipelineRunManager.rerunPauseAndResume();
+                    pipelineRunDockerOperationManager.rerunPauseAndResume();
                 }
             }
         } catch (Exception e) {
@@ -67,6 +67,6 @@ public class StartupApplicationListener {
     }
 
     private boolean isMasterHost() {
-        return haEnabled || kubernetesManager.isMasterHost();
+        return !haEnabled || kubernetesManager.isMasterHost();
     }
 }
