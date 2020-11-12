@@ -25,10 +25,8 @@ import com.epam.pipeline.autotests.utils.SelenideElements;
 import com.epam.pipeline.autotests.utils.Utils;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.*;
@@ -124,7 +122,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkWarningMessage(String message, boolean isVisible) {
-        sleep(2, SECONDS);
+        sleep(5, SECONDS);
         assertEquals(context().findAll(byClassName("ant-alert-warning"))
                 .stream()
                 .map(SelenideElement::getText)
