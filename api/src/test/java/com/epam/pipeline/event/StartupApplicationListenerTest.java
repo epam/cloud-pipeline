@@ -18,7 +18,7 @@ package com.epam.pipeline.event;
 
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,6 +26,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ContextRefreshedEvent;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,11 +35,12 @@ public class StartupApplicationListenerTest {
     private final DockerRegistryManager dockerRegistryManager = mock(DockerRegistryManager.class);
     private final CloudRegionManager cloudRegionManager = mock(CloudRegionManager.class);
     private final KubernetesManager kubernetesManager = mock(KubernetesManager.class);
-    private final PipelineRunManager pipelineRunManager = mock(PipelineRunManager.class);
+    private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager =
+            mock(PipelineRunDockerOperationManager.class);
     private final ContextRefreshedEvent event = mock(ContextRefreshedEvent.class);
 
     private final StartupApplicationListener listener = new StartupApplicationListener(dockerRegistryManager,
-            cloudRegionManager, kubernetesManager, pipelineRunManager, true);
+            cloudRegionManager, kubernetesManager, pipelineRunDockerOperationManager, true);
 
     @Before
     public void setup() {
@@ -47,11 +49,13 @@ public class StartupApplicationListenerTest {
 
     @Test
     public void shouldRerunPauseAndResume() {
+        when(kubernetesManager.isMasterHost()).thenReturn(true);
+
         listener.onApplicationEvent(event);
 
         verify(dockerRegistryManager).checkDockerSecrets();
         verify(cloudRegionManager).refreshCloudRegionCredKubeSecret();
-        verify(pipelineRunManager).rerunPauseAndResume();
+        verify(pipelineRunDockerOperationManager).rerunPauseAndResume();
     }
 
     @Test
@@ -62,6 +66,6 @@ public class StartupApplicationListenerTest {
 
         verify(dockerRegistryManager).checkDockerSecrets();
         verify(cloudRegionManager).refreshCloudRegionCredKubeSecret();
-        verify(pipelineRunManager).rerunPauseAndResume();
+        verify(pipelineRunDockerOperationManager, never()).rerunPauseAndResume();
     }
 }

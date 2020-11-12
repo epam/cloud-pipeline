@@ -34,6 +34,7 @@ import javax.annotation.PostConstruct;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.extern.slf4j.Slf4j;
@@ -115,6 +116,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         private static final long ONE = 1L;
 
         private final PipelineRunManager pipelineRunManager;
+        private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
         private final NotificationManager notificationManager;
         private final MonitoringESDao monitoringDao;
         private final MessageHelper messageHelper;
@@ -123,11 +125,13 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
         @Autowired
         ResourceMonitoringManagerCore(final PipelineRunManager pipelineRunManager,
+                                      final PipelineRunDockerOperationManager pipelineRunDockerOperationManager,
                                       final NotificationManager notificationManager,
                                       final MonitoringESDao monitoringDao,
                                       final MessageHelper messageHelper,
                                       final PreferenceManager preferenceManager) {
             this.pipelineRunManager = pipelineRunManager;
+            this.pipelineRunDockerOperationManager = pipelineRunDockerOperationManager;
             this.messageHelper = messageHelper;
             this.notificationManager = notificationManager;
             this.monitoringDao = monitoringDao;
@@ -406,7 +410,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                 return;
             }
             run.setLastIdleNotificationTime(null);
-            pipelineRunManager.pauseRun(run.getId(), true);
+            pipelineRunDockerOperationManager.pauseRun(run.getId(), true);
             notificationManager.notifyIdleRuns(Collections.singletonList(new ImmutablePair<>(run, cpuUsageRate)),
                     NotificationType.IDLE_RUN_PAUSED);
         }
