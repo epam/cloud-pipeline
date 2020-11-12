@@ -48,7 +48,7 @@ public abstract class AbstractControllerTest {
 
     protected static final String EXPECTED_CONTENT_TYPE = "application/json;charset=UTF-8";
     protected static final String SERVLET_PATH = "/restapi";
-    protected static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
+    private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
 
     private MockMvc mockMvc;
     private ObjectMapper deserializationMapper;
@@ -100,8 +100,8 @@ public abstract class AbstractControllerTest {
         assertEquals(expectedResult.getPayload(), actualResult.getPayload());
     }
 
-    public void assertResponseHeader(final MvcResult mvcResult, final String expected, final String actual) {
-        assertThat(mvcResult.getResponse().getHeader(expected)).contains(actual);
+    public void assertResponseHeader(final MvcResult mvcResult, final String actual) {
+        assertThat(mvcResult.getResponse().getHeader(CONTENT_DISPOSITION_HEADER)).contains(actual);
     }
 
     public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder) throws Exception {

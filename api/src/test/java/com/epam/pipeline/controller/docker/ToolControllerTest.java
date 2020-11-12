@@ -419,7 +419,7 @@ public class ToolControllerTest extends AbstractControllerTest {
         verify(mockToolApiService).loadToolIcon(ID);
         final String actualResult = mvcResult.getResponse().getContentAsString();
         Assert.assertEquals(FILE_NAME, actualResult);
-        assertResponseHeader(mvcResult, CONTENT_DISPOSITION_HEADER, FILE_NAME);
+        assertResponseHeader(mvcResult, FILE_NAME);
     }
 
     @Test
