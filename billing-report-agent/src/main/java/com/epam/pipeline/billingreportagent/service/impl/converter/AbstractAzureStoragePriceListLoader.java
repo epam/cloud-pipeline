@@ -94,7 +94,7 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
 
     protected StoragePricing convertPricing(final AzurePricingEntity azurePricing, final float scaleFactor) {
         final Map<String, Float> rates = azurePricing.getMeterRates();
-        logger.debug("Reading RateCard price from {}", azurePricing);
+        logger.debug("Converting price from {}", azurePricing);
         final StoragePricing storagePricing = new StoragePricing();
         final List<StoragePricing.StoragePricingEntity> pricing = rates.entrySet().stream()
             .map(e -> {
@@ -167,11 +167,11 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
         try {
             List<AzurePricingEntity> priceList;
             if (region.getPriceOfferId().equals("EA-OFFER")) {
-                priceList = rawEAPriceLoader.getRawPricesUsingPipelineRegion(region);
                 logger.info("Reading EA prices for [{}, meterName={}]", region.getName(), region.getMeterRegionName());
+                priceList = rawEAPriceLoader.getRawPricesUsingPipelineRegion(region);
             } else {
-                priceList = rawPriceLoader.getRawPricesUsingPipelineRegion(region);
                 logger.info("Reading RateCard prices for [{}, meterName={}]", region.getName(), region.getMeterRegionName());
+                priceList = rawPriceLoader.getRawPricesUsingPipelineRegion(region);
             }
             return getStoragePricingForRegion(priceList, region.getMeterRegionName());
         } catch (IOException e) {

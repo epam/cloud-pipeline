@@ -44,7 +44,7 @@ public class AzureFilesStoragePriceListLoader extends AbstractAzureStoragePriceL
     protected Map<String, StoragePricing> extractPrices(final List<AzurePricingEntity> pricingMeters) {
         return pricingMeters
             .stream()
-            .filter(meter -> GB_MONTH_UNIT.contains(meter.getUnit()))
+            .filter(meter -> meter.getUnit().contains(GB_MONTH_UNIT))
             .filter(meter -> STORAGE_CATEGORY.equals(meter.getMeterCategory()))
             .filter(meter -> FILES_SUBCATEGORY.equals(meter.getMeterSubCategory()))
             .filter(meter -> meter.getMeterName().equals(String.format(DATA_STORE_METER_TEMPLATE, storageTier)))

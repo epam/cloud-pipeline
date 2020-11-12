@@ -43,7 +43,7 @@ public class AzureNetAppStoragePriceListLoader extends AbstractAzureStoragePrice
 
     protected Map<String, StoragePricing> extractPrices(final List<AzurePricingEntity> pricingMeters) {
         return pricingMeters.stream()
-            .filter(meter -> GIB_HOUR_UNIT.contains(meter.getUnit()))
+            .filter(meter -> meter.getUnit().contains(GIB_HOUR_UNIT))
             .filter(meter -> AZURE_NETAPP_CATEGORY.equals(meter.getMeterCategory()))
             .filter(meter -> meter.getMeterName().equals(String.format(AZURE_CAPACITY_METER_TEMPLATE, netAppTier)))
             .filter(meter -> StringUtils.isNotEmpty(meter.getMeterRegion()))

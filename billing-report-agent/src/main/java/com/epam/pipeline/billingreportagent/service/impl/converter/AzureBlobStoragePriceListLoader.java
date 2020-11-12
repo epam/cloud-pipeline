@@ -45,7 +45,7 @@ public class AzureBlobStoragePriceListLoader extends AbstractAzureStoragePriceLi
     @Override
     protected Map<String, StoragePricing> extractPrices(final List<AzurePricingEntity> pricingMeters) {
         return pricingMeters.stream()
-            .filter(meter -> GB_MONTH_UNIT.contains(meter.getUnit()))
+            .filter(meter -> meter.getUnit().contains(GB_MONTH_UNIT))
             .filter(meter -> meter.getMeterSubCategory().contains(blobStorageCategory))
             .filter(meter -> meter.getMeterName().startsWith(String.format(DATA_STORE_METER_TEMPLATE, redundancyType)))
             .collect(Collectors.toMap(AzurePricingEntity::getMeterRegion,
