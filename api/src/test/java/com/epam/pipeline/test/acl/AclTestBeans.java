@@ -95,7 +95,6 @@ import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.RunScheduleManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
-import com.epam.pipeline.acl.docker.ToolApiService;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
@@ -231,9 +230,6 @@ public class AclTestBeans {
 
     @MockBean
     protected RunScheduleManager mockRunScheduleManager;
-
-    @MockBean
-    protected ToolApiService mockToolApiService;
 
     @MockBean
     protected MessageHelper mockMessageHelper;
