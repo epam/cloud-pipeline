@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.cluster.schedule.NodeScheduleDao" id="nodeScheduleDao" autowire="byName">
+        <constructor-arg>
+            <value>
+                <!--insertScheduleQuery-->
+                <![CDATA[
+                    INSERT INTO pipeline.node_schedule (
+                        created_date,
+                        name)
+                    VALUES (
+                        :SCHEDULE_CREATED_DATE,
+                        :SCHEDULE_NAME)
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--insertScheduleEntryQuery-->
+                <![CDATA[
+                    INSERT INTO pipeline.node_schedule_entry (
+                        schedule_id,
+                        from_day_of_week,
+                        from_time,
+                        to_day_of_week,
+                        to_time)
+                    VALUES (
+                        :SCHEDULE_ID,
+                        :FROM_DAY_OF_WEEK,
+                        :FROM_TIME,
+                        :TO_DAY_OF_WEEK,
+                        :TO_TIME)
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--updateScheduleQuery-->
+                <![CDATA[
+                    UPDATE pipeline.node_schedule SET
+                        name = :SCHEDULE_NAME
+                    WHERE
+                        id = :SCHEDULE_ID
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--deleteScheduleQuery-->
+                <![CDATA[
+                    DELETE FROM pipeline.node_schedule
+                    WHERE id = ?
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--deleteScheduleEntriesQuery-->
+                <![CDATA[
+                    DELETE FROM pipeline.node_schedule_entry
+                    WHERE schedule_id = ?
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadScheduleByIdQuery-->
+                <![CDATA[
+                    SELECT
+                        s.id as SCHEDULE_ID,
+                        s.name as SCHEDULE_NAME,
+                        s.created_date as SCHEDULE_CREATED_DATE,
+                        e.from_day_of_week,
+                        e.from_time,
+                        e.to_day_of_week,
+                        e.to_time
+                    FROM pipeline.node_schedule as s
+                    LEFT JOIN pipeline.node_schedule_entry as e
+                        ON s.id = e.schedule_id
+                    WHERE s.id = ?
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadAllSchedulesQuery-->
+                <![CDATA[
+                    SELECT
+                        s.id as SCHEDULE_ID,
+                        s.name as SCHEDULE_NAME,
+                        s.created_date as SCHEDULE_CREATED_DATE,
+                        e.from_day_of_week,
+                        e.from_time,
+                        e.to_day_of_week,
+                        e.to_time
+                    FROM pipeline.node_schedule as s
+                    LEFT JOIN pipeline.node_schedule_entry as e
+                        ON s.id = e.schedule_id
+                ]]>
+            </value>
+        </constructor-arg>
+    </bean>
+</beans>
