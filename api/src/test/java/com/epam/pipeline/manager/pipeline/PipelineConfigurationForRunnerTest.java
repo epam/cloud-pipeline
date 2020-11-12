@@ -77,6 +77,9 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
     private PermissionsService permissionsServiceMock;
     @MockBean
     private ToolVersionManager toolVersionManagerMock;
+    @MockBean
+    @SuppressWarnings("PMD.UnusedPrivateField")
+    private PipelineRunManager pipelineRunManager;
 
     private ConfigurationEntry configurationEntry;
 
