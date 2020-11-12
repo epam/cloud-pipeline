@@ -54,7 +54,6 @@ public class AzureEARawPriceLoader extends AzureAbstractRawPriceLoader {
         return getPriceSheet(region, credentials, new ArrayList<>(), null)
                     .stream()
                     .filter(details -> region.getMeterRegionName().equals(details.getMeterRegion()))
-//                    .filter(details -> CURRENCY.equals(details.getCurrencyCode()))
                     .map(meter -> AzurePricingEntity.builder()
                             .meterCategory(meter.getMeterCategory())
                             .meterSubCategory(meter.getMeterSubCategory())
