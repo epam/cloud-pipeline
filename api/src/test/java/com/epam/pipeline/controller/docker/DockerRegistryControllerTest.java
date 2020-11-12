@@ -75,7 +75,6 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     private static final String NOTIFY_REGISTRY_URL = DOCKER_REGISTRY_URL + "/notify";
 
     private static final String OCTET_STREAM_CONTENT_TYPE = "application/octet-stream";
-    private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
     private static final String FORCE = "force";
     private static final String TRUE_AS_STRING = String.valueOf(true);
     private static final String REGISTRY_PATH = "Registry-Path";
@@ -276,7 +275,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
                 OCTET_STREAM_CONTENT_TYPE);
 
         verify(mockDockerRegistryApiService).getCertificateContent(ID);
-        assertFileResponse(mvcResult, CONTENT_DISPOSITION_HEADER, CERTIFICATE_NAME, bytes);
+        assertFileResponse(mvcResult, CERTIFICATE_NAME, bytes);
     }
 
     @Test
@@ -293,7 +292,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
                 OCTET_STREAM_CONTENT_TYPE);
 
         verify(mockDockerRegistryApiService).getConfigScript(ID);
-        assertFileResponse(mvcResult, CONTENT_DISPOSITION_HEADER, DOCKER_LOGIN_SCRIPT, bytes);
+        assertFileResponse(mvcResult, DOCKER_LOGIN_SCRIPT, bytes);
     }
 
     @Test

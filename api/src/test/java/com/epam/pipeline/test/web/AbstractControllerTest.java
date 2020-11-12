@@ -22,7 +22,6 @@ import com.epam.pipeline.controller.Result;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -40,7 +39,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
@@ -49,6 +47,7 @@ public abstract class AbstractControllerTest {
 
     protected static final String EXPECTED_CONTENT_TYPE = "application/json;charset=UTF-8";
     protected static final String SERVLET_PATH = "/restapi";
+    protected static final String CERTIFICATE_NAME = "ca.crt";
     private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
 
     private MockMvc mockMvc;
@@ -89,7 +88,7 @@ public abstract class AbstractControllerTest {
     @SneakyThrows
     public <T> void assertResponse(final MvcResult mvcResult,
                                    final T payload,
-                                   final TypeReference<Result<T>> typeReference) {
+                                   final TypeReference<Result<T>> typeReference)  {
         final ResponseResult<T> expectedResult = buildExpectedResult(payload);
 
         final String actual = mvcResult.getResponse().getContentAsString();
@@ -101,8 +100,9 @@ public abstract class AbstractControllerTest {
         assertEquals(expectedResult.getPayload(), actualResult.getPayload());
     }
 
-    public void assertFileResponse(final MvcResult mvcResult, final String fileName, final byte[] fileContent) {
-        assertResponseHeader(mvcResult, fileName);
+    public void assertFileResponse(final MvcResult mvcResult, final String expected,
+                                   final String actual, final byte[] fileContent) {
+        assertResponseHeader(mvcResult, expected, actual);
         assertContent(mvcResult, fileContent);
     }
 
