@@ -19,8 +19,11 @@ import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.SelenideElements;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.WebElement;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.codeborne.selenide.CollectionCondition.sizeGreaterThan;
 import static com.codeborne.selenide.CollectionCondition.texts;
@@ -40,10 +43,11 @@ import static com.epam.pipeline.autotests.ao.Primitive.SELECT_ALL_NON_SENSITIVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SENSITIVE_STORAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.TABLE;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toList;
 
 public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, PipelineRunFormAO> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
-            entry(CANCEL, context().find(byText("Cancel"))),
+            entry(CANCEL, context().find(byText("Cancel")).parent()),
             entry(OK, context().find(byClassName("ant-btn-primary"))),
             entry(CLEAR_SELECTION, context().find(byClassName("ant-btn-danger"))),
             entry(SELECT_ALL, context().find(byXpath("//button/span[.='Select all']")).closest("button")),
@@ -73,6 +77,10 @@ public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, 
 
     public SelectLimitMountsPopupAO selectAllNonSensitive() {
         return click(SELECT_ALL_NON_SENSITIVE).sleep(1, SECONDS);
+    }
+
+    public SelectLimitMountsPopupAO selectAll() {
+        return click(SELECT_ALL).sleep(1, SECONDS);
     }
 
     @Override
@@ -122,5 +130,19 @@ public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, 
         SelenideElements.of(columnHeader)
                 .shouldHave(texts(names));
         return this;
+    }
+
+    public int countStoragesWithType(String type) {
+        List<WebElement> listType = $(byClassName("ant-table-tbody")).$$(byClassName("ant-table-row"))
+                .stream()
+                .map(e -> e.find(byXpath("./td[3]")))
+                .filter(e -> e.text().equals(type))
+                .collect(toList());
+        click(CANCEL);
+        return listType.size();
+    }
+
+    public int countObjectStorages() {
+        return Integer.parseInt(get(OK).text().replaceAll("[^0-9]", "")) - countStoragesWithType("NFS");
     }
 }

@@ -21,9 +21,11 @@ import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
 import com.epam.pipeline.autotests.AbstractSinglePipelineRunningTest;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
+import com.epam.pipeline.autotests.utils.SelenideElements;
 import com.epam.pipeline.autotests.utils.Utils;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -36,6 +38,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.tagName;
@@ -117,6 +120,16 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     public PipelineRunFormAO setTimeOut(String timeOut) {
         inputByFieldName("Timeout (min)")
                 .setValue(timeOut);
+        return this;
+    }
+
+    public PipelineRunFormAO checkWarningMessage(String message, boolean isVisible) {
+        sleep(2, SECONDS);
+        assertEquals(context().findAll(byClassName("ant-alert-warning"))
+                .stream()
+                .map(SelenideElement::getText)
+                .filter(e -> e.contains(message))
+                .collect(toList()).size()==1, isVisible);
         return this;
     }
 
@@ -243,6 +256,21 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         );
     }
 
+    public PipelineRunFormAO checkLaunchWarningMessage(String message, boolean isVisible) {
+        try {
+            $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
+            $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(byClassName("ob-estimated-price-info__info")).shouldBe(visible);
+            assertEquals(context().$(byClassName("ant-modal-body")).findAll(byClassName("ant-alert-warning"))
+                    .stream()
+                    .map(SelenideElement::getText)
+                    .filter(e -> e.contains(message))
+                    .collect(toList()).size()==1, isVisible);
+        } finally {
+            $$(byClassName("ant-modal-body")).findBy(text("Cancel")).find(button("Cancel")).shouldBe(enabled).click();
+            return this;
+        }
+    }
+
     public PipelineRunFormAO checkLaunchItemName(String name) {
         context().find(launchItemName()).shouldHave(text(name));
         return this;
@@ -352,6 +380,17 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     public SelectLimitMountsPopupAO selectDataStoragesToLimitMounts() {
         click(LIMIT_MOUNTS);
         return new SelectLimitMountsPopupAO(this).sleep(2, SECONDS);
+    }
+
+    public int minNodeTypeRAM() {
+        get(INSTANCE_TYPE).shouldBe(visible).click();
+        return SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).texts()
+                .stream()
+                .map(e -> e.substring(e.indexOf("RAM: ")))
+                .map(e -> e.replaceAll("[^0-9 ]", ""))
+                .map(e -> e.split(" ")[1])
+                .mapToInt(Integer::parseInt)
+                .min().getAsInt();
     }
 
     @Override
