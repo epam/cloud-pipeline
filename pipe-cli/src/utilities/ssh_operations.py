@@ -265,18 +265,19 @@ def resolve_ssh_path():
     possible_ssh_paths = []
     if os.getenv('CP_CLI_TUNNEL_SSH_PATH'):
         possible_ssh_paths.append(os.getenv('CP_CLI_TUNNEL_SSH_PATH'))
-    possible_ssh_paths.append(os.path.expanduser('~/.ssh'))
-    if is_wsl():
-        command_output = perform_command(['powershell.exe', '$env:UserName'], collect_output=True) or ''
-        windows_user = command_output.strip()
-        if windows_user:
-            possible_ssh_paths.append('/mnt/c/Users/{}/.ssh'.format(windows_user))
+    else:
+        if is_wsl():
+            command_output = perform_command(['powershell.exe', '$env:UserName'], collect_output=True) or ''
+            windows_user = command_output.strip()
+            if windows_user:
+                possible_ssh_paths.append('/mnt/c/Users/{}/.ssh'.format(windows_user))
+        possible_ssh_paths.append(os.path.expanduser('~/.ssh'))
     for possible_ssh_path in possible_ssh_paths:
         if os.path.exists(possible_ssh_path):
             return possible_ssh_path
-    raise RuntimeError('Default .ssh directory was not found by the following locations: {}. '
-                       'Default .ssh directory path can be overridden using CP_CLI_TUNNEL_SSH_PATH variable.'
-                       .format(', '.join(possible_ssh_paths)))
+    fallback_ssh_path = possible_ssh_paths[0]
+    os.makedirs(fallback_ssh_path, mode=0700)
+    return fallback_ssh_path
 
 
 def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_level, retries,
@@ -467,6 +468,7 @@ def add_to_ssh_known_hosts(run_id, local_port, log_file, retries, ssh_known_host
 def remove_from_ssh_known_hosts(ssh_known_hosts_path, local_port, log_file):
     if os.path.exists(ssh_known_hosts_path):
         perform_command(['ssh-keygen', '-R', '[127.0.0.1]:{}'.format(local_port), '-f', ssh_known_hosts_path], log_file)
+        perform_command(['rm', ssh_known_hosts_path + '.old'], log_file)
 
 
 def perform_command(executable, log_file=None, collect_output=True):
