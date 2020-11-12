@@ -218,12 +218,12 @@ public class DockerContainerOperationManager {
     @Async("pauseRunExecutor")
     public void pauseRun(PipelineRun run) {
         try {
-            if (needToRerun(run, TaskStatus.PAUSING, PAUSE_RUN_TASK)) {
+            if (needToLaunch(run, TaskStatus.PAUSING, PAUSE_RUN_TASK)) {
                 final boolean scriptLaunchedSuccessfully = launchPauseRunScript(run);
                 if (!scriptLaunchedSuccessfully) {
                     return;
                 }
-                addRunLog(run, "[INFO] Pause run script completed successfully", PAUSE_RUN_TASK,
+                addRunLog(run, messageHelper.getMessage(MessageConstants.INFO_LOG_PAUSE_COMPLETED), PAUSE_RUN_TASK,
                         TaskStatus.SUCCESS);
             }
 
@@ -254,11 +254,11 @@ public class DockerContainerOperationManager {
             kubernetesManager.waitForNodeReady(run.getInstance().getNodeName(),
                     run.getId().toString(), cloudRegion.getRegionCode());
 
-            if (needToRerun(run, TaskStatus.RESUMING, RESUME_RUN_TASK)) {
+            if (needToLaunch(run, TaskStatus.RESUMING, RESUME_RUN_TASK)) {
                 final PipelineConfiguration configuration = getResumeConfiguration(run);
                 launcher.launch(run, configuration, endpoints,  run.getId().toString(),
                         true, run.getPodId(), null, false);
-                addRunLog(run, "[INFO] Resume run script completed successfully", RESUME_RUN_TASK,
+                addRunLog(run, messageHelper.getMessage(MessageConstants.INFO_LOG_RESUME_COMPLETED), RESUME_RUN_TASK,
                         TaskStatus.SUCCESS);
             }
 
@@ -359,7 +359,7 @@ public class DockerContainerOperationManager {
             .forEach(run::removeTag);
     }
 
-    private boolean needToRerun(final PipelineRun run, final TaskStatus runStatus, final String taskName) {
+    private boolean needToLaunch(final PipelineRun run, final TaskStatus runStatus, final String taskName) {
         final Optional<LocalDateTime> lastStatusUpdateDate = ListUtils
                 .emptyIfNull(runStatusManager.loadRunStatus(run.getId())).stream()
                 .filter(status -> runStatus.equals(status.getStatus()))
@@ -418,7 +418,7 @@ public class DockerContainerOperationManager {
                 .build()
                 .getCommand();
 
-        RunInstance instance = run.getInstance();
+        final RunInstance instance = run.getInstance();
         kubernetesManager.addNodeLabel(instance.getNodeName(), KubernetesConstants.PAUSED_NODE_LABEL,
                 TaskStatus.PAUSED.name());
 
@@ -427,11 +427,11 @@ public class DockerContainerOperationManager {
         removeUtilizationLevelTags(run);
         runManager.updateRunInfo(run);
 
-        Process sshConnection = submitCommandViaSSH(instance.getNodeIP(), pauseRunCommand);
+        final Process sshConnection = submitCommandViaSSH(instance.getNodeIP(), pauseRunCommand);
 
         //TODO: change SystemPreferences.COMMIT_TIMEOUT in according to
         // f_EPMCMBIBPC-2025_add_lastStatusUpdate_time branch
-        boolean isFinished = sshConnection.waitFor(
+        final boolean isFinished = sshConnection.waitFor(
                 preferenceManager.getPreference(SystemPreferences.PAUSE_TIMEOUT), TimeUnit.SECONDS);
 
         if (isFinished && sshConnection.exitValue() == COMMAND_CANNOT_EXECUTE_CODE) {
