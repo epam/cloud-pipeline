@@ -41,6 +41,9 @@ import org.springframework.util.StringUtils;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * This class contains methods for pipeline run routine related to docker container operations.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -163,7 +166,8 @@ public class PipelineRunDockerOperationManager {
     }
 
     /**
-     * Reruns pause and resume operations if them still in progress
+     * Reruns pause and resume operations if them still in progress. This method shall be executed at the
+     * application startup.
      */
     public void rerunPauseAndResume() {
         final List<PipelineRun> pausingRuns = pipelineRunManager
@@ -178,7 +182,7 @@ public class PipelineRunDockerOperationManager {
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private void rerunPauseRun(final PipelineRun run) {
         try {
-            log.debug("Pause run operation well be relaunched for run '{}'", run.getId());
+            log.debug("Pause run operation will be relaunched for run '{}'", run.getId());
             dockerContainerOperationManager.pauseRun(run);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -188,7 +192,7 @@ public class PipelineRunDockerOperationManager {
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private void rerunResumeRun(final PipelineRun run) {
         try {
-            log.debug("Resume run operation well be relaunched for run '{}'", run.getId());
+            log.debug("Resume run operation will be relaunched for run '{}'", run.getId());
             final Tool tool = toolManager.loadByNameOrId(run.getDockerImage());
             dockerContainerOperationManager.resumeRun(run, tool.getEndpoints());
         } catch (Exception e) {
