@@ -32,7 +32,6 @@ import java.util.Objects;
 @Slf4j
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class StartupApplicationListener {
-
     private final DockerRegistryManager dockerRegistryManager;
     private final CloudRegionManager cloudRegionManager;
     private final KubernetesManager kubernetesManager;

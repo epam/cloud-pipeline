@@ -157,6 +157,8 @@ public final class MessageConstants {
     public static final String ERROR_RUN_DISK_SIZE_NOT_FOUND = "error.run.disk.size.not.found";
     public static final String ERROR_BAD_STATS_FILE_ENCODING = "error.run.stats.file.bad.encoding";
     public static final String ERROR_RUN_CLOUD_REGION_NOT_ALLOWED = "error.run.cloud.region.not.allowed";
+    public static final String INFO_LOG_PAUSE_COMPLETED = "info.log.pause.completed";
+    public static final String INFO_LOG_RESUME_COMPLETED = "info.log.resume.completed";
 
     //Run schedule
     public static final String CRON_EXPRESSION_IS_NOT_PROVIDED = "cron.expression.is.not.provided";
