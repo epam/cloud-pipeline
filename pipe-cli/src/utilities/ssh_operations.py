@@ -281,7 +281,7 @@ def resolve_ssh_path():
 
 
 def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_level, retries,
-                             tunnel_timeout=5, chunk_size=4096, server_delay=0.0001):
+                             tunnel_timeout=3600, chunk_size=4096, server_delay=0.0001):
     logging.basicConfig(level=log_level or logging.ERROR)
     conn_info = get_conn_info(run_id)
     proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]),

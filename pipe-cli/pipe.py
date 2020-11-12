@@ -1233,7 +1233,7 @@ def ssh(ctx, run_id, retries):
 @click.option('-l', '--log-file', required=False, help='Logs file for tunnel in background mode')
 @click.option('-v', '--log-level', required=False, help='Logs level for tunnel: '
                                                         'CRITICAL, ERROR, WARNING, INFO or DEBUG')
-@click.option('-t', '--timeout', required=False, type=int, default=1000,
+@click.option('-t', '--timeout', required=False, type=int, default=5 * 1000,
               help='Time period in ms for background tunnel process health check')
 @click.option('-f', '--foreground', required=False, is_flag=True, default=False,
               help='Establishes tunnel in foreground mode')
