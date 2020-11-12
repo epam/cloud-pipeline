@@ -34,10 +34,10 @@ public class AzureNetAppStoragePriceListLoader extends AbstractAzureStoragePrice
     private final String netAppTier;
 
     public AzureNetAppStoragePriceListLoader(final CloudRegionLoader regionLoader,
-                                             final AzureRateCardRawPriceLoader rawPriceLoader,
+                                             final AzureRateCardRawPriceLoader rawRateCardPriceLoader,
                                              final AzureEARawPriceLoader rawEAPriceLoader,
                                              final String netAppTier) {
-        super(regionLoader, rawPriceLoader, rawEAPriceLoader);
+        super(regionLoader, rawRateCardPriceLoader, rawEAPriceLoader);
         this.netAppTier = netAppTier;
     }
 
@@ -48,7 +48,7 @@ public class AzureNetAppStoragePriceListLoader extends AbstractAzureStoragePrice
             .filter(meter -> meter.getMeterName().equals(String.format(AZURE_CAPACITY_METER_TEMPLATE, netAppTier)))
             .filter(meter -> StringUtils.isNotEmpty(meter.getMeterRegion()))
             .collect(Collectors.toMap(AzurePricingEntity::getMeterRegion,
-                    pricing -> convertPricing(pricing, getScaleFactor(pricing.getUnit()))));
+                    pricing -> convertAzurePricing(pricing, getScaleFactor(pricing.getUnit()))));
     }
 
 }

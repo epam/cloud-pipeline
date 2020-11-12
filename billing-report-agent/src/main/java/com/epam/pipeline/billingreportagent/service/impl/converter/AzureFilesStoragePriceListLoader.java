@@ -17,9 +17,7 @@
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
-import com.epam.pipeline.billingreportagent.model.pricing.AzureEAPricingMeter;
 import com.epam.pipeline.billingreportagent.model.pricing.AzurePricingEntity;
-import com.epam.pipeline.billingreportagent.model.pricing.AzureRateCardPricingMeter;
 import com.epam.pipeline.billingreportagent.service.impl.loader.CloudRegionLoader;
 
 import java.util.List;
@@ -33,10 +31,10 @@ public class AzureFilesStoragePriceListLoader extends AbstractAzureStoragePriceL
     private final String storageTier;
 
     public AzureFilesStoragePriceListLoader(final CloudRegionLoader regionLoader,
-                                            final AzureRateCardRawPriceLoader rawPriceLoader,
+                                            final AzureRateCardRawPriceLoader rawRateCardPriceLoader,
                                             final AzureEARawPriceLoader rawEAPriceLoader,
                                             final String storageTier) {
-        super(regionLoader, rawPriceLoader, rawEAPriceLoader);
+        super(regionLoader, rawRateCardPriceLoader, rawEAPriceLoader);
         this.storageTier = storageTier;
     }
 
@@ -49,7 +47,7 @@ public class AzureFilesStoragePriceListLoader extends AbstractAzureStoragePriceL
             .filter(meter -> FILES_SUBCATEGORY.equals(meter.getMeterSubCategory()))
             .filter(meter -> meter.getMeterName().equals(String.format(DATA_STORE_METER_TEMPLATE, storageTier)))
             .collect(Collectors.toMap(AzurePricingEntity::getMeterRegion,
-                    pricing -> convertPricing(pricing, getScaleFactor(pricing.getUnit()))));
+                    pricing -> convertAzurePricing(pricing, getScaleFactor(pricing.getUnit()))));
     }
 
 }

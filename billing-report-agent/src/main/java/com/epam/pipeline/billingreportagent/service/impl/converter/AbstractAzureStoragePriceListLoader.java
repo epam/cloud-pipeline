@@ -52,16 +52,16 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
     protected static final String DATA_STORE_METER_TEMPLATE = "%s Data Stored";
 
     private CloudRegionLoader regionLoader;
-    private AzureRateCardRawPriceLoader rawPriceLoader;
+    private AzureRateCardRawPriceLoader rawRateCardPriceLoader;
     private AzureEARawPriceLoader rawEAPriceLoader;
 
     private final Logger logger;
 
     public AbstractAzureStoragePriceListLoader(final CloudRegionLoader regionLoader,
-                                               final AzureRateCardRawPriceLoader rawPriceLoader,
+                                               final AzureRateCardRawPriceLoader rawRateCardPriceLoader,
                                                AzureEARawPriceLoader rawEAPriceLoader) {
         this.regionLoader = regionLoader;
-        this.rawPriceLoader = rawPriceLoader;
+        this.rawRateCardPriceLoader = rawRateCardPriceLoader;
         this.rawEAPriceLoader = rawEAPriceLoader;
         this.logger = LoggerFactory.getLogger(this.getClass());
     }
@@ -88,11 +88,11 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
 
     protected abstract Map<String, StoragePricing> extractPrices(List<AzurePricingEntity> pricingMeters);
 
-    protected StoragePricing convertPricing(final AzurePricingEntity azurePricing) {
-        return convertPricing(azurePricing, 1f);
+    protected StoragePricing convertAzurePricing(final AzurePricingEntity azurePricing) {
+        return convertAzurePricing(azurePricing, 1f);
     }
 
-    protected StoragePricing convertPricing(final AzurePricingEntity azurePricing, final float scaleFactor) {
+    protected StoragePricing convertAzurePricing(final AzurePricingEntity azurePricing, final float scaleFactor) {
         final Map<String, Float> rates = azurePricing.getMeterRates();
         logger.debug("Converting price from {}", azurePricing);
         final StoragePricing storagePricing = new StoragePricing();
@@ -116,7 +116,7 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
 
     private void assertOffersAndRegionMetersAreUnique(final List<AzureRegion> activeAzureRegions) {
         final Map<String, Set<String>> regionOfferMapping =
-            mapRegionsOnFunctionResult(activeAzureRegions, rawPriceLoader::getRegionOfferAndSubscription);
+            mapRegionsOnFunctionResult(activeAzureRegions, rawRateCardPriceLoader::getRegionOfferAndSubscription);
         final Map<String, Set<String>> regionMeterMapping =
             mapRegionsOnFunctionResult(activeAzureRegions, AzureRegion::getMeterRegionName);
         for (final String regionName : regionOfferMapping.keySet()) {
@@ -171,7 +171,7 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
                 priceList = rawEAPriceLoader.getRawPricesUsingPipelineRegion(region);
             } else {
                 logger.info("Reading RateCard prices for [{}, meterName={}]", region.getName(), region.getMeterRegionName());
-                priceList = rawPriceLoader.getRawPricesUsingPipelineRegion(region);
+                priceList = rawRateCardPriceLoader.getRawPricesUsingPipelineRegion(region);
             }
             return getStoragePricingForRegion(priceList, region.getMeterRegionName());
         } catch (IOException e) {
