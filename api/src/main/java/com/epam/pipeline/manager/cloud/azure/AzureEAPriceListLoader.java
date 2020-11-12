@@ -103,7 +103,6 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
                     getPriceSheet(new ArrayList<>(), subscription, credentials, null)
                             .stream()
                             .filter(details -> meterRegionName.equals(details.getMeterRegion()))
-                            .filter(details -> CloudInstancePriceService.CURRENCY.equals(details.getCurrencyCode()))
                             .collect(Collectors.toList())
                 ).build()
         ).build();
