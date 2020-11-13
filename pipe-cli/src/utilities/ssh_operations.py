@@ -35,6 +35,8 @@ from urllib.parse import urlparse
 
 DEFAULT_SSH_PORT = 22
 DEFAULT_SSH_USER = 'root'
+DEFAULT_LOGGING_FORMAT = '%(asctime)s:%(levelname)s: %(message)s'
+
 
 def setup_paramiko_logging():
     # Log to "null" file by default
@@ -193,12 +195,17 @@ def run_ssh(run_id, command, retries=10):
             transport.close()
 
 
-def create_tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, foreground, retries):
+def create_tunnel(run_id, local_port, remote_port, connection_timeout,
+                  ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+                  timeout, foreground, retries):
     if foreground:
+        remote_host = ssh_host or 'pipeline-{}'.format(run_id)
         if ssh:
-            create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, log_file, log_level, retries)
+            create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout,
+                                              ssh_path, ssh_keep, remote_host, log_file, log_level, retries)
         else:
-            create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_level, retries)
+            create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout,
+                                     remote_host, log_level, retries)
     else:
         create_background_tunnel(log_file, timeout)
 
@@ -229,68 +236,61 @@ def create_background_tunnel(log_file, timeout):
             sys.exit(1)
 
 
-def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, log_file, log_level, retries):
+def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout,
+                                      ssh_path, ssh_keep, remote_host, log_file, log_level, retries):
+    logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     if is_windows():
         import click
         click.echo('Passwordless ssh configuration is not supported on Windows.', err=True)
         sys.exit(1)
-    ssh_path = resolve_ssh_path()
+    ssh_path = ssh_path or os.path.expanduser('~/.ssh')
     ssh_config_path = '{}/config'.format(ssh_path)
     ssh_known_hosts_path = '{}/known_hosts'.format(ssh_path)
     ssh_keys_path = os.path.expanduser('~/.pipe/.ssh')
     ssh_private_key_name = 'pipeline-{}-{}-{}'.format(run_id, int(time.time()), random.randint(0, sys.maxsize))
     ssh_private_key_path = os.path.join(ssh_keys_path, ssh_private_key_name)
     ssh_public_key_path = '{}.pub'.format(ssh_private_key_path)
-    remote_host = os.getenv('CP_CLI_TUNNEL_SSH_HOST', 'pipeline-{}'.format(run_id))
     conn_info = get_conn_info(run_id)
     remote_ssh_authorized_keys_paths = ['/root/.ssh/authorized_keys',
                                         '/home/{}/.ssh/authorized_keys'.format(conn_info.owner)]
     remote_ssh_public_key_path = '/root/.ssh/id_rsa.pub'
+    if not os.path.exists(ssh_path):
+        os.makedirs(ssh_path, mode=stat.S_IRWXU)
     if not os.path.exists(ssh_keys_path):
-        os.makedirs(ssh_keys_path)
+        os.makedirs(ssh_keys_path, mode=stat.S_IRWXU)
     try:
+        logging.info('Initializing passwordless ssh %s:%s:%s...', local_port, remote_host, remote_port)
         generate_ssh_keys(log_file, ssh_private_key_path)
-        upload_ssh_public_key_to_run(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths)
-        add_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path)
-        add_to_ssh_known_hosts(run_id, local_port, log_file, retries, ssh_known_hosts_path, remote_ssh_public_key_path)
-        create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_level, retries)
+        copy_ssh_public_key_to_remote_authorized_hosts(run_id, ssh_public_key_path, retries,
+                                                       remote_ssh_authorized_keys_paths)
+        add_record_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path)
+        copy_remote_ssh_public_key_to_ssh_known_hosts(run_id, local_port, log_file, retries,
+                                                      ssh_known_hosts_path, remote_ssh_public_key_path)
+        create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout,
+                                 remote_host, log_level, retries)
+    except:
+        logging.exception('Error occurred while trying set up tunnel')
+        raise
     finally:
-        remove_ssh_public_key_from_run(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths)
-        remove_ssh_keys(ssh_public_key_path, ssh_private_key_path)
-        remove_from_ssh_config(ssh_config_path, remote_host)
-        remove_from_ssh_known_hosts(ssh_known_hosts_path, local_port, log_file)
+        if not ssh_keep:
+            remove_ssh_public_key_from_remote_authorized_hosts(run_id, ssh_public_key_path, retries,
+                                                               remote_ssh_authorized_keys_paths)
+            remove_remote_ssh_public_key_from_ssh_known_hosts(ssh_known_hosts_path, local_port, log_file)
+            remove_record_from_ssh_config(ssh_config_path, remote_host)
+            remove_ssh_keys(ssh_public_key_path, ssh_private_key_path)
 
 
-def resolve_ssh_path():
-    possible_ssh_paths = []
-    if os.getenv('CP_CLI_TUNNEL_SSH_PATH'):
-        possible_ssh_paths.append(os.getenv('CP_CLI_TUNNEL_SSH_PATH'))
-    else:
-        if is_wsl():
-            command_output = perform_command(['powershell.exe', '$env:UserName'], collect_output=True) or ''
-            windows_user = command_output.strip()
-            if windows_user:
-                possible_ssh_paths.append('/mnt/c/Users/{}/.ssh'.format(windows_user))
-        possible_ssh_paths.append(os.path.expanduser('~/.ssh'))
-    for possible_ssh_path in possible_ssh_paths:
-        if os.path.exists(possible_ssh_path):
-            return possible_ssh_path
-    fallback_ssh_path = possible_ssh_paths[0]
-    os.makedirs(fallback_ssh_path, mode=0700)
-    return fallback_ssh_path
-
-
-def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_level, retries,
-                             tunnel_timeout=3600, chunk_size=4096, server_delay=0.0001):
-    logging.basicConfig(level=log_level or logging.ERROR)
+def create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout,
+                             remote_host, log_level, retries,
+                             chunk_size=4096, server_delay=0.0001):
+    logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     conn_info = get_conn_info(run_id)
     proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]),
                       int(os.getenv('CP_CLI_TUNNEL_PROXY_PORT', conn_info.ssh_proxy[1])))
     target_endpoint = (os.getenv('CP_CLI_TUNNEL_TARGET_HOST', conn_info.ssh_endpoint[0]),
                        remote_port)
-    tunnel_timeout = float(os.getenv('CP_CLI_TUNNEL_CONNECTION_TIMEOUT', tunnel_timeout))
     server_address = os.getenv('CP_CLI_TUNNEL_SERVER_ADDRESS', '0.0.0.0')
-    logging.info('Initializing tunnel %s:pipeline-%s:%s...', local_port, run_id, remote_port)
+    logging.info('Initializing tunnel %s:%s:%s...', local_port, remote_host, remote_port)
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((server_address, local_port))
     server_socket.listen(5)
@@ -317,7 +317,7 @@ def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_leve
                     try:
                         logging.info('Initializing tunnel connection...')
                         tunnel_socket = http_proxy_tunnel_connect(proxy_endpoint, target_endpoint,
-                                                                  timeout=tunnel_timeout,
+                                                                  timeout=connection_timeout,
                                                                   retries=retries)
                     except KeyboardInterrupt:
                         raise
@@ -380,18 +380,20 @@ def configure_graceful_exiting():
 
 
 def generate_ssh_keys(log_file, ssh_private_key_path):
-    generate_ssh_keys_command = ['ssh-keygen', '-t', 'rsa', '-f', ssh_private_key_path, '-N', '', '-q']
-    perform_command(generate_ssh_keys_command, log_file)
+    logging.info('Generating tunnel ssh keys...')
+    perform_command(['ssh-keygen', '-t', 'rsa', '-f', ssh_private_key_path, '-N', '', '-q'], log_file)
 
 
 def remove_ssh_keys(ssh_public_key_path, ssh_private_key_path):
+    logging.info('Removing tunnel ssh keys...')
     if os.path.exists(ssh_public_key_path):
         os.remove(ssh_public_key_path)
     if os.path.exists(ssh_private_key_path):
         os.remove(ssh_private_key_path)
 
 
-def upload_ssh_public_key_to_run(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths):
+def copy_ssh_public_key_to_remote_authorized_hosts(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths):
+    logging.info('Copying ssh public key to remote authorized keys...')
     with open(ssh_public_key_path, 'r') as f:
         ssh_public_key = f.read().strip()
     run_ssh(run_id,
@@ -399,7 +401,8 @@ def upload_ssh_public_key_to_run(run_id, ssh_public_key_path, retries, remote_ss
             .format(ssh_public_key, ' '.join(remote_ssh_authorized_keys_paths)), retries)
 
 
-def remove_ssh_public_key_from_run(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths):
+def remove_ssh_public_key_from_remote_authorized_hosts(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths):
+    logging.info('Removing ssh public keys from remote authorized hosts...')
     if os.path.exists(ssh_public_key_path) and remote_ssh_authorized_keys_paths:
         with open(ssh_public_key_path, 'r') as f:
             ssh_public_key = f.read().strip()
@@ -418,11 +421,12 @@ def remove_ssh_public_key_from_run(run_id, ssh_public_key_path, retries, remote_
         run_ssh(run_id, remove_ssh_public_keys_from_run_command.rstrip(';'), retries)
 
 
-def add_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path):
-    remove_from_ssh_config(ssh_config_path, remote_host)
+def add_record_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path):
+    remove_record_from_ssh_config(ssh_config_path, remote_host)
+    logging.info('Appending host record to ssh config...')
     ssh_config_path_existed = os.path.exists(ssh_config_path)
     with open(ssh_config_path, 'a') as f:
-        f.write('Host {}\n'
+        f.write('\nHost {}\n'
                 '    Hostname 127.0.0.1\n'
                 '    Port {}\n'
                 '    IdentityFile {}\n'
@@ -431,7 +435,8 @@ def add_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_
         os.chmod(ssh_config_path, stat.S_IRUSR | stat.S_IWUSR)
 
 
-def remove_from_ssh_config(ssh_config_path, remote_host):
+def remove_record_from_ssh_config(ssh_config_path, remote_host):
+    logging.info('Removing host record from ssh config...')
     if os.path.exists(ssh_config_path):
         with open(ssh_config_path, 'r') as f:
             ssh_config_lines = f.readlines()
@@ -450,7 +455,8 @@ def remove_from_ssh_config(ssh_config_path, remote_host):
         os.chmod(ssh_config_path, stat.S_IRUSR | stat.S_IWUSR)
 
 
-def add_to_ssh_known_hosts(run_id, local_port, log_file, retries, ssh_known_hosts_path, remote_ssh_public_key_path):
+def copy_remote_ssh_public_key_to_ssh_known_hosts(run_id, local_port, log_file, retries, ssh_known_hosts_path, remote_ssh_public_key_path):
+    logging.info('Copying remote public key to known hosts...')
     ssh_known_hosts_temp_path = ssh_known_hosts_path + '_{}'.format(random.randint(0, sys.maxsize))
     run_scp_download(run_id, remote_ssh_public_key_path, ssh_known_hosts_temp_path, retries)
     with open(ssh_known_hosts_temp_path, 'r') as f:
@@ -458,17 +464,16 @@ def add_to_ssh_known_hosts(run_id, local_port, log_file, retries, ssh_known_host
     os.remove(ssh_known_hosts_temp_path)
     ssh_known_hosts_path_existed = os.path.exists(ssh_known_hosts_path)
     with open(ssh_known_hosts_path, 'a') as f:
-        f.write('[127.0.0.1]:{} {}'.format(local_port, public_key))
+        f.write('\n[127.0.0.1]:{} {}\n'.format(local_port, public_key))
     if not ssh_known_hosts_path_existed:
         os.chmod(ssh_known_hosts_path, stat.S_IRUSR | stat.S_IWUSR)
     perform_command(['ssh-keygen', '-H', '-f', ssh_known_hosts_path], log_file)
-    perform_command(['rm', ssh_known_hosts_path + '.old'], log_file)
 
 
-def remove_from_ssh_known_hosts(ssh_known_hosts_path, local_port, log_file):
+def remove_remote_ssh_public_key_from_ssh_known_hosts(ssh_known_hosts_path, local_port, log_file):
+    logging.info('Removing remote public key from known hosts...')
     if os.path.exists(ssh_known_hosts_path):
         perform_command(['ssh-keygen', '-R', '[127.0.0.1]:{}'.format(local_port), '-f', ssh_known_hosts_path], log_file)
-        perform_command(['rm', ssh_known_hosts_path + '.old'], log_file)
 
 
 def perform_command(executable, log_file=None, collect_output=True):

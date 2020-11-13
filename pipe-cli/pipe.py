@@ -1227,9 +1227,17 @@ def ssh(ctx, run_id, retries):
 @click.argument('run-id', required=True, type=int)
 @click.option('-lp', '--local-port', required=True, type=int, help='Local port to establish connection from')
 @click.option('-rp', '--remote-port', required=True, type=int, help='Remote port to establish connection to')
+@click.option('-ct', '--connection-timeout', required=False, type=float, default=0,
+              help='Socket connection timeout in seconds')
 @click.option('-s', '--ssh', required=False, is_flag=True, default=False,
               help='Configures passwordless ssh to specified run instance. '
-                   'Not supported for Windows OS')
+                   'Supported on Linux only.')
+@click.option('-sp', '--ssh-path', required=False, type=str,
+              help='Path to .ssh directory for passwordless ssh configuration')
+@click.option('-sh', '--ssh-host', required=False, type=str,
+              help='Host name for passwordless ssh configuration')
+@click.option('-sk', '--ssh-keep', required=False, is_flag=True, default=False,
+              help='Keeps passwordless ssh configuration after tunnel stopping')
 @click.option('-l', '--log-file', required=False, help='Logs file for tunnel in background mode')
 @click.option('-v', '--log-level', required=False, help='Logs level for tunnel: '
                                                         'CRITICAL, ERROR, WARNING, INFO or DEBUG')
@@ -1241,7 +1249,9 @@ def ssh(ctx, run_id, retries):
 @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
-def tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, foreground, retries, trace):
+def tunnel(run_id, local_port, remote_port, connection_timeout,
+           ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+           timeout, foreground, retries, trace):
     """
     Establishes tunnel connection to specified run instance port and serves it as a local port.
 
@@ -1280,15 +1290,16 @@ def tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, f
         CP_CLI_TUNNEL_PROXY_PORT - tunnel proxy port
         CP_CLI_TUNNEL_TARGET_HOST - tunnel target host
         CP_CLI_TUNNEL_SERVER_ADDRESS - tunnel server address
-        CP_CLI_TUNNEL_CONNECTION_TIMEOUT - tunnel connection timeout
-        CP_CLI_TUNNEL_SSH_PATH - .ssh directory path
-        CP_CLI_TUNNEL_SSH_HOST - ssh host name
     """
     if trace:
-        create_tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, foreground, retries)
+        create_tunnel(run_id, local_port, remote_port, connection_timeout,
+                      ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+                      timeout, foreground, retries)
     else:
         try:
-            create_tunnel(run_id, local_port, remote_port, ssh, log_file, log_level, timeout, foreground, retries)
+            create_tunnel(run_id, local_port, remote_port, connection_timeout,
+                          ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+                          timeout, foreground, retries)
         except Exception as runtime_error:
             click.echo('Error: {}'.format(str(runtime_error)), err=True)
             sys.exit(1)
