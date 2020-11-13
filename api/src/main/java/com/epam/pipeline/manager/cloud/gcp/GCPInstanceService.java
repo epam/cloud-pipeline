@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
@@ -216,6 +217,11 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     @Override
     public CloudProvider getProvider() {
         return CloudProvider.GCP;
+    }
+
+    @Override
+    public CloudInstanceState getInstanceState(final GCPRegion region, final String nodeLabel) {
+        throw new UnsupportedOperationException("This operation is not supported yet");
     }
 
     private String getCredentialsFilePath(GCPRegion region) {

@@ -22,8 +22,11 @@ import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -38,8 +41,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * This class contains methods for pipeline run routine related to docker container operations.
@@ -55,6 +61,8 @@ public class PipelineRunDockerOperationManager {
     private final PipelineRunDao pipelineRunDao;
     private final PipelineRunCRUDService runCRUDService;
     private final UsageMonitoringManager usageMonitoringManager;
+    private final RunLogManager runLogManager;
+    private final RunStatusManager runStatusManager;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
 
@@ -117,7 +125,7 @@ public class PipelineRunDockerOperationManager {
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_FINISHED, runId));
         pipelineRun.setStatus(TaskStatus.PAUSING);
         runCRUDService.updateRunStatus(pipelineRun);
-        dockerContainerOperationManager.pauseRun(pipelineRun);
+        dockerContainerOperationManager.pauseRun(pipelineRun, false);
         return pipelineRun;
     }
 
@@ -182,8 +190,12 @@ public class PipelineRunDockerOperationManager {
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private void rerunPauseRun(final PipelineRun run) {
         try {
+            if (!needToRerunPause(run)) {
+                log.debug("Run '{}' is in PAUSING state but pause operation cannot be relaunched", run.getId());
+                return;
+            }
             log.debug("Pause run operation will be relaunched for run '{}'", run.getId());
-            dockerContainerOperationManager.pauseRun(run);
+            dockerContainerOperationManager.pauseRun(run, true);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
@@ -229,5 +241,25 @@ public class PipelineRunDockerOperationManager {
         return registryAndDockerImageFromRun.length == 1
                 ? registryAndDockerImageFromRun[0]
                 : registryAndDockerImageFromRun[1];
+    }
+
+    private boolean needToRerunPause(final PipelineRun run) {
+        final Optional<LocalDateTime> lastStatusUpdateDate = ListUtils
+                .emptyIfNull(runStatusManager.loadRunStatus(run.getId())).stream()
+                .filter(status -> TaskStatus.PAUSING.equals(status.getStatus()))
+                .map(RunStatus::getTimestamp)
+                .max(LocalDateTime::compareTo);
+        if (!lastStatusUpdateDate.isPresent()) {
+            return false;
+        }
+        final List<RunLog> runLogs = runLogManager.loadAllLogsForTask(run.getId(),
+                DockerContainerOperationManager.PAUSE_RUN_TASK);
+        final Optional<Date> lastSuccessTaskDate = ListUtils.emptyIfNull(runLogs).stream()
+                .filter(log -> TaskStatus.SUCCESS.equals(log.getStatus()))
+                .map(RunLog::getDate)
+                .max(Date::compareTo);
+        return lastSuccessTaskDate.isPresent()
+                && DateUtils.convertDateToLocalDateTime(lastSuccessTaskDate.get())
+                .isAfter(lastStatusUpdateDate.get());
     }
 }

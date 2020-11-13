@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.azure;
 
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
@@ -223,6 +224,11 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     @Override
     public CloudProvider getProvider() {
         return CloudProvider.AZURE;
+    }
+
+    @Override
+    public CloudInstanceState getInstanceState(final AzureRegion region, final String nodeLabel) {
+        throw new UnsupportedOperationException("This operation is not supported yet");
     }
 
     private Map<String, String> buildScriptAzureEnvVars(final AzureRegion region) {

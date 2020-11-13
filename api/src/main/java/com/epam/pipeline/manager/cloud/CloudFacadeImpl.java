@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
@@ -237,6 +238,13 @@ public class CloudFacadeImpl implements CloudFacade {
     public List<InstanceDisk> loadDisks(final Long regionId, final Long runId) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
         return getInstanceService(region).loadDisks(region, runId);
+    }
+
+    @Override
+    public CloudInstanceState getInstanceState(final Long runId) {
+        final AbstractCloudRegion region = getRegionByRunId(runId);
+        return getInstanceService(region)
+                .getInstanceState(region, String.valueOf(runId));
     }
 
     private AbstractCloudRegion getRegionByRunId(final Long runId) {
