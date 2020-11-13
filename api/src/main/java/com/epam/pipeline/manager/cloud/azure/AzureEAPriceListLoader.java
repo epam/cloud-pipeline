@@ -48,7 +48,6 @@ import static com.epam.pipeline.manager.cloud.azure.AzurePricingClient.executeRe
 @Slf4j
 public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
 
-    public static final String OFFER_ID = "EA-OFFER";
     private static final String API_VERSION = "2019-10-01";
 
     private final AzurePricingClient azurePricingClient;
