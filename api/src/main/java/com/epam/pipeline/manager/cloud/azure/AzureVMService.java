@@ -28,7 +28,6 @@ import com.microsoft.azure.Page;
 import com.microsoft.azure.PagedList;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.compute.InstanceViewStatus;
-import com.microsoft.azure.management.compute.PowerState;
 import com.microsoft.azure.management.compute.VirtualMachine;
 import com.microsoft.azure.management.compute.VirtualMachineInstanceView;
 import com.microsoft.azure.management.compute.VirtualMachineScaleSet;
@@ -94,10 +93,9 @@ public class AzureVMService {
 
     public AzureVirtualMachineStats getRunningVMByRunId(final AzureRegion region, final String tagValue) {
         final AzureVirtualMachineStats virtualMachine = getVMStatsByTag(region, tagValue);
-        final PowerState powerState = virtualMachine.getPowerState();
-        if (!powerState.equals(PowerState.RUNNING) && !powerState.equals(PowerState.STARTING)) {
+        if (!virtualMachine.hasRunningState()) {
             throw new AzureException(messageHelper.getMessage(
-                    MessageConstants.ERROR_AZURE_INSTANCE_NOT_RUNNING, tagValue, powerState));
+                    MessageConstants.ERROR_AZURE_INSTANCE_NOT_RUNNING, tagValue, virtualMachine.getPowerState()));
         }
         return virtualMachine;
     }
@@ -242,7 +240,7 @@ public class AzureVMService {
                 .map(client -> client.getByResourceGroup(resourceGroup, scaleSetName));
     }
 
-    private AzureVirtualMachineStats getVMStatsByTag(final AzureRegion region, final String tagValue) {
+    public AzureVirtualMachineStats getVMStatsByTag(final AzureRegion region, final String tagValue) {
         final Azure azure = AzureHelper.buildClient(region.getAuthFile());
         final PagedList<GenericResource> resources = azure.genericResources()
                 .listByTag(region.getResourceGroup(), TAG_NAME, tagValue);
