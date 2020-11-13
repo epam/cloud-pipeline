@@ -359,13 +359,13 @@ public class KubernetesManager {
 
     public void deletePod(final String podId) {
         try (KubernetesClient client = getKubernetesClient()) {
-            final Boolean result = client
+            final Boolean deleted = client
                     .pods()
                     .inNamespace(kubeNamespace)
                     .withName(podId)
                     .withGracePeriod(0)
                     .delete();
-            if (Objects.isNull(result) || !result) {
+            if (Objects.isNull(deleted) || !deleted) {
                 LOGGER.debug("Failed to delete pod with ID '{}'", podId);
             }
         }

@@ -352,26 +352,35 @@ public class DockerContainerOperationManager {
     private void stopInstanceIfNeed(final Long runId, final RunInstance instance) {
         final CloudInstanceState cloudInstanceState = cloudFacade.getInstanceState(runId);
         validateInstanceState(cloudInstanceState);
-        if (CloudInstanceState.RUNNING.equals(cloudInstanceState)) {
-            cloudFacade.stopInstance(instance.getCloudRegionId(), instance.getNodeId());
-            return;
+        switch (cloudInstanceState) {
+            case STOPPED:
+                break;
+            case RUNNING:
+                cloudFacade.stopInstance(instance.getCloudRegionId(), instance.getNodeId());
+                break;
+            case TERMINATED:
+                throw new IllegalStateException(messageHelper
+                        .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "stop"));
         }
-        Assert.state(!CloudInstanceState.TERMINATED.equals(cloudInstanceState),
-                messageHelper.getMessage(MessageConstants.ERROR_STOP_INSTANCE_TERMINATED));
     }
 
     private boolean startInstanceIfNeed(final PipelineRun run, final String nodeId, final Long regionId) {
         final CloudInstanceState cloudInstanceState = cloudFacade.getInstanceState(run.getId());
         validateInstanceState(cloudInstanceState);
-        if (CloudInstanceState.STOPPED.equals(cloudInstanceState)) {
-            final CloudInstanceOperationResult startInstanceResult = cloudFacade.startInstance(regionId, nodeId);
-            if (startInstanceResult.getStatus() != CloudInstanceOperationResult.Status.OK) {
-                rollbackRunToPausedState(run, startInstanceResult);
-                return false;
-            }
+        switch (cloudInstanceState) {
+            case STOPPED:
+                final CloudInstanceOperationResult startInstanceResult = cloudFacade.startInstance(regionId, nodeId);
+                if (startInstanceResult.getStatus() != CloudInstanceOperationResult.Status.OK) {
+                    rollbackRunToPausedState(run, startInstanceResult);
+                    return false;
+                }
+                break;
+            case RUNNING:
+                break;
+            case TERMINATED:
+                throw new IllegalStateException(messageHelper
+                        .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "start"));
         }
-        Assert.state(!CloudInstanceState.TERMINATED.equals(cloudInstanceState),
-                messageHelper.getMessage(MessageConstants.ERROR_STOP_INSTANCE_TERMINATED));
         return true;
     }
 

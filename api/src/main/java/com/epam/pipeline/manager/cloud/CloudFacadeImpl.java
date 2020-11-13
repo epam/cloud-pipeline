@@ -243,8 +243,7 @@ public class CloudFacadeImpl implements CloudFacade {
     @Override
     public CloudInstanceState getInstanceState(final Long runId) {
         final AbstractCloudRegion region = getRegionByRunId(runId);
-        return getInstanceService(region)
-                .getInstanceState(region, String.valueOf(runId));
+        return getInstanceService(region).getInstanceState(region, String.valueOf(runId));
     }
 
     private AbstractCloudRegion getRegionByRunId(final Long runId) {
