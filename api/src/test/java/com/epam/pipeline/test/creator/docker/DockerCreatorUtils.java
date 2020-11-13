@@ -22,6 +22,8 @@ import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.pipeline.ToolGroupWithIssues;
 import com.epam.pipeline.entity.scan.ToolScanPolicy;
 import com.epam.pipeline.entity.scan.ToolScanResultView;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
@@ -57,6 +59,12 @@ public final class DockerCreatorUtils {
     public static final TypeReference<Result<Tool>> TOOL_INSTANCE_TYPE = new TypeReference<Result<Tool>>() {};
     public static final TypeReference<Result<List<String>>> LIST_STRING_INSTANCE_TYPE =
             new TypeReference<Result<List<String>>>() {};
+    public static final TypeReference<Result<ToolGroup>> TOOL_GROUP_TYPE =
+            new TypeReference<Result<ToolGroup>>() {};
+    public static final TypeReference<Result<ToolGroupWithIssues>> TOOL_GROUP_WITH_ISSUES_TYPE =
+            new TypeReference<Result<ToolGroupWithIssues>>() {};
+    public static final TypeReference<Result<List<ToolGroup>>> TOOL_GROUP_LIST_TYPE =
+            new TypeReference<Result<List<ToolGroup>>>() {};
 
     private DockerCreatorUtils() {
 
@@ -112,5 +120,13 @@ public final class DockerCreatorUtils {
 
     public static ToolSymlinkRequest getToolSymlinkRequest() {
         return new ToolSymlinkRequest(ID, ID);
+    }
+
+    public static ToolGroup getToolGroup() {
+        return new ToolGroup();
+    }
+
+    public static ToolGroupWithIssues getToolGroupWithIssues() {
+        return new ToolGroupWithIssues();
     }
 }

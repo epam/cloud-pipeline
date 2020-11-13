@@ -124,7 +124,7 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailCreateTool() throws Exception {
+    public void shouldFailCreateTool() {
         performUnauthorizedRequest(post(REGISTER_TOOL_URL));
     }
 
@@ -141,13 +141,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailUpdateTool() throws Exception {
+    public void shouldFailUpdateTool() {
         performUnauthorizedRequest(post(UPDATE_TOOL_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldUpdateWhiteListWithToolVersion() throws Exception {
+    public void shouldUpdateWhiteListWithToolVersion() {
         final ToolVersionScanResult toolVersionScanResult = DockerCreatorUtils.getToolVersionScanResult();
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(TOOL_ID, ID_AS_STRING);
@@ -162,13 +162,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailUpdateWhiteListWithToolVersion() throws Exception {
+    public void shouldFailUpdateWhiteListWithToolVersion() {
         performUnauthorizedRequest(post(UPDATE_WHITE_LIST_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldLoadTool() throws Exception {
+    public void shouldLoadTool() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(REGISTRY, TEST_STRING);
         params.add(IMAGE, TEST_STRING);
@@ -181,13 +181,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadTool() throws Exception {
+    public void shouldFailLoadTool() {
         performUnauthorizedRequest(get(LOAD_TOOL_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldDeleteTool() throws Exception {
+    public void shouldDeleteTool() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(REGISTRY, TEST_STRING);
         params.add(IMAGE, TEST_STRING);
@@ -202,7 +202,7 @@ public class ToolControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldDeleteToolVersion() throws Exception {
+    public void shouldDeleteToolVersion() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(REGISTRY, TEST_STRING);
         params.add(IMAGE, TEST_STRING);
@@ -217,13 +217,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailDeleteToolVersion() throws Exception {
+    public void shouldFailDeleteToolVersion() {
         performUnauthorizedRequest(delete(DELETE_TOOL_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldLoadImageTags() throws Exception {
+    public void shouldLoadImageTags() {
         doReturn(TEST_STRING_LIST).when(mockToolApiService).loadImageTags(ID);
 
         final MvcResult mvcResult = performRequest(get(String.format(LOAD_IMAGE_TAGS_URL, ID)));
@@ -233,13 +233,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadImageTags() throws Exception {
+    public void shouldFailLoadImageTags() {
         performUnauthorizedRequest(get(String.format(LOAD_IMAGE_TAGS_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldLoadImageDescription() throws Exception {
+    public void shouldLoadImageDescription() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(TAG, TEST_STRING);
         final ImageDescription imageDescription = DockerCreatorUtils.getImageDescription();
@@ -252,13 +252,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadImageDescription() throws Exception {
+    public void shouldFailLoadImageDescription() {
         performUnauthorizedRequest(get(String.format(LOAD_IMAGE_DESCRIPTIONS_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldLoadImageHistory() throws Exception {
+    public void shouldLoadImageHistory() {
         final ImageHistoryLayer imageHistoryLayer = DockerCreatorUtils.getImageHistoryLayer();
         final List<ImageHistoryLayer> imageHistoryLayers = Collections.singletonList(imageHistoryLayer);
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
@@ -272,13 +272,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadImageHistory() throws Exception {
+    public void shouldFailLoadImageHistory() {
         performUnauthorizedRequest(get(String.format(LOAD_IMAGE_HISTORY_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldLoadDefaultImageCmd() throws Exception {
+    public void shouldLoadDefaultImageCmd() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(VERSION, TEST_STRING);
         doReturn(TEST_STRING).when(mockToolApiService).getImageDefaultCommand(ID, TEST_STRING);
@@ -290,13 +290,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadDefaultImageCmd() throws Exception {
+    public void shouldFailLoadDefaultImageCmd() {
         performUnauthorizedRequest(get(String.format(DEFAULT_CMD_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldScanTool() throws Exception {
+    public void shouldScanTool() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(REGISTRY, TEST_STRING);
         params.add(TOOL, TEST_STRING);
@@ -311,13 +311,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailScanTool() throws Exception {
+    public void shouldFailScanTool() {
         performUnauthorizedRequest(post(SCAN_TOOL_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldClearToolScan() throws Exception {
+    public void shouldClearToolScan() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(REGISTRY, TEST_STRING);
         params.add(TOOL, TEST_STRING);
@@ -331,13 +331,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailClearToolScan() throws Exception {
+    public void shouldFailClearToolScan() {
         performUnauthorizedRequest(delete(SCAN_TOOL_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldLoadVulnerabilities() throws Exception {
+    public void shouldLoadVulnerabilities() {
         final ToolScanResultView toolScanResultView = DockerCreatorUtils.getToolScanResultView();
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(REGISTRY, TEST_STRING);
@@ -351,13 +351,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadVulnerabilities() throws Exception {
+    public void shouldFailLoadVulnerabilities() {
         performUnauthorizedRequest(get(SCAN_TOOL_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldLoadSecurityPolicy() throws Exception {
+    public void shouldLoadSecurityPolicy() {
         final ToolScanPolicy toolScanPolicy = DockerCreatorUtils.getToolScanPolicy();
         doReturn(toolScanPolicy).when(mockToolApiService).loadSecurityPolicy();
 
@@ -368,13 +368,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadSecurityPolicy() throws Exception {
+    public void shouldFailLoadSecurityPolicy() {
         performUnauthorizedRequest(get(SCAN_POLICY_TOOL_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldCheckIfToolScanningEnabled() throws Exception {
+    public void shouldCheckIfToolScanningEnabled() {
         doReturn(true).when(mockToolManager).isToolScanningEnabled();
 
         final MvcResult mvcResult = performRequest(get(ENABLE_SCAN_TOOL_URL));
@@ -384,13 +384,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailCheckToolScanning() throws Exception {
+    public void shouldFailCheckToolScanning() {
         performUnauthorizedRequest(get(ENABLE_SCAN_TOOL_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldUploadToolIcon() throws Exception {
+    public void shouldUploadToolIcon() {
         doReturn(ID).when(mockToolApiService).updateToolIcon(ID, FILE_NAME, FILE_NAME.getBytes());
 
         final MvcResult mvcResult = performRequest(
@@ -402,7 +402,7 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailUploadToolIcon() throws Exception {
+    public void shouldFailUploadToolIcon() {
         performUnauthorizedRequest(post(String.format(ICON_TOOL_URL, ID)));
     }
 
@@ -422,13 +422,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailDownloadToolIcon() throws Exception {
+    public void shouldFailDownloadToolIcon() {
         performUnauthorizedRequest(get(String.format(ICON_TOOL_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldDeleteToolIcon() throws Exception {
+    public void shouldDeleteToolIcon() {
         doNothing().when(mockToolApiService).deleteToolIcon(ID);
 
         final MvcResult mvcResult = performRequest(delete(String.format(ICON_TOOL_URL, ID)));
@@ -438,13 +438,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailDeleteToolIcon() throws Exception {
+    public void shouldFailDeleteToolIcon() {
         performUnauthorizedRequest(delete(String.format(ICON_TOOL_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldLoadToolAttributes() throws Exception {
+    public void shouldLoadToolAttributes() {
         final ToolDescription toolDescription = DockerCreatorUtils.getToolDescription();
         doReturn(toolDescription).when(mockToolApiService).loadToolAttributes(ID);
 
@@ -455,7 +455,7 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadToolAttributes() throws Exception {
+    public void shouldFailLoadToolAttributes() {
         performUnauthorizedRequest(get(String.format(ATTRIBUTES_TOOL_URL, ID)));
     }
 
@@ -476,13 +476,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailCreateToolVersionSettings() throws Exception {
+    public void shouldFailCreateToolVersionSettings() {
         performUnauthorizedRequest(post(String.format(SETTINGS_TOOL_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldLoadToolVersionSettings() throws Exception {
+    public void shouldLoadToolVersionSettings() {
         final List<ToolVersion> toolVersions = Collections.singletonList(toolVersion);
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(VERSION, TEST_STRING);
@@ -496,7 +496,7 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadToolVersionSettings() throws Exception {
+    public void shouldFailLoadToolVersionSettings() {
         performUnauthorizedRequest(get(String.format(SETTINGS_TOOL_URL, ID)));
     }
 
@@ -514,7 +514,7 @@ public class ToolControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailSymlinkTool() throws Exception {
+    public void shouldFailSymlinkTool() {
         performUnauthorizedRequest(post(SYMLINK_TOOL_URL));
     }
 }
