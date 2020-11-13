@@ -22,6 +22,7 @@ import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeMethod;
@@ -47,7 +48,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
     public static final String CONF_PATH_PROPERTY = "com.epam.bfx.e2e.ui.property.path";
     public static final int userCount;
     public static final Object[][] userList;
-    private static final String PARALLEL_TEST_FOLDER = "parallelTestFolder";
+    private static final String PARALLEL_TEST_FOLDER = "parallelTestFolder-" + Utils.randomSuffix();
     private final String userRoleGroup = "ROLE_USER";
 
     static {
@@ -155,9 +156,9 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
             navigationMenu()
                     .runs()
                     .completedRuns();
-            executionTime("Open completed runs", name, startTime);
+            executionTime("Open completed runs after launch", name, startTime);
         }
-        executionTime("Summary time ", name, testStartTime);
+        executionTime("Summary time", name, testStartTime);
     }
 
     private void addUser(Object[] user) {
