@@ -382,6 +382,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public int minNodeTypeRAM() {
+        sleep(1, SECONDS);
         get(INSTANCE_TYPE).shouldBe(visible).click();
         return SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).texts()
                 .stream()
