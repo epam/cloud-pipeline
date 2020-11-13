@@ -493,10 +493,13 @@ def perform_command(executable, log_file=None, collect_output=True):
         return out
 
 
-def kill_tunnels(run_id=None, local_port=None, timeout=None, force=False):
+def kill_tunnels(run_id=None, local_port=None, timeout=None, force=False, log_level=None):
+    logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     import signal
 
     for tunnel_proc in find_tunnel_procs(run_id, local_port):
+        logging.info('Process with pid %s was found (%s)', tunnel_proc.pid, ' '.join(tunnel_proc.cmdline()))
+        logging.info('Killing the process...')
         tunnel_proc.send_signal(signal.SIGKILL if force else signal.SIGTERM)
         tunnel_proc.wait(timeout / 1000 if timeout else None)
 
@@ -510,6 +513,7 @@ def find_tunnel_procs(run_id=None, local_port=None):
     python_proc_prefix = 'python'
     pipe_script_name = 'pipe.py'
 
+    logging.info('Searching for pipe tunnel processes...')
     for proc in psutil.process_iter():
         proc_name = proc.name()
         if proc_name not in pipe_proc_names and not proc_name.startswith(python_proc_prefix):

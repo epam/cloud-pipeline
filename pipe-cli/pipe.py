@@ -1239,7 +1239,10 @@ def tunnel():
               help='Tunnels stopping timeout in ms')
 @click.option('-f', '--force', required=False, is_flag=True, default=False,
               help='Killing tunnels rather than stopping them')
-def stop_tunnel(run_id, local_port, timeout, force):
+@click.option('-v', '--log-level', required=False, help='Explicit logging level: '
+                                                        'CRITICAL, ERROR, WARNING, INFO or DEBUG.')
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
     """
     Stops background tunnel processes.
 
@@ -1266,7 +1269,14 @@ def stop_tunnel(run_id, local_port, timeout, force):
         pipe tunnel stop -lp 4567 12345
 
     """
-    kill_tunnels(run_id=run_id, local_port=local_port, timeout=timeout, force=force)
+    if trace:
+        kill_tunnels(run_id=run_id, local_port=local_port, timeout=timeout, force=force, log_level=log_level)
+    else:
+        try:
+            kill_tunnels(run_id=run_id, local_port=local_port, timeout=timeout, force=force, log_level=log_level)
+        except Exception as runtime_error:
+            click.echo('Error: {}'.format(str(runtime_error)), err=True)
+            sys.exit(1)
 
 
 @tunnel.command(name='start')
