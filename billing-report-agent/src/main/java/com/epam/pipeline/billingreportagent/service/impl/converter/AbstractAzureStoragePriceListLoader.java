@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -166,7 +167,7 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
     private StoragePricing getPricingForSpecificRegion(final AzureRegion region) {
         try {
             List<AzurePricingEntity> priceList;
-            if (region.getPriceOfferId().equals("EA-OFFER")) {
+            if (BooleanUtils.isTrue(region.getEnterpriseAgreements())) {
                 logger.info("Reading EA prices for [{}, meterName={}]", region.getName(), region.getMeterRegionName());
                 priceList = rawEAPriceLoader.getRawPricesUsingPipelineRegion(region);
             } else {
