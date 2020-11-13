@@ -40,6 +40,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -57,6 +59,7 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
     private AzureEARawPriceLoader rawEAPriceLoader;
 
     private final Logger logger;
+    private Pattern AZURE_UNIT_PATTERN = Pattern.compile("(\\d+)\\s([\\w/]+)");
 
     public AbstractAzureStoragePriceListLoader(final CloudRegionLoader regionLoader,
                                                final AzureRateCardRawPriceLoader rawRateCardPriceLoader,
@@ -181,16 +184,20 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
     }
     protected double getScaleFactor(String unit) {
         double scaleFactor = 1d;
-        String[] amountAndDimension = unit.split(" ");
-        int amount = Integer.parseInt(amountAndDimension[0]);
-        if (amount > 1) {
-            scaleFactor = scaleFactor / amount;
-        }
+        Matcher match = AZURE_UNIT_PATTERN.matcher(unit);
+        if (match.matches()) {
+            int amount = Integer.parseInt(match.group(1));
+            if (amount > 1) {
+                scaleFactor = scaleFactor / amount;
+            }
 
-        if (amountAndDimension[1].contains(GB_HOUR_DIMENSION) || amountAndDimension[1].contains(GIB_HOUR_DIMENSION)) {
-            scaleFactor = scaleFactor * HRS_PER_MONTH;
+            if (match.group(2).contains(GB_HOUR_DIMENSION) || match.group(2).contains(GIB_HOUR_DIMENSION)) {
+                scaleFactor = scaleFactor * HRS_PER_MONTH;
+            }
+            return scaleFactor;
+        } else {
+            throw new IllegalArgumentException("Wrong Azure Unit string: " + unit);
         }
-        return scaleFactor;
     }
 
 }
