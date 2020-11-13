@@ -22,7 +22,6 @@ import EndpointInput from './EndpointInput';
 
 @observer
 export default class ToolEndpointsFormItem extends React.Component {
-
   static propTypes = {
     disabled: PropTypes.bool,
     value: PropTypes.array,
@@ -69,6 +68,7 @@ export default class ToolEndpointsFormItem extends React.Component {
           newItem.name = itemJson.name;
           newItem.isDefault = false;
           newItem.nginx = itemJson.nginx;
+          newItem.sslBackend = itemJson.sslBackend;
           array[i] = JSON.stringify(newItem);
         } catch (__) {}
       }
