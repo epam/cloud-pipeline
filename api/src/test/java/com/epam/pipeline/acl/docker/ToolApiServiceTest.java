@@ -34,25 +34,27 @@ import com.epam.pipeline.manager.docker.scan.ToolScanManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
-import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.docker.ToolCreatorUtils;
 import com.epam.pipeline.test.creator.docker.ToolGroupCreatorUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.io.ByteArrayInputStream;
 import java.util.Collections;
 import java.util.List;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.EXECUTE_PERMISSION;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.READ_PERMISSION;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_LIST;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.WRITE_PERMISSION;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.mockito.Mockito.doReturn;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,9 +63,6 @@ import static org.mockito.Mockito.verify;
 public class ToolApiServiceTest extends AbstractAclTest {
 
     private static final String TOOL_GROUP_MANAGER = "TOOL_GROUP_MANAGER";
-    private static final int READ_PERMISSION = 1;
-    private static final int WRITE_PERMISSION = 2;
-    private static final int EXECUTE_PERMISSION = 4;
     private static final List<ConfigurationEntry> CONFIG_LIST = Collections.singletonList(new ConfigurationEntry());
     private final Tool tool = ToolCreatorUtils.getTool(ANOTHER_SIMPLE_USER);
     private final ToolVersionScanResult toolVersionScanResult = ToolCreatorUtils.getToolVersionScanResult();
@@ -99,9 +98,6 @@ public class ToolApiServiceTest extends AbstractAclTest {
 
     @Autowired
     private ToolGroupManager mockToolGroupManager;
-
-    @Autowired
-    private AuthManager mockAuthManager;
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
@@ -142,8 +138,8 @@ public class ToolApiServiceTest extends AbstractAclTest {
         doReturn(tool).when(mockToolManager).loadTool(TEST_STRING, TEST_STRING);
         doReturn(tool).when(mockToolManager).updateTool(tool);
         initAclEntity(tool, AclPermission.WRITE);
+        mockSecurityContext();
 
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
         final Tool returnedTool = toolApiService.updateTool(tool);
 
         assertThat(returnedTool.getMask()).isEqualTo(WRITE_PERMISSION);
@@ -155,8 +151,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
     public void shouldDenyUpdateToolWhenPermissionIsNotGranted() {
         doReturn(tool).when(mockToolManager).loadTool(TEST_STRING, TEST_STRING);
         initAclEntity(tool);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> toolApiService.updateTool(tool));
     }
@@ -194,7 +189,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
     public void shouldLoadToolWithoutRegistryForAdmin() {
         doReturn(tool).when(mockToolManager).loadByNameOrId(TEST_STRING);
 
-        assertThat(toolApiService.loadTool("", TEST_STRING)).isEqualTo(tool);
+        assertThat(toolApiService.loadTool(StringUtils.EMPTY, TEST_STRING)).isEqualTo(tool);
     }
 
     @Test
@@ -202,8 +197,8 @@ public class ToolApiServiceTest extends AbstractAclTest {
     public void shouldLoadToolWithRegistryWhenPermissionIsGranted() {
         initAclEntity(tool, AclPermission.READ);
         doReturn(tool).when(mockToolManager).loadTool(TEST_STRING, TEST_STRING);
+        mockSecurityContext();
 
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
         final Tool returnedTool = toolApiService.loadTool(TEST_STRING, TEST_STRING);
 
         assertThat(returnedTool.getMask()).isEqualTo(READ_PERMISSION);
@@ -215,8 +210,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
     public void shouldDenyLoadToolWithRegistryWhenPermissionIsNotGranted() {
         initAclEntity(tool);
         doReturn(tool).when(mockToolManager).loadTool(TEST_STRING, TEST_STRING);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> toolApiService.loadTool(TEST_STRING, TEST_STRING));
     }
@@ -225,11 +219,11 @@ public class ToolApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadToolWithoutRegistryWhenPermissionIsGranted() {
         initAclEntity(tool, AclPermission.READ);
-        doReturn(tool).when(mockToolManager).loadTool("", TEST_STRING);
+        doReturn(tool).when(mockToolManager).loadTool(StringUtils.EMPTY, TEST_STRING);
         doReturn(tool).when(mockToolManager).loadByNameOrId(TEST_STRING);
+        mockSecurityContext();
 
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
-        final Tool returnedTool = toolApiService.loadTool("", TEST_STRING);
+        final Tool returnedTool = toolApiService.loadTool(StringUtils.EMPTY, TEST_STRING);
 
         assertThat(returnedTool.getMask()).isEqualTo(READ_PERMISSION);
         assertThat(returnedTool).isEqualTo(tool);
@@ -239,12 +233,11 @@ public class ToolApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyLoadToolWithoutRegistryWhenPermissionIsNotGranted() {
         initAclEntity(tool);
-        doReturn(tool).when(mockToolManager).loadTool("", TEST_STRING);
+        doReturn(tool).when(mockToolManager).loadTool(StringUtils.EMPTY, TEST_STRING);
         doReturn(tool).when(mockToolManager).loadByNameOrId(TEST_STRING);
+        mockSecurityContext();
 
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
-
-        assertThrows(AccessDeniedException.class, () -> toolApiService.loadTool("", TEST_STRING));
+        assertThrows(AccessDeniedException.class, () -> toolApiService.loadTool(StringUtils.EMPTY, TEST_STRING));
     }
 
     @Test
@@ -290,8 +283,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
         doReturn(tool).when(mockToolManager).delete(TEST_STRING, TEST_STRING, true);
         doReturn(tool).when(mockToolManager).loadTool(TEST_STRING, TEST_STRING);
         initAclEntity(tool, AclPermission.WRITE);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThat(toolApiService.delete(TEST_STRING, TEST_STRING, true)).isEqualTo(tool);
     }
@@ -301,8 +293,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
     public void shouldDenyDeleteToolWhenPermissionIsNotGranted() {
         doReturn(tool).when(mockToolManager).loadTool(TEST_STRING, TEST_STRING);
         initAclEntity(tool);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> toolApiService.delete(TEST_STRING, TEST_STRING, true));
     }
@@ -321,8 +312,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
         doReturn(tool).when(mockToolManager).deleteToolVersion(TEST_STRING, TEST_STRING, TEST_STRING);
         doReturn(tool).when(mockToolManager).loadTool(TEST_STRING, TEST_STRING);
         initAclEntity(tool, AclPermission.WRITE);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThat(toolApiService.deleteToolVersion(TEST_STRING, TEST_STRING, TEST_STRING)).isEqualTo(tool);
     }
@@ -332,8 +322,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
     public void shouldDenyDeleteToolVersionWhenPermissionIsNotGranted() {
         doReturn(tool).when(mockToolManager).loadTool(TEST_STRING, TEST_STRING);
         initAclEntity(tool);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class,
             () -> toolApiService.deleteToolVersion(TEST_STRING, TEST_STRING, TEST_STRING));
@@ -352,8 +341,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
     public void shouldLoadImageTagsWhenPermissionIsGranted() {
         doReturn(TEST_STRING_LIST).when(mockToolManager).loadTags(ID);
         initAclEntity(tool, AclPermission.READ);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThat(toolApiService.loadImageTags(ID)).isEqualTo(TEST_STRING_LIST);
     }
@@ -362,8 +350,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
     @WithMockUser(SIMPLE_USER)
     public void shouldLoadImageTagsWhenPermissionIsNotGranted() {
         initAclEntity(tool);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> toolApiService.loadImageTags(ID));
     }
@@ -381,8 +368,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
     public void shouldLGetImageDescriptionWhenPermissionIsGranted() {
         doReturn(imageDescription).when(mockToolManager).loadToolDescription(ID, TEST_STRING);
         initAclEntity(tool, AclPermission.READ);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThat(toolApiService.getImageDescription(ID, TEST_STRING)).isEqualTo(imageDescription);
     }
@@ -391,8 +377,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
     @WithMockUser(SIMPLE_USER)
     public void shouldGetImageDescriptionWhenPermissionIsNotGranted() {
         initAclEntity(tool);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> toolApiService.getImageDescription(ID, TEST_STRING));
     }
@@ -410,8 +395,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
     public void shouldLGetImageHistoryWhenPermissionIsGranted() {
         doReturn(imageHistoryLayers).when(mockToolManager).loadToolHistory(ID, TEST_STRING);
         initAclEntity(tool, AclPermission.READ);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThat(toolApiService.getImageHistory(ID, TEST_STRING)).isEqualTo(imageHistoryLayers);
     }
@@ -420,8 +404,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
     @WithMockUser(SIMPLE_USER)
     public void shouldGetImageHistoryWhenPermissionIsNotGranted() {
         initAclEntity(tool);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> toolApiService.getImageHistory(ID, TEST_STRING));
     }
@@ -439,8 +422,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
     public void shouldLGetImageDefaultCommandWhenPermissionIsGranted() {
         doReturn(TEST_STRING).when(mockToolManager).loadToolDefaultCommand(ID, TEST_STRING);
         initAclEntity(tool, AclPermission.READ);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThat(toolApiService.getImageDefaultCommand(ID, TEST_STRING)).isEqualTo(TEST_STRING);
     }
@@ -449,8 +431,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
     @WithMockUser(SIMPLE_USER)
     public void shouldGetImageDefaultCommandWhenPermissionIsNotGranted() {
         initAclEntity(tool);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> toolApiService.getImageHistory(ID, TEST_STRING));
     }
@@ -500,8 +481,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
         doReturn(tool).when(mockToolManager).loadTool(TEST_STRING, TEST_STRING);
         doReturn(toolScanResult).when(mockToolManager).loadToolScanResult(TEST_STRING, TEST_STRING);
         initAclEntity(tool, AclPermission.READ);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThat(toolApiService.loadToolScanResult(TEST_STRING, TEST_STRING))
                 .isEqualToComparingFieldByFieldRecursively(toolScanResultView);
@@ -513,8 +493,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
         doReturn(tool).when(mockToolManager).loadTool(TEST_STRING, TEST_STRING);
         doReturn(toolScanResult).when(mockToolManager).loadToolScanResult(TEST_STRING, TEST_STRING);
         initAclEntity(tool);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> toolApiService.loadToolScanResult(TEST_STRING, TEST_STRING));
     }
@@ -539,8 +518,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
     public void shouldUpdateToolIconWhenPermissionIsGranted() {
         doReturn(ID).when(mockToolManager).updateToolIcon(ID, TEST_STRING, TEST_STRING.getBytes());
         initAclEntity(tool, AclPermission.WRITE);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThat(toolApiService.updateToolIcon(ID, TEST_STRING, TEST_STRING.getBytes())).isEqualTo(ID);
     }
@@ -549,8 +527,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyUpdateToolIconWhenPermissionIsNotGranted() {
         initAclEntity(tool);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class,
             () -> toolApiService.updateToolIcon(ID, TEST_STRING, TEST_STRING.getBytes()));
@@ -568,8 +545,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDeleteToolIconWhenPermissionIsGranted() {
         initAclEntity(tool, AclPermission.WRITE);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         toolApiService.deleteToolIcon(ID);
         verify(mockToolManager).deleteToolIcon(ID);
@@ -579,8 +555,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyDeleteToolIconWhenPermissionIsNotGranted() {
         initAclEntity(tool);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class,
             () -> toolApiService.deleteToolIcon(ID));
@@ -676,7 +651,6 @@ public class ToolApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadToolVersionSettingsWhenPermissionIsGranted() {
         doReturn(toolVersionList).when(mockToolVersionManager).loadToolVersionSettings(ID, TEST_STRING);
-
         initAclEntity(tool, AclPermission.READ);
 
         assertThat(toolApiService.loadToolVersionSettings(ID, TEST_STRING)).isEqualTo(toolVersionList);
@@ -706,8 +680,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
         doReturn(toolGroup).when(mockToolGroupManager).loadByNameOrId(String.valueOf(ID));
         initAclEntity(tool, AclPermission.READ);
         initAclEntity(toolGroup, AclPermission.WRITE);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThat(toolApiService.symlink(toolSymlinkRequest)).isEqualTo(tool);
     }
@@ -719,8 +692,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
         doReturn(toolGroup).when(mockToolGroupManager).loadByNameOrId(String.valueOf(ID));
         initAclEntity(tool, AclPermission.READ);
         initAclEntity(toolGroup, AclPermission.WRITE);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> toolApiService.symlink(toolSymlinkRequest));
     }
@@ -732,8 +704,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
         doReturn(toolGroup).when(mockToolGroupManager).loadByNameOrId(String.valueOf(ID));
         initAclEntity(tool);
         initAclEntity(toolGroup, AclPermission.WRITE);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> toolApiService.symlink(toolSymlinkRequest));
     }
@@ -745,8 +716,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
         doReturn(toolGroup).when(mockToolGroupManager).loadByNameOrId(String.valueOf(ID));
         initAclEntity(tool, AclPermission.READ);
         initAclEntity(toolGroup);
-
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> toolApiService.symlink(toolSymlinkRequest));
     }
