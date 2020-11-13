@@ -221,7 +221,20 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public CloudInstanceState getInstanceState(final GCPRegion region, final String nodeLabel) {
-        throw new UnsupportedOperationException("This operation is not supported yet");
+        try {
+            final Instance instance = vmService.findInstanceByNameTag(region, nodeLabel);
+            final GCPInstanceStatus instanceStatus = GCPInstanceStatus.valueOf(instance.getStatus());
+            if (GCPInstanceStatus.getWorkingStatuses().contains(instanceStatus)) {
+                return CloudInstanceState.RUNNING;
+            }
+            if (GCPInstanceStatus.getStopStatuses().contains(instanceStatus)) {
+                return CloudInstanceState.STOPPED;
+            }
+            return CloudInstanceState.TERMINATED;
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            return CloudInstanceState.TERMINATED;
+        }
     }
 
     private String getCredentialsFilePath(GCPRegion region) {

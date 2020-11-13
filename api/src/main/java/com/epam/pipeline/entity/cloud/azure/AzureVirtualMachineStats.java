@@ -29,6 +29,7 @@ import lombok.Data;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -42,6 +43,16 @@ public class AzureVirtualMachineStats {
     private String name;
     private String privateIP;
     private List<InstanceDisk> disks;
+
+    public boolean hasRunningState() {
+        return Objects.nonNull(powerState)
+                && (powerState.equals(PowerState.RUNNING) || powerState.equals(PowerState.STARTING));
+    }
+
+    public boolean hasStopState() {
+        return Objects.nonNull(powerState)
+                && (powerState.equals(PowerState.STOPPING) || powerState.equals(PowerState.STOPPED));
+    }
 
     public static AzureVirtualMachineStats fromVirtualMachine(final VirtualMachine machine) {
         return new AzureVirtualMachineStats(

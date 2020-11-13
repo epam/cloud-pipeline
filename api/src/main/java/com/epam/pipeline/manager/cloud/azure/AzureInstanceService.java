@@ -228,7 +228,19 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     @Override
     public CloudInstanceState getInstanceState(final AzureRegion region, final String nodeLabel) {
-        throw new UnsupportedOperationException("This operation is not supported yet");
+        try {
+            final AzureVirtualMachineStats virtualMachine = vmService.getVMStatsByTag(region, nodeLabel);
+            if (virtualMachine.hasRunningState()) {
+                return CloudInstanceState.RUNNING;
+            }
+            if (virtualMachine.hasStopState()) {
+                return CloudInstanceState.STOPPED;
+            }
+            return CloudInstanceState.TERMINATED;
+        } catch (AzureException e) {
+            log.error(e.getMessage(), e);
+            return CloudInstanceState.TERMINATED;
+        }
     }
 
     private Map<String, String> buildScriptAzureEnvVars(final AzureRegion region) {

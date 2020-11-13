@@ -130,6 +130,10 @@ public class GCPVMService {
         }
     }
 
+    public Instance findInstanceByNameTag(final GCPRegion region, final String name) throws IOException {
+        return findInstanceByTag(region, RUN_ID_LABEL_NAME, name);
+    }
+
     private Instance findInstanceByTag(final GCPRegion region,
                                        final String key,
                                        final String value) throws IOException {

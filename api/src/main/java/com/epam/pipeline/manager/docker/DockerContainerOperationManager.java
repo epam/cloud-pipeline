@@ -353,14 +353,14 @@ public class DockerContainerOperationManager {
         final CloudInstanceState cloudInstanceState = cloudFacade.getInstanceState(runId);
         validateInstanceState(cloudInstanceState);
         switch (cloudInstanceState) {
-            case STOPPED:
-                break;
             case RUNNING:
                 cloudFacade.stopInstance(instance.getCloudRegionId(), instance.getNodeId());
                 break;
             case TERMINATED:
                 throw new IllegalStateException(messageHelper
                         .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "stop"));
+            default:
+                break;
         }
     }
 
@@ -375,11 +375,11 @@ public class DockerContainerOperationManager {
                     return false;
                 }
                 break;
-            case RUNNING:
-                break;
             case TERMINATED:
                 throw new IllegalStateException(messageHelper
                         .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "start"));
+            default:
+                break;
         }
         return true;
     }
