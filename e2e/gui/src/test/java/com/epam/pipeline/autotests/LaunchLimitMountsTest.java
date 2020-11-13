@@ -113,6 +113,7 @@ public class LaunchLimitMountsTest
     @AfterClass(alwaysRun = true)
     public void removeEntities() {
         open(C.ROOT_ADDRESS);
+        loginAs(admin);
         library()
                 .removeStorage(storage1)
                 .removeStorage(storage2)
@@ -315,21 +316,23 @@ public class LaunchLimitMountsTest
                 .validateHeader(storage3);
     }
 
-    @Test(priority = 3)
+    @Test(priority = 4)
     @TestCase(value = {"1480"})
     public void checkWarningInCaseOfOOMriskDueToStorageMountsNumber() {
         List<String> addStor = new ArrayList<>();
+        int countObjectStorages = 0;
+        int minRAM = 0;
         try {
             logoutIfNeeded();
             loginAs(user);
-            int countObjectStorages = tools()
+            countObjectStorages = tools()
                     .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                     .expandTab(EXEC_ENVIRONMENT)
                     .selectDataStoragesToLimitMounts()
                     .clearSelection()
                     .selectAll()
                     .countObjectStorages();
-            int minRAM = tools()
+            minRAM = tools()
                     .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                     .expandTab(ADVANCED_PANEL)
                     .minNodeTypeRAM();
@@ -339,12 +342,14 @@ public class LaunchLimitMountsTest
             checkOOMwarningMessage("1", true, warning);
             checkOOMwarningMessage("100", false, warning);
         } finally {
-            logoutIfNeeded();
-            loginAs(admin);
-            addStor.forEach(stor -> {
-                library()
-                        .removeStorage(stor);
-            });
+            if(countObjectStorages < minRAM) {
+                logoutIfNeeded();
+                loginAs(admin);
+                addStor.forEach(stor -> {
+                    library()
+                            .removeStorage(stor);
+                });
+            }
         }
     }
 
