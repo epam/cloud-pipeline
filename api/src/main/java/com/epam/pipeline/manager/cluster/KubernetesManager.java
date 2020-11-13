@@ -247,6 +247,15 @@ public class KubernetesManager {
         }
     }
 
+    public Pod findPodById(final String podId) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return client.pods().inNamespace(kubeNamespace).withName(podId).get();
+        } catch (KubernetesClientException e) {
+            LOGGER.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
     private boolean isLogTruncated(final String tail, final int limit) {
         return tail.split(NEW_LINE).length > limit;
     }
@@ -348,11 +357,16 @@ public class KubernetesManager {
         }
     }
 
-    public void deletePodIfExists(final String podId) {
+    public void deletePod(final String podId) {
         try (KubernetesClient client = getKubernetesClient()) {
-            final Pod pod = client.pods().inNamespace(kubeNamespace).withName(podId).get();
-            if (Objects.nonNull(pod)) {
-                deletePod(client, podId);
+            final Boolean result = client
+                    .pods()
+                    .inNamespace(kubeNamespace)
+                    .withName(podId)
+                    .withGracePeriod(0)
+                    .delete();
+            if (Objects.isNull(result) || !result) {
+                LOGGER.debug("Failed to delete pod with ID '{}'", podId);
             }
         }
     }
@@ -463,10 +477,10 @@ public class KubernetesManager {
         }
     }
 
-    public void deleteNodeIfExists(final String nodeName) {
-        final Node node = getKubernetesClient().nodes().withName(nodeName).get();
-        if (Objects.nonNull(node)) {
-            getKubernetesClient().nodes().withName(nodeName).delete();
+    public void deleteNode(final String nodeName) {
+        final Boolean deleted = getKubernetesClient().nodes().withName(nodeName).delete();
+        if (Objects.isNull(deleted) || !deleted) {
+            LOGGER.debug("Failed to delete node with name '{}'", nodeName);
         }
     }
 
@@ -615,17 +629,5 @@ public class KubernetesManager {
     private boolean isConfigOKFailure(NodeCondition condition) {
         return condition.getType().equals(KubernetesConstants.CONFIG_OK)
                 && condition.getStatus().equals(KubernetesConstants.FALSE);
-    }
-
-    private void deletePod(final KubernetesClient client, final String podId) {
-        final Boolean result = client
-                .pods()
-                .inNamespace(kubeNamespace)
-                .withName(podId)
-                .withGracePeriod(0)
-                .delete();
-        if (Objects.isNull(result) || !result) {
-            LOGGER.debug("Failed to delete pod with ID '{}'", podId);
-        }
     }
 }
