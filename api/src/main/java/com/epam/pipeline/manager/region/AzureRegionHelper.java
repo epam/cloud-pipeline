@@ -97,6 +97,7 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
         originalRegion.setCorsRules(updatedRegion.getCorsRules());
         originalRegion.setAuthFile(updatedRegion.getAuthFile());
         originalRegion.setPriceOfferId(updatedRegion.getPriceOfferId());
+        originalRegion.setEnterpriseAgreements(updatedRegion.isEnterpriseAgreements());
         originalRegion.setAzureApiUrl(updatedRegion.getAzureApiUrl());
         originalRegion.setMeterRegionName(updatedRegion.getMeterRegionName());
         originalRegion.setSshPublicKeyPath(updatedRegion.getSshPublicKeyPath());

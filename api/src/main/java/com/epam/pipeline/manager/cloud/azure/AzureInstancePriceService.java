@@ -52,10 +52,10 @@ public class AzureInstancePriceService implements CloudInstancePriceService<Azur
     public List<InstanceOffer> refreshPriceListForRegion(final AzureRegion region) {
         try {
             final String authPath = region.getAuthFile();
-            if (region.getPriceOfferId().equals(AzureEAPriceListLoader.OFFER_ID)) {
+            if (region.isEnterpriseAgreements()) {
                 return new AzureEAPriceListLoader(authPath, region.getMeterRegionName(), region.getAzureApiUrl())
                         .load(region);
-            }else {
+            } else {
                 return new AzureRateCardPriceListLoader(authPath, region.getPriceOfferId(),
                         region.getMeterRegionName(), region.getAzureApiUrl())
                         .load(region);

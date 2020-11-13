@@ -54,6 +54,7 @@ class AzureRegionDaoHelper extends AbstractCloudRegionDaoHelper<AzureRegion, Azu
         params.addValue(CloudRegionParameters.METER_REGION_NAME.name(), region.getMeterRegionName());
         params.addValue(CloudRegionParameters.AZURE_API_URL.name(), region.getAzureApiUrl());
         params.addValue(CloudRegionParameters.PRICE_OFFER_ID.name(), region.getPriceOfferId());
+        params.addValue(CloudRegionParameters.ENTERPRISE_AGREEMENTS.name(), region.isEnterpriseAgreements());
         return params;
     }
 
@@ -72,6 +73,7 @@ class AzureRegionDaoHelper extends AbstractCloudRegionDaoHelper<AzureRegion, Azu
         azureRegion.setMeterRegionName(rs.getString(CloudRegionParameters.METER_REGION_NAME.name()));
         azureRegion.setAzureApiUrl(rs.getString(CloudRegionParameters.AZURE_API_URL.name()));
         azureRegion.setPriceOfferId(rs.getString(CloudRegionParameters.PRICE_OFFER_ID.name()));
+        azureRegion.setEnterpriseAgreements(rs.getBoolean(CloudRegionParameters.ENTERPRISE_AGREEMENTS.name()));
         return azureRegion;
     }
 
