@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 public abstract class AbstractAzureStoragePriceListLoader implements StoragePriceListLoader {
 
     protected static final String GB_MONTH_UNIT = "GB/Month";
-    private static final int HRS_PER_MONTH = 730;
+    protected static final int HRS_PER_MONTH = 730;
     protected static final String GB_HOUR_DIMENSION = "GB/Hour";
     protected static final String GIB_HOUR_DIMENSION = "GiB/Hour";
     protected static final String STORAGE_CATEGORY = "Storage";
@@ -89,10 +89,10 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
     protected abstract Map<String, StoragePricing> extractPrices(List<AzurePricingEntity> pricingMeters);
 
     protected StoragePricing convertAzurePricing(final AzurePricingEntity azurePricing) {
-        return convertAzurePricing(azurePricing, 1f);
+        return convertAzurePricing(azurePricing, 1L);
     }
 
-    protected StoragePricing convertAzurePricing(final AzurePricingEntity azurePricing, final float scaleFactor) {
+    protected StoragePricing convertAzurePricing(final AzurePricingEntity azurePricing, final double scaleFactor) {
         final Map<String, Float> rates = azurePricing.getMeterRates();
         logger.debug("Converting price from {}", azurePricing);
         final StoragePricing storagePricing = new StoragePricing();
@@ -178,8 +178,8 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
             throw new IllegalStateException(String.format("Error during prices loading: %s", e.getMessage()));
         }
     }
-    protected float getScaleFactor(String unit) {
-        float scaleFactor = 1f;
+    protected double getScaleFactor(String unit) {
+        double scaleFactor = 1d;
         String[] amountAndDimension = unit.split(" ");
         int amount = Integer.parseInt(amountAndDimension[0]);
         if (amount > 1) {

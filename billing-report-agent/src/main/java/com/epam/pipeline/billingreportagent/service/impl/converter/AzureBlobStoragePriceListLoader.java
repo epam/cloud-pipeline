@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 
 public class AzureBlobStoragePriceListLoader extends AbstractAzureStoragePriceListLoader {
 
-    private static final float ONE_THS_SCALE_FACTOR = 0.001f;
     private final String redundancyType;
     private final String blobStorageCategory;
 
