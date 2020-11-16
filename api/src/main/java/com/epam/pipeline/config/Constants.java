@@ -18,6 +18,7 @@ package com.epam.pipeline.config;
 
 public final class Constants {
     public static final String FMT_ISO_LOCAL_DATE = "yyyy-MM-dd HH:mm:ss.SSS";
+    public static final String TIME_FORMAT = "HH:mm:ss";
     public static final String SECURITY_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS";
     public static final String SIMPLE_DATE_FORMAT = "yyyyMMdd";
     public static final String SIMPLE_TIME_FORMAT = "HHmmss";

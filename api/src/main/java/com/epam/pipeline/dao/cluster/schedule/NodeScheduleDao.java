@@ -68,7 +68,7 @@ public class NodeScheduleDao extends NamedParameterJdbcDaoSupport {
                 .update(updateScheduleQuery, NodeScheduleParameters.getParameters(schedule));
         deleteScheduleEntries(schedule.getId());
         insertScheduleEntries(schedule);
-        return null;
+        return schedule;
     }
 
     public Optional<NodeSchedule> find(final Long id) {

@@ -17,6 +17,7 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
+import com.epam.pipeline.mapper.cluster.schedule.NodeScheduleMapper;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
 import com.epam.pipeline.mapper.DtsRegistryMapper;
@@ -29,6 +30,7 @@ import com.epam.pipeline.mapper.ToolGroupWithIssuesMapper;
 import org.mapstruct.factory.Mappers;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 
 @Configuration
 public class MappersConfiguration {
@@ -81,5 +83,10 @@ public class MappersConfiguration {
     @Bean
     public AbstractEntityPermissionMapper entityPermissionMapper() {
         return Mappers.getMapper(AbstractEntityPermissionMapper.class);
+    }
+
+    @Bean
+    public NodeScheduleMapper nodeScheduleMapper() {
+        return Mappers.getMapper(NodeScheduleMapper.class);
     }
 }

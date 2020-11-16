@@ -15,6 +15,7 @@
 
 package com.epam.pipeline.entity.cluster.schedule;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.time.DayOfWeek;
@@ -29,17 +30,20 @@ public class ScheduleEntry {
     private DayOfWeek to;
     private LocalTime toTime;
 
+    @JsonIgnore
     public boolean isActive(final LocalDateTime timestamp) {
         final LocalDateTime start = getFromDay(timestamp).with(fromTime);
         final LocalDateTime end = getToDay(timestamp, start).with(toTime);
         return timestamp.compareTo(start) >= 0 && timestamp.isBefore(end);
     }
 
+    @JsonIgnore
     private LocalDateTime getFromDay(final LocalDateTime timestamp) {
         return timestamp.getDayOfWeek().equals(from) ? timestamp :
                 timestamp.with(TemporalAdjusters.previous(from));
     }
 
+    @JsonIgnore
     private LocalDateTime getToDay(final LocalDateTime timestamp,
                                    final LocalDateTime start) {
         if (timestamp.getDayOfWeek().equals(to)) {

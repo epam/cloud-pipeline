@@ -15,6 +15,7 @@
 
 package com.epam.pipeline.entity.cluster.schedule;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -28,6 +29,7 @@ public class NodeSchedule {
     private LocalDateTime created;
     private List<ScheduleEntry> scheduleEntries;
 
+    @JsonIgnore
     public boolean isActive(final LocalDateTime timestamp) {
         if (CollectionUtils.isEmpty(scheduleEntries)) {
             return true;
@@ -35,5 +37,4 @@ public class NodeSchedule {
         return scheduleEntries.stream()
                 .anyMatch(s -> s.isActive(timestamp));
     }
-
 }

@@ -542,6 +542,14 @@ public final class MessageConstants {
     public static final String ERROR_LUSTRE_MISSING_CONFIG = "error.lustre.missing.config";
     public static final String ERROR_LUSTRE_MISSING_INSTANCE = "error.lustre.missing.instance";
 
+    //Node Schedule
+    public static final String ERROR_NODE_SCHEDULE_MISSING_ENTRIES = "error.node.schedule.missing.entries";
+    public static final String ERROR_NODE_SCHEDULE_MISSING_FROM = "error.node.schedule.missing.from";
+    public static final String ERROR_NODE_SCHEDULE_MISSING_FROM_TIME = "error.node.schedule.missing.from.time";
+    public static final String ERROR_NODE_SCHEDULE_MISSING_TO = "error.node.schedule.missing.to";
+    public static final String ERROR_NODE_SCHEDULE_MISSING_TO_TIME = "error.node.schedule.missing.to.time";
+    public static final String ERROR_NODE_SCHEDULE_NOT_FOUND = "error.node.schedule.not.found";
+
     private MessageConstants() {
         // no-op
     }
