@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.Result;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -39,6 +40,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
@@ -60,7 +62,7 @@ public abstract class AbstractControllerTest {
     protected WebApplicationContext wac;
 
     @Before
-    public void setup() throws Exception {
+    public void setup() {
         // checks that all required dependencies are provided.
         assertNotNull("WebApplicationContext isn't provided.", wac);
         assertNotNull("ObjectMapper isn't provided.", objectMapper);
@@ -88,7 +90,7 @@ public abstract class AbstractControllerTest {
     @SneakyThrows
     public <T> void assertResponse(final MvcResult mvcResult,
                                    final T payload,
-                                   final TypeReference<Result<T>> typeReference)  {
+                                   final TypeReference<Result<T>> typeReference) {
         final ResponseResult<T> expectedResult = buildExpectedResult(payload);
 
         final String actual = mvcResult.getResponse().getContentAsString();
@@ -100,9 +102,8 @@ public abstract class AbstractControllerTest {
         assertEquals(expectedResult.getPayload(), actualResult.getPayload());
     }
 
-    public void assertFileResponse(final MvcResult mvcResult, final String expected,
-                                   final String actual, final byte[] fileContent) {
-        assertResponseHeader(mvcResult, expected, actual);
+    public void assertFileResponse(final MvcResult mvcResult, final String fileName, final byte[] fileContent) {
+        assertResponseHeader(mvcResult, fileName);
         assertContent(mvcResult, fileContent);
     }
 
@@ -115,7 +116,7 @@ public abstract class AbstractControllerTest {
     }
 
     @SneakyThrows
-    public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder)  {
+    public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder) {
         mockMvc.perform(requestBuilder
                 .servletPath(SERVLET_PATH))
                 .andExpect(status().isUnauthorized());

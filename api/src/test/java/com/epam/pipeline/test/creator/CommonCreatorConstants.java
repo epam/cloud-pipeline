@@ -32,6 +32,8 @@ public final class CommonCreatorConstants {
             new TypeReference<Result<Boolean>>() {};
     public static final TypeReference<Result<Long>> LONG_INSTANCE_TYPE =
             new TypeReference<Result<Long>>() {};
+    public static final TypeReference<Result<Map<String, String>>> STRING_MAP_INSTANCE_TYPE =
+            new TypeReference<Result<Map<String, String>>>() {};
 
     public static final long ID = 1L;
     public static final long ID_2 = 2L;

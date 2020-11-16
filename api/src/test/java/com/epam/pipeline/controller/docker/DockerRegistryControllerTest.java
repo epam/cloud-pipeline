@@ -29,7 +29,6 @@ import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
-import com.epam.pipeline.test.creator.tool.ToolCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -108,7 +107,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailCreateDockerRegistry() throws Exception {
+    public void shouldFailCreateDockerRegistry() {
         performUnauthorizedRequest(post(REGISTER_DOCKER_REGISTRY_URL));
     }
 
@@ -125,7 +124,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailUpdateDockerRegistry() throws Exception {
+    public void shouldFailUpdateDockerRegistry() {
         performUnauthorizedRequest(post(UPDATE_DOCKER_REGISTRY_URL));
     }
 
@@ -143,7 +142,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailUpdateDockerRegistryCredentials() throws Exception {
+    public void shouldFailUpdateDockerRegistryCredentials() {
         performUnauthorizedRequest(post(UPDATE_DOCKER_REGISTRY_CREDS_URL));
     }
 
@@ -171,7 +170,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailOauthEndpoint() throws Exception {
+    public void shouldFailOauthEndpoint() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(SERVICE, TEST_STRING);
         params.add(SCOPE, TEST_STRING);
@@ -180,7 +179,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldLoadAllRegistryContent() throws Exception {
+    public void shouldLoadAllRegistryContent() {
         doReturn(dockerRegistryList).when(mockDockerRegistryApiService).loadAllRegistriesContent();
 
         final MvcResult mvcResult = performRequest(get(LOAD_TREE_REGISTRY_URL));
@@ -190,13 +189,13 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadAllRegistryContent() throws Exception {
+    public void shouldFailLoadAllRegistryContent() {
         performUnauthorizedRequest(get(LOAD_TREE_REGISTRY_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldLoadRegistryCertificates() throws Exception {
+    public void shouldLoadRegistryCertificates() {
         final Map<String, String> loadedCerts = Collections.singletonMap(TEST_STRING, TEST_STRING);
         doReturn(dockerRegistryList).when(mockDockerRegistryApiService).listDockerRegistriesWithCerts();
 
@@ -207,13 +206,13 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadRegistryCertificates() throws Exception {
+    public void shouldFailLoadRegistryCertificates() {
         performUnauthorizedRequest(get(LOAD_CERTS_REGISTRY_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldLoadDockerRegistry() throws Exception {
+    public void shouldLoadDockerRegistry() {
         doReturn(dockerRegistry).when(mockDockerRegistryApiService).load(ID);
 
         final MvcResult mvcResult = performRequest(get(String.format(LOAD_REGISTRY_URL, ID)));
@@ -223,13 +222,13 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadDockerRegistry() throws Exception {
+    public void shouldFailLoadDockerRegistry() {
         performUnauthorizedRequest(get(LOAD_REGISTRY_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldDeleteDockerRegistry() throws Exception {
+    public void shouldDeleteDockerRegistry() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(FORCE, TRUE_AS_STRING);
         doReturn(dockerRegistry).when(mockDockerRegistryApiService).delete(ID, true);
@@ -241,14 +240,14 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailDeleteDockerRegistry() throws Exception {
+    public void shouldFailDeleteDockerRegistry() {
         performUnauthorizedRequest(delete(DELETE_REGISTRY_URL));
     }
 
     @Test
     @WithMockUser
     public void shouldNotifyRegistryEvents() throws Exception {
-        final Tool tool = ToolCreatorUtils.getTool();
+        final Tool tool = DockerCreatorUtils.getTool();
         final List<Tool> tools = Collections.singletonList(tool);
         final String content = getObjectMapper().writeValueAsString(eventEnvelope);
         doReturn(tools).when(mockDockerRegistryApiService)
@@ -258,17 +257,17 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
                 post(NOTIFY_REGISTRY_URL).header(REGISTRY_PATH, TEST_STRING).content(content));
 
         verify(mockDockerRegistryApiService).notifyDockerRegistryEvents(eq(TEST_STRING), refEq(eventEnvelope));
-        assertResponse(mvcResult, tools, ToolCreatorUtils.TOOL_LIST_INSTANCE_TYPE);
+        assertResponse(mvcResult, tools, DockerCreatorUtils.TOOL_LIST_INSTANCE_TYPE);
     }
 
     @Test
-    public void shouldFailNotifyRegistryEvents() throws Exception {
+    public void shouldFailNotifyRegistryEvents() {
         performUnauthorizedRequest(get(NOTIFY_REGISTRY_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldDownloadRegistryCertificate() throws Exception {
+    public void shouldDownloadRegistryCertificate() {
         doReturn(bytes).when(mockDockerRegistryApiService).getCertificateContent(ID);
 
         final MvcResult mvcResult = performRequest(get(String.format(CERT_REGISTRY_URL, ID)),
@@ -279,13 +278,13 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailDownloadRegistryCertificate() throws Exception {
+    public void shouldFailDownloadRegistryCertificate() {
         performUnauthorizedRequest(get(String.format(CERT_REGISTRY_URL, ID)));
     }
 
     @Test
     @WithMockUser
-    public void shouldDownloadConfigScript() throws Exception {
+    public void shouldDownloadConfigScript() {
         doReturn(bytes).when(mockDockerRegistryApiService).getConfigScript(ID);
 
         final MvcResult mvcResult = performRequest(get(String.format(LOGIN_REGISTRY_URL, ID)),
@@ -296,7 +295,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailDownloadConfigScript() throws Exception {
+    public void shouldFailDownloadConfigScript() {
         performUnauthorizedRequest(get(String.format(LOGIN_REGISTRY_URL, ID)));
     }
 }
