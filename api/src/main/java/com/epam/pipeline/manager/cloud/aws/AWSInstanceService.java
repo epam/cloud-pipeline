@@ -243,12 +243,12 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
             return CloudInstanceState.TERMINATED;
         }
         final String instanceStateName = aliveInstance.getState().getName();
-        if (InstanceStateName.Pending.name().equals(instanceStateName)
-                || InstanceStateName.Running.name().equals(instanceStateName)) {
+        if (InstanceStateName.Pending.toString().equals(instanceStateName)
+                || InstanceStateName.Running.toString().equals(instanceStateName)) {
             return CloudInstanceState.RUNNING;
         }
-        if (InstanceStateName.Stopping.name().equals(instanceStateName)
-                || InstanceStateName.Stopped.name().equals(instanceStateName)) {
+        if (InstanceStateName.Stopping.toString().equals(instanceStateName)
+                || InstanceStateName.Stopped.toString().equals(instanceStateName)) {
             return CloudInstanceState.STOPPED;
         }
         return null;
