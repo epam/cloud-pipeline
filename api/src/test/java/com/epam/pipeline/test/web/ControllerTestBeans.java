@@ -26,8 +26,8 @@ import com.epam.pipeline.acl.cluster.ClusterApiService;
 import com.epam.pipeline.acl.configuration.RunConfigurationApiService;
 import com.epam.pipeline.acl.configuration.ServerlessConfigurationApiService;
 import com.epam.pipeline.acl.contextual.ContextualPreferenceApiService;
-import com.epam.pipeline.manager.datastorage.DataStorageApiService;
-import com.epam.pipeline.manager.datastorage.FileShareMountApiService;
+import com.epam.pipeline.acl.datastorage.DataStorageApiService;
+import com.epam.pipeline.acl.datastorage.FileShareMountApiService;
 import com.epam.pipeline.manager.docker.DockerRegistryApiService;
 import com.epam.pipeline.manager.dts.DtsOperationsApiService;
 import com.epam.pipeline.manager.dts.DtsRegistryApiService;
@@ -62,11 +62,14 @@ import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.saml.SAMLAuthenticationProvider;
 import org.springframework.security.saml.SAMLEntryPoint;
+import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 @Configuration
+@Import(InternalResourceViewResolver.class)
 @EnableWebSecurity
 public class ControllerTestBeans {
 

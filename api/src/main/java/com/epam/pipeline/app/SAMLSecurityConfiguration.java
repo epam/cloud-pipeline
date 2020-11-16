@@ -143,6 +143,12 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("#{'${api.security.public.urls}'.split(',')}")
     private List<String> excludeScripts;
 
+    @Value("${saml.logout.invalidate.session:false}")
+    private boolean logoutInvalidateSession;
+
+    @Value("${saml.validate.message.inresponse:true}")
+    private boolean validateMessageInResponse;
+
     @Autowired
     private SAMLUserDetailsService samlUserDetailsService;
 
@@ -241,7 +247,7 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     // Provider of default SAML Context
     @Bean
     public SAMLContextProviderImpl contextProvider() {
-        return new SAMLContexProviderCustomSingKey(signingKey);
+        return new SAMLContexProviderCustomSingKey(signingKey, validateMessageInResponse);
     }
 
     // Initialization of OpenSAML library
@@ -438,7 +444,7 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     public SecurityContextLogoutHandler logoutHandler() {
         SecurityContextLogoutHandler logoutHandler =
                 new SecurityContextLogoutHandler();
-        logoutHandler.setInvalidateHttpSession(false);
+        logoutHandler.setInvalidateHttpSession(logoutInvalidateSession);
         return logoutHandler;
     }
 

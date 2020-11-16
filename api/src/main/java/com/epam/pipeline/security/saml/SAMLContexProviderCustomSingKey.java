@@ -25,13 +25,17 @@ import org.opensaml.saml2.metadata.provider.MetadataProviderException;
 import org.springframework.security.saml.context.SAMLContextProviderImpl;
 import org.springframework.security.saml.context.SAMLMessageContext;
 import org.springframework.security.saml.metadata.ExtendedMetadata;
+import org.springframework.security.saml.storage.EmptyStorageFactory;
+import org.springframework.security.saml.storage.HttpSessionStorageFactory;
 
 public class SAMLContexProviderCustomSingKey extends SAMLContextProviderImpl {
 
     private String signingKey;
 
-    public SAMLContexProviderCustomSingKey(String signingKey) {
+    public SAMLContexProviderCustomSingKey(final String signingKey,
+                                           final boolean validateMessage) {
         this.signingKey = signingKey;
+        setStorageFactory(validateMessage ? new HttpSessionStorageFactory() : new EmptyStorageFactory());
     }
 
     @Override

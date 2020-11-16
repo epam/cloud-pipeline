@@ -24,7 +24,7 @@ public final class FolderCreatorUtils {
 
     }
 
-    public static Folder getFolder(Long id, String owner) {
+    public static Folder getFolder(final Long id, final String owner) {
         Folder folder = new Folder();
         folder.setId(id);
         folder.setOwner(owner);

@@ -536,7 +536,7 @@ class GridEngineScaleUpHandler:
     _POLL_DELAY = 10
 
     def __init__(self, cmd_executor, pipe, grid_engine, host_storage, instance_helper, parent_run_id, default_hostfile, instance_disk,
-                 instance_image, price_type, region_id, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
+                 instance_image, cmd_template, price_type, region_id, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
                  instance_family=None, shared_fs_type='lfs'):
         """
         Grid engine scale up implementation. It handles additional nodes launching and hosts configuration (/etc/hosts
@@ -551,6 +551,7 @@ class GridEngineScaleUpHandler:
         :param default_hostfile: Default host file location.
         :param instance_disk: Additional nodes disk size.
         :param instance_image: Additional nodes docker image.
+        :param cmd_template: Additional nodes cmd template.
         :param price_type: Additional nodes price type.
         :param region_id: Additional nodes Cloud Region id.
         :param polling_timeout: Kubernetes and Pipeline APIs polling timeout - in seconds.
@@ -568,6 +569,7 @@ class GridEngineScaleUpHandler:
         self.default_hostfile = default_hostfile
         self.instance_disk = instance_disk
         self.instance_image = instance_image
+        self.cmd_template = cmd_template
         self.price_type = price_type
         self.region_id = region_id
         self.polling_timeout = polling_timeout
@@ -613,7 +615,7 @@ class GridEngineScaleUpHandler:
                            '--instance-disk %s ' \
                            '--instance-type %s ' \
                            '--docker-image %s ' \
-                           '--cmd-template "sleep infinity" ' \
+                           '--cmd-template "%s" ' \
                            '--parent-id %s ' \
                            '--price-type %s ' \
                            '--region-id %s ' \
@@ -624,7 +626,7 @@ class GridEngineScaleUpHandler:
                            'CP_CAP_AUTOSCALE_WORKERS 0 ' \
                            'CP_DISABLE_RUN_ENDPOINTS true ' \
                            'CP_CAP_SHARE_FS_TYPE %s ' \
-                           % (self.instance_disk, instance, self.instance_image, self.parent_run_id,
+                           % (self.instance_disk, instance, self.instance_image, self.cmd_template, self.parent_run_id,
                               self._pipe_cli_price_type(self.price_type), self.region_id, self.shared_fs_type)
         run_id = int(self.executor.execute_to_lines(pipe_run_command)[0])
         Logger.info('Additional worker run id is %s.' % run_id)
@@ -1315,6 +1317,7 @@ if __name__ == '__main__':
     instance_disk = os.environ['instance_disk']
     instance_type = os.environ['instance_size']
     instance_image = os.environ['docker_image']
+    cmd_template = os.getenv('CP_CAP_AUTOSCALE_CMD_TEMPLATE', 'sleep infinity')
     price_type = os.getenv('CP_CAP_AUTOSCALE_PRICE_TYPE', os.environ['price_type'])
     region_id = os.environ['CLOUD_REGION_ID']
     instance_cores = int(os.getenv('CLOUD_PIPELINE_NODE_CORES', multiprocessing.cpu_count()))
@@ -1364,6 +1367,7 @@ if __name__ == '__main__':
                                                 host_storage=host_storage, instance_helper=instance_helper,
                                                 parent_run_id=master_run_id, default_hostfile=default_hostfile,
                                                 instance_disk=instance_disk, instance_image=instance_image,
+                                                cmd_template=cmd_template,
                                                 price_type=price_type, region_id=region_id,
                                                 polling_timeout=scale_up_polling_timeout,
                                                 instance_family=instance_family,

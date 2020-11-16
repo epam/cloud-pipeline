@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.GSBucketStorage;
+import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.datastorage.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.S3bucketDataStorage;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -72,6 +73,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
     private final StoragePricingService storagePricing;
     private final String esFileIndexPattern;
     private final Optional<FileShareMountsService> fileshareMountsService;
+    private final MountType desiredMountType;
     private boolean enableStorageHistoricalBillingGeneration;
 
     public StorageToBillingRequestConverter(final AbstractEntityMapper<StorageBillingInfo> mapper,
@@ -80,7 +82,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                             final StoragePricingService storagePricing,
                                             final String esFileIndexPattern,
                                             final boolean enableStorageHistoricalBillingGeneration) {
-        this(mapper, elasticsearchService, storageType, storagePricing, esFileIndexPattern, null,
+        this(mapper, elasticsearchService, storageType, storagePricing, esFileIndexPattern, null, null,
              enableStorageHistoricalBillingGeneration);
     }
 
@@ -90,6 +92,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                             final StoragePricingService storagePricing,
                                             final String esFileIndexPattern,
                                             final FileShareMountsService fileshareMountsService,
+                                            final MountType desiredMountType,
                                             final boolean enableStorageHistoricalBillingGeneration) {
         this.mapper = mapper;
         this.elasticsearchService = elasticsearchService;
@@ -97,6 +100,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
         this.storagePricing = storagePricing;
         this.esFileIndexPattern = esFileIndexPattern;
         this.fileshareMountsService = Optional.ofNullable(fileshareMountsService);
+        this.desiredMountType = desiredMountType;
         this.enableStorageHistoricalBillingGeneration = enableStorageHistoricalBillingGeneration;
     }
 
@@ -122,7 +126,13 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                                            final LocalDateTime previousSync,
                                                            final LocalDateTime syncStart) {
         storagePricing.updatePrices();
-        fileshareMountsService.ifPresent(FileShareMountsService::updateSharesRegions);
+        fileshareMountsService.ifPresent(service -> {
+            service.updateSharesRegions();
+            containers.removeIf(container -> {
+                final Long fileShareMountId = container.getEntity().getFileShareMountId();
+                return !desiredMountType.equals(service.getMountTypeForShare(fileShareMountId));
+            });
+        });
         return EntityToBillingRequestConverter.super
             .convertEntitiesToRequests(containers, indexName, previousSync, syncStart);
     }
@@ -279,8 +289,12 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                                               final LocalDateTime previousSync,
                                                               final LocalDateTime syncStart,
                                                               final SearchResponse searchResponse) {
-        return Stream.iterate(previousSync.plusDays(1L), date -> date.plusDays(1))
-            .limit(ChronoUnit.DAYS.between(previousSync, syncStart))
+        final LocalDateTime previousSyncDayStart = Optional.ofNullable(previousSync)
+                .map(LocalDateTime::toLocalDate)
+                .orElse(LocalDate.now())
+                .atStartOfDay();
+        return Stream.iterate(previousSyncDayStart, date -> date.plusDays(1))
+            .limit(Math.max(1, ChronoUnit.DAYS.between(previousSyncDayStart, syncStart)))
             .filter(reportDate -> storageExistsOnBillingDate(container, reportDate))
             .map(date -> buildRequestsForGivenDate(container, indexPrefix, searchResponse, date))
             .flatMap(Collection::stream)

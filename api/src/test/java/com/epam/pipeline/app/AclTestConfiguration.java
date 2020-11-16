@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.billing.BillingManager;
+import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
@@ -27,6 +28,10 @@ import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringMa
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.configuration.ServerlessConfigurationManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
+import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
+import com.epam.pipeline.manager.datastorage.FileShareMountManager;
+import com.epam.pipeline.manager.datastorage.RunMountService;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.event.EntityEventServiceManager;
@@ -190,6 +195,21 @@ public class AclTestConfiguration {
 
     @MockBean
     protected LustreFSManager lustreFSManager;
+
+    @MockBean
+    protected DataStorageManager mockDataStorageManager;
+
+    @MockBean
+    protected DataStorageRuleManager mockDataStorageRuleManager;
+
+    @MockBean
+    protected TemporaryCredentialsManager mockTemporaryCredentialsManager;
+
+    @MockBean
+    protected RunMountService mockRunMountService;
+
+    @MockBean
+    protected FileShareMountManager mockFileShareMountManager;
 
     @MockBean
     protected PipelineRunDockerOperationManager pipelineRunDockerOperationManager;

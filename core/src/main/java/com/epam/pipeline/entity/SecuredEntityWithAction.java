@@ -18,6 +18,7 @@ package com.epam.pipeline.entity;
 
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -25,6 +26,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@EqualsAndHashCode
 public class SecuredEntityWithAction<T extends AbstractSecuredEntity> implements SecuredEntityDelegate {
 
     @JsonUnwrapped

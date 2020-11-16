@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.pipeline;
+package com.epam.pipeline.controller.docker;
 
 import java.util.List;
 

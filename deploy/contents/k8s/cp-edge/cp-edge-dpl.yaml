@@ -22,6 +22,9 @@ spec:
           image: lifescience/cloud-pipeline:edge-$CP_VERSION
           imagePullPolicy: "Always"
           command: ["/init"]
+          env:
+          - name: NODE_OPTIONS
+            value: "--max_old_space_size=4096"
           envFrom:
           - configMapRef:
               name: cp-config-global
