@@ -333,6 +333,7 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                                 path = endpoint["nginx"].get("path", "")
                                                 service_name = '"' + endpoint["name"] + '"' if "name" in endpoint.keys() else "null"
                                                 is_default_endpoint = '"' + str(endpoint["isDefault"]).lower() + '"' if "isDefault" in endpoint.keys() else '"false"'
+                                                is_ssl_backend = str(endpoint["sslBackend"]).lower() == 'true' if "sslBackend" in endpoint.keys() else False
                                                 additional = endpoint["nginx"].get("additional", "")
                                                 has_explicit_endpoint_num = "endpoint_num" in endpoint.keys()
                                                 custom_endpoint_num = int(endpoint["endpoint_num"]) if has_explicit_endpoint_num else i
@@ -373,6 +374,7 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                                                                 "shared_groups_sids": shared_groups_sids,
                                                                                 "service_name": service_name,
                                                                                 "is_default_endpoint": is_default_endpoint,
+                                                                                "is_ssl_backend": is_ssl_backend,
                                                                                 "edge_num": i,
                                                                                 "edge_location": edge_location,
                                                                                 "custom_domain": pretty_url['domain'] if pretty_url else None,
@@ -529,6 +531,7 @@ for added_route in routes_to_add:
                 .replace('{run_id}', service_spec["run_id"]) \
                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
+                .replace('{edge_route_schema}', 'https' if service_spec["is_ssl_backend"] else 'http') \
                 .replace('{additional}', service_spec["additional"])
 
         nginx_sensitive_route_definitions = []
@@ -546,6 +549,7 @@ for added_route in routes_to_add:
                                 .replace('{run_id}', service_spec["run_id"]) \
                                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
+                                .replace('{edge_route_schema}', 'https' if service_spec["is_ssl_backend"] else 'http') \
                                 .replace('{additional}', service_spec["additional"])
                         nginx_sensitive_route_definitions.append(nginx_sensitive_route_definition)
 
