@@ -16,13 +16,12 @@
 
 package com.epam.pipeline.test.creator.security;
 
-import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.security.UserContext;
-import com.fasterxml.jackson.core.type.TypeReference;
-
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class SecurityCreatorUtils {
+
+    public static final TypeReference<Result<Map<AclClass, List<S3bucketDataStorage>>>> ACL_SECURED_ENTITY_MAP_TYPE =
+            new TypeReference<Result<Map<AclClass, List<S3bucketDataStorage>>>>() {};
 
     public static final TypeReference<JwtRawToken> JWT_RAW_TOKEN_INSTANCE_TYPE = new TypeReference<JwtRawToken>() {};
 
@@ -38,6 +37,10 @@ public final class SecurityCreatorUtils {
         final UserContext context = new UserContext();
         context.setExternal(external);
         return context;
+    }
+
+    public static AclSid getAclSid() {
+        return new AclSid();
     }
 
     public static JwtRawToken getJwtRawToken() {
