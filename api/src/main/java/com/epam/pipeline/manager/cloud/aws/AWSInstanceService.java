@@ -19,6 +19,8 @@ package com.epam.pipeline.manager.cloud.aws;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.ec2.model.Instance;
+import com.amazonaws.services.ec2.model.InstanceStateName;
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
@@ -48,6 +50,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -230,6 +233,24 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     @Override
     public List<InstanceDisk> loadDisks(final AwsRegion region, final Long runId) {
         return ec2Helper.loadAttachedVolumes(String.valueOf(runId), region.getRegionCode());
+    }
+
+    @Override
+    public CloudInstanceState getInstanceState(final AwsRegion region, final String nodeLabel) {
+        final Instance aliveInstance = ec2Helper.getAliveInstance(nodeLabel, region.getRegionCode());
+        if (Objects.isNull(aliveInstance)) {
+            return CloudInstanceState.TERMINATED;
+        }
+        final String instanceStateName = aliveInstance.getState().getName();
+        if (InstanceStateName.Pending.name().equals(instanceStateName)
+                || InstanceStateName.Running.name().equals(instanceStateName)) {
+            return CloudInstanceState.RUNNING;
+        }
+        if (InstanceStateName.Stopping.name().equals(instanceStateName)
+                || InstanceStateName.Stopped.name().equals(instanceStateName)) {
+            return CloudInstanceState.STOPPED;
+        }
+        return null;
     }
 
     private String buildNodeUpCommand(final AwsRegion region,

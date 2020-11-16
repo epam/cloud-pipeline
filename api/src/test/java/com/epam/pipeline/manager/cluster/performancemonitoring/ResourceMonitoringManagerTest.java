@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -129,6 +130,8 @@ public class ResourceMonitoringManagerTest {
     private AuthManager authManager;
     @Mock
     private StopServerlessRunManager stopServerlessRunManager;
+    @Mock
+    private PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
 
     @Captor
     ArgumentCaptor<List<PipelineRun>> runsToUpdateCaptor;
@@ -147,7 +150,6 @@ public class ResourceMonitoringManagerTest {
     private PipelineRun highConsumingRun;
     private PipelineRun autoscaleMasterRun;
 
-
     private Map<String, Double> mockStats;
 
     @Before
@@ -155,6 +157,7 @@ public class ResourceMonitoringManagerTest {
         MockitoAnnotations.initMocks(this);
         ResourceMonitoringManager.ResourceMonitoringManagerCore core =
             new ResourceMonitoringManager.ResourceMonitoringManagerCore(pipelineRunManager,
+                                                                        pipelineRunDockerOperationManager,
                                                                         notificationManager,
                                                                         monitoringESDao,
                                                                         messageHelper,
@@ -462,8 +465,8 @@ public class ResourceMonitoringManagerTest {
                               .get()
                               .getLastIdleNotificationTime());
 
-        verify(pipelineRunManager).pauseRun(TEST_IDLE_ON_DEMAND_RUN_ID, true);
-        verify(pipelineRunManager, never()).pauseRun(TEST_OK_RUN_ID, true);
+        verify(pipelineRunDockerOperationManager).pauseRun(TEST_IDLE_ON_DEMAND_RUN_ID, true);
+        verify(pipelineRunDockerOperationManager, never()).pauseRun(TEST_OK_RUN_ID, true);
 
         List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
         Assert.assertEquals(1, runsToNotify.size());
@@ -484,8 +487,7 @@ public class ResourceMonitoringManagerTest {
 
         resourceMonitoringManager.monitorResourceUsage();
         // but pause run wasn't called
-        verify(pipelineRunManager, never()).pauseRun(TEST_AUTOSCALE_RUN_ID, true);
-
+        verify(pipelineRunDockerOperationManager, never()).pauseRun(TEST_AUTOSCALE_RUN_ID, true);
     }
 
     @Test
@@ -512,10 +514,10 @@ public class ResourceMonitoringManagerTest {
                               .get()
                               .getLastIdleNotificationTime());
 
-        verify(pipelineRunManager).pauseRun(TEST_IDLE_ON_DEMAND_RUN_ID, true);
+        verify(pipelineRunDockerOperationManager).pauseRun(TEST_IDLE_ON_DEMAND_RUN_ID, true);
         verify(pipelineRunManager).stop(TEST_IDLE_SPOT_RUN_ID);
         verify(pipelineRunManager, never()).stop(TEST_OK_RUN_ID);
-        verify(pipelineRunManager, never()).pauseRun(TEST_OK_RUN_ID, true);
+        verify(pipelineRunDockerOperationManager, never()).pauseRun(TEST_OK_RUN_ID, true);
 
         Assert.assertTrue(runsToNotifyIdleCaptor.getValue().isEmpty());
     }

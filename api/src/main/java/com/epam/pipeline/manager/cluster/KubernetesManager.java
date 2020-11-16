@@ -30,6 +30,7 @@ import io.fabric8.kubernetes.api.model.ContainerStatus;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeCondition;
 import io.fabric8.kubernetes.api.model.NodeList;
+import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretList;
@@ -246,6 +247,15 @@ public class KubernetesManager {
         }
     }
 
+    public Pod findPodById(final String podId) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return client.pods().inNamespace(kubeNamespace).withName(podId).get();
+        } catch (KubernetesClientException e) {
+            LOGGER.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
     private boolean isLogTruncated(final String tail, final int limit) {
         return tail.split(NEW_LINE).length > limit;
     }
@@ -347,9 +357,17 @@ public class KubernetesManager {
         }
     }
 
-    public void deletePod(String podId) {
-        try(KubernetesClient client = getKubernetesClient()) {
-            client.pods().inNamespace(kubeNamespace).withName(podId).withGracePeriod(0).delete();
+    public void deletePod(final String podId) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final Boolean deleted = client
+                    .pods()
+                    .inNamespace(kubeNamespace)
+                    .withName(podId)
+                    .withGracePeriod(0)
+                    .delete();
+            if (Objects.isNull(deleted) || !deleted) {
+                LOGGER.debug("Failed to delete pod with ID '{}'", podId);
+            }
         }
     }
 
@@ -459,8 +477,11 @@ public class KubernetesManager {
         }
     }
 
-    public void deleteNode(String nodeName) {
-        getKubernetesClient().nodes().withName(nodeName).delete();
+    public void deleteNode(final String nodeName) {
+        final Boolean deleted = getKubernetesClient().nodes().withName(nodeName).delete();
+        if (Objects.isNull(deleted) || !deleted) {
+            LOGGER.debug("Failed to delete node with name '{}'", nodeName);
+        }
     }
 
     /**
@@ -515,6 +536,17 @@ public class KubernetesManager {
 
     public String getValidSecretName(String name) {
         return name.toLowerCase().replaceAll("[^a-z0-9\\-]+", "-");
+    }
+
+    /**
+     * Check if current host is master or not
+     *
+     * @return true - if a host is master or no master found, false - otherwise
+     */
+    public boolean isMasterHost() {
+        return Optional.ofNullable(getMasterPodName())
+                .map(masterName -> masterName.equals(getCurrentPodName()))
+                .orElse(true);
     }
 
     private ServiceDescription getServiceDescription(final Service service) {
@@ -598,5 +630,4 @@ public class KubernetesManager {
         return condition.getType().equals(KubernetesConstants.CONFIG_OK)
                 && condition.getStatus().equals(KubernetesConstants.FALSE);
     }
-
 }
