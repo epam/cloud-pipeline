@@ -41,6 +41,8 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
+import com.epam.pipeline.manager.cluster.schedule.NodeScheduleManager;
+import com.epam.pipeline.manager.cluster.schedule.PersistentNodeManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.configuration.ServerlessConfigurationManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
@@ -434,6 +436,12 @@ public class AclTestBeans {
 
     @MockBean
     protected TemporaryCredentialsManager mockTemporaryCredentialsManager;
+
+    @MockBean
+    protected NodeScheduleManager nodeScheduleManager;
+
+    @MockBean
+    protected PersistentNodeManager persistentNodeManager;
 
     @MockBean
     protected PipelineRunDockerOperationManager pipelineRunDockerOperationManager;

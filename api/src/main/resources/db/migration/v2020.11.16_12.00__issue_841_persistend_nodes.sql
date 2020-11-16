@@ -24,9 +24,9 @@ CREATE TABLE IF NOT EXISTS pipeline.persistent_node (
   region_id BIGINT NOT NULL,
   instance_type TEXT NOT NULL,
   node_disk INT NOT NULL,
-  price_type INT NOT NULL,
+  price_type TEXT NOT NULL,
   docker_image TEXT,
-  count INT NOT NULL,
+  instance_count INT NOT NULL,
   schedule_id BIGINT,
   CONSTRAINT schedule_id_node_fkey FOREIGN KEY (schedule_id) REFERENCES pipeline.node_schedule (id)
 );

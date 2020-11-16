@@ -19,7 +19,6 @@ import com.epam.pipeline.entity.cluster.schedule.NodeSchedule;
 import com.epam.pipeline.entity.cluster.schedule.ScheduleEntry;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -32,7 +31,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,12 +71,12 @@ public class NodeScheduleDao extends NamedParameterJdbcDaoSupport {
 
     public Optional<NodeSchedule> find(final Long id) {
         final List<NodeSchedule> result = getJdbcTemplate().query(loadScheduleByIdQuery,
-                NodeScheduleParameters.getNodeExtractor(), id);
+                NodeScheduleParameters.getExtractor(), id);
         return ListUtils.emptyIfNull(result).stream().findFirst();
     }
 
     public List<NodeSchedule> loadAll() {
-        return getJdbcTemplate().query(loadAllSchedulesQuery, NodeScheduleParameters.getNodeExtractor());
+        return getJdbcTemplate().query(loadAllSchedulesQuery, NodeScheduleParameters.getExtractor());
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -124,30 +122,24 @@ public class NodeScheduleDao extends NamedParameterJdbcDaoSupport {
             return params;
         }
 
-        static ResultSetExtractor<List<NodeSchedule>> getNodeExtractor() {
+        static ResultSetExtractor<List<NodeSchedule>> getExtractor() {
             return (rs) -> {
                 final Map<Long, NodeSchedule> schedules = new HashMap<>();
                 while (rs.next()) {
                     final Long scheduleId = rs.getLong(SCHEDULE_ID.name());
                     if (!schedules.containsKey(scheduleId)) {
-                        final NodeSchedule nodeSchedule = parseNodeSchedule(rs, scheduleId);
-                        schedules.put(scheduleId, nodeSchedule);
+                        final NodeSchedule schedule = parseNodeSchedule(rs);
+                        schedules.put(scheduleId, schedule);
                     }
                     final NodeSchedule schedule = schedules.get(scheduleId);
-                    int fromOrdinal = rs.getInt(FROM_DAY_OF_WEEK.name());
-                    if (fromOrdinal >= 0) {
-                        final ScheduleEntry entry = parseScheduleEntry(rs);
-                        schedule.getScheduleEntries().add(entry);
-                    }
-                }
-                if (MapUtils.isEmpty(schedules)) {
-                    return Collections.emptyList();
+                    final ScheduleEntry entry = parseScheduleEntry(rs);
+                    schedule.getScheduleEntries().add(entry);
                 }
                 return new ArrayList<>(schedules.values());
             };
         }
 
-        private static ScheduleEntry parseScheduleEntry(final ResultSet rs) throws SQLException {
+        static ScheduleEntry parseScheduleEntry(final ResultSet rs) throws SQLException {
             final ScheduleEntry entry = new ScheduleEntry();
             entry.setFrom(DayOfWeek.of(rs.getInt(FROM_DAY_OF_WEEK.name())));
             entry.setFromTime(rs.getTime(FROM_TIME.name()).toLocalTime());
@@ -156,10 +148,9 @@ public class NodeScheduleDao extends NamedParameterJdbcDaoSupport {
             return entry;
         }
 
-        private static NodeSchedule parseNodeSchedule(final ResultSet rs,
-                                                      final Long scheduleId) throws SQLException {
+        static NodeSchedule parseNodeSchedule(final ResultSet rs) throws SQLException {
             final NodeSchedule nodeSchedule = new NodeSchedule();
-            nodeSchedule.setId(scheduleId);
+            nodeSchedule.setId(rs.getLong(SCHEDULE_ID.name()));
             nodeSchedule.setName(rs.getString(SCHEDULE_NAME.name()));
             nodeSchedule.setCreated(rs.getTimestamp(SCHEDULE_CREATED_DATE.name()).toLocalDateTime());
             nodeSchedule.setScheduleEntries(new ArrayList<>());

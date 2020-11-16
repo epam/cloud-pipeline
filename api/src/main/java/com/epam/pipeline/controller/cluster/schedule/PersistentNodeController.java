@@ -50,7 +50,7 @@ public class PersistentNodeController extends AbstractRestController {
     @GetMapping("{id}")
     @ApiOperation(value = "Returns a persistent nodes by id", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<PersistentNode> load(final @PathVariable long id) {
+    public Result<PersistentNode> load(final @PathVariable Long id) {
         return Result.success(apiService.load(id));
     }
 
@@ -64,7 +64,7 @@ public class PersistentNodeController extends AbstractRestController {
     @DeleteMapping("{id}")
     @ApiOperation(value = "Deletes a persistent nodes by id", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<PersistentNode> delete(final @PathVariable long id) {
+    public Result<PersistentNode> delete(final @PathVariable Long id) {
         return Result.success(apiService.delete(id));
     }
 

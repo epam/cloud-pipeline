@@ -30,7 +30,7 @@ public class PersistentNode {
     private LocalDateTime created;
     private long regionId;
     private String instanceType;
-    private int nodeDisk;
+    private int instanceDisk;
     private PriceType priceType;
     private String dockerImage;
     private int count;

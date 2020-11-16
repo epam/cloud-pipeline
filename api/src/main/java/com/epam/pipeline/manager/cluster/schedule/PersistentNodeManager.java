@@ -43,14 +43,14 @@ public class PersistentNodeManager {
         return  nodeDao.loadAll();
     }
 
-    public PersistentNode load(final long id) {
+    public PersistentNode load(final Long nodeId) {
         return null;
     }
 
     @Transactional
-    public PersistentNode delete(final long id) {
-        final PersistentNode node = load(id);
-        nodeDao.delete(id);
+    public PersistentNode delete(final Long nodeId) {
+        final PersistentNode node = load(nodeId);
+        nodeDao.delete(nodeId);
         return node;
     }
 }

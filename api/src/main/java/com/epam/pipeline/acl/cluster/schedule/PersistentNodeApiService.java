@@ -37,8 +37,8 @@ public class PersistentNodeApiService {
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public PersistentNode load(final long id) {
-        return nodeManager.load(id);
+    public PersistentNode load(final Long nodeId) {
+        return nodeManager.load(nodeId);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
@@ -47,7 +47,7 @@ public class PersistentNodeApiService {
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public PersistentNode delete(final long id) {
-        return nodeManager.delete(id);
+    public PersistentNode delete(final Long nodeId) {
+        return nodeManager.delete(nodeId);
     }
 }

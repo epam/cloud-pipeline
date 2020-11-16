@@ -17,6 +17,8 @@
 package com.epam.pipeline.test.web;
 
 import com.epam.pipeline.acl.billing.BillingApiService;
+import com.epam.pipeline.acl.cluster.schedule.NodeScheduleApiService;
+import com.epam.pipeline.acl.cluster.schedule.PersistentNodeApiService;
 import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
 import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
@@ -210,4 +212,10 @@ public class ControllerTestBeans {
 
     @MockBean
     protected LustreFSApiService lustreFSApiService;
+
+    @MockBean
+    protected PersistentNodeApiService persistentNodeApiService;
+
+    @MockBean
+    protected NodeScheduleApiService nodeScheduleApiService;
 }

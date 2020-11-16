@@ -18,5 +18,122 @@
        xmlns="http://www.springframework.org/schema/beans"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean class="com.epam.pipeline.dao.cluster.schedule.PersistentNodeDao" id="persistentNodeDao" autowire="byName">
+        <constructor-arg>
+            <value>
+                <!--insertPersistentNodeQuery-->
+                <![CDATA[
+                    INSERT INTO pipeline.persistent_node (
+                        created_date,
+                        name,
+                        region_id,
+                        instance_type,
+                        node_disk,
+                        price_type,
+                        docker_image,
+                        instance_count,
+                        schedule_id
+                        )
+                    VALUES (
+                        :NODE_CREATED_DATE,
+                        :NODE_NAME,
+                        :NODE_REGION_ID,
+                        :NODE_INSTANCE_TYPE,
+                        :NODE_INSTANCE_DISK,
+                        :NODE_PRICE_TYPE,
+                        :NODE_DOCKER_IMAGE,
+                        :NODE_INSTANCE_COUNT,
+                        :SCHEDULE_ID)
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--updatePersistentNodeQuery-->
+                <![CDATA[
+                    UPDATE pipeline.persistent_node SET
+                        name = :NODE_NAME,
+                        region_id = :NODE_REGION_ID,
+                        instance_type = :NODE_INSTANCE_TYPE,
+                        node_disk = :NODE_INSTANCE_DISK,
+                        price_type = :NODE_PRICE_TYPE,
+                        docker_image = :NODE_DOCKER_IMAGE,
+                        instance_count = :NODE_INSTANCE_COUNT,
+                        schedule_id = :SCHEDULE_ID
+                    WHERE
+                        id = :NODE_ID
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--deletePersistentNodeQuery-->
+                <![CDATA[
+                    DELETE FROM pipeline.persistent_node
+                    WHERE id = ?
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadAllPersistentNodesQuery-->
+                <![CDATA[
+                    SELECT
+                        n.id AS NODE_ID,
+                        n.created_date AS NODE_CREATED_DATE,
+                        n.name AS NODE_NAME,
+                        n.region_id as NODE_REGION_ID,
+                        n.instance_type as NODE_INSTANCE_TYPE,
+                        n.node_disk as NODE_INSTANCE_DISK,
+                        n.price_type as NODE_PRICE_TYPE,
+                        n.docker_image as NODE_DOCKER_IMAGE,
+                        n.instance_count as NODE_INSTANCE_COUNT,
+                        n.schedule_id as SCHEDULE_ID,
+                        s.name as SCHEDULE_NAME,
+                        s.created_date as SCHEDULE_CREATED_DATE,
+                        e.from_day_of_week,
+                        e.from_time,
+                        e.to_day_of_week,
+                        e.to_time
+                    FROM
+                        pipeline.persistent_node as n
+                    LEFT JOIN pipeline.node_schedule as s
+                        ON n.schedule_id = s.id
+                    LEFT JOIN pipeline.node_schedule_entry as e
+                        ON s.id = e.schedule_id
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadPersistentNodeByIdQuery-->
+                <![CDATA[
+                    SELECT
+                        n.id AS NODE_ID,
+                        n.created_date AS NODE_CREATED_DATE,
+                        n.name AS NODE_NAME,
+                        n.region_id as NODE_REGION_ID,
+                        n.instance_type as NODE_INSTANCE_TYPE,
+                        n.node_disk as NODE_INSTANCE_DISK,
+                        n.price_type as NODE_PRICE_TYPE,
+                        n.docker_image as NODE_DOCKER_IMAGE,
+                        n.instance_count as NODE_INSTANCE_COUNT,
+                        n.schedule_id as SCHEDULE_ID,
+                        s.name as SCHEDULE_NAME,
+                        s.created_date as SCHEDULE_CREATED_DATE,
+                        e.from_day_of_week,
+                        e.from_time,
+                        e.to_day_of_week,
+                        e.to_time
+                    FROM
+                        pipeline.persistent_node as n
+                    LEFT JOIN pipeline.node_schedule as s
+                        ON n.schedule_id = s.id
+                    LEFT JOIN pipeline.node_schedule_entry as e
+                        ON s.id = e.schedule_id
+                    WHERE
+                        n.id = ?
+                ]]>
+            </value>
+        </constructor-arg>
     </bean>
 </beans>
