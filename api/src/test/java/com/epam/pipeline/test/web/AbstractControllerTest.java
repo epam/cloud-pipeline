@@ -16,14 +16,6 @@
 
 package com.epam.pipeline.test.web;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.ResponseResult;
 import com.epam.pipeline.controller.Result;
@@ -43,11 +35,21 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 @RunWith(SpringRunner.class)
 @WebTestConfiguration
 public abstract class AbstractControllerTest {
+
     protected static final String EXPECTED_CONTENT_TYPE = "application/json;charset=UTF-8";
     protected static final String SERVLET_PATH = "/restapi";
+    private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
 
     private MockMvc mockMvc;
     private ObjectMapper deserializationMapper;
@@ -87,7 +89,7 @@ public abstract class AbstractControllerTest {
     @SneakyThrows
     public <T> void assertResponse(final MvcResult mvcResult,
                                    final T payload,
-                                   final TypeReference<Result<T>> typeReference){
+                                   final TypeReference<Result<T>> typeReference) {
         final ResponseResult<T> expectedResult = buildExpectedResult(payload);
 
         final String actual = mvcResult.getResponse().getContentAsString();
@@ -99,8 +101,21 @@ public abstract class AbstractControllerTest {
         assertEquals(expectedResult.getPayload(), actualResult.getPayload());
     }
 
+    public void assertFileResponse(final MvcResult mvcResult, final String fileName, final byte[] fileContent) {
+        assertResponseHeader(mvcResult, fileName);
+        assertContent(mvcResult, fileContent);
+    }
+
+    public void assertResponseHeader(final MvcResult mvcResult, final String fileName) {
+        assertThat(mvcResult.getResponse().getHeader(CONTENT_DISPOSITION_HEADER)).contains(fileName);
+    }
+
+    public void assertContent(final MvcResult mvcResult, final byte[] fileContent) {
+        assertThat(mvcResult.getResponse().getContentAsByteArray()).isEqualTo(fileContent);
+    }
+
     @SneakyThrows
-    public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder) {
+    public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder)  {
         mockMvc.perform(requestBuilder
                 .servletPath(SERVLET_PATH))
                 .andExpect(status().isUnauthorized());
