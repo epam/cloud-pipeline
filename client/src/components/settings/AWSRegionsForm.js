@@ -680,6 +680,7 @@ class AWSRegionForm extends React.Component {
       'meterRegionName',
       'azureApiUrl',
       'priceOfferId',
+      'enterpriseAgreements',
       'fileShareMounts',
       'mountStorageRule'
     ],
@@ -832,6 +833,7 @@ class AWSRegionForm extends React.Component {
       check('meterRegionName', checkStringValue) ||
       check('azureApiUrl', checkStringValue) ||
       check('priceOfferId', checkStringValue) ||
+      check('enterpriseAgreements', checkBOOLValue) ||
       check('project', checkStringValue) ||
       check('applicationName', checkStringValue) ||
       check('customInstanceTypes', checkJSONValue) ||
@@ -960,6 +962,10 @@ class AWSRegionForm extends React.Component {
   handleSubmit = (e) => {
     e.preventDefault();
     this.props.form.validateFieldsAndScroll(async (err, values) => {
+      if (/^azure$/i.test(this.provider) && !values.priceOfferId && !values.enterpriseAgreements) {
+        message.error('Price Offer ID or Enterprise Agreement must be specified', 5);
+        return;
+      }
       this.cloudRegionFileShareMountsComponent &&
       this.cloudRegionFileShareMountsComponent.validate &&
       this.cloudRegionFileShareMountsComponent.validate();
@@ -1517,16 +1523,29 @@ class AWSRegionForm extends React.Component {
             </Form.Item>
             <Form.Item
               label="Price Offer ID"
-              required={this.providerSupportsField('priceOfferId')}
               {...this.formItemLayout}
               className={this.getFieldClassName('priceOfferId', 'edit-region-priceOfferId-container')}>
               {getFieldDecorator('priceOfferId', {
-                initialValue: this.props.region.priceOfferId,
-                rules: [{required: this.providerSupportsField('priceOfferId'), message: 'Price Offer ID is required'}]
+                initialValue: this.props.region.priceOfferId
               })(
                 <Input
                   size="small"
-                  disabled={this.props.pending} />
+                  disabled={this.props.pending}
+                />
+              )}
+            </Form.Item>
+            <Form.Item
+              label="Enterprise Agreement"
+              {...this.formItemLayout}
+              className={this.getFieldClassName('enterpriseAgreements', 'edit-region-enterpriseAgreements-container')}>
+              {getFieldDecorator('enterpriseAgreements', {
+                initialValue: this.props.region.enterpriseAgreements
+              })(
+                <Checkbox
+                  disabled={this.props.region.default}
+                >
+                  Enterprise Agreement
+                </Checkbox>
               )}
             </Form.Item>
             <Form.Item
