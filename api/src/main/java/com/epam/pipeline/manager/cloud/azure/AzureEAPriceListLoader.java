@@ -20,7 +20,6 @@ import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.pricing.azure.AzureEAPricingMeter;
 import com.epam.pipeline.entity.pricing.azure.AzureEAPricingResult;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
-import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.credentials.AzureTokenCredentials;
@@ -35,7 +34,11 @@ import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -57,9 +60,11 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
         this.azurePricingClient = buildRetrofitClient(azureApiUrl);
     }
 
-    protected List<InstanceOffer> getInstanceOffers(AbstractCloudRegion region, AzureTokenCredentials credentials,
-                                                    Azure client, Map<String, ResourceSkuInner> vmSkusByName,
-                                                    Map<String, ResourceSkuInner> diskSkusByName) throws IOException {
+    protected List<InstanceOffer> getInstanceOffers(final AbstractCloudRegion region,
+                                                    final AzureTokenCredentials credentials,
+                                                    final Azure client,
+                                                    final Map<String, ResourceSkuInner> vmSkusByName,
+                                                    final Map<String, ResourceSkuInner> diskSkusByName) throws IOException {
         final Optional<AzureEAPricingResult> prices = getPricing(client.subscriptionId(), credentials);
         return prices.filter(p -> CollectionUtils.isNotEmpty(p.getProperties().getPricesheets()))
                 .map(p -> mergeSkusWithPrices(p.getProperties().getPricesheets(), vmSkusByName, diskSkusByName,

@@ -17,7 +17,10 @@
 package com.epam.pipeline.entity.pricing.azure;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
@@ -26,13 +29,10 @@ import java.util.Map;
 @Builder
 @AllArgsConstructor
 public class AzureEAPricingMeter {
-    @JsonProperty(value = "meterId")
     private String meterId;
-    @JsonProperty(value = "currencyCode")
     private String currencyCode;
     @JsonProperty(value = "unitOfMeasure")
     private String unit;
-    @JsonProperty(value = "unitPrice")
     private Float unitPrice;
 
     private String meterCategory;
@@ -41,7 +41,7 @@ public class AzureEAPricingMeter {
     private String meterRegion;
 
     @JsonProperty(value = "meterDetails")
-    public void unpackMeterDetails(Map<String, String> meterDetails) {
+    public void unpackMeterDetails(final Map<String, String> meterDetails) {
         if (meterDetails != null) {
             meterCategory = meterDetails.get("meterCategory");
             meterSubCategory = meterDetails.get("meterSubCategory");

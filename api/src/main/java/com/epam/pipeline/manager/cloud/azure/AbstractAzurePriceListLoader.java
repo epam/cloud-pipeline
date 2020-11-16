@@ -37,7 +37,11 @@ import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -78,7 +82,7 @@ public abstract class AbstractAzurePriceListLoader {
     protected final String azureApiUrl;
     protected final String authPath;
 
-    protected AbstractAzurePriceListLoader(String meterRegionName, String azureApiUrl, String authPath) {
+    protected AbstractAzurePriceListLoader(final String meterRegionName, final String azureApiUrl, final String authPath) {
         this.meterRegionName = meterRegionName;
         this.azureApiUrl = azureApiUrl;
         this.authPath = authPath;
@@ -106,10 +110,11 @@ public abstract class AbstractAzurePriceListLoader {
         return getInstanceOffers(region, credentials, client, vmSkusByName, diskSkusByName);
     }
 
-    protected abstract List<InstanceOffer> getInstanceOffers(AbstractCloudRegion region,
-                                                             AzureTokenCredentials credentials, Azure client,
-                                                             Map<String, ResourceSkuInner> vmSkusByName,
-                                                             Map<String, ResourceSkuInner> diskSkusByName)
+    protected abstract List<InstanceOffer> getInstanceOffers(final AbstractCloudRegion region,
+                                                             final AzureTokenCredentials credentials,
+                                                             final Azure client,
+                                                             final Map<String, ResourceSkuInner> vmSkusByName,
+                                                             final Map<String, ResourceSkuInner> diskSkusByName)
             throws IOException;
 
     public abstract String getAPIVersion();
