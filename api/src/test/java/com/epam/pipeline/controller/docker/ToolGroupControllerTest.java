@@ -18,7 +18,7 @@ package com.epam.pipeline.controller.docker;
 
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolGroupWithIssues;
-import com.epam.pipeline.manager.pipeline.ToolGroupApiService;
+import com.epam.pipeline.acl.docker.ToolGroupApiService;
 import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;

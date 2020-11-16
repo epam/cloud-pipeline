@@ -118,8 +118,16 @@ public final class DockerCreatorUtils {
         return new ToolScanPolicy();
     }
 
+    public static Tool getTool() {
+        return getTool(null, null);
+    }
+
     public static ToolSymlinkRequest getToolSymlinkRequest() {
         return new ToolSymlinkRequest(ID, ID);
+    }
+
+    public static ToolGroup getToolGroup() {
+        return new ToolGroup();
     }
 
     public static ToolGroupWithIssues getToolGroupWithIssues() {
@@ -127,17 +135,10 @@ public final class DockerCreatorUtils {
     }
 
     public static DockerRegistry getDockerRegistry() {
-        final DockerRegistry dockerRegistry = new DockerRegistry();
-        dockerRegistry.setPath(TEST_STRING);
-        dockerRegistry.setDescription(TEST_STRING);
-        dockerRegistry.setSecretName(TEST_STRING);
-        dockerRegistry.setUserName(TEST_STRING);
-        dockerRegistry.setPassword(TEST_STRING);
-        dockerRegistry.setCaCert(TEST_STRING);
-        return dockerRegistry;
+        return getDockerRegistry(ID, TEST_STRING);
     }
 
-    public static DockerRegistry getDockerRegistry(final Long id, final String owner) {
+    public static DockerRegistry getDockerRegistry(final Long id,final String owner) {
         final DockerRegistry dockerRegistry = new DockerRegistry();
         dockerRegistry.setOwner(owner);
         dockerRegistry.setCaCert(TEST_STRING);
@@ -146,11 +147,12 @@ public final class DockerCreatorUtils {
         dockerRegistry.setExternalUrl(TEST_STRING);
         dockerRegistry.setHasMetadata(true);
         dockerRegistry.setPassword(TEST_STRING);
+        dockerRegistry.setPath(TEST_STRING);
+        dockerRegistry.setDescription(TEST_STRING);
+        dockerRegistry.setSecretName(TEST_STRING);
+        dockerRegistry.setUserName(TEST_STRING);
+        dockerRegistry.setCaCert(TEST_STRING);
         return dockerRegistry;
-    }
-
-    public static DockerRegistry getDockerRegistry(final String owner) {
-        return getDockerRegistry(ID, owner);
     }
 
     public static DockerRegistryVO getDockerRegistryVO() {
@@ -190,31 +192,14 @@ public final class DockerCreatorUtils {
         return toolScanResult;
     }
 
-    public static Tool getTool(final Long id, final String owner) {
-        final Tool tool = new Tool();
-        tool.setId(id);
-        tool.setOwner(owner);
-        tool.setCpu(TEST_STRING);
-        tool.setRam(TEST_STRING);
-        tool.setInstanceType(TEST_STRING);
-        tool.setDisk(TEST_INT);
-        tool.setImage(TEST_STRING);
-        tool.setToolGroupId(id);
-        tool.setRegistry(TEST_STRING);
-        return tool;
-    }
-
     public static Tool getTool(final String owner) {
         return getTool(ID, owner);
     }
 
-    public static Tool getTool() {
-        return getTool(null, null);
-    }
-
-    public static ToolGroup getToolGroup(final long id, final String owner) {
+    public static ToolGroup getToolGroup(final Long id, final String owner) {
         final ToolGroup toolGroup = new ToolGroup();
         toolGroup.setId(id);
+        toolGroup.setRegistryId(id);
         toolGroup.setOwner(owner);
         return toolGroup;
     }
@@ -223,7 +208,15 @@ public final class DockerCreatorUtils {
         return getToolGroup(ID, owner);
     }
 
-    public static ToolGroup getToolGroup() {
-        return getToolGroup(ID, TEST_STRING);
+    public static Tool getTool(final Long id, final String owner) {
+        final Tool tool = new Tool();
+        tool.setOwner(owner);
+        tool.setId(id);
+        tool.setCpu(TEST_STRING);
+        tool.setDefaultCommand(TEST_STRING);
+        tool.setImage(TEST_STRING);
+        tool.setToolGroupId(id);
+        tool.setRegistry(TEST_STRING);
+        return tool;
     }
 }

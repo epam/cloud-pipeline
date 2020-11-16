@@ -22,22 +22,20 @@ import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolGroupWithIssues;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
-import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
-import com.epam.pipeline.test.creator.docker.ToolCreatorUtils;
-import com.epam.pipeline.test.creator.docker.ToolGroupCreatorUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.READ_PERMISSION;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,21 +43,18 @@ import static org.mockito.Mockito.doReturn;
 
 public class ToolGroupApiServiceTest extends AbstractAclTest {
 
-
     private static final String TOOL_GROUP_MANAGER = "TOOL_GROUP_MANAGER";
-    private final ToolGroup toolGroup = ToolGroupCreatorUtils.getToolGroup(ID, SIMPLE_USER);
-    private final ToolGroup anotherToolGroup = ToolGroupCreatorUtils.getToolGroup(ID, ANOTHER_SIMPLE_USER);
-    private final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry(ID, SIMPLE_USER);
-    private final Tool tool = ToolCreatorUtils.getTool(ANOTHER_SIMPLE_USER);
+    private final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
+    private final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
+    private final Tool tool = DockerCreatorUtils.getTool(ANOTHER_SIMPLE_USER);
+    private final ToolGroupWithIssues toolGroupWithIssues = DockerCreatorUtils.getToolGroupWithIssues();
+
 
     @Autowired
     private ToolGroupApiService toolGroupApiService;
 
     @Autowired
     private ToolGroupManager mockToolGroupManager;
-
-    @Autowired
-    private AuthManager mockAuthManager;
 
     @Autowired
     private DockerRegistryManager mockDockerRegistryManager;
@@ -76,27 +71,23 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = SIMPLE_USER, roles = TOOL_GROUP_MANAGER)
     public void shouldCreateToolGroupForManagerWhenPermissionGranted() {
         initAclEntity(dockerRegistry, AclPermission.WRITE);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         doReturn(toolGroup).when(mockToolGroupManager).create(toolGroup);
 
         assertThat(toolGroupApiService.create(toolGroup)).isEqualTo(toolGroup);
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyCreateToolGroupWithInvalidRole() {
         initAclEntity(dockerRegistry, AclPermission.WRITE);
-        doReturn(toolGroup).when(mockToolGroupManager).create(toolGroup);
 
         assertThrows(AccessDeniedException.class, () -> toolGroupApiService.create(toolGroup));
     }
 
     @Test
-    @WithMockUser(roles = TOOL_GROUP_MANAGER)
+    @WithMockUser(roles = TOOL_GROUP_MANAGER, username = SIMPLE_USER)
     public void shouldDenyCreateToolGroupWhenPermissionIsNotGranted() {
         initAclEntity(dockerRegistry);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
-        doReturn(toolGroup).when(mockToolGroupManager).create(toolGroup);
 
         assertThrows(AccessDeniedException.class, () -> toolGroupApiService.create(toolGroup));
     }
@@ -113,14 +104,13 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldUpdateToolGroupWhenPermissionIsGranted() {
         initAclEntity(toolGroup, AclPermission.WRITE);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         doReturn(toolGroup).when(mockToolGroupManager).updateToolGroup(toolGroup);
 
         assertThat(toolGroupApiService.update(toolGroup)).isEqualTo(toolGroup);
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(SIMPLE_USER)
     public void shouldDenyUpdateWhenPermissionIsNotGranted() {
         initAclEntity(toolGroup);
 
@@ -139,35 +129,31 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadToolGroupsByRegistryIdWhenPermissionIsGranted() {
-        initAclEntity(anotherToolGroup, AclPermission.READ);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
-        final List<ToolGroup> toolGroups = mutableListOf(anotherToolGroup);
+        initAclEntity(toolGroup, AclPermission.READ);
+        final List<ToolGroup> toolGroups = mutableListOf(toolGroup);
         doReturn(toolGroups).when(mockToolGroupManager).loadByRegistryId(ID);
 
         final List<ToolGroup> returnedTollGroups = toolGroupApiService.loadByRegistryId(ID);
 
         assertThat(returnedTollGroups).isEqualTo(toolGroups);
-        assertThat(returnedTollGroups.get(0).getMask()).isEqualTo(1);
+        assertThat(returnedTollGroups.get(0).getMask()).isEqualTo(READ_PERMISSION);
     }
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadToolsGroupsByRegistryIdWhichPermissionIsGranted() {
-        final ToolGroup anotherToolGroup = ToolGroupCreatorUtils.getToolGroup(ID_2, ANOTHER_SIMPLE_USER);
+        final ToolGroup anotherToolGroup = DockerCreatorUtils.getToolGroup(ID_2, ANOTHER_SIMPLE_USER);
         initAclEntity(toolGroup, AclPermission.READ);
         initAclEntity(anotherToolGroup);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         doReturn(mutableListOf(toolGroup, anotherToolGroup)).when(mockToolGroupManager).loadByRegistryId(ID);
 
         assertThat(toolGroupApiService.loadByRegistryId(ID)).hasSize(1).contains(toolGroup);
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyLoadToolGroupsByRegistryIdWhichPermissionIsNotGranted() {
-        initAclEntity(anotherToolGroup);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
-        doReturn(mutableListOf(anotherToolGroup)).when(mockToolGroupManager).loadByRegistryId(ID);
+        initAclEntity(toolGroup);
 
         assertThat(toolGroupApiService.loadByRegistryId(ID)).isEmpty();
     }
@@ -184,24 +170,22 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadToolGroupsByRegistryNameOrIdWhenPermissionIsGranted() {
-        initAclEntity(anotherToolGroup, AclPermission.READ);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
-        final List<ToolGroup> toolGroups = mutableListOf(anotherToolGroup);
+        initAclEntity(toolGroup, AclPermission.READ);
+        final List<ToolGroup> toolGroups = mutableListOf(toolGroup);
         doReturn(toolGroups).when(mockToolGroupManager).loadByRegistryNameOrId(TEST_STRING);
 
         final List<ToolGroup> returnedTollGroups = toolGroupApiService.loadByRegistryNameOrId(TEST_STRING);
 
         assertThat(returnedTollGroups).isEqualTo(toolGroups);
-        assertThat(returnedTollGroups.get(0).getMask()).isEqualTo(1);
+        assertThat(returnedTollGroups.get(0).getMask()).isEqualTo(READ_PERMISSION);
     }
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadToolsGroupsByRegistryNameOrIdWhichPermissionIsGranted() {
-        final ToolGroup anotherToolGroup = ToolGroupCreatorUtils.getToolGroup(ID_2, ANOTHER_SIMPLE_USER);
+        final ToolGroup anotherToolGroup = DockerCreatorUtils.getToolGroup(ID_2, ANOTHER_SIMPLE_USER);
         initAclEntity(toolGroup, AclPermission.READ);
         initAclEntity(anotherToolGroup);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         doReturn(mutableListOf(toolGroup, anotherToolGroup))
                 .when(mockToolGroupManager).loadByRegistryNameOrId(TEST_STRING);
 
@@ -209,11 +193,9 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(SIMPLE_USER)
     public void shouldDenyLoadToolGroupsByRegistryNameOrIdWhichPermissionIsNotGranted() {
-        initAclEntity(anotherToolGroup);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
-        doReturn(mutableListOf(anotherToolGroup)).when(mockToolGroupManager).loadByRegistryNameOrId(TEST_STRING);
+        initAclEntity(toolGroup);
 
         assertThat(toolGroupApiService.loadByRegistryNameOrId(TEST_STRING)).isEmpty();
     }
@@ -231,7 +213,7 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     public void shouldLoadToolGroup() {
         final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
         initAclEntity(dockerRegistry);
-        final ToolGroup toolGroup = ToolGroupCreatorUtils.getToolGroup(ID, ANOTHER_SIMPLE_USER);
+        final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
         toolGroup.setParent(dockerRegistry);
         doReturn(toolGroup).when(mockToolGroupManager).load(ID);
 
@@ -239,12 +221,57 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldLoadToolGroupHierarchy() {
+        final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
+        final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
+        final Tool tool = DockerCreatorUtils.getTool(ANOTHER_SIMPLE_USER);
+        final Tool toolWithoutPermission = DockerCreatorUtils.getTool(ID_2, ANOTHER_SIMPLE_USER);
+        final List<Tool> tools = Arrays.asList(tool, toolWithoutPermission);
+        toolGroup.setParent(dockerRegistry);
+        toolGroup.setTools(tools);
+        initAclEntity(dockerRegistry);
+        initAclEntity(tool, AclPermission.READ);
+        initAclEntity(toolWithoutPermission);
+        doReturn(toolGroup).when(mockToolGroupManager).load(ID);
+
+        final ToolGroup returnedToolGroup = toolGroupApiService.load(ID);
+
+        assertThat(returnedToolGroup.getParent()).isEqualTo(dockerRegistry);
+        assertThat(returnedToolGroup.getLeaves().size()).isEqualTo(1);
+        assertThat(returnedToolGroup.getLeaves().get(0)).isEqualTo(tool);
+    }
+
+    @Test
     @WithMockUser
     public void shouldLoadToolsWithIssuesCount() {
-        final ToolGroupWithIssues toolGroupWithIssues = ToolGroupCreatorUtils.getToolGroupWithIssues();
         doReturn(toolGroupWithIssues).when(mockToolGroupManager).loadToolsWithIssuesCount(ID);
 
         assertThat(toolGroupApiService.loadToolsWithIssuesCount(ID)).isEqualTo(toolGroupWithIssues);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldLoadToolsWithIssuesCountHierarchy() {
+        final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
+        final ToolGroupWithIssues toolGroupWithIssues = DockerCreatorUtils.getToolGroupWithIssues();
+        toolGroupWithIssues.setOwner(ANOTHER_SIMPLE_USER);
+        toolGroupWithIssues.setId(ID_2);
+        final Tool tool = DockerCreatorUtils.getTool(ANOTHER_SIMPLE_USER);
+        final Tool toolWithoutPermission = DockerCreatorUtils.getTool(ID_2, ANOTHER_SIMPLE_USER);
+        final List<Tool> tools = Arrays.asList(tool, toolWithoutPermission);
+        toolGroupWithIssues.setParent(dockerRegistry);
+        toolGroupWithIssues.setTools(tools);
+        initAclEntity(dockerRegistry);
+        initAclEntity(tool, AclPermission.READ);
+        initAclEntity(toolWithoutPermission);
+        doReturn(toolGroupWithIssues).when(mockToolGroupManager).loadToolsWithIssuesCount(ID);
+
+        final ToolGroupWithIssues returnedToolGroup = toolGroupApiService.loadToolsWithIssuesCount(ID);
+
+        assertThat(returnedToolGroup.getParent()).isEqualTo(dockerRegistry);
+        assertThat(returnedToolGroup.getLeaves().size()).isEqualTo(1);
+        assertThat(returnedToolGroup.getLeaves().get(0)).isEqualTo(tool);
     }
 
     @Test
@@ -252,11 +279,32 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     public void shouldLoadByNameOrId() {
         final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
         initAclEntity(dockerRegistry);
-        final ToolGroup toolGroup = ToolGroupCreatorUtils.getToolGroup(ID, ANOTHER_SIMPLE_USER);
+        final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
         toolGroup.setParent(dockerRegistry);
         doReturn(toolGroup).when(mockToolGroupManager).loadByNameOrId(TEST_STRING);
-
         assertThat(toolGroupApiService.loadByNameOrId(TEST_STRING)).isEqualTo(toolGroup);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldLoadToolGroupHierarchyByNameOrId() {
+        final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
+        final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
+        final Tool tool = DockerCreatorUtils.getTool(ANOTHER_SIMPLE_USER);
+        final Tool toolWithoutPermission = DockerCreatorUtils.getTool(ID_2, ANOTHER_SIMPLE_USER);
+        final List<Tool> tools = Arrays.asList(tool, toolWithoutPermission);
+        toolGroup.setParent(dockerRegistry);
+        toolGroup.setTools(tools);
+        initAclEntity(dockerRegistry);
+        initAclEntity(tool, AclPermission.READ);
+        initAclEntity(toolWithoutPermission);
+        doReturn(toolGroup).when(mockToolGroupManager).loadByNameOrId(TEST_STRING);
+
+        final ToolGroup returnedToolGroup = toolGroupApiService.loadByNameOrId(TEST_STRING);
+
+        assertThat(returnedToolGroup.getParent()).isEqualTo(dockerRegistry);
+        assertThat(returnedToolGroup.getLeaves().size()).isEqualTo(1);
+        assertThat(returnedToolGroup.getLeaves().get(0)).isEqualTo(tool);
     }
 
     @Test
@@ -279,25 +327,23 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldCreatePrivateWhenPermissionIsGranted() {
         final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
-        initAclEntity(anotherToolGroup, AclPermission.READ);
-        dockerRegistry.setGroups(mutableListOf(anotherToolGroup));
+        initAclEntity(toolGroup, AclPermission.READ);
+        dockerRegistry.setGroups(mutableListOf(toolGroup));
         doReturn(dockerRegistry).when(mockDockerRegistryManager).getDockerRegistryTree(ID);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
-        doReturn(anotherToolGroup).when(mockToolGroupManager).createPrivate(ID);
+        doReturn(toolGroup).when(mockToolGroupManager).createPrivate(ID);
 
-        assertThat(toolGroupApiService.createPrivate(ID)).isEqualTo(anotherToolGroup);
+        assertThat(toolGroupApiService.createPrivate(ID)).isEqualTo(toolGroup);
     }
 
     @Test
     @WithMockUser
     public void shouldDenyCreatePrivateWhenPermissionIsNotGranted() {
         final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
-        initAclEntity(anotherToolGroup);
-        dockerRegistry.setGroups(mutableListOf(anotherToolGroup));
+        initAclEntity(toolGroup);
+        dockerRegistry.setGroups(mutableListOf(toolGroup));
         initAclEntity(dockerRegistry);
         doReturn(dockerRegistry).when(mockDockerRegistryManager).getDockerRegistryTree(ID);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
-        doReturn(anotherToolGroup).when(mockToolGroupManager).createPrivate(ID);
+        doReturn(toolGroup).when(mockToolGroupManager).createPrivate(ID);
 
         assertThrows(AccessDeniedException.class, () -> toolGroupApiService.createPrivate(ID));
     }
@@ -315,8 +361,8 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     public void shouldDeleteToolGroupForManagerWhenPermissionIsGranted() {
         initAclEntity(toolGroup, AclPermission.WRITE);
         doReturn(toolGroup).when(mockToolGroupManager).loadByNameOrId(TEST_STRING);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
         doReturn(toolGroup).when(mockToolGroupManager).delete(TEST_STRING, false);
+        mockSecurityContext();
 
         assertThat(toolGroupApiService.delete(TEST_STRING)).isEqualTo(toolGroup);
     }
@@ -334,11 +380,10 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = TOOL_GROUP_MANAGER)
     public void shouldDenyDeleteToolGroupWhenPermissionIsNotGranted() {
-        initAclEntity(anotherToolGroup);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
-        doReturn(anotherToolGroup).when(mockToolGroupManager).loadByNameOrId(TEST_STRING);
-        doReturn(anotherToolGroup).when(mockToolGroupManager).delete(TEST_STRING, false);
+        initAclEntity(toolGroup);
+        doReturn(toolGroup).when(mockToolGroupManager).loadByNameOrId(TEST_STRING);
+        doReturn(toolGroup).when(mockToolGroupManager).delete(TEST_STRING, false);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> toolGroupApiService.delete(TEST_STRING));
     }
@@ -354,7 +399,7 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenyDeleteForceToolGroupWithInvalidRole() {
-        final ToolGroup toolGroup = ToolGroupCreatorUtils.getToolGroup(ID, SIMPLE_USER);
+        final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
         toolGroup.setTools(mutableListOf(tool));
         initAclEntity(toolGroup, AclPermission.WRITE);
         initAclEntity(tool, AclPermission.WRITE);
@@ -367,14 +412,13 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = TOOL_GROUP_MANAGER, username = SIMPLE_USER)
     public void shouldDeleteForceToolGroupForManagerWhenChildPermissionIsGranted() {
-        final ToolGroup toolGroup = ToolGroupCreatorUtils.getToolGroup(ID, SIMPLE_USER);
+        final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
         toolGroup.setTools(mutableListOf(tool));
         initAclEntity(toolGroup, AclPermission.WRITE);
         initAclEntity(tool, AclPermission.WRITE);
         doReturn(toolGroup).when(mockToolGroupManager).loadByNameOrId(TEST_STRING);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
         doReturn(toolGroup).when(mockToolGroupManager).delete(TEST_STRING, true);
+        mockSecurityContext();
 
         assertThat(toolGroupApiService.deleteForce(TEST_STRING)).isEqualTo(toolGroup);
     }
@@ -383,14 +427,13 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = TOOL_GROUP_MANAGER, username = SIMPLE_USER)
     public void shouldDenyDeleteForceToolGroupForManagerWhenChildPermissionIsNotGranted() {
-        final ToolGroup toolGroup = ToolGroupCreatorUtils.getToolGroup(ID, SIMPLE_USER);
+        final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
         toolGroup.setTools(mutableListOf(tool));
         initAclEntity(toolGroup, AclPermission.WRITE);
         initAclEntity(tool);
         doReturn(toolGroup).when(mockToolGroupManager).loadByNameOrId(TEST_STRING);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
         doReturn(toolGroup).when(mockToolGroupManager).delete(TEST_STRING, true);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> toolGroupApiService.deleteForce(TEST_STRING));
     }
@@ -398,14 +441,13 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = TOOL_GROUP_MANAGER)
     public void shouldDenyDeleteForceToolGroupForManagerWhenPermissionIsNotGranted() {
-        final ToolGroup toolGroup = ToolGroupCreatorUtils.getToolGroup(ID, ANOTHER_SIMPLE_USER);
+        final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
         toolGroup.setTools(mutableListOf(tool));
         initAclEntity(toolGroup);
         initAclEntity(tool, AclPermission.WRITE);
         doReturn(toolGroup).when(mockToolGroupManager).loadByNameOrId(TEST_STRING);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
-        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
         doReturn(toolGroup).when(mockToolGroupManager).delete(TEST_STRING, true);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> toolGroupApiService.deleteForce(TEST_STRING));
     }

@@ -48,7 +48,7 @@ import com.epam.pipeline.manager.notification.SystemNotificationApiService;
 import com.epam.pipeline.manager.pipeline.FolderApiService;
 import com.epam.pipeline.manager.pipeline.PipelineConfigApiService;
 import com.epam.pipeline.acl.docker.ToolApiService;
-import com.epam.pipeline.manager.pipeline.ToolGroupApiService;
+import com.epam.pipeline.acl.docker.ToolGroupApiService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceApiService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
