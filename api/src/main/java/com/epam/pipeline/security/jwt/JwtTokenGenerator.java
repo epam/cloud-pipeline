@@ -87,8 +87,12 @@ public class JwtTokenGenerator {
     public String encodeToken(JwtTokenClaims claims, Long expirationSeconds) {
         long jwtExpirationSeconds = preferenceManager.getPreference(SystemPreferences.LAUNCH_JWT_TOKEN_EXPIRATION);
         Long expiration = expirationSeconds == null ? jwtExpirationSeconds : expirationSeconds;
+        Date expiresAt = toDate(LocalDateTime.now().plusSeconds(expiration));
+        if (isContainsProblemY2038(expiresAt.toInstant().getEpochSecond())) {
+            throw new IllegalArgumentException("Expiration date configured too far. Please configure expiration date before 19.01.2038");
+        }
         JWTCreator.Builder tokenBuilder = buildToken(claims);
-        tokenBuilder.withExpiresAt(toDate(LocalDateTime.now().plusSeconds(expiration)));
+        tokenBuilder.withExpiresAt(expiresAt);
         return tokenBuilder.sign(Algorithm.RSA512(privateKey));
     }
 
@@ -105,8 +109,12 @@ public class JwtTokenGenerator {
             List<DockerRegistryClaim> dockerRegistryClaims) {
         long jwtExpirationSeconds = preferenceManager.getPreference(SystemPreferences.LAUNCH_JWT_TOKEN_EXPIRATION);
         Long expiration = expirationSeconds == null ? jwtExpirationSeconds : expirationSeconds;
+        Date expiresAt = toDate(LocalDateTime.now().plusSeconds(expiration));
+        if (isContainsProblemY2038(expiresAt.toInstant().getEpochSecond())) {
+            throw new IllegalArgumentException("Expiration date configured too far. Please configure expiration date before 19.01.2038");
+        }
         JwtTokenDockerCreator.Builder tokenBuilder = buildDockerToken(claims, service, dockerRegistryClaims);
-        tokenBuilder.withExpiresAt(toDate(LocalDateTime.now().plusSeconds(expiration)));
+        tokenBuilder.withExpiresAt(expiresAt);
         return tokenBuilder.sign(Algorithm.RSA512(privateKey));
     }
 
@@ -129,6 +137,10 @@ public class JwtTokenGenerator {
             tokenBuilder.withObjectClaim("access", dockerRegistryClaims);
         }
         return tokenBuilder;
+    }
+
+    private boolean isContainsProblemY2038(long expiration) {
+        return expiration > Integer.MAX_VALUE;
     }
 
     /*
