@@ -35,7 +35,7 @@ from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.pipeline_run_operations import PipelineRunOperations
-from src.utilities.ssh_operations import run_ssh
+from src.utilities.ssh_operations import run_ssh, create_tunnel
 from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.utilities.user_token_operations import UserTokenOperations
 from src.version import __version__
@@ -1217,6 +1217,48 @@ def ssh(ctx, run_id, retries):
     try:
         ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries)
         sys.exit(ssh_exit_code)
+    except Exception as runtime_error:
+        click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        sys.exit(1)
+
+
+@cli.command(name='tunnel')
+@click.argument('run-id', required=True, type=int)
+@click.option('-lp', '--local-port', required=True, type=int, help='Local port to establish connection from')
+@click.option('-rp', '--remote-port', required=True, type=int, help='Remote port to establish connection to')
+@click.option('-l', '--log-file', required=False, help='Logs file for tunnel in background mode')
+@click.option('-v', '--log-level', required=False, help='Logs level for tunnel: '
+                                                        'CRITICAL, ERROR, WARNING, INFO or DEBUG')
+@click.option('-t', '--timeout', required=False, type=int, default=1000,
+              help='Time period in ms for background tunnel process health check')
+@click.option('-f', '--foreground', required=False, is_flag=True, default=False,
+              help='Establishes tunnel in foreground mode')
+@click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@Config.validate_access_token
+def tunnel(run_id, local_port, remote_port, log_file, log_level, timeout, foreground):
+    """
+    Establishes tunnel connection to specified run instance port and serves it as a local port.
+
+    It allows to transfer any tcp traffic from local machine to run instance and works both on Linux and Windows.
+
+    For example it can be used to allow ssh connections to run instance.
+
+    \b
+    First of all establish tunnel connection from run (12345) instance ssh port (22) to some local port (4567).
+        pipe tunnel -lp 4567 -rp 22 12345
+
+    \b
+    Then connect to run instance using regular ssh client on the configured local port (4567).
+        ssh -p 4567 root@localhost
+
+    \b
+    Additionally the following environment variables can be used to specify the exact tunnel properties.
+        CP_CLI_TUNNEL_PROXY_HOST
+        CP_CLI_TUNNEL_PROXY_PORT
+        CP_CLI_TUNNEL_TARGET_HOST
+    """
+    try:
+        create_tunnel(run_id, local_port, remote_port, log_file, log_level, timeout, foreground)
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
         sys.exit(1)
