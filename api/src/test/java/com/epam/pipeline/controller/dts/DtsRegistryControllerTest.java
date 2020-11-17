@@ -22,7 +22,6 @@ import com.epam.pipeline.manager.dts.DtsRegistryApiService;
 import com.epam.pipeline.test.creator.dts.DtsCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -33,6 +32,7 @@ import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -58,7 +58,7 @@ public class DtsRegistryControllerTest extends AbstractControllerTest {
 
         final MvcResult mvcResult = performRequest(get(DTS_URL));
 
-        Mockito.verify(mockDtsRegistryApiService).loadAll();
+        verify(mockDtsRegistryApiService).loadAll();
         assertResponse(mvcResult, dtsRegistries, DtsCreatorUtils.DTS_REGISTRY_LIST_TYPE);
     }
 
@@ -74,7 +74,7 @@ public class DtsRegistryControllerTest extends AbstractControllerTest {
 
         final MvcResult mvcResult = performRequest(get(String.format(ID_URL, ID)));
 
-        Mockito.verify(mockDtsRegistryApiService).load(ID);
+        verify(mockDtsRegistryApiService).load(ID);
         assertResponse(mvcResult, dtsRegistry, DtsCreatorUtils.DTS_REGISTRY_TYPE);
     }
 
@@ -91,7 +91,7 @@ public class DtsRegistryControllerTest extends AbstractControllerTest {
 
         final MvcResult mvcResult = performRequest(post(DTS_URL).content(content));
 
-        Mockito.verify(mockDtsRegistryApiService).create(dtsRegistryVO);
+        verify(mockDtsRegistryApiService).create(dtsRegistryVO);
         assertResponse(mvcResult, dtsRegistry, DtsCreatorUtils.DTS_REGISTRY_TYPE);
     }
 
@@ -108,7 +108,7 @@ public class DtsRegistryControllerTest extends AbstractControllerTest {
 
         final MvcResult mvcResult = performRequest(put(String.format(ID_URL, ID)).content(content));
 
-        Mockito.verify(mockDtsRegistryApiService).update(ID, dtsRegistryVO);
+        verify(mockDtsRegistryApiService).update(ID, dtsRegistryVO);
         assertResponse(mvcResult, dtsRegistry, DtsCreatorUtils.DTS_REGISTRY_TYPE);
     }
 
@@ -124,7 +124,7 @@ public class DtsRegistryControllerTest extends AbstractControllerTest {
 
         final MvcResult mvcResult = performRequest(delete(String.format(ID_URL, ID)));
 
-        Mockito.verify(mockDtsRegistryApiService).delete(ID);
+        verify(mockDtsRegistryApiService).delete(ID);
         assertResponse(mvcResult, dtsRegistry, DtsCreatorUtils.DTS_REGISTRY_TYPE);
     }
 

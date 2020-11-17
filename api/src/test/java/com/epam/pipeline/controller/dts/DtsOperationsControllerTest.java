@@ -23,18 +23,17 @@ import com.epam.pipeline.manager.dts.DtsOperationsApiService;
 import com.epam.pipeline.test.creator.dts.DtsCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @WebMvcTest(controllers = DtsOperationsController.class)
@@ -49,8 +48,6 @@ public class DtsOperationsControllerTest extends AbstractControllerTest {
     private static final String PAGE_SIZE = "pageSize";
     private static final String MARKER = "marker";
     private static final String RUN_ID = "runId";
-    private static final String LONG_AS_STRING = String.valueOf(ID);
-    private static final String INT_AS_STRING = String.valueOf(TEST_INT);
 
     @Autowired
     private DtsOperationsApiService mockDtsOperationsApiService;
@@ -59,15 +56,13 @@ public class DtsOperationsControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldListDtsDataStorage() {
         final DtsDataStorageListing dtsDataStorageListing = DtsCreatorUtils.getDtsDataStorageListing();
-        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add(PATH, TEST_STRING);
-        params.add(PAGE_SIZE, INT_AS_STRING);
-        params.add(MARKER, TEST_STRING);
+        final MultiValueMap<String, String> params = multiValueMapOf(
+                PATH, TEST_STRING, PAGE_SIZE, TEST_INT, MARKER, TEST_STRING);
         doReturn(dtsDataStorageListing).when(mockDtsOperationsApiService).list(TEST_STRING, ID, TEST_INT, TEST_STRING);
 
         final MvcResult mvcResult = performRequest(get(String.format(LIST_URL, ID)).params(params));
 
-        Mockito.verify(mockDtsOperationsApiService).list(TEST_STRING, ID, TEST_INT, TEST_STRING);
+        verify(mockDtsOperationsApiService).list(TEST_STRING, ID, TEST_INT, TEST_STRING);
         assertResponse(mvcResult, dtsDataStorageListing, DtsCreatorUtils.DTS_DATA_STORAGE_LISTING_TYPE);
     }
 
@@ -80,13 +75,12 @@ public class DtsOperationsControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldFindSubmission() {
         final DtsSubmission dtsSubmission = DtsCreatorUtils.getDtsSubmission();
-        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add(RUN_ID, LONG_AS_STRING);
+        final MultiValueMap<String, String> params = multiValueMapOf(RUN_ID, ID);
         doReturn(dtsSubmission).when(mockDtsOperationsApiService).findSubmission(ID, ID);
 
         final MvcResult mvcResult = performRequest(get(String.format(SUBMISSION_URL, ID)).params(params));
 
-        Mockito.verify(mockDtsOperationsApiService).findSubmission(ID, ID);
+        verify(mockDtsOperationsApiService).findSubmission(ID, ID);
         assertResponse(mvcResult, dtsSubmission, DtsCreatorUtils.DTS_SUBMISSION_TYPE);
     }
 
@@ -103,7 +97,7 @@ public class DtsOperationsControllerTest extends AbstractControllerTest {
 
         final MvcResult mvcResult = performRequest(get(String.format(CLUSTER_URL, ID)));
 
-        Mockito.verify(mockDtsOperationsApiService).getClusterConfiguration(ID);
+        verify(mockDtsOperationsApiService).getClusterConfiguration(ID);
         assertResponse(mvcResult, dtsClusterConfiguration, DtsCreatorUtils.DTS_CLUSTER_CONFIG_TYPE);
     }
 

@@ -33,6 +33,8 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.context.WebApplicationContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -167,5 +169,15 @@ public abstract class AbstractControllerTest {
                 .servletPath(SERVLET_PATH)
                 .contentType(EXPECTED_CONTENT_TYPE))
                 .andExpect(status().isOk());
+    }
+
+    public MultiValueMap<String, String> multiValueMapOf(Object... objects) {
+        final MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+        for (int i = 0; i < objects.length; i++) {
+            if (i % 2 == 0) {
+                map.add(String.valueOf(objects[i]), String.valueOf(objects[i + 1]));
+            }
+        }
+        return map;
     }
 }
