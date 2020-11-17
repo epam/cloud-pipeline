@@ -36,7 +36,7 @@ from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.pipeline_run_operations import PipelineRunOperations
-from src.utilities.ssh_operations import run_ssh, create_tunnel
+from src.utilities.ssh_operations import run_ssh, create_tunnel, kill_tunnels
 from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.utilities.user_token_operations import UserTokenOperations
 from src.version import __version__
@@ -1224,7 +1224,61 @@ def ssh(ctx, run_id, retries):
         sys.exit(1)
 
 
-@cli.command(name='tunnel')
+@cli.group()
+def tunnel():
+    """
+    Run ports tunnelling operations
+    """
+    pass
+
+
+@tunnel.command(name='stop')
+@click.argument('run-id', required=False, type=int)
+@click.option('-lp', '--local-port', required=False, type=int, help='Local port to stop tunnel for')
+@click.option('-t', '--timeout', required=False, type=int, default=60 * 1000,
+              help='Tunnels stopping timeout in ms')
+@click.option('-f', '--force', required=False, is_flag=True, default=False,
+              help='Killing tunnels rather than stopping them')
+@click.option('-v', '--log-level', required=False, help='Explicit logging level: '
+                                                        'CRITICAL, ERROR, WARNING, INFO or DEBUG.')
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
+    """
+    Stops background tunnel processes.
+
+    It allows to stop multiple tunnel processes for a single run, a single port or a single run port.
+
+    Additionally specified without arguments it allows to stop all background tunnels.
+
+    Examples:
+
+    I. Stop all active tunnels:
+
+        pipe tunnel stop
+
+    II. Stop all tunnels for a single run (12345):
+
+        pipe tunnel stop 12345
+
+    III. Stop a single tunnel which serves on specific local port (4567):
+
+        pipe tunnel stop -lp 4567
+
+    IV. Stop a single tunnel which serves for some run (12345) on specific local port (4567):
+
+        pipe tunnel stop -lp 4567 12345
+
+    """
+    try:
+        kill_tunnels(run_id=run_id, local_port=local_port, timeout=timeout, force=force, log_level=log_level)
+    except Exception as runtime_error:
+        click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        if trace:
+            traceback.print_exc()
+        sys.exit(1)
+
+
+@tunnel.command(name='start')
 @click.argument('run-id', required=True, type=int)
 @click.option('-lp', '--local-port', required=True, type=int, help='Local port to establish connection from')
 @click.option('-rp', '--remote-port', required=True, type=int, help='Remote port to establish connection to')
@@ -1250,9 +1304,9 @@ def ssh(ctx, run_id, retries):
 @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
-def tunnel(run_id, local_port, remote_port, connection_timeout,
-           ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
-           timeout, foreground, retries, trace):
+def start_tunnel(run_id, local_port, remote_port, connection_timeout,
+                 ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+                 timeout, foreground, retries, trace):
     """
     Establishes tunnel connection to specified run instance port and serves it as a local port.
 
@@ -1268,13 +1322,13 @@ def tunnel(run_id, local_port, remote_port, connection_timeout,
 
     Establish tunnel connection from run (12345) instance port (4567) to the same local port.
 
-        pipe tunnel -lp 4567 -rp 4567 12345
+        pipe tunnel start -lp 4567 -rp 4567 12345
 
     II. Example of ssh port tunnel connection establishing with enabled passwordless ssh configuration.
 
     First of all establish tunnel connection from run (12345) instance ssh port (22) to some local port (4567).
 
-        pipe tunnel -lp 4567 -rp 22 --ssh 12345
+        pipe tunnel start -lp 4567 -rp 22 --ssh 12345
 
     Then connect to run instance using regular ssh client.
 
