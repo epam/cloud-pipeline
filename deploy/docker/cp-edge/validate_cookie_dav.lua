@@ -42,6 +42,18 @@ local function split_str(inputstr, sep)
     return t
 end
 
+local function split_str(inputstr, sep)
+    if sep == nil then
+        sep = "%s"
+    end
+    local t={} ; local i=1
+    for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
+        t[i] = str
+        i = i + 1
+    end
+    return t
+end
+
 local function is_empty(str)
     return str == nil or str == ''
 end
@@ -178,12 +190,16 @@ if token then
 
     -- If JWT Subject is not equal to the uri_username - restrict connection
         local jwt_username = jwt_obj["payload"]["sub"]
-        if jwt_username ~= uri_username then
+    -- split jwt_username by @ to deal with emails,
+    -- if jwt_username is not an email it will just have whole username as a first element of splitted array as well
+    local normalized_jwt_username = split_str(jwt_username, '@')[1]
+    if normalized_jwt_username ~= uri_username then
             ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
             ngx.status = ngx.HTTP_UNAUTHORIZED
             ngx.log(ngx.WARN, "[SECURITY] Application: DAV-" .. ngx.var.request_uri ..
                     "; User: " .. jwt_username .. "; Status: Authentication failed; "
                     .. "Message: JWT Subject is not equal to the uri_username - restrict connection")
+            ngx.log(ngx.WARN, "JWT username: " .. jwt_username .. "uri_username" .. uri_username)
             ngx.log(ngx.WARN, jwt_obj.reason)
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
         end
