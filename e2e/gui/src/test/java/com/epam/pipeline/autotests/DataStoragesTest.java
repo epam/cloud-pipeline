@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
+import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -40,10 +41,11 @@ import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.StorageContentAO.folderWithName;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Listeners(value = ConditionalTestAnalyzer.class)
-public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigation {
+public class DataStoragesTest extends AbstractSinglePipelineRunningTest implements Navigation {
 
     private static final String STORAGE_PREFIX = StringUtils.isBlank(C.STORAGE_NAME_PREFIX) ? "" : C.STORAGE_NAME_PREFIX;
     private String storage = "epmcmbi-test-storage-" + Utils.randomSuffix();
@@ -57,9 +59,18 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
     private final String folder = "epmcmbi-test-folder-" + Utils.randomSuffix();
     private final String folderTempName = "epmcmbi-test-folder-temp-name-" + Utils.randomSuffix();
     private final String subfolder = "epmcmbi-test-subfolder-" + Utils.randomSuffix();
-    private final String fileTempName = String.format("epmcmbi-file-temp-name-%d.file", Utils.randomSuffix());
-    private final String prefixStoragePath = String.format("%s://", C.STORAGE_PREFIX);
+    private final String fileTempName = format("epmcmbi-file-temp-name-%d.file", Utils.randomSuffix());
+    private final String prefixStoragePath = format("%s://", C.STORAGE_PREFIX);
     private File file;
+    private String storage1 = "epmcmbi-test-storage-" + Utils.randomSuffix();
+    private String storage2 = "epmcmbi-test-storage-" + Utils.randomSuffix();
+    private String pathStorage1 = "";
+    private String pathStorage2 = "";
+    private String fileFor1469 = "fileFromStorage1";
+    private String anotherCloudRegion = C.ANOTHER_CLOUD_REGION;
+    private final String registry = C.DEFAULT_REGISTRY;
+    private final String tool = C.TESTING_TOOL_NAME;
+    private final String group = C.DEFAULT_GROUP;
 
     @BeforeClass
     public void createPresetStorage() {
@@ -82,7 +93,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
         clickCanceButtonlIfItIsDisplayed();
 
         Utils.removeStorages(this, storage, deletableStorage, editableStorage, tempAlias, refreshingTestStorage,
-                presetStorage);
+                presetStorage, storage1, storage2);
     }
 
     @Test
@@ -94,13 +105,13 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .createStorage(refreshingTestStorage)
             .selectStorage(refreshingTestStorage)
             .inAnotherTab(library -> library.sleep(2, SECONDS).createFolder(folder).sleep(3, SECONDS))
-            .ensure(folderWithName(folder), not(exist).because(String.format(
+            .ensure(folderWithName(folder), not(exist).because(format(
                 "Folder with name %s is not supposed to appear until the page will be refreshed.", folder)
             ))
             .sleep(3, SECONDS)
             .clickRefreshButton()
             .sleep(1, SECONDS)
-            .ensure(folderWithName(folder), visible.because(String.format(
+            .ensure(folderWithName(folder), visible.because(format(
                 "Folder with name %s should appear after the page has been refreshed.", folder)
             ))
             .validateElementIsPresent(folder)
@@ -128,7 +139,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
     public void createDataStorageWithNameThatAlreadyExists() {
         navigateToLibrary()
             .createStorage(storage)
-            .messageShouldAppear(String.format("'%s' already exist", storage));
+            .messageShouldAppear(format("'%s' already exist", storage));
         clickCanceButtonlIfItIsDisplayed();
         refresh();
     }
@@ -151,8 +162,8 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
         navigateToLibrary()
             .selectStorage(storage)
             .createFolder(folder)
-            .messageShouldAppear(String.format("Storage path '%s/' for bucket '%s' already exists.", folder,
-                    String.format("%s%s", STORAGE_PREFIX, storage)));
+            .messageShouldAppear(format("Storage path '%s/' for bucket '%s' already exists.", folder,
+                    format("%s%s", STORAGE_PREFIX, storage)));
 
         refresh();
     }
@@ -415,7 +426,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
     public void addExistingBucket() {
         navigateToLibrary()
             .clickOnCreateExistingStorageButton()
-            .setPath(String.format("%s%s", STORAGE_PREFIX, deletableStorage))
+            .setPath(format("%s%s", STORAGE_PREFIX, deletableStorage))
             .setAlias(deletableStorage)
             .clickCreateButton()
             .validateStorage(deletableStorage);
@@ -434,11 +445,11 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
 
         navigateToLibrary()
             .clickOnCreateExistingStorageButton()
-            .setPath(String.format("%s%s", STORAGE_PREFIX, deletableStorage))
+            .setPath(format("%s%s", STORAGE_PREFIX, deletableStorage))
             .setAlias(deletableStorage)
             .clickCreateAndCancel()
-            .messageShouldAppear(String.format("Error: data storage with name: '%s' or path: '%s' was not found.",
-                    deletableStorage, String.format("%s%s", STORAGE_PREFIX, deletableStorage)))
+            .messageShouldAppear(format("Error: data storage with name: '%s' or path: '%s' was not found.",
+                    deletableStorage, format("%s%s", STORAGE_PREFIX, deletableStorage)))
             .validateStorageIsNotPresent(deletableStorage);
     }
 
@@ -566,6 +577,56 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .selectStorage(storage)
             .selectElementsUsingCheckboxes(folder1, folder2)
             .removeAllSelected();
+    }
+
+    @Test
+    @TestCase(value = {"1469"})
+    @CloudProviderOnly(values = {Cloud.AWS})
+    public void checkTransferBetweenRegions() {
+        pathStorage1 = library()
+                .createStorage(storage1)
+                .selectStorage(storage1)
+                .createAndEditFile(fileFor1469, "description1")
+                .getStoragePath();
+        pathStorage2 = library()
+                .clickOnCreateStorageButton()
+                .setStoragePath(storage2)
+                .selectValue(CLOUD_REGION, anotherCloudRegion)
+                .ok()
+                .selectStorage(storage2)
+                .getStoragePath();
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .setDefaultLaunchOptions()
+                .launchTool(this, Utils.nameWithoutGroup(tool))
+                .showLog(getRunId())
+                .waitForSshLink()
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(getRunId())
+                        .execute(format("pipe storage cp %s/%s %s/", pathStorage1, fileFor1469, pathStorage2))
+                        .assertPageContains("100%")
+                        .close());
+        library()
+                .selectStorage(storage2)
+                .validateElementIsPresent(fileFor1469);
+        library()
+                .selectStorage(storage1)
+                .rmFile(fileFor1469)
+                .validateCurrentFolderIsEmpty();
+        runsMenu()
+                .showLog(getRunId())
+                .waitForSshLink()
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(getRunId())
+                        .execute(format("pipe storage mv %s/%s %s/", pathStorage2, fileFor1469, pathStorage1))
+                        .assertPageContains("100%")
+                        .close());
+        library()
+                .selectStorage(storage2)
+                .validateCurrentFolderIsEmpty();
+        library()
+                .selectStorage(storage1)
+                .validateElementIsPresent(fileFor1469);
     }
 
     private void assertFileSize(File file, int expectedFileSize) {
