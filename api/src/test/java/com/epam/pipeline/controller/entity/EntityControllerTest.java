@@ -24,12 +24,10 @@ import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.util.Collections;
@@ -38,6 +36,7 @@ import java.util.Map;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
@@ -48,7 +47,6 @@ public class EntityControllerTest extends AbstractControllerTest {
 
     private static final String ACL_CLASS = "aclClass";
     private static final String IDENTIFIER = "identifier";
-    private static final String ACL_CLASS_AS_STRING = String.valueOf(AclClass.DATA_STORAGE);
 
     final S3bucketDataStorage s3bucketDataStorage = DatastorageCreatorUtils.getS3bucketDataStorage();
 
@@ -58,14 +56,13 @@ public class EntityControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldListToolGroups() {
-        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add(IDENTIFIER, TEST_STRING);
-        params.add(ACL_CLASS, ACL_CLASS_AS_STRING);
+        final MultiValueMap<String, String> params = multiValueMapOf(
+                IDENTIFIER, TEST_STRING, ACL_CLASS, AclClass.DATA_STORAGE);
         doReturn(s3bucketDataStorage).when(mockEntityApiService).loadByNameOrId(AclClass.DATA_STORAGE, TEST_STRING);
 
         final MvcResult mvcResult = performRequest(get(ENTITIES_URL).params(params));
 
-        Mockito.verify(mockEntityApiService).loadByNameOrId(AclClass.DATA_STORAGE, TEST_STRING);
+        verify(mockEntityApiService).loadByNameOrId(AclClass.DATA_STORAGE, TEST_STRING);
         assertResponse(mvcResult, s3bucketDataStorage, DatastorageCreatorUtils.S3_BUCKET_TYPE);
     }
 
@@ -80,15 +77,14 @@ public class EntityControllerTest extends AbstractControllerTest {
         final List<S3bucketDataStorage> s3bucketDataStorageList = Collections.singletonList(s3bucketDataStorage);
         final Map<AclClass, List<S3bucketDataStorage>> map =
                 Collections.singletonMap(AclClass.DATA_STORAGE, s3bucketDataStorageList);
-        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add(ACL_CLASS, ACL_CLASS_AS_STRING);
+        final MultiValueMap<String, String> params = multiValueMapOf(ACL_CLASS, AclClass.DATA_STORAGE);
         final AclSid aclSid = SecurityCreatorUtils.getAclSid();
         final String content = getObjectMapper().writeValueAsString(aclSid);
         doReturn(map).when(mockEntityApiService).loadAvailable(aclSid, AclClass.DATA_STORAGE);
 
         final MvcResult mvcResult = performRequest(post(ENTITIES_URL).params(params).content(content));
 
-        Mockito.verify(mockEntityApiService).loadAvailable(aclSid, AclClass.DATA_STORAGE);
+        verify(mockEntityApiService).loadAvailable(aclSid, AclClass.DATA_STORAGE);
         assertResponse(mvcResult, map, SecurityCreatorUtils.ACL_SECURED_ENTITY_MAP_TYPE);
     }
 
