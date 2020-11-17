@@ -20,51 +20,42 @@ import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.pricing.azure.AzureEAPricingMeter;
 import com.epam.pipeline.entity.pricing.azure.AzureEAPricingResult;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.credentials.AzureTokenCredentials;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.compute.implementation.ResourceSkuInner;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.OkHttpClient;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.util.Assert;
-import retrofit2.Retrofit;
-import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static com.epam.pipeline.manager.cloud.CloudInstancePriceService.TermType;
 import static com.epam.pipeline.manager.cloud.azure.AzurePricingClient.executeRequest;
 
 @Slf4j
 public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
 
     private static final String API_VERSION = "2019-10-01";
+    private static final int BATCH_SIZE = 10000;
 
-    private final AzurePricingClient azurePricingClient;
 
     public AzureEAPriceListLoader(final String authPath, String meterRegionName, final String azureApiUrl) {
         super(meterRegionName, azureApiUrl, authPath);
-        this.azurePricingClient = buildRetrofitClient(azureApiUrl);
     }
 
     protected List<InstanceOffer> getInstanceOffers(final AbstractCloudRegion region,
                                                     final AzureTokenCredentials credentials,
                                                     final Azure client,
                                                     final Map<String, ResourceSkuInner> vmSkusByName,
-                                                    final Map<String, ResourceSkuInner> diskSkusByName) throws IOException {
+                                                    final Map<String, ResourceSkuInner> diskSkusByName)
+                                                    throws IOException {
         final Optional<AzureEAPricingResult> prices = getPricing(client.subscriptionId(), credentials);
         return prices.filter(p -> CollectionUtils.isNotEmpty(p.getProperties().getPricesheets()))
                 .map(p -> mergeSkusWithPrices(p.getProperties().getPricesheets(), vmSkusByName, diskSkusByName,
@@ -77,22 +68,7 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
         return API_VERSION;
     }
 
-    private AzurePricingClient buildRetrofitClient(final String azureApiUrl) {
-        final OkHttpClient client = new OkHttpClient.Builder()
-                .followRedirects(true)
-                .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
-                .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
-                .hostnameVerifier((s, sslSession) -> true)
-                .build();
-        final ObjectMapper mapper = new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        final Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(azureApiUrl)
-                .addConverterFactory(JacksonConverterFactory.create(mapper))
-                .client(client)
-                .build();
-        return retrofit.create(AzurePricingClient.class);
-    }
+
 
     private Optional<AzureEAPricingResult> getPricing(final String subscription,
                                                       final AzureTokenCredentials credentials) throws IOException {
@@ -113,12 +89,12 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
     }
 
     private List<AzureEAPricingMeter> getPriceSheet(List<AzureEAPricingMeter> buffer, String subscription,
-                                                    AzureTokenCredentials credentials, String skiptoken
+                                                  AzureTokenCredentials credentials, String skiptoken
     ) throws IOException {
         final String token = credentials.getToken(azureApiUrl);
         Assert.isTrue(StringUtils.isNotBlank(token), "Could not find access token");
         AzureEAPricingResult meterDetails = executeRequest(azurePricingClient.getPricesheet(
-                "Bearer " + token, subscription, getAPIVersion(), "meterDetails", 10000, skiptoken));
+                "Bearer " + token, subscription, getAPIVersion(), "meterDetails", BATCH_SIZE, skiptoken));
         if (meterDetails != null && meterDetails.getProperties() != null) {
             buffer.addAll(meterDetails.getProperties().getPricesheets());
             if (StringUtils.isNotBlank(meterDetails.getProperties().getNextLink())) {
@@ -131,81 +107,6 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
             }
         }
         return buffer;
-    }
-
-    List<InstanceOffer> mergeSkusWithPrices(final List<AzureEAPricingMeter> prices,
-                                            final Map<String, ResourceSkuInner> virtualMachineSkus,
-                                            final Map<String, ResourceSkuInner> diskSkusByName,
-                                            final String meterRegion, final Long regionId) {
-        return prices.stream()
-                .filter(meter -> meterRegion.equalsIgnoreCase(meter.getMeterRegion()))
-                .filter(this::verifyPricingMeters)
-                .flatMap(meter -> {
-                    if (virtualMachinesCategory(meter)) {
-                        return getVmSizes(meter.getMeterName())
-                                .stream()
-                                .map(vmSize -> buildVmInstanceOffer(virtualMachineSkus, meter, vmSize, regionId));
-                    }
-                    if (diskCategory(meter)) {
-                        return Stream.of(buildDiskInstanceOffer(diskSkusByName, meter, regionId));
-                    }
-                    return null;
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-    }
-
-    private boolean verifyPricingMeters(final AzureEAPricingMeter meter) {
-        return StringUtils.isNotBlank(meter.getMeterCategory())
-                && StringUtils.isNotBlank(meter.getMeterId())
-                && StringUtils.isNotBlank(meter.getMeterName())
-                && StringUtils.isNotBlank(meter.getMeterSubCategory())
-                && StringUtils.isNotBlank(meter.getMeterRegion())
-                && meter.getUnitPrice() > 0.f;
-    }
-
-    private InstanceOffer buildDiskInstanceOffer(final Map<String, ResourceSkuInner> diskSkusByName,
-                                                 final AzureEAPricingMeter meter, final Long regionId) {
-        final ResourceSkuInner diskSku = getDiskSku(diskSkusByName, meter.getMeterName());
-        if (diskSku == null) {
-            return null;
-        }
-        return diskSkuToOffer(regionId, diskSku,
-                meter.getUnitPrice() / getNumberOfUnits(meter.getUnit()), DEFAULT_DISK_UNIT);
-    }
-
-    private InstanceOffer buildVmInstanceOffer(final Map<String, ResourceSkuInner> virtualMachineSkus,
-                                               final AzureEAPricingMeter meter, final String vmSize,
-                                               final Long regionId) {
-        final String subCategory = meter.getMeterSubCategory();
-        final ResourceSkuInner resourceSku = getVirtualMachineSku(virtualMachineSkus, vmSize, subCategory);
-        if (resourceSku == null) {
-            return null;
-        }
-        return vmSkuToOffer(regionId, resourceSku,
-                meter.getUnitPrice() / getNumberOfUnits(meter.getUnit()),
-                meter.getMeterId(),
-                meter.getMeterName().contains(LOW_PRIORITY_VM_POSTFIX)
-                        ? TermType.LOW_PRIORITY
-                        : TermType.ON_DEMAND,
-                getOperatingSystem(meter.getMeterSubCategory()));
-    }
-
-    private int getNumberOfUnits(String unitOfMeasure) {
-        return Integer.parseInt(unitOfMeasure.split("[\\s/]+")[0]);
-    }
-
-
-
-    private boolean virtualMachinesCategory(final AzureEAPricingMeter meter) {
-        return meter.getMeterCategory().equals(VIRTUAL_MACHINES_CATEGORY)
-                && meter.getMeterSubCategory().contains("Series");
-    }
-
-    private boolean diskCategory(final AzureEAPricingMeter meter) {
-        return meter.getMeterCategory().equals(DISKS_CATEGORY) && meter.getMeterSubCategory().contains("SSD")
-                && meter.getMeterSubCategory().contains(DISK_INDICATOR)
-                && meter.getMeterName().contains(DISK_INDICATOR);
     }
 
 }

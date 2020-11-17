@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cloud.azure;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.pricing.azure.AzureEAPricingMeter;
 import com.epam.pipeline.entity.pricing.azure.AzurePricingMeter;
+import com.epam.pipeline.entity.pricing.azure.AzureRateCardPricingMeter;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.microsoft.azure.management.compute.ResourceSkuCapabilities;
 import com.microsoft.azure.management.compute.implementation.ResourceSkuInner;
@@ -54,20 +55,26 @@ public class AzurePriceListLoaderTest {
     private static final String DISK_NAME = "P6";
     private static final float DISK_SIZE = 64.0f;
     private static final float OS_DISK_SIZE = 56.0f;
+    private static final String RC_HOURS_UNIT = "1 Hour";
     private static final String HOURS_UNIT_2 = "10 Hour";
+    private static final String V_CPUS = "vCPUs";
+    private static final String PREMIUM_IO = "PremiumIO";
+    private static final String GPUS = "GPUs";
+    private static final String MEMORY_GB = "MemoryGB";
 
     @Test
     public void rateCardShouldCalculateInstancePrices() {
         List<AzurePricingMeter> prices = Arrays.asList(
-                AzurePricingMeter.builder()
+                AzureRateCardPricingMeter.builder()
                         .meterCategory(VIRTUAL_MACHINES_CATEGORY)
                         .meterId(ANY)
                         .meterRates(Collections.singletonMap("0", PRICE))
                         .meterSubCategory(VM_METER_SUB_CATEGORY)
                         .meterName(VM_METER_NAME)
+                        .unit(RC_HOURS_UNIT)
                         .meterRegion(METER_REGION)
                         .build(),
-                AzurePricingMeter.builder()
+                AzureRateCardPricingMeter.builder()
                         .meterCategory(DISKS_CATEGORY)
                         .meterId(ANY)
                         .meterRates(Collections.singletonMap("0", PRICE))
@@ -79,18 +86,18 @@ public class AzurePriceListLoaderTest {
         );
 
         List<ResourceSkuCapabilities> vmCapabilities1 = Arrays.asList(
-                createResourceSkuCapabilities("MemoryGB", "56"),
-                createResourceSkuCapabilities("vCPUs", "8"),
-                createResourceSkuCapabilities("GPUs", "0"),
-                createResourceSkuCapabilities("PremiumIO", "True"));
+                createResourceSkuCapabilities(MEMORY_GB, "56"),
+                createResourceSkuCapabilities(V_CPUS, "8"),
+                createResourceSkuCapabilities(GPUS, "0"),
+                createResourceSkuCapabilities(PREMIUM_IO, "True"));
         ResourceSkuInner vmSku1 = createVirtualMachinesSku(VM_TYPE, "standardDSv2Family", vmCapabilities1);
 
         // should be filtered cause it does not match prices list
         List<ResourceSkuCapabilities> vmCapabilities2 = Arrays.asList(
-                createResourceSkuCapabilities("MemoryGB", "0.75"),
-                createResourceSkuCapabilities("vCPUs", "1"),
-                createResourceSkuCapabilities("GPUs", "0"),
-                createResourceSkuCapabilities("PremiumIO", "False"));
+                createResourceSkuCapabilities(MEMORY_GB, "0.75"),
+                createResourceSkuCapabilities(V_CPUS, "1"),
+                createResourceSkuCapabilities(GPUS, "0"),
+                createResourceSkuCapabilities(PREMIUM_IO, "False"));
         ResourceSkuInner vmSku2 = createVirtualMachinesSku("Basic_A0", "basicAFamily", vmCapabilities2);
 
         Map<String, ResourceSkuInner> vmSkus = new HashMap<>();
@@ -168,18 +175,18 @@ public class AzurePriceListLoaderTest {
         );
 
         List<ResourceSkuCapabilities> vmCapabilities1 = Arrays.asList(
-                createResourceSkuCapabilities("MemoryGB", "56"),
-                createResourceSkuCapabilities("vCPUs", "8"),
-                createResourceSkuCapabilities("GPUs", "0"),
-                createResourceSkuCapabilities("PremiumIO", "True"));
+                createResourceSkuCapabilities(MEMORY_GB, "56"),
+                createResourceSkuCapabilities(V_CPUS, "8"),
+                createResourceSkuCapabilities(GPUS, "0"),
+                createResourceSkuCapabilities(PREMIUM_IO, "True"));
         ResourceSkuInner vmSku1 = createVirtualMachinesSku(VM_TYPE, "standardDSv2Family", vmCapabilities1);
 
         // should be filtered cause it does not match prices list
         List<ResourceSkuCapabilities> vmCapabilities2 = Arrays.asList(
-                createResourceSkuCapabilities("MemoryGB", "0.75"),
-                createResourceSkuCapabilities("vCPUs", "1"),
-                createResourceSkuCapabilities("GPUs", "0"),
-                createResourceSkuCapabilities("PremiumIO", "False"));
+                createResourceSkuCapabilities(MEMORY_GB, "0.75"),
+                createResourceSkuCapabilities(V_CPUS, "1"),
+                createResourceSkuCapabilities(GPUS, "0"),
+                createResourceSkuCapabilities(PREMIUM_IO, "False"));
         ResourceSkuInner vmSku2 = createVirtualMachinesSku("Basic_A0", "basicAFamily", vmCapabilities2);
 
         Map<String, ResourceSkuInner> vmSkus = new HashMap<>();
@@ -257,18 +264,18 @@ public class AzurePriceListLoaderTest {
         );
 
         List<ResourceSkuCapabilities> vmCapabilities1 = Arrays.asList(
-                createResourceSkuCapabilities("MemoryGB", "56"),
-                createResourceSkuCapabilities("vCPUs", "8"),
-                createResourceSkuCapabilities("GPUs", "0"),
-                createResourceSkuCapabilities("PremiumIO", "True"));
+                createResourceSkuCapabilities(MEMORY_GB, "56"),
+                createResourceSkuCapabilities(V_CPUS, "8"),
+                createResourceSkuCapabilities(GPUS, "0"),
+                createResourceSkuCapabilities(PREMIUM_IO, "True"));
         ResourceSkuInner vmSku1 = createVirtualMachinesSku(VM_TYPE, "standardDSv2Family", vmCapabilities1);
 
         // should be filtered cause it does not match prices list
         List<ResourceSkuCapabilities> vmCapabilities2 = Arrays.asList(
-                createResourceSkuCapabilities("MemoryGB", "0.75"),
-                createResourceSkuCapabilities("vCPUs", "1"),
-                createResourceSkuCapabilities("GPUs", "0"),
-                createResourceSkuCapabilities("PremiumIO", "False"));
+                createResourceSkuCapabilities(MEMORY_GB, "0.75"),
+                createResourceSkuCapabilities(V_CPUS, "1"),
+                createResourceSkuCapabilities(GPUS, "0"),
+                createResourceSkuCapabilities(PREMIUM_IO, "False"));
         ResourceSkuInner vmSku2 = createVirtualMachinesSku("Basic_A0", "basicAFamily", vmCapabilities2);
 
         Map<String, ResourceSkuInner> vmSkus = new HashMap<>();

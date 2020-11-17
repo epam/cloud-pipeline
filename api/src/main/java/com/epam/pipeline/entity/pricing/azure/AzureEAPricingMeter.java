@@ -22,13 +22,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Collections;
 import java.util.Map;
 
 @NoArgsConstructor
 @Data
 @Builder
 @AllArgsConstructor
-public class AzureEAPricingMeter {
+public class AzureEAPricingMeter implements AzurePricingMeter {
     private String meterId;
     private String currencyCode;
     @JsonProperty(value = "unitOfMeasure")
@@ -51,4 +52,8 @@ public class AzureEAPricingMeter {
     }
 
 
+    @Override
+    public Map<String, Float> getMeterRates() {
+        return Collections.singletonMap("0", unitPrice);
+    }
 }

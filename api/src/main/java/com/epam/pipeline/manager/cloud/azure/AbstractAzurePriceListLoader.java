@@ -18,10 +18,13 @@ package com.epam.pipeline.manager.cloud.azure;
 
 
 import com.epam.pipeline.entity.cluster.InstanceOffer;
+import com.epam.pipeline.entity.pricing.azure.AzurePricingMeter;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.datastorage.providers.azure.AzureHelper;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.credentials.ApplicationTokenCredentials;
 import com.microsoft.azure.credentials.AzureTokenCredentials;
 import com.microsoft.azure.management.Azure;
@@ -31,9 +34,12 @@ import com.microsoft.azure.management.compute.ResourceSkuRestrictionsReasonCode;
 import com.microsoft.azure.management.compute.implementation.ResourceSkuInner;
 import com.microsoft.azure.management.resources.fluentcore.arm.Region;
 import com.microsoft.azure.management.resources.fluentcore.model.HasInner;
+import okhttp3.OkHttpClient;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import retrofit2.Retrofit;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,7 +48,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -78,14 +87,20 @@ public abstract class AbstractAzurePriceListLoader {
     public static final String TRUE = "True";
     public static final String DEFAULT_DISK_UNIT = "1/Month";
 
+    private static final Pattern AZURE_UNIT_PATTERN = Pattern.compile("(\\d+)[\\s/]([\\w/]+)");
+
     protected final String meterRegionName;
     protected final String azureApiUrl;
     protected final String authPath;
+    protected final AzurePricingClient azurePricingClient;
 
-    protected AbstractAzurePriceListLoader(final String meterRegionName, final String azureApiUrl, final String authPath) {
+    protected AbstractAzurePriceListLoader(final String meterRegionName, final String azureApiUrl,
+                                           final String authPath) {
         this.meterRegionName = meterRegionName;
         this.azureApiUrl = azureApiUrl;
         this.authPath = authPath;
+        this.azurePricingClient = buildRetrofitClient(azureApiUrl);
+
     }
 
     public List<InstanceOffer> load(final AbstractCloudRegion region) throws IOException {
@@ -110,12 +125,12 @@ public abstract class AbstractAzurePriceListLoader {
         return getInstanceOffers(region, credentials, client, vmSkusByName, diskSkusByName);
     }
 
-    protected abstract List<InstanceOffer> getInstanceOffers(final AbstractCloudRegion region,
-                                                             final AzureTokenCredentials credentials,
-                                                             final Azure client,
-                                                             final Map<String, ResourceSkuInner> vmSkusByName,
-                                                             final Map<String, ResourceSkuInner> diskSkusByName)
-            throws IOException;
+    protected abstract List<InstanceOffer> getInstanceOffers(AbstractCloudRegion region,
+                                                             AzureTokenCredentials credentials,
+                                                             Azure client,
+                                                             Map<String, ResourceSkuInner> vmSkusByName,
+                                                             Map<String, ResourceSkuInner> diskSkusByName)
+                                                             throws IOException;
 
     public abstract String getAPIVersion();
 
@@ -252,6 +267,105 @@ public abstract class AbstractAzurePriceListLoader {
                         .replaceAll(LOW_PRIORITY_VM_POSTFIX, StringUtils.EMPTY)
                         .replaceAll(" ", "_"))
                 .collect(Collectors.toList());
+    }
+
+    List<InstanceOffer> mergeSkusWithPrices(final List<? extends AzurePricingMeter> prices,
+                                            final Map<String, ResourceSkuInner> virtualMachineSkus,
+                                            final Map<String, ResourceSkuInner> diskSkusByName,
+                                            final String meterRegion, final Long regionId) {
+        return prices.stream()
+                .filter(meter -> meterRegion.equalsIgnoreCase(meter.getMeterRegion()))
+                .filter(this::verifyPricingMeters)
+                .flatMap(meter -> {
+                    if (virtualMachinesCategory(meter)) {
+                        return getVmSizes(meter.getMeterName())
+                                .stream()
+                                .map(vmSize -> buildVmInstanceOffer(virtualMachineSkus, meter, vmSize, regionId));
+                    }
+                    if (diskCategory(meter)) {
+                        return Stream.of(buildDiskInstanceOffer(diskSkusByName, meter, regionId));
+                    }
+                    return null;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    private boolean verifyPricingMeters(final AzurePricingMeter meter) {
+        return StringUtils.isNotBlank(meter.getMeterCategory())
+                && StringUtils.isNotBlank(meter.getMeterId())
+                && StringUtils.isNotBlank(meter.getMeterName())
+                && StringUtils.isNotBlank(meter.getMeterSubCategory())
+                && StringUtils.isNotBlank(meter.getMeterRegion())
+                && MapUtils.isNotEmpty(meter.getMeterRates());
+    }
+
+    private InstanceOffer buildDiskInstanceOffer(final Map<String, ResourceSkuInner> diskSkusByName,
+                                                 final AzurePricingMeter meter, final Long regionId) {
+        final ResourceSkuInner diskSku = getDiskSku(diskSkusByName, meter.getMeterName());
+        if (diskSku == null) {
+            return null;
+        }
+        return diskSkuToOffer(regionId, diskSku,
+                meter.getMeterRates().getOrDefault("0", 0f) / getNumberOfUnits(meter.getUnit()),
+                DEFAULT_DISK_UNIT);
+    }
+
+    private InstanceOffer buildVmInstanceOffer(final Map<String, ResourceSkuInner> virtualMachineSkus,
+                                               final AzurePricingMeter meter, final String vmSize,
+                                               final Long regionId) {
+        final String subCategory = meter.getMeterSubCategory();
+        final ResourceSkuInner resourceSku = getVirtualMachineSku(virtualMachineSkus, vmSize, subCategory);
+        if (resourceSku == null) {
+            return null;
+        }
+        return vmSkuToOffer(regionId, resourceSku,
+                meter.getMeterRates().getOrDefault("0", 0f) / getNumberOfUnits(meter.getUnit()),
+                meter.getMeterId(),
+                meter.getMeterName().contains(LOW_PRIORITY_VM_POSTFIX)
+                        ? CloudInstancePriceService.TermType.LOW_PRIORITY
+                        : CloudInstancePriceService.TermType.ON_DEMAND,
+                getOperatingSystem(meter.getMeterSubCategory()));
+    }
+
+    private boolean virtualMachinesCategory(final AzurePricingMeter meter) {
+        return meter.getMeterCategory().equals(VIRTUAL_MACHINES_CATEGORY)
+                && meter.getMeterSubCategory().contains("Series");
+    }
+
+    private boolean diskCategory(final AzurePricingMeter meter) {
+        return meter.getMeterCategory().equals(DISKS_CATEGORY) && meter.getMeterSubCategory().contains("SSD")
+                && meter.getMeterSubCategory().contains(DISK_INDICATOR)
+                && meter.getMeterName().contains(DISK_INDICATOR);
+    }
+
+    private int getNumberOfUnits(String units) {
+        if (units == null) {
+            return 1;
+        }
+        Matcher match = AZURE_UNIT_PATTERN.matcher(units);
+        if (match.matches()) {
+            return Integer.parseInt(match.group(1));
+        } else {
+            return 1;
+        }
+    }
+
+    private AzurePricingClient buildRetrofitClient(final String azureApiUrl) {
+        final OkHttpClient client = new OkHttpClient.Builder()
+                .followRedirects(true)
+                .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
+                .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                .hostnameVerifier((s, sslSession) -> true)
+                .build();
+        final ObjectMapper mapper = new ObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        final Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(azureApiUrl)
+                .addConverterFactory(JacksonConverterFactory.create(mapper))
+                .client(client)
+                .build();
+        return retrofit.create(AzurePricingClient.class);
     }
 
 }

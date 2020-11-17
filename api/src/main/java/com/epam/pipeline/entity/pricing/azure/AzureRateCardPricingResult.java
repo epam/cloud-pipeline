@@ -16,14 +16,15 @@
 
 package com.epam.pipeline.entity.pricing.azure;
 
-import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public interface AzurePricingMeter {
-    String getMeterCategory();
-    String getMeterId();
-    String getMeterName();
-    String getMeterSubCategory();
-    String getMeterRegion();
-    String getUnit();
-    Map<String, Float> getMeterRates();
+import java.util.List;
+
+@NoArgsConstructor
+@Data
+public class AzureRateCardPricingResult {
+    @JsonProperty(value = "Meters")
+    private List<AzureRateCardPricingMeter> meters;
 }
