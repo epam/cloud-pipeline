@@ -1269,14 +1269,13 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level, trace):
         pipe tunnel stop -lp 4567 12345
 
     """
-    if trace:
+    try:
         kill_tunnels(run_id=run_id, local_port=local_port, timeout=timeout, force=force, log_level=log_level)
-    else:
-        try:
-            kill_tunnels(run_id=run_id, local_port=local_port, timeout=timeout, force=force, log_level=log_level)
-        except Exception as runtime_error:
-            click.echo('Error: {}'.format(str(runtime_error)), err=True)
-            sys.exit(1)
+    except Exception as runtime_error:
+        click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        if trace:
+            traceback.print_exc()
+        sys.exit(1)
 
 
 @tunnel.command(name='start')
