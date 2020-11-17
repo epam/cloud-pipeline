@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import traceback
 import click
 import requests
 import sys
@@ -1291,18 +1292,15 @@ def tunnel(run_id, local_port, remote_port, connection_timeout,
         CP_CLI_TUNNEL_TARGET_HOST - tunnel target host
         CP_CLI_TUNNEL_SERVER_ADDRESS - tunnel server address
     """
-    if trace:
+    try:
         create_tunnel(run_id, local_port, remote_port, connection_timeout,
                       ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
                       timeout, foreground, retries)
-    else:
-        try:
-            create_tunnel(run_id, local_port, remote_port, connection_timeout,
-                          ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
-                          timeout, foreground, retries)
-        except Exception as runtime_error:
-            click.echo('Error: {}'.format(str(runtime_error)), err=True)
-            sys.exit(1)
+    except Exception as runtime_error:
+        click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        if trace:
+            traceback.print_exc()
+        sys.exit(1)
 
 
 @cli.command(name='update')
