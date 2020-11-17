@@ -89,11 +89,10 @@ public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
                         .waitUntilTextAppears(getRunId())
                         .execute(format("pipe storage mv %s/%s %s/", pathStorage2, fileFor1469, pathStorage1))
                         .assertPageContains("100%")
-                        .screenshot("screen-remove-file")
                         .close());
         library()
                 .selectStorage(storage2)
-                .screenshot("emptyfolder")
+                .validateHeader(storage2)
                 .validateCurrentFolderIsEmpty();
         library()
                 .selectStorage(storage1)
