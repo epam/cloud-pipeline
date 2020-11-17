@@ -16,6 +16,11 @@
 
 package com.epam.pipeline.controller;
 
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
+@EqualsAndHashCode
 public class PagedResult<T> { // TODO: refactor to extend Result class
     private T elements; // TODO; refactor to contain a list of T
     private int totalCount;

@@ -52,6 +52,8 @@ public final class CommonCreatorConstants {
     public static final TypeReference<Result<String>> STRING_TYPE = new TypeReference<Result<String>>() {};
     public static final TypeReference<Result<Map<String, String>>> STRING_STRING_MAP_TYPE =
             new TypeReference<Result<Map<String, String>>>() {};
+    public static final TypeReference<Result<Boolean>> BOOLEAN_INSTANCE_TYPE =
+            new TypeReference<Result<Boolean>>() {};
 
     private CommonCreatorConstants() {
 
