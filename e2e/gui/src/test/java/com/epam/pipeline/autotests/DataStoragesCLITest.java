@@ -42,6 +42,7 @@ public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
+    private String pathStorage1;
 
     @AfterClass(alwaysRun = true)
     public void removeStorages() {
@@ -88,7 +89,7 @@ public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getRunId())
                         .execute(format("pipe storage mv %s/%s %s/", pathStorage2, fileFor1469, pathStorage1))
-                        .assertPageContains("100%")
+                        .waitUntilTextAppears("100%")
                         .close());
         library()
                 .selectStorage(storage2)
