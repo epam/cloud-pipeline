@@ -45,7 +45,7 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Listeners(value = ConditionalTestAnalyzer.class)
-public class DataStoragesTest extends AbstractSinglePipelineRunningTest implements Navigation {
+public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigation {
 
     private static final String STORAGE_PREFIX = StringUtils.isBlank(C.STORAGE_NAME_PREFIX) ? "" : C.STORAGE_NAME_PREFIX;
     private String storage = "epmcmbi-test-storage-" + Utils.randomSuffix();
@@ -62,15 +62,6 @@ public class DataStoragesTest extends AbstractSinglePipelineRunningTest implemen
     private final String fileTempName = format("epmcmbi-file-temp-name-%d.file", Utils.randomSuffix());
     private final String prefixStoragePath = format("%s://", C.STORAGE_PREFIX);
     private File file;
-    private String storage1 = "epmcmbi-test-storage-" + Utils.randomSuffix();
-    private String storage2 = "epmcmbi-test-storage-" + Utils.randomSuffix();
-    private String pathStorage1 = "";
-    private String pathStorage2 = "";
-    private String fileFor1469 = "fileFromStorage1";
-    private String anotherCloudRegion = C.ANOTHER_CLOUD_REGION;
-    private final String registry = C.DEFAULT_REGISTRY;
-    private final String tool = C.TESTING_TOOL_NAME;
-    private final String group = C.DEFAULT_GROUP;
 
     @BeforeClass
     public void createPresetStorage() {
@@ -93,7 +84,7 @@ public class DataStoragesTest extends AbstractSinglePipelineRunningTest implemen
         clickCanceButtonlIfItIsDisplayed();
 
         Utils.removeStorages(this, storage, deletableStorage, editableStorage, tempAlias, refreshingTestStorage,
-                presetStorage, storage1, storage2);
+                presetStorage);
     }
 
     @Test
@@ -577,56 +568,6 @@ public class DataStoragesTest extends AbstractSinglePipelineRunningTest implemen
             .selectStorage(storage)
             .selectElementsUsingCheckboxes(folder1, folder2)
             .removeAllSelected();
-    }
-
-    @Test
-    @TestCase(value = {"1469"})
-    @CloudProviderOnly(values = {Cloud.AWS})
-    public void checkTransferBetweenRegions() {
-        pathStorage1 = library()
-                .createStorage(storage1)
-                .selectStorage(storage1)
-                .createAndEditFile(fileFor1469, "description1")
-                .getStoragePath();
-        pathStorage2 = library()
-                .clickOnCreateStorageButton()
-                .setStoragePath(storage2)
-                .selectValue(CLOUD_REGION, anotherCloudRegion)
-                .ok()
-                .selectStorage(storage2)
-                .getStoragePath();
-        tools()
-                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                .setDefaultLaunchOptions()
-                .launchTool(this, Utils.nameWithoutGroup(tool))
-                .showLog(getRunId())
-                .waitForSshLink()
-                .ssh(shell -> shell
-                        .waitUntilTextAppears(getRunId())
-                        .execute(format("pipe storage cp %s/%s %s/", pathStorage1, fileFor1469, pathStorage2))
-                        .assertPageContains("100%")
-                        .close());
-        library()
-                .selectStorage(storage2)
-                .validateElementIsPresent(fileFor1469);
-        library()
-                .selectStorage(storage1)
-                .rmFile(fileFor1469)
-                .validateCurrentFolderIsEmpty();
-        runsMenu()
-                .showLog(getRunId())
-                .waitForSshLink()
-                .ssh(shell -> shell
-                        .waitUntilTextAppears(getRunId())
-                        .execute(format("pipe storage mv %s/%s %s/", pathStorage2, fileFor1469, pathStorage1))
-                        .assertPageContains("100%")
-                        .close());
-        library()
-                .selectStorage(storage2)
-                .validateCurrentFolderIsEmpty();
-        library()
-                .selectStorage(storage1)
-                .validateElementIsPresent(fileFor1469);
     }
 
     private void assertFileSize(File file, int expectedFileSize) {
