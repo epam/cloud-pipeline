@@ -74,7 +74,7 @@ public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getRunId())
                         .execute(format("pipe storage cp %s/%s %s/", pathStorage1, fileFor1469, pathStorage2))
-                        .assertPageContains("100%")
+                        .assertOutputContains("100%")
                         .close());
         library()
                 .selectStorage(storage2)
@@ -89,7 +89,7 @@ public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getRunId())
                         .execute(format("pipe storage mv %s/%s %s/", pathStorage2, fileFor1469, pathStorage1))
-                        .waitUntilTextAppears("100%")
+                        .assertOutputContains("100%")
                         .close());
         library()
                 .selectStorage(storage2)
