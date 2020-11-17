@@ -16,14 +16,6 @@
 
 package com.epam.pipeline.test.web;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.ResponseResult;
 import com.epam.pipeline.controller.Result;
@@ -41,7 +33,19 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.context.WebApplicationContext;
+
+import java.util.Collections;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
 @WebTestConfiguration
@@ -87,7 +91,7 @@ public abstract class AbstractControllerTest {
     @SneakyThrows
     public <T> void assertResponse(final MvcResult mvcResult,
                                    final T payload,
-                                   final TypeReference<Result<T>> typeReference){
+                                   final TypeReference<Result<T>> typeReference) {
         final ResponseResult<T> expectedResult = buildExpectedResult(payload);
 
         final String actual = mvcResult.getResponse().getContentAsString();
@@ -151,5 +155,13 @@ public abstract class AbstractControllerTest {
                 .servletPath(SERVLET_PATH)
                 .contentType(EXPECTED_CONTENT_TYPE))
                 .andExpect(status().isOk());
+    }
+
+    public MultiValueMap<String, String> multiValueMapOf(Object... objects) {
+        final MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+        for (int i = 0; i < objects.length; i += 2) {
+            map.put(String.valueOf(objects[i]), Collections.singletonList(String.valueOf(objects[i + 1])));
+        }
+        return map;
     }
 }
