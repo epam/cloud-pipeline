@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.pipeline;
+package com.epam.pipeline.acl.docker;
 
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.docker.ImageDescription;
@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.tool.ToolSymlinkRequest;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
+import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.security.acl.AclExpressions;
 import org.apache.commons.lang3.tuple.Pair;

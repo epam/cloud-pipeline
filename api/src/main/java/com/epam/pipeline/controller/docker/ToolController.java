@@ -28,7 +28,7 @@ import com.epam.pipeline.entity.scan.ToolScanPolicy;
 import com.epam.pipeline.entity.scan.ToolScanResultView;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.tool.ToolSymlinkRequest;
-import com.epam.pipeline.manager.pipeline.ToolApiService;
+import com.epam.pipeline.acl.docker.ToolApiService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
