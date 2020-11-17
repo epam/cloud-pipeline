@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import traceback
 import click
 import requests
 import sys
@@ -43,7 +44,8 @@ from src.version import __version__
 MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000
 USER_OPTION_DESCRIPTION = 'The user name to perform operation from specified user. Available for admins only'
-RETRIES_OPTION_DESCRIPTION = 'Number of retries to connect to specified pipeline run. Default is 10.'
+RETRIES_OPTION_DESCRIPTION = 'Number of retries to connect to specified pipeline run. Default is 10'
+TRACE_OPTION_DESCRIPTION = 'Enables error stack traces displaying'
 
 
 def silent_print_api_version():
@@ -1226,41 +1228,78 @@ def ssh(ctx, run_id, retries):
 @click.argument('run-id', required=True, type=int)
 @click.option('-lp', '--local-port', required=True, type=int, help='Local port to establish connection from')
 @click.option('-rp', '--remote-port', required=True, type=int, help='Remote port to establish connection to')
+@click.option('-ct', '--connection-timeout', required=False, type=float, default=0,
+              help='Socket connection timeout in seconds')
+@click.option('-s', '--ssh', required=False, is_flag=True, default=False,
+              help='Configures passwordless ssh to specified run instance. '
+                   'Supported on Linux only.')
+@click.option('-sp', '--ssh-path', required=False, type=str,
+              help='Path to .ssh directory for passwordless ssh configuration')
+@click.option('-sh', '--ssh-host', required=False, type=str,
+              help='Host name for passwordless ssh configuration')
+@click.option('-sk', '--ssh-keep', required=False, is_flag=True, default=False,
+              help='Keeps passwordless ssh configuration after tunnel stopping')
 @click.option('-l', '--log-file', required=False, help='Logs file for tunnel in background mode')
 @click.option('-v', '--log-level', required=False, help='Logs level for tunnel: '
                                                         'CRITICAL, ERROR, WARNING, INFO or DEBUG')
-@click.option('-t', '--timeout', required=False, type=int, default=1000,
+@click.option('-t', '--timeout', required=False, type=int, default=5 * 1000,
               help='Time period in ms for background tunnel process health check')
 @click.option('-f', '--foreground', required=False, is_flag=True, default=False,
               help='Establishes tunnel in foreground mode')
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
+@click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
-def tunnel(run_id, local_port, remote_port, log_file, log_level, timeout, foreground):
+def tunnel(run_id, local_port, remote_port, connection_timeout,
+           ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+           timeout, foreground, retries, trace):
     """
     Establishes tunnel connection to specified run instance port and serves it as a local port.
 
     It allows to transfer any tcp traffic from local machine to run instance and works both on Linux and Windows.
 
-    For example it can be used to allow ssh connections to run instance.
+    Additionally it enables passwordless ssh connections if the corresponding option is specified.
+    Once specified ssh is configured both locally and remotely to support passwordless connections.
+    Passwordless ssh configuration is supported only for openssh client on Linux.
 
-    \b
+    Examples:
+
+    I. Example of simple tcp port tunnel connection establishing.
+
+    Establish tunnel connection from run (12345) instance port (4567) to the same local port.
+
+        pipe tunnel -lp 4567 -rp 4567 12345
+
+    II. Example of ssh port tunnel connection establishing with enabled passwordless ssh configuration.
+
     First of all establish tunnel connection from run (12345) instance ssh port (22) to some local port (4567).
-        pipe tunnel -lp 4567 -rp 22 12345
+
+        pipe tunnel -lp 4567 -rp 22 --ssh 12345
+
+    Then connect to run instance using regular ssh client.
+
+        ssh root@pipeline-12345
+
+    Or transfer some files to and from run instance using regular scp client.
+
+        scp file.txt root@pipeline-12345:/common/workdir/file.txt
+
+    Advanced tunnel configuration environment variables:
 
     \b
-    Then connect to run instance using regular ssh client on the configured local port (4567).
-        ssh -p 4567 root@localhost
-
-    \b
-    Additionally the following environment variables can be used to specify the exact tunnel properties.
-        CP_CLI_TUNNEL_PROXY_HOST
-        CP_CLI_TUNNEL_PROXY_PORT
-        CP_CLI_TUNNEL_TARGET_HOST
+        CP_CLI_TUNNEL_PROXY_HOST - tunnel proxy host
+        CP_CLI_TUNNEL_PROXY_PORT - tunnel proxy port
+        CP_CLI_TUNNEL_TARGET_HOST - tunnel target host
+        CP_CLI_TUNNEL_SERVER_ADDRESS - tunnel server address
     """
     try:
-        create_tunnel(run_id, local_port, remote_port, log_file, log_level, timeout, foreground)
+        create_tunnel(run_id, local_port, remote_port, connection_timeout,
+                      ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+                      timeout, foreground, retries)
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        if trace:
+            traceback.print_exc()
         sys.exit(1)
 
 
