@@ -195,7 +195,6 @@ class GridEngineJob:
 
 
 class GridEngine:
-    _ALL_HOSTS = '@allhosts'
     _DELETE_HOST = 'qconf -de %s'
     _SHOW_JOB_PARALLEL_ENVIRONMENT = 'qstat -j %s | grep "^parallel environment" | awk \'{print $3}\''
     _SHOW_JOB_PARALLEL_ENVIRONMENT_SLOTS = 'qstat -j %s | grep "^parallel environment" | awk \'{print $5}\''
@@ -216,11 +215,12 @@ class GridEngine:
     _SHOW_HOST_STATES = 'qstat -f | grep \'%s@%s\' | awk \'{print $6}\''
     _BAD_HOST_STATES = ['u', 'E', 'd']
 
-    def __init__(self, cmd_executor, max_instance_cores, max_cluster_cores, queue):
+    def __init__(self, cmd_executor, max_instance_cores, max_cluster_cores, queue, hostlist):
         self.cmd_executor = cmd_executor
         self.max_instance_cores = max_instance_cores
         self.max_cluster_cores = max_cluster_cores
         self.queue = queue
+        self.hostlist = hostlist
 
     def get_jobs(self):
         """
@@ -332,9 +332,6 @@ class GridEngine:
         exec_result = self.cmd_executor.execute(GridEngine._SHOW_PE_ALLOCATION_RULE % pe)
         return AllocationRule(exec_result.strip()) if exec_result else AllocationRule.pe_slots()
 
-    def get_queue_hostgroup(self):
-        return self.cmd_executor.execute(GridEngine._SHOW_QUEUE_HOST_GROUP % self.queue).strip()
-
     def get_job_parallel_environment(self, job_id):
         """
         Returns PE of the specific job.
@@ -366,7 +363,7 @@ class GridEngine:
         """
         self._shutdown_execution_host(host, skip_on_failure=skip_on_failure)
         self._remove_host_from_queue_settings(host, self.queue, skip_on_failure=skip_on_failure)
-        self._remove_host_from_host_group(host, self.get_queue_hostgroup(), skip_on_failure=skip_on_failure)
+        self._remove_host_from_host_group(host, self.hostlist, skip_on_failure=skip_on_failure)
         self._remove_host_from_administrative_hosts(host, skip_on_failure=skip_on_failure)
         self._remove_host_from_grid_engine(host, skip_on_failure=skip_on_failure)
 
@@ -666,7 +663,7 @@ class GridEngineScaleUpHandler:
     _GE_POLL_ATTEMPTS = 6
 
     def __init__(self, cmd_executor, api, grid_engine, host_storage, parent_run_id, default_hostfile, instance_disk,
-                 instance_image, cmd_template, price_type, region_id, queue, owner_param_name, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
+                 instance_image, cmd_template, price_type, region_id, queue, hostlist, owner_param_name, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
                  ge_polling_timeout=_GE_POLL_TIMEOUT, instance_family=None, worker_launch_system_params='', clock=Clock()):
         """
         Grid engine scale up handler.
@@ -685,6 +682,7 @@ class GridEngineScaleUpHandler:
         :param price_type: Additional nodes price type.
         :param region_id: Additional nodes Cloud Region id.
         :param queue: Additional nodes queue.
+        :param hostlist: Additional nodes hostlist.
         :param owner_param_name: Instance owner param name.
         :param polling_timeout: Kubernetes and Pipeline APIs polling timeout - in seconds.
         :param polling_delay: Polling delay - in seconds.
@@ -704,6 +702,7 @@ class GridEngineScaleUpHandler:
         self.price_type = price_type
         self.region_id = region_id
         self.queue = queue
+        self.hostlist = hostlist
         self.owner_param_name = owner_param_name
         self.polling_timeout = polling_timeout
         self.polling_delay = polling_delay
@@ -1713,7 +1712,7 @@ class CloudPipelineAPI:
         raise exceptions[-1]
 
 
-def fetch_worker_launch_system_params(api, master_run_id, queue):
+def fetch_worker_launch_system_params(api, master_run_id, queue, hostlist):
     parent_run = api.load_run(master_run_id)
     master_system_params = {param.get('name'): param.get('resolvedValue') for param in parent_run.get('pipelineRunParameters', [])}
     system_launch_params_string = api.retrieve_preference('launch.system.parameters', default_value='[]')
@@ -1723,7 +1722,8 @@ def fetch_worker_launch_system_params(api, master_run_id, queue):
                                   'CP_CAP_AUTOSCALE_WORKERS 0 ' \
                                   'CP_DISABLE_RUN_ENDPOINTS true ' \
                                   'CP_CAP_SGE_QUEUE_NAME {queue} ' \
-                                  .format(queue=queue)
+                                  'CP_CAP_SGE_HOSTLIST_NAME {hostlist}' \
+                                  .format(queue=queue, hostlist=hostlist)
     for launch_param in system_launch_params:
         param_name = launch_param.get('name')
         if launch_param.get('passToWorkers', False) and param_name in master_system_params:
@@ -1754,6 +1754,8 @@ if __name__ == '__main__':
     instance_family = os.getenv('CP_CAP_AUTOSCALE_HYBRID_FAMILY',
                                 CloudPipelineInstanceProvider.get_family_from_type(cloud_provider, instance_type))
     queue = os.getenv('CP_CAP_AUTOSCALE_QUEUE', os.getenv('CP_CAP_SGE_QUEUE_NAME', 'main.q'))
+    hostlist = os.getenv('CP_CAP_AUTOSCALE_HOSTLIST', os.getenv('CP_CAP_SGE_HOSTLIST_NAME', '@allhosts'))
+    log_task = os.environ.get('CP_CAP_AUTOSCALE_TASK', 'GridEngineAutoscaling-%s' % queue)
     owner_param_name = os.getenv('CP_CAP_AUTOSCALE_OWNER_PARAMETER_NAME', 'CP_CAP_AUTOSCALE_OWNER')
     idle_timeout = int(os.getenv('CP_CAP_AUTOSCALE_IDLE_TIMEOUT', 30))
     scale_up_strategy = os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_STRATEGY', 'default')
@@ -1761,13 +1763,13 @@ if __name__ == '__main__':
     scale_up_polling_delay = int(os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_POLLING_DELAY', 10))
 
     Logger.init(log_file=os.path.join(shared_work_dir, '.autoscaler.%s.log' % queue),
-                task='GridEngineAutoscaling', verbose=log_verbose)
+                task=log_task, verbose=log_verbose)
 
     # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
     pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(shared_work_dir, '.autoscaler.%s.pipe.log' % queue))
     api = CloudPipelineAPI(pipe=pipe)
 
-    worker_launch_system_params = fetch_worker_launch_system_params(api, master_run_id, queue)
+    worker_launch_system_params = fetch_worker_launch_system_params(api, master_run_id, queue, hostlist)
 
     instance_provider = CloudPipelineInstanceProvider(cloud_provider=cloud_provider, region_id=region_id,
                                                       instance_family=instance_family, master_instance_type=instance_type,
@@ -1795,7 +1797,7 @@ if __name__ == '__main__':
     cmd_executor = CmdExecutor()
     scaling_operations_clock = Clock()
     grid_engine = GridEngine(cmd_executor=cmd_executor, max_instance_cores=max_instance_cores,
-                             max_cluster_cores=max_cluster_cores, queue=queue)
+                             max_cluster_cores=max_cluster_cores, queue=queue, hostlist=hostlist)
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor,
                                          storage_file=os.path.join(shared_work_dir, '.autoscaler.%s.storage' % queue),
                                          clock=scaling_operations_clock)
@@ -1810,7 +1812,7 @@ if __name__ == '__main__':
                                                 instance_disk=instance_disk, instance_image=instance_image,
                                                 cmd_template=cmd_template,
                                                 price_type=price_type, region_id=region_id,
-                                                queue=queue,
+                                                queue=queue, hostlist=hostlist,
                                                 owner_param_name=owner_param_name,
                                                 polling_delay=scale_up_polling_delay,
                                                 polling_timeout=scale_up_polling_timeout,
