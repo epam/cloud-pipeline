@@ -47,5 +47,6 @@ public class AzureEAPricingResult {
 
         @JsonProperty(value = "pricesheets")
         private List<AzureEAPricingMeter> pricesheets;
+
     }
 }
