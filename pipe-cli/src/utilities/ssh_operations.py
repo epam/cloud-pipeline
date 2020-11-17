@@ -16,21 +16,27 @@ import base64
 import collections
 import logging
 import os
+import random
 import select
 import socket
+import stat
 import sys
 import time
 
 import paramiko
+from scp import SCPClient
 
 from src.config import is_frozen
 from src.utilities.pipe_shell import plain_shell, interactive_shell
+from src.utilities.platform_utilities import is_windows, is_wsl
 from src.api.pipeline_run import PipelineRun
 from src.api.preferenceapi import PreferenceAPI
 from urllib.parse import urlparse
 
 DEFAULT_SSH_PORT = 22
 DEFAULT_SSH_USER = 'root'
+DEFAULT_LOGGING_FORMAT = '%(asctime)s:%(levelname)s: %(message)s'
+
 
 def setup_paramiko_logging():
     # Log to "null" file by default
@@ -44,31 +50,45 @@ def setup_paramiko_logging():
     if paramiko_log_file:
         paramiko.util.log_to_file(paramiko_log_file, paramiko_log_level)
 
-def http_proxy_tunnel_connect(proxy, target, timeout=None):
-    import socket
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(timeout)
-    sock.connect(proxy)
-    cmd_connect = "CONNECT %s:%d HTTP/1.0\r\n\r\n" % target
-    sock.sendall(cmd_connect.encode('UTF-8'))
-    response = []
-    sock.settimeout(2)  # quick hack - replace this with something better performing.
+def http_proxy_tunnel_connect(proxy, target, timeout=None, retries=None):
+    timeout = timeout or None
+    retries = retries or 0
+    sock = None
     try:
-        # in worst case this loop will take 2 seconds if not response was received (sock.timeout)
-        while True:
-            chunk = sock.recv(1024)
-            if not chunk:  # if something goes wrong
-                break
-            response.append(chunk.decode('utf-8'))
-            if "\r\n\r\n" in chunk.decode('utf-8'):  # we do not want to read too far
-                break
-    except socket.error as error:
-        if "timed out" not in error:
-            response = [str(error)]
-    response = ''.join(response)
-    if "200 connection established" not in response.lower():
-        raise RuntimeError("Unable to establish HTTP-Tunnel: %s" % repr(response))
-    return sock
+        import socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect(proxy)
+        cmd_connect = "CONNECT %s:%d HTTP/1.0\r\n\r\n" % target
+        sock.sendall(cmd_connect.encode('UTF-8'))
+        response = []
+        sock.settimeout(2)  # quick hack - replace this with something better performing.
+        try:
+            # in worst case this loop will take 2 seconds if not response was received (sock.timeout)
+            while True:
+                chunk = sock.recv(1024)
+                if not chunk:  # if something goes wrong
+                    break
+                response.append(chunk.decode('utf-8'))
+                if "\r\n\r\n" in chunk.decode('utf-8'):  # we do not want to read too far
+                    break
+        except socket.error as error:
+            if "timed out" not in error:
+                response = [str(error)]
+        response = ''.join(response)
+        if "200 connection established" not in response.lower():
+            raise RuntimeError("Unable to establish HTTP-Tunnel: %s" % repr(response))
+        sock.settimeout(timeout)
+        return sock
+    except KeyboardInterrupt:
+        raise
+    except:
+        if retries >= 1:
+            if sock:
+                sock.close()
+            return http_proxy_tunnel_connect(proxy, target, timeout=timeout, retries=retries - 1)
+        else:
+            raise
 
 def get_conn_info(run_id):
     run_model = PipelineRun.get(run_id)
@@ -92,6 +112,54 @@ def get_conn_info(run_id):
                          owner=run_model.owner)
 
 
+def setup_paramiko_transport(conn_info, retries):
+    sock = None
+    transport = None
+    try:
+        sock = http_proxy_tunnel_connect(conn_info.ssh_proxy, conn_info.ssh_endpoint, timeout=5)
+        transport = paramiko.Transport(sock)
+        transport.start_client()
+        return transport
+    except:
+        if retries >= 1:
+            if sock:
+                sock.close()
+            if transport:
+                transport.close()
+            return setup_paramiko_transport(conn_info, retries - 1)
+        else:
+            raise
+
+
+def setup_authenticated_paramiko_transport(run_id, retries):
+    # Grab the run information from the API to setup the run's IP and EDGE proxy address
+    conn_info = get_conn_info(run_id)
+
+    # Initialize Paramiko SSH client
+    setup_paramiko_logging()
+    transport = setup_paramiko_transport(conn_info, retries)
+    # User password authentication, which available only to the OWNER and ROLE_ADMIN users
+    sshpass = conn_info.ssh_pass
+    sshuser = DEFAULT_SSH_USER
+    try:
+        ssh_default_root_user_enabled_preference = PreferenceAPI.get_preference('system.ssh.default.root.user.enabled')
+        ssh_default_root_user_enabled = ssh_default_root_user_enabled_preference.value.lower() == "true"
+    except:
+        ssh_default_root_user_enabled = True
+    if not ssh_default_root_user_enabled:
+        # split owner by @ in case it represented by email address
+        owner_user_name = conn_info.owner.split("@")[0]
+        sshpass = owner_user_name
+        sshuser = owner_user_name
+    try:
+        transport.auth_password(sshuser, sshpass)
+        return transport
+    except paramiko.ssh_exception.AuthenticationException:
+        # Reraise authentication error to provide more details
+        raise RuntimeError('Authentication failed for {}@{}'.format(
+            sshuser, conn_info.ssh_endpoint[0]))
+
+
 def run_ssh_command(channel, command):
     channel.exec_command(command)
     plain_shell(channel)
@@ -103,26 +171,128 @@ def run_ssh_session(channel):
     interactive_shell(channel)
 
 
-def create_tunnel(run_id, local_port, remote_port, log_file, log_level, timeout, foreground,
-                  server_delay=0.0001, tunnel_timeout=5, chunk_size=4096):
+def run_ssh(run_id, command, retries=10):
+    transport = None
+    channel = None
+    try:
+        transport = setup_authenticated_paramiko_transport(run_id, retries)
+        channel = transport.open_session()
+        # "get_pty" is used for non-interactive commands too
+        # This allows to get stdout and stderr in a correct order
+        # Otherwise we'll need to combine them somehow
+        channel.get_pty()
+        if command:
+            # Execute command and wait for it's execution
+            return run_ssh_command(channel, command)
+        else:
+            # Open a remote shell
+            run_ssh_session(channel)
+            return 0
+    finally:
+        if channel:
+            channel.close()
+        if transport:
+            transport.close()
+
+
+def create_tunnel(run_id, local_port, remote_port, connection_timeout,
+                  ssh, ssh_path, ssh_host, ssh_keep, log_file, log_level,
+                  timeout, foreground, retries):
     if foreground:
-        create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_level,
-                                 server_delay, tunnel_timeout, chunk_size)
+        remote_host = ssh_host or 'pipeline-{}'.format(run_id)
+        if ssh:
+            create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout,
+                                              ssh_path, ssh_keep, remote_host, log_file, log_level, retries)
+        else:
+            create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout,
+                                     remote_host, log_level, retries)
     else:
         create_background_tunnel(log_file, timeout)
 
 
-def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_level,
-                             server_delay, tunnel_timeout, chunk_size):
-    logging.basicConfig(level=log_level or logging.ERROR)
+def create_background_tunnel(log_file, timeout):
+    import subprocess
+    with open(log_file or os.devnull, 'w') as output:
+        if is_windows():
+            # See https://docs.microsoft.com/ru-ru/windows/win32/procthread/process-creation-flags
+            DETACHED_PROCESS = 0x00000008
+            CREATE_NEW_PROCESS_GROUP = 0x00000200
+            creationflags = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+            stdin = None
+        else:
+            creationflags = 0
+            import pty
+            _, stdin = pty.openpty()
+        executable = sys.argv + ['-f'] if is_frozen() else [sys.executable] + sys.argv + ['-f']
+        tunnel_proc = subprocess.Popen(executable, stdin=stdin, stdout=output, stderr=subprocess.STDOUT,
+                                       cwd=os.getcwd(), env=os.environ.copy(), creationflags=creationflags)
+        if stdin:
+            os.close(stdin)
+        time.sleep(timeout / 1000)
+        if tunnel_proc.poll() is not None:
+            import click
+            click.echo('Failed to serve tunnel in background. Tunnel command exited with return code: {}'
+                       .format(tunnel_proc.returncode), err=True)
+            sys.exit(1)
+
+
+def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connection_timeout,
+                                      ssh_path, ssh_keep, remote_host, log_file, log_level, retries):
+    logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
+    if is_windows():
+        import click
+        click.echo('Passwordless ssh configuration is not supported on Windows.', err=True)
+        sys.exit(1)
+    ssh_path = ssh_path or os.path.expanduser('~/.ssh')
+    ssh_config_path = '{}/config'.format(ssh_path)
+    ssh_known_hosts_path = '{}/known_hosts'.format(ssh_path)
+    ssh_keys_path = os.path.expanduser('~/.pipe/.ssh')
+    ssh_private_key_name = 'pipeline-{}-{}-{}'.format(run_id, int(time.time()), random.randint(0, sys.maxsize))
+    ssh_private_key_path = os.path.join(ssh_keys_path, ssh_private_key_name)
+    ssh_public_key_path = '{}.pub'.format(ssh_private_key_path)
+    conn_info = get_conn_info(run_id)
+    remote_ssh_authorized_keys_paths = ['/root/.ssh/authorized_keys',
+                                        '/home/{}/.ssh/authorized_keys'.format(conn_info.owner)]
+    remote_ssh_public_key_path = '/root/.ssh/id_rsa.pub'
+    if not os.path.exists(ssh_path):
+        os.makedirs(ssh_path, mode=stat.S_IRWXU)
+    if not os.path.exists(ssh_keys_path):
+        os.makedirs(ssh_keys_path, mode=stat.S_IRWXU)
+    try:
+        logging.info('Initializing passwordless ssh %s:%s:%s...', local_port, remote_host, remote_port)
+        generate_ssh_keys(log_file, ssh_private_key_path)
+        copy_ssh_public_key_to_remote_authorized_hosts(run_id, ssh_public_key_path, retries,
+                                                       remote_ssh_authorized_keys_paths)
+        add_record_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path)
+        copy_remote_ssh_public_key_to_ssh_known_hosts(run_id, local_port, log_file, retries,
+                                                      ssh_known_hosts_path, remote_ssh_public_key_path)
+        create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout,
+                                 remote_host, log_level, retries)
+    except:
+        logging.exception('Error occurred while trying set up tunnel')
+        raise
+    finally:
+        if not ssh_keep:
+            remove_ssh_public_key_from_remote_authorized_hosts(run_id, ssh_public_key_path, retries,
+                                                               remote_ssh_authorized_keys_paths)
+            remove_remote_ssh_public_key_from_ssh_known_hosts(ssh_known_hosts_path, local_port, log_file)
+            remove_record_from_ssh_config(ssh_config_path, remote_host)
+            remove_ssh_keys(ssh_public_key_path, ssh_private_key_path)
+
+
+def create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout,
+                             remote_host, log_level, retries,
+                             chunk_size=4096, server_delay=0.0001):
+    logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     conn_info = get_conn_info(run_id)
     proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]),
                       int(os.getenv('CP_CLI_TUNNEL_PROXY_PORT', conn_info.ssh_proxy[1])))
     target_endpoint = (os.getenv('CP_CLI_TUNNEL_TARGET_HOST', conn_info.ssh_endpoint[0]),
                        remote_port)
-    logging.info('Initializing tunnel %s:pipeline-%s:%s...', local_port, run_id, remote_port)
+    server_address = os.getenv('CP_CLI_TUNNEL_SERVER_ADDRESS', '0.0.0.0')
+    logging.info('Initializing tunnel %s:%s:%s...', local_port, remote_host, remote_port)
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('0.0.0.0', local_port))
+    server_socket.bind((server_address, local_port))
     server_socket.listen(5)
     inputs = []
     channel = {}
@@ -146,7 +316,9 @@ def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_leve
                         break
                     try:
                         logging.info('Initializing tunnel connection...')
-                        tunnel_socket = http_proxy_tunnel_connect(proxy_endpoint, target_endpoint, tunnel_timeout)
+                        tunnel_socket = http_proxy_tunnel_connect(proxy_endpoint, target_endpoint,
+                                                                  timeout=connection_timeout,
+                                                                  retries=retries)
                     except KeyboardInterrupt:
                         raise
                     except:
@@ -160,11 +332,24 @@ def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_leve
                     break
 
                 logging.debug('Reading data...')
-                data = input.recv(chunk_size)
-                if data:
+                read_data = None
+                sent_data = None
+                try:
+                    read_data = input.recv(chunk_size)
+                except KeyboardInterrupt:
+                    raise
+                except:
+                    logging.exception('Cannot read data from socket')
+                if read_data:
                     logging.debug('Writing data...')
-                    channel[input].send(data)
-                else:
+                    try:
+                        channel[input].send(read_data)
+                        sent_data = read_data
+                    except KeyboardInterrupt:
+                        raise
+                    except:
+                        logging.exception('Cannot write data to socket')
+                if not read_data or not sent_data:
                     logging.info('Closing client and tunnel connections...')
                     out = channel[input]
                     inputs.remove(input)
@@ -178,7 +363,6 @@ def create_foreground_tunnel(run_id, local_port, remote_port, log_file, log_leve
         logging.info('Interrupted...')
     except:
         logging.exception('Errored...')
-        sys.exit(1)
     finally:
         logging.info('Closing all sockets...')
         for input in inputs:
@@ -195,88 +379,143 @@ def configure_graceful_exiting():
     signal.signal(signal.SIGTERM, throw_keyboard_interrupt)
 
 
-def create_background_tunnel(log_file, timeout):
+def generate_ssh_keys(log_file, ssh_private_key_path):
+    logging.info('Generating tunnel ssh keys...')
+    perform_command(['ssh-keygen', '-t', 'rsa', '-f', ssh_private_key_path, '-N', '', '-q'], log_file)
+
+
+def remove_ssh_keys(ssh_public_key_path, ssh_private_key_path):
+    logging.info('Removing tunnel ssh keys...')
+    if os.path.exists(ssh_public_key_path):
+        os.remove(ssh_public_key_path)
+    if os.path.exists(ssh_private_key_path):
+        os.remove(ssh_private_key_path)
+
+
+def copy_ssh_public_key_to_remote_authorized_hosts(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths):
+    logging.info('Copying ssh public key to remote authorized keys...')
+    with open(ssh_public_key_path, 'r') as f:
+        ssh_public_key = f.read().strip()
+    run_ssh(run_id,
+            'echo "{}" | tee -a {} > /dev/null'
+            .format(ssh_public_key, ' '.join(remote_ssh_authorized_keys_paths)), retries)
+
+
+def remove_ssh_public_key_from_remote_authorized_hosts(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths):
+    logging.info('Removing ssh public keys from remote authorized hosts...')
+    if os.path.exists(ssh_public_key_path) and remote_ssh_authorized_keys_paths:
+        with open(ssh_public_key_path, 'r') as f:
+            ssh_public_key = f.read().strip()
+        remove_ssh_public_keys_from_run_command = ''
+        for remote_ssh_authorized_keys_path in remote_ssh_authorized_keys_paths:
+            remote_ssh_authorized_keys_temp_path = '{}_{}'.format(remote_ssh_authorized_keys_path,
+                                                                  random.randint(0, sys.maxsize))
+            remove_ssh_public_keys_from_run_command += \
+                'grep -v "{key}" {authorized_keys_path} > {authorized_keys_temp_path};' \
+                'cp {authorized_keys_temp_path} {authorized_keys_path};' \
+                'chmod 600 {authorized_keys_path};' \
+                'rm {authorized_keys_temp_path};' \
+                .format(key=ssh_public_key,
+                        authorized_keys_path=remote_ssh_authorized_keys_path,
+                        authorized_keys_temp_path=remote_ssh_authorized_keys_temp_path)
+        run_ssh(run_id, remove_ssh_public_keys_from_run_command.rstrip(';'), retries)
+
+
+def add_record_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path):
+    remove_record_from_ssh_config(ssh_config_path, remote_host)
+    logging.info('Appending host record to ssh config...')
+    ssh_config_path_existed = os.path.exists(ssh_config_path)
+    with open(ssh_config_path, 'a') as f:
+        f.write('\nHost {}\n'
+                '    Hostname 127.0.0.1\n'
+                '    Port {}\n'
+                '    IdentityFile {}\n'
+                .format(remote_host, local_port, ssh_private_key_path))
+    if not ssh_config_path_existed:
+        os.chmod(ssh_config_path, stat.S_IRUSR | stat.S_IWUSR)
+
+
+def remove_record_from_ssh_config(ssh_config_path, remote_host):
+    logging.info('Removing host record from ssh config...')
+    if os.path.exists(ssh_config_path):
+        with open(ssh_config_path, 'r') as f:
+            ssh_config_lines = f.readlines()
+        updated_ssh_config_lines = []
+        skip_host = False
+        for line in ssh_config_lines:
+            if line.startswith('Host '):
+                if line.startswith('Host {}'.format(remote_host)):
+                    skip_host = True
+                else:
+                    skip_host = False
+            if not skip_host:
+                updated_ssh_config_lines.append(line)
+        with open(ssh_config_path, 'w') as f:
+            f.writelines(updated_ssh_config_lines)
+        os.chmod(ssh_config_path, stat.S_IRUSR | stat.S_IWUSR)
+
+
+def copy_remote_ssh_public_key_to_ssh_known_hosts(run_id, local_port, log_file, retries, ssh_known_hosts_path, remote_ssh_public_key_path):
+    logging.info('Copying remote public key to known hosts...')
+    ssh_known_hosts_temp_path = ssh_known_hosts_path + '_{}'.format(random.randint(0, sys.maxsize))
+    run_scp_download(run_id, remote_ssh_public_key_path, ssh_known_hosts_temp_path, retries)
+    with open(ssh_known_hosts_temp_path, 'r') as f:
+        public_key = f.read().strip()
+    os.remove(ssh_known_hosts_temp_path)
+    ssh_known_hosts_path_existed = os.path.exists(ssh_known_hosts_path)
+    with open(ssh_known_hosts_path, 'a') as f:
+        f.write('\n[127.0.0.1]:{} {}\n'.format(local_port, public_key))
+    if not ssh_known_hosts_path_existed:
+        os.chmod(ssh_known_hosts_path, stat.S_IRUSR | stat.S_IWUSR)
+    perform_command(['ssh-keygen', '-H', '-f', ssh_known_hosts_path], log_file)
+
+
+def remove_remote_ssh_public_key_from_ssh_known_hosts(ssh_known_hosts_path, local_port, log_file):
+    logging.info('Removing remote public key from known hosts...')
+    if os.path.exists(ssh_known_hosts_path):
+        perform_command(['ssh-keygen', '-R', '[127.0.0.1]:{}'.format(local_port), '-f', ssh_known_hosts_path], log_file)
+
+
+def perform_command(executable, log_file=None, collect_output=True):
     import subprocess
-    import os
-    import platform
-    with open(log_file or os.devnull, 'w') as output:
-        if platform.system() == 'Windows':
-            # See https://docs.microsoft.com/ru-ru/windows/win32/procthread/process-creation-flags
-            DETACHED_PROCESS = 0x00000008
-            CREATE_NEW_PROCESS_GROUP = 0x00000200
-            creationflags = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+    with open(log_file or os.devnull, 'a') as output:
+        if collect_output:
+            command_proc = subprocess.Popen(executable, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=os.getcwd(),
+                                            env=os.environ.copy())
         else:
-            creationflags = 0
-        executable = sys.argv + ['-f'] if is_frozen() else [sys.executable] + sys.argv + ['-f']
-        tunnel_proc = subprocess.Popen(executable, stdout=output, stderr=subprocess.STDOUT, cwd=os.getcwd(),
-                                       env=os.environ.copy(), creationflags=creationflags)
-        time.sleep(timeout / 1000)
-        if tunnel_proc.poll() is not None:
-            import click
-            click.echo('Failed to serve tunnel in background. Tunnel command exited with return code: %d'
-                       % tunnel_proc.returncode, err=True)
-            sys.exit(1)
+            command_proc = subprocess.Popen(executable, stdout=output, stderr=subprocess.STDOUT, cwd=os.getcwd(),
+                                            env=os.environ.copy())
+        out, err = command_proc.communicate()
+        exit_code = command_proc.wait()
+        if exit_code != 0:
+            raise RuntimeError('Command "{}" exited with return code: {}, stdout: {}, stderr: {}'
+                               .format(executable, exit_code, out, err))
+        return out
 
 
-def run_ssh(run_id, command, retries=10):
-    # Grab the run information from the API to setup the run's IP and EDGE proxy address
-    conn_info = get_conn_info(run_id)
-
-    # Initialize Paramiko SSH client
-    channel = None
+def run_scp_upload(run_id, source, destination, retries):
     transport = None
+    scp = None
     try:
-        setup_paramiko_logging()
-        transport = setup_paramiko_transport(conn_info, retries)
-        # User password authentication, which available only to the OWNER and ROLE_ADMIN users
-        sshpass = conn_info.ssh_pass
-        sshuser = DEFAULT_SSH_USER
-        ssh_default_root_user_enabled = PreferenceAPI.get_preference('system.ssh.default.root.user.enabled')
-        if ssh_default_root_user_enabled is not None and ssh_default_root_user_enabled.value.lower() != "true":
-            # split owner by @ in case it represented by email address
-            owner_user_name = conn_info.owner.split("@")[0]
-            sshpass = owner_user_name
-            sshuser = owner_user_name
-        try:
-            transport.auth_password(sshuser, sshpass)
-        except paramiko.ssh_exception.AuthenticationException:
-            # Reraise authentication error to provide more details
-            raise PermissionError('Authentication failed for {}@{}'.format(
-                sshuser, conn_info.ssh_endpoint[0]))
-        channel = transport.open_session()
-        # "get_pty" is used for non-interactive commands too
-        # This allows to get stdout and stderr in a correct order
-        # Otherwise we'll need to combine them somehow
-        channel.get_pty()
-        if command:
-            # Execute command and wait for it's execution
-            return run_ssh_command(channel, command)
-        else:
-            # Open a remote shell
-            run_ssh_session(channel)
-            return 0
+        transport = setup_authenticated_paramiko_transport(run_id, retries)
+        scp = SCPClient(transport)
+        scp.put(source, destination)
     finally:
-        if channel:
-            channel.close()
+        if scp:
+            scp.close()
         if transport:
             transport.close()
 
 
-def setup_paramiko_transport(conn_info, retries):
-    socket = None
+def run_scp_download(run_id, source, destination, retries):
     transport = None
+    scp = None
     try:
-        socket = http_proxy_tunnel_connect(conn_info.ssh_proxy, conn_info.ssh_endpoint, 5)
-        transport = paramiko.Transport(socket)
-        transport.start_client()
-        return transport
-    except Exception as e:
-        if retries >= 1:
-            retries = retries - 1
-            if socket:
-                socket.close()
-            if transport:
-                transport.close()
-            return setup_paramiko_transport(conn_info, retries)
-        else:
-            raise e
+        transport = setup_authenticated_paramiko_transport(run_id, retries)
+        scp = SCPClient(transport)
+        scp.get(source, destination)
+    finally:
+        if scp:
+            scp.close()
+        if transport:
+            transport.close()
