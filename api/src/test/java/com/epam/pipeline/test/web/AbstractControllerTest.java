@@ -49,6 +49,7 @@ public abstract class AbstractControllerTest {
 
     protected static final String EXPECTED_CONTENT_TYPE = "application/json;charset=UTF-8";
     protected static final String SERVLET_PATH = "/restapi";
+    protected static final String CERTIFICATE_NAME = "ca.crt";
     private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
 
     private MockMvc mockMvc;
@@ -61,7 +62,7 @@ public abstract class AbstractControllerTest {
     protected WebApplicationContext wac;
 
     @Before
-    public void setup() throws Exception {
+    public void setup() {
         // checks that all required dependencies are provided.
         assertNotNull("WebApplicationContext isn't provided.", wac);
         assertNotNull("ObjectMapper isn't provided.", objectMapper);
@@ -115,7 +116,7 @@ public abstract class AbstractControllerTest {
     }
 
     @SneakyThrows
-    public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder)  {
+    public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder) {
         mockMvc.perform(requestBuilder
                 .servletPath(SERVLET_PATH))
                 .andExpect(status().isUnauthorized());

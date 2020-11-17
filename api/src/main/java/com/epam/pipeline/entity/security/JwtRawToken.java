@@ -25,12 +25,14 @@ import javax.servlet.http.Cookie;
 
 import com.epam.pipeline.utils.AuthorizationUtils;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.AuthenticationServiceException;
 
 @Getter
 @AllArgsConstructor
+@EqualsAndHashCode
 public class JwtRawToken implements Serializable {
     private static final String BEARER_PREFIX = "Bearer ";
     private String token;
