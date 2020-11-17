@@ -36,8 +36,7 @@ import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import com.epam.pipeline.test.creator.docker.ToolCreatorUtils;
-import com.epam.pipeline.test.creator.docker.ToolGroupCreatorUtils;
+import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
@@ -64,22 +63,22 @@ public class ToolApiServiceTest extends AbstractAclTest {
 
     private static final String TOOL_GROUP_MANAGER = "TOOL_GROUP_MANAGER";
     private static final List<ConfigurationEntry> CONFIG_LIST = Collections.singletonList(new ConfigurationEntry());
-    private final Tool tool = ToolCreatorUtils.getTool(ANOTHER_SIMPLE_USER);
-    private final ToolVersionScanResult toolVersionScanResult = ToolCreatorUtils.getToolVersionScanResult();
-    private final ImageDescription imageDescription = ToolCreatorUtils.getImageDescription();
+    private final Tool tool = DockerCreatorUtils.getTool(ANOTHER_SIMPLE_USER);
+    private final ToolVersionScanResult toolVersionScanResult = DockerCreatorUtils.getToolVersionScanResult();
+    private final ImageDescription imageDescription = DockerCreatorUtils.getImageDescription();
     private final List<ImageHistoryLayer> imageHistoryLayers =
-            Collections.singletonList(ToolCreatorUtils.getImageHistoryLayer());
+            Collections.singletonList(DockerCreatorUtils.getImageHistoryLayer());
     private final Pair<String, ByteArrayInputStream> pair =
             Pair.of(TEST_STRING, new ByteArrayInputStream(TEST_STRING.getBytes()));
-    private final ToolDescription toolDescription = ToolCreatorUtils.getToolDescription();
-    private final ToolVersion toolVersion = ToolCreatorUtils.getToolVersion();
+    private final ToolDescription toolDescription = DockerCreatorUtils.getToolDescription();
+    private final ToolVersion toolVersion = DockerCreatorUtils.getToolVersion();
     private final ToolScanPolicy toolScanPolicy = new ToolScanPolicy();
     private final List<ToolVersion> toolVersionList = Collections.singletonList(toolVersion);
-    private final ToolSymlinkRequest toolSymlinkRequest = ToolCreatorUtils.getToolSymlinkRequest();
-    private final ToolScanResult toolScanResult = ToolCreatorUtils.getToolScanResult();
+    private final ToolSymlinkRequest toolSymlinkRequest = DockerCreatorUtils.getToolSymlinkRequest();
+    private final ToolScanResult toolScanResult = DockerCreatorUtils.getToolScanResult();
     private final ToolScanResultView toolScanResultView = new ToolScanResultView(toolScanResult.getToolId(),
             Collections.singletonMap(TEST_STRING, ToolVersionScanResultView.builder().version(TEST_STRING).build()));
-    private final ToolGroup toolGroup = ToolGroupCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
+    private final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
 
     @Autowired
     private ToolApiService toolApiService;
