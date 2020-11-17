@@ -37,7 +37,7 @@ public class AzureEAPricingResult {
     @NoArgsConstructor
     public static class PricingProperties {
 
-        public PricingProperties(String nextLink, List<AzureEAPricingMeter> pricesheets) {
+        public PricingProperties(final String nextLink, final List<AzureEAPricingMeter> pricesheets) {
             this.nextLink = nextLink;
             this.pricesheets = pricesheets;
         }

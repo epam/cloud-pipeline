@@ -46,7 +46,7 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
     private static final int BATCH_SIZE = 10000;
 
 
-    public AzureEAPriceListLoader(final String authPath, String meterRegionName, final String azureApiUrl) {
+    public AzureEAPriceListLoader(final String authPath, final String meterRegionName, final String azureApiUrl) {
         super(meterRegionName, azureApiUrl, authPath);
     }
 
@@ -76,7 +76,7 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
         return Optional.of(getPriceSheet(subscription, credentials));
     }
 
-    private AzureEAPricingResult getPriceSheet(String subscription, AzureTokenCredentials credentials)
+    private AzureEAPricingResult getPriceSheet(final String subscription, final AzureTokenCredentials credentials)
             throws IOException {
         return AzureEAPricingResult.builder().properties(
                 AzureEAPricingResult.PricingProperties.builder().pricesheets(
@@ -88,8 +88,8 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
         ).build();
     }
 
-    private List<AzureEAPricingMeter> getPriceSheet(List<AzureEAPricingMeter> buffer, String subscription,
-                                                  AzureTokenCredentials credentials, String skiptoken
+    private List<AzureEAPricingMeter> getPriceSheet(final List<AzureEAPricingMeter> buffer, final String subscription,
+                                                    final AzureTokenCredentials credentials, String skiptoken
     ) throws IOException {
         final String token = credentials.getToken(azureApiUrl);
         Assert.isTrue(StringUtils.isNotBlank(token), "Could not find access token");
