@@ -23,19 +23,20 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
+import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
 import static java.lang.String.format;
 
+@Listeners(value = ConditionalTestAnalyzer.class)
 public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
         implements Authorization, Navigation {
 
     private String storage1 = "dataStorageCLI-" + Utils.randomSuffix();
     private String storage2 = "dataStorageCLI-" + Utils.randomSuffix();
-    private String pathStorage1 = "";
-    private String pathStorage2 = "";
     private String fileFor1469 = "fileFromStorage1";
     private String anotherCloudRegion = C.ANOTHER_CLOUD_REGION;
     private final String registry = C.DEFAULT_REGISTRY;
@@ -51,12 +52,12 @@ public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
     @TestCase(value = {"1469"})
     @CloudProviderOnly(values = {Cloud.AWS})
     public void checkTransferBetweenRegions() {
-        pathStorage1 = library()
+        String pathStorage1 = library()
                 .createStorage(storage1)
                 .selectStorage(storage1)
                 .createAndEditFile(fileFor1469, "description1")
                 .getStoragePath();
-        pathStorage2 = library()
+        String pathStorage2 = library()
                 .clickOnCreateStorageButton()
                 .setStoragePath(storage2)
                 .selectValue(CLOUD_REGION, anotherCloudRegion)

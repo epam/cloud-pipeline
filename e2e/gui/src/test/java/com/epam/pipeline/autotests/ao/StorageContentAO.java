@@ -160,8 +160,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
     public StorageContentAO rmFile(String name) {
         elementRow(name).find(byClassName("ant-btn-danger")).shouldBe(visible).click();
-        final ConfirmationPopupAO<StorageContentAO> popup = new ConfirmationPopupAO<>(this);
-        popup.ensureTitleIs("Remove file").ok();
+        new ConfirmationPopupAO<>(this).ensureTitleIs("Remove file").ok();
         return this;
     }
 

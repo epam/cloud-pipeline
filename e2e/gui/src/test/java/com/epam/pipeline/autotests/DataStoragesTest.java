@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
-import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
