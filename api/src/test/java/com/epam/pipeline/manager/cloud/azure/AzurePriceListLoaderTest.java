@@ -64,7 +64,7 @@ public class AzurePriceListLoaderTest {
 
     @Test
     public void rateCardShouldCalculateInstancePrices() {
-        List<AzurePricingMeter> prices = Arrays.asList(
+        final List<AzurePricingMeter> prices = Arrays.asList(
                 AzureRateCardPricingMeter.builder()
                         .meterCategory(VIRTUAL_MACHINES_CATEGORY)
                         .meterId(ANY)
@@ -85,38 +85,38 @@ public class AzurePriceListLoaderTest {
                         .build()
         );
 
-        List<ResourceSkuCapabilities> vmCapabilities1 = Arrays.asList(
+        final List<ResourceSkuCapabilities> vmCapabilities1 = Arrays.asList(
                 createResourceSkuCapabilities(MEMORY_GB, "56"),
                 createResourceSkuCapabilities(V_CPUS, "8"),
                 createResourceSkuCapabilities(GPUS, "0"),
                 createResourceSkuCapabilities(PREMIUM_IO, "True"));
-        ResourceSkuInner vmSku1 = createVirtualMachinesSku(VM_TYPE, "standardDSv2Family", vmCapabilities1);
+        final ResourceSkuInner vmSku1 = createVirtualMachinesSku(VM_TYPE, "standardDSv2Family", vmCapabilities1);
 
         // should be filtered cause it does not match prices list
-        List<ResourceSkuCapabilities> vmCapabilities2 = Arrays.asList(
+        final List<ResourceSkuCapabilities> vmCapabilities2 = Arrays.asList(
                 createResourceSkuCapabilities(MEMORY_GB, "0.75"),
                 createResourceSkuCapabilities(V_CPUS, "1"),
                 createResourceSkuCapabilities(GPUS, "0"),
                 createResourceSkuCapabilities(PREMIUM_IO, "False"));
-        ResourceSkuInner vmSku2 = createVirtualMachinesSku("Basic_A0", "basicAFamily", vmCapabilities2);
+        final ResourceSkuInner vmSku2 = createVirtualMachinesSku("Basic_A0", "basicAFamily", vmCapabilities2);
 
-        Map<String, ResourceSkuInner> vmSkus = new HashMap<>();
+        final Map<String, ResourceSkuInner> vmSkus = new HashMap<>();
         vmSkus.put(vmSku1.name(), vmSku1);
         vmSkus.put(vmSku2.name(), vmSku2);
 
-        List<ResourceSkuCapabilities> diskCapabilities1 = Collections.singletonList(
+        final List<ResourceSkuCapabilities> diskCapabilities1 = Collections.singletonList(
                 createResourceSkuCapabilities("MaxSizeGiB", "64"));
-        ResourceSkuInner diskSku1 = createDiskSku(DISK_NAME, diskCapabilities1);
+        final ResourceSkuInner diskSku1 = createDiskSku(DISK_NAME, diskCapabilities1);
 
-        Map<String, ResourceSkuInner> diskSkus = new HashMap<>();
+        final Map<String, ResourceSkuInner> diskSkus = new HashMap<>();
         diskSkus.put(diskSku1.size(), diskSku1);
 
-        AzureRateCardPriceListLoader loader = new AzureRateCardPriceListLoader(ANY, ANY, "",
+        final AzureRateCardPriceListLoader loader = new AzureRateCardPriceListLoader(ANY, ANY, "",
                 "https://any.com/");
-        List<InstanceOffer> actualOffers = loader.mergeSkusWithPrices(prices, vmSkus, diskSkus,
+        final List<InstanceOffer> actualOffers = loader.mergeSkusWithPrices(prices, vmSkus, diskSkus,
                 METER_REGION, REGION_ID);
 
-        Map<String, InstanceOffer> expectedOffers = new HashMap<>();
+        final Map<String, InstanceOffer> expectedOffers = new HashMap<>();
         expectedOffers.put(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY, InstanceOffer.builder()
                 .termType(CloudInstancePriceService.TermType.ON_DEMAND.getName())
                 .tenancy(CloudInstancePriceService.SHARED_TENANCY)
@@ -152,7 +152,7 @@ public class AzurePriceListLoaderTest {
 
     @Test
     public void eaPriceLoaderShouldCalculateInstancePrices() {
-        List<AzureEAPricingMeter> prices = Arrays.asList(
+        final List<AzureEAPricingMeter> prices = Arrays.asList(
                 AzureEAPricingMeter.builder()
                     .meterRegion(METER_REGION)
                     .meterSubCategory(VM_METER_SUB_CATEGORY)
@@ -174,38 +174,38 @@ public class AzurePriceListLoaderTest {
                     .build()
         );
 
-        List<ResourceSkuCapabilities> vmCapabilities1 = Arrays.asList(
+        final List<ResourceSkuCapabilities> vmCapabilities1 = Arrays.asList(
                 createResourceSkuCapabilities(MEMORY_GB, "56"),
                 createResourceSkuCapabilities(V_CPUS, "8"),
                 createResourceSkuCapabilities(GPUS, "0"),
                 createResourceSkuCapabilities(PREMIUM_IO, "True"));
-        ResourceSkuInner vmSku1 = createVirtualMachinesSku(VM_TYPE, "standardDSv2Family", vmCapabilities1);
+        final ResourceSkuInner vmSku1 = createVirtualMachinesSku(VM_TYPE, "standardDSv2Family", vmCapabilities1);
 
         // should be filtered cause it does not match prices list
-        List<ResourceSkuCapabilities> vmCapabilities2 = Arrays.asList(
+        final List<ResourceSkuCapabilities> vmCapabilities2 = Arrays.asList(
                 createResourceSkuCapabilities(MEMORY_GB, "0.75"),
                 createResourceSkuCapabilities(V_CPUS, "1"),
                 createResourceSkuCapabilities(GPUS, "0"),
                 createResourceSkuCapabilities(PREMIUM_IO, "False"));
-        ResourceSkuInner vmSku2 = createVirtualMachinesSku("Basic_A0", "basicAFamily", vmCapabilities2);
+        final ResourceSkuInner vmSku2 = createVirtualMachinesSku("Basic_A0", "basicAFamily", vmCapabilities2);
 
-        Map<String, ResourceSkuInner> vmSkus = new HashMap<>();
+        final Map<String, ResourceSkuInner> vmSkus = new HashMap<>();
         vmSkus.put(vmSku1.name(), vmSku1);
         vmSkus.put(vmSku2.name(), vmSku2);
 
-        List<ResourceSkuCapabilities> diskCapabilities1 = Collections.singletonList(
+        final List<ResourceSkuCapabilities> diskCapabilities1 = Collections.singletonList(
                 createResourceSkuCapabilities("MaxSizeGiB", "64"));
-        ResourceSkuInner diskSku1 = createDiskSku(DISK_NAME, diskCapabilities1);
+        final ResourceSkuInner diskSku1 = createDiskSku(DISK_NAME, diskCapabilities1);
 
-        Map<String, ResourceSkuInner> diskSkus = new HashMap<>();
+        final Map<String, ResourceSkuInner> diskSkus = new HashMap<>();
         diskSkus.put(diskSku1.size(), diskSku1);
 
-        AzureEAPriceListLoader loader = new AzureEAPriceListLoader(ANY, "",
+        final AzureEAPriceListLoader loader = new AzureEAPriceListLoader(ANY, "",
                 "https://any.com/");
-        List<InstanceOffer> actualOffers = loader.mergeSkusWithPrices(prices, vmSkus, diskSkus,
+        final List<InstanceOffer> actualOffers = loader.mergeSkusWithPrices(prices, vmSkus, diskSkus,
                 METER_REGION, REGION_ID);
 
-        Map<String, InstanceOffer> expectedOffers = new HashMap<>();
+        final Map<String, InstanceOffer> expectedOffers = new HashMap<>();
         expectedOffers.put(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY, InstanceOffer.builder()
                 .termType(CloudInstancePriceService.TermType.ON_DEMAND.getName())
                 .tenancy(CloudInstancePriceService.SHARED_TENANCY)
@@ -241,7 +241,7 @@ public class AzurePriceListLoaderTest {
 
     @Test
     public void eaPriceLoaderShouldCalculateInstancePricesWithNonStandardPriceUnit() {
-        List<AzureEAPricingMeter> prices = Arrays.asList(
+        final List<AzureEAPricingMeter> prices = Arrays.asList(
                 AzureEAPricingMeter.builder()
                         .meterRegion(METER_REGION)
                         .meterSubCategory(VM_METER_SUB_CATEGORY)
@@ -263,38 +263,38 @@ public class AzurePriceListLoaderTest {
                         .build()
         );
 
-        List<ResourceSkuCapabilities> vmCapabilities1 = Arrays.asList(
+        final List<ResourceSkuCapabilities> vmCapabilities1 = Arrays.asList(
                 createResourceSkuCapabilities(MEMORY_GB, "56"),
                 createResourceSkuCapabilities(V_CPUS, "8"),
                 createResourceSkuCapabilities(GPUS, "0"),
                 createResourceSkuCapabilities(PREMIUM_IO, "True"));
-        ResourceSkuInner vmSku1 = createVirtualMachinesSku(VM_TYPE, "standardDSv2Family", vmCapabilities1);
+        final ResourceSkuInner vmSku1 = createVirtualMachinesSku(VM_TYPE, "standardDSv2Family", vmCapabilities1);
 
         // should be filtered cause it does not match prices list
-        List<ResourceSkuCapabilities> vmCapabilities2 = Arrays.asList(
+        final List<ResourceSkuCapabilities> vmCapabilities2 = Arrays.asList(
                 createResourceSkuCapabilities(MEMORY_GB, "0.75"),
                 createResourceSkuCapabilities(V_CPUS, "1"),
                 createResourceSkuCapabilities(GPUS, "0"),
                 createResourceSkuCapabilities(PREMIUM_IO, "False"));
-        ResourceSkuInner vmSku2 = createVirtualMachinesSku("Basic_A0", "basicAFamily", vmCapabilities2);
+        final ResourceSkuInner vmSku2 = createVirtualMachinesSku("Basic_A0", "basicAFamily", vmCapabilities2);
 
-        Map<String, ResourceSkuInner> vmSkus = new HashMap<>();
+        final Map<String, ResourceSkuInner> vmSkus = new HashMap<>();
         vmSkus.put(vmSku1.name(), vmSku1);
         vmSkus.put(vmSku2.name(), vmSku2);
 
-        List<ResourceSkuCapabilities> diskCapabilities1 = Collections.singletonList(
+        final List<ResourceSkuCapabilities> diskCapabilities1 = Collections.singletonList(
                 createResourceSkuCapabilities("MaxSizeGiB", "64"));
-        ResourceSkuInner diskSku1 = createDiskSku(DISK_NAME, diskCapabilities1);
+        final ResourceSkuInner diskSku1 = createDiskSku(DISK_NAME, diskCapabilities1);
 
-        Map<String, ResourceSkuInner> diskSkus = new HashMap<>();
+        final Map<String, ResourceSkuInner> diskSkus = new HashMap<>();
         diskSkus.put(diskSku1.size(), diskSku1);
 
-        AzureEAPriceListLoader loader = new AzureEAPriceListLoader(ANY, "",
+        final AzureEAPriceListLoader loader = new AzureEAPriceListLoader(ANY, "",
                 "https://any.com/");
-        List<InstanceOffer> actualOffers = loader.mergeSkusWithPrices(prices, vmSkus, diskSkus,
+        final List<InstanceOffer> actualOffers = loader.mergeSkusWithPrices(prices, vmSkus, diskSkus,
                 METER_REGION, REGION_ID);
 
-        Map<String, InstanceOffer> expectedOffers = new HashMap<>();
+        final Map<String, InstanceOffer> expectedOffers = new HashMap<>();
         expectedOffers.put(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY, InstanceOffer.builder()
                 .termType(CloudInstancePriceService.TermType.ON_DEMAND.getName())
                 .tenancy(CloudInstancePriceService.SHARED_TENANCY)
@@ -351,7 +351,7 @@ public class AzurePriceListLoaderTest {
 
     private ResourceSkuInner createVirtualMachinesSku(final String name, final String family,
                                                       final List<ResourceSkuCapabilities> capabilities) {
-        ResourceSkuInner vmSku = new ResourceSkuInner();
+        final ResourceSkuInner vmSku = new ResourceSkuInner();
         ReflectionTestUtils.setField(vmSku, "resourceType", "virtualMachines");
         ReflectionTestUtils.setField(vmSku, "name", name);
         ReflectionTestUtils.setField(vmSku, "family", family);
@@ -360,14 +360,14 @@ public class AzurePriceListLoaderTest {
     }
 
     private ResourceSkuCapabilities createResourceSkuCapabilities(final String name, final String value) {
-        ResourceSkuCapabilities capability = new ResourceSkuCapabilities();
+        final ResourceSkuCapabilities capability = new ResourceSkuCapabilities();
         ReflectionTestUtils.setField(capability, "name", name);
         ReflectionTestUtils.setField(capability, "value", value);
         return capability;
     }
 
     private ResourceSkuInner createDiskSku(final String size, final List<ResourceSkuCapabilities> capabilities) {
-        ResourceSkuInner vmSku = new ResourceSkuInner();
+        final ResourceSkuInner vmSku = new ResourceSkuInner();
         ReflectionTestUtils.setField(vmSku, "resourceType", "disks");
         ReflectionTestUtils.setField(vmSku, "size", size);
         ReflectionTestUtils.setField(vmSku, "capabilities", capabilities);

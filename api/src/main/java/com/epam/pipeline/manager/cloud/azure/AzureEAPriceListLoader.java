@@ -93,7 +93,7 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
     ) throws IOException {
         final String token = credentials.getToken(azureApiUrl);
         Assert.isTrue(StringUtils.isNotBlank(token), "Could not find access token");
-        AzureEAPricingResult meterDetails = executeRequest(azurePricingClient.getPricesheet(
+        final AzureEAPricingResult meterDetails = executeRequest(azurePricingClient.getPricesheet(
                 "Bearer " + token, subscription, getAPIVersion(), "meterDetails", BATCH_SIZE, skiptoken));
         if (meterDetails != null && meterDetails.getProperties() != null) {
             buffer.addAll(meterDetails.getProperties().getPricesheets());

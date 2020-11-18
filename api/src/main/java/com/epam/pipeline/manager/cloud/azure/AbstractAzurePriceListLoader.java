@@ -125,11 +125,11 @@ public abstract class AbstractAzurePriceListLoader {
         return getInstanceOffers(region, credentials, client, vmSkusByName, diskSkusByName);
     }
 
-    protected abstract List<InstanceOffer> getInstanceOffers(AbstractCloudRegion region,
-                                                             AzureTokenCredentials credentials,
-                                                             Azure client,
-                                                             Map<String, ResourceSkuInner> vmSkusByName,
-                                                             Map<String, ResourceSkuInner> diskSkusByName)
+    protected abstract List<InstanceOffer> getInstanceOffers(final AbstractCloudRegion region,
+                                                             final AzureTokenCredentials credentials,
+                                                             final  Azure client,
+                                                             final Map<String, ResourceSkuInner> vmSkusByName,
+                                                             final Map<String, ResourceSkuInner> diskSkusByName)
                                                              throws IOException;
 
     public abstract String getAPIVersion();
@@ -149,8 +149,8 @@ public abstract class AbstractAzurePriceListLoader {
     }
 
     protected List<InstanceOffer> getOffersFromSku(final Map<String, ResourceSkuInner> vmSkusByName,
-                                                 final Map<String, ResourceSkuInner> diskSkusByName,
-                                                 final Long regionId) {
+                                                   final Map<String, ResourceSkuInner> diskSkusByName,
+                                                   final Long regionId) {
         log.debug("Azure prices are not available. Instance offers will be loaded without price.");
         final Stream<InstanceOffer> onDemandVmOffers = MapUtils.emptyIfNull(vmSkusByName)
                 .values()
@@ -205,11 +205,11 @@ public abstract class AbstractAzurePriceListLoader {
     }
 
     protected InstanceOffer vmSkuToOffer(final Long regionId,
-                                       final ResourceSkuInner resourceSku,
-                                       final double price,
-                                       final String sku,
-                                       final CloudInstancePriceService.TermType termType,
-                                       final String os) {
+                                         final ResourceSkuInner resourceSku,
+                                         final double price,
+                                         final String sku,
+                                         final CloudInstancePriceService.TermType termType,
+                                         final String os) {
         final List<ResourceSkuCapabilities> capabilities = resourceSku.capabilities();
         final Map<String, String> capabilitiesByName = capabilities.stream()
                 .collect(Collectors.toMap(ResourceSkuCapabilities::name,
@@ -241,7 +241,7 @@ public abstract class AbstractAzurePriceListLoader {
     }
 
     protected ResourceSkuInner getVirtualMachineSku(final Map<String, ResourceSkuInner> virtualMachineSkus,
-                                                  final String vmSize, final String subCategory) {
+                                                    final String vmSize, final String subCategory) {
         String vmSkusKey = (subCategory.contains(BASIC) ? BASIC : STANDARD) + "_" + vmSize;
 
         if (subCategory.contains(PROMO)) {
@@ -252,7 +252,7 @@ public abstract class AbstractAzurePriceListLoader {
     }
 
     protected ResourceSkuInner getDiskSku(final Map<String, ResourceSkuInner> disksSkus,
-                                        final String diskName) {
+                                          final String diskName) {
         final String diskSkusKey = diskName.replace(DISK_INDICATOR, "").trim();
         return disksSkus.get(diskSkusKey);
     }
@@ -339,11 +339,11 @@ public abstract class AbstractAzurePriceListLoader {
                 && meter.getMeterName().contains(DISK_INDICATOR);
     }
 
-    private int getNumberOfUnits(String units) {
+    private int getNumberOfUnits(final String units) {
         if (units == null) {
             return 1;
         }
-        Matcher match = AZURE_UNIT_PATTERN.matcher(units);
+        final Matcher match = AZURE_UNIT_PATTERN.matcher(units);
         if (match.matches()) {
             return Integer.parseInt(match.group(1));
         } else {
