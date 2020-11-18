@@ -41,16 +41,19 @@ public class AzureRateCardPriceListLoader extends AbstractAzurePriceListLoader {
 
     private final String offerId;
 
-    public AzureRateCardPriceListLoader(final String authPath, final String offerId, String meterRegionName,
+    public AzureRateCardPriceListLoader(final String authPath, final String offerId, final String meterRegionName,
                                         final String azureApiUrl) {
         super(meterRegionName, azureApiUrl, authPath);
         this.offerId = offerId;
     }
 
     @Override
-    protected List<InstanceOffer> getInstanceOffers(AbstractCloudRegion region, AzureTokenCredentials credentials,
-                                                    Azure client, Map<String, ResourceSkuInner> vmSkusByName,
-                                                    Map<String, ResourceSkuInner> diskSkusByName) throws IOException {
+    protected List<InstanceOffer> getInstanceOffers(final AbstractCloudRegion region,
+                                                    final AzureTokenCredentials credentials,
+                                                    final Azure client,
+                                                    final Map<String, ResourceSkuInner> vmSkusByName,
+                                                    final Map<String, ResourceSkuInner> diskSkusByName)
+                                                    throws IOException {
         final Optional<AzureRateCardPricingResult> prices = getPricing(client.subscriptionId(), credentials);
         return prices.filter(p -> CollectionUtils.isNotEmpty(p.getMeters()))
                 .map(p -> mergeSkusWithPrices(p.getMeters(), vmSkusByName, diskSkusByName,
