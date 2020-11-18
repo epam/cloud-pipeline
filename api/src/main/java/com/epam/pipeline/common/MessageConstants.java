@@ -550,6 +550,24 @@ public final class MessageConstants {
     public static final String ERROR_NODE_SCHEDULE_MISSING_TO_TIME = "error.node.schedule.missing.to.time";
     public static final String ERROR_NODE_SCHEDULE_NOT_FOUND = "error.node.schedule.not.found";
 
+    //Persistent Nodes
+    public static final String ERROR_PERSISTENT_NODE_NOD_FOUND =
+            "error.persistent.node.not.found";
+    public static final String ERROR_PERSISTENT_NODE_MISSING_PRICE_TYPE =
+            "error.persistent.node.missing.price.type";
+    public static final String ERROR_PERSISTENT_NODE_MISSING_REGION =
+            "error.persistent.node.missing.region";
+    public static final String ERROR_PERSISTENT_NODE_MISSING_INSTANCE_TYPE =
+            "error.persistent.node.missing.instance.type";
+    public static final String ERROR_PERSISTENT_NODE_PRICE_TYPE_NOT_ALLOWED =
+            "error.persistent.node.price.type.not.allowed";
+    public static final String ERROR_PERSISTENT_NODE_INSTANCE_TYPE_NOT_ALLOWED =
+            "error.persistent.node.instance.type.not.allowed";
+    public static final String ERROR_PERSISTENT_NODE_INVALID_DISK_SIZE =
+            "error.persistent.node.invalid.disk.size";
+    public static final String ERROR_PERSISTENT_NODE_INVALID_COUNT =
+            "error.persistent.node.invalid.count";
+
     private MessageConstants() {
         // no-op
     }

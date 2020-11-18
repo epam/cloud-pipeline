@@ -18,12 +18,17 @@ package com.epam.pipeline.controller.vo.cluster.schedule;
 import com.epam.pipeline.entity.cluster.PriceType;
 import lombok.Data;
 
+
 @Data
 public class PersistentNodeVO {
-    private long id;
-    private long regionId;
+
+    private Long id;
+    private String name;
+    private Long regionId;
     private String instanceType;
-    private int nodeDisk;
+    private int instanceDisk;
     private PriceType priceType;
     private String dockerImage;
+    private int count;
+    private Long scheduleId;
 }

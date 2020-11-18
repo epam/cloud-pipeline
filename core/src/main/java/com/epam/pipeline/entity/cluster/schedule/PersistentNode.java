@@ -28,7 +28,7 @@ public class PersistentNode {
     private Long id;
     private String name;
     private LocalDateTime created;
-    private long regionId;
+    private Long regionId;
     private String instanceType;
     private int instanceDisk;
     private PriceType priceType;
