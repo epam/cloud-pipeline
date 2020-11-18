@@ -28,7 +28,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.util.MultiValueMap;
 
 import java.util.Collections;
 import java.util.List;
@@ -56,11 +55,11 @@ public class EntityControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldListToolGroups() {
-        final MultiValueMap<String, String> params = multiValueMapOf(
-                IDENTIFIER, TEST_STRING, ACL_CLASS, AclClass.DATA_STORAGE);
         doReturn(s3bucketDataStorage).when(mockEntityApiService).loadByNameOrId(AclClass.DATA_STORAGE, TEST_STRING);
 
-        final MvcResult mvcResult = performRequest(get(ENTITIES_URL).params(params));
+        final MvcResult mvcResult = performRequest(get(ENTITIES_URL)
+                .params(multiValueMapOf(IDENTIFIER, TEST_STRING,
+                                        ACL_CLASS, AclClass.DATA_STORAGE)));
 
         verify(mockEntityApiService).loadByNameOrId(AclClass.DATA_STORAGE, TEST_STRING);
         assertResponse(mvcResult, s3bucketDataStorage, DatastorageCreatorUtils.S3_BUCKET_TYPE);
@@ -77,12 +76,12 @@ public class EntityControllerTest extends AbstractControllerTest {
         final List<S3bucketDataStorage> s3bucketDataStorageList = Collections.singletonList(s3bucketDataStorage);
         final Map<AclClass, List<S3bucketDataStorage>> map =
                 Collections.singletonMap(AclClass.DATA_STORAGE, s3bucketDataStorageList);
-        final MultiValueMap<String, String> params = multiValueMapOf(ACL_CLASS, AclClass.DATA_STORAGE);
         final AclSid aclSid = SecurityCreatorUtils.getAclSid();
         final String content = getObjectMapper().writeValueAsString(aclSid);
         doReturn(map).when(mockEntityApiService).loadAvailable(aclSid, AclClass.DATA_STORAGE);
 
-        final MvcResult mvcResult = performRequest(post(ENTITIES_URL).params(params).content(content));
+        final MvcResult mvcResult = performRequest(post(ENTITIES_URL).content(content)
+                .params(multiValueMapOf(ACL_CLASS, AclClass.DATA_STORAGE)));
 
         verify(mockEntityApiService).loadAvailable(aclSid, AclClass.DATA_STORAGE);
         assertResponse(mvcResult, map, SecurityCreatorUtils.ACL_SECURED_ENTITY_MAP_TYPE);
