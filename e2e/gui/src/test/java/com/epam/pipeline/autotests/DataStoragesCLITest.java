@@ -30,7 +30,6 @@ import org.testng.annotations.Test;
 
 import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Listeners(value = ConditionalTestAnalyzer.class)
 public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
@@ -43,7 +42,6 @@ public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
-    private String pathStorage1;
 
     @AfterClass(alwaysRun = true)
     public void removeStorages() {
@@ -75,7 +73,7 @@ public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getRunId())
                         .execute(format("pipe storage cp %s/%s %s/", pathStorage1, fileFor1469, pathStorage2))
-                        .assertOutputContains("100%")
+                        .assertNextStringIsVisible("100%", format("pipeline-%s", getRunId()))
                         .close());
         library()
                 .selectStorage(storage2)
@@ -90,8 +88,7 @@ public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getRunId())
                         .execute(format("pipe storage mv %s/%s %s/", pathStorage2, fileFor1469, pathStorage1))
-                        .assertOutputContains("100%")
-                        .sleep(2, SECONDS)
+                        .assertNextStringIsVisible("100%", format("pipeline-%s", getRunId()))
                         .close());
         library()
                 .selectStorage(storage2)
