@@ -30,6 +30,7 @@ import org.testng.annotations.Test;
 
 import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Listeners(value = ConditionalTestAnalyzer.class)
 public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
@@ -90,6 +91,7 @@ public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
                         .waitUntilTextAppears(getRunId())
                         .execute(format("pipe storage mv %s/%s %s/", pathStorage2, fileFor1469, pathStorage1))
                         .assertOutputContains("100%")
+                        .sleep(2, SECONDS)
                         .close());
         library()
                 .selectStorage(storage2)
