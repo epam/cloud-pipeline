@@ -21,7 +21,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import org.apache.commons.collections4.CollectionUtils;
-import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 
 import java.util.Collection;
@@ -38,10 +37,10 @@ public final class CategoricalAttributeTestUtils {
     public static void assertAttribute(final CategoricalAttribute attributeAfter, final String key,
                                        final String... values) {
         Assert.assertEquals(key, attributeAfter.getKey());
-        final List<CategoricalAttributeValue> attributeValues = Stream.of(values)
+        final CategoricalAttributeValue[] attributeValues = Stream.of(values)
             .map(v -> new CategoricalAttributeValue(key, v))
-            .collect(Collectors.toList());
-        Assert.assertThat(attributeAfter.getValues(), CoreMatchers.is(attributeValues));
+            .toArray(CategoricalAttributeValue[]::new);
+        Assert.assertThat(attributeAfter.getValues(), containsInAnyOrder(attributeValues));
     }
 
     public static Map<String, List<String>> convertToMap(final Collection<CategoricalAttribute> attributes) {
