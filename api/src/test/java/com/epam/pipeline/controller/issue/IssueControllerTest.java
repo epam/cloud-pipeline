@@ -37,7 +37,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.util.MultiValueMap;
 
 import java.util.Collections;
 import java.util.List;
@@ -137,11 +136,11 @@ public class IssueControllerTest extends AbstractControllerTest {
     public void shouldLoadIssues() {
         final List<Issue> issues = Collections.singletonList(issue);
         final EntityVO entityVO = new EntityVO(ID, AclClass.DATA_STORAGE);
-        final MultiValueMap<String, String> params =
-                multiValueMapOf(ENTITY_ID, ID, ENTITY_CLASS, AclClass.DATA_STORAGE);
         doReturn(issues).when(mockIssueApiService).loadIssuesForEntity(entityVO);
 
-        final MvcResult mvcResult = performRequest(get(ISSUES_URL).params(params));
+        final MvcResult mvcResult = performRequest(get(ISSUES_URL)
+                .params(multiValueMapOf(ENTITY_ID, ID, ENTITY_CLASS,
+                                        AclClass.DATA_STORAGE)));
 
         verify(mockIssueApiService).loadIssuesForEntity(entityVO);
         assertResponse(mvcResult, issues, IssueCreatorUtils.ISSUE_LIST_TYPE);
@@ -307,10 +306,12 @@ public class IssueControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldLoadMyIssue() {
         final PagedResult<List<Issue>> pagedResult = IssueCreatorUtils.getPagedResult();
-        final MultiValueMap<String, String> params = multiValueMapOf(PAGE, ID, PAGE_SIZE, TEST_INT);
         doReturn(pagedResult).when(mockIssueApiService).loadMy(ID, TEST_INT);
 
-        final MvcResult mvcResult = performRequest(get(MY_ISSUES_URL).params(params), EXPECTED_CONTENT_TYPE);
+        final MvcResult mvcResult = performRequest(get(MY_ISSUES_URL)
+                .params(multiValueMapOf(PAGE, ID,
+                                        PAGE_SIZE, TEST_INT)),
+                EXPECTED_CONTENT_TYPE);
 
         verify(mockIssueApiService).loadMy(ID, TEST_INT);
         assertResponse(mvcResult, pagedResult, IssueCreatorUtils.PAGED_RESULT_LIST_ISSUE_TYPE);
