@@ -122,7 +122,7 @@ class MountStorageTask:
             for mounter in [mounter for mounter in self.mounters.values()]:
                 storage_count_by_type = len(filter((lambda dsm: dsm.storage.storage_type == mounter.type()), available_storages_with_mounts))
                 if storage_count_by_type > 0:
-                    mounter.check_or_install(self.task_name)
+                    self._check_or_install_client(available_storages_with_mounts, mounter)
                     mounter.init_tmp_dir(tmp_dir, self.task_name)
 
             if all([not mounter.is_available() for mounter in self.mounters.values()]):
@@ -144,6 +144,23 @@ class MountStorageTask:
             Logger.success('Finished data storage mounting', task_name=self.task_name)
         except Exception as e:
             Logger.fail('Unhandled error during mount task: {}.'.format(str(e.message)), task_name=self.task_name)
+
+    def _check_or_install_client(self, available_storages_with_mounts, mounter):
+        if mounter.type() != NFS_TYPE:
+            mounter.check_or_install(self.task_name)
+            return
+        has_lustre = False
+        has_nfs_or_smb = False
+        for nfs_mount in [x.file_share_mount for x in available_storages_with_mounts
+                          if x.storage.storage_type == NFS_TYPE and x.file_share_mount is not None]:
+            if "LUSTRE" == str(nfs_mount.mount_type).upper():
+                has_lustre = True
+            else:
+                has_nfs_or_smb = True
+        if has_lustre:
+            mounter.check_or_install(self.task_name, 'LUSTRE')
+        if has_nfs_or_smb:
+            mounter.check_or_install(self.task_name)  # NFS or SMB
 
 
 class StorageMounter:
@@ -168,7 +185,7 @@ class StorageMounter:
 
     @staticmethod
     @abstractmethod
-    def check_or_install(task_name):
+    def check_or_install(task_name, mount_type=None):
         pass
 
     @staticmethod
@@ -256,7 +273,7 @@ class AzureMounter(StorageMounter):
         return AZ_TYPE
 
     @staticmethod
-    def check_or_install(task_name):
+    def check_or_install(task_name, mount_type=None):
         AzureMounter.available = StorageMounter.execute_and_check_command('install_azure_fuse_blobfuse', task_name=task_name)
 
     @staticmethod
@@ -319,7 +336,7 @@ class S3Mounter(StorageMounter):
         return S3_TYPE
 
     @staticmethod
-    def check_or_install(task_name):
+    def check_or_install(task_name, mount_type=None):
         S3Mounter.fuse_type = S3Mounter._check_or_install(task_name)
 
     @staticmethod
@@ -433,7 +450,7 @@ class GCPMounter(StorageMounter):
         return GCP_TYPE
 
     @staticmethod
-    def check_or_install(task_name):
+    def check_or_install(task_name, mount_type=None):
         GCPMounter.fuse_type = GCPMounter._check_or_install(task_name)
 
     @staticmethod
@@ -522,8 +539,12 @@ class NFSMounter(StorageMounter):
         return NFS_TYPE
 
     @staticmethod
-    def check_or_install(task_name):
-        NFSMounter.available = StorageMounter.execute_and_check_command('install_nfs_client', task_name=task_name)
+    def check_or_install(task_name, mount_type=None):
+        if mount_type == 'LUSTRE':
+            NFSMounter.available = StorageMounter.execute_and_check_command('install_lustre_client',
+                                                                            task_name=task_name)
+        else:
+            NFSMounter.available = StorageMounter.execute_and_check_command('install_nfs_client', task_name=task_name)
 
     @staticmethod
     def init_tmp_dir(tmp_dir, task_name):
