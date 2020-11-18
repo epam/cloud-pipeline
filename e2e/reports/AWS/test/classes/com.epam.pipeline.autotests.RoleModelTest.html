@@ -23,7 +23,7 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">29</div>
+<div class="counter">27</div>
 <p>tests</p>
 </div>
 </td>
@@ -35,13 +35,13 @@
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">27</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">3m26.09s</div>
+<div class="counter">43m36.02s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">0%</div>
+<div class="percent">92%</div>
 <p>successful</p>
 </div>
 </td>
@@ -66,50 +66,63 @@
 <li>
 <a href="#tab1">Tests</a>
 </li>
+<li>
+<a href="#tab2">Standard output</a>
+</li>
 </ul>
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="setUp"></a>
-<h3 class="failures">setUp</h3>
+<a name="setPipelinePermissionsAndCheckItForGroup - EPMCMBIBPC-579"></a>
+<h3 class="failures">setPipelinePermissionsAndCheckItForGroup - EPMCMBIBPC-579</h3>
 <span class="code">
-<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'bucket-4594723477876843260')]]}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1605581494372.24.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1605581494372.24.html
+<pre>Element not found {by text: DOMAIN USERS}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1605669436287.7.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1605669436287.7.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;span id=&quot;pipelines-library-tree-node-storage_31637-name&quot; class=&quot;pipelines-library__tree-item-title&quot;&gt;...&lt;/span&gt; is not clickable at point (171, 953). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[normalize-space(translate(string(.), '
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy13.click(Unknown Source)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.cd(PipelinesLibraryAO.java:156)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.selectStorage(PipelinesLibraryAO.java:238)
-	at com.epam.pipeline.autotests.RoleModelTest.setUp(RoleModelTest.java:80)
+	at com.sun.proxy.$Proxy13.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.PermissionTabAO$GroupAdditionPopupAO.selectGroup(PermissionTabAO.java:224)
+	at com.epam.pipeline.autotests.ao.PermissionTabAO$GroupAdditionPopupAO.access$000(PermissionTabAO.java:210)
+	at com.epam.pipeline.autotests.ao.PermissionTabAO.addNewGroup(PermissionTabAO.java:108)
+	at com.epam.pipeline.autotests.RoleModelTest.setPipelinePermissionsAndCheckItForGroup(RoleModelTest.java:710)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
-	at org.testng.internal.TestMethodWorker.invokeBeforeClassMethods(TestMethodWorker.java:166)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:105)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;span id=&quot;pipelines-library-tree-node-storage_31637-name&quot; class=&quot;pipelines-library__tree-item-title&quot;&gt;...&lt;/span&gt; is not clickable at point (171, 953). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[normalize-space(translate(string(.), '	
+ ', '    ')) = &quot;DOMAIN USERS&quot;]/parent::*&quot;}
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'bb19950558d4', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'a54b9be2ed89', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: ff644b9ffd8a0ab8088d198470319a6f
-	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
+Session ID: 8414b14e1af086504c7078262d2e18cc
+*** Element info: {Using=xpath, value=.//*/text()[normalize-space(translate(string(.), '	
+ ', '    ')) = &quot;DOMAIN USERS&quot;]/parent::*}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
 	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
@@ -121,26 +134,27 @@ Session ID: ff644b9ffd8a0ab8088d198470319a6f
 	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
 	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
 	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
-	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
-	at com.codeborne.selenide.commands.Click.click(Click.java:29)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	... 18 more
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:179)
+	at org.openqa.selenium.remote.RemoteWebElement.findElementByXPath(RemoteWebElement.java:255)
+	at org.openqa.selenium.By$ByXPath.findElement(By.java:361)
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 24 more
 </pre>
 </span>
 </div>
 <div class="test">
-<a name="tearDown"></a>
-<h3 class="failures">tearDown</h3>
+<a name="setToolPermissionsAndCheckItForGroup - EPMCMBIBPC-580"></a>
+<h3 class="failures">setToolPermissionsAndCheckItForGroup - EPMCMBIBPC-580</h3>
 <span class="code">
-<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'folder-with-several-pipelines-4602047915363442254')]]}
+<pre>Element not found {by text: DOMAIN USERS}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1605581825979.25.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1605581825979.25.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1605669540687.8.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1605669540687.8.html
 Timeout: 80 s.
-Caused by: NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'folder-with-several-pipelines-4602047915363442254')]]
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[normalize-space(translate(string(.), '
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
@@ -151,34 +165,64 @@ Caused by: NoSuchElementException: Cannot locate an element using title of a By.
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
 	at com.sun.proxy.$Proxy13.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.cd(PipelinesLibraryAO.java:156)
-	at com.epam.pipeline.autotests.RoleModelTest.lambda$tearDown$1(RoleModelTest.java:116)
-	at com.epam.pipeline.autotests.mixins.Authorization.logoutIfNeededAndPerform(Authorization.java:82)
-	at com.epam.pipeline.autotests.RoleModelTest.tearDown(RoleModelTest.java:113)
+	at com.epam.pipeline.autotests.ao.PermissionTabAO$GroupAdditionPopupAO.selectGroup(PermissionTabAO.java:224)
+	at com.epam.pipeline.autotests.ao.PermissionTabAO$GroupAdditionPopupAO.access$000(PermissionTabAO.java:210)
+	at com.epam.pipeline.autotests.ao.PermissionTabAO.addNewGroup(PermissionTabAO.java:108)
+	at com.epam.pipeline.autotests.RoleModelTest.lambda$setToolPermissionsAndCheckItForGroup$7(RoleModelTest.java:742)
+	at java.util.function.Consumer.lambda$andThen$0(Consumer.java:65)
+	at com.epam.pipeline.autotests.ao.ToolGroup.toolWithin(ToolGroup.java:52)
+	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$null$0(ToolsPage.java:90)
+	at com.epam.pipeline.autotests.ao.Registry.groupWithin(Registry.java:49)
+	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$performWithin$1(ToolsPage.java:89)
+	at com.epam.pipeline.autotests.ao.ToolsPage.registryWithin(ToolsPage.java:127)
+	at com.epam.pipeline.autotests.ao.ToolsPage.performWithin(ToolsPage.java:88)
+	at com.epam.pipeline.autotests.RoleModelTest.setToolPermissionsAndCheckItForGroup(RoleModelTest.java:740)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
-	at org.testng.internal.TestMethodWorker.invokeAfterClassMethods(TestMethodWorker.java:212)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'folder-with-several-pipelines-4602047915363442254')]]
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[normalize-space(translate(string(.), '	
+ ', '    ')) = &quot;DOMAIN USERS&quot;]/parent::*&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'bb19950558d4', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: driver.version: unknown
-	at org.openqa.selenium.By.findElement(By.java:162)
+System info: host: 'a54b9be2ed89', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 8414b14e1af086504c7078262d2e18cc
+*** Element info: {Using=xpath, value=.//*/text()[normalize-space(translate(string(.), '	
+ ', '    ')) = &quot;DOMAIN USERS&quot;]/parent::*}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:179)
+	at org.openqa.selenium.remote.RemoteWebElement.findElementByXPath(RemoteWebElement.java:255)
+	at org.openqa.selenium.By$ByXPath.findElement(By.java:361)
 	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
 	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
 	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 24 more
+	... 32 more
 </pre>
 </span>
 </div>
@@ -194,151 +238,157 @@ Driver info: driver.version: unknown
 </tr>
 </thead>
 <tr>
-<td class="skipped">checkBucketEditProhibitionForReadOnlyUser - EPMCMBIBPC-563</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkBucketEditProhibitionForReadOnlyUser - EPMCMBIBPC-563</td>
+<td>28.861s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">checkBucketEditingByNonAdminUser - EPMCMBIBPC-566</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkBucketEditingByNonAdminUser - EPMCMBIBPC-566</td>
+<td>3m57.65s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">checkClusterNodesByNonAdminUser - EPMCMBIBPC-567</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkClusterNodesByNonAdminUser - EPMCMBIBPC-567</td>
+<td>6m8.46s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">checkFolderPermissionForReadOnlyUser - EPMCMBIBPC-549</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkFolderPermissionForReadOnlyUser - EPMCMBIBPC-549</td>
+<td>1m12.42s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">checkFolderPermissionsForReadOnlyUserAndCheckInnerDeniedPipelinePermissions - EPMCMBIBPC-552</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkFolderPermissionsForReadOnlyUserAndCheckInnerDeniedPipelinePermissions - EPMCMBIBPC-552</td>
+<td>1m27.54s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">checkPermissionsForExecutingPipelines - EPMCMBIBPC-553</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkPermissionsForExecutingPipelines - EPMCMBIBPC-553</td>
+<td>4m29.99s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">checkPipelinePermissionsForGroup - EPMCMBIBPC-578</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkPipelinePermissionsForGroup - EPMCMBIBPC-578</td>
+<td>30.615s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">checkReadPermissionForBucket - EPMCMBIBPC-562</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkReadPermissionForBucket - EPMCMBIBPC-562</td>
+<td>52.433s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">checkToolsPageByEditPermissionUser - EPMCMBIBPC-574</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkToolsPageByEditPermissionUser - EPMCMBIBPC-574</td>
+<td>1m38.76s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">checkToolsPageByExecutePermissionUser - EPMCMBIBPC-573</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkToolsPageByExecutePermissionUser - EPMCMBIBPC-573</td>
+<td>1m35.66s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">checkToolsPageByReadOnlyUser - EPMCMBIBPC-572</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkToolsPageByReadOnlyUser - EPMCMBIBPC-572</td>
+<td>2m16.52s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">checkWritePermissionForBucket - EPMCMBIBPC-565</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkWritePermissionForBucket - EPMCMBIBPC-565</td>
+<td>59.524s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">editAndExecutePipeline - EPMCMBIBPC-561</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">editAndExecutePipeline - EPMCMBIBPC-561</td>
+<td>5m4.08s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">givePermissionsToUser - EPMCMBIBPC-537</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">givePermissionsToUser - EPMCMBIBPC-537</td>
+<td>1m48.84s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">giveUserReadPermissionForPipeline - EPMCMBIBPC-546</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">giveUserReadPermissionForPipeline - EPMCMBIBPC-546</td>
+<td>46.118s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">giveUserWritePermissionForPipeline - EPMCMBIBPC-540</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">giveUserWritePermissionForPipeline - EPMCMBIBPC-540</td>
+<td>58.066s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">readOnlyUserIsNotAbleToEditFileInPipeline - EPMCMBIBPC-558</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">readOnlyUserIsNotAbleToEditFileInPipeline - EPMCMBIBPC-558</td>
+<td>4.290s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">readOnlyUserIsNotAbleToEditPipeline - EPMCMBIBPC-547</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">readOnlyUserIsNotAbleToEditPipeline - EPMCMBIBPC-547</td>
+<td>27.553s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">rerunPipelineWithoutPermissionsForExecute - EPMCMBIBPC-560</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">rerunPipelineWithoutPermissionsForExecute - EPMCMBIBPC-560</td>
+<td>1m10.05s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">setPipelinePermissionsAndCheckItForGroup - EPMCMBIBPC-579</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">setToolPermissionsAndCheckItForGroup - EPMCMBIBPC-580</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="failures">setUp</td>
-<td>1m48.95s</td>
+<td class="failures">setPipelinePermissionsAndCheckItForGroup - EPMCMBIBPC-579</td>
+<td>1m48.39s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="failures">tearDown</td>
-<td>1m37.14s</td>
+<td class="failures">setToolPermissionsAndCheckItForGroup - EPMCMBIBPC-580</td>
+<td>1m44.38s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="skipped">tryToNavigateToAnotherBucketByNavigationBar - EPMCMBIBPC-564</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">tryToNavigateToAnotherBucketByNavigationBar - EPMCMBIBPC-564</td>
+<td>20.259s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validatePermissionsForEditPipeline - EPMCMBIBPC-556</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validatePermissionsForEditPipeline - EPMCMBIBPC-556</td>
+<td>1m18.72s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validatePermissionsForEditPipelineFiles - EPMCMBIBPC-557</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validatePermissionsForEditPipelineFiles - EPMCMBIBPC-557</td>
+<td>51.637s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateSearchForNoUser - EPMCMBIBPC-1581</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateSearchForNoUser - EPMCMBIBPC-1581</td>
+<td>23.361s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateSearchWithinEditUser - EPMCMBIBPC-1575</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateSearchWithinEditUser - EPMCMBIBPC-1575</td>
+<td>34.881s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">viewUserPermissions - EPMCMBIBPC-539</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">viewUserPermissions - EPMCMBIBPC-539</td>
+<td>36.974s</td>
+<td class="success">passed</td>
 </tr>
 </table>
+</div>
+<div id="tab2" class="tab">
+<h2>Standard output</h2>
+<span class="code">
+<pre>Returns latest run with runId 47721 from [47721]
+Returns latest run with runId 47721 from [47721]
+Returns latest run with runId 47721 from [47721]
+Returns latest run with runId 47722 from [47721, 47722]
+Returns latest run with runId 47722 from [47721, 47722]
+Returns latest run with runId 47722 from [47721, 47722]
+Returns latest run with runId 47723 from [47721, 47722, 47723]
+Returns latest run with runId 47723 from [47721, 47722, 47723]
+Returns latest run with runId 47724 from [47721, 47722, 47723, 47724]
+Returns latest run with runId 47724 from [47721, 47722, 47723, 47724]
+</pre>
+</span>
 </div>
 </div>
 <div id="footer">
@@ -348,7 +398,7 @@ Driver info: driver.version: unknown
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 17, 2020 5:17:57 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 18, 2020 4:51:02 PM</p>
 </div>
 </div>
 </body>

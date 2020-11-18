@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">3</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">5</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">8m13.08s</div>
+<div class="counter">6m12.75s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">86%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,197 +61,13 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Failed tests</a>
+<a href="#tab0">Tests</a>
 </li>
 <li>
-<a href="#tab1">Tests</a>
+<a href="#tab1">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="deleteDetachedConfigurationValidation - EPMCMBIBPC-1604"></a>
-<h3 class="failures">deleteDetachedConfigurationValidation - EPMCMBIBPC-1604</h3>
-<span class="code">
-<pre>Element not found {By.id: navigation-button-pipelines}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1605608862934.86.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1605608862934.86.html
-Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy13.click(Unknown Source)
-	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:36)
-	at com.epam.pipeline.autotests.mixins.Navigation.library(Navigation.java:49)
-	at com.epam.pipeline.autotests.DetachedConfigurationsTest.deleteDetachedConfigurationValidation(DetachedConfigurationsTest.java:737)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'bb19950558d4', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 4fbdf1a4b311da1daf688e74d2a4276e
-	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
-	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
-	at com.codeborne.selenide.commands.Click.click(Click.java:29)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	... 18 more
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="validationOfConfigWithEmptyParametersInDetachConfiguration - EPMCMBIBPC-1140"></a>
-<h3 class="failures">validationOfConfigWithEmptyParametersInDetachConfiguration - EPMCMBIBPC-1140</h3>
-<span class="code">
-<pre>Element not found {By.xpath: ancestor::*[contains(concat(' ', normalize-space(@class), ' '), ' ant-table-row ')][1]}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1605608782566.85.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1605608782566.85.html
-Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;tr class=&quot;ant-table-row folder-item-version_8bec681eddc03505c331ab6c089d444321f317ad ant-table-row-level-0&quot;&gt;...&lt;/tr&gt; is not clickable at point (746, 230). Other element would receive the click: &lt;div class=&quot;ant-modal-body&quot;&gt;...&lt;/div&gt;
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy13.click(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.click(AccessObject.java:94)
-	at com.epam.pipeline.autotests.ao.PipelineLibraryContentAO.firstVersion(PipelineLibraryContentAO.java:65)
-	at com.epam.pipeline.autotests.ao.PipelineSelection.selectFirstVersion(PipelineSelection.java:60)
-	at com.epam.pipeline.autotests.ao.Configuration.lambda$selectPipeline$0(Configuration.java:210)
-	at com.epam.pipeline.autotests.ao.Configuration.selectPipeline(Configuration.java:202)
-	at com.epam.pipeline.autotests.ao.Configuration.selectPipeline(Configuration.java:207)
-	at com.epam.pipeline.autotests.DetachedConfigurationsTest.lambda$validationOfConfigWithEmptyParametersInDetachConfiguration$42(DetachedConfigurationsTest.java:586)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.configurationWithin(PipelinesLibraryAO.java:420)
-	at com.epam.pipeline.autotests.DetachedConfigurationsTest.validationOfConfigWithEmptyParametersInDetachConfiguration(DetachedConfigurationsTest.java:582)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;tr class=&quot;ant-table-row folder-item-version_8bec681eddc03505c331ab6c089d444321f317ad ant-table-row-level-0&quot;&gt;...&lt;/tr&gt; is not clickable at point (746, 230). Other element would receive the click: &lt;div class=&quot;ant-modal-body&quot;&gt;...&lt;/div&gt;
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'bb19950558d4', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 4fbdf1a4b311da1daf688e74d2a4276e
-	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
-	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
-	at com.codeborne.selenide.commands.Click.click(Click.java:29)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	... 24 more
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="validationOfConfigWithNonEmptyParametersInDetachConfiguration - EPMCMBIBPC-1611"></a>
-<h3 class="failures">validationOfConfigWithNonEmptyParametersInDetachConfiguration - EPMCMBIBPC-1611</h3>
-<span class="code">
-<pre>Element not found {By.xpath: .//*[contains(concat(' ', @class, ' '), ' ant-form-item-control ') and .//input[@placeholder = 'Name' and @value = 'stringParameter'] and .//input[@value = 'stringParameterValue']]}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1605608549727.84.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1605608549727.84.html
-Timeout: 80 s.
-Caused by: NoSuchElementException: Cannot locate an element using By.xpath: .//*[contains(concat(' ', @class, ' '), ' ant-form-item-control ') and .//input[@placeholder = 'Name' and @value = 'stringParameter'] and .//input[@value = 'stringParameterValue']]
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy13.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:184)
-	at com.epam.pipeline.autotests.DetachedConfigurationsTest.lambda$validationOfConfigWithNonEmptyParametersInDetachConfiguration$41(DetachedConfigurationsTest.java:568)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.configurationWithin(PipelinesLibraryAO.java:420)
-	at com.epam.pipeline.autotests.DetachedConfigurationsTest.validationOfConfigWithNonEmptyParametersInDetachConfiguration(DetachedConfigurationsTest.java:565)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using By.xpath: .//*[contains(concat(' ', @class, ' '), ' ant-form-item-control ') and .//input[@placeholder = 'Name' and @value = 'stringParameter'] and .//input[@value = 'stringParameterValue']]
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'bb19950558d4', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: driver.version: unknown
-	at org.openqa.selenium.By.findElement(By.java:162)
-	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 24 more
-</pre>
-</span>
-</div>
-</div>
-<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -263,140 +79,162 @@ Driver info: driver.version: unknown
 </thead>
 <tr>
 <td class="success">addParameterToDetachedConfiguration - EPMCMBIBPC-1601</td>
-<td>13.909s</td>
+<td>13.584s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">changeSecondConfigurationProfilePipeline - EPMCMBIBPC-1139</td>
-<td>16.551s</td>
+<td>16.665s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">changesValidationInAttachedPipelineConfiguration - EPMCMBIBPC-1544</td>
-<td>23.695s</td>
+<td>23.842s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">checkPipelineConfigAfterChangesInDetachedConfig</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkPipelineConfigAfterChangesInDetachedConfig - EPMCMBIBPC-1141</td>
+<td>6.519s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">configurationChangingValidation - EPMCMBIBPC-1115</td>
-<td>11.578s</td>
+<td>11.675s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">configurationProfileSetAsDefaultBehaviour - EPMCMBIBPC-1144</td>
-<td>13.762s</td>
+<td>13.154s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">configurationRenamingValidation - EPMCMBIBPC-1130</td>
-<td>7.827s</td>
+<td>7.574s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">configurationSavingValidation - EPMCMBIBPC-1114</td>
-<td>16.916s</td>
+<td>16.807s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">deleteDetachedConfigurationValidation - EPMCMBIBPC-1604</td>
-<td>1m20.36s</td>
-<td class="failures">failed</td>
+<td class="success">deleteDetachedConfigurationValidation - EPMCMBIBPC-1604</td>
+<td>4.543s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">detachedConfigurationCreatingPopupFocusValidation - EPMCMBIBPC-1493</td>
-<td>6.567s</td>
+<td>5.962s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">detachedConfigurationCreatingValidation - EPMCMBIBPC-1185</td>
-<td>15.355s</td>
+<td>14.454s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">detachedConfigurationEditionPopupFocusValidation - EPMCMBIBPC-1495</td>
-<td>16.195s</td>
+<td>15.756s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">detachedConfigurationProfileAdditionPopupFocusValidation - EPMCMBIBPC-1496</td>
-<td>3.640s</td>
+<td>3.389s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">dockerImageSelection - EPMCMBIBPC-1494</td>
-<td>18.244s</td>
+<td>17.727s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">exitWithoutSavingValidation - EPMCMBIBPC-1113</td>
-<td>2.849s</td>
+<td>2.786s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">fieldsEditingProhibitionValidation - EPMCMBIBPC-1132</td>
-<td>3.890s</td>
+<td>4.068s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">groupAdditionValidation - EPMCMBIBPC-1149</td>
-<td>12.471s</td>
+<td>11.545s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pipelineAdditionValidation - EPMCMBIBPC-1112</td>
-<td>9.570s</td>
+<td>9.308s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">priceTypeValidation - EPMCMBIBPC-1516</td>
-<td>4.308s</td>
+<td>4.331s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">secondConfigurationProfileAddition - EPMCMBIBPC-1129</td>
-<td>5.947s</td>
+<td>6.038s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">templatesListContainsAllProfiles - EPMCMBIBPC-1145</td>
-<td>4.417s</td>
+<td>4.453s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateDetachConfigBehaviorIfUserChangesBasePipelineConfig</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateDetachConfigBehaviorIfUserChangesBasePipelineConfig - EPMCMBIBPC-1151</td>
+<td>33.365s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateRunClusterFromDetachConfiguration</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateRunClusterFromDetachConfiguration - EPMCMBIBPC-1147</td>
+<td>25.231s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateRunSingleConfigFromDetachedConfiguration</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateRunSingleConfigFromDetachedConfiguration - EPMCMBIBPC-1146</td>
+<td>17.448s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">validationOfConfigWithEmptyParametersInDetachConfiguration - EPMCMBIBPC-1140</td>
-<td>1m43.75s</td>
-<td class="failures">failed</td>
+<td class="success">validationOfConfigWithEmptyParametersInDetachConfiguration - EPMCMBIBPC-1140</td>
+<td>32.125s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">validationOfConfigWithNonEmptyParametersInDetachConfiguration - EPMCMBIBPC-1611</td>
-<td>1m41.27s</td>
-<td class="failures">failed</td>
+<td class="success">validationOfConfigWithNonEmptyParametersInDetachConfiguration - EPMCMBIBPC-1611</td>
+<td>22.138s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validationPriceTypeFieldForClusterRun</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validationPriceTypeFieldForClusterRun - EPMCMBIBPC-1545</td>
+<td>28.261s</td>
+<td class="success">passed</td>
 </tr>
 </table>
+</div>
+<div id="tab1" class="tab">
+<h2>Standard output</h2>
+<span class="code">
+<pre>Returns latest run with runId 47786 from [47786]
+Returns latest run with runId 47786 from [47786]
+Returns latest run with runId 47786 from [47786]
+Returns latest run with runId 47786 from [47786]
+Returns latest run with runId 47786 from [47786]
+Returns latest run with runId 47786 from [47786]
+Returns latest run with runId 47788 from [47786, 47788]
+Returns latest run with runId 47788 from [47786, 47788]
+Returns latest run with runId 47789 from [47786, 47788, 47789]
+Returns latest run with runId 47789 from [47786, 47788, 47789]
+Returns latest run with runId 47789 from [47786, 47788, 47789]
+Returns latest run with runId 47789 from [47786, 47788, 47789]
+Returns latest run with runId 47791 from [47786, 47788, 47789, 47791]
+Returns latest run with runId 47791 from [47786, 47788, 47789, 47791]
+Returns latest run with runId 47791 from [47786, 47788, 47789, 47791]
+Returns latest run with runId 47791 from [47786, 47788, 47789, 47791]
+</pre>
+</span>
 </div>
 </div>
 <div id="footer">
@@ -406,7 +244,7 @@ Driver info: driver.version: unknown
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 17, 2020 5:17:56 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 18, 2020 4:51:02 PM</p>
 </div>
 </div>
 </body>
