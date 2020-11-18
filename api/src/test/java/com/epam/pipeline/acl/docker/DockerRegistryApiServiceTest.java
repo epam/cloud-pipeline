@@ -17,26 +17,30 @@
 package com.epam.pipeline.acl.docker;
 
 import com.epam.pipeline.controller.vo.docker.DockerRegistryVO;
+import com.epam.pipeline.entity.AbstractHierarchicalEntity;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.docker.DockerRegistryList;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.DockerRegistryEventEnvelope;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
-import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
-import com.epam.pipeline.test.creator.docker.ToolCreatorUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,22 +49,29 @@ import static org.mockito.Mockito.doReturn;
 public class DockerRegistryApiServiceTest extends AbstractAclTest {
 
     private static final byte[] BYTE_RESULT = TEST_STRING.getBytes();
-    private final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry();
-    private final DockerRegistry dockerRegistryWithOwner = DockerCreatorUtils.getDockerRegistry(SIMPLE_USER);
+    private final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry(ANOTHER_SIMPLE_USER);
     private final DockerRegistryVO dockerRegistryVO = DockerCreatorUtils.getDockerRegistryVO();
-    private final DockerRegistryList dockerRegistryList = DockerCreatorUtils.getDockerRegistryList();
-    private final Tool tool = ToolCreatorUtils.getTool();
+    private final DockerRegistryList dockerRegistryList = DockerCreatorUtils.getDockerRegistryList(dockerRegistry);
+    private final Tool tool = DockerCreatorUtils.getTool(ANOTHER_SIMPLE_USER);
     private final List<Tool> tools = Collections.singletonList(tool);
     private final DockerRegistryEventEnvelope eventEnvelope = DockerCreatorUtils.getDockerRegistryEventEnvelope();
+    private final JwtRawToken jwtRawToken = new JwtRawToken(TEST_STRING);
+    private final DockerRegistry dockerRegistryWithTools = DockerCreatorUtils.getDockerRegistry(ANOTHER_SIMPLE_USER);
+    private final ToolGroup toolGroupWithoutPermission = DockerCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
+    private final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup(ID_2, ANOTHER_SIMPLE_USER);
+    private final ToolGroup emptyToolGroupWithoutPermission = DockerCreatorUtils.getToolGroup(ID_3, ANOTHER_SIMPLE_USER);
+    private final Tool toolRead = DockerCreatorUtils.getTool(ANOTHER_SIMPLE_USER);
+    private final Tool toolWithoutPermission = DockerCreatorUtils.getTool(ID_2, ANOTHER_SIMPLE_USER);
+    private final List<Tool> toolList = Arrays.asList(toolRead, toolWithoutPermission);
+    private final List<ToolGroup> toolGroups =
+            Arrays.asList(toolGroup, toolGroupWithoutPermission, emptyToolGroupWithoutPermission);
+
 
     @Autowired
     private DockerRegistryApiService dockerRegistryApiService;
 
     @Autowired
     private DockerRegistryManager mockDockerRegistryManager;
-
-    @Autowired
-    private AuthManager mockAuthManager;
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
@@ -73,8 +84,6 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenyCreateDockerRegistryForNonAdminUser() {
-        doReturn(dockerRegistry).when(mockDockerRegistryManager).create(dockerRegistryVO);
-
         assertThrows(AccessDeniedException.class, () -> dockerRegistryApiService.create(dockerRegistryVO));
     }
 
@@ -89,24 +98,30 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldUpdateDockerRegistryWhenPermissionIsGranted() {
-        initAclEntity(dockerRegistryWithOwner, AclPermission.WRITE);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
-        doReturn(dockerRegistryWithOwner).when(mockDockerRegistryManager).updateDockerRegistry(dockerRegistry);
+        initAclEntity(dockerRegistry, AclPermission.WRITE);
+        doReturn(dockerRegistry).when(mockDockerRegistryManager).updateDockerRegistry(dockerRegistry);
 
-        final DockerRegistry resultRegistry = dockerRegistryApiService.updateDockerRegistry(dockerRegistry);
-
-        assertThat(resultRegistry).isEqualTo(dockerRegistryWithOwner);
+        assertThat(dockerRegistryApiService.updateDockerRegistry(dockerRegistry)).isEqualTo(dockerRegistry);
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldUpdateDockerRegistryHierarchyWhenPermissionIsGranted() {
+        initDockerRegistryAclTree();
+        initAclEntity(dockerRegistryWithTools, AclPermission.WRITE);
+        doReturn(dockerRegistryWithTools).when(mockDockerRegistryManager).updateDockerRegistry(dockerRegistryWithTools);
+
+        final DockerRegistry returnedDr = dockerRegistryApiService.updateDockerRegistry(dockerRegistryWithTools);
+        assertPartialDockerRegistryAclTree(returnedDr);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyUpdateDockerRegistryWhenPermissionIsNotGranted() {
-        doReturn(dockerRegistryWithOwner).when(mockDockerRegistryManager).updateDockerRegistry(dockerRegistry);
-        initAclEntity(dockerRegistryWithOwner);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
+        initAclEntity(dockerRegistry);
 
         assertThrows(AccessDeniedException.class,
-            () -> dockerRegistryApiService.updateDockerRegistry(dockerRegistryWithOwner));
+            () -> dockerRegistryApiService.updateDockerRegistry(dockerRegistry));
     }
 
     @Test
@@ -121,10 +136,20 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenyUpdateDockerRegistryCredentialsForNonAdminUser() {
-        doReturn(dockerRegistry).when(mockDockerRegistryManager).updateDockerRegistryCredentials(dockerRegistryVO);
-
         assertThrows(AccessDeniedException.class,
             () -> dockerRegistryApiService.updateDockerRegistryCredentials(dockerRegistryVO));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldUpdateWholeDockerRegistryHierarchyCredentialsForAdmin() {
+        initDockerRegistryAclTree();
+        doReturn(dockerRegistryWithTools).when(mockDockerRegistryManager)
+                .updateDockerRegistryCredentials(dockerRegistryVO);
+
+        final DockerRegistry returnedDr = dockerRegistryApiService.updateDockerRegistryCredentials(dockerRegistryVO);
+
+        assertWholeDockerRegistryAclTree(returnedDr);
     }
 
     @Test
@@ -136,11 +161,43 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(SIMPLE_USER)
+    public void shouldListDockerRegistryHierarchyWithCerts() {
+        final DockerRegistryList dockerRegistryList = DockerCreatorUtils.getDockerRegistryList(dockerRegistry);
+        final DockerRegistry anotherRegistry = DockerCreatorUtils.getDockerRegistry(ID_3, ANOTHER_SIMPLE_USER);
+        dockerRegistryList.setRegistries(Arrays.asList(dockerRegistryWithTools, anotherRegistry));
+        initDockerRegistryAclTree();
+        doReturn(dockerRegistryList).when(mockDockerRegistryManager).listAllDockerRegistriesWithCerts();
+
+        final DockerRegistry returnedDr = (DockerRegistry) dockerRegistryApiService
+                .listDockerRegistriesWithCerts().getChildren().get(0);
+
+        assertPartialDockerRegistryAclTree(returnedDr);
+        assertThat(dockerRegistryApiService.listDockerRegistriesWithCerts().getChildren().size()).isEqualTo(1);
+    }
+
+    @Test
     @WithMockUser
     public void shouldLoadAllRegistriesContent() {
         doReturn(dockerRegistryList).when(mockDockerRegistryManager).loadAllRegistriesContent();
 
         assertThat(dockerRegistryApiService.loadAllRegistriesContent()).isEqualTo(dockerRegistryList);
+    }
+
+    @Test
+    @WithMockUser(SIMPLE_USER)
+    public void shouldLoadAllRegistriesHierarchyContent() {
+        final DockerRegistryList dockerRegistryList = DockerCreatorUtils.getDockerRegistryList(dockerRegistry);
+        final DockerRegistry anotherRegistry = DockerCreatorUtils.getDockerRegistry(ID_3, ANOTHER_SIMPLE_USER);
+        dockerRegistryList.setRegistries(Arrays.asList(dockerRegistryWithTools, anotherRegistry));
+        initDockerRegistryAclTree();
+        doReturn(dockerRegistryList).when(mockDockerRegistryManager).loadAllRegistriesContent();
+
+        final DockerRegistry returnedDr = (DockerRegistry) dockerRegistryApiService
+                .loadAllRegistriesContent().getChildren().get(0);
+
+        assertPartialDockerRegistryAclTree(returnedDr);
+        assertThat(dockerRegistryApiService.loadAllRegistriesContent().getChildren().size()).isEqualTo(1);
     }
 
     @Test
@@ -152,29 +209,37 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(SIMPLE_USER)
+    public void shouldLoadDockerRegistryHierarchy() {
+        initDockerRegistryAclTree();
+        doReturn(dockerRegistryWithTools).when(mockDockerRegistryManager).load(ID);
+
+        final DockerRegistry returnedDr = dockerRegistryApiService.load(ID);
+
+        assertPartialDockerRegistryAclTree(returnedDr);
+    }
+
+    @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldDeleteDockerRegistryForAdmin() {
         doReturn(dockerRegistry).when(mockDockerRegistryManager).delete(ID, true);
 
-        assertThat(mockDockerRegistryManager.delete(ID, true)).isEqualTo(dockerRegistry);
+        assertThat(dockerRegistryApiService.delete(ID, true)).isEqualTo(dockerRegistry);
     }
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDeleteDockerRegistryWhenPermissionIsGranted() {
-        doReturn(dockerRegistryWithOwner).when(mockDockerRegistryManager).delete(ID, true);
-        initAclEntity(dockerRegistryWithOwner, AclPermission.WRITE);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
+        doReturn(dockerRegistry).when(mockDockerRegistryManager).delete(ID, true);
+        initAclEntity(dockerRegistry, AclPermission.WRITE);
 
-        assertThat(mockDockerRegistryManager.delete(ID, true)).isEqualTo(dockerRegistryWithOwner);
+        assertThat(dockerRegistryApiService.delete(ID, true)).isEqualTo(dockerRegistry);
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyDeleteDockerRegistryWhenPermissionIsNotGranted() {
-        doReturn(dockerRegistryWithOwner).when(mockDockerRegistryManager).delete(ID, true);
-        initAclEntity(dockerRegistryWithOwner);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
+        initAclEntity(dockerRegistry);
 
         assertThrows(AccessDeniedException.class, () -> dockerRegistryApiService.delete(ID, true));
     }
@@ -198,7 +263,6 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
 
     @Test
     public void shouldIssueTokenForDockerRegistry() {
-        final JwtRawToken jwtRawToken = new JwtRawToken(TEST_STRING);
         doReturn(jwtRawToken).when(mockDockerRegistryManager)
                 .issueTokenForDockerRegistry(TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING);
 
@@ -219,17 +283,15 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldGetCertificateContentWhenPermissionIsGranted() {
         doReturn(BYTE_RESULT).when(mockDockerRegistryManager).getCertificateContent(ID);
-        initAclEntity(dockerRegistryWithOwner, AclPermission.READ);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
+        initAclEntity(dockerRegistry, AclPermission.READ);
 
         assertThat(dockerRegistryApiService.getCertificateContent(ID)).isEqualTo(BYTE_RESULT);
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyGetCertificateContentWhenPermissionIsNotGranted() {
-        doReturn(BYTE_RESULT).when(mockDockerRegistryManager).getCertificateContent(ID);
-        initAclEntity(dockerRegistryWithOwner, AclPermission.READ);
+        initAclEntity(dockerRegistry);
 
         assertThrows(AccessDeniedException.class, () -> dockerRegistryApiService.getCertificateContent(ID));
     }
@@ -246,18 +308,56 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
     @WithMockUser(SIMPLE_USER)
     public void shouldGetConfigScriptWhenPermissionIsGranted() {
         doReturn(BYTE_RESULT).when(mockDockerRegistryManager).getConfigScript(ID);
-        initAclEntity(dockerRegistryWithOwner, AclPermission.READ);
-        doReturn(SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
+        initAclEntity(dockerRegistry, AclPermission.READ);
 
         assertThat(dockerRegistryApiService.getConfigScript(ID)).isEqualTo(BYTE_RESULT);
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyGetConfigScriptWhenPermissionIsNotGranted() {
-        doReturn(BYTE_RESULT).when(mockDockerRegistryManager).getConfigScript(ID);
-        initAclEntity(dockerRegistryWithOwner, AclPermission.READ);
+        initAclEntity(dockerRegistry);
 
         assertThrows(AccessDeniedException.class, () -> dockerRegistryApiService.getConfigScript(ID));
+    }
+
+    private void initDockerRegistryAclTree() {
+        toolGroup.setTools(toolList);
+        toolGroupWithoutPermission.setTools(toolList);
+        dockerRegistryWithTools.setGroups(toolGroups);
+        initAclEntity(toolRead, AclPermission.READ);
+        initAclEntity(toolWithoutPermission);
+        initAclEntity(toolGroup, AclPermission.READ);
+        initAclEntity(toolGroupWithoutPermission);
+        initAclEntity(emptyToolGroupWithoutPermission, AclPermission.READ);
+    }
+
+    private void assertPartialDockerRegistryAclTree(final DockerRegistry registry) {
+        assertDockerRegistryAclHierarchy(registry);
+        final List<? extends AbstractSecuredEntity> toolGroupWithoutPermissionLeaves =
+                registry.getChildren().get(1).getLeaves();
+        assertThat(toolGroupWithoutPermissionLeaves.size()).isEqualTo(1);
+        assertThat(toolGroupWithoutPermissionLeaves.get(0)).isEqualTo(toolRead);
+    }
+
+    private void assertWholeDockerRegistryAclTree(final DockerRegistry registry) {
+        assertDockerRegistryAclHierarchy(registry);
+        final List<? extends AbstractSecuredEntity> toolGroupWithoutPermissionLeaves =
+                registry.getChildren().get(1).getLeaves();
+
+        assertThat(toolGroupWithoutPermissionLeaves.size()).isEqualTo(toolList.size());
+        assertThat(toolGroupWithoutPermissionLeaves).isEqualTo(toolList);
+    }
+
+    private void assertDockerRegistryAclHierarchy(final DockerRegistry registry) {
+        final List<AbstractHierarchicalEntity> dockerRegistryChildren = registry.getChildren();
+        final List<? extends AbstractSecuredEntity> toolGroupLeaves = registry.getChildren().get(0).getLeaves();
+        final List<? extends AbstractSecuredEntity> emptyToolGroupLeaves = registry.getChildren().get(2).getLeaves();
+
+        assertThat(dockerRegistryChildren.size()).isEqualTo(toolGroups.size());
+        assertThat(dockerRegistryChildren).isEqualTo(toolGroups);
+        assertThat(toolGroupLeaves.size()).isEqualTo(toolList.size());
+        assertThat(toolGroupLeaves).isEqualTo(toolList);
+        assertThat(emptyToolGroupLeaves).isEmpty();
     }
 }
