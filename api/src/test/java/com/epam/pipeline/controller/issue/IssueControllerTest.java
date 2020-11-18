@@ -33,7 +33,6 @@ import com.epam.pipeline.test.creator.issue.IssueCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -108,7 +107,7 @@ public class IssueControllerTest extends AbstractControllerTest {
 
         final MvcResult mvcResult = performRequest(post(ISSUES_URL).content(content));
 
-        Mockito.verify(mockIssueApiService).createIssue(issueVO);
+        verify(mockIssueApiService).createIssue(issueVO);
         assertResponse(mvcResult, issue, IssueCreatorUtils.ISSUE_TYPE);
     }
 
@@ -124,7 +123,7 @@ public class IssueControllerTest extends AbstractControllerTest {
 
         final MvcResult mvcResult = performRequest(get(String.format(ISSUES_ID_URL, ID)));
 
-        Mockito.verify(mockIssueApiService).loadIssue(ID);
+        verify(mockIssueApiService).loadIssue(ID);
         assertResponse(mvcResult, issue, IssueCreatorUtils.ISSUE_TYPE);
     }
 
@@ -144,7 +143,7 @@ public class IssueControllerTest extends AbstractControllerTest {
 
         final MvcResult mvcResult = performRequest(get(ISSUES_URL).params(params));
 
-        Mockito.verify(mockIssueApiService).loadIssuesForEntity(entityVO);
+        verify(mockIssueApiService).loadIssuesForEntity(entityVO);
         assertResponse(mvcResult, issues, IssueCreatorUtils.ISSUE_LIST_TYPE);
     }
 
@@ -161,7 +160,7 @@ public class IssueControllerTest extends AbstractControllerTest {
 
         final MvcResult mvcResult = performRequest(put(String.format(ISSUES_ID_URL, ID)).content(content));
 
-        Mockito.verify(mockIssueApiService).updateIssue(ID, issueVO);
+        verify(mockIssueApiService).updateIssue(ID, issueVO);
         assertResponse(mvcResult, issue, IssueCreatorUtils.ISSUE_TYPE);
     }
 
@@ -177,7 +176,7 @@ public class IssueControllerTest extends AbstractControllerTest {
 
         final MvcResult mvcResult = performRequest(delete(String.format(ISSUES_ID_URL, ID)));
 
-        Mockito.verify(mockIssueApiService).deleteIssue(ID);
+        verify(mockIssueApiService).deleteIssue(ID);
         assertResponse(mvcResult, issue, IssueCreatorUtils.ISSUE_TYPE);
     }
 
@@ -194,7 +193,7 @@ public class IssueControllerTest extends AbstractControllerTest {
 
         final MvcResult mvcResult = performRequest(post(String.format(ISSUES_COMMENTS_URL, ID)).content(content));
 
-        Mockito.verify(mockIssueApiService).createComment(ID, issueCommentVO);
+        verify(mockIssueApiService).createComment(ID, issueCommentVO);
         assertResponse(mvcResult, issueComment, IssueCreatorUtils.ISSUE_COMMENT_TYPE);
     }
 
@@ -210,7 +209,7 @@ public class IssueControllerTest extends AbstractControllerTest {
 
         final MvcResult mvcResult = performRequest(get(String.format(ISSUES_COMMENTS_ID_URL, ID, ID)));
 
-        Mockito.verify(mockIssueApiService).loadComment(ID, ID);
+        verify(mockIssueApiService).loadComment(ID, ID);
         assertResponse(mvcResult, issueComment, IssueCreatorUtils.ISSUE_COMMENT_TYPE);
     }
 
@@ -227,7 +226,7 @@ public class IssueControllerTest extends AbstractControllerTest {
 
         final MvcResult mvcResult = performRequest(put(String.format(ISSUES_COMMENTS_ID_URL, ID, ID)).content(content));
 
-        Mockito.verify(mockIssueApiService).updateComment(ID, ID, issueCommentVO);
+        verify(mockIssueApiService).updateComment(ID, ID, issueCommentVO);
         assertResponse(mvcResult, issueComment, IssueCreatorUtils.ISSUE_COMMENT_TYPE);
     }
 
@@ -243,7 +242,7 @@ public class IssueControllerTest extends AbstractControllerTest {
 
         final MvcResult mvcResult = performRequest(delete(String.format(ISSUES_COMMENTS_ID_URL, ID, ID)));
 
-        Mockito.verify(mockIssueApiService).deleteComment(ID, ID);
+        verify(mockIssueApiService).deleteComment(ID, ID);
         assertResponse(mvcResult, issueComment, IssueCreatorUtils.ISSUE_COMMENT_TYPE);
     }
 
