@@ -62,13 +62,15 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        int userCount = conf.size() / 2;
-        ArrayList<Object[]> dataList = new ArrayList<>();
-        IntStream.rangeClosed(1, userCount)
-                .forEach(i -> dataList.add(new Object[]{
+        int confSize = conf.size();
+        if (confSize == 0 || confSize % 2 != 0) {
+            throw new IllegalArgumentException("parallelLoad.conf is empty or does not contain even number of values");
+        }
+        userList = IntStream.rangeClosed(1, confSize / 2)
+                .mapToObj(i -> new Object[] {
                         conf.getProperty("e2e.ui.login" + i),
-                        conf.getProperty("e2e.ui.pass" + i)}));
-        userList = dataList.toArray(new Object[dataList.size()][]);
+                        conf.getProperty("e2e.ui.pass" + i)})
+                .toArray(Object[][]::new);
     }
 
     @DataProvider(name = "openNewBrowser", parallel = true)
