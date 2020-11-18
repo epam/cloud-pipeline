@@ -27,7 +27,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.util.MultiValueMap;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
@@ -56,11 +55,12 @@ public class DtsOperationsControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldListDtsDataStorage() {
         final DtsDataStorageListing dtsDataStorageListing = DtsCreatorUtils.getDtsDataStorageListing();
-        final MultiValueMap<String, String> params = multiValueMapOf(
-                PATH, TEST_STRING, PAGE_SIZE, TEST_INT, MARKER, TEST_STRING);
         doReturn(dtsDataStorageListing).when(mockDtsOperationsApiService).list(TEST_STRING, ID, TEST_INT, TEST_STRING);
 
-        final MvcResult mvcResult = performRequest(get(String.format(LIST_URL, ID)).params(params));
+        final MvcResult mvcResult = performRequest(get(String.format(LIST_URL, ID))
+                .params(multiValueMapOf(PATH, TEST_STRING,
+                                        PAGE_SIZE, TEST_INT,
+                                        MARKER, TEST_STRING)));
 
         verify(mockDtsOperationsApiService).list(TEST_STRING, ID, TEST_INT, TEST_STRING);
         assertResponse(mvcResult, dtsDataStorageListing, DtsCreatorUtils.DTS_DATA_STORAGE_LISTING_TYPE);
@@ -75,10 +75,10 @@ public class DtsOperationsControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldFindSubmission() {
         final DtsSubmission dtsSubmission = DtsCreatorUtils.getDtsSubmission();
-        final MultiValueMap<String, String> params = multiValueMapOf(RUN_ID, ID);
         doReturn(dtsSubmission).when(mockDtsOperationsApiService).findSubmission(ID, ID);
 
-        final MvcResult mvcResult = performRequest(get(String.format(SUBMISSION_URL, ID)).params(params));
+        final MvcResult mvcResult = performRequest(get(String.format(SUBMISSION_URL, ID))
+                .params(multiValueMapOf(RUN_ID, ID)));
 
         verify(mockDtsOperationsApiService).findSubmission(ID, ID);
         assertResponse(mvcResult, dtsSubmission, DtsCreatorUtils.DTS_SUBMISSION_TYPE);
