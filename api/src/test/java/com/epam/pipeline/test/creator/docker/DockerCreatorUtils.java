@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolGroupWithIssues;
 import com.epam.pipeline.entity.scan.ToolScanPolicy;
+import com.epam.pipeline.entity.scan.ToolScanResult;
 import com.epam.pipeline.entity.scan.ToolScanResultView;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResultView;
@@ -37,6 +38,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
@@ -127,12 +129,34 @@ public final class DockerCreatorUtils {
         return tool;
     }
 
+    public static Tool getTool(final String owner) {
+        final Tool tool = new Tool();
+        tool.setId(ID);
+        tool.setOwner(owner);
+        tool.setImage(TEST_STRING);
+        tool.setCpu(TEST_STRING);
+        tool.setRam(TEST_STRING);
+        tool.setInstanceType(TEST_STRING);
+        tool.setDisk(TEST_INT);
+        tool.setToolGroupId(ID);
+        tool.setRegistry(TEST_STRING);
+        return tool;
+    }
+
     public static ToolSymlinkRequest getToolSymlinkRequest() {
         return new ToolSymlinkRequest(ID, ID);
     }
 
     public static ToolGroup getToolGroup() {
         return new ToolGroup();
+    }
+
+    public static ToolGroup getToolGroup(final String owner) {
+        final ToolGroup toolGroup = new ToolGroup();
+        toolGroup.setId(ID);
+        toolGroup.setRegistryId(ID);
+        toolGroup.setOwner(owner);
+        return toolGroup;
     }
 
     public static ToolGroupWithIssues getToolGroupWithIssues() {
@@ -170,5 +194,15 @@ public final class DockerCreatorUtils {
 
     public static DockerRegistryEventEnvelope getDockerRegistryEventEnvelope() {
         return new DockerRegistryEventEnvelope();
+    }
+
+    public static ToolScanResult getToolScanResult() {
+        final ToolScanResult toolScanResult = new ToolScanResult();
+        final ToolVersionScanResult toolVersionScanResult = new ToolVersionScanResult();
+        toolVersionScanResult.setVersion(TEST_STRING);
+        final Map<String, ToolVersionScanResult> map = Collections.singletonMap(TEST_STRING, toolVersionScanResult);
+        toolScanResult.setToolId(ID);
+        toolScanResult.setToolVersionScanResults(map);
+        return toolScanResult;
     }
 }
