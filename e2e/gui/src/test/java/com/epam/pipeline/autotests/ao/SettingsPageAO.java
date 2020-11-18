@@ -560,24 +560,17 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return new CreateUserPopup(this);
             }
 
-
             public UsersTabAO createIfNotExist(String name) {
-                if (clickSearch()
-                        .setSearchName(name)
-                        .pressEnter()
-                        .userTabIsEmpty()) {
+                if (clickSearch().setSearchName(name).pressEnter().userTabIsEmpty()) {
                     clickCreateButton()
-                    .setValue(NAME, name)
-                    .ok();
+                            .setValue(NAME, name)
+                            .ok();
                 }
                 return this;
             }
 
             public UsersTabAO deleteUserIfExist(String name) {
-                if (!clickSearch()
-                        .setSearchName(name)
-                        .pressEnter()
-                        .userTabIsEmpty()) {
+                if (!clickSearch().setSearchName(name).pressEnter().userTabIsEmpty()) {
                     SelenideElement entry = getUser(name.toUpperCase()).shouldBe(visible);
                     new UserEntry(this, name.toUpperCase(), entry)
                             .edit()
@@ -737,7 +730,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 }
             }
 
-            public class CreateUserPopup extends PopupAO<CreateUserPopup, UsersTabAO>  {
+            public class CreateUserPopup extends PopupAO<CreateUserPopup, UsersTabAO> {
 
                 public CreateUserPopup(UsersTabAO parentAO) {
                     super(parentAO);

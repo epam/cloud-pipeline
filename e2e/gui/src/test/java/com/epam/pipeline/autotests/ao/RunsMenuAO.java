@@ -83,7 +83,6 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO completedRuns() {
         $(byId("completed-runs-button")).shouldBe(visible).click();
-        sleep(2, SECONDS);
         tableShouldAppear();
         return new RunsMenuAO();
     }
@@ -309,7 +308,6 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     private void tableShouldAppear() {
-        screenshot("Completed runs table " + Utils.randomSuffix());
         $(byClassName("ant-table-tbody")).should(Condition.or("table appears", appear, tableIsEmpty));
     }
 

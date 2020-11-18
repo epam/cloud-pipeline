@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Properties;
+import java.util.stream.IntStream;
 
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
@@ -42,17 +43,18 @@ import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
+import static java.lang.System.currentTimeMillis;
+import static java.lang.System.getProperty;
+import static java.lang.System.out;
+import static java.lang.System.setProperty;
 
 public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implements Navigation, Authorization {
 
-    public static final String CONF_PATH_PROPERTY = "com.epam.bfx.e2e.ui.property.path";
-    public static final int userCount;
-    public static final Object[][] userList;
     private static final String PARALLEL_TEST_FOLDER = "parallelTestFolder-" + Utils.randomSuffix();
-    private final String userRoleGroup = "ROLE_USER";
+    private static final Object[][] userList;
 
     static {
-        String propFilePath = System.getProperty(CONF_PATH_PROPERTY, "parallelLoad.conf");
+        String propFilePath = getProperty(C.CONF_PATH_PROPERTY, "parallelLoad.conf");
         Properties conf = new Properties();
 
         try {
@@ -60,13 +62,12 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        userCount = conf.size() / 2;
+        int userCount = conf.size() / 2;
         ArrayList<Object[]> dataList = new ArrayList<>();
-        for (int i = 1; i <= userCount; i++) {
-            String login = conf.getProperty("e2e.ui.login" + i);
-            String password = conf.getProperty("e2e.ui.pass" + i);
-            dataList.add(new Object[]{login, password});
-        }
+        IntStream.rangeClosed(1, userCount)
+                .forEach(i -> dataList.add(new Object[]{
+                        conf.getProperty("e2e.ui.login" + i),
+                        conf.getProperty("e2e.ui.pass" + i)}));
         userList = dataList.toArray(new Object[dataList.size()][]);
     }
 
@@ -81,6 +82,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
         loginAs(admin);
         Arrays.stream(userList)
             .forEach(this::addUser);
+        final String userRoleGroup = "ROLE_USER";
         library()
                 .createFolder(PARALLEL_TEST_FOLDER)
                 .clickOnFolder(PARALLEL_TEST_FOLDER)
@@ -106,7 +108,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
         Configuration.timeout = C.DEFAULT_TIMEOUT;
         Configuration.browser = WebDriverRunner.CHROME;
         Configuration.startMaximized = true;
-        System.setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
+        setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
 
         Selenide.open(C.ROOT_ADDRESS);
     }
@@ -123,24 +125,24 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
     public void parallelLoadTest(String name, String pass) {
         Account testUser = new Account(name, pass);
         loginAs(testUser);
-        long testStartTime = System.currentTimeMillis();
+        long testStartTime = currentTimeMillis();
         for (int i = 1; i <= 10; i++) {
             String runId;
-            long startTime = System.currentTimeMillis();
+            long startTime = currentTimeMillis();
             navigationMenu()
                     .library()
                     .cd(PARALLEL_TEST_FOLDER);
             executionTime("Open library", name, startTime);
-            startTime = System.currentTimeMillis();
+            startTime = currentTimeMillis();
             navigationMenu()
                     .runs();
             executionTime("Open active runs", name, startTime);
-            startTime = System.currentTimeMillis();
+            startTime = currentTimeMillis();
             navigationMenu()
                     .runs()
                     .completedRuns();
             executionTime("Open completed runs", name, startTime);
-            startTime = System.currentTimeMillis();
+            startTime = currentTimeMillis();
             tools()
                     .perform(C.DEFAULT_REGISTRY, C.DEFAULT_GROUP, C.TESTING_TOOL_NAME, ToolTab::runWithCustomSettings)
                     .launch(this)
@@ -148,11 +150,11 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
                     .shouldHaveRunningStatus();
             executionTime("Running tool", name, startTime);
 
-            startTime = System.currentTimeMillis();
+            startTime = currentTimeMillis();
             runsMenu()
                     .stopRun(runId);
             executionTime("Stop tool", name, startTime);
-            startTime = System.currentTimeMillis();
+            startTime = currentTimeMillis();
             navigationMenu()
                     .runs()
                     .completedRuns();
@@ -170,7 +172,6 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
     }
 
     private void executionTime(String action, String user, long startTime) {
-        System.out.println(String.format("%s (%s) : execution time %s ms",
-                action, user, (System.currentTimeMillis() - startTime)));
+        out.println(String.format("%s (%s) : execution time %s ms", action, user, (currentTimeMillis() - startTime)));
     }
 }

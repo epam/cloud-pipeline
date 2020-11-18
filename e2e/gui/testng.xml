@@ -412,7 +412,7 @@
         </classes>
     </test>
 
-    <test name="ParallelLoadTests">
+    <test name="ParallelLoadTests" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.ParallelLoadTests"/>
         </classes>
