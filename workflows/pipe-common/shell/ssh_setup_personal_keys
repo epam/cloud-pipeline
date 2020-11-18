@@ -144,6 +144,9 @@ add_ssh_config  "$OWNER_SSH_CONFIG_LOCATION" \
                 "$GIT_HOST_PREF" \
                 "$OWNER_SSH_PRV_LOCATION"
 
+chown -R $OWNER:$OWNER $OWNER_SSH_DIR
+ssh_fix_permissions $OWNER_SSH_DIR
+
 ### Configure keys to be used for the gitlab by root
 add_ssh_config  "$ROOT_SSH_DIR/config" \
                 "$GIT_HOST_EXTERNAL_PREF" \
@@ -152,6 +155,3 @@ add_ssh_config  "$ROOT_SSH_DIR/config" \
 
 chown -R root:root $ROOT_SSH_DIR
 ssh_fix_permissions $ROOT_SSH_DIR
-
-chown -R $OWNER:$OWNER $OWNER_SSH_DIR
-ssh_fix_permissions $OWNER_SSH_DIR
