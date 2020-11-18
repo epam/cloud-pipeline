@@ -131,7 +131,7 @@ def setup_paramiko_transport(conn_info, retries):
             raise
 
 
-def setup_authenticated_paramiko_transport(run_id, retries):
+def setup_authenticated_paramiko_transport(run_id, user, retries):
     # Grab the run information from the API to setup the run's IP and EDGE proxy address
     conn_info = get_conn_info(run_id)
 
@@ -139,14 +139,10 @@ def setup_authenticated_paramiko_transport(run_id, retries):
     setup_paramiko_logging()
     transport = setup_paramiko_transport(conn_info, retries)
     # User password authentication, which available only to the OWNER and ROLE_ADMIN users
-    sshpass = conn_info.ssh_pass
-    sshuser = DEFAULT_SSH_USER
-    try:
-        ssh_default_root_user_enabled_preference = PreferenceAPI.get_preference('system.ssh.default.root.user.enabled')
-        ssh_default_root_user_enabled = ssh_default_root_user_enabled_preference.value.lower() == "true"
-    except:
-        ssh_default_root_user_enabled = True
-    if not ssh_default_root_user_enabled:
+    if user or is_ssh_default_root_user_enabled():
+        sshpass = conn_info.ssh_pass
+        sshuser = user or DEFAULT_SSH_USER
+    else:
         # split owner by @ in case it represented by email address
         owner_user_name = conn_info.owner.split("@")[0]
         sshpass = owner_user_name
@@ -160,6 +156,14 @@ def setup_authenticated_paramiko_transport(run_id, retries):
             sshuser, conn_info.ssh_endpoint[0]))
 
 
+def is_ssh_default_root_user_enabled():
+    try:
+        ssh_default_root_user_enabled_preference = PreferenceAPI.get_preference('system.ssh.default.root.user.enabled')
+        return ssh_default_root_user_enabled_preference.value.lower() == 'true'
+    except:
+        return True
+
+
 def run_ssh_command(channel, command):
     channel.exec_command(command)
     plain_shell(channel)
@@ -171,11 +175,11 @@ def run_ssh_session(channel):
     interactive_shell(channel)
 
 
-def run_ssh(run_id, command, retries=10):
+def run_ssh(run_id, command, user=None, retries=10):
     transport = None
     channel = None
     try:
-        transport = setup_authenticated_paramiko_transport(run_id, retries)
+        transport = setup_authenticated_paramiko_transport(run_id, user, retries)
         channel = transport.open_session()
         # "get_pty" is used for non-interactive commands too
         # This allows to get stdout and stderr in a correct order
@@ -251,8 +255,10 @@ def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connectio
     ssh_private_key_path = os.path.join(ssh_keys_path, ssh_private_key_name)
     ssh_public_key_path = '{}.pub'.format(ssh_private_key_path)
     conn_info = get_conn_info(run_id)
+    owner_user = conn_info.owner.split('@')[0]
+    ssh_config_user = DEFAULT_SSH_USER if is_ssh_default_root_user_enabled() else owner_user
     remote_ssh_authorized_keys_paths = ['/root/.ssh/authorized_keys',
-                                        '/home/{}/.ssh/authorized_keys'.format(conn_info.owner)]
+                                        '/home/{}/.ssh/authorized_keys'.format(owner_user)]
     remote_ssh_public_key_path = '/root/.ssh/id_rsa.pub'
     if not os.path.exists(ssh_path):
         os.makedirs(ssh_path, mode=stat.S_IRWXU)
@@ -263,7 +269,7 @@ def create_foreground_tunnel_with_ssh(run_id, local_port, remote_port, connectio
         generate_ssh_keys(log_file, ssh_private_key_path)
         copy_ssh_public_key_to_remote_authorized_hosts(run_id, ssh_public_key_path, retries,
                                                        remote_ssh_authorized_keys_paths)
-        add_record_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path)
+        add_record_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path, ssh_config_user)
         copy_remote_ssh_public_key_to_ssh_known_hosts(run_id, local_port, log_file, retries,
                                                       ssh_known_hosts_path, remote_ssh_public_key_path)
         create_foreground_tunnel(run_id, local_port, remote_port, connection_timeout,
@@ -396,9 +402,12 @@ def copy_ssh_public_key_to_remote_authorized_hosts(run_id, ssh_public_key_path, 
     logging.info('Copying ssh public key to remote authorized keys...')
     with open(ssh_public_key_path, 'r') as f:
         ssh_public_key = f.read().strip()
-    run_ssh(run_id,
-            'echo "{}" | tee -a {} > /dev/null'
-            .format(ssh_public_key, ' '.join(remote_ssh_authorized_keys_paths)), retries)
+    exit_code = run_ssh(run_id,
+                        'echo "{}" | tee -a {} > /dev/null'
+                        .format(ssh_public_key, ' '.join(remote_ssh_authorized_keys_paths)),
+                        user=DEFAULT_SSH_USER, retries=retries)
+    if exit_code:
+        RuntimeError('Copying ssh public key to remote authorized keys has failed with {} exit code'.format(exit_code))
 
 
 def remove_ssh_public_key_from_remote_authorized_hosts(run_id, ssh_public_key_path, retries, remote_ssh_authorized_keys_paths):
@@ -418,19 +427,23 @@ def remove_ssh_public_key_from_remote_authorized_hosts(run_id, ssh_public_key_pa
                 .format(key=ssh_public_key,
                         authorized_keys_path=remote_ssh_authorized_keys_path,
                         authorized_keys_temp_path=remote_ssh_authorized_keys_temp_path)
-        run_ssh(run_id, remove_ssh_public_keys_from_run_command.rstrip(';'), retries)
+        exit_code = run_ssh(run_id, remove_ssh_public_keys_from_run_command.rstrip(';'),
+                            user=DEFAULT_SSH_USER, retries=retries)
+        if exit_code:
+            RuntimeError('Removing ssh public keys from remote authorized hosts has failed with {} exit code'.format(exit_code))
 
 
-def add_record_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path):
+def add_record_to_ssh_config(ssh_config_path, remote_host, local_port, ssh_private_key_path, user):
     remove_record_from_ssh_config(ssh_config_path, remote_host)
     logging.info('Appending host record to ssh config...')
     ssh_config_path_existed = os.path.exists(ssh_config_path)
     with open(ssh_config_path, 'a') as f:
-        f.write('\nHost {}\n'
+        f.write('Host {}\n'
                 '    Hostname 127.0.0.1\n'
                 '    Port {}\n'
                 '    IdentityFile {}\n'
-                .format(remote_host, local_port, ssh_private_key_path))
+                '    User {}\n'
+                .format(remote_host, local_port, ssh_private_key_path, user))
     if not ssh_config_path_existed:
         os.chmod(ssh_config_path, stat.S_IRUSR | stat.S_IWUSR)
 
@@ -458,13 +471,14 @@ def remove_record_from_ssh_config(ssh_config_path, remote_host):
 def copy_remote_ssh_public_key_to_ssh_known_hosts(run_id, local_port, log_file, retries, ssh_known_hosts_path, remote_ssh_public_key_path):
     logging.info('Copying remote public key to known hosts...')
     ssh_known_hosts_temp_path = ssh_known_hosts_path + '_{}'.format(random.randint(0, sys.maxsize))
-    run_scp_download(run_id, remote_ssh_public_key_path, ssh_known_hosts_temp_path, retries)
+    run_scp_download(run_id, remote_ssh_public_key_path, ssh_known_hosts_temp_path,
+                     user=DEFAULT_SSH_USER, retries=retries)
     with open(ssh_known_hosts_temp_path, 'r') as f:
         public_key = f.read().strip()
     os.remove(ssh_known_hosts_temp_path)
     ssh_known_hosts_path_existed = os.path.exists(ssh_known_hosts_path)
     with open(ssh_known_hosts_path, 'a') as f:
-        f.write('\n[127.0.0.1]:{} {}\n'.format(local_port, public_key))
+        f.write('[127.0.0.1]:{} {}\n'.format(local_port, public_key))
     if not ssh_known_hosts_path_existed:
         os.chmod(ssh_known_hosts_path, stat.S_IRUSR | stat.S_IWUSR)
     perform_command(['ssh-keygen', '-H', '-f', ssh_known_hosts_path], log_file)
@@ -531,11 +545,11 @@ def find_tunnel_procs(run_id=None, local_port=None):
             yield proc
 
 
-def run_scp_upload(run_id, source, destination, retries):
+def run_scp_upload(run_id, source, destination, user, retries):
     transport = None
     scp = None
     try:
-        transport = setup_authenticated_paramiko_transport(run_id, retries)
+        transport = setup_authenticated_paramiko_transport(run_id, user, retries)
         scp = SCPClient(transport)
         scp.put(source, destination)
     finally:
@@ -545,11 +559,11 @@ def run_scp_upload(run_id, source, destination, retries):
             transport.close()
 
 
-def run_scp_download(run_id, source, destination, retries):
+def run_scp_download(run_id, source, destination, user, retries):
     transport = None
     scp = None
     try:
-        transport = setup_authenticated_paramiko_transport(run_id, retries)
+        transport = setup_authenticated_paramiko_transport(run_id, user, retries)
         scp = SCPClient(transport)
         scp.get(source, destination)
     finally:

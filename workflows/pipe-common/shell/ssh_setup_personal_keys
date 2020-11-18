@@ -43,9 +43,10 @@ if [ -z "$OWNER" ]; then
     exit 1
 fi
 
-OWNER_SSH_PRV_LOCATION=/home/$OWNER/.ssh/id_${OWNER}
-OWNER_SSH_PUB_LOCATION=/home/$OWNER/.ssh/id_${OWNER}.pub
-OWNER_SSH_CONFIG_LOCATION=/home/$OWNER/.ssh/config
+OWNER_SSH_DIR=/home/$OWNER/.ssh
+OWNER_SSH_PRV_LOCATION=$OWNER_SSH_DIR/id_${OWNER}
+OWNER_SSH_PUB_LOCATION=$OWNER_SSH_DIR/id_${OWNER}.pub
+OWNER_SSH_CONFIG_LOCATION=$OWNER_SSH_DIR/config
 mkdir -p $(dirname $OWNER_SSH_PRV_LOCATION)
 
 ## SSH keys configuration
@@ -142,6 +143,9 @@ add_ssh_config  "$OWNER_SSH_CONFIG_LOCATION" \
                 "$GIT_HOST_EXTERNAL_PREF" \
                 "$GIT_HOST_PREF" \
                 "$OWNER_SSH_PRV_LOCATION"
+
+chown -R $OWNER:$OWNER $OWNER_SSH_DIR
+ssh_fix_permissions $OWNER_SSH_DIR
 
 ### Configure keys to be used for the gitlab by root
 add_ssh_config  "$ROOT_SSH_DIR/config" \
