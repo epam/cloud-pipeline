@@ -32,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class NodeScheduleDaoTest extends AbstractSpringTest {
 
     public static final String NEW_NAME = "New";
+
     @Autowired
     private NodeScheduleDao nodeScheduleDao;
 
@@ -77,8 +78,23 @@ public class NodeScheduleDaoTest extends AbstractSpringTest {
         final Optional<NodeSchedule> loaded = nodeScheduleDao.find(created.getId());
         assertThat(loaded.isPresent()).isTrue();
         final NodeSchedule actual = loaded.get();
-        assertThat(actual.getScheduleEntries()).containsExactlyInAnyOrder(weekendEntry, workEntry);
+        assertThat(actual.getScheduleEntries()).containsOnly(weekendEntry, workEntry);
 
+    }
+
+    @Test
+    public void shouldDeleteSchedule() {
+        final NodeSchedule created = nodeScheduleDao.create(NodeScheduleCreatorUtils.getWorkDaySchedule());
+        nodeScheduleDao.delete(created.getId());
+        assertThat(nodeScheduleDao.find(created.getId()).isPresent()).isFalse();
+        assertThat(nodeScheduleDao.loadAll()).isEmpty();
+    }
+
+    @Test
+    public void shouldLoadAllSchedules() {
+        final NodeSchedule first = nodeScheduleDao.create(NodeScheduleCreatorUtils.getWorkDaySchedule());
+        final NodeSchedule second = nodeScheduleDao.create(NodeScheduleCreatorUtils.getWorkDaySchedule());
+        assertThat(nodeScheduleDao.loadAll()).containsOnly(first, second);
     }
 
 }
