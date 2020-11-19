@@ -57,6 +57,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -93,7 +94,7 @@ public class FolderTemplateManager {
             return ListUtils.emptyIfNull(crudManager.load(folder.getParentId()).getChildFolders()).stream()
                 .filter(f -> f.getName().equals(folderTemplate.getName()))
                 .findAny()
-                .map(existingFolder -> fillInExistingFolderFromTemplate(existingFolder, folderTemplate))
+                .map(existingFolder -> createStorageFromTemplateInExistingFolder(existingFolder, folderTemplate))
                 .orElseGet(() -> fillInNewFolderFromTemplate(folder, folderTemplate));
         } catch (IllegalArgumentException e) {
             return fillInNewFolderFromTemplate(folder, folderTemplate);
@@ -156,18 +157,21 @@ public class FolderTemplateManager {
         }
     }
 
-    private Folder fillInExistingFolderFromTemplate(final Folder existingFolder, final FolderTemplate folderTemplate) {
-        final DataStorageWithMetadataVO storageToCreate = folderTemplate.getDatastorages().get(0);
-        storageToCreate.setParentFolderId(existingFolder.getId());
-        final List<AbstractDataStorage> storages = ListUtils.emptyIfNull(existingFolder.getStorages());
-        final boolean hasSuitableStorage = storages.stream()
-            .anyMatch(s -> s.getPath().equals(storageToCreate.getPath()));
-        if (!hasSuitableStorage) {
-            final AbstractDataStorage newStorage =
-                dataStorageManager.create(storageToCreate, true, true, true).getEntity();
-            storages.add(newStorage);
-            existingFolder.setStorages(storages);
-            crudManager.update(existingFolder);
+    private Folder createStorageFromTemplateInExistingFolder(final Folder existingFolder,
+                                                             final FolderTemplate folderTemplate) {
+        if (CollectionUtils.isNotEmpty(folderTemplate.getDatastorages())) {
+            final Set<String> existingStoragePaths = ListUtils.emptyIfNull(existingFolder.getStorages()).stream()
+                .map(AbstractDataStorage::getPath)
+                .collect(Collectors.toSet());
+            final List<AbstractDataStorage> storageToAssign = folderTemplate.getDatastorages().stream()
+                .filter(storageToCreate -> !existingStoragePaths.contains(storageToCreate.getPath()))
+                .peek(storageToCreate -> storageToCreate.setParentFolderId(existingFolder.getId()))
+                .map(storageToCreate -> dataStorageManager.create(storageToCreate, true, true, true).getEntity())
+                .collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(storageToAssign)) {
+                existingFolder.setStorages(storageToAssign);
+                crudManager.update(existingFolder);
+            }
         }
         return existingFolder;
     }
