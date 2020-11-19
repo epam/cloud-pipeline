@@ -74,8 +74,10 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
     public void userAuthentication() {
         logoutIfNeeded();
         loginAs(user);
+        sleep(30, SECONDS);
         logout();
         loginAs(admin);
+        sleep(30, SECONDS);
         SettingsPageAO.SystemLogsAO systemLogsAO = navigationMenu()
                 .settings()
                 .switchToSystemLogs();
@@ -88,8 +90,10 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                     .getInfoRow(format("Successfully authenticate user: %s", user.login), user.login, TYPE);
         } catch (NoSuchElementException e) {
             systemLogsAO.clearUserFilters();
-            adminInfo = systemLogsAO.getInfoRow(format("Successfully authenticate user .*: %s", admin.login),
+            adminInfo = systemLogsAO.filterByUser(admin.login)
+                    .getInfoRow(format("Successfully authenticate user .*: %s", admin.login),
                     admin.login, TYPE);
+            systemLogsAO.clearUserFilters();
             userInfo = systemLogsAO.filterByUser(user.login)
                     .getInfoRow(format("Successfully authenticate user .*: %s", user.login), user.login, TYPE);
         }

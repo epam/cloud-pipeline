@@ -164,9 +164,11 @@ public class DetachedConfigurationsTest
                     .addCommonParameter(commonParameter, commonParameterValue)
                     .addInputParameter(inputParameter, inputParameterValue)
                     .addOutputParameter(outputParameter, outputParameterValue)
+                    .sleep(3, SECONDS)
                     .click(SAVE)
                     .waitUntilSaveEnding(pipelineProfile1611)
             );
+        refresh();
         library().clickRoot();
     }
 
@@ -267,6 +269,7 @@ public class DetachedConfigurationsTest
                         .selectPipeline(pipeline1, pipelineCustomProfile)
                         .ensure(DISK, value(customDisk))
                         .click(SAVE)
+                        .sleep(2, SECONDS)
         );
     }
 
@@ -277,7 +280,9 @@ public class DetachedConfigurationsTest
             .configurationWithin(mainConfiguration, configuration ->
                 configuration.expandTabs(execEnvironmentTab, advancedTab)
                         .selectPipeline(pipeline1, pipelineDefaultProfile)
+                        .sleep(2, SECONDS)
                         .click(SAVE)
+                        .sleep(2, SECONDS)
             )
             .configurationWithin(mainConfiguration, configuration ->
                 configuration.expandTabs(execEnvironmentTab, advancedTab)
