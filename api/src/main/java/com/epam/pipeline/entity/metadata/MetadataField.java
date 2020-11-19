@@ -17,20 +17,26 @@
 package com.epam.pipeline.entity.metadata;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class MetadataField {
     private String name;
     @JsonIgnore
     private String dbName;
     private boolean predefined = false;
+
+    public MetadataField(String name, String dbName, boolean predefined) {
+        this.name = name;
+        this.dbName = dbName;
+        this.predefined = predefined;
+    }
+
+    public MetadataField() {
+
+    }
 
     @Override public boolean equals(Object o) {
         if (this == o) {

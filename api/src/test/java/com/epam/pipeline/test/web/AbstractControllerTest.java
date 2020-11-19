@@ -48,20 +48,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(SpringRunner.class)
 @WebTestConfiguration
 public abstract class AbstractControllerTest {
-    protected static final String EXPECTED_CONTENT_TYPE = "application/json;charset=UTF-8";
+
     protected static final String SERVLET_PATH = "/restapi";
     protected static final String CERTIFICATE_NAME = "ca.crt";
     private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
+    protected static final String EXPECTED_CONTENT_TYPE = "application/json;charset=UTF-8";
     protected static final String MULTIPART_CONTENT_TYPE =
             "multipart/form-data; boundary=--------------------------boundary";
     protected static final String MULTIPART_CONTENT =
             "----------------------------boundary\r\n" +
-                    "Content-Disposition: form-data; name=\"file\"; filename=\"file.txt\"\r\n" +
-                    "Content-Type:  application/octet-stream\r\n" +
-                    "\r\n" +
-                    "file.txt" +
-                    "\r\n" +
-                    "----------------------------boundary";
+            "Content-Disposition: form-data; name=\"file\"; filename=\"file.txt\"\r\n" +
+            "Content-Type:  application/octet-stream\r\n" +
+            "\r\n" +
+            "file.txt" +
+            "\r\n" +
+            "----------------------------boundary";
 
     private MockMvc mockMvc;
     private ObjectMapper deserializationMapper;
