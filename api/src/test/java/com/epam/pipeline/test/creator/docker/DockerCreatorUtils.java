@@ -192,38 +192,24 @@ public final class DockerCreatorUtils {
 
     public static Tool getTool(final Long id, final String owner) {
         final Tool tool = new Tool();
-        tool.setOwner(owner);
         tool.setId(id);
+        tool.setOwner(owner);
         tool.setCpu(TEST_STRING);
-        tool.setDefaultCommand(TEST_STRING);
-        tool.setToolGroupId(ID);
+        tool.setRam(TEST_STRING);
+        tool.setInstanceType(TEST_STRING);
+        tool.setDisk(TEST_INT);
+        tool.setImage(TEST_STRING);
+        tool.setToolGroupId(id);
         tool.setRegistry(TEST_STRING);
         return tool;
     }
 
     public static Tool getTool(final String owner) {
-        final Tool tool = new Tool();
-        tool.setId(ID);
-        tool.setOwner(owner);
-        tool.setImage(TEST_STRING);
-        tool.setCpu(TEST_STRING);
-        tool.setRam(TEST_STRING);
-        tool.setInstanceType(TEST_STRING);
-        tool.setDisk(TEST_INT);
-        tool.setToolGroupId(ID);
-        tool.setRegistry(TEST_STRING);
-        return tool;
+        return getTool(ID, owner);
     }
 
     public static Tool getTool() {
-        final Tool tool = new Tool();
-        tool.setId(ID);
-        tool.setImage(TEST_STRING);
-        tool.setCpu(TEST_STRING);
-        tool.setRam(TEST_STRING);
-        tool.setInstanceType(TEST_STRING);
-        tool.setDisk(TEST_INT);
-        return tool;
+        return getTool(null, null);
     }
 
     public static ToolGroup getToolGroup(final long id, final String owner) {
