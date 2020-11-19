@@ -170,7 +170,7 @@ public class FolderTemplateManager {
                 .collect(Collectors.toList());
             if (CollectionUtils.isNotEmpty(storageToAssign)) {
                 existingFolder.setStorages(storageToAssign);
-                crudManager.update(existingFolder);
+                return crudManager.updateContent(existingFolder);
             }
         }
         return existingFolder;
