@@ -24,8 +24,12 @@ if ! kubectl version &> /dev/null || ! kubectl get po 2>/dev/null | grep -q cp-a
     unset _ERASE_DATA
 fi
 
+#Export docker registry where all containers are stored
+export CP_DOCKER_DIST_SRV=${CP_DOCKER_DIST_SRV}
+
 sudo chmod +x $DEPLOY_DIR/pipectl && \
 sudo -E $DEPLOY_DIR/pipectl install \
+    -env CP_DOCKER_DIST_SRV=${CP_DOCKER_DIST_SRV} \
     -env CP_AWS_KMS_ARN="$CP_AWS_KMS_ARN" \
     -env CP_AWS_ACCESS_KEY_ID="$CP_AWS_ACCESS_KEY_ID" \
     -env CP_HA_DEPLOY_ENABLED="${CP_AWS_HA_ENABLED:-false}" \
