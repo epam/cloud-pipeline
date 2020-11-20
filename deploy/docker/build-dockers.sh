@@ -100,7 +100,7 @@ if [ -z "$CP_DOCKER_DIST_SRV" ]; then
     export CP_DOCKER_DIST_SRV="https://index.docker.io/v1/"
 fi
 
-if [ "${$CP_DOCKER_DIST_SRV: -1}" != "/" ]; then
+if [ "${CP_DOCKER_DIST_SRV: -1}" != "/" ]; then
     echo "CP_DOCKER_DIST_SRV doesn't end with '/': ${CP_DOCKER_DIST_SRV}, will additionally add it."
     export CP_DOCKER_DIST_SRV="${CP_DOCKER_DIST_SRV}/"
 fi
