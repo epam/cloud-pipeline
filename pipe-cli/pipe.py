@@ -1234,7 +1234,7 @@ def ssh(ctx, run_id, retries, trace):
               help='Recursive transferring (required for directories transferring)')
 @click.option('-q', '--quiet', help='Quiet mode', is_flag=True, default=False)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
-@click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
+@click.option('--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 @Config.validate_access_token
 def scp(source, destination, recursive, quiet, retries, trace):
