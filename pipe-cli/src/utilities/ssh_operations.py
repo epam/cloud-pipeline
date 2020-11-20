@@ -206,6 +206,8 @@ def run_ssh(run_identifier, command, user=None, retries=10):
 
 
 def parse_run_identifier(run_identifier):
+    if isinstance(run_identifier, int):
+        return run_identifier
     import re
     match = re.search('^(\d+)$', run_identifier)
     if match:
