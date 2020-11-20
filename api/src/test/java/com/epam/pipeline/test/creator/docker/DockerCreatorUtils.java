@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class DockerCreatorUtils {
@@ -138,7 +137,7 @@ public final class DockerCreatorUtils {
         return getDockerRegistry(ID, TEST_STRING);
     }
 
-    public static DockerRegistry getDockerRegistry(final Long id,final String owner) {
+    public static DockerRegistry getDockerRegistry(final Long id, final String owner) {
         final DockerRegistry dockerRegistry = new DockerRegistry();
         dockerRegistry.setOwner(owner);
         dockerRegistry.setCaCert(TEST_STRING);
@@ -218,5 +217,12 @@ public final class DockerCreatorUtils {
         tool.setToolGroupId(id);
         tool.setRegistry(TEST_STRING);
         return tool;
+    }
+
+    public static ToolGroupWithIssues getToolGroupWithIssues(final Long id, final String owner) {
+        final ToolGroupWithIssues toolGroupWithIssues = new ToolGroupWithIssues();
+        toolGroupWithIssues.setId(id);
+        toolGroupWithIssues.setOwner(owner);
+        return toolGroupWithIssues;
     }
 }

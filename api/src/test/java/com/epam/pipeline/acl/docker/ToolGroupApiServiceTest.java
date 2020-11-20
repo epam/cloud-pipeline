@@ -47,8 +47,9 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     private final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
     private final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
     private final Tool tool = DockerCreatorUtils.getTool(ANOTHER_SIMPLE_USER);
+    private final Tool toolWithoutPermission = DockerCreatorUtils.getTool(ID_2, ANOTHER_SIMPLE_USER);
+    private final List<Tool> tools = Arrays.asList(tool, toolWithoutPermission);
     private final ToolGroupWithIssues toolGroupWithIssues = DockerCreatorUtils.getToolGroupWithIssues();
-
 
     @Autowired
     private ToolGroupApiService toolGroupApiService;
@@ -209,7 +210,7 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(username = SIMPLE_USER)
+    @WithMockUser
     public void shouldLoadToolGroup() {
         final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
         initAclEntity(dockerRegistry);
@@ -223,23 +224,15 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadToolGroupHierarchy() {
-        final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
         final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
-        final Tool tool = DockerCreatorUtils.getTool(ANOTHER_SIMPLE_USER);
-        final Tool toolWithoutPermission = DockerCreatorUtils.getTool(ID_2, ANOTHER_SIMPLE_USER);
-        final List<Tool> tools = Arrays.asList(tool, toolWithoutPermission);
         toolGroup.setParent(dockerRegistry);
         toolGroup.setTools(tools);
-        initAclEntity(dockerRegistry);
-        initAclEntity(tool, AclPermission.READ);
-        initAclEntity(toolWithoutPermission);
+        initToolGroupAclTree();
         doReturn(toolGroup).when(mockToolGroupManager).load(ID);
 
         final ToolGroup returnedToolGroup = toolGroupApiService.load(ID);
 
-        assertThat(returnedToolGroup.getParent()).isEqualTo(dockerRegistry);
-        assertThat(returnedToolGroup.getLeaves().size()).isEqualTo(1);
-        assertThat(returnedToolGroup.getLeaves().get(0)).isEqualTo(tool);
+        assertToolGroupAclTree(returnedToolGroup);
     }
 
     @Test
@@ -254,24 +247,16 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadToolsWithIssuesCountHierarchy() {
         final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
-        final ToolGroupWithIssues toolGroupWithIssues = DockerCreatorUtils.getToolGroupWithIssues();
-        toolGroupWithIssues.setOwner(ANOTHER_SIMPLE_USER);
-        toolGroupWithIssues.setId(ID_2);
-        final Tool tool = DockerCreatorUtils.getTool(ANOTHER_SIMPLE_USER);
-        final Tool toolWithoutPermission = DockerCreatorUtils.getTool(ID_2, ANOTHER_SIMPLE_USER);
-        final List<Tool> tools = Arrays.asList(tool, toolWithoutPermission);
+        final ToolGroupWithIssues toolGroupWithIssues =
+                DockerCreatorUtils.getToolGroupWithIssues(ID_2, ANOTHER_SIMPLE_USER);
         toolGroupWithIssues.setParent(dockerRegistry);
         toolGroupWithIssues.setTools(tools);
-        initAclEntity(dockerRegistry);
-        initAclEntity(tool, AclPermission.READ);
-        initAclEntity(toolWithoutPermission);
+        initToolGroupAclTree();
         doReturn(toolGroupWithIssues).when(mockToolGroupManager).loadToolsWithIssuesCount(ID);
 
         final ToolGroupWithIssues returnedToolGroup = toolGroupApiService.loadToolsWithIssuesCount(ID);
 
-        assertThat(returnedToolGroup.getParent()).isEqualTo(dockerRegistry);
-        assertThat(returnedToolGroup.getLeaves().size()).isEqualTo(1);
-        assertThat(returnedToolGroup.getLeaves().get(0)).isEqualTo(tool);
+        assertToolGroupAclTree(returnedToolGroup);
     }
 
     @Test
@@ -288,23 +273,15 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadToolGroupHierarchyByNameOrId() {
-        final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
         final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
-        final Tool tool = DockerCreatorUtils.getTool(ANOTHER_SIMPLE_USER);
-        final Tool toolWithoutPermission = DockerCreatorUtils.getTool(ID_2, ANOTHER_SIMPLE_USER);
-        final List<Tool> tools = Arrays.asList(tool, toolWithoutPermission);
         toolGroup.setParent(dockerRegistry);
         toolGroup.setTools(tools);
-        initAclEntity(dockerRegistry);
-        initAclEntity(tool, AclPermission.READ);
-        initAclEntity(toolWithoutPermission);
+        initToolGroupAclTree();
         doReturn(toolGroup).when(mockToolGroupManager).loadByNameOrId(TEST_STRING);
 
         final ToolGroup returnedToolGroup = toolGroupApiService.loadByNameOrId(TEST_STRING);
 
-        assertThat(returnedToolGroup.getParent()).isEqualTo(dockerRegistry);
-        assertThat(returnedToolGroup.getLeaves().size()).isEqualTo(1);
-        assertThat(returnedToolGroup.getLeaves().get(0)).isEqualTo(tool);
+        assertToolGroupAclTree(returnedToolGroup);
     }
 
     @Test
@@ -450,5 +427,17 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
         mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> toolGroupApiService.deleteForce(TEST_STRING));
+    }
+
+    private void initToolGroupAclTree() {
+        initAclEntity(dockerRegistry);
+        initAclEntity(tool, AclPermission.READ);
+        initAclEntity(toolWithoutPermission);
+    }
+
+    private void assertToolGroupAclTree(final ToolGroup returnedToolGroup) {
+        assertThat(returnedToolGroup.getParent()).isEqualTo(dockerRegistry);
+        assertThat(returnedToolGroup.getLeaves()).hasSize(1);
+        assertThat(returnedToolGroup.getLeaves().get(0)).isEqualTo(tool);
     }
 }
