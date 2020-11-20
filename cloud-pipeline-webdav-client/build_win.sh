@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-CP_NODE_WINE_DOCKER="lifescience/cloud-pipeline:node-wine"
+CP_NODE_WINE_DOCKER="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:node-wine"
 docker pull $CP_NODE_WINE_DOCKER
 if [ $? -ne 0 ]; then
     echo "Unable to pull $CP_NODE_WINE_DOCKER image, it will be rebuilt"

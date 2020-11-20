@@ -19,7 +19,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-notifier
-          image: lifescience/cloud-pipeline:notifier-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:notifier-$CP_VERSION
           imagePullPolicy: "Always"
           command: ["/init"]
           envFrom:
