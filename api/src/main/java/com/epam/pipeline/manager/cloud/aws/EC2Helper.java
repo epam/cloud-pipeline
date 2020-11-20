@@ -315,6 +315,7 @@ public class EC2Helper {
                 .withSize(size.intValue())
                 .withAvailabilityZone(zone);
         if (StringUtils.isNotBlank(kmsKeyArn)) {
+            request.setEncrypted(true);
             request.setKmsKeyId(kmsKeyArn);
         }
         final Volume volume = client.createVolume(request).getVolume();
