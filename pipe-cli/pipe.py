@@ -1206,7 +1206,7 @@ def chown(user_name, entity_class, entity_name):
 @cli.command(name='ssh', context_settings=dict(
     ignore_unknown_options=True,
     allow_extra_args=True))
-@click.argument('run-id', required=True, type=int)
+@click.argument('run-id', required=True, type=str)
 @click.option('-u', '--user', required=False, callback=set_user_token, expose_value=False, help=USER_OPTION_DESCRIPTION)
 @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
@@ -1216,6 +1216,20 @@ def ssh(ctx, run_id, retries, trace):
     """Runs a single command or an interactive session over the SSH protocol for the specified job run\n
     Arguments:\n
     - run-id: ID of the job running in the platform to establish SSH connection with
+
+    Examples:
+
+    I. Open an interactive SSH session for some run (12345):
+
+        pipe ssh pipeline-12345
+
+        pipe ssh 12345
+
+    II. Execute a single command via SSH for some run (12345):
+
+        pipe ssh pipeline-12345 echo \$HOSTNAME
+
+        pipe ssh 12345 echo \$HOSTNAME
     """
     try:
         ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries=retries)
@@ -1250,17 +1264,25 @@ def scp(source, destination, recursive, quiet, retries, trace):
 
         pipe scp file.txt pipeline-12345:/common/workdir/file.txt
 
+        pipe scp file.txt 12345:/common/workdir/file.txt
+
     II. Upload some local directory (dir) to some run (12345):
 
         pipe scp -r dir pipeline-12345:/common/workdir/dir
+
+        pipe scp -r dir 12345:/common/workdir/dir
 
     III. Download some remote file (/common/workdir/file.txt) from run (12345) to some local file (file.txt):
 
         pipe scp pipeline-12345:/common/workdir/file.txt file.txt
 
+        pipe scp 12345:/common/workdir/file.txt file.txt
+
     IV. Download some remote directory (/common/workdir/dir) from run (12345) to some local directory (dir):
 
         pipe scp -r pipeline-12345:/common/workdir/dir dir
+
+        pipe scp -r 12345:/common/workdir/dir dir
     """
     try:
         run_scp(source, destination, recursive, quiet, retries)

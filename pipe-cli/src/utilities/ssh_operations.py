@@ -177,7 +177,11 @@ def run_ssh_session(channel):
     interactive_shell(channel)
 
 
-def run_ssh(run_id, command, user=None, retries=10):
+def run_ssh(run_identifier, command, user=None, retries=10):
+    run_id = parse_run_identifier(run_identifier)
+    if not run_id:
+        raise RuntimeError('The specified run {} is not a valid run identifier.'.format(run_identifier))
+
     transport = None
     channel = None
     try:
@@ -199,6 +203,17 @@ def run_ssh(run_id, command, user=None, retries=10):
             channel.close()
         if transport:
             transport.close()
+
+
+def parse_run_identifier(run_identifier):
+    import re
+    match = re.search('^(\d+)$', run_identifier)
+    if match:
+        return int(match.group(1))
+    match = re.search('^pipeline-(\d+)$', run_identifier)
+    if match:
+        return int(match.group(1))
+    return None
 
 
 def run_scp(source, destination, recursive, quiet, retries):
@@ -231,12 +246,11 @@ def run_scp(source, destination, recursive, quiet, retries):
 
 
 def parse_scp_location(location):
-    import re
     location_parts = location.split(':', 1)
     if len(location_parts) == 2:
-        match = re.search('^pipeline-(\d+)$', location_parts[0])
-        if match:
-            return location_parts[1], int(match.group(1))
+        run_id = parse_run_identifier(location_parts[0])
+        if run_id:
+            return location_parts[1], run_id
     return location_parts[0], None
 
 
