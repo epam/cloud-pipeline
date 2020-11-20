@@ -21,7 +21,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.dts.DtsClusterConfiguration;
 import com.epam.pipeline.entity.dts.DtsDataStorageListing;
 import com.epam.pipeline.entity.dts.DtsSubmission;
-import com.epam.pipeline.manager.dts.DtsOperationsApiService;
+import com.epam.pipeline.acl.dts.DtsOperationsApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;

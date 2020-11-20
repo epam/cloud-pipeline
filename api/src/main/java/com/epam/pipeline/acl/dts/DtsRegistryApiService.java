@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.dts;
+package com.epam.pipeline.acl.dts;
 
 import com.epam.pipeline.controller.vo.dts.DtsRegistryVO;
 import com.epam.pipeline.entity.dts.DtsRegistry;
+import com.epam.pipeline.manager.dts.DtsRegistryManager;
 import lombok.AllArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
