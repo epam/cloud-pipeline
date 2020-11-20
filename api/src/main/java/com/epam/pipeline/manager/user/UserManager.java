@@ -24,6 +24,7 @@ import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
@@ -113,36 +114,41 @@ public class UserManager {
     @Value("${storage.user.home.template}")
     private  String defaultUserStorageTemplateName;
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser createUser(String name, List<Long> roles,
                                    List<String> groups, Map<String, String> attributes,
                                    Long defaultStorageId) {
         final PipelineUser newUser = createUser(name, roles, groups, attributes);
+        try {
+            return createUserDefaultFolder(defaultStorageId, newUser);
+        } catch (RuntimeException e) {
+            throw new DefaultStorageCreationException(
+                messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION, name, e.getMessage()));
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineUser createUserDefaultFolder(final Long defaultStorageId, final PipelineUser newUser) {
         final boolean shouldCreateDefaultHome =
             preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_ENABLED);
         final Long storageId = Optional.ofNullable(defaultStorageId)
-            .orElseGet(() -> shouldCreateDefaultHome
-                             ? createUserDefaultFolder(newUser).getStorages().get(0).getId()
-                             : null);
+            .orElseGet(() -> {
+                final List<AbstractDataStorage> defaultFolderStorage =
+                    ListUtils.emptyIfNull(createUserDefaultFolder(newUser).getStorages());
+                if (shouldCreateDefaultHome) {
+                    if (defaultFolderStorage.size() != 1) {
+                        log.warn(messageHelper.getMessage(
+                            MessageConstants.ERROR_DEFAULT_STORAGE_CREATION_ILLEGAL_NUMBER_OF_STORAGE,
+                            defaultFolderStorage.size()));
+                    } else {
+                        return defaultFolderStorage.get(0).getId();
+                    }
+                }
+                return null;
+            });
         newUser.setDefaultStorageId(storageId);
-        userDao.updateUser(newUser);
-        return newUser;
-    }
-
-    private PipelineUser createUser(String name, List<Long> roles,
-                                   List<String> groups, Map<String, String> attributes) {
-        Assert.isTrue(StringUtils.isNotBlank(name),
-                messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_REQUIRED));
-        String userName = name.trim().toUpperCase();
-        PipelineUser loadedUser = userDao.loadUserByName(userName);
-        Assert.isNull(loadedUser, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_EXISTS, name));
-        PipelineUser user = new PipelineUser(userName);
-        List<Long> userRoles = getNewUserRoles(roles);
-        user.setRoles(roleDao.loadRolesList(userRoles));
-        user.setGroups(groups);
-        user.setAttributes(attributes);
-        storageValidator.validate(user);
-        log.info(messageHelper.getMessage(MessageConstants.INFO_CREATE_USER, userName));
-        return userDao.createUser(user, userRoles);
+        return userDao.updateUser(newUser);
     }
 
     /**
@@ -427,28 +433,34 @@ public class UserManager {
         return new UserExporter().exportUsers(attr, users, sensitiveKeys).getBytes(Charset.defaultCharset());
     }
 
-    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private PipelineUser createUser(final String name, final List<Long> roles, final List<String> groups,
+                                    final Map<String, String> attributes) {
+        Assert.isTrue(StringUtils.isNotBlank(name),
+                      messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_REQUIRED));
+        String userName = name.trim().toUpperCase();
+        PipelineUser loadedUser = userDao.loadUserByName(userName);
+        Assert.isNull(loadedUser, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_EXISTS, name));
+        PipelineUser user = new PipelineUser(userName);
+        List<Long> userRoles = getNewUserRoles(roles);
+        user.setRoles(roleDao.loadRolesList(userRoles));
+        user.setGroups(groups);
+        user.setAttributes(attributes);
+        storageValidator.validate(user);
+        log.info(messageHelper.getMessage(MessageConstants.INFO_CREATE_USER, userName));
+        return userDao.createUser(user, userRoles);
+    }
+
     private Folder createUserDefaultFolder(final PipelineUser user) {
         final Folder folder = new Folder();
         final Long parentId =
             preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_PARENT_FOLDER);
-        Assert.notNull(parentId,
-                       messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_NULL_PARENT_FOLDER));
+        Assert.notNull(parentId, messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_NULL_PARENT_FOLDER));
         folder.setParentId(parentId);
         final String userName = user.getUserName();
         folder.setName(userName);
-        try {
-            final Folder defaultFolder =
-                folderManager.createFromTemplate(folder, defaultUserStorageTemplateName, false);
-            grantOwnerPermissionsToUser(userName, defaultFolder);
-            return defaultFolder;
-        } catch (RuntimeException e) {
-            throw new DefaultStorageCreationException(
-                messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION,
-                                         userName,
-                                         e.getMessage())
-            );
-        }
+        final Folder defaultFolder = folderManager.createFromTemplate(folder, defaultUserStorageTemplateName, false);
+        grantOwnerPermissionsToUser(userName, defaultFolder);
+        return defaultFolder;
     }
 
     private void grantOwnerPermissionsToUser(final String userName, final Folder defaultFolder) {

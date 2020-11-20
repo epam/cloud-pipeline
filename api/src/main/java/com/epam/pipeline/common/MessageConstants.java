@@ -311,6 +311,8 @@ public final class MessageConstants {
     public static final String INFO_UPDATE_USER_SAML_INFO = "info.update.user.saml.info";
     public static final String ERROR_DEFAULT_STORAGE_CREATION = "user.storage.home.auto.fails";
     public static final String ERROR_DEFAULT_STORAGE_NULL_PARENT_FOLDER = "user.storage.home.auto.null.parent";
+    public static final String ERROR_DEFAULT_STORAGE_CREATION_ILLEGAL_NUMBER_OF_STORAGE =
+        "user.storage.home.auto.illegal.storage.number";
 
     // Security
     public static final String ERROR_PERMISSION_PARAM_REQUIRED = "permission.param.is.required";
