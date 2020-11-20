@@ -61,6 +61,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -260,12 +261,13 @@ public class EC2Helper {
                 .findFirst();
     }
 
-    public void createAndAttachVolume(final String runId, final Long size, final String awsRegion) {
+    public void createAndAttachVolume(final String runId, final Long size,
+                                      final String awsRegion, final String kmsKeyArn) {
         final AmazonEC2 client = getEC2Client(awsRegion);
         final Instance instance = getAliveInstance(runId, awsRegion);
         final String device = getVacantDeviceName(instance);
         final String zone = getAvailabilityZone(instance);
-        final Volume volume = createVolume(client, size, zone);
+        final Volume volume = createVolume(client, size, zone, kmsKeyArn);
         tryAttachVolume(client, instance, volume, device);
         enableVolumeDeletionOnInstanceTermination(client, instance.getInstanceId(), device);
     }
@@ -307,12 +309,15 @@ public class EC2Helper {
                         "has no associated availability zone", instance.getInstanceId())));
     }
 
-    private Volume createVolume(final AmazonEC2 client, final Long size, final String zone) {
-        final Volume volume = client.createVolume(new CreateVolumeRequest()
+    private Volume createVolume(final AmazonEC2 client, final Long size, final String zone, final String kmsKeyArn) {
+        final CreateVolumeRequest request = new CreateVolumeRequest()
                 .withVolumeType(VolumeType.Gp2)
                 .withSize(size.intValue())
-                .withAvailabilityZone(zone))
-                .getVolume();
+                .withAvailabilityZone(zone);
+        if (StringUtils.isNotBlank(kmsKeyArn)) {
+            request.setKmsKeyId(kmsKeyArn);
+        }
+        final Volume volume = client.createVolume(request).getVolume();
         final Waiter<DescribeVolumesRequest> waiter = client.waiters().volumeAvailable();
         waiter.run(new WaiterParameters<>(new DescribeVolumesRequest().withVolumeIds(volume.getVolumeId())));
         return volume;
