@@ -234,7 +234,7 @@ ROOT_DEVICE_DEFAULT = {
                         "Ebs": {"VolumeSize": 40}
                       }
 
-def root_device(ec2, ins_img):
+def root_device(ec2, ins_img, kms_encyr_key_id):
     try:
         pipe_log('- Getting image {} block device mapping details'.format(ins_img))
         img_details = ec2.describe_images(ImageIds=[ins_img])
@@ -256,6 +256,9 @@ def root_device(ec2, ins_img):
             "DeviceName": block_device_name,
             "Ebs": {"VolumeSize": block_device_obj["Ebs"]["VolumeSize"], "VolumeType": "gp2"}
         }
+        if kms_encyr_key_id:
+            device_spec["Ebs"]["Encrypted"] = True
+            device_spec["Ebs"]["KmsKeyId"] = kms_encyr_key_id
         return device_spec
     except Exception as e:
         pipe_log('Error while getting image {} root device, using default device: {}\n{}'.format(ins_img,
@@ -411,7 +414,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
 
 
 def get_block_devices(ec2, ins_img, ins_hdd, kms_encyr_key_id, swap_size):
-    block_devices = [root_device(ec2, ins_img), block_device(ins_hdd, kms_encyr_key_id)]
+    block_devices = [root_device(ec2, ins_img, kms_encyr_key_id), block_device(ins_hdd, kms_encyr_key_id)]
     if swap_size is not None and swap_size > 0:
         block_devices.append(block_device(swap_size, kms_encyr_key_id, name="/dev/sdc"))
     return block_devices
