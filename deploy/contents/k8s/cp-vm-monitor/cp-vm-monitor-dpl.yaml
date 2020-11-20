@@ -18,7 +18,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-vm-monitor
-          image: lifescience/cloud-pipeline:vm-monitor-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:vm-monitor-$CP_VERSION
           imagePullPolicy: "Always"
           securityContext:
             privileged: true

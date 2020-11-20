@@ -17,7 +17,7 @@
 # Step 1: Build NTLM APS with Python 2
 #######################################
 
-CP_PYINSTALL_WIN32_PY2_DOCKER="lifescience/cloud-pipeline:pyinstaller-win32-py2"
+CP_PYINSTALL_WIN32_PY2_DOCKER="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:pyinstaller-win32-py2"
 docker pull $CP_PYINSTALL_WIN32_PY2_DOCKER
 if [ $? -ne 0 ]; then
     echo "Unable to pull $CP_PYINSTALL_WIN32_PY2_DOCKER image, it will be rebuilt"
@@ -67,7 +67,7 @@ rm -f $_BUILD_SCRIPT_NAME
 # Step 2: pipe CLI
 #######################################
 
-CP_PYINSTALL_WIN64_DOCKER="lifescience/cloud-pipeline:pyinstaller-win64"
+CP_PYINSTALL_WIN64_DOCKER="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:pyinstaller-win64"
 docker pull $CP_PYINSTALL_WIN64_DOCKER
 if [ $? -ne 0 ]; then
     echo "Unable to pull $CP_PYINSTALL_WIN64_DOCKER image, it will be rebuilt"
