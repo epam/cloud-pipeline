@@ -212,7 +212,11 @@ class GridEngine:
 
         :return: Grid engine jobs list.
         """
-        lines = self.cmd_executor.execute_to_lines(GridEngine._QSTAT % self.queue)
+        try:
+            lines = self.cmd_executor.execute_to_lines(GridEngine._QSTAT % self.queue)
+        except ExecutionError:
+            Logger.warn('Grid engine jobs listing has failed.')
+            return []
         if len(lines) == 0:
             return []
         jobs = {}
@@ -1060,12 +1064,12 @@ class GridEngineWorkerValidator:
 
 class CloudPipelineInstanceHelper:
 
-    def __init__(self, pipe, cloud_provider, region_id, master_instance_type, instance_family,
+    def __init__(self, pipe, cloud_provider, region_id, instance_type, instance_family,
                  hybrid_autoscale, hybrid_instance_cores, free_cores):
         self.pipe = pipe
         self.cloud_provider = cloud_provider
         self.region_id = region_id
-        self.master_instance_type = master_instance_type
+        self.instance_type = instance_type
         self.instance_family = instance_family
         self.hybrid_autoscale = hybrid_autoscale
         self.hybrid_instance_cores = hybrid_instance_cores
@@ -1086,12 +1090,12 @@ class CloudPipelineInstanceHelper:
             return self._get_hybrid_instances(price_type)
         else:
             Logger.info('Hybrid autoscaling is disabled, allowed list of instances will be trimmed '
-                        'to master instance type: {type}'.format(type=self.master_instance_type))
-            return self._get_master_instance(price_type)
+                        'to default instance type: {type}'.format(type=self.instance_type))
+            return self._get_default_instance(price_type)
 
-    def _get_master_instance(self, price_type):
+    def _get_default_instance(self, price_type):
         return [instance for instance in self._get_existing_instances(price_type)
-                if instance.name == self.master_instance_type]
+                if instance.name == self.instance_type]
 
     def _get_hybrid_instances(self, price_type):
         return sorted([instance for instance in self._get_existing_instances(price_type)
@@ -1313,7 +1317,7 @@ if __name__ == '__main__':
     master_run_id = os.environ['RUN_ID']
     default_hostfile = os.environ['DEFAULT_HOSTFILE']
     instance_disk = os.environ['instance_disk']
-    instance_type = os.environ['instance_size']
+    instance_type = os.getenv('CP_CAP_AUTOSCALE_INSTANCE_TYPE', os.environ['instance_size'])
     instance_image = os.environ['docker_image']
     cmd_template = os.getenv('CP_CAP_AUTOSCALE_CMD_TEMPLATE', 'sleep infinity')
     price_type = os.getenv('CP_CAP_AUTOSCALE_PRICE_TYPE', os.environ['price_type'])
@@ -1331,7 +1335,8 @@ if __name__ == '__main__':
                                 CloudPipelineInstanceHelper.get_family_from_type(cloud_provider, instance_type))
     queue = os.getenv('CP_CAP_AUTOSCALE_QUEUE', os.getenv('CP_CAP_SGE_QUEUE_NAME', 'main.q'))
     hostlist = os.getenv('CP_CAP_AUTOSCALE_HOSTLIST', os.getenv('CP_CAP_SGE_HOSTLIST_NAME', '@allhosts'))
-    log_task = os.environ.get('CP_CAP_AUTOSCALE_TASK', 'GridEngineAutoscaling-%s' % queue)
+    log_task = os.environ.get('CP_CAP_AUTOSCALE_TASK',
+                              'GridEngineAutoscaling-%s' % (queue if not queue.endswith('.q') else queue[:-2]))
 
     # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
     pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(shared_work_dir, '.autoscaler.%s.pipe.log' % queue))
@@ -1340,7 +1345,7 @@ if __name__ == '__main__':
     worker_launch_system_params = fetch_worker_launch_system_params(api, master_run_id, queue, hostlist)
 
     instance_helper = CloudPipelineInstanceHelper(cloud_provider=cloud_provider, region_id=region_id,
-                                                  instance_family=instance_family, master_instance_type=instance_type,
+                                                  instance_family=instance_family, instance_type=instance_type,
                                                   pipe=pipe, hybrid_autoscale=hybrid_autoscale,
                                                   hybrid_instance_cores=hybrid_instance_cores,
                                                   free_cores=free_cores)

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,8 +19,9 @@ CURRENT_PID=$$
 
 add_worker() {
     local _QUEUE=$1
-	local _SLOTS=$2
-    local _MASTER_NAME=$3
+    local _HOSTLIST=$2
+	  local _SLOTS=$3
+    local _MASTER_NAME=$4
 
     if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
         ssh -t "$_MASTER_NAME" bash -c "'
@@ -35,7 +36,7 @@ add_worker() {
         fi
 
         # add to the all hosts list
-        qconf -aattr hostgroup hostlist $HOSTNAME @allhosts
+        qconf -aattr hostgroup hostlist $HOSTNAME $_HOSTLIST
         if [ \"$cluster_role_type\" = \"additional\" ]
         then
             # additional hosts should be disabled until GE autoscaler enables them
@@ -60,7 +61,7 @@ add_worker() {
             qconf -aattr queue slots "[$HOSTNAME=$_SLOTS]" $_QUEUE
         fi
 
-        qconf -aattr hostgroup hostlist $HOSTNAME @allhosts
+        qconf -aattr hostgroup hostlist $HOSTNAME $_HOSTLIST
         if [ "$cluster_role_type" = "additional" ]
         then
             # additional hosts should be disabled until GE autoscaler enables them
@@ -161,6 +162,7 @@ pipe_log_info "Installing SGE worker" "$SGE_WORKER_SETUP_TASK"
 export SGE_CELL="default"
 export SGE_CLUSTER_NAME="CLOUD_PIPELINE"
 export CP_CAP_SGE_QUEUE_NAME="${CP_CAP_SGE_QUEUE_NAME:-main.q}"
+export CP_CAP_SGE_HOSTLIST_NAME="${CP_CAP_SGE_HOSTLIST_NAME:-@allhosts}"
 
 IFS='@' read -r -a owner_info <<< "$OWNER"
 OWNER_NAME="${owner_info[0]}"
@@ -252,13 +254,21 @@ _WORKER_CORES=$(($_WORKER_CORES - $CP_CAP_SGE_WORKER_FREE_CORES))
 (( $_WORKER_CORES <= 0 )) && _WORKER_CORES=$(nproc)
 
 pipe_log_info "Adding worker node to SGE cluster" "$SGE_WORKER_SETUP_TASK"
-add_worker "$CP_CAP_SGE_QUEUE_NAME" "$_WORKER_CORES" $MASTER_NAME
-check_last_exit_code $? "Host was added as a worker to the SGE cluster" "Fail to add SGE worker host"
+if [[ "$cluster_role_type" != "additional" ]] && [[ "$CP_CAP_SGE_DEFAULT_QUEUE_NAME" != "$CP_CAP_SGE_QUEUE_NAME" ]]
+then
+    add_worker "$CP_CAP_SGE_DEFAULT_QUEUE_NAME" "$CP_CAP_SGE_DEFAULT_HOSTLIST_NAME" "$_WORKER_CORES" $MASTER_NAME
+    check_last_exit_code $? "Host was added as a worker to $CP_CAP_SGE_DEFAULT_QUEUE_NAME queue and $CP_CAP_SGE_DEFAULT_HOSTLIST_NAME hostlist" \
+                            "Fail to add host as worker to $CP_CAP_SGE_DEFAULT_QUEUE_NAME queue and $CP_CAP_SGE_DEFAULT_HOSTLIST_NAME hostlist"
+fi
+add_worker "$CP_CAP_SGE_QUEUE_NAME" "$CP_CAP_SGE_HOSTLIST_NAME" "$_WORKER_CORES" $MASTER_NAME
+check_last_exit_code $? "Host was added as a worker to $CP_CAP_SGE_QUEUE_NAME queue and $CP_CAP_SGE_HOSTLIST_NAME hostlist" \
+                        "Fail to add host as worker to $CP_CAP_SGE_QUEUE_NAME queue and $CP_CAP_SGE_HOSTLIST_NAME hostlist"
 
 echo "export SGE_ROOT=$SGE_ROOT" >> /etc/cp_env.sh
 echo "export SGE_CELL=$SGE_CELL" >> /etc/cp_env.sh
 echo "export SGE_CLUSTER_NAME=$SGE_CLUSTER_NAME" >> /etc/cp_env.sh
 echo "export CP_CAP_SGE_QUEUE_NAME=$CP_CAP_SGE_QUEUE_NAME" >> /etc/cp_env.sh
+echo "export CP_CAP_SGE_HOSTLIST_NAME=$CP_CAP_SGE_HOSTLIST_NAME" >> /etc/cp_env.sh
 
 # Setup any additional SGE consumable resources if available
 sge_setup_resources "$HOSTNAME" "$SGE_WORKER_SETUP_TASK" "$_WORKER_CORES"
