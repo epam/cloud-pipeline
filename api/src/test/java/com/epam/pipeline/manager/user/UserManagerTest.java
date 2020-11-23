@@ -145,7 +145,7 @@ public class UserManagerTest extends AbstractSpringTest {
         attr.setIncludeUserName(true);
 
         String[] exported = new String(userManager.exportUsers(attr)).split("\n");
-        Assert.assertEquals(2, exported.length);
+        Assert.assertEquals(1, exported.length);
         Assert.assertTrue(
                 Arrays.stream(exported).anyMatch(
                     s -> ("" + newUser.getId() + CSV_SEPARATOR + newUser.getUserName()).equals(s)
@@ -154,12 +154,12 @@ public class UserManagerTest extends AbstractSpringTest {
 
         attr.setIncludeHeader(true);
         exported = new String(userManager.exportUsers(attr)).split("\n");
-        Assert.assertEquals(3, exported.length);
+        Assert.assertEquals(2, exported.length);
         Assert.assertEquals(ID.getValue() + CSV_SEPARATOR + USER_NAME.getValue(), exported[0]);
 
         attr.setIncludeRoles(true);
         exported = new String(userManager.exportUsers(attr)).split("\n");
-        Assert.assertEquals(3, exported.length);
+        Assert.assertEquals(2, exported.length);
         Assert.assertEquals(
                 ID.getValue() + CSV_SEPARATOR + USER_NAME.getValue() + CSV_SEPARATOR + ROLES.getValue(),
                 exported[0]
@@ -176,7 +176,7 @@ public class UserManagerTest extends AbstractSpringTest {
         attr.setIncludeHeader(true);
         attr.setIncludeId(true);
         final String[] exported = new String(userManager.exportUsers(attr)).split("\n");
-        Assert.assertEquals(3, exported.length);
+        Assert.assertEquals(2, exported.length);
         Assert.assertEquals(
                 ID.getValue() + CSV_SEPARATOR +
                         DEFAULT_STORAGE_ID.getValue() + CSV_SEPARATOR +
