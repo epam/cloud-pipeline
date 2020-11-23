@@ -26,13 +26,17 @@ import org.openqa.selenium.Keys;
 
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.codeborne.selenide.Selenide.switchTo;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertTrue;
+import static org.testng.AssertJUnit.assertFalse;
 
 public class ShellAO implements AccessObject<ShellAO> {
 
@@ -81,8 +85,39 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
+    public ShellAO assertPageAfterCommandContainsStrings(String command, String... messages) {
+        Arrays.stream(messages)
+                .forEach(message -> assertTrue(lastCommandResult(command).contains(message)));
+        return this;
+    }
+
+    public ShellAO assertPageAfterCommandNotContainsStrings(String command, String... messages) {
+        Arrays.stream(messages)
+                .forEach(message -> assertFalse(lastCommandResult(command).contains(message)));
+        return this;
+    }
+
+    public ShellAO assertResultsCount(String command, String runID, int expectedCount) {
+        String results = lastCommandResult(command)
+                .replace(format("root@pipeline-%s:/runs/pipeline-%s#", runID, runID), "");
+        assertTrue(results.split("\\s+").length == expectedCount);
+        return this;
+    }
+
+    private String lastCommandResult(String command) {
+        String str = context().text().substring(context().text().indexOf(command))
+                .replace("\n", "");
+        return str.replace(command, "");
+    }
+
     public ShellAO assertPageContainsString(String str) {
         context().shouldHave(text(str));
+        return this;
+    }
+
+    public ShellAO assertPageContainsStrings(String... messages) {
+        Arrays.stream(messages)
+                .forEach(this::assertPageContainsString);
         return this;
     }
 
@@ -99,7 +134,7 @@ public class ShellAO implements AccessObject<ShellAO> {
     public ShellAO waitUntilTextAppears(final String runId) {
         for (int i = 0; i < 2; i++) {
             sleep(10, SECONDS);
-            if ($(withText(String.format("pipeline-%s", runId))).exists()) {
+            if ($(withText(format("pipeline-%s", runId))).exists()) {
                 break;
             }
             sleep(1, MINUTES);
@@ -108,6 +143,12 @@ public class ShellAO implements AccessObject<ShellAO> {
             sleep(5, SECONDS);
             new NavigationMenuAO().runs().showLog(runId).clickOnSshLink();
         }
+        return this;
+    }
+
+    public ShellAO assertNextStringIsVisible(String str1, String str2) {
+        $(withText(str1)).shouldBe(visible).parent()
+                .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible);
         return this;
     }
 

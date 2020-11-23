@@ -186,6 +186,12 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
                 .editFileWithText(fileText);
     }
 
+    public StorageContentAO editFile(String fileName, String fileText) {
+        return fileMetadata(fileName)
+               .fullScreen()
+               .editFileWithText(fileText);
+    }
+
     public StorageContentAO validateElementIsPresent(String elementName) {
         elementRow(elementName).shouldBe(visible);
         return this;
@@ -454,6 +460,10 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     public StorageContentAO shouldContainNumberOfElements(int number) {
         filesAndFolderElements().shouldHaveSize(number);
         return this;
+    }
+
+    public String getStoragePath() {
+        return get(STORAGEPATH).text();
     }
 
     public StorageContentAO removeAllSelectedElements() {

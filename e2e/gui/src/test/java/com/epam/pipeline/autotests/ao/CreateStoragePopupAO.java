@@ -16,17 +16,22 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.listener.Cloud;
 
 import java.util.Map;
 
+import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CREATE;
+import static com.epam.pipeline.autotests.ao.Primitive.ENABLE_VERSIONING;
 import static com.epam.pipeline.autotests.ao.Primitive.SENSITIVE_STORAGE;
 
 public class CreateStoragePopupAO extends StorageContentAO.AbstractEditStoragePopUpAO<CreateStoragePopupAO, PipelinesLibraryAO> {
@@ -35,6 +40,8 @@ public class CreateStoragePopupAO extends StorageContentAO.AbstractEditStoragePo
             entry(CANCEL, $(byId("edit-storage-dialog-cancel-button"))),
             entry(CREATE, $(byId("edit-storage-dialog-create-button"))),
             entry(SENSITIVE_STORAGE, context().find(byText("Sensitive storage"))
+                    .parent().find(byClassName("ant-checkbox"))),
+            entry(ENABLE_VERSIONING, context().find(byText("Enable versioning"))
                     .parent().find(byClassName("ant-checkbox")))
     );
 
@@ -61,6 +68,24 @@ public class CreateStoragePopupAO extends StorageContentAO.AbstractEditStoragePo
 
     public CreateStoragePopupAO clickSensitiveStorageCheckbox() {
         return click(SENSITIVE_STORAGE);
+    }
+
+    public CreateStoragePopupAO clickEnableVersioningCheckbox() {
+        return click(ENABLE_VERSIONING);
+    }
+
+    public CreateStoragePopupAO setEnableVersioning(boolean isChecked) {
+        if(C.CLOUD_PROVIDER.equalsIgnoreCase(Cloud.AZURE.name())) {
+            if(get(ENABLE_VERSIONING).has(cssClass("ant-checkbox-checked"))) {
+                clickEnableVersioningCheckbox();
+            }
+        } else {
+            if((!isChecked && get(ENABLE_VERSIONING).has(cssClass("ant-checkbox-checked"))) ||
+                    (isChecked && !get(ENABLE_VERSIONING).has(cssClass("ant-checkbox-checked")))) {
+                clickEnableVersioningCheckbox();
+            }
+        };
+        return this;
     }
 
     @Override
