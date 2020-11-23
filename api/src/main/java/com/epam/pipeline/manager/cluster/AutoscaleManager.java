@@ -326,8 +326,9 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 }).count();
                 LOGGER.debug("Found {} existing instances matching {}.", matchingNodeCount, node);
                 if (matchingNodeCount < node.getCount()) {
-                    LOGGER.debug("Creating {} persistent instance(s) for {}.", matchingNodeCount, node);
-                    LongStream.range(0, matchingNodeCount).forEach(i -> createPersistentNode(node, client));
+                    final long nodesToCreate = node.getCount() - matchingNodeCount;
+                    LOGGER.debug("Creating {} persistent instance(s) for {}.", nodesToCreate, node);
+                    LongStream.range(0, nodesToCreate).forEach(i -> createPersistentNode(node, client));
                 }
             });
         }
