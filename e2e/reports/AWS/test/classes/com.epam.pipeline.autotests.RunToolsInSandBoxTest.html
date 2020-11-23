@@ -23,25 +23,25 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">12</div>
+<div class="counter">11</div>
 <p>tests</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">11</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">1m51.62s</div>
+<div class="counter">35m31.78s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">0%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,96 +61,16 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Failed tests</a>
+<a href="#tab0">Tests</a>
 </li>
 <li>
-<a href="#tab1">Tests</a>
+<a href="#tab1">Standard output</a>
+</li>
+<li>
+<a href="#tab2">Standard error</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="fallbackToToolDefaultState"></a>
-<h3 class="failures">fallbackToToolDefaultState</h3>
-<span class="code">
-<pre>org.openqa.selenium.ElementNotVisibleException: element not visible
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '7fa0233295b5', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 5ea4aed18ac6b9b96d4a84d1712dac63
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1605919669123.0.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1605919669123.0.html
-Timeout: 80 s.
-Caused by: ElementNotVisibleException: element not visible
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:113)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy13.sendKeys(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.setValue(AccessObject.java:159)
-	at com.epam.pipeline.autotests.ao.AccessObject.setValue(AccessObject.java:154)
-	at com.epam.pipeline.autotests.ao.ToolSettings.setDisk(ToolSettings.java:144)
-	at com.epam.pipeline.autotests.mixins.Tools.lambda$setDisk$10(Tools.java:112)
-	at com.epam.pipeline.autotests.ao.AccessObject.performIf(AccessObject.java:334)
-	at com.epam.pipeline.autotests.ao.AccessObject.performIf(AccessObject.java:327)
-	at com.epam.pipeline.autotests.ao.AccessObject.performIf(AccessObject.java:322)
-	at com.epam.pipeline.autotests.mixins.Tools.lambda$fallbackToToolDefaultState$0(Tools.java:70)
-	at java.util.function.Consumer.lambda$andThen$0(Consumer.java:65)
-	at com.epam.pipeline.autotests.ao.ToolGroup.toolWithin(ToolGroup.java:52)
-	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$null$0(ToolsPage.java:90)
-	at com.epam.pipeline.autotests.ao.Registry.groupWithin(Registry.java:49)
-	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$performWithin$1(ToolsPage.java:89)
-	at com.epam.pipeline.autotests.ao.ToolsPage.registryWithin(ToolsPage.java:127)
-	at com.epam.pipeline.autotests.ao.ToolsPage.performWithin(ToolsPage.java:88)
-	at com.epam.pipeline.autotests.mixins.Tools.fallbackToToolDefaultState(Tools.java:63)
-	at com.epam.pipeline.autotests.RunToolsInSandBoxTest.fallbackToToolDefaultState(RunToolsInSandBoxTest.java:66)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
-	at org.testng.internal.TestMethodWorker.invokeBeforeClassMethods(TestMethodWorker.java:166)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:105)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.ElementNotVisibleException: element not visible
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '7fa0233295b5', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 5ea4aed18ac6b9b96d4a84d1712dac63
-	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
-	at org.openqa.selenium.remote.RemoteWebElement.sendKeys(RemoteWebElement.java:100)
-	at sun.reflect.GeneratedMethodAccessor4.invoke(Unknown Source)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:90)
-	... 32 more
-</pre>
-</span>
-</div>
-</div>
-<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -161,66 +81,104 @@ Session ID: 5ea4aed18ac6b9b96d4a84d1712dac63
 </tr>
 </thead>
 <tr>
-<td class="skipped">checkToolAccessibilityForAnotherUser</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkToolAccessibilityForAnotherUser - EPMCMBIBPC-500</td>
+<td>47.773s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">fallbackToToolDefaultState</td>
-<td>1m51.62s</td>
-<td class="failures">failed</td>
+<td class="success">prepareForToolInSandbox - EPMCMBIBPC-526</td>
+<td>19.693s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">prepareForToolInSandbox - EPMCMBIBPC-526</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateEndpointLink - EPMCMBIBPC-495</td>
+<td>8m16.81s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateEndpointLink</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateNodeReusage - EPMCMBIBPC-503</td>
+<td>45.030s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateNodeReusage</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validatePipelineIsLaunchedForToolInSandbox - EPMCMBIBPC-494</td>
+<td>15.954s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validatePipelineIsLaunchedForToolInSandbox</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateRunParameters - EPMCMBIBPC-493</td>
+<td>6.107s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateRunParameters</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateStopToolInSandbox - EPMCMBIBPC-501</td>
+<td>3m13.87s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateStopToolInSandbox</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateStopToolInSandboxWithTimeout - EPMCMBIBPC-504</td>
+<td>8m40.85s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateStopToolInSandboxWithTimeout - EPMCMBIBPC-504</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateUsernameOnPipelinePage - EPMCMBIBPC-496</td>
+<td>2.757s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateUsernameOnPipelinePage</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validationOfDinDLaunchAndFunctionality - EPMCMBIBPC-3173</td>
+<td>5m51.33s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validationOfDinDLaunchAndFunctionality - EPMCMBIBPC-3173</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validationOfSingularityLaunchAndFunctionality - EPMCMBIBPC-3175</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validationOfSingularityLaunchAndFunctionality - EPMCMBIBPC-3175</td>
+<td>7m11.60s</td>
+<td class="success">passed</td>
 </tr>
 </table>
+</div>
+<div id="tab1" class="tab">
+<h2>Standard output</h2>
+<span class="code">
+<pre>Returns latest run with runId 48220 from [48220]
+Returns latest run with runId 48221 from [48220, 48221]
+Returns latest run with runId 48222 from [48220, 48221, 48222]
+Returns latest run with runId 48223 from [48220, 48221, 48222, 48223]
+Returns latest run with runId 48223 from [48220, 48221, 48222, 48223]
+Returns latest run with runId 48223 from [48220, 48221, 48222, 48223]
+Returns latest run with runId 48223 from [48220, 48221, 48222, 48223]
+Returns latest run with runId 48223 from [48220, 48221, 48222, 48223]
+Returns latest run with runId 48223 from [48220, 48221, 48222, 48223]
+Returns latest run with runId 48223 from [48220, 48221, 48222, 48223]
+Returns latest run with runId 48223 from [48220, 48221, 48222, 48223]
+Returns latest run with runId 48224 from [48220, 48221, 48222, 48223, 48224]
+Returns latest run with runId 48224 from [48220, 48221, 48222, 48223, 48224]
+</pre>
+</span>
+</div>
+<div id="tab2" class="tab">
+<h2>Standard error</h2>
+<span class="code">
+<pre>Nov 23, 2020 1:17:25 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Close webdriver: 12 -&gt; ChromeDriver: chrome on LINUX (d73895e679ff403859c3a5537f0a0de3)
+Nov 23, 2020 1:17:25 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer$CloseBrowser run
+INFO: Trying to close the browser ChromeDriver ...
+Nov 23, 2020 1:17:25 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer closeWebDriver
+INFO: Closed webdriver in 115 ms
+Starting ChromeDriver 2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752) on port 9512
+Only local connections are allowed.
+Nov 23, 2020 1:17:26 AM org.openqa.selenium.remote.ProtocolHandshake createSession
+INFO: Detected dialect: OSS
+Nov 23, 2020 1:17:26 AM com.codeborne.selenide.webdriver.WebDriverFactory logBrowserVersion
+INFO: BrowserName=chrome Version=63.0.3239.132 Platform=LINUX
+Nov 23, 2020 1:17:26 AM com.codeborne.selenide.webdriver.WebDriverFactory createWebDriver
+INFO: Selenide v. 4.10.01
+Nov 23, 2020 1:17:26 AM com.codeborne.selenide.webdriver.WebDriverFactory logSeleniumInfo
+INFO: Selenium WebDriver v. 3.8.1 build time: 2017-12-01T18:33:54.468Z
+Nov 23, 2020 1:17:26 AM com.codeborne.selenide.impl.WebDriverThreadLocalContainer createDriver
+INFO: Create webdriver in current thread 12: ChromeDriver -&gt; ChromeDriver: chrome on LINUX (9c998610e22d6318774f24e5940e08b8)
+</pre>
+</span>
 </div>
 </div>
 <div id="footer">
@@ -230,7 +188,7 @@ Session ID: 5ea4aed18ac6b9b96d4a84d1712dac63
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 21, 2020 4:26:02 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 23, 2020 3:21:21 PM</p>
 </div>
 </div>
 </body>
