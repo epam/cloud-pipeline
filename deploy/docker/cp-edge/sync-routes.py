@@ -362,7 +362,9 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                                 
                                                 # If CP_EDGE_NO_PATH_CROP is present (any place) in the "additional" section of the route config
                                                 # then trailing "/" is not added to the proxy pass target. This will allow to forward original requests trailing path
+                                                edge_route_has_no_crop = False
                                                 if EDGE_ROUTE_NO_PATH_CROP in additional:
+                                                        edge_route_has_no_crop = True
                                                         additional = additional.replace(EDGE_ROUTE_NO_PATH_CROP, "")
                                                 else:
                                                         edge_target = edge_target + "/"
@@ -381,7 +383,8 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                                                                 "edge_target": edge_target,
                                                                                 "run_id": pod_run_id,
                                                                                 "additional" : additional,
-                                                                                "sensitive": sensitive}
+                                                                                "sensitive": sensitive,
+                                                                                "edge_route_has_no_crop": edge_route_has_no_crop }
                         else:
                                 print('Unable to get details of the tool {} from API due to errors. Empty endpoints will be returned'.format(docker_image))
                 else:
@@ -532,6 +535,7 @@ for added_route in routes_to_add:
                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
                 .replace('{edge_route_schema}', 'https' if service_spec["is_ssl_backend"] else 'http') \
+                .replace('{edge_route_cookie_path}', '/' if service_spec["edge_route_has_no_crop"] else service_location) \
                 .replace('{additional}', service_spec["additional"])
 
         nginx_sensitive_route_definitions = []
@@ -550,6 +554,7 @@ for added_route in routes_to_add:
                                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
                                 .replace('{edge_route_schema}', 'https' if service_spec["is_ssl_backend"] else 'http') \
+                                .replace('{edge_route_cookie_path}', '/' if service_spec["edge_route_has_no_crop"] else service_location) \
                                 .replace('{additional}', service_spec["additional"])
                         nginx_sensitive_route_definitions.append(nginx_sensitive_route_definition)
 
