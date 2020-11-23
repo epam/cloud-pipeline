@@ -10,6 +10,26 @@ module.exports = function writeLocalConfiguration(configuration) {
     path.join(require('os').homedir(), '.pipe-webdav-client'),
     'webdav.config'
   );
+  if (configuration) {
+    if (configuration.server) {
+      const parts = configuration.server.split('/');
+      /*
+      scheme:
+      empty
+      server
+      webdav
+      username
+      ...
+       */
+      if (parts.length > 4) {
+        parts[4] = parts[4].toUpperCase();
+      }
+      configuration.server = parts.join('/');
+    }
+    if (configuration.username) {
+      configuration.username = configuration.username.toUpperCase();
+    }
+  }
   console.log(localConfigPath);
   console.log(configuration);
   log(`Writing configuration ${localConfigPath}:\n${JSON.stringify(configuration, null, ' ')}`);
