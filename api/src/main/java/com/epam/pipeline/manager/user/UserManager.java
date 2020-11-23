@@ -111,7 +111,7 @@ public class UserManager {
     @Autowired
     private GrantPermissionManager permissionManager;
 
-    @Value("${storage.user.home.template}")
+    @Value("${templates.user.home.storage}")
     private  String defaultUserStorageTemplateName;
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
