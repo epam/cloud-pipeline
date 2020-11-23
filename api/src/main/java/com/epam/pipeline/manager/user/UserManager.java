@@ -134,9 +134,9 @@ public class UserManager {
             preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_ENABLED);
         final Long storageId = Optional.ofNullable(defaultStorageId)
             .orElseGet(() -> {
-                final List<AbstractDataStorage> defaultFolderStorage =
-                    ListUtils.emptyIfNull(createUserDefaultFolder(newUser).getStorages());
                 if (shouldCreateDefaultHome) {
+                    final List<AbstractDataStorage> defaultFolderStorage =
+                        ListUtils.emptyIfNull(createUserDefaultFolder(newUser).getStorages());
                     if (defaultFolderStorage.size() != 1) {
                         log.warn(messageHelper.getMessage(
                             MessageConstants.ERROR_DEFAULT_STORAGE_CREATION_ILLEGAL_NUMBER_OF_STORAGE,
@@ -147,6 +147,9 @@ public class UserManager {
                 }
                 return null;
             });
+        if (storageId == null) {
+            return newUser;
+        }
         newUser.setDefaultStorageId(storageId);
         return userDao.updateUser(newUser);
     }
