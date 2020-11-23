@@ -54,7 +54,7 @@ import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.acl.preference.PreferenceApiService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.search.SearchManager;
-import com.epam.pipeline.manager.security.AclPermissionApiService;
+import com.epam.pipeline.acl.security.AclPermissionApiService;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.template.TemplateManager;
 import com.epam.pipeline.acl.user.RoleApiService;
