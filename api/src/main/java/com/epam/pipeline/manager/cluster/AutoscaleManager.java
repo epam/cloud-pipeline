@@ -95,7 +95,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
     @PostConstruct
     public void init() {
         if (preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING)) {
-            scheduleFixedDelay(core::runAutoscaling, SystemPreferences.CLUSTER_AUTOSCALE_RATE, "Autoscaling job");
+            scheduleFixedDelaySecured(core::runAutoscaling, SystemPreferences.CLUSTER_AUTOSCALE_RATE, "Autoscaling job");
         }
     }
 
