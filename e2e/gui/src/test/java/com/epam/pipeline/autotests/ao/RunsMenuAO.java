@@ -22,6 +22,7 @@ import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
 import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -83,6 +84,21 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO completedRuns() {
         $(byId("completed-runs-button")).shouldBe(visible).click();
         tableShouldAppear();
+        return new RunsMenuAO();
+    }
+
+    public RunsMenuAO nextPageCompletedRuns() {
+        if ($(byClassName(" ant-pagination-next")).attr("aria-disabled").equals("false")) {
+            $(byClassName(" ant-pagination-next")).click();
+            tableShouldAppear();
+        }
+        return new RunsMenuAO();
+    }
+
+    public RunsMenuAO switchAllPagesCompletedRuns() {
+        while ($(byClassName(" ant-pagination-next")).attr("aria-disabled").equals("false")) {
+            nextPageCompletedRuns();
+        }
         return new RunsMenuAO();
     }
 

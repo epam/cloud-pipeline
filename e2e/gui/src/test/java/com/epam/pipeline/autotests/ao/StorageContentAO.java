@@ -158,6 +158,12 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return this;
     }
 
+    public StorageContentAO rmFile(String name) {
+        elementRow(name).find(byClassName("ant-btn-danger")).shouldBe(visible).click();
+        new ConfirmationPopupAO<>(this).ensureTitleIs("Remove file").ok();
+        return this;
+    }
+
     public StorageContentAO createFolder(String folderName) {
         sleep(1, SECONDS);
         resetMouse().hover(CREATE).click(CREATE_FOLDER);
@@ -468,6 +474,10 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
     public StorageContentAO removeAllSelectedElements() {
         return selectElementsUsingCheckboxes().removeAllSelected();
+    }
+
+    public String getStoragePath() {
+        return get(STORAGEPATH).text();
     }
 
     public class FileAO extends ElementAO<FileAO> {

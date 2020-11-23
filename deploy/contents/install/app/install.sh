@@ -266,14 +266,19 @@ echo
 ##########
 print_ok "[Setting up docker distr registry credentials]"
 
+if [ -z "$CP_DOCKER_DIST_SRV" ]; then
+    print_warn "CP_DOCKER_DIST_SRV is not set, https://index.docker.io/v1/ is used to authenticate against docker dist registry and create a kube secret"
+    export CP_DOCKER_DIST_SRV="https://index.docker.io/v1/"
+fi
+
+if [ "${CP_DOCKER_DIST_SRV: -1}" != "/" ]; then
+    echo "CP_DOCKER_DIST_SRV doesn't end with '/': ${CP_DOCKER_DIST_SRV}, will additionally add it."
+    export CP_DOCKER_DIST_SRV="${CP_DOCKER_DIST_SRV}/"
+fi
+
 if [ -z "$CP_DOCKER_DIST_USER" ] || [ -z "$CP_DOCKER_DIST_PASS" ]; then
     print_warn "CP_DOCKER_DIST_USER or CP_DOCKER_DIST_PASS is not set, proceeding without registry authentication"
 else
-    if [ -z "$CP_DOCKER_DIST_SRV" ]; then
-        print_warn "CP_DOCKER_DIST_SRV is not set, https://index.docker.io/v1/ is used to authenticate against docker dist registry and create a kube secret"
-        export CP_DOCKER_DIST_SRV="https://index.docker.io/v1/"
-    fi
-
     print_info "Logging docker into $CP_DOCKER_DIST_SRV as $CP_DOCKER_DIST_USER"
     docker login "$CP_DOCKER_DIST_SRV" \
                 -u "$CP_DOCKER_DIST_USER" \

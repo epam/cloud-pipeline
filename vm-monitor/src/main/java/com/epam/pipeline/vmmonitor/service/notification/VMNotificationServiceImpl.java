@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,16 +47,19 @@ public class VMNotificationServiceImpl implements VMNotificationService {
     private final List<String> copyUsers;
     private final String platformName;
     private final String deploymentName;
+    private final String subjectPrefix;
 
     public VMNotificationServiceImpl(
             final NotificationSender notificationSender,
             @Value("${cloud.pipeline.platform.name}") final String platformName,
             @Value("${cloud.pipeline.deployment.name}") final String deploymentName,
             @Value("${notification.to-user}") final String toUser,
-            @Value("${notification.copy-users}") final String copyUsers) {
+            @Value("${notification.copy-users}") final String copyUsers,
+            @Value("${notification.subject.prefix:}") final String subjectPrefix) {
         this.notificationSender = notificationSender;
         this.platformName = platformName;
         this.deploymentName = deploymentName;
+        this.subjectPrefix = subjectPrefix;
         this.toUser = toUser;
         this.copyUsers = Arrays.asList(copyUsers.split(","));
     }
@@ -65,12 +67,19 @@ public class VMNotificationServiceImpl implements VMNotificationService {
     @Override
     public void sendMessage(final Map<String, Object> parameters, final String subject, final String template) {
         NotificationMessageVO build = NotificationMessageVO.builder()
-                .subject(subject)
+                .subject(buildSubject(subject))
                 .body(getTemplateContent(template))
                 .parameters(withCommonParams(parameters))
                 .toUser(toUser)
                 .copyUsers(copyUsers).build();
         notificationSender.sendMessage(build);
+    }
+
+    private String buildSubject(final String subject) {
+        if (StringUtils.isBlank(subjectPrefix)) {
+            return subject;
+        }
+        return subjectPrefix + StringUtils.SPACE + subject;
     }
 
     private Map<String, Object> withCommonParams(final Map<String, Object> parameters) {

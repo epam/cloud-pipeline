@@ -125,11 +125,11 @@ public abstract class AbstractAzurePriceListLoader {
         return getInstanceOffers(region, credentials, client, vmSkusByName, diskSkusByName);
     }
 
-    protected abstract List<InstanceOffer> getInstanceOffers(final AbstractCloudRegion region,
-                                                             final AzureTokenCredentials credentials,
-                                                             final  Azure client,
-                                                             final Map<String, ResourceSkuInner> vmSkusByName,
-                                                             final Map<String, ResourceSkuInner> diskSkusByName)
+    protected abstract List<InstanceOffer> getInstanceOffers(AbstractCloudRegion region,
+                                                             AzureTokenCredentials credentials,
+                                                             Azure client,
+                                                             Map<String, ResourceSkuInner> vmSkusByName,
+                                                             Map<String, ResourceSkuInner> diskSkusByName)
                                                              throws IOException;
 
     public abstract String getAPIVersion();

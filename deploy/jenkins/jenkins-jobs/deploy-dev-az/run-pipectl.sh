@@ -48,6 +48,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+#Export docker registry where all containers are stored
+export CP_DOCKER_DIST_SRV=${CP_DOCKER_DIST_SRV}
+
 # Grab pipectl binary
 wget -q "$PIPECTL_DIST_URL" -O "${DEPLOY_DIR}/pipectl"
 if [ $? -ne 0 ]; then
@@ -61,6 +64,7 @@ chmod +x "${DEPLOY_DIR}/pipectl"
 # $CP_AZURE_KUBE_MASTER_DOCKER_PATH and $CP_AZURE_KUBE_MASTER_ETCD_HOST_PATH
 # This allows to overcome disk I/O issues with a single drive
 ${DEPLOY_DIR}/pipectl install \
+                      -env CP_DOCKER_DIST_SRV=${CP_DOCKER_DIST_SRV} \
                       -env CP_CLUSTER_SSH_KEY="${DOLLAR}{AZURE_SSH_KEY_S3_LOCAL}" \
                       -env CP_CLUSTER_SSH_PUB="${DOLLAR}{AZURE_SSH_PUB_S3_LOCAL}" \
                       -env CP_CLOUD_CREDENTIALS_FILE="${DOLLAR}{AZURE_JSON_S3_LOCAL}" \

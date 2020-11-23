@@ -1539,11 +1539,10 @@ class AWSRegionForm extends React.Component {
               {...this.formItemLayout}
               className={this.getFieldClassName('enterpriseAgreements', 'edit-region-enterpriseAgreements-container')}>
               {getFieldDecorator('enterpriseAgreements', {
+                valuePropName: 'checked',
                 initialValue: this.props.region.enterpriseAgreements
               })(
-                <Checkbox
-                  disabled={this.props.region.default}
-                >
+                <Checkbox>
                   Enterprise Agreement
                 </Checkbox>
               )}
