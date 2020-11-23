@@ -25,6 +25,13 @@
         "passToWorkers": true
     },
     {
+        "name": "CP_CAP_SGE_HOSTLIST_NAME",
+        "type": "string",
+        "description": "Overrides the default name of the Grid Engine hostlist",
+        "defaultValue": "@allhosts",
+        "passToWorkers": true
+    },
+    {
         "name": "CP_CAP_SGE_PE_NAME",
         "type": "string",
         "description": "Overrides the default name of the Grid Engine PE",
