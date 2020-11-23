@@ -209,8 +209,8 @@ public class MetadataEntityController extends AbstractRestController {
     @RequestMapping(value = "/metadataEntity/save", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(
-            value = "Update user entity. If id not specified or not fount a new one will be created",
-            notes = "Update user entity. If id not specified or not fount a new one will be created.",
+            value = "Update user entity. If id not specified or not found a new one will be created",
+            notes = "Update user entity. If id not specified or not found a new one will be created.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
