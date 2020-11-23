@@ -24,11 +24,11 @@ import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.schedule.PersistentNode;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.exception.cloud.aws.AwsEc2Exception;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cloud.CloudInstanceService;
@@ -36,6 +36,7 @@ import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
 import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
 import com.epam.pipeline.manager.cloud.commands.NodeUpCommand;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -99,23 +100,25 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     public RunInstance scaleUpNode(final AwsRegion region,
                                    final Long runId,
                                    final RunInstance instance) {
-        final String command = buildNodeUpCommand(region, runId, instance);
+        final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap());
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptEnvVars());
+    }
+
+    @Override
+    public RunInstance scaleUpPersistentNode(final AwsRegion region,
+                                             final String nodeIdLabel,
+                                             final PersistentNode node) {
+        final RunInstance instance = node.toRunInstance();
+        final Map<String, String> labels = Collections.singletonMap(
+                KubernetesConstants.PERSISTENT_NODE_ID_LABEL, String.valueOf(node.getId()));
+        final String command = buildNodeUpCommand(region, nodeIdLabel, instance, labels);
+        return instanceService.runNodeUpScript(cmdExecutor, null, instance, command, buildScriptEnvVars());
     }
 
     @Override
     public void scaleDownNode(final AwsRegion region, final Long runId) {
         final String command = commandService.buildNodeDownCommand(nodeDownScript, runId, getProviderName());
         instanceService.runNodeDownScript(cmdExecutor, command, buildScriptEnvVars());
-    }
-
-    //TODO: This code won't work for current scripts
-    @Override
-    public void scaleUpFreeNode(final AwsRegion region, final String nodeId) {
-        String command = buildNodeUpDefaultCommand(region, nodeId);
-        log.debug("Creating default free node. Command: {}.", command);
-        //TODO: issue token for some default user???
-        executeCmd(command, buildScriptEnvVars());
     }
 
     @Override
@@ -255,16 +258,19 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     private String buildNodeUpCommand(final AwsRegion region,
-                                      final Long runId,
-                                      final RunInstance instance) {
+                                      final String nodeLabel,
+                                      final RunInstance instance,
+                                      final Map<String, String> labels) {
         final NodeUpCommand.NodeUpCommandBuilder commandBuilder =
-                commandService.buildNodeUpCommand(nodeUpScript, region, runId, instance, getProviderName())
+                commandService.buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName())
                                .sshKey(region.getSshKeyName());
 
         if (StringUtils.isNotBlank(region.getKmsKeyId())) {
             commandBuilder.encryptionKey(region.getKmsKeyId());
         }
         addSpotArguments(instance, commandBuilder, region.getId());
+        commandBuilder.prePulledImages(instance.getPrePulledDockerImages());
+        commandBuilder.additionalLabels(labels);
         return commandBuilder.build().getCommand();
     }
 
@@ -299,22 +305,6 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         }
     }
 
-    private String buildNodeUpDefaultCommand(final AwsRegion region, final String nodeId) {
-
-        final NodeUpCommand.NodeUpCommandBuilder commandBuilder =
-                commandService.buildDefaultNodeUpCommand(nodeUpScript, region, nodeId, getProviderName())
-                               .sshKey(region.getSshKeyName());
-
-        if (StringUtils.isNotBlank(region.getKmsKeyId())) {
-            commandBuilder.encryptionKey(region.getKmsKeyId());
-        }
-        if (preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT)) {
-            setBidPrice(commandBuilder, preferenceManager.getPreference(
-                    SystemPreferences.CLUSTER_INSTANCE_TYPE), region.getId());
-        }
-        return commandBuilder.build().getCommand();
-    }
-
     private void setBidPrice(final NodeUpCommand.NodeUpCommandBuilder commandBuilder,
                              final String preference,
                              final Long id) {
@@ -322,14 +312,6 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         commandBuilder.isSpot(true);
         commandBuilder.bidPrice(Optional.ofNullable(bidPrice)
                 .map(p -> String.valueOf(bidPrice)).orElse(StringUtils.EMPTY));
-    }
-
-    private void executeCmd(final String command, final Map<String, String> envVars) {
-        try {
-            cmdExecutor.executeCommandWithEnvVars(command, envVars);
-        } catch (CmdExecutionException e) {
-            log.error(e.getMessage(), e);
-        }
     }
 
     private Map<String, String> buildScriptEnvVars() {

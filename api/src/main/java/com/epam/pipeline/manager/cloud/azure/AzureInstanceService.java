@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.schedule.PersistentNode;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AzureRegion;
@@ -109,17 +110,18 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
+    public RunInstance scaleUpPersistentNode(final AzureRegion region,
+                                             final String nodeId,
+                                             final PersistentNode node) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void scaleDownNode(final AzureRegion region, final Long runId) {
         final String command = buildNodeDownCommand(runId);
         final Map<String, String> envVars = buildScriptAzureEnvVars(region);
         CompletableFuture.runAsync(() -> instanceService.runNodeDownScript(cmdExecutor, command, envVars),
                 executorService.getExecutorService());
-    }
-
-    //TODO: This code won't work for current scripts
-    @Override
-    public void scaleUpFreeNode(final AzureRegion region, final String nodeId) {
-        throw new UnsupportedOperationException();
     }
 
     @Override

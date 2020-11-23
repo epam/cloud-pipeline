@@ -47,7 +47,7 @@ public class PersistentNodeManager {
     private final ToolManager toolManager;
     private final MessageHelper messageHelper;
 
-    public List<PersistentNode> getActiveNodes() {
+    public List<PersistentNode> getActiveScheduleNodes() {
         return nodeDao.loadAll();
     }
 
@@ -58,6 +58,10 @@ public class PersistentNodeManager {
 
     public List<PersistentNode> loadAll() {
         return nodeDao.loadAll();
+    }
+
+    public Optional<PersistentNode> find(final Long nodeId) {
+        return nodeDao.find(nodeId);
     }
 
     public PersistentNode load(final Long nodeId) {
@@ -115,7 +119,7 @@ public class PersistentNodeManager {
         Optional.ofNullable(vo.getScheduleId())
                 .ifPresent(scheduleManager::load);
 
-        Optional.ofNullable(vo.getDockerImage())
-                .ifPresent(image -> toolManager.loadByNameOrId(vo.getDockerImage()));
+        Optional.ofNullable(vo.getDockerImages())
+                .ifPresent(images -> images.forEach(toolManager::loadByNameOrId));
     }
 }

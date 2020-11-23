@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.schedule.PersistentNode;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -51,19 +52,14 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      */
     RunInstance scaleUpNode(T region, Long runId, RunInstance instance);
 
+    RunInstance scaleUpPersistentNode(T region, String nodeId, PersistentNode node);
+
     /**
      * Terminates instances in the cloud and removes it from cluster
      * @param region
      * @param runId
      */
     void scaleDownNode(T region, Long runId);
-
-    /**
-     * Creates new idle node without assignment to any existing run
-     * @param region
-     * @param nodeId
-     */
-    void scaleUpFreeNode(T region, String nodeId);
 
     /**
      * Terminates instances in the cloud and removes it from the cluster

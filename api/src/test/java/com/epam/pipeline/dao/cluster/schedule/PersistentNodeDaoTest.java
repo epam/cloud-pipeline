@@ -61,8 +61,6 @@ public class PersistentNodeDaoTest extends AbstractSpringTest {
     public void shouldUpdateNode() {
         final PersistentNode node = PersistentNodeCreatorUtils.getNodeWithoutSchedule();
         final PersistentNode created = nodeDao.create(node);
-        created.setDockerImage(NEW_VALUE);
-        created.setInstanceType(NEW_VALUE);
         created.setCount(2);
         created.setName(NEW_VALUE);
         nodeDao.update(created);

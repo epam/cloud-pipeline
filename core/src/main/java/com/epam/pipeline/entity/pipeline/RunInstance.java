@@ -25,6 +25,7 @@ import lombok.Setter;
 import org.springframework.util.StringUtils;
 
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Created by Mariia_Zueva on 5/29/2017.
@@ -51,6 +52,10 @@ public class RunInstance {
     private Boolean spot;
     private Long cloudRegionId;
     private CloudProvider cloudProvider;
+    /**
+     * Docker images that shall be pre-pulled to the instance
+     */
+    private Set<String> prePulledDockerImages;
 
     @JsonIgnore
     public boolean isEmpty() {

@@ -22,6 +22,8 @@ import com.epam.pipeline.entity.cluster.schedule.PersistentNode;
 import com.epam.pipeline.entity.cluster.schedule.ScheduleEntry;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.SetUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -33,10 +35,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @RequiredArgsConstructor
 public class PersistentNodeDao extends NamedParameterJdbcDaoSupport {
@@ -94,6 +100,8 @@ public class PersistentNodeDao extends NamedParameterJdbcDaoSupport {
         NODE_DOCKER_IMAGE,
         NODE_INSTANCE_COUNT;
 
+        public static final String DOCKER_IMAGE_DELIMITER = ",";
+
         static MapSqlParameterSource getParameters(final PersistentNode node) {
             final MapSqlParameterSource params = new MapSqlParameterSource();
             params.addValue(NODE_ID.name(), node.getId());
@@ -103,7 +111,8 @@ public class PersistentNodeDao extends NamedParameterJdbcDaoSupport {
             params.addValue(NODE_INSTANCE_TYPE.name(), node.getInstanceType());
             params.addValue(NODE_INSTANCE_DISK.name(), node.getInstanceDisk());
             params.addValue(NODE_PRICE_TYPE.name(), node.getPriceType().name());
-            params.addValue(NODE_DOCKER_IMAGE.name(), node.getDockerImage());
+            params.addValue(NODE_DOCKER_IMAGE.name(), String.join(DOCKER_IMAGE_DELIMITER,
+                    SetUtils.emptyIfNull(node.getDockerImages())));
             params.addValue(NODE_INSTANCE_COUNT.name(), node.getCount());
             params.addValue(NodeScheduleParameters.SCHEDULE_ID.name(),
                     Optional.ofNullable(node.getSchedule())
@@ -148,9 +157,16 @@ public class PersistentNodeDao extends NamedParameterJdbcDaoSupport {
             node.setInstanceType(rs.getString(NODE_INSTANCE_TYPE.name()));
             node.setInstanceDisk(rs.getInt(NODE_INSTANCE_DISK.name()));
             node.setPriceType(PriceType.valueOf(rs.getString(NODE_PRICE_TYPE.name())));
-            node.setDockerImage(rs.getString(NODE_DOCKER_IMAGE.name()));
+            node.setDockerImages(parseDockerImages(rs.getString(NODE_DOCKER_IMAGE.name())));
             node.setCount(rs.getInt(NODE_INSTANCE_COUNT.name()));
             return node;
+        }
+
+        private static Set<String> parseDockerImages(final String line) {
+            if (StringUtils.isBlank(line)) {
+                return Collections.emptySet();
+            }
+            return new HashSet<>(Arrays.asList(line.split(DOCKER_IMAGE_DELIMITER)));
         }
     }
 }

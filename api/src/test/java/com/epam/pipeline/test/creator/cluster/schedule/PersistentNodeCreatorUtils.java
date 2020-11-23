@@ -19,6 +19,7 @@ import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.schedule.PersistentNode;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 
 public final class PersistentNodeCreatorUtils {
 
@@ -38,7 +39,7 @@ public final class PersistentNodeCreatorUtils {
         node.setName(NODE_NAME);
         node.setCreated(LocalDateTime.now());
         node.setCount(INSTANCE_COUNT);
-        node.setDockerImage(DOCKER_IMAGE);
+        node.setDockerImages(Collections.singleton(DOCKER_IMAGE));
         node.setPriceType(PriceType.ON_DEMAND);
         node.setInstanceType(INSTANCE_TYPE);
         node.setRegionId(REGION_ID);

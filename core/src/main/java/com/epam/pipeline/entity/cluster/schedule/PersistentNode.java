@@ -16,11 +16,12 @@
 package com.epam.pipeline.entity.cluster.schedule;
 
 import com.epam.pipeline.entity.cluster.PriceType;
-import com.epam.pipeline.entity.cluster.schedule.NodeSchedule;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.Set;
 
 @Data
 public class PersistentNode {
@@ -32,7 +33,7 @@ public class PersistentNode {
     private String instanceType;
     private int instanceDisk;
     private PriceType priceType;
-    private String dockerImage;
+    private Set<String> dockerImages;
     private int count;
     private NodeSchedule schedule;
 
@@ -40,5 +41,32 @@ public class PersistentNode {
         return Optional.ofNullable(schedule)
                 .map(s -> s.isActive(timestamp))
                 .orElse(true);
+    }
+
+    public boolean match(final RunInstance instance) {
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        return "PersistentNode{" +
+                "regionId=" + regionId +
+                ", instanceType='" + instanceType + '\'' +
+                ", instanceDisk=" + instanceDisk +
+                ", priceType=" + priceType +
+                ", dockerImage=" + dockerImages +
+                ", count=" + count +
+                '}';
+    }
+
+    public RunInstance toRunInstance() {
+        final RunInstance runInstance = new RunInstance();
+        runInstance.setNodeType(instanceType);
+        runInstance.setCloudRegionId(regionId);
+        runInstance.setNodeDisk(instanceDisk);
+        runInstance.setEffectiveNodeDisk(instanceDisk);
+        runInstance.setSpot(PriceType.SPOT.equals(priceType));
+        runInstance.setPrePulledDockerImages(dockerImages);
+        return runInstance;
     }
 }

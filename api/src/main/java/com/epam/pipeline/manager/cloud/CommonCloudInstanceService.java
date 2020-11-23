@@ -38,6 +38,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -138,6 +139,9 @@ public class CommonCloudInstanceService {
     }
 
     private String getApiTokenForRun(final Long runId) {
+        if (Objects.isNull(runId)) {
+            return authManager.issueTokenForCurrentUser().getToken();
+        }
         PipelineRun run = pipelineRunManager.loadPipelineRun(runId);
         UserContext owner = Optional.ofNullable(authManager.getUserContext())
                 .orElse(userManager.loadUserContext(run.getOwner()));

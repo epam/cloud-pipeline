@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
+import com.epam.pipeline.entity.cluster.schedule.PersistentNode;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -88,15 +89,20 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public void scaleUpFreeNode(final String nodeId) {
-        AbstractCloudRegion defaultRegion = regionManager.loadDefaultRegion();
-        getInstanceService(defaultRegion).scaleUpFreeNode(defaultRegion, nodeId);
+    public RunInstance scaleUpPersistentNode(final String nodeId, final PersistentNode node) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(node.getRegionId());
+        return getInstanceService(region).scaleUpPersistentNode(region, nodeId, node);
     }
 
     @Override
     public void scaleDownNode(final Long runId) {
         final AbstractCloudRegion region = getRegionByRunId(runId);
         getInstanceService(region).scaleDownNode(region, runId);
+    }
+
+    @Override
+    public void scaleDownPersistentNode(final String nodeLabel) {
+        //TODO
     }
 
     @Override
@@ -123,6 +129,11 @@ public class CloudFacadeImpl implements CloudFacade {
     public boolean reassignNode(final Long oldId, final Long newId) {
         final AbstractCloudRegion region = getRegionByRunId(oldId);
         return getInstanceService(region).reassignNode(region, oldId, newId);
+    }
+
+    @Override
+    public boolean reassignPersistentNode(final String nodeLabel, final Long newId) {
+        return false;
     }
 
     @Override

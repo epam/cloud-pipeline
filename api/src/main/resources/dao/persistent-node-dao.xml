@@ -52,11 +52,6 @@
                 <![CDATA[
                     UPDATE pipeline.persistent_node SET
                         name = :NODE_NAME,
-                        region_id = :NODE_REGION_ID,
-                        instance_type = :NODE_INSTANCE_TYPE,
-                        node_disk = :NODE_INSTANCE_DISK,
-                        price_type = :NODE_PRICE_TYPE,
-                        docker_image = :NODE_DOCKER_IMAGE,
                         instance_count = :NODE_INSTANCE_COUNT,
                         schedule_id = :SCHEDULE_ID
                     WHERE
