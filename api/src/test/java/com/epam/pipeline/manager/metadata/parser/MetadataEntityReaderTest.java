@@ -16,10 +16,12 @@
 
 package com.epam.pipeline.manager.metadata.parser;
 
+import static com.epam.pipeline.manager.metadata.parser.MetadataFileBuilder.SAMPLE1_ID;
 import static com.epam.pipeline.manager.metadata.parser.MetadataFileBuilder.prepareInputData;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.function.Function;
@@ -30,9 +32,16 @@ import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.manager.utils.MetadataParsingUtils;
+import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 
 public class MetadataEntityReaderTest {
+
+    private static final List<String> DATA_WITH_MISSING_IDS = Arrays.asList(
+            "Sample:ID${d}name\n", 
+            "s1${d}Sample1\n",
+            "${d}Sample2\n",
+            "${d}Sample3\n");
 
     private Folder parent = new Folder(1L);
     private MetadataClass metadataClass = new MetadataClass(1L, MetadataFileBuilder.SAMPLE_CLASS_NAME);
@@ -54,6 +63,26 @@ public class MetadataEntityReaderTest {
         compareResults(expectedResult, csvEntities);
     }
 
+    @Test
+    public void readDataWithMissingIds() throws IOException {
+        final InputStream data = prepareInputData(MetadataParsingUtils.TAB_DELIMITER, DATA_WITH_MISSING_IDS);
+        MetadataParsingResult entities =
+                new MetadataEntityReader(MetadataParsingUtils.TAB_DELIMITER, parent, metadataClass)
+                        .readData(data, getNameField());
+
+        final Map<String, MetadataEntity> parsedEntitiesMap = entities.getEntities();
+        final List<String> parsedEntityGeneratedIds = parsedEntitiesMap.keySet().stream()
+                .filter(it -> !it.equals(SAMPLE1_ID))
+                .collect(Collectors.toList());
+        assertEquals(3, parsedEntitiesMap.size());
+        assertEquals(2, parsedEntityGeneratedIds.size());
+        for (final String parsedEntityGeneratedId : parsedEntityGeneratedIds) {
+            final MetadataEntity parsedEntity = parsedEntitiesMap.get(parsedEntityGeneratedId);
+            assertTrue(StringUtils.isNotBlank(parsedEntityGeneratedId));
+            assertEquals(parsedEntityGeneratedId, parsedEntity.getExternalId());
+        }
+    }
+
     private void compareResults(MetadataParsingResult expected, MetadataParsingResult actual) {
         assertEquals(expected.getMetadataClass(), actual.getMetadataClass());
         assertEquals(expected.getReferences(), actual.getReferences());
@@ -65,6 +94,12 @@ public class MetadataEntityReaderTest {
             assertEquals(entity.getExternalId(), actualEntity.getExternalId());
             assertEquals(entity.getName(), actualEntity.getName());
         });
+    }
+
+    private Map<Integer, EntityTypeField> getNameField() {
+        MetadataHeader fields = new MetadataHeader(MetadataFileBuilder.SAMPLE_CLASS_NAME);
+        fields.addField(1, new EntityTypeField("name", EntityTypeField.DEFAULT_TYPE, false, false));
+        return fields.getFields();
     }
 
     private Map<Integer, EntityTypeField> getFields() {
