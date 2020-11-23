@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.issue;
+package com.epam.pipeline.acl.issue;
 
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.EntityVO;
@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.IssueCommentVO;
 import com.epam.pipeline.controller.vo.IssueVO;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
+import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.security.acl.AclExpressions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PostAuthorize;

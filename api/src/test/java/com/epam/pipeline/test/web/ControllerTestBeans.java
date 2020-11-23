@@ -37,7 +37,7 @@ import com.epam.pipeline.acl.entity.EntityApiService;
 import com.epam.pipeline.manager.firecloud.FirecloudApiService;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
-import com.epam.pipeline.manager.issue.IssueApiService;
+import com.epam.pipeline.acl.issue.IssueApiService;
 import com.epam.pipeline.manager.metadata.CategoricalAttributeApiService;
 import com.epam.pipeline.manager.metadata.MetadataApiService;
 import com.epam.pipeline.manager.metadata.MetadataEntityApiService;

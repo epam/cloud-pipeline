@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.issue;
 
+import com.epam.pipeline.acl.issue.IssueApiService;
 import com.epam.pipeline.app.TestApplicationWithAclSecurity;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.EntityVO;
