@@ -288,11 +288,6 @@ function cp_cap_init {
                   source "$CP_ENV_FILE_TO_SOURCE"
                   echo "--> Done $_CAP_INIT_SCRIPT"
             fi
-
-            if [ "$cluster_role" = "master" ] && check_cp_cap "CP_CAP_AUTOSCALE" && check_cp_cap "CP_CAP_SGE"
-            then
-                  nohup $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/autoscale_sge.py 1>/dev/null 2>$LOG_DIR/.nohup.sge.autoscale.log &
-            fi
       fi
 }
 

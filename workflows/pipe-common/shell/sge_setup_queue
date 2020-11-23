@@ -1,0 +1,167 @@
+#!/usr/bin/env bash
+
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+SGE_MASTER_SETUP_TASK="SGEMasterSetup"
+
+check_last_exit_code() {
+  exit_code=$1
+  msg_if_success=$2
+  msg_if_fail=$3
+  if [[ "$exit_code" -ne 0 ]]; then
+    pipe_log_fail "$msg_if_fail" "${SGE_MASTER_SETUP_TASK}"
+    kill -s "$CURRENT_PID"
+    exit 1
+  else
+    pipe_log_info "$msg_if_success" "${SGE_MASTER_SETUP_TASK}"
+  fi
+}
+
+create_hostlist() {
+  HOSTLIST=$1
+  echo -e "group_name $HOSTLIST\nhostlist NONE" >./grid
+  qconf -Ahgrp ./grid
+  rm -f ./grid
+}
+
+create_queue() {
+  QUEUE=$1
+  HOSTLIST=$2
+  PE=$3
+
+  cat >./grid <<EOL
+        qname                 $QUEUE
+        hostlist              $HOSTLIST
+        seq_no                0
+        load_thresholds       NONE
+        suspend_thresholds    NONE
+        nsuspend              1
+        suspend_interval      00:00:01
+        priority              0
+        min_cpu_interval      00:00:01
+        processors            UNDEFINED
+        qtype                 BATCH INTERACTIVE
+        ckpt_list             NONE
+        pe_list               $PE
+        rerun                 FALSE
+        slots                 2
+        tmpdir                /tmp
+        shell                 /bin/bash
+        prolog                NONE
+        epilog                NONE
+        shell_start_mode      unix_behavior
+        starter_method        NONE
+        suspend_method        NONE
+        resume_method         NONE
+        terminate_method      NONE
+        notify                00:00:01
+        owner_list            NONE
+        user_lists            NONE
+        xuser_lists           NONE
+        subordinate_list      NONE
+        complex_values        NONE
+        projects              NONE
+        xprojects             NONE
+        calendar              NONE
+        initial_state         default
+        s_rt                  INFINITY
+        h_rt                  INFINITY
+        s_cpu                 INFINITY
+        h_cpu                 INFINITY
+        s_fsize               INFINITY
+        h_fsize               INFINITY
+        s_data                INFINITY
+        h_data                INFINITY
+        s_stack               INFINITY
+        h_stack               INFINITY
+        s_core                INFINITY
+        h_core                INFINITY
+        s_rss                 INFINITY
+        h_rss                 INFINITY
+        s_vmem                INFINITY
+        h_vmem                INFINITY
+EOL
+  qconf -Aq ./grid
+  rm -f ./grid
+}
+
+add_worker_to_hostlist() {
+  HOSTLIST=$1
+
+  # add to the all hosts list
+  qconf -aattr hostgroup hostlist $HOSTNAME $HOSTLIST
+}
+
+enable_worker_in_queue() {
+  QUEUE=$1
+
+  # enable the host for the queue, in case it was disabled and not removed
+  qmod -e $QUEUE@$HOSTNAME
+}
+
+add_worker_to_queue_slots() {
+  QUEUE=$1
+  SLOTS=$2
+
+  if [ "$SLOTS" ]; then
+    qconf -aattr queue slots "[$HOSTNAME=$SLOTS]" $QUEUE
+  fi
+}
+
+disable_worker_in_queue() {
+  QUEUE=$1
+  SLOTS=$2
+
+  qmod -d $QUEUE@$HOSTNAME
+}
+
+create_hostlist "$CP_CAP_SGE_HOSTLIST_NAME"
+check_last_exit_code $? "Hostlist $CP_CAP_SGE_HOSTLIST_NAME was configured" \
+                        "Fail to configure hostlist $CP_CAP_SGE_HOSTLIST_NAME"
+
+create_queue "$CP_CAP_SGE_QUEUE_NAME" "$CP_CAP_SGE_HOSTLIST_NAME" "$CP_CAP_SGE_PE_NAME $CP_CAP_SGE_PE_MPI_NAME"
+check_last_exit_code $? "Queue $CP_CAP_SGE_QUEUE_NAME was configured" \
+                        "Fail to configure $CP_CAP_SGE_QUEUE_NAME queue"
+
+#add local worker
+add_worker_to_hostlist "$CP_CAP_SGE_HOSTLIST_NAME"
+check_last_exit_code $? "Master host was added to $CP_CAP_SGE_HOSTLIST_NAME hostlist" \
+                        "Fail to add master host to $CP_CAP_SGE_HOSTLIST_NAME hostlist"
+
+# If CP_CAP_SGE_MASTER_CORES is set to "0" - we'll not use master as a worker
+if [ "$CP_CAP_SGE_MASTER_CORES" == "0" ]; then
+  disable_worker_in_queue "$CP_CAP_SGE_QUEUE_NAME"
+  pipe_log_info "CP_CAP_SGE_MASTER_CORES is set to 0. Master host was disabled in $CP_CAP_SGE_QUEUE_NAME queue" "$SGE_MASTER_SETUP_TASK"
+else
+  # If CP_CAP_SGE_MASTER_CORES is set - then we'll it's value:
+  # - if larger that nproc - use nproc
+  # - if less - use CP_CAP_SGE_MASTER_CORES, e.g. if we'd like to keep some cores free
+  # If CP_CAP_SGE_MASTER_CORES not set - use nproc
+  _MASTER_WORKER_CORES=$(nproc)
+  CP_CAP_SGE_MASTER_CORES="${CP_CAP_SGE_MASTER_CORES:-999999999}"
+  _MASTER_WORKER_CORES=$((_MASTER_WORKER_CORES < CP_CAP_SGE_MASTER_CORES ? _MASTER_WORKER_CORES : CP_CAP_SGE_MASTER_CORES))
+
+  # If a certain number of cores, shall be reserved (outside the SGE): CP_CAP_SGE_WORKER_FREE_CORES can be used
+  # Total number of the worker slots is calculated as (_MASTER_WORKER_CORES - CP_CAP_SGE_WORKER_FREE_CORES). If the result <= 0: _MASTER_WORKER_CORES is used
+  _MASTER_WORKER_CORES_BKP=$_MASTER_WORKER_CORES
+  CP_CAP_SGE_WORKER_FREE_CORES="${CP_CAP_SGE_WORKER_FREE_CORES:-0}"
+  _MASTER_WORKER_CORES=$(($_MASTER_WORKER_CORES - $CP_CAP_SGE_WORKER_FREE_CORES))
+  (($_MASTER_WORKER_CORES <= 0)) && _MASTER_WORKER_CORES=$_MASTER_WORKER_CORES_BKP
+
+  enable_worker_in_queue "$CP_CAP_SGE_QUEUE_NAME" \
+  && add_worker_to_queue_slots "$CP_CAP_SGE_QUEUE_NAME" "$_MASTER_WORKER_CORES"
+  check_last_exit_code $? "Master host was enabled with $_MASTER_WORKER_CORES slots in $CP_CAP_SGE_QUEUE_NAME queue" \
+                          "Fail to enable master host in $CP_CAP_SGE_QUEUE_NAME queue"
+fi
