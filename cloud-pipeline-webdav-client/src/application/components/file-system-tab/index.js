@@ -197,7 +197,7 @@ function FileSystemTab (
   }, [onDropEvent]);
   const onDropParent = useCallback((event) => {
     onDropEvent(event, path);
-  }, [onDropEvent]);
+  }, [onDropEvent, path]);
   const onNameClicked = useCallback((e) => {
     if (e) {
       e.stopPropagation();
