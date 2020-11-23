@@ -86,6 +86,7 @@ public class C {
         CLUSTER_ALLOWED_MASKS = conf.getProperty("e2e.ui.cluster.allowed.masks");
         DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES = conf.getProperty("e2e.ui.default.cluster.allowed.price.types");
         TEST_DOCKER_IMAGE = conf.getProperty("e2e.ui.test.docker.image");
+        ANOTHER_CLOUD_REGION = conf.getProperty("e2e.ui.another.cloud.region");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -147,6 +148,7 @@ public class C {
     public static final String STORAGE_NAME_PREFIX;
     public static final String SEARCH_PREFIX;
     public static final String PLATFORM_NAME;
+    public static final String ANOTHER_CLOUD_REGION;
 
     public static final String ANONYMOUS_NAME;
     public static final String ANONYMOUS_TOKEN;

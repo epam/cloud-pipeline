@@ -26,10 +26,12 @@ import org.openqa.selenium.Keys;
 
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.codeborne.selenide.Selenide.switchTo;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -86,6 +88,12 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
+    public ShellAO assertNextStringIsVisible(String str1, String str2) {
+        $(withText(str1)).shouldBe(visible).parent()
+                .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible);
+        return this;
+    }
+
     public NavigationMenuAO assertAccessIsDenied() {
         assertPageContains("Permission denied");
         return close();
@@ -99,7 +107,7 @@ public class ShellAO implements AccessObject<ShellAO> {
     public ShellAO waitUntilTextAppears(final String runId) {
         for (int i = 0; i < 2; i++) {
             sleep(10, SECONDS);
-            if ($(withText(String.format("pipeline-%s", runId))).exists()) {
+            if ($(withText(format("pipeline-%s", runId))).exists()) {
                 break;
             }
             sleep(1, MINUTES);
