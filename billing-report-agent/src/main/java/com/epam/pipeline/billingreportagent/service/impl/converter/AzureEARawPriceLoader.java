@@ -28,13 +28,16 @@ import org.springframework.stereotype.Service;
 import retrofit2.Response;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
-public class AzureEARawPriceLoader extends AzureAbstractRawPriceLoader {
+public class AzureEARawPriceLoader extends AbstractAzureRawPriceLoader {
 
     private static final String API_VERSION = "2019-10-01";
 
@@ -49,7 +52,7 @@ public class AzureEARawPriceLoader extends AzureAbstractRawPriceLoader {
         return getPriceSheet(region, credentials);
     }
 
-    private List<AzurePricingEntity> getPriceSheet(final AzureRegion region, ApplicationTokenCredentials credentials)
+    private List<AzurePricingEntity> getPriceSheet(final AzureRegion region, final ApplicationTokenCredentials credentials)
             throws IOException {
         return getPriceSheet(region, credentials, new ArrayList<>(), null)
                     .stream()
@@ -67,7 +70,7 @@ public class AzureEARawPriceLoader extends AzureAbstractRawPriceLoader {
     }
 
     private List<AzureEAPricingMeter> getPriceSheet(final AzureRegion region, ApplicationTokenCredentials credentials,
-                                                    List<AzureEAPricingMeter> buffer, String skiptoken
+                                                    final List<AzureEAPricingMeter> buffer, String skiptoken
     ) throws IOException {
         Response<AzureEAPricingResult> meterDetails = buildRetrofitClient(credentials.environment().resourceManagerEndpoint())
                 .getPricesheet(String.format(AUTH_TOKEN_TEMPLATE,

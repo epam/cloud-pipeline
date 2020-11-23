@@ -29,70 +29,71 @@ import java.util.Map;
 public class AzurePriceListLoaderTest {
 
     private static final int THOUSAND = 1000;
+    private static final String TEST_REGION = "TestRegion";
 
     @Test
-    public void AzureNetAppPriceListLoaderTest() {
-        AzureNetAppStoragePriceListLoader loader = new AzureNetAppStoragePriceListLoader(null, null, null, "Standard");
-        Float azureApiPrice = 2f;
-        AzurePricingEntity pricingEntity = AzurePricingEntity.builder()
+    public void azureNetAppPriceListLoaderTest() {
+        final AzureNetAppStoragePriceListLoader loader = new AzureNetAppStoragePriceListLoader(null, null, null, "Standard");
+        final Float azureApiPrice = 2f;
+        final AzurePricingEntity pricingEntity = AzurePricingEntity.builder()
                 .unit(THOUSAND + " GiB/Hour")
                 .meterCategory("Azure NetApp Files")
                 .meterName("Standard Capacity")
-                .meterRegion("TestRegion")
+                .meterRegion(TEST_REGION)
                 .meterRates(Collections.singletonMap("0", azureApiPrice))
                 .build();
-        Map<String, StoragePricing> storagePricing = loader.extractPrices(
+        final Map<String, StoragePricing> storagePricing = loader.extractPrices(
                 Collections.singletonList(pricingEntity
         ));
         Assert.assertEquals(BigDecimal.valueOf(
                 azureApiPrice.doubleValue() * AbstractAzureStoragePriceListLoader.HRS_PER_MONTH
                 / THOUSAND * StoragePriceListLoader.CENTS_IN_DOLLAR),
-                storagePricing.get("TestRegion").getPrices().get(0).getPriceCentsPerGb()
+                storagePricing.get(TEST_REGION).getPrices().get(0).getPriceCentsPerGb()
         );
     }
 
     @Test
-    public void AzureBlobPriceListLoaderTest() {
-        AzureBlobStoragePriceListLoader loader = new AzureBlobStoragePriceListLoader(null, null, null,
+    public void azureBlobPriceListLoaderTest() {
+        final AzureBlobStoragePriceListLoader loader = new AzureBlobStoragePriceListLoader(null, null, null,
                 "General Block Blob", "Hot LRS");
-        Float azureApiPrice = 2.08f;
-        AzurePricingEntity pricingEntity = AzurePricingEntity.builder()
+        final Float azureApiPrice = 2.08f;
+        final AzurePricingEntity pricingEntity = AzurePricingEntity.builder()
                 .unit(THOUSAND + " GB/Month")
                 .meterCategory("Storage")
                 .meterSubCategory("General Block Blob V2 H")
                 .meterName("Hot LRS Data Stored")
-                .meterRegion("TestRegion")
+                .meterRegion(TEST_REGION)
                 .meterRates(Collections.singletonMap("0", azureApiPrice))
                 .build();
-        Map<String, StoragePricing> storagePricing = loader.extractPrices(
+        final Map<String, StoragePricing> storagePricing = loader.extractPrices(
                 Collections.singletonList(pricingEntity
                 ));
         Assert.assertEquals(BigDecimal.valueOf(
                 azureApiPrice.doubleValue() / THOUSAND * StoragePriceListLoader.CENTS_IN_DOLLAR),
-                storagePricing.get("TestRegion").getPrices().get(0).getPriceCentsPerGb()
+                storagePricing.get(TEST_REGION).getPrices().get(0).getPriceCentsPerGb()
         );
     }
 
     @Test
-    public void AzureFilesPriceListLoaderTest() {
-        AzureFilesStoragePriceListLoader loader = new AzureFilesStoragePriceListLoader(
+    public void azureFilesPriceListLoaderTest() {
+        final AzureFilesStoragePriceListLoader loader = new AzureFilesStoragePriceListLoader(
                 null, null, null, "Hot LRS"
         );
-        Float azureApiPrice = 2.08f;
-        AzurePricingEntity pricingEntity = AzurePricingEntity.builder()
+        final Float azureApiPrice = 2.08f;
+        final AzurePricingEntity pricingEntity = AzurePricingEntity.builder()
                 .unit(THOUSAND + " GB/Month")
                 .meterCategory("Storage")
                 .meterSubCategory("Files v2")
                 .meterName("Hot LRS Data Stored")
-                .meterRegion("TestRegion")
+                .meterRegion(TEST_REGION)
                 .meterRates(Collections.singletonMap("0", azureApiPrice))
                 .build();
-        Map<String, StoragePricing> storagePricing = loader.extractPrices(
+        final Map<String, StoragePricing> storagePricing = loader.extractPrices(
                 Collections.singletonList(pricingEntity
                 ));
         Assert.assertEquals(BigDecimal.valueOf(
                 azureApiPrice.doubleValue() / THOUSAND * StoragePriceListLoader.CENTS_IN_DOLLAR),
-                storagePricing.get("TestRegion").getPrices().get(0).getPriceCentsPerGb()
+                storagePricing.get(TEST_REGION).getPrices().get(0).getPriceCentsPerGb()
         );
     }
 

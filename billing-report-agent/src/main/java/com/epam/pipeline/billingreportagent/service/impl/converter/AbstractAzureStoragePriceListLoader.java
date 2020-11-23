@@ -53,13 +53,13 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
     protected static final String GIB_HOUR_DIMENSION = "GiB/Hour";
     protected static final String STORAGE_CATEGORY = "Storage";
     protected static final String DATA_STORE_METER_TEMPLATE = "%s Data Stored";
+    private final static Pattern AZURE_UNIT_PATTERN = Pattern.compile("(\\d+)\\s([\\w/]+)");
 
     private CloudRegionLoader regionLoader;
     private AzureRateCardRawPriceLoader rawRateCardPriceLoader;
     private AzureEARawPriceLoader rawEAPriceLoader;
 
     private final Logger logger;
-    private Pattern AZURE_UNIT_PATTERN = Pattern.compile("(\\d+)\\s([\\w/]+)");
 
     public AbstractAzureStoragePriceListLoader(final CloudRegionLoader regionLoader,
                                                final AzureRateCardRawPriceLoader rawRateCardPriceLoader,

@@ -33,11 +33,13 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Service
-public abstract class AzureAbstractRawPriceLoader {
+public abstract class AbstractAzureRawPriceLoader {
 
     private static final int READ_TIMEOUT = 30;
     private static final int CONNECT_TIMEOUT = 30;
@@ -50,7 +52,7 @@ public abstract class AzureAbstractRawPriceLoader {
     protected final Map<String, List<AzurePricingEntity>> azureRegionPricing = new HashMap<>();
 
     @Autowired
-    public AzureAbstractRawPriceLoader(final @Value("${sync.storage.azure.price.retention.minutes:30}")
+    public AbstractAzureRawPriceLoader(final @Value("${sync.storage.azure.price.retention.minutes:30}")
                                    Long retentionTimeoutMinutes) {
         this.lastPriceUpdate = LocalDateTime.now();
         this.retentionTimeoutMinutes = retentionTimeoutMinutes;
