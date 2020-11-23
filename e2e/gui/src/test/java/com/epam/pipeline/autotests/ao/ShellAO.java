@@ -19,9 +19,17 @@ import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Utils;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.google.common.collect.Comparators;
 import org.openqa.selenium.Keys;
 
 import static com.codeborne.selenide.Condition.text;
@@ -104,6 +112,15 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
+    public ShellAO assertFileVersionsCount(String command, String fileName, int expectedCount) {
+        String results = lastCommandResult(command);
+        Matcher matcher = Pattern.compile(fileName).matcher(results);
+        int count = 0;
+        while(matcher.find()) {count++;}
+        assertTrue(count == expectedCount);
+        return this;
+    }
+
     private String lastCommandResult(String command) {
         String str = context().text().substring(context().text().indexOf(command))
                 .replace("\n", "");
@@ -149,6 +166,22 @@ public class ShellAO implements AccessObject<ShellAO> {
             sleep(5, SECONDS);
             new NavigationMenuAO().runs().showLog(runId).clickOnSshLink();
         }
+        return this;
+    }
+
+    public List<String> versionsCreationData(String command){
+        String log = lastCommandResult(command);
+        List<String> list = new ArrayList<>();
+        Matcher matcher = Pattern.compile(" \\d{4}:\\d{2}:\\d{2} \\d{2}:\\d{2}:\\d{2} ").matcher(log);
+        while(matcher.find()) {
+            list.add(matcher.group());
+        }
+        return list;
+    }
+
+    public ShellAO checkVersionsListIsSorted(String command) {
+        List<String> vers = versionsCreationData(command);
+        assertTrue(Comparators.isInOrder(vers, Comparator.reverseOrder()));
         return this;
     }
 

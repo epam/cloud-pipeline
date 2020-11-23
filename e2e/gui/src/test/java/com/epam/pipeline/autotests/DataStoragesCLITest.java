@@ -32,12 +32,22 @@ import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
 import static java.lang.String.format;
 
 @Listeners(value = ConditionalTestAnalyzer.class)
-public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
+public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
         implements Authorization, Navigation {
 
     private String storage1 = "dataStorageCLI-" + Utils.randomSuffix();
     private String storage2 = "dataStorageCLI-" + Utils.randomSuffix();
     private String fileFor1469 = "fileFromStorage1";
+    private String storage3 = "dataStorageCLI-" + Utils.randomSuffix();
+    private String folder1 = "3-folderDataStorageCLI-" + Utils.randomSuffix();
+    private String folder2 = "2-folderDataStorageCLI-" + Utils.randomSuffix();
+    private String folder3 = "4-folderDataStorageCLI-" + Utils.randomSuffix();
+    private String folder4 = "5-folderDataStorageCLI-" + Utils.randomSuffix();
+    private String fileFor1339_1 = "6-fileFor1339-" + Utils.randomSuffix();
+    private String fileFor1339_2 = "1-fileFor1339-" + Utils.randomSuffix();
+    private String fileFor1339_3 = "fileFor1339-" + Utils.randomSuffix();
+    private String pathStorage3 = "";
+    private String runID1339 = "";
     private String anotherCloudRegion = C.ANOTHER_CLOUD_REGION;
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
@@ -45,7 +55,7 @@ public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
 
     @AfterClass(alwaysRun = true)
     public void removeStorages() {
-        Utils.removeStorages(this, storage1, storage2);
+        Utils.removeStorages(this, storage1, storage2, storage3);
     }
 
     @Test
@@ -68,12 +78,12 @@ public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setDefaultLaunchOptions()
                 .launchTool(this, Utils.nameWithoutGroup(tool))
-                .showLog(getRunId())
+                .showLog(getLastRunId())
                 .waitForSshLink()
                 .ssh(shell -> shell
-                        .waitUntilTextAppears(getRunId())
+                        .waitUntilTextAppears(getLastRunId())
                         .execute(format("pipe storage cp %s/%s %s/", pathStorage1, fileFor1469, pathStorage2))
-                        .assertNextStringIsVisible("100%", format("pipeline-%s", getRunId()))
+                        .assertNextStringIsVisible("100%", format("pipeline-%s", getLastRunId()))
                         .close());
         library()
                 .selectStorage(storage2)
@@ -83,12 +93,12 @@ public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
                 .rmFile(fileFor1469)
                 .validateCurrentFolderIsEmpty();
         runsMenu()
-                .showLog(getRunId())
+                .showLog(getLastRunId())
                 .waitForSshLink()
                 .ssh(shell -> shell
-                        .waitUntilTextAppears(getRunId())
+                        .waitUntilTextAppears(getLastRunId())
                         .execute(format("pipe storage mv %s/%s %s/", pathStorage2, fileFor1469, pathStorage1))
-                        .assertNextStringIsVisible("100%", format("pipeline-%s", getRunId()))
+                        .assertNextStringIsVisible("100%", format("pipeline-%s", getLastRunId()))
                         .close());
         library()
                 .selectStorage(storage2)
@@ -97,5 +107,83 @@ public class DataStoragesCLITest extends AbstractSinglePipelineRunningTest
         library()
                 .selectStorage(storage1)
                 .validateElementIsPresent(fileFor1469);
+    }
+
+    @Test
+    @TestCase(value = {"1339_1"})
+    public void checkPipeStorageLsPaging() {
+        pathStorage3 = library()
+                .clickOnCreateStorageButton()
+                .setStoragePath(storage3)
+                .setEnableVersioning(true)
+                .ok()
+                .selectStorage(storage3)
+                .createFolder(folder1)
+                .createFolder(folder2)
+                .createFolder(folder3)
+                .createFolder(folder4)
+                .createFile(fileFor1339_1)
+                .createFile(fileFor1339_2)
+                .getStoragePath();
+        String[] commands = {
+                format("pipe storage ls %s/", pathStorage3),
+                format("pipe storage ls --page 2 %s/", pathStorage3),
+                format("pipe storage ls -p 4 %s/", pathStorage3)};
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .setDefaultLaunchOptions()
+                .launchTool(this, Utils.nameWithoutGroup(tool))
+                .showLog(runID1339 = getLastRunId())
+                .waitForSshLink()
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(runID1339)
+                        .execute(commands[0])
+                        .assertPageAfterCommandContainsStrings(commands[0],
+                                folder1, folder2, folder3, folder4, fileFor1339_1, fileFor1339_2)
+                        .assertResultsCount(commands[0], runID1339, 6)
+                        .execute(commands[1])
+                        .assertPageAfterCommandContainsStrings(commands[1], folder2, fileFor1339_2)
+                        .assertPageAfterCommandNotContainsStrings(commands[1],
+                                folder1, folder3, folder4, fileFor1339_1)
+                        .assertResultsCount(commands[1], runID1339, 2)
+                        .execute(commands[2])
+                        .assertPageAfterCommandContainsStrings(commands[2],
+                                folder1, folder2, folder3, fileFor1339_2)
+                        .assertPageAfterCommandNotContainsStrings(commands[2], folder4, fileFor1339_1)
+                        .assertResultsCount(commands[2], runID1339, 4)
+                        .close());
+    }
+
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
+    @Test(dependsOnMethods = {"checkPipeStorageLsPaging"})
+    @TestCase(value = {"1339_2"})
+    public void checkPipeStorageLsPagingOfVersions() {
+        String[] commands =
+                {format("pipe storage ls -l -v %s/%s", pathStorage3, fileFor1339_3),
+                 format("pipe storage ls -l -v --page 3 %s/%s", pathStorage3, fileFor1339_3),
+                 format("pipe storage ls -l -v -p 1 %s/%s", pathStorage3, fileFor1339_3)};
+        library()
+                .selectStorage(storage3)
+                .createFileWithContent(fileFor1339_3, "initial description")
+                .editFile(fileFor1339_3, "\n1st update")
+                .editFile(fileFor1339_3, "\n2nd update")
+                .editFile(fileFor1339_3, "\n3th update")
+                .editFile(fileFor1339_3, "\n4th update");
+        runsMenu()
+                .showLog(runID1339)
+                .waitForSshLink()
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(runID1339)
+                        .execute(commands[0])
+                        .assertFileVersionsCount(commands[0], fileFor1339_3, 6)
+                        .execute(commands[1])
+                        .assertFileVersionsCount(commands[1], fileFor1339_3, 4)
+                        .checkVersionsListIsSorted(commands[1])
+                        .assertPageAfterCommandContainsStrings("(latest)")
+                        .execute(commands[2])
+                        .assertFileVersionsCount(commands[2], fileFor1339_3, 2)
+                        .checkVersionsListIsSorted(commands[2])
+                        .assertPageAfterCommandContainsStrings("(latest)")
+                        .close());
     }
 }

@@ -185,6 +185,15 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return this;
     }
 
+    public StorageContentAO createFileWithContent(String fileName, String content) {
+        sleep(1, SECONDS);
+        resetMouse().hover(CREATE).click(CREATE_FILE);
+        $$(byId("name")).findBy(visible).setValue(fileName);
+        $$(byId("content")).findBy(visible).setValue(content);
+        $(button("OK")).shouldBe(visible).click();
+        return this;
+    }
+
     public StorageContentAO createAndEditFile(String fileName, String fileText) {
         return createFile(fileName)
                 .fileMetadata(fileName)
@@ -474,10 +483,6 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
     public StorageContentAO removeAllSelectedElements() {
         return selectElementsUsingCheckboxes().removeAllSelected();
-    }
-
-    public String getStoragePath() {
-        return get(STORAGEPATH).text();
     }
 
     public class FileAO extends ElementAO<FileAO> {
