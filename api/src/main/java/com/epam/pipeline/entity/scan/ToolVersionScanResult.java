@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.scan;
 
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -30,6 +31,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
+@EqualsAndHashCode
 public class ToolVersionScanResult {
 
     private Long toolId;

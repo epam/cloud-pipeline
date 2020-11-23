@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.pipeline;
+package com.epam.pipeline.controller.docker;
 
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
@@ -28,7 +28,7 @@ import com.epam.pipeline.entity.scan.ToolScanPolicy;
 import com.epam.pipeline.entity.scan.ToolScanResultView;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.tool.ToolSymlinkRequest;
-import com.epam.pipeline.manager.pipeline.ToolApiService;
+import com.epam.pipeline.acl.docker.ToolApiService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;

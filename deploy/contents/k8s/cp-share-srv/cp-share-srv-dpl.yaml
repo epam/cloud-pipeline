@@ -18,7 +18,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-share-srv
-          image: lifescience/cloud-pipeline:share-srv-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:share-srv-$CP_VERSION
           imagePullPolicy: "Always"
           securityContext:
             privileged: true

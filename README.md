@@ -1,7 +1,7 @@
 # Cloud Pipeline
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/2d8f9c0c32814e6ca6669226c565c6e0)](https://app.codacy.com/app/sidoruka/cloud-pipeline?utm_source=github.com&utm_medium=referral&utm_content=epam/cloud-pipeline&utm_campaign=Badge_Grade_Dashboard)
-[![Build status](https://ci.appveyor.com/api/projects/status/m381mqegmsmd28d8/branch/develop?svg=true)](https://ci.appveyor.com/project/sidoruka/cloud-pipeline/branch/develop)
+[![Build status](https://ci.appveyor.com/api/projects/status/m381mqegmsmd28d8/branch/develop?svg=true)](https://ci.appveyor.com/project/epam/cloud-pipeline/branch/develop)
 
 `Cloud Pipeline` solution wraps `AWS`, `GCP` and `Azure` compute and storage resources into a single service. Providing an easy and scalable approach to accomplish a wide range of scientific tasks.
 

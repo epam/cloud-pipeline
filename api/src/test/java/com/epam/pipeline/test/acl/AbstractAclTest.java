@@ -17,6 +17,7 @@
 package com.epam.pipeline.test.acl;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import lombok.AllArgsConstructor;
 import org.apache.commons.collections.CollectionUtils;
@@ -31,6 +32,7 @@ import org.springframework.security.acls.domain.PrincipalSid;
 import org.springframework.security.acls.model.Permission;
 import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.Sid;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.ArrayList;
@@ -72,6 +74,9 @@ public abstract class AbstractAclTest {
 
     @Autowired
     protected PermissionFactory permissionFactory;
+
+    @Autowired
+    protected AuthManager mockAuthManager;
 
     protected void initAclEntity(AbstractSecuredEntity entity, Permission permission) {
         initAclEntity(entity,
@@ -141,5 +146,9 @@ public abstract class AbstractAclTest {
         final List<T> list = new ArrayList<>();
         Collections.addAll(list, objects);
         return list;
+    }
+
+    protected void mockSecurityContext() {
+        doReturn(SecurityContextHolder.getContext().getAuthentication()).when(mockAuthManager).getAuthentication();
     }
 }

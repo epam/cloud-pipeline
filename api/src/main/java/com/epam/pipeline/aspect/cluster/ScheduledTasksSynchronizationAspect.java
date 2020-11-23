@@ -27,8 +27,6 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-
 @Slf4j
 @Aspect
 @Component
@@ -42,21 +40,10 @@ public class ScheduledTasksSynchronizationAspect {
 
     @Around("@annotation(net.javacrumbs.shedlock.core.SchedulerLock)")
     public void skipScheduledMethodInvocation(ProceedingJoinPoint joinPoint) throws Throwable {
-        if (isMasterHost()) {
+        if (kubernetesManager.isMasterHost()) {
             joinPoint.proceed();
         } else {
             log.warn("Scheduled method skipped :" + joinPoint.getSignature().toString());
         }
-    }
-
-    /**
-     * Check if current host is master or not
-     *
-     * @return true - if a host is master or no master found, false - otherwise
-     */
-    private boolean isMasterHost() {
-        return Optional.ofNullable(kubernetesManager.getMasterPodName())
-            .map(masterName -> masterName.equals(kubernetesManager.getCurrentPodName()))
-            .orElse(true);
     }
 }

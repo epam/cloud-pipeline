@@ -18,7 +18,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-api-srv-leader-elector
-          image: lifescience/cloud-pipeline:leader-elector-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:leader-elector-$CP_VERSION
           imagePullPolicy: "Always"
           securityContext:
             privileged: true
@@ -37,7 +37,7 @@ spec:
                 name: cp-config-global
           
         - name: cp-api-srv
-          image: lifescience/cloud-pipeline:api-srv-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:api-srv-$CP_VERSION
           imagePullPolicy: "Always"
           securityContext:
             privileged: true

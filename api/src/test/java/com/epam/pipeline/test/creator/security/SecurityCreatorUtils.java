@@ -16,9 +16,15 @@
 
 package com.epam.pipeline.test.creator.security;
 
+import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.security.UserContext;
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class SecurityCreatorUtils {
+
+    public static final TypeReference<JwtRawToken> JWT_RAW_TOKEN_INSTANCE_TYPE = new TypeReference<JwtRawToken>() {};
 
     private SecurityCreatorUtils() {
 
@@ -32,5 +38,9 @@ public final class SecurityCreatorUtils {
         final UserContext context = new UserContext();
         context.setExternal(external);
         return context;
+    }
+
+    public static JwtRawToken getJwtRawToken() {
+        return new JwtRawToken(TEST_STRING);
     }
 }

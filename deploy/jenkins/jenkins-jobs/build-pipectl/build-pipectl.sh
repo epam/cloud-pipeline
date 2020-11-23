@@ -21,6 +21,7 @@ export CP_VERSION_FULL="${dist_major}.${dist_minor}.${dist_patch}.${dist_build}.
 export CP_API_DIST_URL="$API_DIST_URL"
 export CP_PIPECTL_DIST_FILE_NAME="pipectl.$CP_VERSION_FULL"
 export CP_PIPECTL_DIST="$WORKSPACE/build/$CP_PIPECTL_DIST_FILE_NAME"
+export CP_DOCKER_DIST_SRV=quay.io/
 
 bash build.sh -o $CP_PIPECTL_DIST \
               -p $WORKSPACE/cloud-pipeline/workflows/pipe-templates/__SYSTEM/data_loader \

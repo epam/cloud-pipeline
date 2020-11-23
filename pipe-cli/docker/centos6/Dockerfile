@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Used to build "lifescience/cloud-pipeline:python2.7-centos6" for the el6 pipe distribution
+# Used to build "${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:python2.7-centos6" for the el6 pipe distribution
 FROM centos:6
 RUN yum install gcc \
                 openssl-devel \

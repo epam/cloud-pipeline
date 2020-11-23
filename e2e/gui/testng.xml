@@ -412,6 +412,12 @@
         </classes>
     </test>
 
+    <test name="ParallelLoadTests" enabled="false">
+        <classes>
+            <class name="com.epam.pipeline.autotests.ParallelLoadTests"/>
+        </classes>
+    </test>
+
     <test name="DataStoragesCLITest">
         <classes>
             <class name="com.epam.pipeline.autotests.DataStoragesCLITest"/>

@@ -87,6 +87,7 @@ import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
+import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
 import com.epam.pipeline.manager.pipeline.RestartRunManager;
@@ -94,7 +95,6 @@ import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.RunScheduleManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
-import com.epam.pipeline.manager.pipeline.ToolApiService;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
@@ -230,9 +230,6 @@ public class AclTestBeans {
 
     @MockBean
     protected RunScheduleManager mockRunScheduleManager;
-
-    @MockBean
-    protected ToolApiService mockToolApiService;
 
     @MockBean
     protected MessageHelper mockMessageHelper;
@@ -437,6 +434,9 @@ public class AclTestBeans {
 
     @MockBean
     protected TemporaryCredentialsManager mockTemporaryCredentialsManager;
+
+    @MockBean
+    protected PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
 
     @Bean
     protected TemplatesScanner mockTemplatesScanner() {

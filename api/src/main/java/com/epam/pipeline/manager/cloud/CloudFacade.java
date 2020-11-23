@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud;
 
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
@@ -86,4 +87,6 @@ public interface CloudFacade {
      * Loads all disks attached to an instance associated with run including os, data and swap disks.
      */
     List<InstanceDisk> loadDisks(Long regionId, Long runId);
+
+    CloudInstanceState getInstanceState(Long runId);
 }

@@ -64,7 +64,7 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldListToolGroups() throws Exception {
+    public void shouldListToolGroups() {
         final List<ToolGroup> toolGroups = Collections.singletonList(toolGroup);
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(REGISTRY, TEST_STRING);
@@ -77,13 +77,13 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailListToolGroups() throws Exception {
+    public void shouldFailListToolGroups() {
         performUnauthorizedRequest(get(TOOL_GROUP_LIST_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldCreatePrivateToolGroup() throws Exception {
+    public void shouldCreatePrivateToolGroup() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(REGISTRY_ID, ID_AS_STRING);
         doReturn(toolGroup).when(mockToolGroupApiService).createPrivate(ID);
@@ -95,13 +95,13 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailCreatePrivateToolGroup() throws Exception {
+    public void shouldFailCreatePrivateToolGroup() {
         performUnauthorizedRequest(post(PRIVATE_TOOL_GROUP_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldLoadToolGroup() throws Exception {
+    public void shouldLoadToolGroup() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(STRING_ID, ID_AS_STRING);
         doReturn(toolGroup).when(mockToolGroupApiService).loadByNameOrId(ID_AS_STRING);
@@ -113,13 +113,13 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadToolGroup() throws Exception {
+    public void shouldFailLoadToolGroup() {
         performUnauthorizedRequest(get(TOOL_GROUP_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldLoadToolGroupWithIssuesCount() throws Exception {
+    public void shouldLoadToolGroupWithIssuesCount() {
         final ToolGroupWithIssues toolGroupWithIssues = DockerCreatorUtils.getToolGroupWithIssues();
         doReturn(toolGroupWithIssues).when(mockToolGroupApiService).loadToolsWithIssuesCount(ID);
 
@@ -130,7 +130,7 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailLoadToolGroupWithIssuesCount() throws Exception {
+    public void shouldFailLoadToolGroupWithIssuesCount() {
         performUnauthorizedRequest(get(String.format(ISSUES_COUNT_TOOL_GROUP_URL, ID)));
     }
 
@@ -147,7 +147,7 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailCreateToolGroup() throws Exception {
+    public void shouldFailCreateToolGroup() {
         performUnauthorizedRequest(post(TOOL_GROUP_URL));
     }
 
@@ -164,13 +164,13 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailUpdateToolGroup() throws Exception {
+    public void shouldFailUpdateToolGroup() {
         performUnauthorizedRequest(put(TOOL_GROUP_URL));
     }
 
     @Test
     @WithMockUser
-    public void shouldDeleteForceToolGroup() throws Exception {
+    public void shouldDeleteForceToolGroup() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(STRING_ID, ID_AS_STRING);
         params.add(FORCE, TRUE_AS_STRING);
@@ -184,7 +184,7 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
 
     @Test
     @WithMockUser
-    public void shouldDeleteToolGroup() throws Exception {
+    public void shouldDeleteToolGroup() {
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(STRING_ID, ID_AS_STRING);
         params.add(FORCE, FALSE_AS_STRING);
@@ -197,7 +197,7 @@ public class ToolGroupControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void shouldFailDeleteToolGroup() throws Exception {
+    public void shouldFailDeleteToolGroup() {
         performUnauthorizedRequest(delete(TOOL_GROUP_URL));
     }
 }

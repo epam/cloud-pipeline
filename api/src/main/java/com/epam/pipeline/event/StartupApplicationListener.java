@@ -16,10 +16,12 @@
 
 package com.epam.pipeline.event;
 
+import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -27,12 +29,26 @@ import org.springframework.stereotype.Component;
 import java.util.Objects;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class StartupApplicationListener {
     private final DockerRegistryManager dockerRegistryManager;
     private final CloudRegionManager cloudRegionManager;
+    private final KubernetesManager kubernetesManager;
+    private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
+    private final boolean haEnabled;
+
+    public StartupApplicationListener(final DockerRegistryManager dockerRegistryManager,
+                                      final CloudRegionManager cloudRegionManager,
+                                      final KubernetesManager kubernetesManager,
+                                      final PipelineRunDockerOperationManager pipelineRunDockerOperationManager,
+                                      final @Value("${ha.deploy.enabled:false}") boolean haEnabled) {
+        this.dockerRegistryManager = dockerRegistryManager;
+        this.cloudRegionManager = cloudRegionManager;
+        this.kubernetesManager = kubernetesManager;
+        this.pipelineRunDockerOperationManager = pipelineRunDockerOperationManager;
+        this.haEnabled = haEnabled;
+    }
 
     @EventListener
     public void onApplicationEvent(final ContextRefreshedEvent event) {
@@ -40,9 +56,16 @@ public class StartupApplicationListener {
             if (Objects.isNull(event.getApplicationContext().getParent())) {
                 dockerRegistryManager.checkDockerSecrets();
                 cloudRegionManager.refreshCloudRegionCredKubeSecret();
+                if (isMasterHost()) {
+                    pipelineRunDockerOperationManager.rerunPauseAndResume();
+                }
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
+    }
+
+    private boolean isMasterHost() {
+        return !haEnabled || kubernetesManager.isMasterHost();
     }
 }

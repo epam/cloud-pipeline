@@ -16,7 +16,7 @@
 -- Common functions
 local function arr_has_value (tab, val)
     for index, value in ipairs(tab) do
-        if value == val then
+        if value:lower() == val:lower() then
             return true
         end
     end

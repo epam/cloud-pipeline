@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
@@ -216,6 +217,24 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     @Override
     public CloudProvider getProvider() {
         return CloudProvider.GCP;
+    }
+
+    @Override
+    public CloudInstanceState getInstanceState(final GCPRegion region, final String nodeLabel) {
+        try {
+            final Instance instance = vmService.findInstanceByNameTag(region, nodeLabel);
+            final GCPInstanceStatus instanceStatus = GCPInstanceStatus.valueOf(instance.getStatus());
+            if (GCPInstanceStatus.getWorkingStatuses().contains(instanceStatus)) {
+                return CloudInstanceState.RUNNING;
+            }
+            if (GCPInstanceStatus.getStopStatuses().contains(instanceStatus)) {
+                return CloudInstanceState.STOPPED;
+            }
+            return CloudInstanceState.TERMINATED;
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            return CloudInstanceState.TERMINATED;
+        }
     }
 
     private String getCredentialsFilePath(GCPRegion region) {
