@@ -64,14 +64,14 @@ public class RunInstance {
                 && spot == null && cloudRegionId == null && !StringUtils.hasText(nodeName);
     }
 
-    public boolean requirementsMatch(RunInstance other) {
+    public boolean requirementsMatch(final RunInstance other, final Integer diskDelta) {
         if (other == null) {
             return false;
         }
         if (!Objects.equals(this.nodeType, other.nodeType)) {
             return false;
         }
-        if (!Objects.equals(this.effectiveNodeDisk, other.effectiveNodeDisk)) {
+        if (!compareDisks(other.effectiveNodeDisk, diskDelta)) {
             return false;
         }
         if (!Objects.equals(this.nodeImage, other.nodeImage)) {
@@ -81,5 +81,16 @@ public class RunInstance {
             return false;
         }
         return Objects.equals(this.cloudRegionId, other.cloudRegionId);
+    }
+
+    private boolean compareDisks(final Integer otherDisk, final Integer diskDelta) {
+        if (Objects.equals(this.effectiveNodeDisk, otherDisk)) {
+            return true;
+        }
+        if (this.effectiveNodeDisk == null || otherDisk == null) {
+            return false;
+        }
+        final int difference = this.effectiveNodeDisk - otherDisk;
+        return difference >= 0 && difference <= diskDelta;
     }
 }

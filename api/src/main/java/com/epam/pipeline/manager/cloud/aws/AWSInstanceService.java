@@ -129,6 +129,14 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
+    public boolean reassignPersistentNode(final AwsRegion region, final String nodeLabel, final Long newId) {
+        final String command = commandService.buildNodeReassignCommand(
+                nodeReassignScript, nodeLabel, String.valueOf(newId), getProvider().name());
+        return instanceService.runNodeReassignScript(cmdExecutor, command, nodeLabel,
+                String.valueOf(newId), buildScriptEnvVars());
+    }
+
+    @Override
     public void terminateNode(final AwsRegion region, final String internalIp, final String nodeName) {
         final String command = commandService.buildTerminateNodeCommand(nodeTerminateScript, internalIp, nodeName,
                 getProviderName());

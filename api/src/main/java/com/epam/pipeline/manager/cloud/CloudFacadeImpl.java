@@ -133,7 +133,8 @@ public class CloudFacadeImpl implements CloudFacade {
 
     @Override
     public boolean reassignPersistentNode(final String nodeLabel, final Long newId) {
-        return false;
+        final AbstractCloudRegion region = loadRegionFromNodeLabels(nodeLabel);
+        return getInstanceService(region).reassignPersistentNode(region, nodeLabel, newId);
     }
 
     @Override
@@ -265,9 +266,13 @@ public class CloudFacadeImpl implements CloudFacade {
         } catch (IllegalArgumentException e) {
             log.trace(e.getMessage(), e);
             log.debug("RunID {} was not found. Trying to get instance details from Node", runId);
-            final NodeRegionLabels nodeRegion = kubernetesManager.getNodeRegion(String.valueOf(runId));
-            return regionManager.load(nodeRegion.getCloudProvider(), nodeRegion.getRegionCode());
+            return loadRegionFromNodeLabels(String.valueOf(runId));
         }
+    }
+
+    private AbstractCloudRegion loadRegionFromNodeLabels(final String nodeLabel) {
+        final NodeRegionLabels nodeRegion = kubernetesManager.getNodeRegion(nodeLabel);
+        return regionManager.load(nodeRegion.getCloudProvider(), nodeRegion.getRegionCode());
     }
 
     private List<InstanceType> loadInstancesForAllRegions(final Boolean spot) {

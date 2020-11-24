@@ -34,11 +34,13 @@ public class AutoscalerServiceImpl implements AutoscalerService {
     private final CloudRegionManager cloudRegionManager;
 
     @Override
-    public boolean requirementsMatch(RunInstance instanceOld, RunInstance instanceNew) {
+    public boolean requirementsMatch(final RunInstance instanceOld,
+                                     final RunInstance instanceNew) {
         if (instanceOld == null || instanceNew == null) {
             return false;
         }
-        return instanceOld.requirementsMatch(instanceNew);
+        final Integer diskDelta = preferenceManager.getPreference(SystemPreferences.CLUSTER_REASSIGN_DISK_DELTA);
+        return instanceOld.requirementsMatch(instanceNew, diskDelta);
     }
 
     @Override

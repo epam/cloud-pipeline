@@ -119,6 +119,11 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
                 buildScriptGCPEnvVars(region));
     }
 
+    @Override
+    public boolean reassignPersistentNode(final GCPRegion region, final String nodeLabel, final Long newId) {
+        throw new UnsupportedOperationException();
+    }
+
 
     @Override
     public void terminateNode(final GCPRegion region, final String internalIp, final String nodeName) {

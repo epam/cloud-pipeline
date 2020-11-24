@@ -472,24 +472,20 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             //Try to reassign one of idle nodes
             for (String previousId : freeNodes) {
                 LOGGER.debug("Found free node ID {}.", previousId);
-                RunInstance previousInstance = getPreviousRunInstance(previousId, client);
+                final RunInstance previousInstance = getPreviousRunInstance(previousId, client);
                 if (autoscalerService.requirementsMatch(requiredInstance, previousInstance)) {
                     LOGGER.debug("Reassigning node ID {} to run {}.", previousId, runId);
-                    if (previousId.startsWith(PERSISTENT_NODE_PREFIX)) {
-                        LOGGER.debug("Reassigning persistent node");
-                        //TODO: reassign persistent node
+                    final boolean successfullyReassigned = previousId.startsWith(PERSISTENT_NODE_PREFIX) ?
+                            cloudFacade.reassignPersistentNode(previousId, longId) :
+                            cloudFacade.reassignNode(Long.valueOf(previousId), longId);
+                    if (successfullyReassigned) {
+                        scheduledRuns.add(runId);
+                        pipelineRunManager.updateRunInstance(longId, previousInstance);
+                        List<InstanceDisk> disks = cloudFacade.loadDisks(previousInstance.getCloudRegionId(),
+                                longId);
+                        adjustRunPrices(longId, disks);
+                        reassignedNodes.add(previousId);
                         return true;
-                    } else {
-                        boolean successfullyReassigned = cloudFacade.reassignNode(Long.valueOf(previousId), longId);
-                        if (successfullyReassigned) {
-                            scheduledRuns.add(runId);
-                            pipelineRunManager.updateRunInstance(longId, previousInstance);
-                            List<InstanceDisk> disks = cloudFacade.loadDisks(previousInstance.getCloudRegionId(),
-                                    longId);
-                            adjustRunPrices(longId, disks);
-                            reassignedNodes.add(previousId);
-                            return true;
-                        }
                     }
                 }
             }

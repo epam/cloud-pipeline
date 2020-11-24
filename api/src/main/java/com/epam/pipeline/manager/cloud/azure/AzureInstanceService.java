@@ -133,6 +133,13 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
+    public boolean reassignPersistentNode(final AzureRegion region,
+                                          final String nodeLabel,
+                                          final Long newId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void terminateNode(final AzureRegion region, final String internalIp, final String nodeName) {
         final String command = commandService.buildTerminateNodeCommand(nodeTerminateScript, internalIp, nodeName,
                 getProviderName());

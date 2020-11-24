@@ -90,6 +90,14 @@ public class CommonCloudInstanceService {
                                          final Long oldId,
                                          final Long newId,
                                          final Map<String, String> envVars) {
+        return runNodeReassignScript(cmdExecutor, command, String.valueOf(oldId), String.valueOf(newId), envVars);
+    }
+
+    public boolean runNodeReassignScript(final CmdExecutor cmdExecutor,
+                                         final String command,
+                                         final String oldId,
+                                         final String newId,
+                                         final Map<String, String> envVars) {
         log.debug("Reusing Node with previous ID {} for rud ID {}. Command {}.", oldId, newId, command);
         try {
             cmdExecutor.executeCommandWithEnvVars(command, envVars);

@@ -131,6 +131,7 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @return {@code true} if operation was successful
      */
     boolean reassignNode(T region, Long oldId, Long newId);
+    boolean reassignPersistentNode(T region, String nodeLabel, Long newId);
 
     /**
      * Builds environment variables required for running a container in provided region
