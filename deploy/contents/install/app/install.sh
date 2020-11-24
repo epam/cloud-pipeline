@@ -563,9 +563,11 @@ if is_service_requested cp-api-srv; then
 
         # Install the API assets backup service
         export CP_BKP_SERVICE_NAME="cp-api-srv"
+        export CP_BKP_SERVICE_CONTAINER_NAME="cp-api-srv"
         export CP_BKP_SERVICE_WD="/opt/api/logs/bkp"
         create_kube_resource $K8S_SPECS_HOME/cp-bkp-worker/cp-bkp-worker-dpl.yaml
         unset CP_BKP_SERVICE_NAME
+        unset CP_BKP_SERVICE_CONTAINER_NAME
         unset CP_BKP_SERVICE_WD
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-api-srv: https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/"

@@ -26,6 +26,8 @@ spec:
           env:
             - name: CP_BKP_SERVICE_NAME
               value: $CP_BKP_SERVICE_NAME
+            - name: CP_BKP_SERVICE_CONTAINER_NAME
+              value: $CP_BKP_SERVICE_CONTAINER_NAME
             - name: CP_BKP_SERVICE_WD
               value: ${CP_BKP_SERVICE_WD}/bkp-worker-wd
           volumeMounts:
