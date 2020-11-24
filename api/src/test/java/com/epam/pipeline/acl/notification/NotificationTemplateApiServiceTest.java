@@ -71,7 +71,7 @@ public class NotificationTemplateApiServiceTest extends AbstractAclTest {
     @WithMockUser
     public void shouldDenyCreateOrUpdateForNotAdmin() {
         assertThrows(AccessDeniedException.class,
-                () -> notificationTemplateApiService.create(notificationTemplate));
+            () -> notificationTemplateApiService.create(notificationTemplate));
     }
 
     @Test
