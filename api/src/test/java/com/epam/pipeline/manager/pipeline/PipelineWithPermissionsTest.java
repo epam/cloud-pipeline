@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,13 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineWithPermissions;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclPermissionEntry;
+import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.security.acl.AclPermission;
+import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +46,7 @@ import java.util.*;
 
 import static com.epam.pipeline.manager.ObjectCreatorUtils.constructPipeline;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @DirtiesContext
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
@@ -54,6 +59,7 @@ public class PipelineWithPermissionsTest extends AbstractManagerTest {
     private static final String TEST_PIPELINE2 = "Pipeline2";
     private static final String TEST_PIPELINE_REPO = "///";
     private static final String TEST_PIPELINE_REPO_SSH = "git@test";
+    private static final String TEST_ROLE = "testRole";
 
     @Autowired
     private AclTestDao aclTestDao;
@@ -66,6 +72,9 @@ public class PipelineWithPermissionsTest extends AbstractManagerTest {
 
     @Autowired
     private GrantPermissionManager permissionManager;
+
+    @Autowired
+    private RoleManager roleManager;
 
     private Folder folder1;
     private Folder folder2;
@@ -145,6 +154,21 @@ public class PipelineWithPermissionsTest extends AbstractManagerTest {
         assertPipelineWithPermissions(expectedMap);
     }
 
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @WithMockUser(username = TEST_OWNER1)
+    public void testAuthorityRemoval() {
+        final Role role = roleManager.createRole(TEST_ROLE, false, false, null);
+        grantPermissionToFolder(AclPermission.READ.getMask(), role.getName(), folder1.getId(), false);
+        final AclSecuredEntry permissions = permissionManager.getPermissions(folder1.getId(), AclClass.FOLDER);
+        final List<AclPermissionEntry> permissionEntries = permissions.getPermissions();
+        assertEquals(1, permissionEntries.size());
+        assertEquals(role.getName(), permissions.getPermissions().get(0).getSid().getName());
+        roleManager.deleteRole(role.getId());
+        final AclSecuredEntry permissionsAfter = permissionManager.getPermissions(folder1.getId(), AclClass.FOLDER);
+        assertTrue(CollectionUtils.isEmpty(permissionsAfter.getPermissions()));
+    }
+
     private void assertPipelineWithPermissions(Map<Long, Map<String, Integer>> expectedMap) {
         Set<PipelineWithPermissions> loaded = permissionManager.loadAllPipelinesWithPermissions(null, null)
                 .getPipelines();
@@ -160,19 +184,23 @@ public class PipelineWithPermissionsTest extends AbstractManagerTest {
     }
 
     private void grantPermissionsToPipeline(Integer mask, String user, Long pipelineId) {
-        grantPermissions(mask, user, AclClass.PIPELINE, pipelineId);
+        grantPermissions(mask, user, AclClass.PIPELINE, pipelineId, true);
     }
 
     private void grantPermissionToFolder(Integer mask, String user, Long folderId) {
-        grantPermissions(mask, user, AclClass.FOLDER, folderId);
+        grantPermissionToFolder(mask, user, folderId, true);
     }
 
-    private void grantPermissions(Integer mask, String user, AclClass aclClass, Long entityId) {
+    private void grantPermissionToFolder(Integer mask, String user, Long folderId, boolean isPrincipal) {
+        grantPermissions(mask, user, AclClass.FOLDER, folderId, isPrincipal);
+    }
+
+    private void grantPermissions(Integer mask, String user, AclClass aclClass, Long entityId, boolean isPrincipal) {
         PermissionGrantVO grantVO = new PermissionGrantVO();
         grantVO.setAclClass(aclClass);
         grantVO.setId(entityId);
         grantVO.setMask(mask);
-        grantVO.setPrincipal(true);
+        grantVO.setPrincipal(isPrincipal);
         grantVO.setUserName(user);
         permissionManager.setPermissions(grantVO);
     }
