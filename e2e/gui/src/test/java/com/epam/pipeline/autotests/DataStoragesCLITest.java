@@ -47,7 +47,7 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
     private String folder4 = "5-folderDataStorageCLI";
     private String fileFor1339_1 = "6-fileFor1339";
     private String fileFor1339_2 = "1-fileFor1339";
-    private String fileFor1339_3 = "fileFor1339";
+    private String fileFor1339_3 = "7-fileFor1339";
     private String pathStorage3 = "";
     private String runID1339 = "";
     private String anotherCloudRegion = C.ANOTHER_CLOUD_REGION;
@@ -180,7 +180,7 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
                 .editFile(fileFor1339_3, "\n2nd update")
                 .editFile(fileFor1339_3, "\n3th update")
                 .editFile(fileFor1339_3, "\n4th update");
-        runsMenu()
+       runsMenu()
                 .showLog(runID1339)
                 .waitForSshLink()
                 .ssh(shell -> shell
