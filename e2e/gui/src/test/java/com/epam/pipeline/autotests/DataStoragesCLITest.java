@@ -41,13 +41,13 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
     private String storage2 = "dataStorageCLI-" + Utils.randomSuffix();
     private String fileFor1469 = "fileFromStorage1";
     private String storage3 = "dataStorageCLI-" + Utils.randomSuffix();
-    private String folder1 = "3-folderDataStorageCLI-" + Utils.randomSuffix();
-    private String folder2 = "2-folderDataStorageCLI-" + Utils.randomSuffix();
-    private String folder3 = "4-folderDataStorageCLI-" + Utils.randomSuffix();
-    private String folder4 = "5-folderDataStorageCLI-" + Utils.randomSuffix();
-    private String fileFor1339_1 = "6-fileFor1339-" + Utils.randomSuffix();
-    private String fileFor1339_2 = "1-fileFor1339-" + Utils.randomSuffix();
-    private String fileFor1339_3 = "fileFor1339-" + Utils.randomSuffix();
+    private String folder1 = "3-folderDataStorageCLI";
+    private String folder2 = "2-folderDataStorageCLI";
+    private String folder3 = "4-folderDataStorageCLI";
+    private String folder4 = "5-folderDataStorageCLI";
+    private String fileFor1339_1 = "6-fileFor1339";
+    private String fileFor1339_2 = "1-fileFor1339";
+    private String fileFor1339_3 = "fileFor1339";
     private String pathStorage3 = "";
     private String runID1339 = "";
     private String anotherCloudRegion = C.ANOTHER_CLOUD_REGION;
@@ -57,6 +57,7 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
 
     @AfterClass(alwaysRun = true)
     public void removeStorages() {
+        open(C.ROOT_ADDRESS);
         Utils.removeStorages(this, storage1, storage2, storage3);
     }
 
