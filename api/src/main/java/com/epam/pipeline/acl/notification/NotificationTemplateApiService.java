@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.notification;
+package com.epam.pipeline.acl.notification;
 
 import java.util.List;
 
 import com.epam.pipeline.entity.notification.NotificationTemplate;
+import com.epam.pipeline.manager.notification.NotificationTemplateManager;
 import com.epam.pipeline.security.acl.AclExpressions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
