@@ -307,16 +307,7 @@ public class MetadataEntityManager implements SecuredEntityManager {
         Assert.notNull(folderId,
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_METADATA_FILTER, "folderId", folderId));
         folderManager.load(folderId);
-        Collection<MetadataClassDescription> metadataFields =
-                metadataEntityDao.getMetadataFields(folderId);
-        Set<String> presentClasses = metadataFields.stream()
-                .map(c -> c.getMetadataClass().getName())
-                .collect(Collectors.toSet());
-        metadataFields.stream()
-                .map(MetadataClassDescription::getFields)
-                .flatMap(Collection::stream)
-                .forEach(field -> field.setReference(presentClasses.contains(field.getType())));
-        return metadataFields;
+        return metadataEntityDao.getMetadataFields(folderId);
     }
 
     public Set<MetadataEntity> getExistingEntities(Set<String> externalIds, Long folderId, String className) {

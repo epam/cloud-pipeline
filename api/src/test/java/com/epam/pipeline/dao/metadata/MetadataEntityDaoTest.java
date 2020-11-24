@@ -443,7 +443,7 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
                 .collect(Collectors.toMap(e -> e.getMetadataClass().getId(), Function.identity()));
         Assert.assertEquals(Collections.singletonList(new EntityTypeField(DATA_KEY_1, DATA_TYPE_1)),
                 results.get(metadataClass1.getId()).getFields());
-        Assert.assertEquals(Collections.singletonList(new EntityTypeField(DATA_KEY_2, CLASS_NAME_2)),
+        Assert.assertEquals(Collections.singletonList(new EntityTypeField(DATA_KEY_2, CLASS_NAME_2, true, false)),
                 results.get(metadataClass2.getId()).getFields());
     }
 
