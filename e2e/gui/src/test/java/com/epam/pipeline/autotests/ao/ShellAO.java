@@ -138,8 +138,14 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
-    public ShellAO assertNextStringIsVisible(String str1, String str2) {
+    public ShellAO assertNextStringIsVisibleAtfileUpload(String str1, String str2) {
         $(withText(str1)).shouldBe(visible).parent()
+                .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible);
+        return this;
+    }
+
+    public ShellAO assertNextStringIsVisible(String str1, String str2) {
+        $(withText(str1)).shouldBe(visible)
                 .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible);
         return this;
     }

@@ -25,9 +25,11 @@ import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
 import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
+import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
 import static java.lang.String.format;
 
@@ -58,6 +60,11 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
         Utils.removeStorages(this, storage1, storage2, storage3);
     }
 
+    @BeforeMethod
+    void openApplication() {
+        open(C.ROOT_ADDRESS);
+    }
+
     @Test
     @TestCase(value = {"1469"})
     @CloudProviderOnly(values = {Cloud.AWS})
@@ -83,7 +90,7 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getLastRunId())
                         .execute(format("pipe storage cp %s/%s %s/", pathStorage1, fileFor1469, pathStorage2))
-                        .assertNextStringIsVisible("100%", format("pipeline-%s", getLastRunId()))
+                        .assertNextStringIsVisibleAtfileUpload("100%", format("pipeline-%s", getLastRunId()))
                         .close());
         library()
                 .selectStorage(storage2)
@@ -98,7 +105,7 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getLastRunId())
                         .execute(format("pipe storage mv %s/%s %s/", pathStorage2, fileFor1469, pathStorage1))
-                        .assertNextStringIsVisible("100%", format("pipeline-%s", getLastRunId()))
+                        .assertNextStringIsVisibleAtfileUpload("100%", format("pipeline-%s", getLastRunId()))
                         .close());
         library()
                 .selectStorage(storage2)
@@ -138,15 +145,18 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(runID1339)
                         .execute(commands[0])
+                        .assertNextStringIsVisible(commands[0], "root@pipeline")
                         .assertPageAfterCommandContainsStrings(commands[0],
                                 folder1, folder2, folder3, folder4, fileFor1339_1, fileFor1339_2)
                         .assertResultsCount(commands[0], runID1339, 6)
                         .execute(commands[1])
+                        .assertNextStringIsVisible(commands[1], "root@pipeline")
                         .assertPageAfterCommandContainsStrings(commands[1], folder2, fileFor1339_2)
                         .assertPageAfterCommandNotContainsStrings(commands[1],
                                 folder1, folder3, folder4, fileFor1339_1)
                         .assertResultsCount(commands[1], runID1339, 2)
                         .execute(commands[2])
+                        .assertNextStringIsVisible(commands[2], "root@pipeline")
                         .assertPageAfterCommandContainsStrings(commands[2],
                                 folder1, folder2, folder3, fileFor1339_2)
                         .assertPageAfterCommandNotContainsStrings(commands[2], folder4, fileFor1339_1)
@@ -175,12 +185,15 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(runID1339)
                         .execute(commands[0])
+                        .assertNextStringIsVisible(commands[0], "root@pipeline")
                         .assertFileVersionsCount(commands[0], fileFor1339_3, 6)
                         .execute(commands[1])
+                        .assertNextStringIsVisible(commands[1], "root@pipeline")
                         .assertFileVersionsCount(commands[1], fileFor1339_3, 4)
                         .checkVersionsListIsSorted(commands[1])
                         .assertPageAfterCommandContainsStrings("(latest)")
                         .execute(commands[2])
+                        .assertNextStringIsVisible(commands[2], "root@pipeline")
                         .assertFileVersionsCount(commands[2], fileFor1339_3, 2)
                         .checkVersionsListIsSorted(commands[2])
                         .assertPageAfterCommandContainsStrings("(latest)")
