@@ -429,7 +429,7 @@ public class MetadataEntityControllerTest extends AbstractControllerTest {
                                                 MediaType.APPLICATION_OCTET_STREAM_VALUE);
 
         verify(mockMetadataEntityApiService).getMetadataEntityFile(ID, TEST_STRING, TEST_STRING);
-        Assert.assertEquals(TEST_STRING, mvcResult.getResponse().getContentAsString());
+        assertFileResponse(mvcResult, TEST_STRING, TEST_STRING.getBytes());
     }
 
     @Test
