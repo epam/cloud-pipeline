@@ -117,7 +117,7 @@ public class ShellAO implements AccessObject<ShellAO> {
         Matcher matcher = Pattern.compile(fileName).matcher(results);
         int count = 0;
         while(matcher.find()) {count++;}
-        assertTrue(count == expectedCount);
+        assertTrue(count == expectedCount, format("Actual count: %s. Expected count: %s", count, expectedCount));
         return this;
     }
 
