@@ -62,7 +62,7 @@ import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
 
 public class LaunchLimitMountsTest
-        extends AbstractAutoRemovingPipelineRunningTest
+        extends AbstractSeveralPipelineRunningTest
         implements Navigation, Authorization {
     private String storage1 = "launchLimitMountsStorage" + Utils.randomSuffix();
     private String storage2 = "launchLimitMountsStorage" + Utils.randomSuffix();
@@ -165,7 +165,7 @@ public class LaunchLimitMountsTest
                 .selectStorage(storage1)
                 .ok()
                 .launch(this)
-                .showLog(testRunID = getRunId())
+                .showLog(testRunID = getLastRunId())
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", storage1), exist)
                 .waitForSshLink()
@@ -196,7 +196,7 @@ public class LaunchLimitMountsTest
                 .ok()
                 .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
                 .launch(this)
-                .showLog(getRunId())
+                .showLog(getLastRunId())
                 .ensureNotVisible(PARAMETERS)
                 .waitForSshLink()
                 .waitForTask(mountDataStoragesTask)
@@ -205,7 +205,7 @@ public class LaunchLimitMountsTest
                 .collect(toSet());
 
         runsMenu()
-                .showLog(getRunId())
+                .showLog(getLastRunId())
                 .logContainsMessage(logMess, " available storage(s). Checking mount options.")
                 .checkAvailableStoragesCount(logMess, 2)
                 .logNotContainsMessage(logMess, "Run is launched with mount limits")
@@ -278,7 +278,7 @@ public class LaunchLimitMountsTest
                 .ok()
                 .inputSystemParameterValue("CP_S3_FUSE_TYPE", "pipefuse")
                 .launch(this)
-                .showLog(getRunId())
+                .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
                 .checkMountLimitsParameter(storageSensitive, storage1)
                 .waitForSshLink()
@@ -310,7 +310,7 @@ public class LaunchLimitMountsTest
                 .selectStorage(storage3)
                 .ok()
                 .launch(this)
-                .showLog(getRunId())
+                .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", storage3), exist)
                 .openStorageFromLimitMountsParameter(storage3)
