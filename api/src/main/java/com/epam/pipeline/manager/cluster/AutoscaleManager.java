@@ -227,7 +227,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 cloudFacade.scaleDownPersistentNode(nodeLabel);
                 return;
             }
-            if (isNodeAvailable(node)) {
+            if (!isNodeAvailable(node)) {
                 LOGGER.debug("Scaling down unavailable {} node.", nodeLabel);
                 cloudFacade.scaleDownPersistentNode(nodeLabel);
                 return;
