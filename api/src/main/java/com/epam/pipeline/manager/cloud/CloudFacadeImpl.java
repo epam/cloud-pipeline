@@ -26,7 +26,7 @@ import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
-import com.epam.pipeline.entity.cluster.schedule.PersistentNode;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -89,9 +89,9 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public RunInstance scaleUpPersistentNode(final String nodeId, final PersistentNode node) {
+    public RunInstance scaleUpPoolNode(final String nodeId, final NodePool node) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(node.getRegionId());
-        return getInstanceService(region).scaleUpPersistentNode(region, nodeId, node);
+        return getInstanceService(region).scaleUpPoolNode(region, nodeId, node);
     }
 
     @Override
@@ -101,9 +101,9 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public void scaleDownPersistentNode(final String nodeLabel) {
+    public void scaleDownPoolNode(final String nodeLabel) {
         final AbstractCloudRegion region = loadRegionFromNodeLabels(nodeLabel);
-        getInstanceService(region).scaleDownPersistentNode(region, nodeLabel);
+        getInstanceService(region).scaleDownPoolNode(region, nodeLabel);
     }
 
     @Override
@@ -133,9 +133,9 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public boolean reassignPersistentNode(final String nodeLabel, final Long newId) {
+    public boolean reassignPoolNode(final String nodeLabel, final Long newId) {
         final AbstractCloudRegion region = loadRegionFromNodeLabels(nodeLabel);
-        return getInstanceService(region).reassignPersistentNode(region, nodeLabel, newId);
+        return getInstanceService(region).reassignPoolNode(region, nodeLabel, newId);
     }
 
     @Override

@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.mapper.cluster.schedule;
+package com.epam.pipeline.mapper.cluster.pool;
 
-import com.epam.pipeline.controller.vo.cluster.schedule.PersistentNodeVO;
-import com.epam.pipeline.entity.cluster.schedule.NodeSchedule;
-import com.epam.pipeline.entity.cluster.schedule.PersistentNode;
+import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
+import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -26,14 +26,14 @@ import org.mapstruct.MappingTarget;
 import java.util.Optional;
 
 @Mapper(componentModel = "spring")
-public interface PersistentNodeMapper {
+public interface NodePoolMapper {
 
     @Mapping(target = "created", ignore = true)
     @Mapping(target = "schedule", ignore = true)
-    PersistentNode toEntity(PersistentNodeVO vo);
+    NodePool toEntity(NodePoolVO vo);
 
     @AfterMapping
-    default void fillSchedule(final PersistentNodeVO vo, final @MappingTarget PersistentNode entity) {
+    default void fillSchedule(final NodePoolVO vo, final @MappingTarget NodePool entity) {
         Optional.ofNullable(vo.getScheduleId())
                 .ifPresent(scheduleId -> {
                     final NodeSchedule schedule = new NodeSchedule();

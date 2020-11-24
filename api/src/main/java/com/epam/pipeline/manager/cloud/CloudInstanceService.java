@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
-import com.epam.pipeline.entity.cluster.schedule.PersistentNode;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -52,7 +52,7 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      */
     RunInstance scaleUpNode(T region, Long runId, RunInstance instance);
 
-    RunInstance scaleUpPersistentNode(T region, String nodeId, PersistentNode node);
+    RunInstance scaleUpPoolNode(T region, String nodeId, NodePool node);
 
     /**
      * Terminates instances in the cloud and removes it from cluster
@@ -60,7 +60,7 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @param runId
      */
     void scaleDownNode(T region, Long runId);
-    void scaleDownPersistentNode(T region, String nodeLabel);
+    void scaleDownPoolNode(T region, String nodeLabel);
 
     /**
      * Terminates instances in the cloud and removes it from the cluster
@@ -132,7 +132,7 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @return {@code true} if operation was successful
      */
     boolean reassignNode(T region, Long oldId, Long newId);
-    boolean reassignPersistentNode(T region, String nodeLabel, Long newId);
+    boolean reassignPoolNode(T region, String nodeLabel, Long newId);
 
     /**
      * Builds environment variables required for running a container in provided region

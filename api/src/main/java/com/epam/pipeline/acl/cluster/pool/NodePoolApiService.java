@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.acl.cluster.schedule;
+package com.epam.pipeline.acl.cluster.pool;
 
-import com.epam.pipeline.controller.vo.cluster.schedule.PersistentNodeVO;
-import com.epam.pipeline.entity.cluster.schedule.PersistentNode;
-import com.epam.pipeline.manager.cluster.schedule.PersistentNodeManager;
+import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,27 +27,27 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class PersistentNodeApiService {
+public class NodePoolApiService {
 
-    private final PersistentNodeManager nodeManager;
+    private final NodePoolManager nodeManager;
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public List<PersistentNode> loadAll() {
+    public List<NodePool> loadAll() {
         return nodeManager.loadAll();
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public PersistentNode load(final Long nodeId) {
-        return nodeManager.load(nodeId);
+    public NodePool load(final Long poolId) {
+        return nodeManager.load(poolId);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public PersistentNode createOrUpdate(final PersistentNodeVO vo) {
+    public NodePool createOrUpdate(final NodePoolVO vo) {
         return nodeManager.createOrUpdate(vo);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public PersistentNode delete(final Long nodeId) {
-        return nodeManager.delete(nodeId);
+    public NodePool delete(final Long poolId) {
+        return nodeManager.delete(poolId);
     }
 }

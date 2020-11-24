@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.acl.cluster.schedule;
+package com.epam.pipeline.acl.cluster.pool;
 
-import com.epam.pipeline.controller.vo.cluster.schedule.NodeScheduleVO;
-import com.epam.pipeline.entity.cluster.schedule.NodeSchedule;
-import com.epam.pipeline.manager.cluster.schedule.NodeScheduleManager;
+import com.epam.pipeline.controller.vo.cluster.pool.NodeScheduleVO;
+import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
+import com.epam.pipeline.manager.cluster.pool.NodeScheduleManager;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;

@@ -13,16 +13,25 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.mapper.cluster.schedule;
+package com.epam.pipeline.controller.vo.cluster.pool;
 
-import com.epam.pipeline.controller.vo.cluster.schedule.NodeScheduleVO;
-import com.epam.pipeline.entity.cluster.schedule.NodeSchedule;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import com.epam.pipeline.entity.cluster.PriceType;
+import lombok.Data;
 
-@Mapper(componentModel = "spring")
-public interface NodeScheduleMapper {
+import java.util.Set;
 
-    @Mapping(target = "created", ignore = true)
-    NodeSchedule toEntity(NodeScheduleVO vo);
+
+@Data
+public class NodePoolVO {
+
+    private Long id;
+    private String name;
+    private Long regionId;
+    private String instanceType;
+    private int instanceDisk;
+    private PriceType priceType;
+    private Set<String> dockerImages;
+    private String instanceImage;
+    private int count;
+    private Long scheduleId;
 }

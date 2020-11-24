@@ -24,7 +24,7 @@ import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
-import com.epam.pipeline.entity.cluster.schedule.PersistentNode;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -105,12 +105,12 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public RunInstance scaleUpPersistentNode(final AwsRegion region,
-                                             final String nodeIdLabel,
-                                             final PersistentNode node) {
+    public RunInstance scaleUpPoolNode(final AwsRegion region,
+                                       final String nodeIdLabel,
+                                       final NodePool node) {
         final RunInstance instance = node.toRunInstance();
         final Map<String, String> labels = Collections.singletonMap(
-                KubernetesConstants.PERSISTENT_NODE_ID_LABEL, String.valueOf(node.getId()));
+                KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(node.getId()));
         final String command = buildNodeUpCommand(region, nodeIdLabel, instance, labels);
         return instanceService.runNodeUpScript(cmdExecutor, null, instance, command, buildScriptEnvVars());
     }
@@ -122,7 +122,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public void scaleDownPersistentNode(final AwsRegion region, final String nodeLabel) {
+    public void scaleDownPoolNode(final AwsRegion region, final String nodeLabel) {
         final String command = commandService.buildNodeDownCommand(nodeDownScript, nodeLabel, getProviderName());
         instanceService.runNodeDownScript(cmdExecutor, command, buildScriptEnvVars());
     }
@@ -135,7 +135,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public boolean reassignPersistentNode(final AwsRegion region, final String nodeLabel, final Long newId) {
+    public boolean reassignPoolNode(final AwsRegion region, final String nodeLabel, final Long newId) {
         final String command = commandService.buildNodeReassignCommand(
                 nodeReassignScript, nodeLabel, String.valueOf(newId), getProvider().name());
         return instanceService.runNodeReassignScript(cmdExecutor, command, nodeLabel,

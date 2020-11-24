@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
-import com.epam.pipeline.entity.cluster.schedule.PersistentNode;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -100,7 +100,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public RunInstance scaleUpPersistentNode(final GCPRegion region, final String nodeId, final PersistentNode node) {
+    public RunInstance scaleUpPoolNode(final GCPRegion region, final String nodeId, final NodePool node) {
         throw new UnsupportedOperationException();
     }
 
@@ -112,7 +112,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public void scaleDownPersistentNode(final GCPRegion region, final String nodeLabel) {
+    public void scaleDownPoolNode(final GCPRegion region, final String nodeLabel) {
         throw new UnsupportedOperationException();
     }
 
@@ -125,7 +125,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public boolean reassignPersistentNode(final GCPRegion region, final String nodeLabel, final Long newId) {
+    public boolean reassignPoolNode(final GCPRegion region, final String nodeLabel, final Long newId) {
         throw new UnsupportedOperationException();
     }
 

@@ -15,8 +15,8 @@
 
 package com.epam.pipeline.test.creator.cluster.schedule;
 
-import com.epam.pipeline.entity.cluster.schedule.NodeSchedule;
-import com.epam.pipeline.entity.cluster.schedule.ScheduleEntry;
+import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
+import com.epam.pipeline.entity.cluster.pool.ScheduleEntry;
 
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;

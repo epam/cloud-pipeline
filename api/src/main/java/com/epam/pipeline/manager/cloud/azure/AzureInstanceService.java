@@ -21,7 +21,7 @@ import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
-import com.epam.pipeline.entity.cluster.schedule.PersistentNode;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AzureRegion;
@@ -110,9 +110,9 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
-    public RunInstance scaleUpPersistentNode(final AzureRegion region,
-                                             final String nodeId,
-                                             final PersistentNode node) {
+    public RunInstance scaleUpPoolNode(final AzureRegion region,
+                                       final String nodeId,
+                                       final NodePool node) {
         throw new UnsupportedOperationException();
     }
 
@@ -125,7 +125,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
-    public void scaleDownPersistentNode(final AzureRegion region, final String nodeLabel) {
+    public void scaleDownPoolNode(final AzureRegion region, final String nodeLabel) {
         throw new UnsupportedOperationException();
     }
 
@@ -138,9 +138,9 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
-    public boolean reassignPersistentNode(final AzureRegion region,
-                                          final String nodeLabel,
-                                          final Long newId) {
+    public boolean reassignPoolNode(final AzureRegion region,
+                                    final String nodeLabel,
+                                    final Long newId) {
         throw new UnsupportedOperationException();
     }
 

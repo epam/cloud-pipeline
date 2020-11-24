@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.vo.cluster.schedule;
+package com.epam.pipeline.controller.vo.cluster.pool;
 
-import com.epam.pipeline.entity.cluster.schedule.ScheduleEntry;
+import com.epam.pipeline.entity.cluster.pool.ScheduleEntry;
 import lombok.Data;
 
 import java.util.List;

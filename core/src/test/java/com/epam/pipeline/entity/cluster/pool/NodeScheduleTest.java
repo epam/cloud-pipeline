@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cluster.schedule;
+package com.epam.pipeline.entity.cluster.pool;
 
 import org.junit.Test;
 

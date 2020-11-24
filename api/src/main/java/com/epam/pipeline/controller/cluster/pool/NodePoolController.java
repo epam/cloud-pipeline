@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.cluster.schedule;
+package com.epam.pipeline.controller.cluster.pool;
 
-import com.epam.pipeline.acl.cluster.schedule.NodeScheduleApiService;
+import com.epam.pipeline.acl.cluster.pool.NodePoolApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
-import com.epam.pipeline.controller.vo.cluster.schedule.NodeScheduleVO;
-import com.epam.pipeline.entity.cluster.schedule.NodeSchedule;
+import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -32,39 +32,39 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @Controller
-@Api(value = "Node Schedule Management")
+@Api(value = "Node Pool Management")
 @RequiredArgsConstructor
-@RequestMapping("/cluster/nodeSchedule")
+@RequestMapping("/cluster/pool")
 @ResponseBody
-public class NodeScheduleController extends AbstractRestController {
+public class NodePoolController extends AbstractRestController {
 
-    private final NodeScheduleApiService apiService;
+    private final NodePoolApiService apiService;
 
     @GetMapping
-    @ApiOperation(value = "Returns all registered node schedules", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Returns all registered node pools", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<NodeSchedule>> loadAll() {
+    public Result<List<NodePool>> loadAll() {
         return Result.success(apiService.loadAll());
     }
 
     @GetMapping("{id}")
-    @ApiOperation(value = "Returns a node schedule by id", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Returns a node pool by id", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<NodeSchedule> load(final @PathVariable long id) {
+    public Result<NodePool> load(final @PathVariable Long id) {
         return Result.success(apiService.load(id));
     }
 
     @PostMapping
-    @ApiOperation(value = "Creates or updates a node schedule", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Creates or updates a node pool", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<NodeSchedule> createOrUpdate(final @RequestBody NodeScheduleVO vo) {
+    public Result<NodePool> createOrUpdate(final @RequestBody NodePoolVO vo) {
         return Result.success(apiService.createOrUpdate(vo));
     }
 
     @DeleteMapping("{id}")
-    @ApiOperation(value = "Deletes a node schedule by id", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Deletes a node pool by id", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<NodeSchedule> delete(final @PathVariable long id) {
+    public Result<NodePool> delete(final @PathVariable Long id) {
         return Result.success(apiService.delete(id));
     }
 

@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 public final class KubernetesConstants {
 
     public static final String RUN_ID_LABEL = "runid";
-    public static final String PERSISTENT_NODE_ID_LABEL = "persistent_node_id";
+    public static final String NODE_POOL_ID_LABEL = "pool_id";
     public static final String CLOUD_REGION_LABEL = "cloud_region";
     public static final String AWS_REGION_LABEL = "aws_region";
     public static final String CLOUD_PROVIDER_LABEL = "cloud_provider";

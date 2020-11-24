@@ -21,7 +21,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
-import com.epam.pipeline.manager.cluster.schedule.PersistentNodeManager;
+import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -91,7 +91,7 @@ public class AutoscaleManagerTest {
     private CloudFacade cloudFacade;
 
     @Mock
-    private PersistentNodeManager persistentNodeManager;
+    private NodePoolManager nodePoolManager;
 
     private AutoscaleManager.AutoscaleManagerCore autoscaleManagerCore;
 
@@ -104,7 +104,7 @@ public class AutoscaleManagerTest {
                                                                          nodeDiskManager, kubernetesManager,
                                                                          preferenceManager,
                                                                          TEST_KUBE_NAMESPACE, cloudFacade,
-                persistentNodeManager);
+                nodePoolManager);
         Whitebox.setInternalState(autoscaleManagerCore, "preferenceManager", preferenceManager);
 
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());

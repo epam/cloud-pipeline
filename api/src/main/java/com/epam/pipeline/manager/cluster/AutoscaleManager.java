@@ -18,7 +18,7 @@ package com.epam.pipeline.manager.cluster;
 
 import com.epam.pipeline.entity.cluster.DiskRegistrationRequest;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
-import com.epam.pipeline.entity.cluster.schedule.PersistentNode;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -28,7 +28,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
-import com.epam.pipeline.manager.cluster.schedule.PersistentNodeManager;
+import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -82,7 +82,7 @@ import java.util.stream.LongStream;
 public class AutoscaleManager extends AbstractSchedulingManager {
     public static final int NODEUP_SPOT_FAILED_EXIT_CODE = 5;
     public static final int NODEUP_LIMIT_EXCEEDED_EXIT_CODE = 6;
-
+    private static final String NODE_POOL_PREFIX = "p-";
     private static final Logger LOGGER = LoggerFactory.getLogger(AutoscaleManager.class);
 
     private final AutoscaleManagerCore core;
@@ -112,12 +112,11 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         private final CloudFacade cloudFacade;
         private final PreferenceManager preferenceManager;
         private final String kubeNamespace;
-        private static final String PERSISTENT_NODE_PREFIX = "f-";
-        private final PersistentNodeManager persistentNodeManager;
+        private final NodePoolManager nodePoolManager;
         private final Set<Long> nodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
         private final Map<Long, Integer> nodeUpAttempts = new ConcurrentHashMap<>();
         private final Map<Long, Integer> spotNodeUpAttempts = new ConcurrentHashMap<>();
-        private final Set<Long> persitentNodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
+        private final Set<Long> poolNodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
 
         @Autowired
         AutoscaleManagerCore(final PipelineRunManager pipelineRunManager,
@@ -129,7 +128,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                              final PreferenceManager preferenceManager,
                              final @Value("${kube.namespace}") String kubeNamespace,
                              final CloudFacade cloudFacade,
-                             final PersistentNodeManager persistentNodeManager) {
+                             final NodePoolManager nodePoolManager) {
             this.pipelineRunManager = pipelineRunManager;
             this.executorService = executorService;
             this.autoscalerService = autoscalerService;
@@ -139,7 +138,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             this.cloudFacade = cloudFacade;
             this.kubeNamespace = kubeNamespace;
             this.preferenceManager = preferenceManager;
-            this.persistentNodeManager = persistentNodeManager;
+            this.nodePoolManager = nodePoolManager;
         }
 
         @SchedulerLock(name = "AutoscaleManager_runAutoscaling", lockAtMostForString = "PT10M")
@@ -152,9 +151,9 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 checkPendingPods(scheduledRuns, client, nodes);
                 Set<String> pods = getAllPodIds(client);
                 checkFreeNodes(scheduledRuns, client, pods);
-                checkPersistentNodes(client);
+                checkPoolNodes(client);
                 int clusterSize = getAvailableNodes(client).getItems().size();
-                int nodeUpTasksSize = nodeUpTaskInProgress.size() + persitentNodeUpTaskInProgress.size();
+                int nodeUpTasksSize = nodeUpTaskInProgress.size() + poolNodeUpTaskInProgress.size();
 
                 LOGGER.debug(
                         "Finished autoscaling job. Minimum cluster size {}. Maximum cluster size {}. "
@@ -209,41 +208,41 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 LOGGER.debug("Node is already assigned to run {}.", nodeLabel);
                 return;
             }
-            if (nodeLabel.startsWith(PERSISTENT_NODE_PREFIX)) {
-                scaleDownPersistentNodeIfNotRequired(nodeLabel, client, node, requiredInstances);
+            if (nodeLabel.startsWith(NODE_POOL_PREFIX)) {
+                scaleDownPoolNodeIfNotRequired(nodeLabel, client, node, requiredInstances);
             } else {
                 scaleDownRunNodeIfNotRequired(nodeLabel, client, node, requiredInstances);
             }
         }
 
-        private void scaleDownPersistentNodeIfNotRequired(final String nodeLabel,
-                                                          final KubernetesClient client,
-                                                          final Node node,
-                                                          final List<RunInstance> requiredInstances) {
-            final PersistentNode persistentNode = findPersistentNodeId(nodeLabel, client)
-                    .flatMap(persistentNodeManager::find).orElse(null);
-            if (persistentNode == null) {
-                LOGGER.debug("Scaling down persistent {} node for deleted schedule.", nodeLabel);
-                cloudFacade.scaleDownPersistentNode(nodeLabel);
+        private void scaleDownPoolNodeIfNotRequired(final String nodeLabel,
+                                                    final KubernetesClient client,
+                                                    final Node node,
+                                                    final List<RunInstance> requiredInstances) {
+            final NodePool nodePool = findPoolNodeId(nodeLabel, client)
+                    .flatMap(nodePoolManager::find).orElse(null);
+            if (nodePool == null) {
+                LOGGER.debug("Scaling down pool node {} for a deleted pool.", nodeLabel);
+                cloudFacade.scaleDownPoolNode(nodeLabel);
                 return;
             }
             if (!isNodeAvailable(node)) {
-                LOGGER.debug("Scaling down unavailable {} node.", nodeLabel);
-                cloudFacade.scaleDownPersistentNode(nodeLabel);
+                LOGGER.debug("Scaling down unavailable {} pool node.", nodeLabel);
+                cloudFacade.scaleDownPoolNode(nodeLabel);
                 return;
             }
             final Optional<RunInstance> matchingPipeline = requiredInstances.stream()
                     .filter(instance -> autoscalerService
-                            .requirementsMatch(persistentNode.toRunInstance(), instance))
+                            .requirementsMatch(nodePool.toRunInstance(), instance))
                     .findFirst();
             if (matchingPipeline.isPresent()) {
                 requiredInstances.remove(matchingPipeline.get());
                 LOGGER.debug("Leaving node {} free since it possibly matches a pending run.", nodeLabel);
-            } else if (matchesActiveSchedule(persistentNode, client)) {
-                LOGGER.debug("Leaving {} node in cluster as it matches active schedule.", persistentNode);
+            } else if (matchesActivePool(nodePool, client)) {
+                LOGGER.debug("Leaving {} node in cluster as it matches an active pool.", nodePool);
             } else {
-                LOGGER.debug("Scaling down persistent node {}.", nodeLabel);
-                cloudFacade.scaleDownPersistentNode(nodeLabel);
+                LOGGER.debug("Scaling down pool node {}.", nodeLabel);
+                cloudFacade.scaleDownPoolNode(nodeLabel);
             }
         }
 
@@ -276,7 +275,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             if (matchingPipeline.isPresent()) {
                 requiredInstances.remove(matchingPipeline.get());
                 LOGGER.debug("Leaving node {} free since it possibly matches a pending run.", nodeLabel);
-            } else if (matchesActiveSchedule(nodeLabel, client)) {
+            } else if (matchesActivePool(nodeLabel, client)) {
                 LOGGER.debug("Leaving {} node in cluster as it matches active schedule.", nodeLabel);
             } else {
                 if (cloudFacade.isNodeExpired(currentRunId)) {
@@ -288,53 +287,53 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             }
         }
 
-        private boolean matchesActiveSchedule(final String nodeLabel,
-                                              final KubernetesClient client) {
-            return findPersistentNodeId(nodeLabel, client)
-                    .flatMap(persistentNodeManager::find)
-                    .map(node -> matchesActiveSchedule(node, client))
+        private boolean matchesActivePool(final String nodeLabel,
+                                          final KubernetesClient client) {
+            return findPoolNodeId(nodeLabel, client)
+                    .flatMap(nodePoolManager::find)
+                    .map(node -> matchesActivePool(node, client))
                     .orElse(false);
         }
 
-        private boolean matchesActiveSchedule(final PersistentNode persistentNode,
-                                              final KubernetesClient client) {
-            if (!persistentNode.isActive(DateUtils.nowUTC())) {
+        private boolean matchesActivePool(final NodePool nodePool,
+                                          final KubernetesClient client) {
+            if (!nodePool.isActive(DateUtils.nowUTC())) {
                 return false;
             }
             final NodeList nodes = client.nodes()
-                    .withLabel(KubernetesConstants.PERSISTENT_NODE_ID_LABEL, String.valueOf(persistentNode.getId()))
+                    .withLabel(KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(nodePool.getId()))
                     .list();
-            return nodes.getItems().size() <= persistentNode.getCount();
+            return nodes.getItems().size() <= nodePool.getCount();
         }
 
 
-        private void checkPersistentNodes(final KubernetesClient client) {
-            final List<PersistentNode> scheduledNodes = persistentNodeManager.getActiveScheduleNodes();
-            if (CollectionUtils.isEmpty(scheduledNodes)) {
+        private void checkPoolNodes(final KubernetesClient client) {
+            final List<NodePool> activePools = nodePoolManager.getActivePools();
+            if (CollectionUtils.isEmpty(activePools)) {
                 return;
             }
             final List<Node> currentNodes = ListUtils.emptyIfNull(getAvailableNodes(client).getItems());
-            scheduledNodes.forEach(node -> {
-                if (persitentNodeUpTaskInProgress.contains(node.getId())) {
+            activePools.forEach(node -> {
+                if (poolNodeUpTaskInProgress.contains(node.getId())) {
                     LOGGER.debug("Instance for {} is already created.", node);
                     return;
                 }
                 final long matchingNodeCount = currentNodes.stream().filter(currentNode -> {
                     final String nodeIdLabel = MapUtils.emptyIfNull(currentNode.getMetadata().getLabels())
-                            .get(KubernetesConstants.PERSISTENT_NODE_ID_LABEL);
+                            .get(KubernetesConstants.NODE_POOL_ID_LABEL);
                     return StringUtils.isNotBlank(nodeIdLabel) && NumberUtils.isDigits(nodeIdLabel) &&
                             node.getId().equals(Long.parseLong(nodeIdLabel));
                 }).count();
                 LOGGER.debug("Found {} existing instances matching {}.", matchingNodeCount, node);
                 if (matchingNodeCount < node.getCount()) {
                     final long nodesToCreate = node.getCount() - matchingNodeCount;
-                    LOGGER.debug("Creating {} persistent instance(s) for {}.", nodesToCreate, node);
-                    LongStream.range(0, nodesToCreate).forEach(i -> createPersistentNode(node, client));
+                    LOGGER.debug("Creating {} node pool instance(s) for {}.", nodesToCreate, node);
+                    LongStream.range(0, nodesToCreate).forEach(i -> createPoolNode(node, client));
                 }
             });
         }
 
-        private void createPersistentNode(final PersistentNode node, final KubernetesClient client) {
+        private void createPoolNode(final NodePool node, final KubernetesClient client) {
             final int currentClusterSize = getCurrentClusterSize(client);
             final Integer maxClusterSize = preferenceManager.getPreference(SystemPreferences.CLUSTER_MAX_SIZE);
             if (currentClusterSize >= maxClusterSize) {
@@ -344,20 +343,20 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             if (!hasFreeNodeUpThreads()) {
                 return;
             }
-            persitentNodeUpTaskInProgress.add(node.getId());
+            poolNodeUpTaskInProgress.add(node.getId());
             CompletableFuture.runAsync(
                 () -> {
                     Instant start = Instant.now();
-                    String nodeId = PERSISTENT_NODE_PREFIX + nodesManager.getNextFreeNodeId();
-                    cloudFacade.scaleUpPersistentNode(nodeId, node);
+                    String nodeId = NODE_POOL_PREFIX + nodesManager.getNextFreeNodeId();
+                    cloudFacade.scaleUpPoolNode(nodeId, node);
                     Instant end = Instant.now();
-                    persitentNodeUpTaskInProgress.remove(node.getId());
+                    poolNodeUpTaskInProgress.remove(node.getId());
                     LOGGER.debug("Time to create {} : {} s.", node, Duration.between(start, end).getSeconds());
                 },
                 executorService.getExecutorService())
                 .exceptionally(e -> {
                     LOGGER.error(e.getMessage(), e);
-                    persitentNodeUpTaskInProgress.remove(node.getId());
+                    poolNodeUpTaskInProgress.remove(node.getId());
                     return null;
                 });
         }
@@ -475,8 +474,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 final RunInstance previousInstance = getPreviousRunInstance(previousId, client);
                 if (autoscalerService.requirementsMatch(previousInstance, requiredInstance)) {
                     LOGGER.debug("Reassigning node ID {} to run {}.", previousId, runId);
-                    final boolean successfullyReassigned = previousId.startsWith(PERSISTENT_NODE_PREFIX) ?
-                            cloudFacade.reassignPersistentNode(previousId, longId) :
+                    final boolean successfullyReassigned = previousId.startsWith(NODE_POOL_PREFIX) ?
+                            cloudFacade.reassignPoolNode(previousId, longId) :
                             cloudFacade.reassignNode(Long.valueOf(previousId), longId);
                     if (successfullyReassigned) {
                         scheduledRuns.add(runId);
@@ -507,7 +506,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
 
         private boolean hasFreeNodeUpThreads() {
             final int maxNodeUpThreads = preferenceManager.getPreference(SystemPreferences.CLUSTER_NODEUP_MAX_THREADS);
-            final int nodeUpTasks = nodeUpTaskInProgress.size() + persitentNodeUpTaskInProgress.size();
+            final int nodeUpTasks = nodeUpTaskInProgress.size() + poolNodeUpTaskInProgress.size();
             if (nodeUpTasks >= maxNodeUpThreads) {
                 LOGGER.debug("Exceeded maximum node up tasks queue size {}.", nodeUpTasks);
                 return false;
@@ -663,7 +662,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         }
 
         private int getCurrentClusterSize(KubernetesClient client) {
-            return nodeUpTaskInProgress.size() + persitentNodeUpTaskInProgress.size() +
+            return nodeUpTaskInProgress.size() + poolNodeUpTaskInProgress.size() +
                     getAvailableNodes(client).getItems().size();
         }
 
@@ -719,9 +718,9 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         }
 
         private RunInstance getPreviousRunInstance(final String nodeLabel, final KubernetesClient client) {
-            return findPersistentNodeId(nodeLabel, client)
-                    .flatMap(persistentNodeManager::find)
-                    .map(PersistentNode::toRunInstance)
+            return findPoolNodeId(nodeLabel, client)
+                    .flatMap(nodePoolManager::find)
+                    .map(NodePool::toRunInstance)
                     .orElseGet(() -> {
                         try {
                             return pipelineRunManager.loadPipelineRun(Long.parseLong(nodeLabel)).getInstance();
@@ -732,7 +731,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     });
         }
 
-        private Optional<Long> findPersistentNodeId(final String nodeLabel, final KubernetesClient client) {
+        private Optional<Long> findPoolNodeId(final String nodeLabel, final KubernetesClient client) {
             final NodeList nodes = client.nodes()
                     .withLabel(KubernetesConstants.RUN_ID_LABEL, nodeLabel)
                     .withoutLabel(KubernetesConstants.PAUSED_NODE_LABEL)
@@ -741,9 +740,9 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     .stream()
                     .filter(node ->
                             MapUtils.emptyIfNull(node.getMetadata().getLabels())
-                                    .containsKey(KubernetesConstants.PERSISTENT_NODE_ID_LABEL))
+                                    .containsKey(KubernetesConstants.NODE_POOL_ID_LABEL))
                     .map(node -> MapUtils.emptyIfNull(node.getMetadata().getLabels())
-                            .get(KubernetesConstants.PERSISTENT_NODE_ID_LABEL))
+                            .get(KubernetesConstants.NODE_POOL_ID_LABEL))
                     .filter(NumberUtils::isDigits)
                     .map(Long::parseLong)
                     .findFirst();

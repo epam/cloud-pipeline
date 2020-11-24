@@ -17,12 +17,12 @@
 <beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns="http://www.springframework.org/schema/beans"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
-    <bean class="com.epam.pipeline.dao.cluster.schedule.PersistentNodeDao" id="persistentNodeDao" autowire="byName">
+    <bean class="com.epam.pipeline.dao.cluster.pool.NodePoolDao" id="persistentNodeDao" autowire="byName">
         <constructor-arg>
             <value>
-                <!--insertPersistentNodeQuery-->
+                <!--insertNodePoolQuery-->
                 <![CDATA[
-                    INSERT INTO pipeline.persistent_node (
+                    INSERT INTO pipeline.node_pool (
                         created_date,
                         name,
                         region_id,
@@ -30,58 +30,61 @@
                         node_disk,
                         price_type,
                         docker_image,
+                        instance_image,
                         instance_count,
                         schedule_id
                         )
                     VALUES (
-                        :NODE_CREATED_DATE,
-                        :NODE_NAME,
-                        :NODE_REGION_ID,
-                        :NODE_INSTANCE_TYPE,
-                        :NODE_INSTANCE_DISK,
-                        :NODE_PRICE_TYPE,
-                        :NODE_DOCKER_IMAGE,
-                        :NODE_INSTANCE_COUNT,
+                        :POOL_CREATED_DATE,
+                        :POOL_NAME,
+                        :POOL_REGION_ID,
+                        :POOL_INSTANCE_TYPE,
+                        :POOL_INSTANCE_DISK,
+                        :POOL_PRICE_TYPE,
+                        :POOL_DOCKER_IMAGE,
+                        :POOL_INSTANCE_IMAGE,
+                        :POOL_INSTANCE_COUNT,
                         :SCHEDULE_ID)
                 ]]>
             </value>
         </constructor-arg>
         <constructor-arg>
             <value>
-                <!--updatePersistentNodeQuery-->
+                <!--updateNodePoolQuery-->
                 <![CDATA[
-                    UPDATE pipeline.persistent_node SET
-                        name = :NODE_NAME,
-                        instance_count = :NODE_INSTANCE_COUNT,
+                    UPDATE pipeline.node_pool SET
+                        name = :POOL_NAME,
+                        instance_count = :POOL_INSTANCE_COUNT,
                         schedule_id = :SCHEDULE_ID
                     WHERE
-                        id = :NODE_ID
+                        id = :POOL_ID
                 ]]>
             </value>
         </constructor-arg>
         <constructor-arg>
             <value>
-                <!--deletePersistentNodeQuery-->
+                <!--deleteNodePoolQuery-->
                 <![CDATA[
-                    DELETE FROM pipeline.persistent_node
+                    DELETE FROM pipeline.node_pool
                     WHERE id = ?
                 ]]>
             </value>
         </constructor-arg>
         <constructor-arg>
             <value>
-                <!--loadAllPersistentNodesQuery-->
+                <!--loadAllNodePoolsQuery-->
                 <![CDATA[
                     SELECT
-                        n.id AS NODE_ID,
-                        n.created_date AS NODE_CREATED_DATE,
-                        n.name AS NODE_NAME,
-                        n.region_id as NODE_REGION_ID,
-                        n.instance_type as NODE_INSTANCE_TYPE,
-                        n.node_disk as NODE_INSTANCE_DISK,
-                        n.price_type as NODE_PRICE_TYPE,
-                        n.docker_image as NODE_DOCKER_IMAGE,
-                        n.instance_count as NODE_INSTANCE_COUNT,
+                        n.id AS POOL_ID,
+                        n.created_date AS POOL_CREATED_DATE,
+                        n.name AS POOL_NAME,
+                        n.region_id as POOL_REGION_ID,
+                        n.instance_type as POOL_INSTANCE_TYPE,
+                        n.node_disk as POOL_INSTANCE_DISK,
+                        n.price_type as POOL_PRICE_TYPE,
+                        n.docker_image as POOL_DOCKER_IMAGE,
+                        n.instance_image as POOL_INSTANCE_IMAGE,
+                        n.instance_count as POOL_INSTANCE_COUNT,
                         n.schedule_id as SCHEDULE_ID,
                         s.name as SCHEDULE_NAME,
                         s.created_date as SCHEDULE_CREATED_DATE,
@@ -90,7 +93,7 @@
                         e.to_day_of_week,
                         e.to_time
                     FROM
-                        pipeline.persistent_node as n
+                        pipeline.node_pool as n
                     LEFT JOIN pipeline.node_schedule as s
                         ON n.schedule_id = s.id
                     LEFT JOIN pipeline.node_schedule_entry as e
@@ -100,18 +103,19 @@
         </constructor-arg>
         <constructor-arg>
             <value>
-                <!--loadPersistentNodeByIdQuery-->
+                <!--loadNodePoolByIdQuery-->
                 <![CDATA[
                     SELECT
-                        n.id AS NODE_ID,
-                        n.created_date AS NODE_CREATED_DATE,
-                        n.name AS NODE_NAME,
-                        n.region_id as NODE_REGION_ID,
-                        n.instance_type as NODE_INSTANCE_TYPE,
-                        n.node_disk as NODE_INSTANCE_DISK,
-                        n.price_type as NODE_PRICE_TYPE,
-                        n.docker_image as NODE_DOCKER_IMAGE,
-                        n.instance_count as NODE_INSTANCE_COUNT,
+                        n.id AS POOL_ID,
+                        n.created_date AS POOL_CREATED_DATE,
+                        n.name AS POOL_NAME,
+                        n.region_id as POOL_REGION_ID,
+                        n.instance_type as POOL_INSTANCE_TYPE,
+                        n.node_disk as POOL_INSTANCE_DISK,
+                        n.price_type as POOL_PRICE_TYPE,
+                        n.docker_image as POOL_DOCKER_IMAGE,
+                        n.instance_image as POOL_INSTANCE_IMAGE,
+                        n.instance_count as POOL_INSTANCE_COUNT,
                         n.schedule_id as SCHEDULE_ID,
                         s.name as SCHEDULE_NAME,
                         s.created_date as SCHEDULE_CREATED_DATE,
@@ -120,7 +124,7 @@
                         e.to_day_of_week,
                         e.to_time
                     FROM
-                        pipeline.persistent_node as n
+                        pipeline.node_pool as n
                     LEFT JOIN pipeline.node_schedule as s
                         ON n.schedule_id = s.id
                     LEFT JOIN pipeline.node_schedule_entry as e

@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dao.cluster.schedule;
+package com.epam.pipeline.dao.cluster.pool;
 
 import com.epam.pipeline.AbstractSpringTest;
-import com.epam.pipeline.entity.cluster.schedule.NodeSchedule;
-import com.epam.pipeline.entity.cluster.schedule.ScheduleEntry;
+import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
+import com.epam.pipeline.entity.cluster.pool.ScheduleEntry;
 import com.epam.pipeline.test.creator.cluster.schedule.NodeScheduleCreatorUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;

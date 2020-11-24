@@ -22,7 +22,7 @@ import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
-import com.epam.pipeline.entity.cluster.schedule.PersistentNode;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -34,11 +34,11 @@ import java.util.Optional;
 public interface CloudFacade {
     RunInstance scaleUpNode(Long runId, RunInstance instance);
 
-    RunInstance scaleUpPersistentNode(String nodeId, PersistentNode node);
+    RunInstance scaleUpPoolNode(String nodeId, NodePool node);
 
     void scaleDownNode(Long runId);
 
-    void scaleDownPersistentNode(String nodeLabel);
+    void scaleDownPoolNode(String nodeLabel);
 
     void terminateNode(AbstractCloudRegion region, String internalIp, String nodeName);
 
@@ -46,7 +46,7 @@ public interface CloudFacade {
 
     boolean reassignNode(Long oldId, Long newId);
 
-    boolean reassignPersistentNode(String nodeLabel, Long newId);
+    boolean reassignPoolNode(String nodeLabel, Long newId);
 
     /**
      * Fills in provider related data for running instance associated with run,

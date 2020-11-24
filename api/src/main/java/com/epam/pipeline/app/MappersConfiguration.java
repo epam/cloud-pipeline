@@ -17,8 +17,8 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
-import com.epam.pipeline.mapper.cluster.schedule.NodeScheduleMapper;
-import com.epam.pipeline.mapper.cluster.schedule.PersistentNodeMapper;
+import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
+import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
 import com.epam.pipeline.mapper.DtsRegistryMapper;
@@ -92,7 +92,7 @@ public class MappersConfiguration {
     }
 
     @Bean
-    public PersistentNodeMapper persistentNodeMapper() {
-        return Mappers.getMapper(PersistentNodeMapper.class);
+    public NodePoolMapper nodePoolMapper() {
+        return Mappers.getMapper(NodePoolMapper.class);
     }
 }

@@ -17,7 +17,7 @@
 <beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns="http://www.springframework.org/schema/beans"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
-    <bean class="com.epam.pipeline.dao.cluster.schedule.NodeScheduleDao" id="nodeScheduleDao" autowire="byName">
+    <bean class="com.epam.pipeline.dao.cluster.pool.NodeScheduleDao" id="nodeScheduleDao" autowire="byName">
         <constructor-arg>
             <value>
                 <!--insertScheduleQuery-->

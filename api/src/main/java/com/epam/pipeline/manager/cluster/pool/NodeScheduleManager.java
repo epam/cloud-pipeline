@@ -13,16 +13,16 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.cluster.schedule;
+package com.epam.pipeline.manager.cluster.pool;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.controller.vo.cluster.schedule.NodeScheduleVO;
-import com.epam.pipeline.dao.cluster.schedule.NodeScheduleDao;
-import com.epam.pipeline.entity.cluster.schedule.NodeSchedule;
-import com.epam.pipeline.entity.cluster.schedule.ScheduleEntry;
+import com.epam.pipeline.controller.vo.cluster.pool.NodeScheduleVO;
+import com.epam.pipeline.dao.cluster.pool.NodeScheduleDao;
+import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
+import com.epam.pipeline.entity.cluster.pool.ScheduleEntry;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.mapper.cluster.schedule.NodeScheduleMapper;
+import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.cluster.schedule;
+package com.epam.pipeline.controller.cluster.pool;
 
-import com.epam.pipeline.acl.cluster.schedule.PersistentNodeApiService;
+import com.epam.pipeline.acl.cluster.pool.NodeScheduleApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
-import com.epam.pipeline.controller.vo.cluster.schedule.PersistentNodeVO;
-import com.epam.pipeline.entity.cluster.schedule.PersistentNode;
+import com.epam.pipeline.controller.vo.cluster.pool.NodeScheduleVO;
+import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -32,39 +32,39 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @Controller
-@Api(value = "Persistent Node Management")
+@Api(value = "Node Schedule Management")
 @RequiredArgsConstructor
-@RequestMapping("/cluster/persistentNode")
+@RequestMapping("/cluster/nodeSchedule")
 @ResponseBody
-public class PersistentNodeController extends AbstractRestController {
+public class NodeScheduleController extends AbstractRestController {
 
-    private final PersistentNodeApiService apiService;
+    private final NodeScheduleApiService apiService;
 
     @GetMapping
-    @ApiOperation(value = "Returns all registered persistent nodes", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Returns all registered node schedules", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<PersistentNode>> loadAll() {
+    public Result<List<NodeSchedule>> loadAll() {
         return Result.success(apiService.loadAll());
     }
 
     @GetMapping("{id}")
-    @ApiOperation(value = "Returns a persistent nodes by id", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Returns a node schedule by id", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<PersistentNode> load(final @PathVariable Long id) {
+    public Result<NodeSchedule> load(final @PathVariable long id) {
         return Result.success(apiService.load(id));
     }
 
     @PostMapping
-    @ApiOperation(value = "Creates or updates a persistent node", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Creates or updates a node schedule", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<PersistentNode> createOrUpdate(final @RequestBody PersistentNodeVO vo) {
+    public Result<NodeSchedule> createOrUpdate(final @RequestBody NodeScheduleVO vo) {
         return Result.success(apiService.createOrUpdate(vo));
     }
 
     @DeleteMapping("{id}")
-    @ApiOperation(value = "Deletes a persistent nodes by id", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Deletes a node schedule by id", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<PersistentNode> delete(final @PathVariable Long id) {
+    public Result<NodeSchedule> delete(final @PathVariable long id) {
         return Result.success(apiService.delete(id));
     }
 

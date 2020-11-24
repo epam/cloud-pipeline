@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cluster.schedule;
+package com.epam.pipeline.entity.cluster.pool;
 
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Data
-public class PersistentNode {
+public class NodePool {
 
     private Long id;
     private String name;
@@ -34,27 +34,27 @@ public class PersistentNode {
     private int instanceDisk;
     private PriceType priceType;
     private Set<String> dockerImages;
+    private String instanceImage;
     private int count;
     private NodeSchedule schedule;
 
     public boolean isActive(final LocalDateTime timestamp) {
         return Optional.ofNullable(schedule)
                 .map(s -> s.isActive(timestamp))
-                .orElse(true);
-    }
-
-    public boolean match(final RunInstance instance) {
-        return false;
+                .orElse(false);
     }
 
     @Override
     public String toString() {
-        return "PersistentNode{" +
-                "regionId=" + regionId +
+        return "NodePool{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", regionId=" + regionId +
                 ", instanceType='" + instanceType + '\'' +
                 ", instanceDisk=" + instanceDisk +
                 ", priceType=" + priceType +
-                ", dockerImage=" + dockerImages +
+                ", dockerImages=" + dockerImages +
+                ", instanceImage='" + instanceImage + '\'' +
                 ", count=" + count +
                 '}';
     }
@@ -66,6 +66,7 @@ public class PersistentNode {
         runInstance.setNodeDisk(instanceDisk);
         runInstance.setEffectiveNodeDisk(instanceDisk);
         runInstance.setSpot(PriceType.SPOT.equals(priceType));
+        runInstance.setNodeImage(instanceImage);
         runInstance.setPrePulledDockerImages(dockerImages);
         return runInstance;
     }
