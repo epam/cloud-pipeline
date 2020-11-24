@@ -82,7 +82,7 @@ public class MetadataEntityManager implements SecuredEntityManager {
     public Map<String, Integer> loadRootMetadataEntities() {
         Map<String, Integer> countEntities = new HashMap<>();
         List<MetadataEntity> entities = metadataEntityDao.loadRootMetadataEntities();
-        entities.forEach(e -> countEntities.merge(e.getClassEntity().getName(), 1, (p, i) -> p + i));
+        entities.forEach(e -> countEntities.merge(e.getClassEntity().getName(), 1, Integer::sum));
         return countEntities;
     }
 

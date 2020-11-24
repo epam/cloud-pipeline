@@ -528,9 +528,10 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
         actual.forEach(e -> compareMetadata(expectedMap.get(e.getId()), e, true));
     }
 
-    private void compareMetadata(MetadataEntity metadataEntity, MetadataEntity result, boolean compareIds) {
-        if (compareIds) {
+    private void compareMetadata(MetadataEntity metadataEntity, MetadataEntity result, boolean compareExactly) {
+        if (compareExactly) {
             Assert.assertEquals(metadataEntity.getId(), result.getId());
+            Assert.assertEquals(metadataEntity.getCreatedDate(), result.getCreatedDate());
         }
         Assert.assertEquals(metadataEntity.getName(), result.getName());
         Assert.assertEquals(metadataEntity.getClassEntity().getName(), result.getClassEntity().getName());
