@@ -921,11 +921,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public PreferencesAO setPreference(String preference, String value, boolean eyeIsChecked) {
             searchPreference(preference);
-            By pref = getByField(preference);
-            click(pref);
-            clear(pref);
-            setValue(pref, value);
-            SelenideElement eye = context().find(byClassName("preference-group__preference-row"))
+            final By pref = getByField(preference);
+            click(pref)
+                    .clear(pref)
+                    .setValue(pref, value);
+            final SelenideElement eye = context().find(byClassName("preference-group__preference-row"))
                     .find(byClassName("anticon"));
             if((eye.has(cssClass("anticon-eye-o")) && eyeIsChecked) ||
                     (eye.has(cssClass("anticon-eye")) && !eyeIsChecked)) {

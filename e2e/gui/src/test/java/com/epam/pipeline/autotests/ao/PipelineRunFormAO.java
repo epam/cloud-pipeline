@@ -36,7 +36,6 @@ import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.tagName;
@@ -128,7 +127,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .stream()
                 .map(SelenideElement::getText)
                 .filter(e -> e.contains(message))
-                .collect(toList()).size()==1, isVisible);
+                .count() == 1, isVisible);
         return this;
     }
 
@@ -258,14 +257,20 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     public PipelineRunFormAO checkLaunchWarningMessage(String message, boolean isVisible) {
         try {
             $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
-            $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(byClassName("ob-estimated-price-info__info")).shouldBe(visible);
+            $$(byClassName("ant-modal-body"))
+                    .findBy(text("Launch"))
+                    .find(byClassName("ob-estimated-price-info__info"))
+                    .shouldBe(visible);
             assertEquals(context().$(byClassName("ant-modal-body")).findAll(byClassName("ant-alert-warning"))
                     .stream()
                     .map(SelenideElement::getText)
                     .filter(e -> e.contains(message))
-                    .collect(toList()).size()==1, isVisible);
+                    .count() == 1, isVisible);
         } finally {
-            $$(byClassName("ant-modal-body")).findBy(text("Cancel")).find(button("Cancel")).shouldBe(enabled).click();
+            $$(byClassName("ant-modal-body")).findBy(text("Cancel"))
+                    .find(button("Cancel"))
+                    .shouldBe(enabled)
+                    .click();
             return this;
         }
     }

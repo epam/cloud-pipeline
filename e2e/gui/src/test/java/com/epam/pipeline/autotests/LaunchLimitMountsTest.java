@@ -31,6 +31,7 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.codeborne.selenide.Condition.disabled;
@@ -337,18 +338,14 @@ public class LaunchLimitMountsTest
                     .expandTab(ADVANCED_PANEL)
                     .minNodeTypeRAM();
             addStor = createStoragesIfNeeded(countObjectStorages, minRAM);
-            logout();
-            String warning = String.format(warningMessage, countObjectStorages);
+            final String warning = format(warningMessage, countObjectStorages);
             checkOOMwarningMessage("1", true, warning);
             checkOOMwarningMessage("100", false, warning);
         } finally {
             if(countObjectStorages < minRAM) {
                 logoutIfNeeded();
                 loginAs(admin);
-                addStor.forEach(stor -> {
-                    library()
-                            .removeStorage(stor);
-                });
+                addStor.forEach(stor -> library().removeStorage(stor));
             }
         }
     }
@@ -358,6 +355,7 @@ public class LaunchLimitMountsTest
     }
 
     private void checkOOMwarningMessage(String storageMountsPerGBratio, boolean messageIsVisible, String warning) {
+        logout();
         loginAs(admin);
         navigationMenu()
                 .settings()
@@ -371,34 +369,30 @@ public class LaunchLimitMountsTest
                 .expandTab(ADVANCED_PANEL)
                 .checkWarningMessage(warning, messageIsVisible)
                 .checkLaunchWarningMessage(warning, messageIsVisible);
-        logout();
     }
 
     private List<String> createStoragesIfNeeded(int objStor, int min) {
-        List<String> additionalStor = new ArrayList<>();
-        if(objStor < min) {
-            logout();
-            loginAs(admin);
-            IntStream.range(1, min - objStor)
-                    .forEach(i -> {
-                        String storage = "launchLimitMountsStorage" + Utils.randomSuffix();
-                        library()
+        if (objStor >= min) {
+            return new ArrayList<>();
+        }
+        logout();
+        loginAs(admin);
+        return IntStream.range(0, min - objStor)
+                .mapToObj(i -> {
+                    String storage = "launchLimitMountsStorage" + Utils.randomSuffix();
+                    library()
                             .createStorage(storage)
                             .selectStorage(storage)
                             .clickEditStorageButton()
                             .clickOnPermissionsTab()
                             .addNewUser(user.login)
                             .closeAll();
-                        givePermissions(user,
+                    givePermissions(user,
                             BucketPermission.allow(READ, storage),
                             BucketPermission.allow(WRITE, storage),
                             BucketPermission.allow(EXECUTE, storage)
-                            );
-                        additionalStor.add(storage);
-                    });
-            logout();
-            loginAs(user);
-        }
-        return additionalStor;
+                    );
+                    return storage;
+                }).collect(Collectors.toList());
     }
 }

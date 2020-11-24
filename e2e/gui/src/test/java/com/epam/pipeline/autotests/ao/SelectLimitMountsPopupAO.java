@@ -19,11 +19,8 @@ import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.SelenideElements;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
-import org.openqa.selenium.WebElement;
 
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.codeborne.selenide.CollectionCondition.sizeGreaterThan;
 import static com.codeborne.selenide.CollectionCondition.texts;
@@ -43,7 +40,6 @@ import static com.epam.pipeline.autotests.ao.Primitive.SELECT_ALL_NON_SENSITIVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SENSITIVE_STORAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.TABLE;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.stream.Collectors.toList;
 
 public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, PipelineRunFormAO> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
@@ -132,17 +128,17 @@ public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, 
         return this;
     }
 
-    public int countStoragesWithType(String type) {
-        List<WebElement> listType = $(byClassName("ant-table-tbody")).$$(byClassName("ant-table-row"))
+    public int countObjectStorages() {
+        return Integer.parseInt(get(OK).text().replaceAll("[^0-9]", "")) - countStoragesWithType("NFS");
+    }
+
+    private int countStoragesWithType(String type) {
+        int listTypeSize = (int) $(byClassName("ant-table-tbody")).$$(byClassName("ant-table-row"))
                 .stream()
                 .map(e -> e.find(byXpath("./td[3]")))
                 .filter(e -> e.text().equals(type))
-                .collect(toList());
+                .count();
         click(CANCEL);
-        return listType.size();
-    }
-
-    public int countObjectStorages() {
-        return Integer.parseInt(get(OK).text().replaceAll("[^0-9]", "")) - countStoragesWithType("NFS");
+        return listTypeSize;
     }
 }
