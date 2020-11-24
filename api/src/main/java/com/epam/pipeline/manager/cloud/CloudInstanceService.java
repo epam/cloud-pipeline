@@ -60,6 +60,7 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @param runId
      */
     void scaleDownNode(T region, Long runId);
+    void scaleDownPersistentNode(T region, String nodeLabel);
 
     /**
      * Terminates instances in the cloud and removes it from the cluster

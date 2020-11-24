@@ -480,8 +480,10 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                             cloudFacade.reassignNode(Long.valueOf(previousId), longId);
                     if (successfullyReassigned) {
                         scheduledRuns.add(runId);
-                        pipelineRunManager.updateRunInstance(longId, previousInstance);
-                        List<InstanceDisk> disks = cloudFacade.loadDisks(previousInstance.getCloudRegionId(),
+                        final RunInstance reassignedInstance = StringUtils.isBlank(previousInstance.getNodeId()) ?
+                                cloudFacade.describeInstance(longId, previousInstance) : previousInstance;
+                        pipelineRunManager.updateRunInstance(longId, reassignedInstance);
+                        List<InstanceDisk> disks = cloudFacade.loadDisks(reassignedInstance.getCloudRegionId(),
                                 longId);
                         adjustRunPrices(longId, disks);
                         reassignedNodes.add(previousId);

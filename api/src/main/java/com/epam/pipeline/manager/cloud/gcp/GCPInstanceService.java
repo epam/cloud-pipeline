@@ -112,6 +112,11 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
+    public void scaleDownPersistentNode(final GCPRegion region, final String nodeLabel) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean reassignNode(final GCPRegion region, final Long oldId, final Long newId) {
         final String command = commandService.buildNodeReassignCommand(
                 nodeReassignScript, oldId, newId, getProviderName());

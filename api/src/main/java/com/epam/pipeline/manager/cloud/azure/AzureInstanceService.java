@@ -125,6 +125,11 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
+    public void scaleDownPersistentNode(final AzureRegion region, final String nodeLabel) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean reassignNode(final AzureRegion region, final Long oldId, final Long newId) {
         final String command = commandService.buildNodeReassignCommand(
                 nodeReassignScript, oldId, newId, getProvider().name());

@@ -62,10 +62,16 @@ public class ClusterCommandService {
     public String buildNodeDownCommand(final String nodeDownScript,
                                        final Long runId,
                                        final String cloud) {
+        return buildNodeDownCommand(nodeDownScript, String.valueOf(runId), cloud);
+    }
+
+    public String buildNodeDownCommand(final String nodeDownScript,
+                                       final String nodeLabel,
+                                       final String cloud) {
         return RunIdArgCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeDownScript)
-                .runId(String.valueOf(runId))
+                .runId(nodeLabel)
                 .cloud(cloud)
                 .build()
                 .getCommand();

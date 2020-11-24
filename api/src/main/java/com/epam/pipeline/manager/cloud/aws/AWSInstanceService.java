@@ -122,6 +122,12 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
+    public void scaleDownPersistentNode(final AwsRegion region, final String nodeLabel) {
+        final String command = commandService.buildNodeDownCommand(nodeDownScript, nodeLabel, getProviderName());
+        instanceService.runNodeDownScript(cmdExecutor, command, buildScriptEnvVars());
+    }
+
+    @Override
     public boolean reassignNode(final AwsRegion region, final Long oldId, final Long newId) {
         final String command = commandService.buildNodeReassignCommand(
                 nodeReassignScript, oldId, newId, getProvider().name());

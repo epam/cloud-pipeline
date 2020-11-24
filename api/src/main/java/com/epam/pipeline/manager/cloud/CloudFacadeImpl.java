@@ -102,7 +102,8 @@ public class CloudFacadeImpl implements CloudFacade {
 
     @Override
     public void scaleDownPersistentNode(final String nodeLabel) {
-        //TODO
+        final AbstractCloudRegion region = loadRegionFromNodeLabels(nodeLabel);
+        getInstanceService(region).scaleDownPersistentNode(region, nodeLabel);
     }
 
     @Override
