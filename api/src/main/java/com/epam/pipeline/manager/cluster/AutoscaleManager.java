@@ -471,10 +471,9 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             LOGGER.debug("Found {} free nodes.", freeNodes.size());
             //Try to reassign one of idle nodes
             for (String previousId : freeNodes) {
-                LOGGER.debug("Found free node with label {}.", previousId);
+                LOGGER.debug("Checking free node with label {}.", previousId);
                 final RunInstance previousInstance = getPreviousRunInstance(previousId, client);
-                LOGGER.debug("Previous instance {}", previousInstance);
-                if (autoscalerService.requirementsMatch(requiredInstance, previousInstance)) {
+                if (autoscalerService.requirementsMatch(previousInstance, requiredInstance)) {
                     LOGGER.debug("Reassigning node ID {} to run {}.", previousId, runId);
                     final boolean successfullyReassigned = previousId.startsWith(PERSISTENT_NODE_PREFIX) ?
                             cloudFacade.reassignPersistentNode(previousId, longId) :

@@ -23,7 +23,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
 import java.util.Objects;
@@ -37,7 +36,6 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-@Slf4j
 public class RunInstance {
     private String nodeType;
     /**
@@ -95,7 +93,6 @@ public class RunInstance {
             return false;
         }
         final int difference = this.effectiveNodeDisk - otherDisk;
-        log.debug("Comparing disk size {} {} {}", this.effectiveNodeDisk, otherDisk, difference);
         return difference >= 0 && difference <= diskDelta;
     }
 }
