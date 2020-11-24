@@ -1,19 +1,17 @@
 /*
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
- *  * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
- *  *
- *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  * you may not use this file except in compliance with the License.
- *  * You may obtain a copy of the License at
- *  *
- *  *     http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.epam.pipeline.manager.user;
@@ -35,6 +33,7 @@ import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.exception.DefaultStorageCreationException;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -42,6 +41,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
+import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -328,6 +328,25 @@ public class UserManagerTest extends AbstractSpringTest {
         assertDefaultFolderAndStorageNames(newUser);
         final AbstractDataStorage defaultStorage = dataStorageManager.load(newUser.getDefaultStorageId());
         Assert.assertEquals(folder.getId(), defaultStorage.getParentFolderId());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void createUserErrorAtDefaultFolderCreation() {
+        prepareContextForDefaultUserFolder();
+        Mockito.doThrow(IllegalArgumentException.class)
+            .when(dataStorageManager)
+            .create(Mockito.any(), Matchers.eq(true), Mockito.anyBoolean(), Mockito.anyBoolean());
+        try {
+            createDefaultPipelineUser();
+            Assert.fail("The expected exception during default storage initialization was not thrown!");
+        } catch (DefaultStorageCreationException e) {
+            final PipelineUser newUser = userManager.loadUserByName(TEST_USER);
+            Assert.assertNotNull(newUser);
+            Assert.assertEquals(TEST_USER.toUpperCase(), newUser.getUserName());
+            Assert.assertNull(newUser.getDefaultStorageId());
+            Assert.assertTrue(CollectionUtils.isEmpty(folderManager.loadAllProjects().getChildFolders()));
+        }
     }
 
     private void prepareContextForDefaultUserFolder() {
