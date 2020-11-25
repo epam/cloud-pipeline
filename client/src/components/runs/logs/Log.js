@@ -405,6 +405,7 @@ class Logs extends localization.LocalizedReactComponent {
       }
     } else if (runParameter.name === CP_CAP_LIMIT_MOUNTS) {
       const values = (valueSelector() || '').split(',').map(v => v.trim());
+      const isNone = /^none$/i.test(valueSelector());
       return (
         <tr key={runParameter.name}>
           <td
@@ -414,7 +415,12 @@ class Logs extends localization.LocalizedReactComponent {
             {runParameter.name}:
           </td>
           <td>
-            <DataStorageList identifiers={values} />
+            {
+              isNone && (<span>None</span>)
+            }
+            {
+              !isNone && (<DataStorageList identifiers={values} />)
+            }
           </td>
         </tr>
       );
