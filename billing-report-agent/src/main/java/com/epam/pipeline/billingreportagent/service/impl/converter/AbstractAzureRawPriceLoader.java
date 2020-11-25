@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
-import com.epam.pipeline.billingreportagent.model.pricing.AzurePricingResult;
+import com.epam.pipeline.billingreportagent.model.pricing.AzurePricingEntity;
 import com.epam.pipeline.billingreportagent.service.impl.pricing.AzurePricingClient;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -26,7 +26,6 @@ import okhttp3.OkHttpClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
@@ -35,31 +34,31 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Service
-public class AzureRawPriceLoader {
+public abstract class AbstractAzureRawPriceLoader {
 
     private static final int READ_TIMEOUT = 30;
     private static final int CONNECT_TIMEOUT = 30;
-    private static final String API_VERSION = "2016-08-31-preview";
-    private static final String AUTH_TOKEN_TEMPLATE = "Bearer %s";
-    private static final String FILTER_TEMPLATE =
-        "OfferDurableId eq '%s' and Currency eq 'USD' and Locale eq 'en-US' and RegionInfo eq 'US'";
+    public static final String AUTH_TOKEN_TEMPLATE = "Bearer %s";
+    public static final String CURRENCY = "USD";
 
-    private LocalDateTime lastPriceUpdate;
-    private final Long retentionTimeoutMinutes;
-    private final Map<String, Response<AzurePricingResult>> azureRegionPricing = new HashMap<>();
+
+    protected LocalDateTime lastPriceUpdate;
+    protected final Long retentionTimeoutMinutes;
+    protected final Map<String, List<AzurePricingEntity>> azureRegionPricing = new HashMap<>();
 
     @Autowired
-    public AzureRawPriceLoader(final @Value("${sync.storage.azure.price.retention.minutes:30}")
+    public AbstractAzureRawPriceLoader(final @Value("${sync.storage.azure.price.retention.minutes:30}")
                                    Long retentionTimeoutMinutes) {
         this.lastPriceUpdate = LocalDateTime.now();
         this.retentionTimeoutMinutes = retentionTimeoutMinutes;
     }
 
-    public Response<AzurePricingResult> getRawPricesUsingPipelineRegion(final AzureRegion region) throws IOException {
+    public List<AzurePricingEntity> getRawPricesUsingPipelineRegion(final AzureRegion region) throws IOException {
         final String offerAndSubscription = getRegionOfferAndSubscription(region);
         updatePricesIfRequired(region, offerAndSubscription);
         return azureRegionPricing.get(offerAndSubscription);
@@ -79,7 +78,7 @@ public class AzureRawPriceLoader {
         }
     }
 
-    private ApplicationTokenCredentials getCredentialsFromFile(final String credentialsPath) {
+    protected ApplicationTokenCredentials getCredentialsFromFile(final String credentialsPath) {
         try {
             return ApplicationTokenCredentials.fromFile(new File(credentialsPath));
         } catch (IOException e) {
@@ -87,23 +86,9 @@ public class AzureRawPriceLoader {
         }
     }
 
-    private Response<AzurePricingResult> getAzurePricing(final AzureRegion region) throws IOException {
-        final ApplicationTokenCredentials credentials = getCredentialsFromFile(region.getAuthFile());
-        final String resourceManagerEndpoint = credentials.environment().resourceManagerEndpoint();
-        final Response<AzurePricingResult> pricingResponse = buildRetrofitClient(resourceManagerEndpoint)
-            .getPricing(String.format(AUTH_TOKEN_TEMPLATE,
-                                      credentials.getToken(resourceManagerEndpoint)),
-                        region.getSubscription(),
-                        String.format(FILTER_TEMPLATE, region.getPriceOfferId()),
-                        API_VERSION).execute();
-        if (!pricingResponse.isSuccessful()) {
-            throw new IllegalStateException(String.format("Can't load Azure price list for region with id=%s!",
-                                                          region.getId()));
-        }
-        return pricingResponse;
-    }
+    protected abstract List<AzurePricingEntity> getAzurePricing(final AzureRegion region) throws IOException;
 
-    private AzurePricingClient buildRetrofitClient(final String azureApiUrl) {
+    protected AzurePricingClient buildRetrofitClient(final String azureApiUrl) {
         final OkHttpClient client = new OkHttpClient.Builder()
             .followRedirects(true)
             .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)

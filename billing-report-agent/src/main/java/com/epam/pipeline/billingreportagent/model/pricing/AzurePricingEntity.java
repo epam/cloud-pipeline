@@ -16,15 +16,24 @@
 
 package com.epam.pipeline.billingreportagent.model.pricing;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.util.Map;
 
 @NoArgsConstructor
 @Data
-public class AzurePricingResult {
-    @JsonProperty(value = "Meters")
-    private List<AzurePricingMeter> meters;
+@Builder
+@AllArgsConstructor
+public class AzurePricingEntity {
+
+    private String meterCategory;
+    private String meterSubCategory;
+    private String meterName;
+    private String unit;
+    private Map<String, Float> meterRates;
+    private String meterRegion;
+
 }
