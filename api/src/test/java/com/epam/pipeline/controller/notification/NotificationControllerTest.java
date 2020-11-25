@@ -29,6 +29,7 @@ import static com.epam.pipeline.test.creator.notification.NotificationCreatorUti
 import static com.epam.pipeline.test.creator.notification.NotificationCreatorUtils.getNotificationMessage;
 import static com.epam.pipeline.test.creator.notification.NotificationCreatorUtils.getNotificationMessageVO;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 public class NotificationControllerTest extends AbstractControllerTest {
@@ -42,7 +43,7 @@ public class NotificationControllerTest extends AbstractControllerTest {
     private NotificationApiService mockNotificationApiService;
 
     @Test
-    public void shouldDenyCreateForUnauthorizedUser() {
+    public void shouldFailCreateForUnauthorizedUser() {
         performUnauthorizedRequest(post(NOTIFICATION_MESSAGE_URL));
     }
 
@@ -54,6 +55,7 @@ public class NotificationControllerTest extends AbstractControllerTest {
 
         final MvcResult mvcResult = performRequest(post(NOTIFICATION_MESSAGE_URL).content(content));
 
+        verify(mockNotificationApiService).createNotification(notificationMessageVO);
         assertResponse(mvcResult, notificationMessage, NOTIFICATION_MESSAGE_TYPE);
     }
 }
