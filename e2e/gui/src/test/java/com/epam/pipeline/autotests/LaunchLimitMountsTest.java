@@ -114,6 +114,7 @@ public class LaunchLimitMountsTest
     @AfterClass(alwaysRun = true)
     public void removeEntities() {
         open(C.ROOT_ADDRESS);
+        logoutIfNeeded();
         loginAs(admin);
         library()
                 .removeStorage(storage1)
