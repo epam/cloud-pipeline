@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import platform
-import os
 import subprocess
 
 
@@ -30,25 +29,6 @@ def execute(command, logger=None):
     if exit_code:
         raise CmdError('Command has finished with exit code ' + str(exit_code))
     return out, err
-
-
-def execute_command(command, environment=None, log_file=None, collect_output=True):
-    import subprocess
-    with open(log_file or os.devnull, 'a') as output:
-        env = os.environ.copy()
-        env.update(environment or {})
-        if collect_output:
-            command_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                            shell=True, env=env, cwd=os.getcwd())
-        else:
-            command_proc = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT,
-                                            shell=True, env=env, cwd=os.getcwd())
-        out, err = command_proc.communicate()
-        exit_code = command_proc.wait()
-        if exit_code != 0:
-            raise RuntimeError('Command "{}" exited with return code: {}, stdout: {}, stderr: {}'
-                               .format(command, exit_code, out, err))
-        return out
 
 
 def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=None):

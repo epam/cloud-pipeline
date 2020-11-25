@@ -1757,8 +1757,8 @@ if __name__ == '__main__':
     hybrid_instance_cores = int(os.getenv('CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE', sys.maxint))
     instance_family = os.getenv('CP_CAP_AUTOSCALE_HYBRID_FAMILY',
                                 CloudPipelineInstanceProvider.get_family_from_type(cloud_provider, instance_type))
-    queue = os.getenv('CP_CAP_AUTOSCALE_QUEUE', os.getenv('CP_CAP_SGE_QUEUE_NAME', 'main.q'))
-    hostlist = os.getenv('CP_CAP_AUTOSCALE_HOSTLIST', os.getenv('CP_CAP_SGE_HOSTLIST_NAME', '@allhosts'))
+    queue = os.getenv('CP_CAP_SGE_QUEUE_NAME', 'main.q')
+    hostlist = os.getenv('CP_CAP_SGE_HOSTLIST_NAME', '@allhosts')
     log_task = os.environ.get('CP_CAP_AUTOSCALE_TASK',
                               'GridEngineAutoscaling-%s' % (queue if not queue.endswith('.q') else queue[:-2]))
     owner_param_name = os.getenv('CP_CAP_AUTOSCALE_OWNER_PARAMETER_NAME', 'CP_CAP_AUTOSCALE_OWNER')
