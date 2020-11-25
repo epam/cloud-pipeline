@@ -977,7 +977,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public PreferencesAO save() {
-            $(byId("edit-preference-form-ok-button")).shouldBe(visible).click();
+            By saveButton = byId("edit-preference-form-ok-button");
+            $(saveButton).shouldBe(visible).click();
+            $(saveButton).shouldBe(disabled);
             return this;
         }
 
