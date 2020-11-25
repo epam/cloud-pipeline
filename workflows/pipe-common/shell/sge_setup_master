@@ -18,24 +18,6 @@ SGE_MASTER_SETUP_TASK="SGEMasterSetup"
 SGE_MASTER_SETUP_TASK_WORKERS="SGEMasterSetupWorkers"
 CURRENT_PID=$$
 
-function check_cp_cap {
-      _CAP="$1"
-      if [ -z "$_CAP" ]; then
-            return 1
-      fi
-
-      _CAP_VALUE=${!_CAP}
-      if [ -z "$_CAP_VALUE" ]; then
-            return 1
-      fi
-
-      if [ ${_CAP_VALUE,,} == 'true' ] || [ ${_CAP_VALUE,,} == 'yes' ]; then
-            return 0
-      else
-            return 1
-      fi
-}
-
 create_execution_host() {
     # add to the execution host list
     TMPFILE=/tmp/sge.hostname-$HOSTNAME
@@ -239,8 +221,8 @@ mkdir -p "$CP_CAP_SCRIPTS_DIR"
 echo "export SGE_ROOT=$SGE_ROOT" > $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export SGE_CELL=$SGE_CELL" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export SGE_CLUSTER_NAME=$SGE_CLUSTER_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
-echo "export CP_CAP_SGE_DEFAULT_QUEUE_NAME=$CP_CAP_SGE_QUEUE_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
-echo "export CP_CAP_SGE_DEFAULT_HOSTLIST_NAME=$CP_CAP_SGE_HOSTLIST_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
+echo "export CP_CAP_SGE_QUEUE_NAME=$CP_CAP_SGE_QUEUE_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
+echo "export CP_CAP_SGE_HOSTLIST_NAME=$CP_CAP_SGE_HOSTLIST_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export CP_CAP_SGE_PE_NAME=$CP_CAP_SGE_PE_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export CP_CAP_SGE_PE_SLOTS=$CP_CAP_SGE_PE_SLOTS" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export CP_CAP_SGE_PE_MPI_NAME=$CP_CAP_SGE_PE_MPI_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
@@ -393,15 +375,15 @@ done
 
 create_execution_host
 
-if check_cp_cap "CP_CAP_AUTOSCALE"
-then
-    $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/autoscale_sge_profiles.py -v INFO --command \
-        "sge_setup_queue; \
-         if [[ \"\$CP_CAP_AUTOSCALE_STATIC\" ]]; then sed -i 's/\(export CP_CAP_SGE_DEFAULT_QUEUE_NAME=.*\)/\1,'\"\$CP_CAP_SGE_QUEUE_NAME\"'/' $CP_CAP_SGE_MASTER_ENV_FILE; fi; \
-         if [[ \"\$CP_CAP_AUTOSCALE_STATIC\" ]]; then sed -i 's/\(export CP_CAP_SGE_DEFAULT_HOSTLIST_NAME=.*\)/\1,'\"\$CP_CAP_SGE_HOSTLIST_NAME\"'/' $CP_CAP_SGE_MASTER_ENV_FILE; fi"
-else
-    sge_setup_queue
-fi
+"$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/generate_sge_profiles.py" -v INFO
+
+for sge_profile_script in "$CP_CAP_SCRIPTS_DIR"/sge_profile_*.sh; do
+    (
+        # shellcheck source=/dev/null
+        source "$sge_profile_script"
+        sge_setup_queue
+    )
+done
 
 if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
     /etc/init.d/gridengine-exec restart
@@ -435,7 +417,12 @@ else
     pipe_log_success "All execution hosts are connected" "$SGE_MASTER_SETUP_TASK_WORKERS"
 fi
 
-if check_cp_cap "CP_CAP_AUTOSCALE"
-then
-    $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/autoscale_sge_profiles.py -v INFO --command "nohup \$CP_PYTHON2_PATH \$COMMON_REPO_DIR/scripts/autoscale_sge.py >\$LOG_DIR/.nohup.sge.autoscale.\$CP_CAP_AUTOSCALE_QUEUE.log 2>&1 &"
-fi
+for sge_profile_script in $CP_CAP_SCRIPTS_DIR/sge_profile_*.sh; do
+    (
+        # shellcheck source=/dev/null
+        source "$sge_profile_script"
+        if check_cp_cap "CP_CAP_AUTOSCALE"; then
+            nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/autoscale_sge.py" >"$LOG_DIR/.nohup.sge.autoscale.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
+        fi
+    )
+done
