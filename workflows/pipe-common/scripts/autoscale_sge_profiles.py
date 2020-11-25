@@ -19,6 +19,8 @@ def launch_sge_autoscalers(command):
                     profile.get('CP_CAP_AUTOSCALE_HYBRID_FAMILY', os.environ['instance_size']))
             else:
                 profile['CP_CAP_AUTOSCALE_QUEUE'] = '{}.q'.format(os.environ['instance_size'])
+        if 'CP_CAP_AUTOSCALE_STATIC' not in profile:
+            profile['CP_CAP_SGE_MASTER_CORES'] = '0'
 
     profile_indexes = profiles.keys()
     profile_queues = [profiles[index]['CP_CAP_AUTOSCALE_QUEUE'] for index in profile_indexes]
@@ -33,7 +35,6 @@ def launch_sge_autoscalers(command):
         profile['CP_CAP_AUTOSCALE_HOSTLIST'] = '@{}'.format(profile['CP_CAP_AUTOSCALE_QUEUE'])
         profile['CP_CAP_SGE_QUEUE_NAME'] = profile['CP_CAP_AUTOSCALE_QUEUE']
         profile['CP_CAP_SGE_HOSTLIST_NAME'] = profile['CP_CAP_AUTOSCALE_HOSTLIST']
-        profile['CP_CAP_SGE_MASTER_CORES'] = '0'
 
     common_profile['CP_CAP_AUTOSCALE_TASK'] = 'GridEngineAutoscaling'
 
