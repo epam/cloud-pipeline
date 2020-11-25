@@ -395,7 +395,10 @@ create_execution_host
 
 if check_cp_cap "CP_CAP_AUTOSCALE"
 then
-    $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/autoscale_sge_profiles.py -v INFO --command "sge_setup_queue"
+    $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/autoscale_sge_profiles.py -v INFO --command \
+        "sge_setup_queue; \
+         if [[ \"\$CP_CAP_AUTOSCALE_STATIC\" ]]; then sed -i 's/\(export CP_CAP_SGE_DEFAULT_QUEUE_NAME=.*\)/\1,'\"\$CP_CAP_SGE_QUEUE_NAME\"'/' $CP_CAP_SGE_MASTER_ENV_FILE; fi; \
+         if [[ \"\$CP_CAP_AUTOSCALE_STATIC\" ]]; then sed -i 's/\(export CP_CAP_SGE_DEFAULT_HOSTLIST_NAME=.*\)/\1,'\"\$CP_CAP_SGE_HOSTLIST_NAME\"'/' $CP_CAP_SGE_MASTER_ENV_FILE; fi"
 else
     sge_setup_queue
 fi
