@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationSettings;
+import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -37,6 +38,10 @@ public final class NotificationCreatorUtils {
             new TypeReference<Result<NotificationSettings>>() { };
     public static final TypeReference<Result<List<NotificationSettings>>> NOTIFICATION_SETTINGS_LIST_TYPE =
             new TypeReference<Result<List<NotificationSettings>>>() { };
+    public static final TypeReference<Result<NotificationTemplate>> NOTIFICATION_TEMPLATE_TYPE =
+            new TypeReference<Result<NotificationTemplate>>() { };
+    public static final TypeReference<Result<List<NotificationTemplate>>> NOTIFICATION_TEMPLATE_LIST_TYPE =
+            new TypeReference<Result<List<NotificationTemplate>>>() { };
     private static final List<Long> LONG_LIST = Collections.singletonList(ID);
 
     private NotificationCreatorUtils() {
@@ -65,5 +70,14 @@ public final class NotificationCreatorUtils {
         notificationSettings.setType(NotificationSettings.NotificationType.HIGH_CONSUMED_RESOURCES);
         notificationSettings.setStatusesToInform(Collections.singletonList(TaskStatus.RUNNING));
         return notificationSettings;
+    }
+
+    public static NotificationTemplate getNotificationTemplate() {
+        final NotificationTemplate notificationTemplate = new NotificationTemplate();
+        notificationTemplate.setBody(TEST_STRING);
+        notificationTemplate.setId(ID);
+        notificationTemplate.setName(TEST_STRING);
+        notificationTemplate.setSubject(TEST_STRING);
+        return notificationTemplate;
     }
 }
