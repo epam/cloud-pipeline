@@ -254,11 +254,19 @@ _WORKER_CORES=$(($_WORKER_CORES - $CP_CAP_SGE_WORKER_FREE_CORES))
 (( $_WORKER_CORES <= 0 )) && _WORKER_CORES=$(nproc)
 
 pipe_log_info "Adding worker node to SGE cluster" "$SGE_WORKER_SETUP_TASK"
-if [[ "$cluster_role_type" != "additional" ]] && [[ "$CP_CAP_SGE_DEFAULT_QUEUE_NAME" != "$CP_CAP_SGE_QUEUE_NAME" ]]
+if [[ "$cluster_role_type" != "additional" ]]
 then
-    add_worker "$CP_CAP_SGE_DEFAULT_QUEUE_NAME" "$CP_CAP_SGE_DEFAULT_HOSTLIST_NAME" "$_WORKER_CORES" $MASTER_NAME
-    check_last_exit_code $? "Host was added as a worker to $CP_CAP_SGE_DEFAULT_QUEUE_NAME queue and $CP_CAP_SGE_DEFAULT_HOSTLIST_NAME hostlist" \
-                            "Fail to add host as worker to $CP_CAP_SGE_DEFAULT_QUEUE_NAME queue and $CP_CAP_SGE_DEFAULT_HOSTLIST_NAME hostlist"
+    IFS=',' read -ra CP_CAP_SGE_DEFAULT_QUEUE_NAME_ARRAY <<< "$CP_CAP_SGE_DEFAULT_QUEUE_NAME"
+    IFS=',' read -ra CP_CAP_SGE_DEFAULT_HOSTLIST_NAME_ARRAY <<< "$CP_CAP_SGE_DEFAULT_HOSTLIST_NAME"
+    for index in "${!CP_CAP_SGE_DEFAULT_QUEUE_NAME_ARRAY[@]}"; do
+        current_queue="${CP_CAP_SGE_DEFAULT_QUEUE_NAME_ARRAY[$index]}"
+        current_hostlist="${CP_CAP_SGE_DEFAULT_HOSTLIST_NAME_ARRAY[$index]}"
+        if [[ "$current_queue" != "$CP_CAP_SGE_QUEUE_NAME" ]]; then
+            add_worker "$current_queue" "$current_hostlist" "$_WORKER_CORES" $MASTER_NAME
+            check_last_exit_code $? "Host was added as a worker to $CP_CAP_SGE_DEFAULT_QUEUE_NAME queue and $CP_CAP_SGE_DEFAULT_HOSTLIST_NAME hostlist" \
+                                    "Fail to add host as worker to $CP_CAP_SGE_DEFAULT_QUEUE_NAME queue and $CP_CAP_SGE_DEFAULT_HOSTLIST_NAME hostlist"
+        fi
+    done
 fi
 add_worker "$CP_CAP_SGE_QUEUE_NAME" "$CP_CAP_SGE_HOSTLIST_NAME" "$_WORKER_CORES" $MASTER_NAME
 check_last_exit_code $? "Host was added as a worker to $CP_CAP_SGE_QUEUE_NAME queue and $CP_CAP_SGE_HOSTLIST_NAME hostlist" \
