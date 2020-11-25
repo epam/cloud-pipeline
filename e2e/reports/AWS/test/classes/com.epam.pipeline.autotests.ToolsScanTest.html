@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">12m7.78s</div>
+<div class="counter">11m37.99s</div>
 <p>duration</p>
 </div>
 </td>
@@ -73,11 +73,10 @@
 <a name="denyNotScannedToolOptionValidation - EPMCMBIBPC-2004"></a>
 <h3 class="failures">denyNotScannedToolOptionValidation - EPMCMBIBPC-2004</h3>
 <span class="code">
-<pre>Element should disabled {visible(By.xpath: .//button[normalize-space(.) = 'Run'])}
-Element: '&lt;button class=&quot;ant-btn ant-btn-primary ant-btn-sm&quot; id=&quot;run-latest-button&quot; type=&quot;button&quot;&gt;Run&lt;/button&gt;'
-Actual value: enabled
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1606137470563.62.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1606137470563.62.html
+<pre>Element should be selected navigation menu item {By.id: navigation-button-tools}
+Element: '&lt;a class=&quot;navigation__navigation-menu-item&quot; href=&quot;#/tools&quot; id=&quot;navigation-button-tools&quot;&gt;&lt;/a&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1606313878519.69.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1606313878519.69.html
 Timeout: 80 s.
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
@@ -86,16 +85,9 @@ Timeout: 80 s.
 	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy13.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:221)
-	at com.epam.pipeline.autotests.ToolsScanTest.lambda$denyNotScannedToolOptionValidation$7(ToolsScanTest.java:200)
-	at com.epam.pipeline.autotests.ao.ToolGroup.tool(ToolGroup.java:61)
-	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$null$3(ToolsPage.java:111)
-	at com.epam.pipeline.autotests.ao.Registry.group(Registry.java:55)
-	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$perform$4(ToolsPage.java:110)
-	at com.epam.pipeline.autotests.ao.ToolsPage.registry(ToolsPage.java:133)
-	at com.epam.pipeline.autotests.ao.ToolsPage.perform(ToolsPage.java:109)
-	at com.epam.pipeline.autotests.ToolsScanTest.denyNotScannedToolOptionValidation(ToolsScanTest.java:196)
+	at com.sun.proxy.$Proxy13.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.tools(Navigation.java:55)
+	at com.epam.pipeline.autotests.ToolsScanTest.denyNotScannedToolOptionValidation(ToolsScanTest.java:189)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -119,8 +111,8 @@ Timeout: 80 s.
 <pre>Element should enabled {visible(By.xpath: .//button[normalize-space(.) = 'Run'])}
 Element: '&lt;button class=&quot;ant-btn ant-btn-primary ant-btn-sm&quot; id=&quot;run-latest-button&quot; type=&quot;button&quot;&gt;Run&lt;/button&gt;'
 Actual value: disabled
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1606137687724.63.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1606137687724.63.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1606314093232.70.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1606314093232.70.html
 Timeout: 80 s.
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
@@ -168,37 +160,37 @@ Timeout: 80 s.
 </thead>
 <tr>
 <td class="failures">denyNotScannedToolOptionValidation - EPMCMBIBPC-2004</td>
-<td>2m22.72s</td>
+<td>1m45.56s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">gracePeriodOptionValidation - EPMCMBIBPC-2629</td>
-<td>1m12.54s</td>
+<td>1m8.99s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">runUnscannedToolValidation - EPMCMBIBPC-1994</td>
-<td>45.952s</td>
+<td>47.268s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolScanResultsValidation - EPMCMBIBPC-1996</td>
-<td>22.425s</td>
+<td>23.778s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">toolScanningValidation - EPMCMBIBPC-1995</td>
-<td>2m19.01s</td>
+<td>2m23.79s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">uncheckedDenyNotScannedToolOptionValidation - EPMCMBIBPC-2630</td>
-<td>2m24.64s</td>
+<td>2m25.70s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">whiteListFlagValidation - EPMCMBIBPC-2631</td>
-<td>2m40.49s</td>
+<td>2m42.91s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -211,7 +203,7 @@ Timeout: 80 s.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 23, 2020 3:21:21 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 25, 2020 4:56:35 PM</p>
 </div>
 </div>
 </body>
