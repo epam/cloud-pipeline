@@ -38,6 +38,7 @@ import com.epam.pipeline.manager.metadata.parser.MetadataParsingResult;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +47,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -55,7 +55,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -151,6 +153,9 @@ public class MetadataEntityManager implements SecuredEntityManager {
             }
             LOGGER.debug("Metadata entity with id %d was not found. A new one will be created.", entityId);
         }
+        metadataEntity.setExternalId(Optional.ofNullable(metadataEntity.getExternalId())
+                .filter(StringUtils::isNotBlank)
+                .orElseGet(() -> UUID.randomUUID().toString()));
         metadataEntityDao.createMetadataEntity(metadataEntity);
         return metadataEntity;
     }
@@ -242,7 +247,7 @@ public class MetadataEntityManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteMetadataEntitiesInProject(Long projectId, String entityClassName) {
         Objects.requireNonNull(projectId);
-        if (StringUtils.hasText(entityClassName)) {
+        if (StringUtils.isNotBlank(entityClassName)) {
             MetadataClass metadataClass =  loadClass(entityClassName);
             metadataEntityDao.deleteMetadataClassFromProject(projectId, metadataClass.getId());
         } else {
@@ -358,7 +363,7 @@ public class MetadataEntityManager implements SecuredEntityManager {
         parsedData.getEntities().values().forEach(e -> {
             if (existing.containsKey(e.getExternalId())) {
                 MetadataEntity current = existing.get(e.getExternalId());
-                if (org.apache.commons.lang3.StringUtils.isNotBlank(e.getName())) {
+                if (StringUtils.isNotBlank(e.getName())) {
                     current.setName(e.getName());
                 }
                 current.getData().putAll(e.getData());
