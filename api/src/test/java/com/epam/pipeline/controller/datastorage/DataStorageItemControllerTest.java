@@ -45,7 +45,7 @@ import java.util.Set;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.INTEGER_TYPE;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.OBJECT_TYPE;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.STRING_STRING_MAP_TYPE;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.STRING_MAP_INSTANCE_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -523,7 +523,7 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
         final MvcResult mvcResult = performRequest(post(String.format(TAGS_URL, ID)).params(params).content(content));
 
         Mockito.verify(mockStorageApiService).updateDataStorageObjectTags(ID, TEST, TAGS, TEST, true);
-        assertResponse(mvcResult, TAGS, STRING_STRING_MAP_TYPE);
+        assertResponse(mvcResult, TAGS, STRING_MAP_INSTANCE_TYPE);
     }
 
     @Test
@@ -542,7 +542,7 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
         final MvcResult mvcResult = performRequest(get(String.format(TAGS_URL, ID)).params(params));
 
         Mockito.verify(mockStorageApiService).loadDataStorageObjectTagsOwner(ID, TEST, TEST);
-        assertResponse(mvcResult, TAGS, STRING_STRING_MAP_TYPE);
+        assertResponse(mvcResult, TAGS, STRING_MAP_INSTANCE_TYPE);
     }
 
     @Test
@@ -556,7 +556,7 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
         final MvcResult mvcResult = performRequest(get(String.format(TAGS_URL, ID)).params(params));
 
         Mockito.verify(mockStorageApiService).loadDataStorageObjectTags(ID, TEST, EMPTY_STRING);
-        assertResponse(mvcResult, TAGS, STRING_STRING_MAP_TYPE);
+        assertResponse(mvcResult, TAGS, STRING_MAP_INSTANCE_TYPE);
     }
 
     @Test
@@ -577,6 +577,6 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
         final MvcResult mvcResult = performRequest(delete(String.format(TAGS_URL, ID)).params(params).content(content));
 
         Mockito.verify(mockStorageApiService).deleteDataStorageObjectTags(ID, TEST, setTags, TEST);
-        assertResponse(mvcResult, TAGS, STRING_STRING_MAP_TYPE);
+        assertResponse(mvcResult, TAGS, STRING_MAP_INSTANCE_TYPE);
     }
 }
