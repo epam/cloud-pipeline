@@ -804,7 +804,7 @@ public class PipelineRunManager {
                 .map(Map.Entry::getValue)
                 .flatMap(pipeConfValueVO -> {
                             String limitMounts = pipeConfValueVO.getValue();
-                            if (limitMounts.equalsIgnoreCase(LIMIT_MOUNTS_NONE)) {
+                            if (LIMIT_MOUNTS_NONE.equalsIgnoreCase(limitMounts)) {
                                 return Stream.empty();
                             }
                             return Arrays.stream(StringUtils.commaDelimitedListToStringArray(limitMounts))
