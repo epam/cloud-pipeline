@@ -135,7 +135,7 @@ const limitMountsHint = (localizedStringFn) => (
 
 const doNotMountStoragesHint = () => (
   <Row style={{maxWidth: 300}}>
-    If you choose <b>Do not mount storages</b> option, no storages will be mounted to the job
+    If enabled, no storages will be mounted to the job
   </Row>
 );
 
