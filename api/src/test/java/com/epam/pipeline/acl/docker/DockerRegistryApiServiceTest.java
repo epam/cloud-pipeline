@@ -343,23 +343,28 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
         assertThrows(AccessDeniedException.class, () -> dockerRegistryApiService.getConfigScript(ID));
     }
 
+    // TODO: another name?
     private void initToolAcls() {
         initAclEntity(toolRead, AclPermission.READ);
         initAclEntity(toolWithoutPermission);
-        initAclEntity(emptyToolGroupWithoutPermission);    }
-
-    private void assertReadPermissionInheritedForLeaves(final int permission,
-            final AbstractHierarchicalEntity actualToolGroupWithPermissions) {
-        final List<? extends AbstractSecuredEntity> actualToolWithReadPermissions =
-                actualToolGroupWithPermissions.getLeaves();
-        assertThat(actualToolGroupWithPermissions.getMask()).isEqualTo(permission);
-        assertThat(actualToolWithReadPermissions).isEqualTo(toolList);
-        // TODO: why?
-        actualToolWithReadPermissions.forEach(tool -> assertThat(tool.getMask()).isEqualTo(permission));
+        initAclEntity(emptyToolGroupWithoutPermission);
     }
 
-    private void assertReadPermissionsGrantedToGroup(final int permission,
-            final AbstractHierarchicalEntity actualToolGroupWithoutPermissions) {
+    private void assertPermissionInheritedForLeaves(final int permission,
+                                                    final AbstractHierarchicalEntity actualToolGroupWithPermissions) {
+        final List<? extends AbstractSecuredEntity> actualToolsWithReadPermissions =
+                actualToolGroupWithPermissions.getLeaves();
+        assertThat(actualToolGroupWithPermissions.getMask()).isEqualTo(permission);
+        assertThat(actualToolsWithReadPermissions).isEqualTo(toolList);
+        final AbstractSecuredEntity toolWithReadPermission = actualToolsWithReadPermissions.get(0);
+        assertThat(toolWithReadPermission.getMask()).isEqualTo(permission);
+        // TODO: why read permission cannot be granted? (permission shall be granted)
+        final AbstractSecuredEntity toolWithoutPermission = actualToolsWithReadPermissions.get(1);
+        assertThat(toolWithoutPermission.getMask()).isEqualTo(permission); // permission inherited from tool group
+    }
+
+    private void assertPermissionGrantedToGroup(final int permission,
+                                                final AbstractHierarchicalEntity actualToolGroupWithoutPermissions) {
         final List<? extends AbstractSecuredEntity> resultToolGroupWithoutPermissionLeaves =
                 actualToolGroupWithoutPermissions.getLeaves();
         assertThat(resultToolGroupWithoutPermissionLeaves).hasSize(1); // no permission tool has been filtered
@@ -385,10 +390,11 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
             final int permission) {
         assertThat(actualGroups).hasSize(expectedGroups.size()).containsAll(expectedGroups);
 
-        assertReadPermissionsGrantedToGroup(permission, actualGroups.get(1));
-        assertReadPermissionInheritedForLeaves(permission, actualGroups.get(0));
+        assertPermissionGrantedToGroup(permission, actualGroups.get(1));
+        assertPermissionInheritedForLeaves(permission, actualGroups.get(0));
     }
 
+    // TODO: find a better name for method
     private void assertWholeDockerRegistryAclTree(final List<AbstractHierarchicalEntity> actualGroups,
                                                   final List<? extends AbstractHierarchicalEntity> expectedGroups) {
         assertThat(actualGroups).containsAll(expectedGroups);
