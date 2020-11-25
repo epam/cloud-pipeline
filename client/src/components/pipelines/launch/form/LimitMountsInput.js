@@ -23,10 +23,6 @@ import AvailableStoragesBrowser
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import styles from './LimitMountsInput.css';
 
-function filterUniqueIdentifiers (o, i, a) {
-  return a.indexOf(+o) === i;
-}
-
 @inject('dataStorageAvailable')
 @observer
 export class LimitMountsInput extends React.Component {
@@ -46,24 +42,53 @@ export class LimitMountsInput extends React.Component {
     limitMountsDialogVisible: false
   };
 
+  componentDidMount () {
+    this.updateFromProps();
+  }
+
+  componentWillUnmount () {
+    this.props.dataStorageAvailable.invalidateCache();
+  }
+
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (prevProps.allowSensitive !== this.props.allowSensitive && !this.props.allowSensitive) {
-      this.restrictSensitiveStorages();
+    if (
+      (prevProps.allowSensitive !== this.props.allowSensitive) ||
+      (prevProps.value !== this.props.value)
+    ) {
+      this.updateFromProps();
     }
   }
 
-  restrictSensitiveStorages = async () => {
-    await this.props.dataStorageAvailable.fetchIfNeededOrWait();
-    const nonSensitiveStorageIds = (this.props.dataStorageAvailable.value || [])
-      .filter(s => !s.sensitive)
-      .map(s => +s.id);
-    const mountsIds = (this.state.value || this.props.value || '')
-      .split(',')
-      .map(id => +id)
-      .filter(id => nonSensitiveStorageIds.indexOf(id) >= 0);
-    this.setState({
-      value: mountsIds ? mountsIds.map(i => `${i}`).join(',') : null
-    }, this.handleChange);
+  updateFromProps = () => {
+    const {
+      allowSensitive,
+      dataStorageAvailable,
+      value
+    } = this.props;
+    if (!allowSensitive && value && !/^none$/i.test(value)) {
+      dataStorageAvailable
+        .fetchIfNeededOrWait()
+        .then(() => {
+          const nonSensitiveStorageIds = (dataStorageAvailable.value || [])
+            .filter(s => !s.sensitive)
+            .map(s => +s.id);
+          const mountsIds = value
+            .split(',')
+            .map(id => +id)
+            .filter(id => nonSensitiveStorageIds.indexOf(id) >= 0);
+          const newValue = mountsIds ? mountsIds.map(i => `${i}`).join(',') : null;
+          if (newValue !== value) {
+            this.setState({
+              value: newValue
+            }, this.handleChange);
+          }
+        })
+        .catch(console.error);
+    } else {
+      this.setState({
+        value
+      }, this.handleChange);
+    }
   };
 
   @computed
@@ -77,12 +102,27 @@ export class LimitMountsInput extends React.Component {
   }
 
   @computed
+  get availableNonSensitiveStorages () {
+    return this.availableStorages.filter(s => !s.sensitive);
+  }
+
+  allNonSensitiveStorages (selection) {
+    const ids = new Set(selection.map(id => +id));
+    return ids.size === this.availableNonSensitiveStorages.length &&
+      this.availableNonSensitiveStorages
+        .filter(s => ids.has(+s.id))
+        .length === this.availableNonSensitiveStorages.length;
+  }
+
   get selectedStorages () {
     if (this.state.value) {
-      const ids = this.state.value.split(',').map(i => i.trim());
-      return this.availableStorages.filter(s => ids.indexOf(`${s.id}`) >= 0);
+      if (/^none$/i.test(this.state.value)) {
+        return [];
+      }
+      const ids = new Set(this.state.value.split(',').map(i => +i));
+      return this.availableStorages.filter(s => ids.has(s.id));
     }
-    return [];
+    return this.availableNonSensitiveStorages;
   }
 
   input;
@@ -103,8 +143,14 @@ export class LimitMountsInput extends React.Component {
   };
 
   onSaveLimitMountsDialog = (mountsIds) => {
+    let value = mountsIds.join(',');
+    if (mountsIds.length === 0) {
+      value = 'None';
+    } else if (this.allNonSensitiveStorages(mountsIds)) {
+      value = null;
+    }
     this.setState({
-      value: mountsIds ? mountsIds.map(i => `${i}`).join(',') : null,
+      value,
       limitMountsDialogVisible: false
     }, this.handleChange);
   };
@@ -115,6 +161,36 @@ export class LimitMountsInput extends React.Component {
 
   handleChange = () => {
     this.props.onChange && this.props.onChange(this.state.value);
+  };
+
+  renderContent = () => {
+    if (this.selectedStorages.length === 0) {
+      return (
+        <span>No storages will be mounted</span>
+      );
+    }
+    if (this.allNonSensitiveStorages(this.selectedStorages.map(s => s.id))) {
+      return (
+        <span>
+          All available non-sensitive storages
+        </span>
+      );
+    }
+    if (this.selectedStorages.length === this.availableStorages.length) {
+      return (
+        <span>
+          All available storages
+        </span>
+      );
+    }
+    return this.selectedStorages.map(s => {
+      return (
+        <span key={s.id} className={styles.storage}>
+          <AWSRegionTag regionId={s.regionId} regionUID={s.regionName} />
+          {s.name}
+        </span>
+      );
+    });
   };
 
   render () {
@@ -129,59 +205,15 @@ export class LimitMountsInput extends React.Component {
             : `${styles.limitMountsInput} ${styles.disabled}`
         }
       >
-        {
-          this.selectedStorages.length > 0 &&
-          this.selectedStorages.map(s => {
-            return (
-              <span key={s.id} className={styles.storage}>
-                <AWSRegionTag regionId={s.regionId} regionUID={s.regionName} />
-                {s.name}
-              </span>
-            );
-          })
-        }
-        {
-          !this.state.value &&
-          <span>All available non-sensitive storages</span>
-        }
-        {
-          this.state.value &&
-          (this.state.value || '')
-            .split(',')
-            .filter(filterUniqueIdentifiers)
-            .length === this.availableStorages.length &&
-          (
-            <span>All available storages</span>
-          )
-        }
+        {this.renderContent()}
         <AvailableStoragesBrowser
           visible={this.state.limitMountsDialogVisible}
           availableStorages={this.availableStorages}
-          selectedStorages={
-            this.selectedStorages.length
-              ? this.selectedStorages.map(s => s.id)
-              : this.availableStorages.filter(s => !s.sensitive).map(s => s.id)
-          }
+          selectedStorages={this.selectedStorages.map(s => s.id)}
           onCancel={this.onCancelLimitMountsDialog}
           onSave={this.onSaveLimitMountsDialog}
         />
       </div>
     );
-  }
-
-  componentWillReceiveProps (nextProps) {
-    if ('value' in nextProps) {
-      const value = nextProps.value;
-      this.setState({value});
-    }
-  }
-
-  componentDidMount () {
-    this.props.dataStorageAvailable.fetchIfNeededOrWait();
-    this.setState({value: this.props.value});
-  }
-
-  componentWillUnmount () {
-    this.props.dataStorageAvailable.invalidateCache();
   }
 }

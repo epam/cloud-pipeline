@@ -489,8 +489,7 @@ export default class EditToolForm extends React.Component {
                   .map(d => +d.id));
                 this.defaultLimitMounts = (props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value || '')
                   .split(',')
-                  .map(o => +o)
-                  .filter(o => availableMounts.has(o))
+                  .filter(o => /^none$/i.test(o) || availableMounts.has(+o))
                   .join(',');
               } else {
                 this.defaultLimitMounts = props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value;
@@ -1039,6 +1038,9 @@ export default class EditToolForm extends React.Component {
   correctSensitiveMounts = async (e) => {
     const {dataStorageAvailable, form} = this.props;
     const initialLimitMounts = (form.getFieldValue('limitMounts') || this.defaultLimitMounts || '');
+    if (/^none$/i.test(initialLimitMounts)) {
+      return;
+    }
     const storages = initialLimitMounts
       .split(',')
       .map(id => +id);
@@ -1076,6 +1078,18 @@ export default class EditToolForm extends React.Component {
     });
   };
 
+  toggleDoNotMountStorages = (e) => {
+    if (e.target.checked) {
+      this.props.form.setFieldsValue({
+        limitMounts: 'None'
+      });
+    } else {
+      this.props.form.setFieldsValue({
+        limitMounts: null
+      });
+    }
+  };
+
   renderExecutionEnvironment = () => {
     const renderExecutionEnvironmentSection = () => {
       const {getFieldDecorator, getFieldValue} = this.props.form;
@@ -1083,6 +1097,7 @@ export default class EditToolForm extends React.Component {
       if (allowSensitive === undefined) {
         allowSensitive = this.getAllowSensitiveInitialValue();
       }
+      const limitMountsValue = getFieldValue('limitMounts');
       return (
         <div>
           {this.renderSeparator('Execution defaults')}
@@ -1182,19 +1197,43 @@ export default class EditToolForm extends React.Component {
                     ],
                     initialValue: this.getDiskInitialValue()
                   })(
-                  <Input disabled={this.state.pending || this.props.readOnly}/>
+                  <Input disabled={this.state.pending || this.props.readOnly} />
                 )}
               </Form.Item>
-              <Form.Item {...this.formItemLayout} label="Limit mounts" style={{marginTop: 10, marginBottom: 10}}>
-                {getFieldDecorator('limitMounts',
-                  {
-                    initialValue: this.defaultLimitMounts
-                  })(
-                  <LimitMountsInput
-                    allowSensitive={allowSensitive}
-                    disabled={this.state.pending || this.props.readOnly}
-                  />
-                )}
+              <Form.Item
+                {...this.formItemLayout}
+                label="Limit mounts"
+                style={{marginTop: 10, marginBottom: 10}}
+              >
+                <div>
+                  <Row type="flex" align="middle">
+                    <Checkbox
+                      checked={/^none$/i.test(limitMountsValue)}
+                      onChange={this.toggleDoNotMountStorages}
+                    >
+                      Do not mount storages
+                    </Checkbox>
+                  </Row>
+                  <Row
+                    type="flex"
+                    align="middle"
+                    style={{display: /^none$/i.test(limitMountsValue) ? 'none' : undefined}}
+                  >
+                    <Form.Item
+                      style={{marginBottom: 0, flex: 1}}
+                    >
+                      {getFieldDecorator('limitMounts',
+                        {
+                          initialValue: this.defaultLimitMounts
+                        })(
+                        <LimitMountsInput
+                          allowSensitive={allowSensitive}
+                          disabled={this.state.pending || this.props.readOnly}
+                        />
+                      )}
+                    </Form.Item>
+                  </Row>
+                </div>
               </Form.Item>
               <Form.Item {...this.formItemLayout} label="Allow sensitive storages" style={{marginTop: 10, marginBottom: 10}}>
                 {getFieldDecorator('allowSensitive',

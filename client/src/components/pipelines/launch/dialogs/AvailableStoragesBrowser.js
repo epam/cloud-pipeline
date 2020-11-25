@@ -27,6 +27,26 @@ function sensitiveSorter (a, b) {
   return a.sensitive - b.sensitive;
 }
 
+function arraysAreEqual (a, b) {
+  if (!a && !b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
+  const sA = new Set(a);
+  const sB = new Set(b);
+  if (sA.size !== sB.size) {
+    return false;
+  }
+  for (let aa of sA) {
+    if (!sB.has(aa)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 @observer
 export default class AvailableStoragesBrowser extends Component {
   static propTypes = {
@@ -42,7 +62,39 @@ export default class AvailableStoragesBrowser extends Component {
     searchString: null
   };
 
+  componentDidMount () {
+    this.updateSelectionFromProps();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (!arraysAreEqual(prevProps.selectedStorages, this.props.selectedStorages)) {
+      const presentation = (arr) => {
+        if (arr === undefined || arr === null) {
+          return `${arr}`;
+        }
+        return `[${arr.join(',')}]`;
+      };
+      this.updateSelectionFromProps();
+    }
+  }
+
+  updateSelectionFromProps = () => {
+    this.setState({
+      selectedStorages: this.props.selectedStorages.slice()
+    });
+  };
+
   get limitMountsParameter () {
+    if (this.state.selectedStorages.length === 0) {
+      return {
+        [CP_CAP_LIMIT_MOUNTS]: {
+          value: 'None'
+        }
+      };
+    }
+    if (this.onlyNonSensitiveStoragesAreSelected) {
+      return {};
+    }
     return {
       [CP_CAP_LIMIT_MOUNTS]: {
         value: this.state.selectedStorages.join(',')
@@ -54,27 +106,25 @@ export default class AvailableStoragesBrowser extends Component {
     return (this.props.availableStorages || []).filter(s => !s.sensitive);
   }
 
+  get onlyNonSensitiveStoragesAreSelected () {
+    const {selectedStorages} = this.state;
+    const ids = new Set(selectedStorages.map(id => +id));
+    return ids.size === this.availableNonSensitiveStorages.length &&
+      this.allAvailableNonSensitiveStoragesAreSelected;
+  }
+
   get allAvailableNonSensitiveStoragesAreSelected () {
     const {selectedStorages} = this.state;
-    const ids = selectedStorages.map(id => +id);
+    const ids = new Set(selectedStorages.map(id => +id));
     return this.availableNonSensitiveStorages
-      .filter(s => ids.indexOf(+s.id) >= 0)
+      .filter(s => ids.has(+s.id))
       .length === this.availableNonSensitiveStorages.length;
   }
 
   onSave = () => {
     if (this.props.onSave) {
       const {selectedStorages} = this.state;
-      const ids = selectedStorages.map(id => +id);
-      const sensitiveStoragesSelected = this.availableStorages
-        .filter(s => s.sensitive && ids.indexOf(+s.id) >= 0)
-        .length > 0;
-      this.props.onSave(
-        this.allAvailableNonSensitiveStoragesAreSelected &&
-        !sensitiveStoragesSelected
-          ? null
-          : this.state.selectedStorages
-      );
+      this.props.onSave(selectedStorages);
     }
   };
 
@@ -224,8 +274,8 @@ export default class AvailableStoragesBrowser extends Component {
             </Button>
             <Button
               type="primary"
-              disabled={!this.state.selectedStorages.length}
-              onClick={this.onSave}>
+              onClick={this.onSave}
+            >
               OK{
                 !!this.state.selectedStorages.length > 0 &&
                 ` (${this.state.selectedStorages.length})`
@@ -249,7 +299,8 @@ export default class AvailableStoragesBrowser extends Component {
           <Button
             style={{marginLeft: 5}}
             disabled={this.state.selectedStorages.length === this.props.availableStorages.length}
-            onClick={this.selectAll}>
+            onClick={this.selectAll}
+          >
             Select all
           </Button>
           {
@@ -277,15 +328,5 @@ export default class AvailableStoragesBrowser extends Component {
         {this.renderStoragesTable()}
       </Modal>
     );
-  }
-
-  componentWillReceiveProps (nextProps) {
-    let selectedStorages = [];
-    if (nextProps.selectedStorages.length) {
-      selectedStorages = nextProps.selectedStorages.slice();
-    }
-    this.setState({
-      selectedStorages, searchString: null
-    });
   }
 }
