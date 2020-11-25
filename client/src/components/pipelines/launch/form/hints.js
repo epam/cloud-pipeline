@@ -133,6 +133,12 @@ const limitMountsHint = (localizedStringFn) => (
   </Row>
 );
 
+const doNotMountStoragesHint = () => (
+  <Row style={{maxWidth: 300}}>
+    If you choose <b>Do not mount storages</b> option, no storages will be mounted to the job
+  </Row>
+);
+
 const prettyUrlHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
     This value will be used in the <b>Endpoint URL</b> instead of the general
@@ -180,6 +186,7 @@ const hints = {
   autoPauseHint,
   timeOutHint,
   limitMountsHint,
+  doNotMountStoragesHint,
   prettyUrlHint,
   executionEnvironmentSummaryHint,
   endpointNameHint,

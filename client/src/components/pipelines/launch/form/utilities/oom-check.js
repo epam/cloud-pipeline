@@ -38,7 +38,7 @@ function OOMCheck (
     return null;
   }
   const allNonSensitive = !limitMounts;
-  const ids = limitMounts
+  const ids = limitMounts && !/^none$/i.test(limitMounts)
     ? (new Set(limitMounts.split(',').map(id => +id)))
     : new Set();
   const storages = (dataStorages || [])
