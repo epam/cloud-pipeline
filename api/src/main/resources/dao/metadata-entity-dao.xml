@@ -29,14 +29,16 @@
                         parent_id,
                         entity_name,
                         external_id,
-                        data)
+                        data,
+                        created_date)
                     VALUES (
                         :ENTITY_ID,
                         :CLASS_ID,
                         :PARENT_ID,
                         :ENTITY_NAME,
                         :EXTERNAL_ID,
-                        to_jsonb(:DATA::jsonb))
+                        to_jsonb(:DATA::jsonb),
+                        :CREATED_DATE)
                 ]]>
             </value>
         </property>
@@ -76,6 +78,7 @@
                         e.entity_name,
                         e.external_id,
                         e.data,
+                        e.created_date,
                         c.external_class_name
                     FROM
                         pipeline.metadata_entity e
@@ -95,6 +98,7 @@
                         e.entity_name,
                         e.external_id,
                         e.data,
+                        e.created_date,
                         c.external_class_name
                      FROM
                         pipeline.metadata_entity e
@@ -114,14 +118,16 @@
                         parent_id,
                         entity_name,
                         external_id,
-                        data
+                        data,
+                        created_date
                      ) SELECT
                         NEXTVAL('pipeline.s_metadata_entity') AS entity_id,
                         class_id,
                         ? AS parent_id,
                         entity_name,
                         external_id,
-                        data
+                        data,
+                        now() AS created_date
                      FROM pipeline.metadata_entity e WHERE e.parent_id = ?
                 ]]>
             </value>
@@ -137,6 +143,7 @@
                         null as class_id,
                         null as entity_name,
                         null as external_id,
+                        e.created_date,
                         c.external_class_name
                     FROM
                         pipeline.metadata_entity e
@@ -157,6 +164,7 @@
                         e.entity_name,
                         e.external_id,
                         e.data,
+                        e.created_date,
                         c.external_class_name
                      FROM
                         pipeline.metadata_entity e
@@ -255,6 +263,7 @@
                       e.entity_name,
                       e.external_id,
                       e.data,
+                      e.created_date,
                       c.external_class_name
                     FROM
                       children f
@@ -278,6 +287,7 @@
                       e.entity_name,
                       e.external_id,
                       e.data,
+                      e.created_date,
                       c.external_class_name
                     FROM
                       metadata_entity e
@@ -373,6 +383,7 @@
                       m.entity_id,
                       m.key,
                       m.data->m.key->>'type' as type,
+                      m.created_date,
                       m.external_class_name
                     FROM (
                       WITH RECURSIVE children AS (
@@ -402,6 +413,7 @@
                         m.entity_id,
                         jsonb_object_keys(m.data) as key,
                         m.data,
+                        m.created_date,
                         c.external_class_name
                       FROM metadata_entity m
                         INNER JOIN
@@ -444,6 +456,7 @@
                         e.entity_name,
                         e.external_id,
                         NULL as data,
+                        e.created_date,
                         c.c.external_class_name
                     FROM pipeline.metadata_entity e
                     INNER JOIN folders ON folders.folder_id = e.parent_id
@@ -463,6 +476,7 @@
                         e.entity_name,
                         e.external_id,
                         e.data,
+                        e.created_date,
                         c.external_class_name
                      FROM
                         pipeline.metadata_entity e
@@ -485,6 +499,7 @@
                         e.entity_name,
                         e.external_id,
                         e.data,
+                        e.created_date,
                         c.external_class_name
                      FROM
                         pipeline.metadata_entity e
@@ -510,6 +525,7 @@
                           p.field_type,
                           p.field_value,
                           p.data,
+                          p.created_date,
 						  p.external_class_name
                         FROM (SELECT
                                 entity_id,
@@ -519,6 +535,7 @@
                                 class_name,
                                 parent_id,
                                 data,
+                                created_date,
                                 key as field_name,
                                 regexp_replace(regexp_replace(value->>'type', '(:ID)|(Array\[)', ''), ']', '') as field_type,
                                 CASE
@@ -545,6 +562,7 @@
                           d.field_type,
                           d.field_value,
                           d.data,
+                          d.created_date,
 						  d.external_class_name
                         FROM (SELECT
                                 entity_id,
@@ -554,6 +572,7 @@
                                 class_name,
                                 parent_id,
                                 data,
+                                created_date,
                                 key as field_name,
                                 regexp_replace(regexp_replace(value->>'type', '(:ID)|(Array\[)', ''), ']', '') as field_type,
                                 CASE
@@ -576,6 +595,7 @@
                       external_id,
                       parent_id,
                       data,
+                      created_date,
 					  external_class_name
                     FROM links;
                 ]]>
@@ -592,6 +612,7 @@
                             p.class_id,
                             p.parent_id,
                             p.data,
+                            p.created_date,
 						    f.folder_id AS folder_id,
                             f.parent_id AS parent_folder_id
                         FROM pipeline.metadata_entity p
@@ -605,6 +626,7 @@
                             null AS class_id,
                             null AS parent_id,
                             null AS data,
+                            null AS created_date,
 		                    m.folder_id AS folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m
