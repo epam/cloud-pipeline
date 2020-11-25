@@ -231,6 +231,8 @@ export default class Metadata extends React.Component {
       if (request.error) {
         message.error(request.error, 5);
       } else {
+        await this.props.entityFields.fetch();
+        await this.loadColumns(this.props.folderId, this.props.metadataClass);
         await this.loadData(this.state.filterModel);
         await this.props.folder.fetch();
         if (this.props.onReloadTree) {
@@ -355,8 +357,8 @@ export default class Metadata extends React.Component {
         .map(k => k.name === 'externalId' ? 'ID' : k.name);
 
       if (this.defaultColumns && this.defaultColumns.length < newColumns.length) {
-        const [newColumn] = newColumns.filter(column => !this.defaultColumns.includes(column));
-        this.state.selectedColumns.push(newColumn);
+        const addedColumns = newColumns.filter(column => !this.defaultColumns.includes(column));
+        this.state.selectedColumns.push(...addedColumns);
         this.setState({selectedColumns: this.state.selectedColumns});
       }
       this.defaultColumns = this.columns = newColumns;
@@ -692,6 +694,7 @@ export default class Metadata extends React.Component {
             parentId={currentItem ? currentItem.parent.id : null}
             currentItem={this.state.selectedItem}
             onUpdateMetadata={async () => {
+              await this.props.entityFields.fetch();
               await this.loadColumns(this.props.folderId, this.props.metadataClass);
               await this.loadData(this.state.filterModel);
               const [selectedItem] =
@@ -1082,6 +1085,7 @@ export default class Metadata extends React.Component {
         nextProps.onSelectItems(this.state.selectedItems);
       }
       this._totalCount = 0;
+      await this.props.entityFields.fetch();
       await this.loadColumns(nextProps.folderId, nextProps.metadataClass);
       this.state.selectedColumns = [...this.columns];
       await this.loadData(this.state.filterModel);

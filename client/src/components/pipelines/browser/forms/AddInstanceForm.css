@@ -28,17 +28,27 @@
 
 .validation-error {
   color: red;
-  text-align: right;
+}
+
+.parameter-row {
+  margin-top: 5px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 
 .parameter-name {
-  width: 1px;
   white-space: nowrap;
   text-align: right;
   color: #000;
   padding-right: 5px;
+  width: 25%;
 }
 
 .parameter-name.custom {
-  width: 33%;
+  width: 25%;
+}
+
+.browse-items-button {
+  cursor: pointer;
 }
