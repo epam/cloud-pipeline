@@ -19,9 +19,12 @@ package com.epam.pipeline.test.creator.notification;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 import com.epam.pipeline.entity.notification.NotificationMessage;
+import com.epam.pipeline.entity.notification.NotificationSettings;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.Collections;
+import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
@@ -30,6 +33,11 @@ public final class NotificationCreatorUtils {
 
     public static final TypeReference<Result<NotificationMessage>> NOTIFICATION_MESSAGE_TYPE =
             new TypeReference<Result<NotificationMessage>>() { };
+    public static final TypeReference<Result<NotificationSettings>> NOTIFICATION_SETTINGS_TYPE =
+            new TypeReference<Result<NotificationSettings>>() { };
+    public static final TypeReference<Result<List<NotificationSettings>>> NOTIFICATION_SETTINGS_LIST_TYPE =
+            new TypeReference<Result<List<NotificationSettings>>>() { };
+    private static final List<Long> LONG_LIST = Collections.singletonList(ID);
 
     private NotificationCreatorUtils() {
 
@@ -40,11 +48,22 @@ public final class NotificationCreatorUtils {
         notificationMessage.setBody(TEST_STRING);
         notificationMessage.setId(ID);
         notificationMessage.setSubject(TEST_STRING);
-        notificationMessage.setCopyUserIds(Collections.singletonList(ID));
+        notificationMessage.setCopyUserIds(LONG_LIST);
         return notificationMessage;
     }
 
     public static NotificationMessageVO getNotificationMessageVO() {
         return new NotificationMessageVO();
+    }
+
+    public static NotificationSettings getNotificationSettings() {
+        final NotificationSettings notificationSettings = new NotificationSettings();
+        notificationSettings.setId(ID);
+        notificationSettings.setEnabled(true);
+        notificationSettings.setInformedUserIds(LONG_LIST);
+        notificationSettings.setResendDelay(ID);
+        notificationSettings.setType(NotificationSettings.NotificationType.HIGH_CONSUMED_RESOURCES);
+        notificationSettings.setStatusesToInform(Collections.singletonList(TaskStatus.RUNNING));
+        return notificationSettings;
     }
 }
