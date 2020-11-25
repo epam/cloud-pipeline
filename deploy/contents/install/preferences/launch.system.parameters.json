@@ -32,6 +32,12 @@
         "passToWorkers": true
     },
     {
+        "name": "CP_CAP_SGE_DISABLE_DEFAULT_QUEUE",
+        "type": "string",
+        "description": "Disables default Grid Engine queue and hostlist creation",
+        "defaultValue": "false"
+    },
+    {
         "name": "CP_CAP_SGE_PE_NAME",
         "type": "string",
         "description": "Overrides the default name of the Grid Engine PE",

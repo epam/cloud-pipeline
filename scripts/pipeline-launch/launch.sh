@@ -145,24 +145,6 @@ function setup_nfs_if_required {
 
 }
 
-function check_cp_cap {
-      _CAP="$1"
-      if [ -z "$_CAP" ]; then
-            return 1
-      fi
-
-      _CAP_VALUE=${!_CAP}
-      if [ -z "$_CAP_VALUE" ]; then
-            return 1
-      fi
-
-      if [ ${_CAP_VALUE,,} == 'true' ] || [ ${_CAP_VALUE,,} == 'yes' ]; then
-            return 0
-      else
-            return 1
-      fi
-}
-
 function cp_cap_publish {
       if [ -z "$cluster_role" ]; then
             return 0

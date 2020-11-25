@@ -55,12 +55,17 @@ def get_path_without_trailing_delimiter(path):
     return path if not path.endswith('/') else path[:-1]
 
 
-def build_environment_profiles(prefix):
+def build_environment_profiles(prefixes):
     logging.info('Searching for environment profiles...')
     common_profile = {}
     profiles = {}
     for key, value in os.environ.items():
-        if not key.startswith(prefix):
+        prefix = None
+        for possible_prefix in prefixes:
+            if key.startswith(possible_prefix):
+                prefix = possible_prefix
+                break
+        if not prefix:
             continue
         profile_match = re.match(_PROFILE_PATTERN.format(prefix), key)
         if profile_match:
@@ -85,9 +90,7 @@ def build_environment_profiles(prefix):
     complete_profiles = {}
     for profile_index, profile in profiles.items():
         complete_profile = complete_profiles[profile_index] = complete_profiles.get(profile_index) or {}
-        complete_profile.update(common_profile)
         complete_profile.update(profile)
-        complete_profile['{}_PROFILE'.format(prefix)] = profile_index
         logging.info('Profile %s environment:', profile_index)
         for key, value in complete_profile.items():
             logging.info('%s=%s', key, value)

@@ -141,7 +141,7 @@ check_last_exit_code $? "Master host was added to $CP_CAP_SGE_HOSTLIST_NAME host
                         "Fail to add master host to $CP_CAP_SGE_HOSTLIST_NAME hostlist"
 
 # If CP_CAP_SGE_MASTER_CORES is set to "0" - we'll not use master as a worker
-if [ "$CP_CAP_SGE_MASTER_CORES" == "0" ]; then
+if [ "$CP_CAP_SGE_MASTER_CORES" == "0" ] || ! check_cp_cap "CP_CAP_SGE_STATIC"; then
   disable_worker_in_queue "$CP_CAP_SGE_QUEUE_NAME"
   pipe_log_info "CP_CAP_SGE_MASTER_CORES is set to 0. Master host was disabled in $CP_CAP_SGE_QUEUE_NAME queue" "$SGE_MASTER_SETUP_TASK"
 else
