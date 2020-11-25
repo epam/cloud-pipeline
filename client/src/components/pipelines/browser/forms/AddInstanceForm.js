@@ -319,7 +319,7 @@ export default class AddInstanceForm extends React.Component {
               className={styles.browseItemsButton}
               onClick={this.onOpenMetadataItemSelection(custom, parameterFilterFn)}
             >
-              Browse {field.type} {field.multiValue ? 'entities' : 'entity'}
+              Browse
             </div>
           )}
           value={field.multiValue ? (field.value || []).join(', ') : field.value}

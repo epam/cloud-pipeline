@@ -135,6 +135,10 @@ class SelectMetadataItems extends React.Component {
     }
   }
 
+  get pageIsSelected () {
+
+  }
+
   updateState = () => {
     const {type, selection} = this.props;
     this.setState({
@@ -217,7 +221,7 @@ class SelectMetadataItems extends React.Component {
     const clearSelection = () => {
       this.setState({selection: []});
     };
-    const selectAll = () => {
+    const selectPage = () => {
       const select = (id) => {
         const index = selection.map(o => `${o}`).indexOf(`${id}`);
         if (index === -1) {
@@ -266,31 +270,39 @@ class SelectMetadataItems extends React.Component {
         size="small"
         scroll={{x: 100}}
         footer={() => (
-          <div>
-            {
-              multiple && (
-                <div
-                  style={{marginTop: 5}}
-                >
-                  <Button
-                    disabled={selection.length === 0}
-                    size="small"
-                    style={{marginRight: 5}}
-                    onClick={clearSelection}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}
+          >
+            <div>
+              {
+                multiple ? (
+                  <div
+                    style={{marginTop: 5}}
                   >
-                    Clear selection
-                  </Button>
-                  <Button
-                    size="small"
-                    onClick={selectAll}
-                    disabled={selection.length === total}
-                  >
-                    Select all
-                  </Button>
-                </div>
-              )
-            }
-            <div style={{marginTop: 5}}>
+                    <Button
+                      disabled={selection.length === 0}
+                      size="small"
+                      style={{marginRight: 5}}
+                      onClick={clearSelection}
+                    >
+                      Clear selection
+                    </Button>
+                    <Button
+                      size="small"
+                      onClick={selectPage}
+                    >
+                      Select page
+                    </Button>
+                  </div>
+                ) : '\u00A0'
+              }
+            </div>
+            <div>
               <Pagination
                 current={page}
                 pageSize={PAGE_SIZE}
@@ -367,7 +379,7 @@ class SelectMetadataItems extends React.Component {
         title={`Select ${type} entities`}
         onCancel={onClose}
         width="80%"
-        style={{top: 20}}
+        style={{top: 5}}
         footer={(
           <div className={styles.footer}>
             <Button
@@ -377,7 +389,7 @@ class SelectMetadataItems extends React.Component {
             </Button>
             <Button
               type="primary"
-              disabled={disabled || selection.length === 0}
+              disabled={disabled}
               onClick={this.onOkClicked}
             >
               OK {selection.length > 0 ? `(${selection.length} entities)` : ''}
