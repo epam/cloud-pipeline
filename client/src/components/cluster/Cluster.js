@@ -19,7 +19,6 @@ import moment from 'moment-timezone';
 import {
   Alert,
   Button,
-  Card,
   Col,
   Input,
   message,
@@ -38,6 +37,7 @@ import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
 import styles from './Cluster.css';
 import {renderNodeLabels} from './renderers';
+import parseQueryParameters from '../../utils/queryParameters';
 import {
   getRoles,
   nodeRoles,
@@ -50,9 +50,16 @@ import {
 })
 @localization.localizedComponent
 @inject('clusterNodes', 'nodesFilter')
+@inject((stores, params) => {
+  const {routing} = stores;
+  const query = parseQueryParameters(routing);
+  return {
+    ...stores,
+    filter: query
+  };
+})
 @observer
 export default class Cluster extends localization.LocalizedReactComponent {
-
   state = {
     appliedFilter: {
       runId: null,
@@ -122,7 +129,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
       });
   };
 
-  terminateNode = async(item) => {
+  terminateNode = async (item) => {
     const hide = message.loading('Processing...', 0);
     const request = new TerminateNodeRequest(item.name);
     await request.fetch();
@@ -145,7 +152,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         wordWrap: 'break-word'
       },
       onOk () {
-        (async() => {
+        (async () => {
           await terminateNode(item);
         })();
       }
@@ -449,7 +456,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
       }
     }
     return (
-      <Card className={styles.clusterCard} bodyStyle={{padding: 15}}>
+      <div>
         <Row type="flex" align="middle">
           <Col span={22}>
             <span className={styles.nodeMainInfo}>Cluster nodes {description}</span>
@@ -475,8 +482,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
           this.props.nodesFilter.value,
           this.props.nodesFilter.pending
         )}
-      </Card>
+      </div>
     );
   }
-
 }

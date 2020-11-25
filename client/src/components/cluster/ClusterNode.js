@@ -15,7 +15,7 @@
  */
 
 import React, {Component} from 'react';
-import {Alert, Menu, Row, Col, Card, Button} from 'antd';
+import {Alert, Menu, Row, Col, Button} from 'antd';
 import AdaptedLink from '../special/AdaptedLink';
 import {Link} from 'react-router';
 import clusterNodes from '../../models/cluster/ClusterNodes';
@@ -145,16 +145,10 @@ class ClusterNode extends Component {
     ];
     const nodeLabels = this.renderNodeLabels();
     return (
-      <Card
+      <div
         key={this.props.name}
         className={styles.nodeCard}
-        bodyStyle={{
-          padding: 15,
-          display: 'flex',
-          flexDirection: 'column',
-          flex: 'auto',
-          height: '100%'
-        }}>
+      >
         <Row align="middle">
           <Col span={1}>
             <Link id="back-button" to="/cluster"><Button type="link" icon="arrow-left" /></Link>
@@ -173,7 +167,7 @@ class ClusterNode extends Component {
           </Col>
         </Row>
         {result}
-      </Card>
+      </div>
     );
   }
 }

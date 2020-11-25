@@ -72,6 +72,7 @@ const searchEngine = new Search();
 
 const spotInstanceTypes = new InstanceTypes(true);
 const onDemandInstanceTypes = new InstanceTypes(false);
+const allInstanceTypes = new InstanceTypes();
 const spotToolInstanceTypes = new ToolInstanceTypes(true);
 const onDemandToolInstanceTypes = new ToolInstanceTypes(false);
 
@@ -110,6 +111,7 @@ const Root = () =>
       folders,
       spotInstanceTypes,
       onDemandInstanceTypes,
+      allInstanceTypes,
       spotToolInstanceTypes,
       onDemandToolInstanceTypes,
       notifications,
