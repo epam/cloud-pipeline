@@ -73,17 +73,6 @@ public class IssueControllerTest extends AbstractControllerTest {
     private static final String PAGE_SIZE = "pageSize";
     private static final String FILE = "file.txt";
     private static final String PATH = "path";
-    private static final String MULTIPART_CONTENT_TYPE =
-            "multipart/form-data; boundary=--------------------------boundary";
-    private static final String MULTIPART_CONTENT =
-            "----------------------------boundary\r\n" +
-            "Content-Disposition: form-data; name=\"file\"; filename=\"file.txt\"\r\n" +
-            "Content-Type:  application/octet-stream\r\n" +
-            "\r\n" +
-            "file.txt" +
-            "\r\n" +
-            "----------------------------boundary";
-
 
     private final Issue issue = IssueCreatorUtils.getIssue();
     private final IssueVO issueVO = IssueCreatorUtils.getIssueVO();

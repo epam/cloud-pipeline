@@ -34,6 +34,12 @@ public final class CommonCreatorConstants {
             new TypeReference<Result<Long>>() {};
     public static final TypeReference<Result<Map<String, String>>> STRING_MAP_INSTANCE_TYPE =
             new TypeReference<Result<Map<String, String>>>() {};
+    public static final TypeReference<Result<Integer>> INTEGER_TYPE = new TypeReference<Result<Integer>>() {};
+    public static final TypeReference<Result<Object>> OBJECT_TYPE = new TypeReference<Result<Object>>() {};
+    public static final TypeReference<Result<String>> STRING_TYPE = new TypeReference<Result<String>>() {};
+    public static final TypeReference<Result<Map<String, String>>> STRING_STRING_MAP_TYPE =
+            new TypeReference<Result<Map<String, String>>>() {};
+
 
     public static final long ID = 1L;
     public static final long ID_2 = 2L;
@@ -46,14 +52,6 @@ public final class CommonCreatorConstants {
     public static final byte[] TEST_ARRAY = {1, 1, 1};
     public static final Map<String, String> TEST_STRING_MAP = Collections.singletonMap(TEST_STRING, TEST_STRING);
     public static final Set<String> TEST_STRING_SET = Collections.singleton(TEST_STRING);
-
-    public static final TypeReference<Result<Integer>> INTEGER_TYPE = new TypeReference<Result<Integer>>() {};
-    public static final TypeReference<Result<Object>> OBJECT_TYPE = new TypeReference<Result<Object>>() {};
-    public static final TypeReference<Result<String>> STRING_TYPE = new TypeReference<Result<String>>() {};
-    public static final TypeReference<Result<Map<String, String>>> STRING_STRING_MAP_TYPE =
-            new TypeReference<Result<Map<String, String>>>() {};
-    public static final TypeReference<Result<Boolean>> BOOLEAN_INSTANCE_TYPE =
-            new TypeReference<Result<Boolean>>() {};
 
     private CommonCreatorConstants() {
 

@@ -37,8 +37,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.util.Collections;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -52,6 +50,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public abstract class AbstractControllerTest {
     protected static final String EXPECTED_CONTENT_TYPE = "application/json;charset=UTF-8";
     protected static final String SERVLET_PATH = "/restapi";
+    protected static final String CERTIFICATE_NAME = "ca.crt";
+    private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
+    protected static final String MULTIPART_CONTENT_TYPE =
+            "multipart/form-data; boundary=--------------------------boundary";
+    protected static final String MULTIPART_CONTENT =
+            "----------------------------boundary\r\n" +
+                    "Content-Disposition: form-data; name=\"file\"; filename=\"file.txt\"\r\n" +
+                    "Content-Type:  application/octet-stream\r\n" +
+                    "\r\n" +
+                    "file.txt" +
+                    "\r\n" +
+                    "----------------------------boundary";
 
     private MockMvc mockMvc;
     private ObjectMapper deserializationMapper;
@@ -63,7 +73,7 @@ public abstract class AbstractControllerTest {
     protected WebApplicationContext wac;
 
     @Before
-    public void setup() throws Exception {
+    public void setup() {
         // checks that all required dependencies are provided.
         assertNotNull("WebApplicationContext isn't provided.", wac);
         assertNotNull("ObjectMapper isn't provided.", objectMapper);
@@ -101,6 +111,19 @@ public abstract class AbstractControllerTest {
         final Result<T> actualResult = JsonMapper.parseData(actual, typeReference, deserializationMapper);
         assertNotNull(actualResult);
         assertEquals(expectedResult.getPayload(), actualResult.getPayload());
+    }
+
+    public void assertFileResponse(final MvcResult mvcResult, final String fileName, final byte[] fileContent) {
+        assertResponseHeader(mvcResult, fileName);
+        assertContent(mvcResult, fileContent);
+    }
+
+    public void assertResponseHeader(final MvcResult mvcResult, final String fileName) {
+        assertThat(mvcResult.getResponse().getHeader(CONTENT_DISPOSITION_HEADER)).contains(fileName);
+    }
+
+    public void assertContent(final MvcResult mvcResult, final byte[] fileContent) {
+        assertThat(mvcResult.getResponse().getContentAsByteArray()).isEqualTo(fileContent);
     }
 
     @SneakyThrows
