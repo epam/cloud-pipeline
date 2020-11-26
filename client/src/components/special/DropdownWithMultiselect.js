@@ -39,7 +39,8 @@ export default class DropdownWithMultiselect extends React.Component {
     onColumnSelect: PropTypes.func,
     onSetOrder: PropTypes.func,
     selectedColumns: PropTypes.array,
-    columns: PropTypes.array
+    columns: PropTypes.array,
+    columnNameFn: PropTypes.func
   };
 
   state = {
@@ -78,6 +79,10 @@ export default class DropdownWithMultiselect extends React.Component {
   };
 
   renderColumnsMenu = () => {
+    let {columnNameFn} = this.props;
+    if (!columnNameFn) {
+      columnNameFn = (o => o);
+    }
     const columns = this.state.columns;
     const DragHandle = SortableHandle(() => <span><Icon type="bars" /></span>);
     const SortableItem = SortableElement(({value}) => {
@@ -88,7 +93,7 @@ export default class DropdownWithMultiselect extends React.Component {
             disabled={this.state.selectedColumns.length <= 1 && this.itemIsSelected(value)}
             checked={this.itemIsSelected(value)}
             onChange={this.onColumnSelect(value)}>
-            {value}
+            {columnNameFn(value)}
           </Checkbox>
         </Row>
       );

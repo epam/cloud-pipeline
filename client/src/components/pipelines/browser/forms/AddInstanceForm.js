@@ -71,19 +71,6 @@ export default class AddInstanceForm extends React.Component {
     const valid = this.validate();
     this.props.form.validateFieldsAndScroll((err, values) => {
       if (valid && !err && this.state.customFields.filter(f => !!f.validation).length === 0) {
-        const data = this.state.fields.filter(f => !!f.value).map(f => {
-          return {
-            name: f.name,
-            type: f.reference ? `${f.type}:ID` : f.type,
-            value: f.value
-          };
-        }).reduce((dataObj, field) => {
-          dataObj[field.name] = {
-            type: field.type,
-            value: field.value
-          };
-          return dataObj;
-        }, {});
         const mapType = (field) => {
           if (field.multiValue) {
             return `Array[${field.type}]`;
@@ -98,6 +85,19 @@ export default class AddInstanceForm extends React.Component {
           }
           return field.value;
         };
+        const data = this.state.fields.filter(f => !!f.value).map(f => {
+          return {
+            name: f.name,
+            type: mapType(f),
+            value: mapValue(f)
+          };
+        }).reduce((dataObj, field) => {
+          dataObj[field.name] = {
+            type: field.type,
+            value: field.value
+          };
+          return dataObj;
+        }, {});
         this.state.customFields.filter(f => !!f.value).map(f => {
           return {
             name: f.name,

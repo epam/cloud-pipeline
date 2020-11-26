@@ -378,6 +378,12 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
+    public StorageContentAO openStorageFromLimitMountsParameter(String storage) {
+        $(byText("CP_CAP_LIMIT_MOUNTS")).$(By.xpath("following::td"))
+                .shouldHave(text(storage)).click();
+        return new StorageContentAO();
+    }
+
     public static By log() {
         return byClassName("ReactVirtualized__List");
     }

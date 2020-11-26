@@ -52,10 +52,36 @@ import ConfigurationRun from '../../../models/configuration/ConfigurationRun';
 import PipelineRunner from '../../../models/pipelines/PipelineRunner';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import Breadcrumbs from '../../special/Breadcrumbs';
+import displayDate from '../../../utils/displayDate';
 
 const PAGE_SIZE = 20;
 const ASCEND = 'ascend';
 const DESCEND = 'descend';
+
+function filterColumns (column) {
+  return !column.predefined || ['externalId', 'createdDate'].indexOf(column.name) >= 0;
+}
+
+function mapColumnName (column) {
+  if (column.name === 'externalId') {
+    return 'ID';
+  }
+  return column.name;
+}
+
+function unmapColumnName (name) {
+  if (name === 'ID') {
+    return 'externalId';
+  }
+  return name;
+}
+
+function getColumnTitle(key) {
+  if (key === 'createdDate') {
+    return 'Created Date';
+  }
+  return key;
+}
 
 @connect({
   folders,
@@ -251,7 +277,7 @@ export default class Metadata extends React.Component {
     let orderBy;
     if (filterModel) {
       orderBy = (filterModel.orderBy || [])
-        .map(o => ({...o, field: o.field === 'ID' ? 'externalId' : o.field}));
+        .map(o => ({...o, field: unmapColumnName(o.field)}));
     }
     await this.metadataRequest.send(Object.assign({...filterModel}, {orderBy}));
     if (this.metadataRequest.error) {
@@ -276,6 +302,10 @@ export default class Metadata extends React.Component {
           v.data.ID = {
             value: v.externalId,
             type: 'string'
+          };
+          v.data.createdDate = {
+            value: v.createdDate,
+            type: 'date'
           };
           return v.data;
         });
@@ -352,9 +382,24 @@ export default class Metadata extends React.Component {
       message.error(metadataEntityKeysRequest.error, 5);
     } else {
       this.keys = (metadataEntityKeysRequest.value || []).map(k => k);
+      const externalIdSort = (a, b) => {
+        if (a.name === b.name) {
+          return 0;
+        }
+        if (a.name === 'externalId') {
+          return -1;
+        }
+        if (b.name === 'externalId') {
+          return 1;
+        }
+        return 0;
+      };
+      const predefinedSort = (a, b) => b.predefined - a.predefined;
       const newColumns = (metadataEntityKeysRequest.value || [])
-        .filter(k => !k.predefined || k.name === 'externalId')
-        .map(k => k.name === 'externalId' ? 'ID' : k.name);
+        .sort(externalIdSort)
+        .sort(predefinedSort)
+        .filter(filterColumns)
+        .map(mapColumnName);
 
       if (this.defaultColumns && this.defaultColumns.length < newColumns.length) {
         const addedColumns = newColumns.filter(column => !this.defaultColumns.includes(column));
@@ -390,6 +435,10 @@ export default class Metadata extends React.Component {
       selectedItem.ID = {
         value: metadataEntityLoadExternalRequest.value.externalId,
         type: 'string'
+      };
+      selectedItem.createdDate = {
+        value: metadataEntityLoadExternalRequest.value.createdDate,
+        type: 'date'
       };
       this.setState({metadata: true, selectedItem: selectedItem});
     }
@@ -825,7 +874,7 @@ export default class Metadata extends React.Component {
         <span
           onClick={(e) => onHeaderClicked(key)}
           className={styles.metadataColumnHeader}>
-          {icon}{key}
+          {icon}{getColumnTitle(key)}
         </span>
       );
     };
@@ -968,6 +1017,12 @@ export default class Metadata extends React.Component {
                 </a>;
               } else if (data.type.toLowerCase() === 'path') {
                 return this.renderDataStorageLinks(data);
+              } else if (/^date$/i.test(data.type)) {
+                return (
+                  <span title={data.value}>
+                    {displayDate(data.value)}
+                  </span>
+                );
               } else {
                 return (
                   <span title={data.value}>
@@ -1029,6 +1084,7 @@ export default class Metadata extends React.Component {
                 selectedColumns={this.state.selectedColumns}
                 columns={this.columns}
                 onResetColums={this.onResetColums}
+                columnNameFn={getColumnTitle}
               />
             </span>
           </Col>
