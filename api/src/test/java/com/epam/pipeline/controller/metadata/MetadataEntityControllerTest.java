@@ -46,7 +46,6 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_SET;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_MAP;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -233,9 +232,7 @@ public class MetadataEntityControllerTest extends AbstractControllerTest {
         final ArgumentCaptor<MultipartFile> multipartFileCaptor = ArgumentCaptor.forClass(MultipartFile.class);
 
         verify(mockMetadataEntityApiService).uploadMetadataFromFile(eq(ID), multipartFileCaptor.capture());
-        final MultipartFile returnedFile = multipartFileCaptor.getValue();
-        assertThat(returnedFile.getContentType()).isEqualTo(MediaType.APPLICATION_OCTET_STREAM_VALUE);
-        assertThat(returnedFile.getOriginalFilename()).isEqualTo("file.txt");
+        assertRequestFile(multipartFileCaptor.getValue(), "file.txt", "file.txt".getBytes());
         assertResponse(mvcResult, entities, MetadataCreatorUtils.METADATA_ENTITY_LIST_TYPE);
     }
 
@@ -425,7 +422,7 @@ public class MetadataEntityControllerTest extends AbstractControllerTest {
                         .params(multiValueMapOf(FOLDER_ID, ID,
                                                 ENTITY_CLASS, TEST_STRING,
                                                 FILE_FORMAT, TEST_STRING)),
-                MediaType.APPLICATION_OCTET_STREAM_VALUE);
+                                                MediaType.APPLICATION_OCTET_STREAM_VALUE);
 
         verify(mockMetadataEntityApiService).getMetadataEntityFile(ID, TEST_STRING, TEST_STRING);
         assertFileResponse(mvcResult, TEST_STRING, TEST_STRING.getBytes());

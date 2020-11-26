@@ -29,7 +29,6 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,7 +39,6 @@ import java.util.List;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_SET;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -254,10 +252,7 @@ public class MetadataControllerTest extends AbstractControllerTest {
 
         verify(mockMetadataApiService).uploadMetadataFromFile(any(EntityVO.class),
                 multipartFileCaptor.capture(), eq(true));
-        final MultipartFile returnedFile = multipartFileCaptor.getValue();
-        assertThat(returnedFile.getOriginalFilename()).isEqualTo("file.txt");
-        assertThat(returnedFile.getBytes()).isEqualTo("file.txt".getBytes());
-        assertRequestFile(multipartFileCaptor, "file", MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        assertRequestFile(multipartFileCaptor.getValue(), "file.txt", "file.txt".getBytes());
         assertResponse(mvcResult, metadataEntry, MetadataCreatorUtils.METADATA_ENTRY_TYPE);
     }
 
