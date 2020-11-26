@@ -53,10 +53,11 @@ public class IssueApiServiceTest extends AbstractAclTest {
     private final EntityVO entityVO = SecurityCreatorUtils.getEntityVO(ID, ENTITY_ACL_CLASS);
     private final Issue issue = IssueCreatorUtils.getIssue(entityVO, SIMPLE_USER);
     private final IssueVO issueVO = IssueCreatorUtils.getIssueVO(entityVO);
-    private final AbstractSecuredEntity s3bucket = DatastorageCreatorUtils.getS3bucketDataStorage(ID, OWNER_USER);
+    private final AbstractSecuredEntity entity = DatastorageCreatorUtils.getS3bucketDataStorage(ID, OWNER_USER);
     private final List<Issue> issueList = Collections.singletonList(issue);
     private final IssueComment issueComment = IssueCreatorUtils.getIssueComment(SIMPLE_USER);
     private final IssueCommentVO issueCommentVO = IssueCreatorUtils.getIssueCommentVO();
+    private final PagedResult<List<Issue>> pagedResult = IssueCreatorUtils.getPagedListIssue();
 
     @Autowired
     private IssueApiService issueApiService;
@@ -81,9 +82,9 @@ public class IssueApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldCreateIssueWhenPermissionIsGranted() {
-        initAclEntity(s3bucket, AclPermission.READ);
+        initAclEntity(entity, AclPermission.READ);
         doReturn(issue).when(mockIssueManager).createIssue(issueVO);
-        doReturn(s3bucket).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
+        doReturn(entity).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
         mockSecurityContext();
 
         assertThat(issueApiService.createIssue(issueVO)).isEqualTo(issue);
@@ -92,9 +93,9 @@ public class IssueApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenyCreateIssueWhenPermissionIsNotGranted() {
-        initAclEntity(s3bucket);
+        initAclEntity(entity);
         doReturn(issue).when(mockIssueManager).createIssue(issueVO);
-        doReturn(s3bucket).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
+        doReturn(entity).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
         mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> issueApiService.createIssue(issueVO));
@@ -111,9 +112,9 @@ public class IssueApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadIssueWhenPermissionIsGranted() {
-        initAclEntity(s3bucket, AclPermission.READ);
+        initAclEntity(entity, AclPermission.READ);
         doReturn(issue).when(mockIssueManager).loadIssue(ID);
-        doReturn(s3bucket).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
+        doReturn(entity).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
         mockSecurityContext();
 
         assertThat(issueApiService.loadIssue(ID)).isEqualTo(issue);
@@ -122,9 +123,9 @@ public class IssueApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenyLoadIssueWhenPermissionIsNotGranted() {
-        initAclEntity(s3bucket);
+        initAclEntity(entity);
         doReturn(issue).when(mockIssueManager).loadIssue(ID);
-        doReturn(s3bucket).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
+        doReturn(entity).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
         mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> issueApiService.loadIssue(ID));
@@ -141,9 +142,9 @@ public class IssueApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadIssuesForEntityWhenPermissionIsGranted() {
-        initAclEntity(s3bucket, AclPermission.READ);
+        initAclEntity(entity, AclPermission.READ);
         doReturn(issueList).when(mockIssueManager).loadIssuesForEntity(entityVO);
-        doReturn(s3bucket).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
+        doReturn(entity).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
         mockSecurityContext();
 
         assertThat(issueApiService.loadIssuesForEntity(entityVO)).isEqualTo(issueList);
@@ -152,9 +153,9 @@ public class IssueApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenyLoadIssuesForEntityWhenPermissionIsNotGranted() {
-        initAclEntity(s3bucket);
+        initAclEntity(entity);
         doReturn(issueList).when(mockIssueManager).loadIssuesForEntity(entityVO);
-        doReturn(s3bucket).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
+        doReturn(entity).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
         mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> issueApiService.loadIssuesForEntity(entityVO));
@@ -225,10 +226,10 @@ public class IssueApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldCreateCommentWhenPermissionIsGranted() {
-        initAclEntity(s3bucket, AclPermission.READ);
+        initAclEntity(entity, AclPermission.READ);
         doReturn(issueComment).when(mockIssueManager).createComment(ID, issueCommentVO);
         doReturn(issue).when(mockIssueManager).loadIssue(ID);
-        doReturn(s3bucket).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
+        doReturn(entity).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
         mockSecurityContext();
 
         assertThat(issueApiService.createComment(ID, issueCommentVO)).isEqualTo(issueComment);
@@ -237,10 +238,10 @@ public class IssueApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenyCreateCommentWhenPermissionIsNotGranted() {
-        initAclEntity(s3bucket);
+        initAclEntity(entity);
         doReturn(issueComment).when(mockIssueManager).createComment(ID, issueCommentVO);
         doReturn(issue).when(mockIssueManager).loadIssue(ID);
-        doReturn(s3bucket).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
+        doReturn(entity).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
         mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> issueApiService.createComment(ID, issueCommentVO));
@@ -257,10 +258,10 @@ public class IssueApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadCommentWhenPermissionIsGranted() {
-        initAclEntity(s3bucket, AclPermission.READ);
+        initAclEntity(entity, AclPermission.READ);
         doReturn(issueComment).when(mockIssueManager).loadComment(ID, ID);
         doReturn(issue).when(mockIssueManager).loadIssue(ID);
-        doReturn(s3bucket).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
+        doReturn(entity).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
         mockSecurityContext();
 
         assertThat(issueApiService.loadComment(ID, ID)).isEqualTo(issueComment);
@@ -269,10 +270,10 @@ public class IssueApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenyLoadCommentWhenPermissionIsNotGranted() {
-        initAclEntity(s3bucket);
+        initAclEntity(entity);
         doReturn(issueComment).when(mockIssueManager).loadComment(ID, ID);
         doReturn(issue).when(mockIssueManager).loadIssue(ID);
-        doReturn(s3bucket).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
+        doReturn(entity).when(mockEntityManager).load(ENTITY_ACL_CLASS, ID);
         mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> issueApiService.loadComment(ID, ID));
@@ -335,8 +336,8 @@ public class IssueApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldLoadMyPagedResultListIssue() {
-        final PagedResult<List<Issue>> pagedResult = IssueCreatorUtils.getPagedListIssue();
         doReturn(pagedResult).when(mockIssueManager).loadMy(ID, TEST_INT);
+
         assertThat(issueApiService.loadMy(ID, TEST_INT)).isEqualTo(pagedResult);
     }
 }

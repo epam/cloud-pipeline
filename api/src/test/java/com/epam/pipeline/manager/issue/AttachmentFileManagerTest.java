@@ -16,7 +16,10 @@
 
 package com.epam.pipeline.manager.issue;
 
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -41,6 +44,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
+import org.springframework.security.access.AccessDeniedException;
 
 public class AttachmentFileManagerTest {
     private static final String TEST_SYSTEM_DATA_STORAGE = "testStorage";
@@ -129,5 +133,19 @@ public class AttachmentFileManagerTest {
         verify(dataStorageManager).loadByNameOrId(TEST_SYSTEM_DATA_STORAGE);
         verify(attachmentManager).load(1L);
         verify(dataStorageManager).getStreamingContent(testSystemDataStorage.getId(), TEST_ATTACHMENT_PATH, null);
+    }
+
+    @Test
+    public void testDeleteAttachment() {
+        doReturn(true).when(authManager).isAdmin();
+
+        attachmentFileManager.deleteAttachment(anyLong());
+
+        verify(attachmentManager).load(anyLong());
+    }
+
+    @Test
+    public void testDeleteAttachmentFail() {
+        assertThrows(AccessDeniedException.class, () -> attachmentFileManager.deleteAttachment(anyLong()));
     }
 }
