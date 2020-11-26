@@ -29,7 +29,6 @@ import com.epam.pipeline.manager.metadata.MetadataEntityApiService;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.metadata.MetadataCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -426,7 +425,7 @@ public class MetadataEntityControllerTest extends AbstractControllerTest {
                         .params(multiValueMapOf(FOLDER_ID, ID,
                                                 ENTITY_CLASS, TEST_STRING,
                                                 FILE_FORMAT, TEST_STRING)),
-                                                MediaType.APPLICATION_OCTET_STREAM_VALUE);
+                MediaType.APPLICATION_OCTET_STREAM_VALUE);
 
         verify(mockMetadataEntityApiService).getMetadataEntityFile(ID, TEST_STRING, TEST_STRING);
         assertFileResponse(mvcResult, TEST_STRING, TEST_STRING.getBytes());

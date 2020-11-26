@@ -26,6 +26,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
@@ -36,6 +37,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.multipart.MultipartFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -57,12 +59,12 @@ public abstract class AbstractControllerTest {
             "multipart/form-data; boundary=--------------------------boundary";
     protected static final String MULTIPART_CONTENT =
             "----------------------------boundary\r\n" +
-            "Content-Disposition: form-data; name=\"file\"; filename=\"file.txt\"\r\n" +
-            "Content-Type:  application/octet-stream\r\n" +
-            "\r\n" +
-            "file.txt" +
-            "\r\n" +
-            "----------------------------boundary";
+                    "Content-Disposition: form-data; name=\"file\"; filename=\"file.txt\"\r\n" +
+                    "Content-Type:  application/octet-stream\r\n" +
+                    "\r\n" +
+                    "file.txt" +
+                    "\r\n" +
+                    "----------------------------boundary";
 
     private MockMvc mockMvc;
     private ObjectMapper deserializationMapper;
@@ -125,6 +127,14 @@ public abstract class AbstractControllerTest {
 
     public void assertContent(final MvcResult mvcResult, final byte[] fileContent) {
         assertThat(mvcResult.getResponse().getContentAsByteArray()).isEqualTo(fileContent);
+    }
+
+    public void assertRequestFile(final ArgumentCaptor<MultipartFile> captor,
+                                  final String expectedFileName,
+                                  final String expectedContent) {
+        final MultipartFile capturedValue = captor.getValue();
+        assertThat(capturedValue.getName()).isEqualTo(expectedFileName);
+        assertThat(capturedValue.getContentType()).isEqualTo(expectedContent);
     }
 
     @SneakyThrows

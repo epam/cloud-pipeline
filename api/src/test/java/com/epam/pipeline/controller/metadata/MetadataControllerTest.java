@@ -255,8 +255,9 @@ public class MetadataControllerTest extends AbstractControllerTest {
         verify(mockMetadataApiService).uploadMetadataFromFile(any(EntityVO.class),
                 multipartFileCaptor.capture(), eq(true));
         final MultipartFile returnedFile = multipartFileCaptor.getValue();
-        assertThat(returnedFile.getContentType()).isEqualTo(MediaType.APPLICATION_OCTET_STREAM_VALUE);
         assertThat(returnedFile.getOriginalFilename()).isEqualTo("file.txt");
+        assertThat(returnedFile.getBytes()).isEqualTo("file.txt".getBytes());
+        assertRequestFile(multipartFileCaptor, "file", MediaType.APPLICATION_OCTET_STREAM_VALUE);
         assertResponse(mvcResult, metadataEntry, MetadataCreatorUtils.METADATA_ENTRY_TYPE);
     }
 
