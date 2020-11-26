@@ -89,7 +89,7 @@ public class PreferenceApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadVisiblePreferenceForNotAdmin() {
-        final Preference visiblePreference = new Preference();
+        final Preference visiblePreference = getPreference();
         visiblePreference.setVisible(true);
         doReturn(Optional.of(visiblePreference)).when(mockPreferenceManager).load(TEST_NAME);
 
@@ -99,7 +99,7 @@ public class PreferenceApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyLoadPreferenceForNotAdmin() {
-        final Preference preference = new Preference();
+        final Preference preference = getPreference();
         preference.setVisible(false);
         doReturn(Optional.of(preference)).when(mockPreferenceManager).load(TEST_NAME);
 
