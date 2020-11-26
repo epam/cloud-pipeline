@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.cluster.pool.NodePoolDao" id="persistentNodeDao" autowire="byName">
+        <constructor-arg>
+            <value>
+                <!--insertNodePoolQuery-->
+                <![CDATA[
+                    INSERT INTO pipeline.node_pool (
+                        created_date,
+                        name,
+                        region_id,
+                        instance_type,
+                        node_disk,
+                        price_type,
+                        docker_image,
+                        instance_image,
+                        instance_count,
+                        schedule_id
+                        )
+                    VALUES (
+                        :POOL_CREATED_DATE,
+                        :POOL_NAME,
+                        :POOL_REGION_ID,
+                        :POOL_INSTANCE_TYPE,
+                        :POOL_INSTANCE_DISK,
+                        :POOL_PRICE_TYPE,
+                        :POOL_DOCKER_IMAGE,
+                        :POOL_INSTANCE_IMAGE,
+                        :POOL_INSTANCE_COUNT,
+                        :SCHEDULE_ID)
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--updateNodePoolQuery-->
+                <![CDATA[
+                    UPDATE pipeline.node_pool SET
+                        name = :POOL_NAME,
+                        instance_count = :POOL_INSTANCE_COUNT,
+                        schedule_id = :SCHEDULE_ID
+                    WHERE
+                        id = :POOL_ID
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--deleteNodePoolQuery-->
+                <![CDATA[
+                    DELETE FROM pipeline.node_pool
+                    WHERE id = ?
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadAllNodePoolsQuery-->
+                <![CDATA[
+                    SELECT
+                        n.id AS POOL_ID,
+                        n.created_date AS POOL_CREATED_DATE,
+                        n.name AS POOL_NAME,
+                        n.region_id as POOL_REGION_ID,
+                        n.instance_type as POOL_INSTANCE_TYPE,
+                        n.node_disk as POOL_INSTANCE_DISK,
+                        n.price_type as POOL_PRICE_TYPE,
+                        n.docker_image as POOL_DOCKER_IMAGE,
+                        n.instance_image as POOL_INSTANCE_IMAGE,
+                        n.instance_count as POOL_INSTANCE_COUNT,
+                        n.schedule_id as SCHEDULE_ID,
+                        s.name as SCHEDULE_NAME,
+                        s.created_date as SCHEDULE_CREATED_DATE,
+                        e.from_day_of_week,
+                        e.from_time,
+                        e.to_day_of_week,
+                        e.to_time
+                    FROM
+                        pipeline.node_pool as n
+                    LEFT JOIN pipeline.node_schedule as s
+                        ON n.schedule_id = s.id
+                    LEFT JOIN pipeline.node_schedule_entry as e
+                        ON s.id = e.schedule_id
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadNodePoolByIdQuery-->
+                <![CDATA[
+                    SELECT
+                        n.id AS POOL_ID,
+                        n.created_date AS POOL_CREATED_DATE,
+                        n.name AS POOL_NAME,
+                        n.region_id as POOL_REGION_ID,
+                        n.instance_type as POOL_INSTANCE_TYPE,
+                        n.node_disk as POOL_INSTANCE_DISK,
+                        n.price_type as POOL_PRICE_TYPE,
+                        n.docker_image as POOL_DOCKER_IMAGE,
+                        n.instance_image as POOL_INSTANCE_IMAGE,
+                        n.instance_count as POOL_INSTANCE_COUNT,
+                        n.schedule_id as SCHEDULE_ID,
+                        s.name as SCHEDULE_NAME,
+                        s.created_date as SCHEDULE_CREATED_DATE,
+                        e.from_day_of_week,
+                        e.from_time,
+                        e.to_day_of_week,
+                        e.to_time
+                    FROM
+                        pipeline.node_pool as n
+                    LEFT JOIN pipeline.node_schedule as s
+                        ON n.schedule_id = s.id
+                    LEFT JOIN pipeline.node_schedule_entry as e
+                        ON s.id = e.schedule_id
+                    WHERE
+                        n.id = ?
+                ]]>
+            </value>
+        </constructor-arg>
+    </bean>
+</beans>

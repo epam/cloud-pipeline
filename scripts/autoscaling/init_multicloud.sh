@@ -327,4 +327,16 @@ kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks --node-name 
 systemctl start kubelet
 EOF
 
+_PRE_PULL_DOCKERS="@PRE_PULL_DOCKERS@"
+_API_USER="@API_USER@"
+if [[ ! -z "${_PRE_PULL_DOCKERS}" ]]; then
+  echo "Pre-pulling requested docker images ${_PRE_PULL_DOCKERS}"
+  IFS=',' read -ra DOCKERS <<< "$_PRE_PULL_DOCKERS"
+  for _DOCKER in "${DOCKERS[@]}"; do
+    _REGISTRY="${_DOCKER%%_*}"
+    docker login -u "$_API_USER" -p "$_API_TOKEN" "${_REGISTRY}"
+    docker pull "$_DOCKER"
+  done
+fi
+
 nc -l -k 8888 &

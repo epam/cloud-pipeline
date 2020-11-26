@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AzureRegion;
@@ -109,6 +110,13 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
+    public RunInstance scaleUpPoolNode(final AzureRegion region,
+                                       final String nodeId,
+                                       final NodePool node) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void scaleDownNode(final AzureRegion region, final Long runId) {
         final String command = buildNodeDownCommand(runId);
         final Map<String, String> envVars = buildScriptAzureEnvVars(region);
@@ -116,9 +124,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                 executorService.getExecutorService());
     }
 
-    //TODO: This code won't work for current scripts
     @Override
-    public void scaleUpFreeNode(final AzureRegion region, final String nodeId) {
+    public void scaleDownPoolNode(final AzureRegion region, final String nodeLabel) {
         throw new UnsupportedOperationException();
     }
 
@@ -128,6 +135,13 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                 nodeReassignScript, oldId, newId, getProvider().name());
         return instanceService.runNodeReassignScript(cmdExecutor, command, oldId, newId,
                 buildScriptAzureEnvVars(region));
+    }
+
+    @Override
+    public boolean reassignPoolNode(final AzureRegion region,
+                                    final String nodeLabel,
+                                    final Long newId) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
