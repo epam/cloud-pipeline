@@ -49,7 +49,6 @@ import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.reflection.Whitebox;
 
@@ -175,11 +174,22 @@ public class AutoscaleManagerTest {
                     .mockPodList(Collections.singletonList(unscheduledPipelinePod))
                 .and()
                 .getMockedEntity();
-        doReturn(mockPods.list()).when(kubernetesManager).getPodList(any());
+
+        doReturn(mockPods.inNamespace(TEST_KUBE_NAMESPACE)
+                .withLabel("type", "pipeline")
+                .withLabel(KubernetesConstants.RUN_ID_LABEL)
+                .list()).when(kubernetesManager).getPodList(any());
+
+        doReturn(mockNodes
+                .withLabel(KubernetesConstants.RUN_ID_LABEL)
+                .withoutLabel(KubernetesConstants.PAUSED_NODE_LABEL)
+                .list()).when(kubernetesManager).getAvailableNodes(any());
     }
 
     @Test
     public void testAutoChangeToSpot() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+
         when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID),
                                     argThat(Matchers.hasProperty("spot", Matchers.is(true)))))
             .thenThrow(new CmdExecutionException("", 5, ""));
