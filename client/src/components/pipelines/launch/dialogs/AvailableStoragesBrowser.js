@@ -68,13 +68,10 @@ export default class AvailableStoragesBrowser extends Component {
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (!arraysAreEqual(prevProps.selectedStorages, this.props.selectedStorages)) {
-      const presentation = (arr) => {
-        if (arr === undefined || arr === null) {
-          return `${arr}`;
-        }
-        return `[${arr.join(',')}]`;
-      };
       this.updateSelectionFromProps();
+    }
+    if (this.props.visible !== prevProps.visible) {
+      this.setState({searchString: null});
     }
   }
 

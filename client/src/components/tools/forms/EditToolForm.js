@@ -516,9 +516,11 @@ export default class EditToolForm extends React.Component {
         this.toolFormParameters.reset(this.defaultProperties);
         this.toolFormSystemParameters && this.toolFormSystemParameters.reset &&
         this.toolFormSystemParameters.reset(this.defaultSystemProperties);
+        this.props.form.resetFields();
         this.setState(state);
       })();
     } else {
+      this.props.form.resetFields();
       this.setState(state);
     }
   }
@@ -1514,11 +1516,9 @@ export default class EditToolForm extends React.Component {
   reset = (props) => {
     props = props || this.props;
     this.rebuildComponent(props);
-    props.form.resetFields();
     if (this.editor) {
       this.editor.clear();
       this.editor.setValue(this.defaultCommand);
     }
   }
-
 }
