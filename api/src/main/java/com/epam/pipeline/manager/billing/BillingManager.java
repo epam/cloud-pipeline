@@ -271,8 +271,10 @@ public class BillingManager {
             throw new IllegalArgumentException(messageHelper
                                                    .getMessage(MessageConstants.ERROR_BILLING_ONCOMING_FROM_DATE));
         }
-
         final BillingChartRequest.BillingChartRequestBuilder requestBuilder = request.toBuilder();
+        if (to.equals(currentDate)) {
+            requestBuilder.to(to.minusDays(1));
+        }
         if (MapUtils.isEmpty(request.getFilters())) {
             requestBuilder.filters(new HashMap<>());
         }
