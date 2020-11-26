@@ -45,11 +45,11 @@ public final class KubernetesConstants {
     public static final String KUBE_NAME_REGEXP = "[^a-z0-9\\-]+";
     public static final String KUBE_NAME_FULL_REGEXP = "[^a-zA-Z0-9\\-._]+";
 
-    protected static final String POD_SUCCEEDED_PHASE = "Succeeded";
-    protected static final String POD_FAILED_PHASE = "Failed";
-    protected static final String NODE_LOST = "NodeLost";
-    protected static final String POD_UNSCHEDULABLE = "Unschedulable";
-    protected static final String POD_RUNNING_PHASE = "Running";
+    public static final String POD_SUCCEEDED_PHASE = "Succeeded";
+    public static final String POD_FAILED_PHASE = "Failed";
+    public static final String NODE_LOST = "NodeLost";
+    public static final String POD_UNSCHEDULABLE = "Unschedulable";
+    public static final String POD_RUNNING_PHASE = "Running";
 
     protected static final String SYSTEM_NAMESPACE = "kube-system";
     protected static final String POD_NODE_SELECTOR = "spec.nodeName";
@@ -73,7 +73,7 @@ public final class KubernetesConstants {
                     NETWORK_UNAVAILABLE, CONFIG_OK, PID_PRESSURE)
                     .collect(Collectors.toSet());
 
-    protected static final Set<String> NODE_OUT_OF_ORDER_REASONS = new HashSet<>();
+    public static final Set<String> NODE_OUT_OF_ORDER_REASONS = new HashSet<>();
 
     static {
         NODE_OUT_OF_ORDER_REASONS.add("KubeletOutOfDisk");

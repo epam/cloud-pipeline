@@ -24,7 +24,7 @@ import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
-import com.epam.pipeline.manager.cluster.AutoscalerServiceImpl;
+import com.epam.pipeline.manager.cluster.autoscale.AutoscalerServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

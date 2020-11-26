@@ -1,11 +1,10 @@
 /*
  * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,13 +13,16 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.cluster;
+package com.epam.pipeline.manager.cluster.autoscale;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.cluster.KubernetesManager;
+import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -55,6 +57,8 @@ import java.util.Collections;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -76,9 +80,6 @@ public class AutoscaleManagerTest {
     private NodesManager nodesManager;
 
     @Mock
-    private NodeDiskManager nodeDiskManager;
-
-    @Mock
     private KubernetesManager kubernetesManager;
 
     @Mock
@@ -93,18 +94,23 @@ public class AutoscaleManagerTest {
     @Mock
     private NodePoolManager nodePoolManager;
 
+    @Mock
+    private ReassignHandler reassignHandler;
+
+    @Mock
+    private ScaleDownHandler scaleDownHandler;
+
     private AutoscaleManager.AutoscaleManagerCore autoscaleManagerCore;
 
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        autoscaleManagerCore = new AutoscaleManager.AutoscaleManagerCore(pipelineRunManager, executorService,
-                                                                         autoscalerService, nodesManager,
-                                                                         nodeDiskManager, kubernetesManager,
-                                                                         preferenceManager,
-                                                                         TEST_KUBE_NAMESPACE, cloudFacade,
-                nodePoolManager);
+        autoscaleManagerCore = new AutoscaleManager.AutoscaleManagerCore(
+                pipelineRunManager, executorService,
+                autoscalerService, nodesManager, kubernetesManager,
+                preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
+                nodePoolManager, reassignHandler, scaleDownHandler);
         Whitebox.setInternalState(autoscaleManagerCore, "preferenceManager", preferenceManager);
 
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());
@@ -157,7 +163,7 @@ public class AutoscaleManagerTest {
         spotInstance.setSpot(true);
         testRun.setInstance(spotInstance);
 
-        when(pipelineRunManager.loadPipelineRun(Mockito.eq(TEST_RUN_ID))).thenReturn(testRun);
+        when(pipelineRunManager.loadPipelineRun(eq(TEST_RUN_ID))).thenReturn(testRun);
         when(autoscalerService.fillInstance(any(RunInstance.class)))
             .thenAnswer(invocation -> invocation.getArguments()[0]);
 
@@ -169,24 +175,22 @@ public class AutoscaleManagerTest {
                     .mockPodList(Collections.singletonList(unscheduledPipelinePod))
                 .and()
                 .getMockedEntity();
-        when(kubernetesClient.pods()).thenReturn(mockPods);
+        doReturn(mockPods.list()).when(kubernetesManager).getPodList(any());
     }
-
-
 
     @Test
     public void testAutoChangeToSpot() {
-        when(cloudFacade.scaleUpNode(Mockito.eq(TEST_RUN_ID),
+        when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID),
                                     argThat(Matchers.hasProperty("spot", Matchers.is(true)))))
             .thenThrow(new CmdExecutionException("", 5, ""));
 
         autoscaleManagerCore.runAutoscaling(); // this time spot scheduling should fail
-        verify(cloudFacade).scaleUpNode(Mockito.eq(TEST_RUN_ID),
+        verify(cloudFacade).scaleUpNode(eq(TEST_RUN_ID),
                                        argThat(Matchers.hasProperty("spot", Matchers.is(true))));
 
         autoscaleManagerCore.runAutoscaling(); // this time it should be a on-demand request
         verify(cloudFacade, times(2))
-            .scaleUpNode(Mockito.eq(TEST_RUN_ID), argThat(
+            .scaleUpNode(eq(TEST_RUN_ID), argThat(
                 Matchers.hasProperty("spot", Matchers.is(false))));
     }
 }

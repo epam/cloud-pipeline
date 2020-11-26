@@ -39,6 +39,9 @@ public class NodePool {
     private NodeSchedule schedule;
 
     public boolean isActive(final LocalDateTime timestamp) {
+        if (count == 0) {
+            return false;
+        }
         return Optional.ofNullable(schedule)
                 .map(s -> s.isActive(timestamp))
                 .orElse(false);
@@ -57,6 +60,13 @@ public class NodePool {
                 ", instanceImage='" + instanceImage + '\'' +
                 ", count=" + count +
                 '}';
+    }
+
+    public RunningInstance toRunningInstance() {
+        final RunningInstance runningInstance = new RunningInstance();
+        runningInstance.setInstance(toRunInstance());
+        runningInstance.setPrePulledImages(dockerImages);
+        return runningInstance;
     }
 
     public RunInstance toRunInstance() {

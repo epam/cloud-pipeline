@@ -207,7 +207,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
             final Instance ec2Instance = supplier.get();
             instance.setNodeId(ec2Instance.getInstanceId());
             instance.setNodeIP(ec2Instance.getPrivateIpAddress());
-            instance.setNodeName(ec2Instance.getPrivateDnsName().split("\\.")[0]);
+            instance.setNodeName(ec2Instance.getInstanceId());
             return instance;
         } catch (AwsEc2Exception e) {
             log.debug("Instance for label {} not found", nodeLabel);

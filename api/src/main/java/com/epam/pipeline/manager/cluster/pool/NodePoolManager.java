@@ -120,7 +120,7 @@ public class NodePoolManager {
         Assert.isTrue(vo.getInstanceDisk() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_INVALID_DISK_SIZE));
 
-        Assert.isTrue(vo.getCount() > 0,
+        Assert.isTrue(vo.getCount() >= 0,
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_INVALID_COUNT));
 
         Optional.ofNullable(vo.getScheduleId())
