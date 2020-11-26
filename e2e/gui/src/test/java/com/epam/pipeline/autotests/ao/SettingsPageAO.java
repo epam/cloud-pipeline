@@ -1128,14 +1128,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public DockerSecurityAO enablePolicyDenyNotScanned() {
-                if ($(policyDenyNotScanned).has(text("Disabled"))) {
+                if (!$(policyDenyNotScanned).$(byXpath(".//span")).has(cssClass("ant-checkbox-checked"))) {
                     clickPolicyDenyNotScanned();
                 }
                 return this;
             }
 
             public DockerSecurityAO disablePolicyDenyNotScanned() {
-                if ($(policyDenyNotScanned).has(text("Enable"))) {
+                if ($(policyDenyNotScanned).$(byXpath(".//span")).has(cssClass("ant-checkbox-checked"))) {
                     clickPolicyDenyNotScanned();
                 }
                 return this;

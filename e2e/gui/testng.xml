@@ -382,12 +382,6 @@
         </classes>
     </test>
 
-    <test name="RestrictionsOnInstancePriceTypeTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>
-        </classes>
-    </test>
-
     <test name="RoleBasedAccessControlTest">
         <classes>
             <class name="com.epam.pipeline.autotests.RoleBasedAccessControlTest"/>
@@ -421,6 +415,12 @@
     <test name="DataStoragesCLITest">
         <classes>
             <class name="com.epam.pipeline.autotests.DataStoragesCLITest"/>
+        </classes>
+    </test>
+
+    <test name="RestrictionsOnInstancePriceTypeTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>
         </classes>
     </test>
 </suite>
