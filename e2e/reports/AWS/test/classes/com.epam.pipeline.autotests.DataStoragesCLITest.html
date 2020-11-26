@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">1m46.57s</div>
+<div class="counter">20m59.09s</div>
 <p>duration</p>
 </div>
 </td>
@@ -73,12 +73,27 @@
 <a name="checkTransferBetweenRegions - 1469"></a>
 <h3 class="failures">checkTransferBetweenRegions - 1469</h3>
 <span class="code">
-<pre>java.lang.NullPointerException
-	at org.openqa.selenium.support.ui.Quotes.escape(Quotes.java:42)
-	at com.codeborne.selenide.Selectors$WithText.&lt;init&gt;(Selectors.java:113)
-	at com.codeborne.selenide.Selectors.withText(Selectors.java:19)
-	at com.epam.pipeline.autotests.ao.AccessObject.selectValue(AccessObject.java:479)
-	at com.epam.pipeline.autotests.DataStoragesCLITest.checkTransferBetweenRegions(DataStoragesCLITest.java:63)
+<pre>Element not found {By.tagName: a.findBy(exact text 'SSH')}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1606411055006.128.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1606411055006.128.html
+Timeout: 1200 s.
+Caused by: Element not found {By.tagName: a.findBy(exact text 'SSH')}
+Expected: exact text 'SSH'
+Screenshot: null
+Timeout: 0 ms.
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:53)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy13.waitUntil(Unknown Source)
+	at com.epam.pipeline.autotests.ao.LogAO.waitForSshLink(LogAO.java:83)
+	at com.epam.pipeline.autotests.DataStoragesCLITest.checkTransferBetweenRegions(DataStoragesCLITest.java:72)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -92,6 +107,13 @@
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
+Caused by: Element not found {By.tagName: a.findBy(exact text 'SSH')}
+Expected: exact text 'SSH'
+Screenshot: null
+Timeout: 0 ms.
+	at com.codeborne.selenide.impl.CollectionElementByCondition.getWebElement(CollectionElementByCondition.java:39)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 22 more
 </pre>
 </span>
 </div>
@@ -99,19 +121,24 @@
 <a name="removeStorages"></a>
 <h3 class="failures">removeStorages</h3>
 <span class="code">
-<pre>Element not found {By.id: navigation-button-pipelines}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1606323390605.100.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1606323390605.100.html
-Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle4&quot;&gt;...&lt;/div&gt;
+<pre>Element not found {By.xpath: //*[.//*[text()[contains(.,'Library')]] and contains(@id, 'pipelines-library-content')]}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1606411060870.129.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1606411060870.129.html
+Timeout: 5 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;//*[.//*[text()[contains(.,'Library')]] and contains(@id, 'pipelines-library-content')]&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy13.click(Unknown Source)
-	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:36)
-	at com.epam.pipeline.autotests.utils.Utils.lambda$removeStorages$0(Utils.java:328)
+	at com.sun.proxy.$Proxy13.waitUntil(Unknown Source)
+	at com.epam.pipeline.autotests.ao.NavigationMenuAO.library(NavigationMenuAO.java:40)
+	at com.epam.pipeline.autotests.utils.Utils.lambda$removeStorages$0(Utils.java:329)
 	at java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:174)
 	at java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:948)
 	at java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:482)
@@ -135,16 +162,18 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-pipelines&quot; class=&quot;navigation__navigation-menu-item-selected&quot; href=&quot;#/library&quot; style=&quot;display: block; margin: 0px 2px; text-decoration: none;&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 114). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle4&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;//*[.//*[text()[contains(.,'Library')]] and contains(@id, 'pipelines-library-content')]&quot;}
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '8728923e4bf8', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'b0529b5645a6', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 89d38682a104914b36da9064128aa156
-	at sun.reflect.GeneratedConstructorAccessor22.newInstance(Unknown Source)
+Session ID: fe2cfaf31adffe31f136b96ee3a7b1d5
+*** Element info: {Using=xpath, value=//*[.//*[text()[contains(.,'Library')]] and contains(@id, 'pipelines-library-content')]}
+	at sun.reflect.GeneratedConstructorAccessor14.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
 	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
@@ -155,14 +184,14 @@ Session ID: 89d38682a104914b36da9064128aa156
 	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
 	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
 	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
-	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
-	at com.codeborne.selenide.commands.Click.click(Click.java:29)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	... 27 more
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementByXPath(RemoteWebDriver.java:473)
+	at org.openqa.selenium.By$ByXPath.findElement(By.java:361)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 32 more
 </pre>
 </span>
 </div>
@@ -179,12 +208,12 @@ Session ID: 89d38682a104914b36da9064128aa156
 </thead>
 <tr>
 <td class="failures">checkTransferBetweenRegions - 1469</td>
-<td>26.221s</td>
+<td>20m53.28s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">removeStorages</td>
-<td>1m20.35s</td>
+<td>5.803s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -197,7 +226,7 @@ Session ID: 89d38682a104914b36da9064128aa156
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 25, 2020 4:56:35 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 26, 2020 5:18:02 PM</p>
 </div>
 </div>
 </body>
