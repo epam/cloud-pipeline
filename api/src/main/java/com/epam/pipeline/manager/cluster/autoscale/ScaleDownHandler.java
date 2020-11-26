@@ -92,7 +92,7 @@ public class ScaleDownHandler {
             cloudFacade.scaleDownPoolNode(nodeLabel);
             return;
         }
-        if (kubernetesManager.isNodeAvailable(node)) {
+        if (kubernetesManager.isNodeUnavailable(node)) {
             log.debug("Scaling down unavailable {} pool node.", nodeLabel);
             cloudFacade.scaleDownPoolNode(nodeLabel);
             return;
