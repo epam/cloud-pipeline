@@ -21,7 +21,6 @@ import com.epam.pipeline.entity.notification.SystemNotification;
 import com.epam.pipeline.entity.notification.SystemNotificationConfirmation;
 import com.epam.pipeline.entity.notification.SystemNotificationConfirmationRequest;
 import com.epam.pipeline.manager.notification.SystemNotificationApiService;
-import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,13 +47,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 public class SystemNotificationControllerTest extends AbstractControllerTest {
 
+    private static final long ONE_SECOND = 1000L;
     private static final String NOTIFICATION_URL = SERVLET_PATH + "/notification";
     private static final String LIST_NOTIFICATIONS_URL = NOTIFICATION_URL + "/list";
     private static final String ACTIVE_NOTIFICATIONS_URL = NOTIFICATION_URL + "/active";
     private static final String FILTER_URL = NOTIFICATION_URL + "/filter";
     private static final String BY_ID_URL = NOTIFICATION_URL + "/%d";
     private static final String CONFIRM_URL = NOTIFICATION_URL + "/confirm";
-    private static final Date DATE = new Date(ID);
+    private static final String AFTER = "after";
+    private static final String DATE_AS_STRING = "1970-01-01 03:00:01";
+    private static final Date DATE = new Date(ONE_SECOND);
     private final SystemNotification systemNotification = getSystemNotification();
     private final List<SystemNotification> systemNotificationList = Collections.singletonList(systemNotification);
     private final SystemNotificationFilterVO systemNotificationFilterVO = getSystemNotificationFilterVO();
@@ -110,7 +112,7 @@ public class SystemNotificationControllerTest extends AbstractControllerTest {
         doReturn(systemNotificationList).when(mockSystemNotificationApiService).loadActiveNotifications(DATE);
 
         final MvcResult mvcResult = performRequest(get(ACTIVE_NOTIFICATIONS_URL)
-                .param("after", "1970-01-01 03:00:00"));
+                .param(AFTER, DATE_AS_STRING));
 
         verify(mockSystemNotificationApiService).loadActiveNotifications(DATE);
         assertResponse(mvcResult, systemNotificationList, SYSTEM_NOTIFICATION_LIST_TYPE);
