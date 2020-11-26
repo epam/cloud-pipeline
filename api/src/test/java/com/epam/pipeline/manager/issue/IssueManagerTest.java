@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -62,6 +63,9 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
@@ -80,6 +84,7 @@ public class IssueManagerTest extends AbstractSpringTest {
     private static final String COMMENT_TEXT = "Comment text";
     private static final String COMMENT_TEXT2 = "Comment text2";
     private static final String AUTHOR = "author";
+    private static final String TEST_USER = "TEST_USER";
     private static final int TIMEOUT = 500;
     private static EntityVO entityVO;
 
@@ -91,6 +96,8 @@ public class IssueManagerTest extends AbstractSpringTest {
     private FolderDao folderDao;
     @Autowired
     private FolderManager folderManager;
+    @Autowired
+    private AttachmentFileManager attachmentFileManager;
 
     @Autowired
     private AttachmentDao attachmentDao;
@@ -408,6 +415,22 @@ public class IssueManagerTest extends AbstractSpringTest {
         Thread.sleep(TIMEOUT);
         verify(dataStorageManager, Mockito.times(2)).deleteDataStorageItems(Mockito.eq(testSystemDataStorage.getId()),
                                                                             Mockito.anyList(), Mockito.anyBoolean());
+    }
+
+    @Test(expected = AccessDeniedException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    @WithMockUser(username = TEST_USER)
+    public void testDeleteAttachmentFail() {
+        attachmentFileManager.deleteAttachment(testAttachment.getId());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    @WithMockUser(username = AUTHOR)
+    public void testDeleteAttachment() {
+        final AttachmentFileManager mockAttachmentFileManager = mock(AttachmentFileManager.class);
+        mockAttachmentFileManager.deleteAttachment(testAttachment.getId());
+        verify(mockAttachmentFileManager).deleteAttachment(testAttachment.getId());
     }
 
     private IssueCommentVO getCommentVO(String text) {
