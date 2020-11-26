@@ -39,6 +39,7 @@ import org.openqa.selenium.*;
 
 import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.appears;
+import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
@@ -229,6 +230,11 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
 
     default ELEMENT_TYPE ensureNotVisible(final Primitive... elements) {
         Arrays.stream(elements).forEach(el -> ensure(el, not(visible)));
+        return (ELEMENT_TYPE) this;
+    }
+
+    default ELEMENT_TYPE ensureDisable(final Primitive... elements) {
+        Arrays.stream(elements).forEach(el -> ensure(el, disabled));
         return (ELEMENT_TYPE) this;
     }
 
