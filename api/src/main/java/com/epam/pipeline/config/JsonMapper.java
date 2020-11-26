@@ -24,13 +24,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 public class JsonMapper extends ObjectMapper {
@@ -42,7 +45,8 @@ public class JsonMapper extends ObjectMapper {
      */
     private static final String FMT_ISO_LOCAL_DATE = Constants.FMT_ISO_LOCAL_DATE;
     private static final String EMPTY_JSON = "{}";
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern(FMT_ISO_LOCAL_DATE);
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(FMT_ISO_LOCAL_DATE);
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern(Constants.TIME_FORMAT);
 
     private static volatile JsonMapper instance;
 
@@ -57,8 +61,10 @@ public class JsonMapper extends ObjectMapper {
 
         JavaTimeModule javaTimeModule = new JavaTimeModule();
 
-        javaTimeModule.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(FORMATTER));
-        javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(FORMATTER));
+        javaTimeModule.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(DATE_FORMATTER));
+        javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(DATE_FORMATTER));
+        javaTimeModule.addDeserializer(LocalTime.class, new LocalTimeDeserializer(TIME_FORMATTER));
+        javaTimeModule.addSerializer(LocalTime.class, new LocalTimeSerializer(TIME_FORMATTER));
 
         super.registerModule(javaTimeModule);
 

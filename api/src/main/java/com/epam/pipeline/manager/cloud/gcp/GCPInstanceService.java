@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -99,6 +100,11 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
+    public RunInstance scaleUpPoolNode(final GCPRegion region, final String nodeId, final NodePool node) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void scaleDownNode(final GCPRegion region, final Long runId) {
         final String command = commandService.buildNodeDownCommand(nodeDownScript, runId, getProviderName());
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
@@ -106,7 +112,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public void scaleUpFreeNode(final GCPRegion region, final String nodeId) {
+    public void scaleDownPoolNode(final GCPRegion region, final String nodeLabel) {
         throw new UnsupportedOperationException();
     }
 
@@ -116,6 +122,11 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
                 nodeReassignScript, oldId, newId, getProviderName());
         return instanceService.runNodeReassignScript(cmdExecutor, command, oldId, newId,
                 buildScriptGCPEnvVars(region));
+    }
+
+    @Override
+    public boolean reassignPoolNode(final GCPRegion region, final String nodeLabel, final Long newId) {
+        throw new UnsupportedOperationException();
     }
 
 

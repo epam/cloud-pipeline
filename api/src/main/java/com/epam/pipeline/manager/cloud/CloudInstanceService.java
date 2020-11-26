@@ -20,10 +20,11 @@ import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
-import com.epam.pipeline.manager.cluster.AutoscalerServiceImpl;
+import com.epam.pipeline.manager.cluster.autoscale.AutoscalerServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,19 +52,15 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      */
     RunInstance scaleUpNode(T region, Long runId, RunInstance instance);
 
+    RunInstance scaleUpPoolNode(T region, String nodeId, NodePool node);
+
     /**
      * Terminates instances in the cloud and removes it from cluster
      * @param region
      * @param runId
      */
     void scaleDownNode(T region, Long runId);
-
-    /**
-     * Creates new idle node without assignment to any existing run
-     * @param region
-     * @param nodeId
-     */
-    void scaleUpFreeNode(T region, String nodeId);
+    void scaleDownPoolNode(T region, String nodeLabel);
 
     /**
      * Terminates instances in the cloud and removes it from the cluster
@@ -135,6 +132,7 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @return {@code true} if operation was successful
      */
     boolean reassignNode(T region, Long oldId, Long newId);
+    boolean reassignPoolNode(T region, String nodeLabel, Long newId);
 
     /**
      * Builds environment variables required for running a container in provided region

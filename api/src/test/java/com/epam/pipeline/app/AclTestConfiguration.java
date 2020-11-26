@@ -22,6 +22,9 @@ import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
+import com.epam.pipeline.manager.cluster.pool.NodeScheduleManager;
+import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
@@ -170,6 +173,12 @@ public class AclTestConfiguration {
 
     @MockBean
     protected LustreFSManager lustreFSManager;
+
+    @MockBean
+    protected NodeScheduleManager nodeScheduleManager;
+
+    @MockBean
+    protected NodePoolManager nodePoolManager;
 
     @MockBean
     protected PipelineRunDockerOperationManager pipelineRunDockerOperationManager;

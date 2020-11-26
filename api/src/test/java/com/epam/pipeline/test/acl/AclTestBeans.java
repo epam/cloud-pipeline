@@ -39,6 +39,8 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
+import com.epam.pipeline.manager.cluster.pool.NodeScheduleManager;
+import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
@@ -422,6 +424,12 @@ public class AclTestBeans {
 
     @MockBean
     protected LustreFSManager mockLustreFSManager;
+
+    @MockBean
+    protected NodeScheduleManager nodeScheduleManager;
+
+    @MockBean
+    protected NodePoolManager nodePoolManager;
 
     @MockBean
     protected PipelineRunDockerOperationManager pipelineRunDockerOperationManager;

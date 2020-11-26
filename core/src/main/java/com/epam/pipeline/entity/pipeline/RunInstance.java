@@ -22,9 +22,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import org.springframework.util.StringUtils;
 
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Created by Mariia_Zueva on 5/29/2017.
@@ -33,6 +35,7 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 public class RunInstance {
     private String nodeType;
     /**
@@ -51,6 +54,10 @@ public class RunInstance {
     private Boolean spot;
     private Long cloudRegionId;
     private CloudProvider cloudProvider;
+    /**
+     * Docker images that shall be pre-pulled to the instance
+     */
+    private Set<String> prePulledDockerImages;
 
     @JsonIgnore
     public boolean isEmpty() {
@@ -59,14 +66,14 @@ public class RunInstance {
                 && spot == null && cloudRegionId == null && !StringUtils.hasText(nodeName);
     }
 
-    public boolean requirementsMatch(RunInstance other) {
+    public boolean requirementsMatch(final RunInstance other, final Integer diskDelta) {
         if (other == null) {
             return false;
         }
         if (!Objects.equals(this.nodeType, other.nodeType)) {
             return false;
         }
-        if (!Objects.equals(this.effectiveNodeDisk, other.effectiveNodeDisk)) {
+        if (!compareDisks(other.effectiveNodeDisk, diskDelta)) {
             return false;
         }
         if (!Objects.equals(this.nodeImage, other.nodeImage)) {
@@ -76,5 +83,16 @@ public class RunInstance {
             return false;
         }
         return Objects.equals(this.cloudRegionId, other.cloudRegionId);
+    }
+
+    private boolean compareDisks(final Integer otherDisk, final Integer diskDelta) {
+        if (Objects.equals(this.effectiveNodeDisk, otherDisk)) {
+            return true;
+        }
+        if (this.effectiveNodeDisk == null || otherDisk == null) {
+            return false;
+        }
+        final int difference = this.effectiveNodeDisk - otherDisk;
+        return difference >= 0 && difference <= diskDelta;
     }
 }
