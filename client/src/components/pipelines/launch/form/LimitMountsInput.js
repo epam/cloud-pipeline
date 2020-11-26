@@ -77,11 +77,9 @@ export class LimitMountsInput extends React.Component {
             .map(id => +id)
             .filter(id => nonSensitiveStorageIds.indexOf(id) >= 0);
           const newValue = mountsIds ? mountsIds.map(i => `${i}`).join(',') : null;
-          if (newValue !== value) {
-            this.setState({
-              value: newValue
-            }, this.handleChange);
-          }
+          this.setState({
+            value: newValue
+          }, this.handleChange);
         })
         .catch(console.error);
     } else {
