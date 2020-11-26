@@ -18,26 +18,24 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {
+  Checkbox,
   Modal,
   Button,
   Form,
   Row,
   Input,
   Select,
-  Collapse,
-  AutoComplete,
   Menu,
   Icon,
   Dropdown
 } from 'antd';
-import MetadataEntityFilter from '../../../../models/folderMetadata/MetadataEntityFilter';
+import SelectMetadataItems from './SelectMetadataItems';
 import compareArrays from '../../../../utils/compareArrays';
 import styles from './AddInstanceForm.css';
 
 @Form.create()
 @observer
 export default class AddInstanceForm extends React.Component {
-
   static propTypes = {
     pending: PropTypes.bool,
     visible: PropTypes.bool,
@@ -65,7 +63,7 @@ export default class AddInstanceForm extends React.Component {
   state = {
     fields: [],
     customFields: [],
-    search: null
+    selectMetadataItems: undefined
   };
 
   handleSubmit = (e) => {
@@ -73,11 +71,25 @@ export default class AddInstanceForm extends React.Component {
     const valid = this.validate();
     this.props.form.validateFieldsAndScroll((err, values) => {
       if (valid && !err && this.state.customFields.filter(f => !!f.validation).length === 0) {
+        const mapType = (field) => {
+          if (field.multiValue) {
+            return `Array[${field.type}]`;
+          } else if (field.reference) {
+            return `${field.type}:ID`;
+          }
+          return field.type;
+        };
+        const mapValue = (field) => {
+          if (field.multiValue) {
+            return `[${(field.value || []).map(v => `"${v}"`).join(', ')}]`;
+          }
+          return field.value;
+        };
         const data = this.state.fields.filter(f => !!f.value).map(f => {
           return {
             name: f.name,
-            type: f.reference ? `${f.type}:ID` : f.type,
-            value: f.value
+            type: mapType(f),
+            value: mapValue(f)
           };
         }).reduce((dataObj, field) => {
           dataObj[field.name] = {
@@ -89,8 +101,8 @@ export default class AddInstanceForm extends React.Component {
         this.state.customFields.filter(f => !!f.value).map(f => {
           return {
             name: f.name,
-            type: f.reference ? `${f.type}:ID` : f.type,
-            value: f.value
+            type: mapType(f),
+            value: mapValue(f)
           };
         }).reduce((dataObj, field) => {
           dataObj[field.name] = {
@@ -122,49 +134,21 @@ export default class AddInstanceForm extends React.Component {
     return (this.props.entityTypes || []).map(e => e.metadataClass);
   };
 
+  ownEntityTypes = () => {
+    return this.entityTypes().filter(t => !t.outOfProject);
+  };
+
   onSelectEntityType = (id) => {
     this.props.form.setFieldsValue({entityClass: id});
     this.rebuildEntityTypeParameters(id);
   };
 
   rebuildEntityTypeParameters = (entityTypeId) => {
-    const [entityTypeInfo] = (this.props.entityTypes || []).filter(e => `${e.metadataClass.id}` === `${entityTypeId}`);
+    const [entityTypeInfo] = (this.props.entityTypes || [])
+      .filter(e => `${e.metadataClass.id}` === `${entityTypeId}`);
     let fields = [];
     if (entityTypeInfo) {
-      const onSearchFinished = (name, values) => {
-        const fields = this.state.fields;
-        const [field] = fields.filter(f => f.name === name);
-        if (field) {
-          field.dataSource = values;
-          this.setState({fields});
-        }
-      };
-      fields = (entityTypeInfo.fields || []).map(f => (
-        {
-          ...f,
-          value: null,
-          search: null,
-          dataSource: [],
-          onSearch: async (search) => {
-            if (!f.reference) {
-              return;
-            }
-            const request = new MetadataEntityFilter();
-            await request.send({
-              folderId: this.props.folderId,
-              metadataClass: f.type,
-              externalIdQueries: [search],
-              page: 1,
-              pageSize: 100000
-            });
-            if (request.loaded) {
-              onSearchFinished(f.name, (request.value.elements || []).map(e => e.externalId));
-            } else {
-              onSearchFinished(f.name, []);
-            }
-          }
-        })
-      );
+      fields = (entityTypeInfo.fields || []).map(f => ({...f, value: null}));
     }
     this.setState({fields, customFields: []});
   };
@@ -219,6 +203,68 @@ export default class AddInstanceForm extends React.Component {
     }
   };
 
+  onChangeParameterMultiple = (parameterNameFn) => (e) => {
+    const fields = this.state.customFields;
+    const [field] = fields.filter(parameterNameFn);
+    if (field) {
+      if (e.target.checked) {
+        field.value = field.value ? [field.value] : [];
+      } else {
+        field.value = undefined;
+      }
+      field.multiValue = e.target.checked;
+      field.validation = this.validateCustomParameterName(field.name, field.identifier);
+      this.setState({customFields: fields});
+    }
+  };
+
+  onOpenMetadataItemSelection = (custom, parameterNameFn) => (e) => {
+    if (e && e.target && typeof e.target.blur === 'function') {
+      e.target.blur();
+    }
+    const fields = custom
+      ? (this.state.customFields || [])
+      : (this.state.fields || []);
+    const field = fields.find(parameterNameFn);
+    if (field) {
+      this.setState({
+        selectMetadataItems: {
+          custom,
+          type: field.type,
+          multiple: field.multiValue,
+          filter: parameterNameFn,
+          value: field.multiValue ? (field.value || []) : [field.value].filter(Boolean)
+        }
+      });
+    }
+  };
+
+  onCloseMetadataItemSelection = () => {
+    this.setState({
+      selectMetadataItems: undefined
+    });
+  };
+
+  onSelectMetadataItems = (items) => {
+    const {selectMetadataItems} = this.state;
+    const {custom, filter, multiple} = selectMetadataItems;
+    const fields = custom ? this.state.customFields : this.state.fields;
+    const [field] = fields.filter(filter);
+    if (field) {
+      if (multiple) {
+        field.value = items && items.length ? items : undefined;
+      } else {
+        field.value = items && items.length === 1 ? items[0] : undefined;
+      }
+      if (custom) {
+        this.setState({customFields: fields});
+      } else {
+        this.setState({fields});
+      }
+    }
+    this.onCloseMetadataItemSelection();
+  };
+
   onRemoveParameter = (parameterNameFn) => () => {
     const fields = this.state.customFields;
     const [field] = fields.filter(parameterNameFn);
@@ -232,7 +278,7 @@ export default class AddInstanceForm extends React.Component {
   };
 
   renderField = (custom) => (field, index) => {
-    if (field.reference) {
+    if (field.reference || field.multiValue) {
       return this.renderReferenceField(field, index, custom);
     } else {
       return this.renderStringField(field, index, custom);
@@ -244,55 +290,81 @@ export default class AddInstanceForm extends React.Component {
       ? f => f.identifier === field.identifier
       : f => f.name === field.name;
     const trs = [];
+    const disabled = this.props.pending;
     trs.push(
-      <tr
-        key={`parameter_${index}`}>
-        <td className={`${styles.parameterName} ${custom ? styles.custom : ''}`}>
+      <div
+        key={`parameter_${index}`}
+        className={styles.parameterRow}
+      >
+        <div
+          className={`${styles.parameterName} ${custom ? styles.custom : ''}`}
+        >
           {
             custom
               ? (
-              <Input
-                placeholder="Parameter name"
-                className={`${styles.nameInput} ${field.validation ? styles.validationError : ''}`}
-                value={field.name}
-                onChange={this.onChangeParameterName(parameterFilterFn)}
-                style={{width: '100%'}} />
-            )
+                <Input
+                  placeholder="Parameter name"
+                  className={`${styles.nameInput} ${field.validation ? styles.validationError : ''}`}
+                  value={field.name}
+                  onChange={this.onChangeParameterName(parameterFilterFn)}
+                  style={{width: '100%'}}
+                  disabled={disabled}
+                />
+              )
               : <span>{field.name}: </span>
           }
-        </td>
-        <td>
-          <Row type="flex" align="middle">
-            <AutoComplete
-              dataSource={field.dataSource}
-              style={{flex: 1}}
-              onSelect={this.onChangeReferenceValue(parameterFilterFn, custom)}
-              onSearch={field.onSearch}
-              placeholder={`Filter '${field.type}' instances`}
-            />
-            {
-              custom && (
-                <Button
-                  size="small"
-                  onClick={this.onRemoveParameter(f => f.identifier === field.identifier)}
-                  type="danger"
-                  style={{marginLeft: 5}}>
-                  <Icon type="delete" />
-                </Button>
-              )
-            }
-          </Row>
-        </td>
-      </tr>
+        </div>
+        <Input
+          style={{flex: 1, lineHeight: 1, top: 0}}
+          disabled={disabled}
+          onFocus={this.onOpenMetadataItemSelection(custom, parameterFilterFn)}
+          addonBefore={(
+            <div
+              className={styles.browseItemsButton}
+              onClick={this.onOpenMetadataItemSelection(custom, parameterFilterFn)}
+            >
+              Browse
+            </div>
+          )}
+          value={field.multiValue ? (field.value || []).join(', ') : field.value}
+          placeholder={`Browse ${field.type} ${field.multiValue ? 'entities' : 'entity'}`}
+        />
+        {
+          custom && (
+            <Checkbox
+              disabled={disabled}
+              checked={field.multiValue}
+              style={{marginLeft: 5}}
+              onChange={this.onChangeParameterMultiple(parameterFilterFn)}
+            >
+              Multiple
+            </Checkbox>
+          )
+        }
+        {
+          custom && (
+            <Button
+              disabled={disabled}
+              size="small"
+              onClick={this.onRemoveParameter(f => f.identifier === field.identifier)}
+              type="danger"
+              style={{marginLeft: 5}}
+            >
+              <Icon type="delete" />
+            </Button>
+          )
+        }
+      </div>
     );
     if (field.validation) {
       trs.push(
-        <tr key={`parameter_${index}_validation`}>
-          <td className={styles.validationError} style={{paddingRight: 5}}>
-            {field.validation}
-          </td>
-          <td>{'\u00A0'}</td>
-        </tr>
+        <div
+          key={`parameter_${index}_validation`}
+          className={styles.validationError}
+          style={{paddingRight: 5}}
+        >
+          {field.validation}
+        </div>
       );
     }
     return trs;
@@ -303,80 +375,66 @@ export default class AddInstanceForm extends React.Component {
       ? f => f.identifier === field.identifier
       : f => f.name === field.name;
     const trs = [];
+    const disabled = this.props.pending;
     trs.push(
-      <tr
-        key={`parameter_${index}`}>
-        <td className={`${styles.parameterName} ${custom ? styles.custom : ''}`}>
+      <div
+        key={`parameter_${index}`}
+        className={styles.parameterRow}
+      >
+        <div className={`${styles.parameterName} ${custom ? styles.custom : ''}`}>
           {
             custom
               ? (
-              <Input
-                placeholder="Parameter name"
-                className={`${styles.nameInput} ${field.validation ? styles.validationError : ''}`}
-                value={field.name}
-                onChange={this.onChangeParameterName(parameterFilterFn)}
-                style={{width: '100%'}} />
-            )
+                <Input
+                  disabled={disabled}
+                  placeholder="Parameter name"
+                  className={`${styles.nameInput} ${field.validation ? styles.validationError : ''}`}
+                  value={field.name}
+                  onChange={this.onChangeParameterName(parameterFilterFn)}
+                  style={{width: '100%'}}
+                />
+              )
               : <span>{field.name}: </span>
           }
-        </td>
-        <td>
-          <Row type="flex" align="middle">
-            <Input
-              style={{flex: 1}}
-              value={field.value}
-              placeholder="Parameter value"
-              onChange={this.onChangeStringValue(parameterFilterFn, custom)} />
-            {
-              custom && (
-                <Button
-                  size="small"
-                  onClick={this.onRemoveParameter(f => f.identifier === field.identifier)}
-                  type="danger"
-                  style={{marginLeft: 5}}>
-                  <Icon type="delete" />
-                </Button>
-              )
-            }
-          </Row>
-        </td>
-      </tr>
+        </div>
+        <Input
+          disabled={disabled}
+          style={{flex: 1}}
+          value={field.value}
+          placeholder="Parameter value"
+          onChange={this.onChangeStringValue(parameterFilterFn, custom)} />
+        {
+          custom && (
+            <Button
+              disabled={disabled}
+              size="small"
+              onClick={this.onRemoveParameter(f => f.identifier === field.identifier)}
+              type="danger"
+              style={{marginLeft: 5}}>
+              <Icon type="delete" />
+            </Button>
+          )
+        }
+      </div>
     );
     if (field.validation) {
       trs.push(
-        <tr key={`parameter_${index}_validation`}>
-          <td className={styles.validationError} style={{paddingRight: 5}}>
-            {field.validation}
-          </td>
-          <td>{'\u00A0'}</td>
-        </tr>
+        <div
+          key={`parameter_${index}_validation`}
+          className={styles.validationError}
+          style={{paddingRight: 5}}
+        >
+          {field.validation}
+        </div>
       );
     }
     return trs;
-  };
-
-  onParameterSearchChanged = (e) => {
-    this.setState({
-      search: e.target.value
-    });
-  };
-
-  filterFields = (f) => {
-    return !this.state.search || f.name.toLowerCase().indexOf(this.state.search.toLowerCase()) >= 0;
   };
 
   newIdentifier = 0;
 
   renderAddParameterButton = () => {
     const onSelect = ({key}) => {
-      const onSearchFinished = (identifier, values) => {
-        const fields = this.state.customFields;
-        const [field] = fields.filter(f => f.identifier === identifier);
-        if (field) {
-          field.dataSource = values;
-          this.setState({customFields: fields});
-        }
-      };
       this.newIdentifier += 1;
       const identifier = this.newIdentifier;
       const field = {
@@ -385,26 +443,7 @@ export default class AddInstanceForm extends React.Component {
         type: key,
         name: '',
         value: null,
-        search: null,
-        dataSource: [],
-        onSearch: async (search) => {
-          if (key === 'string') {
-            return;
-          }
-          const request = new MetadataEntityFilter();
-          await request.send({
-            folderId: this.props.folderId,
-            metadataClass: key,
-            externalIdQueries: [search],
-            page: 1,
-            pageSize: 100000
-          });
-          if (request.loaded) {
-            onSearchFinished(identifier, (request.value.elements || []).map(e => e.externalId));
-          } else {
-            onSearchFinished(identifier, []);
-          }
-        }
+        multiValue: false
       };
       const customFields = this.state.customFields;
       customFields.push(field);
@@ -414,7 +453,7 @@ export default class AddInstanceForm extends React.Component {
       <Menu onClick={onSelect}>
         <Menu.Item key="string">String parameter</Menu.Item>
         {
-          this.entityTypes().map(e => {
+          this.ownEntityTypes().map(e => {
             return (
               <Menu.Item key={e.name}>Link to '{e.name}' instance</Menu.Item>
             );
@@ -476,21 +515,6 @@ export default class AddInstanceForm extends React.Component {
           <Form.Item
             className={styles.formItem}
             {...this.formItemLayout}
-            label="Instance ID">
-            {getFieldDecorator('id', {
-              rules: [{
-                required: true,
-                message: 'ID is required'
-              }]
-            })(
-              <Input
-                ref={!this.props.dataStorage ? this.initializeNameInput : null}
-                disabled={this.props.pending} />
-            )}
-          </Form.Item>
-          <Form.Item
-            className={styles.formItem}
-            {...this.formItemLayout}
             label="Instance type">
             {getFieldDecorator('entityClass', {
               rules: [{
@@ -504,12 +528,13 @@ export default class AddInstanceForm extends React.Component {
                 disabled={this.props.pending}
                 showSearch
                 style={{width: '100%'}}
-                allowClear={true}
+                allowClear
                 optionFilterProp="children"
                 onSelect={this.onSelectEntityType}
                 filterOption={
                   (input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }>
+                }
+              >
                 {
                   this.entityTypes().map(t =>
                     <Select.Option
@@ -522,44 +547,54 @@ export default class AddInstanceForm extends React.Component {
               </Select>
             )}
           </Form.Item>
+          <Form.Item
+            className={styles.formItem}
+            {...this.formItemLayout}
+            label="Instance ID">
+            {getFieldDecorator('id')(
+              <Input
+                ref={!this.props.dataStorage ? this.initializeNameInput : null}
+                disabled={this.props.pending}
+              />
+            )}
+          </Form.Item>
           {
-            this.state.fields && this.state.fields.length > 0 &&
-            <Collapse style={{marginBottom: 10}} bordered={false}>
-              <Collapse.Panel header="Parameters">
-                <Row type="flex" style={{marginBottom: 15}}>
-                  <Input.Search
-                    id="add-instance-search-input"
-                    placeholder="Filter fields"
-                    onChange={this.onParameterSearchChanged} />
-                </Row>
-                <table style={{width: '100%'}}>
-                  <tbody>
-                  {
-                    this.state.fields
-                      .filter(this.filterFields)
-                      .map(this.renderField(false)).reduce((array, trs) => {
-                        array.push(...trs);
-                        return array;
-                      }, [])
-                  }
-                  </tbody>
-                </table>
-              </Collapse.Panel>
-            </Collapse>
+            this.state.fields && this.state.fields.length > 0 && this.state.fields
+              .map(this.renderField(false)).reduce((array, trs) => {
+                array.push(...trs);
+                return array;
+              }, [])
           }
-          <table style={{width: '100%'}}>
-            <tbody>
-            {
-              this.state.customFields
-                .map(this.renderField(true))
-                .reduce((array, trs) => {
-                  array.push(...trs);
-                  return array;
-                }, [])
-            }
-            </tbody>
-          </table>
+          {
+            this.state.customFields
+              .map(this.renderField(true))
+              .reduce((array, trs) => {
+                array.push(...trs);
+                return array;
+              }, [])
+          }
           {this.renderAddParameterButton()}
+          <SelectMetadataItems
+            visible={!!this.state.selectMetadataItems}
+            type={
+              this.state.selectMetadataItems
+                ? this.state.selectMetadataItems.type
+                : undefined
+            }
+            selection={
+              this.state.selectMetadataItems
+                ? this.state.selectMetadataItems.value
+                : []
+            }
+            multiple={
+              this.state.selectMetadataItems
+                ? this.state.selectMetadataItems.multiple
+                : false
+            }
+            onClose={this.onCloseMetadataItemSelection}
+            onSave={this.onSelectMetadataItems}
+            folderId={this.props.folderId}
+          />
         </Form>
       </Modal>
     );

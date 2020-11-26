@@ -44,7 +44,9 @@ import ReactTable from 'react-table';
 import roleModel from '../../../utils/roleModel';
 import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityUpload';
 import PropTypes from 'prop-types';
-import MetadataEntityDeleteFromProject from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
+import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
+import MetadataEntityDeleteFromProject
+  from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
 import MetadataEntityDeleteList from '../../../models/folderMetadata/MetadataEntityDeleteList';
 import ConfigurationBrowser from '../launch/dialogs/ConfigurationBrowser';
 import FolderProject from '../../../models/folders/FolderProject';
@@ -52,10 +54,36 @@ import ConfigurationRun from '../../../models/configuration/ConfigurationRun';
 import PipelineRunner from '../../../models/pipelines/PipelineRunner';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import Breadcrumbs from '../../special/Breadcrumbs';
+import displayDate from '../../../utils/displayDate';
 
 const PAGE_SIZE = 20;
 const ASCEND = 'ascend';
 const DESCEND = 'descend';
+
+function filterColumns (column) {
+  return !column.predefined || ['externalId', 'createdDate'].indexOf(column.name) >= 0;
+}
+
+function mapColumnName (column) {
+  if (column.name === 'externalId') {
+    return 'ID';
+  }
+  return column.name;
+}
+
+function unmapColumnName (name) {
+  if (name === 'ID') {
+    return 'externalId';
+  }
+  return name;
+}
+
+function getColumnTitle (key) {
+  if (key === 'createdDate') {
+    return 'Created Date';
+  }
+  return key;
+}
 
 @connect({
   folders,
@@ -72,6 +100,7 @@ const DESCEND = 'descend';
     folderId: componentParameters.id,
     metadataClass: componentParameters.class,
     entityFields: new MetadataEntityFields(componentParameters.id),
+    metadataClasses: new MetadataClassLoadAll(),
     onReloadTree: params.onReloadTree,
     authenticatedUserInfo,
     preferences,
@@ -126,8 +155,20 @@ export default class Metadata extends React.Component {
 
   @computed
   get entityTypes () {
-    if (this.props.entityFields.loaded) {
-      return (this.props.entityFields.value || []).map(e => e);
+    if (this.props.entityFields.loaded && this.props.metadataClasses.loaded) {
+      const entityFields = (this.props.entityFields.value || [])
+        .map(e => e);
+      const ignoreClasses = new Set(entityFields.map(f => f.metadataClass.id));
+      const otherClasses = (this.props.metadataClasses.value || [])
+        .filter(({id}) => !ignoreClasses.has(id))
+        .map(metadataClass => ({
+          fields: [],
+          metadataClass: {...metadataClass, outOfProject: true}
+        }));
+      return [
+        ...entityFields,
+        ...otherClasses
+      ];
     }
     return [];
   }
@@ -216,7 +257,8 @@ export default class Metadata extends React.Component {
 
   addInstance = async (values) => {
     const classId = +values.entityClass;
-    const [metadataClass] = this.entityTypes.map(e => e.metadataClass).filter(m => m.id === classId);
+    const [metadataClass] = this.entityTypes
+      .map(e => e.metadataClass).filter(m => m.id === classId);
     if (metadataClass) {
       const className = metadataClass.name;
       const payload = {
@@ -231,6 +273,8 @@ export default class Metadata extends React.Component {
       if (request.error) {
         message.error(request.error, 5);
       } else {
+        await this.props.entityFields.fetch();
+        await this.loadColumns(this.props.folderId, this.props.metadataClass);
         await this.loadData(this.state.filterModel);
         await this.props.folder.fetch();
         if (this.props.onReloadTree) {
@@ -249,7 +293,7 @@ export default class Metadata extends React.Component {
     let orderBy;
     if (filterModel) {
       orderBy = (filterModel.orderBy || [])
-        .map(o => ({...o, field: o.field === 'ID' ? 'externalId' : o.field}));
+        .map(o => ({...o, field: unmapColumnName(o.field)}));
     }
     await this.metadataRequest.send(Object.assign({...filterModel}, {orderBy}));
     if (this.metadataRequest.error) {
@@ -274,6 +318,10 @@ export default class Metadata extends React.Component {
           v.data.ID = {
             value: v.externalId,
             type: 'string'
+          };
+          v.data.createdDate = {
+            value: v.createdDate,
+            type: 'date'
           };
           return v.data;
         });
@@ -350,13 +398,28 @@ export default class Metadata extends React.Component {
       message.error(metadataEntityKeysRequest.error, 5);
     } else {
       this.keys = (metadataEntityKeysRequest.value || []).map(k => k);
+      const externalIdSort = (a, b) => {
+        if (a.name === b.name) {
+          return 0;
+        }
+        if (a.name === 'externalId') {
+          return -1;
+        }
+        if (b.name === 'externalId') {
+          return 1;
+        }
+        return 0;
+      };
+      const predefinedSort = (a, b) => b.predefined - a.predefined;
       const newColumns = (metadataEntityKeysRequest.value || [])
-        .filter(k => !k.predefined || k.name === 'externalId')
-        .map(k => k.name === 'externalId' ? 'ID' : k.name);
+        .sort(externalIdSort)
+        .sort(predefinedSort)
+        .filter(filterColumns)
+        .map(mapColumnName);
 
       if (this.defaultColumns && this.defaultColumns.length < newColumns.length) {
-        const [newColumn] = newColumns.filter(column => !this.defaultColumns.includes(column));
-        this.state.selectedColumns.push(newColumn);
+        const addedColumns = newColumns.filter(column => !this.defaultColumns.includes(column));
+        this.state.selectedColumns.push(...addedColumns);
         this.setState({selectedColumns: this.state.selectedColumns});
       }
       this.defaultColumns = this.columns = newColumns;
@@ -388,6 +451,10 @@ export default class Metadata extends React.Component {
       selectedItem.ID = {
         value: metadataEntityLoadExternalRequest.value.externalId,
         type: 'string'
+      };
+      selectedItem.createdDate = {
+        value: metadataEntityLoadExternalRequest.value.createdDate,
+        type: 'date'
       };
       this.setState({metadata: true, selectedItem: selectedItem});
     }
@@ -684,6 +751,8 @@ export default class Metadata extends React.Component {
             key={METADATA_PANEL_KEY}
             readOnly={!(roleModel.writeAllowed(this.props.folder.value) &&
             this.props.folderId !== undefined)}
+            readOnlyKeys={['ID', 'createdDate']}
+            columnNamesFn={getColumnTitle}
             classId={currentItem ? currentItem.classEntity.id : null}
             className={currentItem ? currentItem.classEntity.name : null}
             entityId={currentItem ? currentItem.id : null}
@@ -692,6 +761,7 @@ export default class Metadata extends React.Component {
             parentId={currentItem ? currentItem.parent.id : null}
             currentItem={this.state.selectedItem}
             onUpdateMetadata={async () => {
+              await this.props.entityFields.fetch();
               await this.loadColumns(this.props.folderId, this.props.metadataClass);
               await this.loadData(this.state.filterModel);
               const [selectedItem] =
@@ -824,7 +894,7 @@ export default class Metadata extends React.Component {
         <span
           onClick={(e) => onHeaderClicked(key)}
           className={styles.metadataColumnHeader}>
-          {icon}{key}
+          {icon}{getColumnTitle(key)}
         </span>
       );
     };
@@ -967,6 +1037,12 @@ export default class Metadata extends React.Component {
                 </a>;
               } else if (data.type.toLowerCase() === 'path') {
                 return this.renderDataStorageLinks(data);
+              } else if (/^date$/i.test(data.type)) {
+                return (
+                  <span title={data.value}>
+                    {displayDate(data.value)}
+                  </span>
+                );
               } else {
                 return (
                   <span title={data.value}>
@@ -1028,6 +1104,7 @@ export default class Metadata extends React.Component {
                 selectedColumns={this.state.selectedColumns}
                 columns={this.columns}
                 onResetColums={this.onResetColums}
+                columnNameFn={getColumnTitle}
               />
             </span>
           </Col>
@@ -1084,6 +1161,7 @@ export default class Metadata extends React.Component {
         nextProps.onSelectItems(this.state.selectedItems);
       }
       this._totalCount = 0;
+      await this.props.entityFields.fetch();
       await this.loadColumns(nextProps.folderId, nextProps.metadataClass);
       this.state.selectedColumns = [...this.columns];
       await this.loadData(this.state.filterModel);
