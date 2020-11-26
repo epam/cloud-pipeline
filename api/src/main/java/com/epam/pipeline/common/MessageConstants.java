@@ -542,6 +542,24 @@ public final class MessageConstants {
     public static final String ERROR_LUSTRE_MISSING_CONFIG = "error.lustre.missing.config";
     public static final String ERROR_LUSTRE_MISSING_INSTANCE = "error.lustre.missing.instance";
 
+    //Node Schedule
+    public static final String ERROR_NODE_SCHEDULE_MISSING_ENTRIES = "error.node.schedule.missing.entries";
+    public static final String ERROR_NODE_SCHEDULE_MISSING_FROM = "error.node.schedule.missing.from";
+    public static final String ERROR_NODE_SCHEDULE_MISSING_FROM_TIME = "error.node.schedule.missing.from.time";
+    public static final String ERROR_NODE_SCHEDULE_MISSING_TO = "error.node.schedule.missing.to";
+    public static final String ERROR_NODE_SCHEDULE_MISSING_TO_TIME = "error.node.schedule.missing.to.time";
+    public static final String ERROR_NODE_SCHEDULE_NOT_FOUND = "error.node.schedule.not.found";
+
+    //Persistent Nodes
+    public static final String ERROR_NODE_POOL_NOT_FOUND = "error.node.pool.not.found";
+    public static final String ERROR_NODE_POOL_MISSING_PRICE_TYPE = "error.node.pool.missing.price.type";
+    public static final String ERROR_NODE_POOL_MISSING_REGION = "error.node.pool.missing.region";
+    public static final String ERROR_NODE_POOL_MISSING_INSTANCE_TYPE = "error.node.pool.missing.instance.type";
+    public static final String ERROR_NODE_POOL_PRICE_TYPE_NOT_ALLOWED = "error.node.pool.price.type.not.allowed";
+    public static final String ERROR_NODE_POOL_INSTANCE_TYPE_NOT_ALLOWED = "error.node.pool.instance.type.not.allowed";
+    public static final String ERROR_NODE_POOL_INVALID_DISK_SIZE = "error.node.pool.invalid.disk.size";
+    public static final String ERROR_NODE_POOL_INVALID_COUNT = "error.node.pool.invalid.count";
+
     private MessageConstants() {
         // no-op
     }
