@@ -78,7 +78,7 @@ function unmapColumnName (name) {
   return name;
 }
 
-function getColumnTitle(key) {
+function getColumnTitle (key) {
   if (key === 'createdDate') {
     return 'Created Date';
   }
@@ -751,6 +751,8 @@ export default class Metadata extends React.Component {
             key={METADATA_PANEL_KEY}
             readOnly={!(roleModel.writeAllowed(this.props.folder.value) &&
             this.props.folderId !== undefined)}
+            readOnlyKeys={['ID', 'createdDate']}
+            columnNamesFn={getColumnTitle}
             classId={currentItem ? currentItem.classEntity.id : null}
             className={currentItem ? currentItem.classEntity.name : null}
             entityId={currentItem ? currentItem.id : null}

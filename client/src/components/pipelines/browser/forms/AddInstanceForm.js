@@ -252,7 +252,7 @@ export default class AddInstanceForm extends React.Component {
     const [field] = fields.filter(filter);
     if (field) {
       if (multiple) {
-        field.value = items;
+        field.value = items && items.length ? items : undefined;
       } else {
         field.value = items && items.length === 1 ? items[0] : undefined;
       }
