@@ -255,6 +255,7 @@ export default class MetadataFolder extends React.Component {
       actions.push(
         roleModel.manager.entities(
           <Button
+            disabled={this.entityTypes.length === 0}
             size="small"
             onClick={this.openAddInstanceForm}
             key="add-metadata">
@@ -268,8 +269,9 @@ export default class MetadataFolder extends React.Component {
           <UploadButton
             key="upload-metadata"
             multiple={false}
-            synchronous={true}
+            synchronous
             onRefresh={async () => {
+              await this.props.entityFields.fetch();
               await this.props.folder.fetch();
               if (this.props.onReloadTree) {
                 this.props.onReloadTree(true);
