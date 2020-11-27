@@ -49,8 +49,6 @@ add_worker() {
         qconf -as $HOSTNAME
         qconf -ah $HOSTNAME
         '"
-        /etc/init.d/gridengine-exec restart
-        check_last_exit_code $? "All SGE packages were installed" "Fail to install SGE worker"
     elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
         cd "$SGE_ROOT"
         ssh -o "StrictHostKeyChecking=no" "$_MASTER_NAME" bash --login -c "'qconf -ah $HOSTNAME'"
@@ -72,8 +70,6 @@ add_worker() {
         fi
         qconf -as $HOSTNAME
         qconf -ah $HOSTNAME
-
-        $SGE_ROOT/$SGE_CELL/common/sgeexecd restart
     fi
 }
 
@@ -253,11 +249,21 @@ CP_CAP_SGE_WORKER_FREE_CORES="${CP_CAP_SGE_WORKER_FREE_CORES:-0}"
 _WORKER_CORES=$(($_WORKER_CORES - $CP_CAP_SGE_WORKER_FREE_CORES))
 (( $_WORKER_CORES <= 0 )) && _WORKER_CORES=$(nproc)
 
+add_worker "$CP_CAP_SGE_QUEUE_NAME" "$CP_CAP_SGE_HOSTLIST_NAME" "$_WORKER_CORES" $MASTER_NAME
+check_last_exit_code $? "Host was added as a worker to $CP_CAP_SGE_QUEUE_NAME queue and $CP_CAP_SGE_HOSTLIST_NAME hostlist" \
+                        "Fail to add host as worker to $CP_CAP_SGE_QUEUE_NAME queue and $CP_CAP_SGE_HOSTLIST_NAME hostlist"
+
+export _CP_CAP_SGE_DEFAULT_QUEUE_NAME="$CP_CAP_SGE_QUEUE_NAME"
+export _CP_CAP_SGE_DEFAULT_HOSTLIST_NAME="$CP_CAP_SGE_HOSTLIST_NAME"
+
 for sge_profile_script in $CP_CAP_SCRIPTS_DIR/sge_profile_*.sh; do
     (
         # shellcheck source=/dev/null
-        source "$sge_profile_script"
-        if [[ "$cluster_role_type" != "additional" ]] && check_cp_cap "CP_CAP_SGE_STATIC"; then
+        [[ -e "$sge_profile_script" ]] && source "$sge_profile_script"
+        if check_cp_cap "CP_CAP_SGE_STATIC" \
+          && [[ "$cluster_role_type" != "additional" ]] \
+          && [[ "$CP_CAP_SGE_QUEUE_NAME" != "$_CP_CAP_SGE_DEFAULT_QUEUE_NAME" ]] \
+          && [[ "$CP_CAP_SGE_HOSTLIST_NAME" != "$_CP_CAP_SGE_DEFAULT_HOSTLIST_NAME" ]]; then
             add_worker "$CP_CAP_SGE_QUEUE_NAME" "$CP_CAP_SGE_HOSTLIST_NAME" "$_WORKER_CORES" $MASTER_NAME
             check_last_exit_code $? "Host was added as a worker to $CP_CAP_SGE_QUEUE_NAME queue and $CP_CAP_SGE_HOSTLIST_NAME hostlist" \
                                     "Fail to add host as worker to $CP_CAP_SGE_QUEUE_NAME queue and $CP_CAP_SGE_HOSTLIST_NAME hostlist"
@@ -265,11 +271,19 @@ for sge_profile_script in $CP_CAP_SCRIPTS_DIR/sge_profile_*.sh; do
     )
 done
 
+unset _CP_CAP_SGE_DEFAULT_QUEUE_NAME
+unset _CP_CAP_SGE_DEFAULT_HOSTLIST_NAME
+
+if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
+    /etc/init.d/gridengine-exec restart
+elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
+    $SGE_ROOT/$SGE_CELL/common/sgeexecd restart
+fi
+check_last_exit_code $? "Execution host was restarted" "Fail to restart execution host"
+
 echo "export SGE_ROOT=$SGE_ROOT" >> /etc/cp_env.sh
 echo "export SGE_CELL=$SGE_CELL" >> /etc/cp_env.sh
 echo "export SGE_CLUSTER_NAME=$SGE_CLUSTER_NAME" >> /etc/cp_env.sh
-echo "export CP_CAP_SGE_QUEUE_NAME=$CP_CAP_SGE_QUEUE_NAME" >> /etc/cp_env.sh
-echo "export CP_CAP_SGE_HOSTLIST_NAME=$CP_CAP_SGE_HOSTLIST_NAME" >> /etc/cp_env.sh
 
 # Setup any additional SGE consumable resources if available
 sge_setup_resources "$HOSTNAME" "$SGE_WORKER_SETUP_TASK" "$_WORKER_CORES"
