@@ -35,13 +35,13 @@
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">2</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">23m27.34s</div>
+<div class="counter">15m15.90s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">92%</div>
+<div class="percent">91%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,181 +73,49 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="clusterNodePageShouldBeValid - EPMCMBIBPC-267"></a>
-<h3 class="failures">clusterNodePageShouldBeValid - EPMCMBIBPC-267</h3>
+<a name="logShouldBeValid - EPMCMBIBPC-309"></a>
+<h3 class="failures">logShouldBeValid - EPMCMBIBPC-309</h3>
 <span class="code">
-<pre>java.lang.RuntimeException: Elements collection of {qualifier in the scope of a selenide element.
-Qualifier: master node.
-Scope:&lt;body&gt;12
-Cluster nodes (25 nodes, 18 nodes with associated RunId)
-Refresh
-
-Name
-Pipeline Labels
-Addresses Created
-i-01b9f2a627fbd5e88 ubuntu:18.04 PAUSED AMD64 LINUX EU-CENTRAL-1A AMI-091B7D4CECC079C60 I-01B9F2A627FBD5E88 M5.LARGE AWS EU-CENTRAL-1 I-01B9F2A627FBD5E88 RUN ID 47907
-172.31.2.65
-i-01b9f2a627fbd5e88
-2020-11-19
-09:54:25
-TERMINATE
-i-02e67268b5c2d6632 AMD64 LINUX EU-CENTRAL-1C AMI-091B7D4CECC079C60 I-02E67268B5C2D6632 M5.LARGE AWS EU-CENTRAL-1 I-02E67268B5C2D6632
-172.31.43.185
-i-02e67268b5c2d6632
-2020-11-20
-10:30:14
-TERMINATE
-i-0300156dd1da8a0b9 ubuntu:16.04 AMD64 LINUX EU-CENTRAL-1C AMI-091B7D4CECC079C60 I-0300156DD1DA8A0B9 M5.LARGE AWS EU-CENTRAL-1 I-0300156DD1DA8A0B9 RUN ID 48640
-172.31.32.241
-i-0300156dd1da8a0b9
-2020-11-26
-12:30:54
-TERMINATE
-i-038210f1498b33813 AMD64 LINUX EU-CENTRAL-1C AMI-091B7D4CECC079C60 I-038210F1498B33813 M5.LARGE AWS EU-CENTRAL-1 I-038210F1498B33813
-172.31.33.245
-i-038210f1498b33813
-2020-11-20
-10:30:45
-TERMINATE
-i-052fd6b34f7b69f9c ubuntu:19.04 AMD64 LINUX EU-CENTRAL-1B AMI-091B7D4CECC079C60 I-052FD6B34F7B69F9C M5.LARGE AWS EU-CENTRAL-1 I-052FD6B34F7B69F9C RUN ID 48628
-172.31.23.158
-i-052fd6b34f7b69f9c
-2020-11-26
-13:07:31
-TERMINATE
-i-0687e5b65caff7dfd SimplePipe (draft-a2fcbd1f) AMD64 LINUX EU-CENTRAL-1B AMI-091B7D4CECC079C60 I-0687E5B65CAFF7DFD M5.LARGE AWS EU-CENTRAL-1 I-0687E5B65CAFF7DFD RUN ID 48657
-172.31.20.225
-i-0687e5b65caff7dfd
-2020-11-26
-13:01:17
-TERMINATE
-i-07389eab215c17b75 AMD64 LINUX EU-CENTRAL-1C AMI-091B7D4CECC079C60 I-07389EAB215C17B75 M5.LARGE AWS EU-CENTRAL-1 I-07389EAB215C17B75
-172.31.46.82
-i-07389eab215c17b75
-2020-11-20
-10:30:42
-TERMINATE
-i-074543ff65a40f6a9 ubuntu:latest AMD64 LINUX EU-CENTRAL-1B AMI-091B7D4CECC079C60 I-074543FF65A40F6A9 M5.LARGE AWS EU-CENTRAL-1 I-074543FF65A40F6A9 RUN ID 48621
-172.31.26.149
-i-074543ff65a40f6a9
-2020-11-26
-10:41:45
-TERMINATE
-i-077af0e1c77b1aebf ubuntu:19.04 AMD64 LINUX EU-CENTRAL-1C AMI-091B7D4CECC079C60 I-077AF0E1C77B1AEBF M5.LARGE AWS EU-CENTRAL-1 I-077AF0E1C77B1AEBF RUN ID 48646
-172.31.32.122
-i-077af0e1c77b1aebf
-2020-11-26
-12:43:18
-TERMINATE
-i-08ab5570e4fc50b00 ubuntu:19.04 AMD64 LINUX EU-CENTRAL-1C AMI-091B7D4CECC079C60 I-08AB5570E4FC50B00 M5.LARGE AWS EU-CENTRAL-1 I-08AB5570E4FC50B00 RUN ID 48645
-172.31.43.150
-i-08ab5570e4fc50b00
-2020-11-26
-12:40:41
-TERMINATE
-i-08d39682277820162 ubuntu:latest PAUSED AMD64 LINUX EU-CENTRAL-1B AMI-091B7D4CECC079C60 I-08D39682277820162 M5.LARGE AWS EU-CENTRAL-1 I-08D39682277820162 RUN ID 47921
-172.31.25.134
-i-08d39682277820162
-2020-11-19
-10:24:49
-TERMINATE
-i-0923ce1f9299cb334 AMD64 LINUX EU-CENTRAL-1B AMI-091B7D4CECC079C60 I-0923CE1F9299CB334 M5.LARGE AWS EU-CENTRAL-1 I-0923CE1F9299CB334
-172.31.26.105
-i-0923ce1f9299cb334
-2020-11-20
-10:26:00
-TERMINATE
-i-09244c27adc64e18f ui-tests-epmcmbibpc-312-4605519376394168113 (draft-8d8580e5) AMD64 LINUX EU-CENTRAL-1C AMI-091B7D4CECC079C60 I-09244C27ADC64E18F M5.LARGE AWS EU-CENTRAL-1 I-09244C27ADC64E18F RUN ID 48663
-172.31.40.148
-i-09244c27adc64e18f
-2020-11-26
-12:59:24
-TERMINATE
-i-0a9c49758de7b4565 SimplePipe (draft-d72365b5) AMD64 LINUX EU-CENTRAL-1B AMI-091B7D4CECC079C60 I-0A9C49758DE7B4565 M5.LARGE AWS EU-CENTRAL-1 I-0A9C49758DE7B4565 RUN ID 48655
-172.31.17.199
-i-0a9c49758de7b4565
-2020-11-26
-12:26:23
-TERMINATE
-i-0ab7142613261d4c9 AMD64 LINUX EU-CENTRAL-1C AMI-091B7D4CECC079C60 I-0AB7142613261D4C9 M5.LARGE AWS EU-CENTRAL-1 I-0AB7142613261D4C9
-172.31.46.61
-i-0ab7142613261d4c9
-2020-11-20
-10:30:16
-TERMINATE
-i-0afe487b6d01259c1 AMD64 LINUX EU-CENTRAL-1B AMI-091B7D4CECC079C60 I-0AFE487B6D01259C1 M5.LARGE AWS EU-CENTRAL-1 I-0AFE487B6D01259C1
-172.31.27.13
-i-0afe487b6d01259c1
-2020-11-20
-10:26:00
-TERMINATE
-i-0b2c7a6e45441b44f ubuntu:latest AMD64 LINUX EU-CENTRAL-1B AMI-091B7D4CECC079C60 I-0B2C7A6E45441B44F M5.LARGE AWS EU-CENTRAL-1 I-0B2C7A6E45441B44F RUN ID 48622
-172.31.20.118
-i-0b2c7a6e45441b44f
-2020-11-26
-10:41:43
-TERMINATE
-i-0b3430654186775b5 ubuntu:latest AMD64 LINUX EU-CENTRAL-1A AMI-091B7D4CECC079C60 I-0B3430654186775B5 M5.XLARGE AWS EU-CENTRAL-1 I-0B3430654186775B5 RUN ID 48659
-172.31.9.165
-i-0b3430654186775b5
-2020-11-26
-12:28:06
-TERMINATE
-i-0bc108ba65cc2de7b ubuntu:16.04 PAUSED AMD64 LINUX EU-CENTRAL-1A AMI-091B7D4CECC079C60 I-0BC108BA65CC2DE7B M5.LARGE AWS EU-CENTRAL-1 I-0BC108BA65CC2DE7B RUN ID 47952
-172.31.8.19
-i-0bc108ba65cc2de7b
-2020-11-19
-15:17:29
-TERMINATE
-i-0c5f27e488181e019 ubuntu:latest AMD64 LINUX EU-CENTRAL-1B AMI-091B7D4CECC079C60 I-0C5F27E488181E019 M5.LARGE AWS EU-CENTRAL-1 I-0C5F27E488181E019 RUN ID 48643
-172.31.16.60
-i-0c5f27e488181e019
-2020-11-26
-12:35:59
-TERMINATE
-i-0cd8701240fe20145 SimplePipe (draft-c08f0588) AMD64 LINUX EU-CENTRAL-1B AMI-091B7D4CECC079C60 I-0CD8701240FE20145 M5.LARGE AWS EU-CENTRAL-1 I-0CD8701240FE20145 RUN ID 48656
-172.31.28.21
-i-0cd8701240fe20145
-2020-11-26
-12:27:22
-TERMINATE
-i-0d9543ba6f8eeb5cb ubuntu:16.04 PAUSED AMD64 LINUX EU-CENTRAL-1A AMI-091B7D4CECC079C60 I-0D9543BA6F8EEB5CB M5.LARGE AWS EU-CENTRAL-1 I-0D9543BA6F8EEB5CB RUN ID 47929
-172.31.14.99
-i-0d9543ba6f8eeb5cb
-2020-11-19
-11:16:49
-TERMINATE
-i-0ec60c7b7c39b32e3 ubuntu:19.04 AMD64 LINUX EU-CENTRAL-1C AMI-091B7D4CECC079C60 I-0EC60C7B7C39B32E3 M5.LARGE AWS EU-CENTRAL-1 I-0EC60C7B7C39B32E3 RUN ID 48647
-172.31.42.71
-i-0ec60c7b7c39b32e3
-2020-11-26
-12:44:18
-TERMINATE
-i-0f518c8ca91d94f2b ubuntu:16.04 AMD64 LINUX EU-CENTRAL-1B AMI-091B7D4CECC079C60 I-0F518C8CA91D94F2B M5.LARGE AWS EU-CENTRAL-1 I-0F518C8CA91D94F2B RUN ID 48629
-172.31.29.22
-i-0f518c8ca91d94f2b
-2020-11-26
-13:05:55
-TERMINATE
-i-0fbcab23e844f9f97 AMD64 LINUX EU-CENTRAL-1C AMI-091B7D4CECC079C60 I-0FBCAB23E844F9F97 M5.LARGE AWS EU-CENTRAL-1 I-0FBCAB23E844F9F97
-172.31.33.227
-i-0fbcab23e844f9f97
-2020-11-20
-10:30:14
-TERMINATE
-12
-Cluster state&lt;/body&gt;.} has mismatched size.
-Expected size: greater than 1.
-Actual size: 0.
-Screenshot: /headless/e2e/gui/build/reports/tests/screenshot-4600652992345918994.png.
-	at com.epam.pipeline.autotests.utils.LazyWebElementsCollection.retrieveElements(LazyWebElementsCollection.java:79)
-	at com.epam.pipeline.autotests.utils.LazyWebElementsCollection.lambda$getElements$0(LazyWebElementsCollection.java:55)
-	at java.util.Optional.orElseGet(Optional.java:267)
-	at com.epam.pipeline.autotests.utils.LazyWebElementsCollection.getElements(LazyWebElementsCollection.java:54)
-	at com.codeborne.selenide.impl.SelenideElementIterator.hasNext(SelenideElementIterator.java:17)
-	at java.lang.Iterable.forEach(Iterable.java:74)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensureAll(AccessObject.java:203)
-	at com.epam.pipeline.autotests.RunPipelineTest.clusterNodePageShouldBeValid(RunPipelineTest.java:243)
+<pre>Element should contains messages {By.className: ReactVirtualized__List}
+Element: '&lt;div aria-label=&quot;grid&quot; aria-readonly=&quot;true&quot; class=&quot;ReactVirtualized__Grid ReactVirtualized__List log__logs-table&quot; role=&quot;grid&quot; tabindex=&quot;0&quot;&gt;019:[2020-11-27 09:11:51] COMMON_REPO_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4601642873405720652-48770/CommonRepo
+020:[2020-11-27 09:11:51] Creating default common code directory at /runs/ui-tests-epmcmbibpc-100-4601642873405720652-48770/CommonRepo
+021:[2020-11-27 09:11:51] LOG_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4601642873405720652-48770/logs
+022:[2020-11-27 09:11:51] Creating default logs directory at /runs/ui-tests-epmcmbibpc-100-4601642873405720652-48770/logs
+023:[2020-11-27 09:11:51] TMP_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4601642873405720652-48770/tmp
+024:[2020-11-27 09:11:51] Creating default tmp directory at /runs/ui-tests-epmcmbibpc-100-4601642873405720652-48770/tmp
+025:[2020-11-27 09:11:51] ANALYSIS_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4601642873405720652-48770/analysis
+026:[2020-11-27 09:11:51] Creating default analysis directory at /runs/ui-tests-epmcmbibpc-100-4601642873405720652-48770/analysis
+027:[2020-11-27 09:11:51] INPUT_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4601642873405720652-48770/input
+028:[2020-11-27 09:11:51] Creating default input directory at /runs/ui-tests-epmcmbibpc-100-4601642873405720652-48770/input
+029:[2020-11-27 09:11:51] CONFIG_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4601642873405720652-48770/config
+030:[2020-11-27 09:11:51] Creating default config directory at /runs/ui-tests-epmcmbibpc-100-4601642873405720652-48770/config
+031:[2020-11-27 09:11:51] SCRIPTS_DIR is not defined, setting to /runs/ui-tests-epmcmbibpc-100-4601642873405720652-48770/scripts
+032:[2020-11-27 09:11:51] Creating default scripts directory at /runs/ui-tests-epmcmbibpc-100-4601642873405720652-48770/scripts. Please use 'SCRIPTS_DIR' variable to run pipeline script
+033:[2020-11-27 09:11:51] SHARED_FOLDER is not defined, setting to /common
+034:[2020-11-27 09:11:51] SHARED_WORK_FOLDER is not defined, setting to /common/workdir
+035:[2020-11-27 09:11:51] PUBLISH_SHARED_FOLDER is not defined, setting to /to-be-shared
+036:[2020-11-27 09:11:51] DEFAULT_HOSTFILE is not defined, setting to /common/hostfile
+037:[2020-11-27 09:11:51] REPOSITORY_MOUNT is not defined, setting to /code-repository
+038:[2020-11-27 09:11:51] Cleaning any data in common repository mount point directory: /code-repository
+039:[2020-11-27 09:11:51] MAX_PROCS_LIMIT is not defined, setting to 65536
+040:[2020-11-27 09:11:51] MAX_NOPEN_LIMIT is not defined, setting to 65536
+041:[2020-11-27 09:11:51] CP_CAP_ENV_UMASK is not defined, setting to 0002
+042:[2020-11-27 09:11:51] CP_CAP_SUDO_ENABLE is not defined, setting to true&lt;/div&gt;'
+Actual value: Following messages wasn't found in log:
+Creating default run directory at /runs/ui-tests-epmcmbibpc-100-4601642873405720652-48770
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1606468609752.19.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1606468609752.19.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy13.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:185)
+	at com.epam.pipeline.autotests.RunPipelineTest.logShouldBeValid(RunPipelineTest.java:190)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -277,88 +145,88 @@ Screenshot: /headless/e2e/gui/build/reports/tests/screenshot-4600652992345918994
 </thead>
 <tr>
 <td class="success">activePipelineShouldBeOpenedFromNodeInfo - EPMCMBIBPC-302</td>
-<td>1.416s</td>
+<td>1.207s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">clusterNodePageShouldBeValid - EPMCMBIBPC-267</td>
-<td>8m29.81s</td>
-<td class="failures">failed</td>
+<td class="success">clusterNodePageShouldBeValid - EPMCMBIBPC-267</td>
+<td>9.902s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">cmdTemplateShouldBeCorrect - EPMCMBIBPC-306</td>
-<td>18.195s</td>
+<td>16.762s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">instanceTabShouldBeValid - EPMCMBIBPC-307</td>
-<td>0.657s</td>
+<td>0.580s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">logShouldBeValid - EPMCMBIBPC-309</td>
-<td>4m42.21s</td>
-<td class="success">passed</td>
+<td class="failures">logShouldBeValid - EPMCMBIBPC-309</td>
+<td>4m48.85s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">nodePageShouldBeValid - EPMCMBIBPC-301</td>
-<td>12.528s</td>
+<td>4.421s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pipelineLogPageShouldBeValid - EPMCMBIBPC-305</td>
-<td>2m58.80s</td>
+<td>2m59.01s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pipelineRunFormShouldBeValid - EPMCMBIBPC-299</td>
-<td>17.171s</td>
+<td>16.542s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">runShouldNotAppearInActiveRuns - EPMCMBIBPC-312</td>
-<td>3m8.84s</td>
+<td>3m8.97s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldContainCorrectNode - EPMCMBIBPC-304</td>
-<td>2m37.07s</td>
+<td>3m0.02s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldCreatePipelineFromPythonTemplate - EPMCMBIBPC-298</td>
-<td>10.177s</td>
+<td>9.810s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">shouldLaunchPipeline - EPMCMBIBPC-100</td>
-<td>20.712s</td>
+<td>19.823s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">shouldNavigateToTheNode - EPMCMBIBPC-311</td>
-<td>0.701s</td>
-<td class="success">passed</td>
+<td class="skipped">shouldNavigateToTheNode</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">timingsShouldBeValid - EPMCMBIBPC-310</td>
-<td>9.044s</td>
-<td class="success">passed</td>
+<td class="skipped">timingsShouldBeValid</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 </table>
 </div>
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 48654 from [48654]
-Returns latest run with runId 48654 from [48654]
-Returns latest run with runId 48654 from [48654]
-Returns latest run with runId 48654 from [48654]
-Returns latest run with runId 48654 from [48654]
-Returns latest run with runId 48654 from [48654]
-Returns latest run with runId 48663 from [48654, 48663]
-Returns latest run with runId 48663 from [48654, 48663]
-Returns latest run with runId 48663 from [48654, 48663]
+<pre>Returns latest run with runId 48770 from [48770]
+Returns latest run with runId 48770 from [48770]
+Returns latest run with runId 48770 from [48770]
+Returns latest run with runId 48770 from [48770]
+Returns latest run with runId 48770 from [48770]
+Returns latest run with runId 48770 from [48770]
+Returns latest run with runId 48771 from [48770, 48771]
+Returns latest run with runId 48771 from [48770, 48771]
+Returns latest run with runId 48771 from [48770, 48771]
 </pre>
 </span>
 </div>
@@ -370,7 +238,7 @@ Returns latest run with runId 48663 from [48654, 48663]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 26, 2020 5:18:02 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 27, 2020 1:53:13 PM</p>
 </div>
 </div>
 </body>
