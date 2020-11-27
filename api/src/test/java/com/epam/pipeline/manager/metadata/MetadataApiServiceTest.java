@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.metadata;
 
+import com.epam.pipeline.acl.metadata.MetadataApiService;
 import com.epam.pipeline.app.TestApplicationWithAclSecurity;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;

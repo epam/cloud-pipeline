@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.metadata;
+package com.epam.pipeline.acl.metadata;
 
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
+import com.epam.pipeline.manager.metadata.CategoricalAttributeManager;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;

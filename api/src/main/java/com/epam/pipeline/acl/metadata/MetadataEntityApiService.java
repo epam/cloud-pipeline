@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.metadata;
+package com.epam.pipeline.acl.metadata;
 
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.metadata.MetadataEntityVO;
@@ -24,6 +24,9 @@ import com.epam.pipeline.entity.metadata.MetadataClassDescription;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.MetadataField;
 import com.epam.pipeline.entity.metadata.MetadataFilter;
+import com.epam.pipeline.manager.metadata.MetadataDownloadManager;
+import com.epam.pipeline.manager.metadata.MetadataEntityManager;
+import com.epam.pipeline.manager.metadata.MetadataUploadManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -129,7 +132,7 @@ public class MetadataEntityApiService {
     public Collection<MetadataClassDescription> getMetadataFields(Long folderId) {
         return metadataEntityManager.getMetadataFields(folderId);
     }
-
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     @PreAuthorize("hasRole('ADMIN') OR (hasRole('ENTITIES_MANAGER') AND hasPermission(#parentId, "
             + "'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
     public List<MetadataEntity> uploadMetadataFromFile(Long parentId, MultipartFile file) {

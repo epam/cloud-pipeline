@@ -17,7 +17,6 @@
 package com.epam.pipeline.test.creator.metadata;
 
 import com.epam.pipeline.controller.PagedResult;
-import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.controller.vo.metadata.MetadataEntityVO;
@@ -31,11 +30,14 @@ import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.MetadataField;
 import com.epam.pipeline.entity.metadata.MetadataFilter;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.security.acl.AclClass;
 
 import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 
 public final class MetadataCreatorUtils {
@@ -92,10 +94,62 @@ public final class MetadataCreatorUtils {
 
     public static EntityVO getEntityVO() {
         return new EntityVO();
+
+    public static CategoricalAttribute getCategoricalAttribute() {
+        return new CategoricalAttribute(TEST_STRING, Collections.singletonList(new CategoricalAttributeValue()));
+    }
+
+    public static MetadataEntry getMetadataEntry(final EntityVO entityVO) {
+        final MetadataEntry metadataEntry = new MetadataEntry();
+        metadataEntry.setEntity(entityVO);
+        return metadataEntry;
+    }
+
+    public static MetadataVO getMetadataVO(final AclClass aclClass) {
+        final MetadataVO metadataVO = new MetadataVO();
+        metadataVO.setEntity(new EntityVO(ID, aclClass));
+        return metadataVO;
+    }
+
+    public static MetadataEntryWithIssuesCount getMetadataEntryWithIssuesCount(final EntityVO entityVO) {
+        final MetadataEntryWithIssuesCount entry = new MetadataEntryWithIssuesCount();
+        entry.setEntity(entityVO);
+        return entry;
     }
 
     public static MetadataClass getMetadataClass() {
         return new MetadataClass();
+    }
+
+    public static MetadataEntity getMetadataEntity(final Long id, final Folder parent) {
+        final MetadataEntity metadataEntity = new MetadataEntity();
+        metadataEntity.setId(id);
+        metadataEntity.setParent(parent);
+        return metadataEntity;
+    }
+
+    public static MetadataEntityVO getMetadataEntityVO(final Long id) {
+        final MetadataEntityVO entityVO = new MetadataEntityVO();
+        entityVO.setParentId(id);
+        return entityVO;
+    }
+
+    public static PagedResult<List<MetadataEntity>> getPagedResult() {
+        return new PagedResult<>();
+    }
+
+    public static MetadataFilter getMetadataFilter(final Long id) {
+        final MetadataFilter metadataFilter = new MetadataFilter();
+        metadataFilter.setFolderId(id);
+        return metadataFilter;
+    }
+
+    public static MetadataField getMetadataField() {
+        return new MetadataField();
+    }
+
+    public static MetadataClassDescription getMetadataClassDescription() {
+        return new MetadataClassDescription();
     }
 
     public static MetadataEntity getMetadataEntity() {

@@ -23,7 +23,7 @@ import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.security.acl.AclClass;
-import com.epam.pipeline.manager.metadata.MetadataApiService;
+import com.epam.pipeline.acl.metadata.MetadataApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
