@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller.vo;
 
 import com.epam.pipeline.entity.security.acl.AclClass;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -24,6 +25,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@EqualsAndHashCode
 public class PermissionGrantVO extends PermissionVO {
     private AclClass aclClass;
     private Long id;
