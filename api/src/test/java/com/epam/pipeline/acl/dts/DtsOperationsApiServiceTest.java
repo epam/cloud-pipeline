@@ -59,7 +59,7 @@ public class DtsOperationsApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser()
+    @WithMockUser
     public void shouldListDtsDataStorageForUser() {
         doReturn(listing).when(mockDtsListingManager).list(TEST_STRING, ID, TEST_INT, TEST_STRING);
 
@@ -68,7 +68,7 @@ public class DtsOperationsApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(roles = SIMPLE_USER)
-    public void shouldDenyListDtsDataStorageWhenRolesAreNotValid() {
+    public void shouldDenyListDtsDataStorageWithoutUserRole() {
         doReturn(listing).when(mockDtsListingManager).list(TEST_STRING, ID, TEST_INT, TEST_STRING);
 
         assertThrows(AccessDeniedException.class, () ->
@@ -84,7 +84,7 @@ public class DtsOperationsApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser()
+    @WithMockUser
     public void shouldFindSubmissionForUser() {
         doReturn(dtsSubmission).when(mockDtsSubmissionManager).findSubmission(ID, ID);
 
@@ -93,7 +93,7 @@ public class DtsOperationsApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(roles = SIMPLE_USER)
-    public void shouldDenyFindSubmissionWhenRolesAreNotValid() {
+    public void shouldDenyFindSubmissionWithoutUserRole() {
         doReturn(dtsSubmission).when(mockDtsSubmissionManager).findSubmission(ID, ID);
 
         assertThrows(AccessDeniedException.class, () ->
@@ -109,7 +109,7 @@ public class DtsOperationsApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser()
+    @WithMockUser
     public void shouldGetClusterConfigurationForUser() {
         doReturn(configuration).when(mockDtsSubmissionManager).getClusterConfiguration(ID);
 
@@ -118,7 +118,7 @@ public class DtsOperationsApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(roles = SIMPLE_USER)
-    public void shouldDenyGetClusterConfigurationWhenRolesAreNotValid() {
+    public void shouldDenyGetClusterConfigurationWithoutUserRole() {
         doReturn(configuration).when(mockDtsSubmissionManager).getClusterConfiguration(ID);
 
         assertThrows(AccessDeniedException.class, () ->

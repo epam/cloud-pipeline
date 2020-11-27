@@ -55,7 +55,7 @@ public class DtsRegistryApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser()
+    @WithMockUser
     public void shouldLoadAllDtsRegistriesForUser() {
         doReturn(dtsRegistries).when(mockDtsRegistryManager).loadAll();
 
@@ -64,7 +64,7 @@ public class DtsRegistryApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(roles = SIMPLE_USER)
-    public void shouldDenyLoadAllDtsRegistriesWhenRolesAreNotValid() {
+    public void shouldDenyLoadAllDtsRegistriesWithoutUserRole() {
         doReturn(dtsRegistries).when(mockDtsRegistryManager).loadAll();
 
         assertThrows(AccessDeniedException.class, () -> dtsRegistryApiService.loadAll());
@@ -79,7 +79,7 @@ public class DtsRegistryApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser()
+    @WithMockUser
     public void shouldLoadDtsRegistryForUser() {
         doReturn(dtsRegistry).when(mockDtsRegistryManager).load(ID);
 
@@ -88,7 +88,7 @@ public class DtsRegistryApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(roles = SIMPLE_USER)
-    public void shouldDenyLoadDtsRegistryWhenRolesAreNotValid() {
+    public void shouldDenyLoadDtsRegistryWithoutUserRole() {
         doReturn(dtsRegistry).when(mockDtsRegistryManager).load(ID);
 
         assertThrows(AccessDeniedException.class, () -> dtsRegistryApiService.load(ID));
@@ -103,7 +103,7 @@ public class DtsRegistryApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser()
+    @WithMockUser
     public void shouldCreateDtsRegistryForUser() {
         doReturn(dtsRegistry).when(mockDtsRegistryManager).create(dtsRegistryVO);
 
@@ -112,7 +112,7 @@ public class DtsRegistryApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(roles = SIMPLE_USER)
-    public void shouldDenyCreateDtsRegistryWhenRolesAreNotValid() {
+    public void shouldDenyCreateDtsRegistryWithoutUserRole() {
         doReturn(dtsRegistry).when(mockDtsRegistryManager).create(dtsRegistryVO);
 
         assertThrows(AccessDeniedException.class, () -> dtsRegistryApiService.create(dtsRegistryVO));
@@ -127,7 +127,7 @@ public class DtsRegistryApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser()
+    @WithMockUser
     public void shouldUpdateDtsRegistryForUser() {
         doReturn(dtsRegistry).when(mockDtsRegistryManager).update(ID, dtsRegistryVO);
 
@@ -136,7 +136,7 @@ public class DtsRegistryApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(roles = SIMPLE_USER)
-    public void shouldDenyUpdateDtsRegistryWhenRolesAreNotValid() {
+    public void shouldDenyUpdateDtsRegistryWithoutUserRole() {
         doReturn(dtsRegistry).when(mockDtsRegistryManager).update(ID, dtsRegistryVO);
 
         assertThrows(AccessDeniedException.class, () -> dtsRegistryApiService.update(ID, dtsRegistryVO));
@@ -151,7 +151,7 @@ public class DtsRegistryApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser()
+    @WithMockUser
     public void shouldDeleteDtsRegistryForUser() {
         doReturn(dtsRegistry).when(mockDtsRegistryManager).delete(ID);
 
@@ -160,7 +160,7 @@ public class DtsRegistryApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(roles = SIMPLE_USER)
-    public void shouldDenyDeleteDtsRegistryWhenRolesAreNotValid() {
+    public void shouldDenyDeleteDtsRegistryWithoutUserRole() {
         doReturn(dtsRegistry).when(mockDtsRegistryManager).delete(ID);
 
         assertThrows(AccessDeniedException.class, () -> dtsRegistryApiService.delete(ID));
