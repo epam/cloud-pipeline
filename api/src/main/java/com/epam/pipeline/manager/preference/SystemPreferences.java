@@ -132,8 +132,19 @@ public class SystemPreferences {
             "storage.mounts.per.gb.ratio", null, DATA_STORAGE_GROUP, isNullOrGreaterThan(0));
     public static final BooleanPreference DEFAULT_USER_DATA_STORAGE_ENABLED =
         new BooleanPreference("storage.user.home.auto", false, DATA_STORAGE_GROUP, pass);
-    public static final LongPreference DEFAULT_USER_DATA_STORAGE_PARENT_FOLDER = new LongPreference(
-        "storage.user.home.auto.parent.folder", null, DATA_STORAGE_GROUP, isGreaterThan(0));
+    public static final StringPreference DEFAULT_USER_DATA_STORAGE_TEMPLATE =
+        new StringPreference("user.default.storage.template",
+                             "{ \n"
+                             + "    \"datastorage\": {\n"
+                             + "        \"parentFolderId\": 1,\n"
+                             + "        \"name\": \"@@-home\",\n"
+                             + "        \"description\": \"Home folder for user @@\"\n"
+                             + "    },\n"
+                             + "    \"permissions\": [],\n"
+                             + "    \"metadata\": {}\n"
+                             + "}",
+                             DATA_STORAGE_GROUP,
+                             PreferenceValidators.isNotBlank);
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'

@@ -24,10 +24,8 @@ import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
-import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.CustomControl;
@@ -38,8 +36,8 @@ import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.exception.DefaultStorageCreationException;
+import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
-import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -54,7 +52,6 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -106,13 +103,10 @@ public class UserManager {
     private MetadataManager metadataManager;
 
     @Autowired
-    private FolderManager folderManager;
-
-    @Autowired
     private GrantPermissionManager permissionManager;
 
-    @Value("${templates.user.home.storage}")
-    private  String defaultUserStorageTemplateName;
+    @Autowired
+    private DataStorageManager dataStorageManager;
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
@@ -121,7 +115,7 @@ public class UserManager {
                                    Long defaultStorageId) {
         final PipelineUser newUser = createUser(name, roles, groups, attributes);
         try {
-            return createUserDefaultFolder(defaultStorageId, newUser);
+            return createUserDefaultStorage(defaultStorageId, newUser);
         } catch (RuntimeException e) {
             throw new DefaultStorageCreationException(
                 messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION, name, e.getMessage()));
@@ -129,27 +123,17 @@ public class UserManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineUser createUserDefaultFolder(final Long defaultStorageId, final PipelineUser newUser) {
+    public PipelineUser createUserDefaultStorage(final Long defaultStorageId, final PipelineUser newUser) {
         final boolean shouldCreateDefaultHome =
             preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_ENABLED);
         final Long storageId = Optional.ofNullable(defaultStorageId)
-            .orElseGet(() -> {
-                if (shouldCreateDefaultHome) {
-                    final List<AbstractDataStorage> defaultFolderStorage =
-                        ListUtils.emptyIfNull(createUserDefaultFolder(newUser).getStorages());
-                    if (defaultFolderStorage.size() != 1) {
-                        log.warn(messageHelper.getMessage(
-                            MessageConstants.ERROR_DEFAULT_STORAGE_CREATION_ILLEGAL_NUMBER_OF_STORAGE,
-                            defaultFolderStorage.size()));
-                    } else {
-                        return defaultFolderStorage.get(0).getId();
-                    }
-                }
-                return null;
-            });
+            .orElse(shouldCreateDefaultHome
+                    ? dataStorageManager.createDefaultStorageForUser(newUser.getUserName()).getId()
+                    : null);
         if (storageId == null) {
             return newUser;
         }
+        grantOwnerPermissionsToUser(newUser.getUserName(), storageId);
         newUser.setDefaultStorageId(storageId);
         return userDao.updateUser(newUser);
     }
@@ -161,6 +145,7 @@ public class UserManager {
      * @param userVO specifies user to create
      * @return created user
      */
+    @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser createUser(PipelineUserVO userVO) {
         return createUser(userVO.getUserName(), userVO.getRoleIds(), null, null, null);
     }
@@ -453,27 +438,11 @@ public class UserManager {
         return userDao.createUser(user, userRoles);
     }
 
-    private Folder createUserDefaultFolder(final PipelineUser user) {
-        final Folder folder = new Folder();
-        final Long parentId =
-            preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_PARENT_FOLDER);
-        Assert.notNull(parentId, messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_NULL_PARENT_FOLDER));
-        folder.setParentId(parentId);
-        final String userName = user.getUserName();
-        folder.setName(userName);
-        final Folder defaultFolder = folderManager.createFromTemplate(folder, defaultUserStorageTemplateName, false);
-        grantOwnerPermissionsToUser(userName, defaultFolder);
-        return defaultFolder;
-    }
-
-    private void grantOwnerPermissionsToUser(final String userName, final Folder defaultFolder) {
+    private void grantOwnerPermissionsToUser(final String userName, final Long storageId) {
         final Authentication originalAuth = authManager.getAuthentication();
         if (originalAuth == null) {
             setAuthAsUser(userName);
         }
-        final Long folderId = defaultFolder.getId();
-        permissionManager.changeOwner(folderId, AclClass.FOLDER, userName);
-        final Long storageId = defaultFolder.getStorages().get(0).getId();
         permissionManager.changeOwner(storageId, AclClass.DATA_STORAGE, userName);
         if (originalAuth == null) {
             SecurityContextHolder.getContext().setAuthentication(null);

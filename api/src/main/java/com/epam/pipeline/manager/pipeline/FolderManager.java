@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -134,6 +134,10 @@ public class FolderManager {
         return crudManager.load(id);
     }
 
+    public boolean exists(final Long id) {
+        return crudManager.searchById(id).isPresent();
+    }
+
     public Folder loadByNameOrId(String pathOrIdentifier) {
         return crudManager.loadByNameOrId(pathOrIdentifier);
     }
@@ -145,12 +149,7 @@ public class FolderManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public Folder createFromTemplate(final Folder folder, final String templateName) {
-        return createFromTemplate(folder, templateName, true);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
-    public Folder createFromTemplate(final Folder folder, final String templateName, final boolean failOnExisting) {
-        return folderTemplateManager.create(folder, templateName, failOnExisting);
+        return folderTemplateManager.create(folder, templateName);
     }
 
     public Folder loadTree() {

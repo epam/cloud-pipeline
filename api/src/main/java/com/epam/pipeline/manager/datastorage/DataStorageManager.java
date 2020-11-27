@@ -18,8 +18,11 @@ package com.epam.pipeline.manager.datastorage;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.EntityVO;
+import com.epam.pipeline.controller.vo.MetadataVO;
+import com.epam.pipeline.controller.vo.PermissionGrantVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
@@ -52,21 +55,27 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.parameter.DataStorageLink;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.user.StorageContainer;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.pipeline.FolderTemplateManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.mapper.PermissionGrantVOMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -150,6 +159,12 @@ public class DataStorageManager implements SecuredEntityManager {
 
     @Autowired
     private DataStoragePathLoader pathLoader;
+
+    @Autowired
+    private GrantPermissionManager permissionManager;
+
+    @Autowired
+    private PermissionGrantVOMapper permissionGrantVOMapper;
 
     private AbstractDataStorageFactory dataStorageFactory =
             AbstractDataStorageFactory.getDefaultDataStorageFactory();
@@ -341,6 +356,30 @@ public class DataStorageManager implements SecuredEntityManager {
         dataStorageDao.createDataStorage(dataStorage);
 
         return createdStorage;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public AbstractDataStorage createDefaultStorageForUser(final String userName) {
+        final String dataStorageTemplateJson =
+            preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_TEMPLATE);
+        final DataStorageTemplate dataStorageTemplate = JsonMapper.parseData(
+            dataStorageTemplateJson.replaceAll(FolderTemplateManager.TEMPLATE_REPLACE_MARK, userName),
+            new TypeReference<DataStorageTemplate>() {});
+        if (!folderManager.exists(dataStorageTemplate.getDatastorage().getParentFolderId())) {
+            dataStorageTemplate.getDatastorage().setParentFolderId(null);
+        }
+        final AbstractDataStorage dataStorage =
+            create(dataStorageTemplate.getDatastorage(), true, true, true).getEntity();
+        if (!MapUtils.isEmpty(dataStorageTemplate.getMetadata())) {
+            updateDataStorageMetadata(dataStorageTemplate.getMetadata(), dataStorage.getId());
+        }
+        ListUtils.emptyIfNull(dataStorageTemplate.getPermissions()).forEach(permission -> {
+            PermissionGrantVO permissionGrantVO = permissionGrantVOMapper.toPermissionGrantVO(permission);
+            permissionGrantVO.setId(dataStorage.getId());
+            permissionGrantVO.setAclClass(AclClass.DATA_STORAGE);
+            permissionManager.setPermissions(permissionGrantVO);
+        });
+        return dataStorage;
     }
 
     private AbstractCloudRegion getDatastorageCloudRegionOrDefault(DataStorageVO dataStorageVO) {
@@ -986,5 +1025,12 @@ public class DataStorageManager implements SecuredEntityManager {
         } else {
             return dataStorageDao.loadDataStorageByNameOrPath(dataStorageName, dataStorageName);
         }
+    }
+
+    private void updateDataStorageMetadata(final Map<String, PipeConfValue> data, final Long storageId) {
+        MetadataVO metadataVO = new MetadataVO();
+        metadataVO.setData(data);
+        metadataVO.setEntity(new EntityVO(storageId, AclClass.DATA_STORAGE));
+        metadataManager.updateMetadataItemKeys(metadataVO);
     }
 }

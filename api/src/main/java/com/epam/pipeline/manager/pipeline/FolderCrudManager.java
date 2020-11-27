@@ -45,6 +45,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -111,18 +112,26 @@ public class FolderCrudManager implements SecuredEntityManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public Folder update(final Folder folder) {
-        return update(folder, true);
-    }
-
-    /**
-     * Updates a {@link Folder} specified by id. Should be used, when only the content
-     * of the folder should be updated, checks whether target folder exists already
-     * @param folder to update
-     * @return updated {@link Folder}
-     */
-    @Transactional(propagation = Propagation.REQUIRED)
-    public Folder updateContent(final Folder folder) {
-        return update(folder, false);
+        Folder dbFolder = load(folder.getId());
+        if (StringUtils.hasText(folder.getName())) {
+            dbFolder.setName(validateName(folder.getName()));
+        }
+        Long parentId = folder.getParentId();
+        Assert.isNull(loadByNameAndParentId(folder.getName(), parentId),
+                messageHelper.getMessage(MessageConstants.ERROR_FOLDER_NAME_EXISTS,
+                        folder.getName(), parentId));
+        if (parentId != null) {
+            Assert.isTrue(!dbFolder.getId().equals(parentId), messageHelper.getMessage(
+                    MessageConstants.ERROR_FOLDER_RECURSIVE_DEPENDENCY, folder.getId(), parentId));
+            boolean recursiveDependency = checkChildrenFolders(folder, parentId);
+            Assert.isTrue(!recursiveDependency,
+                    messageHelper.getMessage(MessageConstants.ERROR_FOLDER_RECURSIVE_DEPENDENCY,
+                            folder.getId(), parentId));
+            dbFolder.setParent(load(parentId));
+        }
+        dbFolder.setParentId(folder.getParentId());
+        folderDao.updateFolder(dbFolder);
+        return dbFolder;
     }
 
     /**
@@ -160,6 +169,10 @@ public class FolderCrudManager implements SecuredEntityManager {
         Assert.notNull(folder, messageHelper.getMessage(MessageConstants.ERROR_FOLDER_NOT_FOUND, id));
         folder.setHasMetadata(metadataManager.hasMetadata(new EntityVO(id, AclClass.FOLDER)));
         return folder;
+    }
+
+    public Optional<Folder> searchById(Long id) {
+        return Optional.ofNullable(folderDao.loadFolder(id));
     }
 
     /**
@@ -244,42 +257,6 @@ public class FolderCrudManager implements SecuredEntityManager {
                 .stream()
                 .collect(Collectors.toMap(Folder::getId, Function.identity()));
         return DaoHelper.fillFolder(folders, folders.get(id));
-    }
-
-    /**
-     * Updates a {@link Folder}
-     * @param folder folder to update
-     * @param nameShouldNotExist specify, whether folder with such name expected to exist or not
-     *                           (true - if folder shouldn't exist, false - otherwise)
-     * @return updated {@link Folder}
-     */
-    private Folder update(final Folder folder, final boolean nameShouldNotExist) {
-        final Folder dbFolder = load(folder.getId());
-        if (StringUtils.hasText(folder.getName())) {
-            dbFolder.setName(validateName(folder.getName()));
-        }
-        final Long parentId = folder.getParentId();
-        if (nameShouldNotExist) {
-            Assert.isNull(loadByNameAndParentId(folder.getName(), parentId),
-                          messageHelper.getMessage(MessageConstants.ERROR_FOLDER_NAME_EXISTS,
-                                                   folder.getName(), parentId));
-        } else {
-            Assert.notNull(loadByNameAndParentId(folder.getName(), parentId),
-                           messageHelper.getMessage(MessageConstants.ERROR_FOLDER_NOT_FOUND,
-                                                    folder.getId()));
-        }
-        if (parentId != null) {
-            Assert.isTrue(!dbFolder.getId().equals(parentId),
-                          messageHelper.getMessage(MessageConstants.ERROR_FOLDER_RECURSIVE_DEPENDENCY,
-                                                   folder.getId(), parentId));
-            Assert.isTrue(!checkChildrenFolders(folder, parentId),
-                          messageHelper.getMessage(MessageConstants.ERROR_FOLDER_RECURSIVE_DEPENDENCY,
-                                                   folder.getId(), parentId));
-            dbFolder.setParent(load(parentId));
-        }
-        dbFolder.setParentId(folder.getParentId());
-        folderDao.updateFolder(dbFolder);
-        return dbFolder;
     }
 
     private String validateName(@NonNull String name) {
