@@ -68,7 +68,6 @@ public class EntityApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadEntityWhenPermissionIsGranted() {
-        s3bucket.setAclClass(AclClass.DATA_STORAGE);
         initAclEntity(s3bucket, AclPermission.READ);
         doReturn(s3bucket).when(mockEntityManager).loadByNameOrId(AclClass.DATA_STORAGE, TEST_STRING);
         doReturn(s3bucket).when(mockEntityManager).load(AclClass.DATA_STORAGE, ID);
@@ -79,7 +78,6 @@ public class EntityApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenyLoadEntityWhenPermissionIsNotGranted() {
-        s3bucket.setAclClass(AclClass.DATA_STORAGE);
         initAclEntity(s3bucket);
         doReturn(s3bucket).when(mockEntityManager).loadByNameOrId(AclClass.DATA_STORAGE, TEST_STRING);
         doReturn(s3bucket).when(mockEntityManager).load(AclClass.DATA_STORAGE, ID);
@@ -98,7 +96,7 @@ public class EntityApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser()
+    @WithMockUser
     public void shouldDenyLoadAvailableEntityWhenRoleIsNotValid() {
         doReturn(aclEntityMap).when(mockHierarchicalEntityManager).loadAvailable(aclSid, AclClass.DATA_STORAGE);
 
