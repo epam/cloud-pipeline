@@ -185,12 +185,8 @@ configure_pe() {
     local pe_name="${1:-local}"
     local pe_alloc_rule="${2:-\$pe_slots}"
     local pe_job_is_first_task="${3:-TRUE}"
-    local pe_slots="${4}"
+    local pe_slots="${4:-999999}"
 
-    if [ -z "$pe_slots" ]; then
-        pe_slots=${CLOUD_PIPELINE_CLUSTER_CORES:-999999}
-    fi
-    
     cat > pe.conf <<EOL
         pe_name            $pe_name
         slots              $pe_slots
@@ -295,7 +291,9 @@ export SGE_CELL="default"
 export SGE_CLUSTER_NAME="CLOUD_PIPELINE"
 export CP_CAP_SGE_QUEUE_NAME="${CP_CAP_SGE_QUEUE_NAME:-main.q}"
 export CP_CAP_SGE_PE_NAME="${CP_CAP_SGE_PE_NAME:-local}"
+export CP_CAP_SGE_PE_SLOTS="${CP_CAP_SGE_PE_SLOTS:-999999}"
 export CP_CAP_SGE_PE_MPI_NAME="${CP_CAP_SGE_PE_MPI_NAME:-mpi}"
+export CP_CAP_SGE_PE_MPI_SLOTS="${CP_CAP_SGE_PE_MPI_SLOTS:-999999}"
 export CP_CAP_SGE_WORKER_FREE_CORES="${CP_CAP_SGE_WORKER_FREE_CORES:-0}"
 
 if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
@@ -312,7 +310,9 @@ echo "export SGE_CELL=$SGE_CELL" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export SGE_CLUSTER_NAME=$SGE_CLUSTER_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export CP_CAP_SGE_QUEUE_NAME=$CP_CAP_SGE_QUEUE_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export CP_CAP_SGE_PE_NAME=$CP_CAP_SGE_PE_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
+echo "export CP_CAP_SGE_PE_SLOTS=$CP_CAP_SGE_PE_SLOTS" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export CP_CAP_SGE_PE_MPI_NAME=$CP_CAP_SGE_PE_MPI_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
+echo "export CP_CAP_SGE_PE_MPI_SLOTS=$CP_CAP_SGE_PE_MPI_SLOTS" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export CP_CAP_SGE_WORKER_FREE_CORES=$CP_CAP_SGE_WORKER_FREE_CORES" >> $CP_CAP_SGE_MASTER_ENV_FILE
 cat $CP_CAP_SGE_MASTER_ENV_FILE >> /etc/cp_env.sh
 
@@ -481,11 +481,14 @@ delete_pe all
 # - Add a "threaded/smp" PE, which schedules all threads to a single machine
 configure_pe "$CP_CAP_SGE_PE_NAME" \
              "\$pe_slots" \
-             "TRUE"
+             "TRUE" \
+             "$CP_CAP_SGE_PE_SLOTS"
+
 # Add an "mpi" PE, which allows to spread processes across nodes
 configure_pe "$CP_CAP_SGE_PE_MPI_NAME" \
              "\$fill_up" \
-             "FALSE"
+             "FALSE" \
+             "$CP_CAP_SGE_PE_MPI_SLOTS"
 
 # Setup any additional SGE consumable resources if available
 sge_setup_resources "$HOSTNAME" "$SGE_MASTER_SETUP_TASK" "$_MASTER_WORKER_CORES"

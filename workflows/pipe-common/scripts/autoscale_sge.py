@@ -170,9 +170,6 @@ class GridEngine:
     _MAIN_Q = os.getenv('CP_CAP_SGE_QUEUE_NAME', 'main.q')
     _ALL_HOSTS = '@allhosts'
     _DELETE_HOST = 'qconf -de %s'
-    _SHOW_PARALLEL_ENVIRONMENTS = 'qconf -spl'
-    _SHOW_PARALLEL_ENVIRONMENT_SLOTS = 'qconf -sp %s | grep "^slots" | awk \'{print $2}\''
-    _REPLACE_PARALLEL_ENVIRONMENT_SLOTS = 'qconf -rattr pe slots %s %s'
     _SHOW_JOB_PARALLEL_ENVIRONMENT = 'qstat -j %s | grep "^parallel environment" | awk \'{print $3}\''
     _SHOW_JOB_PARALLEL_ENVIRONMENT_SLOTS = 'qstat -j %s | grep "^parallel environment" | awk \'{print $5}\''
     _SHOW_PE_ALLOCATION_RULE = 'qconf -sp %s | grep "^allocation_rule" | awk \'{print $2}\''
@@ -299,41 +296,6 @@ class GridEngine:
         :param queue: Queue that host is a part of.
         """
         self.cmd_executor.execute(GridEngine._QMOD_ENABLE % (queue, host))
-
-    def increase_parallel_environment_slots(self, slots):
-        """
-        Increases the number of parallel environment slots.
-
-        :param slots: Number of slots to append.
-        """
-        for pe in self.get_parallel_environments():
-            pe_slots = self.get_parallel_environment_slots(pe)
-            self.cmd_executor.execute(GridEngine._REPLACE_PARALLEL_ENVIRONMENT_SLOTS % (pe_slots + slots, pe))
-
-    def decrease_parallel_environment_slots(self, slots):
-        """
-        Decreases the number of parallel environment slots.
-
-        :param slots: Number of slots to subtract.
-        """
-        for pe in self.get_parallel_environments():
-            pe_slots = self.get_parallel_environment_slots(pe)
-            self.cmd_executor.execute(GridEngine._REPLACE_PARALLEL_ENVIRONMENT_SLOTS % (pe_slots - slots, pe))
-
-    def get_parallel_environments(self):
-        """
-        Returns number of the parallel environment slots.
-
-        """
-        return self.cmd_executor.execute_to_lines(GridEngine._SHOW_PARALLEL_ENVIRONMENTS)
-
-    def get_parallel_environment_slots(self, pe):
-        """
-        Returns number of the parallel environment slots.
-
-        :param pe: Parallel environment to return number of slots for.
-        """
-        return int(self.cmd_executor.execute(GridEngine._SHOW_PARALLEL_ENVIRONMENT_SLOTS % pe).strip())
 
     def get_pe_allocation_rule(self, pe):
         """
@@ -603,7 +565,6 @@ class GridEngineScaleUpHandler:
         self._add_worker_to_master_hosts(pod)
         self._await_worker_initialization(run_id)
         self._enable_worker_in_grid_engine(pod)
-        self._increase_parallel_environment_slots(instance_to_run.cpu)
         Logger.info('Additional worker with host=%s and instance type=%s has been created.' % (pod.name, instance_to_run.name), crucial=True)
 
         # todo: Some delay is needed for GE to submit task to a new host.
@@ -714,11 +675,6 @@ class GridEngineScaleUpHandler:
         Logger.warn(error_msg, crucial=True)
         raise ScalingError(error_msg)
 
-    def _increase_parallel_environment_slots(self, slots_to_append):
-        Logger.info('Increase number of parallel environment slots by %s.' % slots_to_append)
-        self.grid_engine.increase_parallel_environment_slots(slots_to_append)
-        Logger.info('Number of parallel environment slots was increased.')
-
 
 class GridEngineScaleDownHandler:
 
@@ -753,18 +709,11 @@ class GridEngineScaleDownHandler:
             Logger.info('Enable additional worker with host=%s again.' % child_host)
             self.grid_engine.enable_host(child_host)
             return False
-        child_host_slots = self.grid_engine.get_host_resource(child_host).cpu
         self._remove_host_from_grid_engine_configuration(child_host)
-        self._decrease_parallel_environment_slots(child_host_slots)
         self._stop_pipeline(child_host)
         self._remove_host_from_hosts(child_host)
         Logger.info('Additional worker with host=%s has been stopped.' % child_host, crucial=True)
         return True
-
-    def _decrease_parallel_environment_slots(self, slots_to_remove):
-        Logger.info('Decrease number of parallel environment slots by %s.' % slots_to_remove)
-        self.grid_engine.decrease_parallel_environment_slots(slots_to_remove)
-        Logger.info('Number of parallel environment slots was decreased.')
 
     def _remove_host_from_grid_engine_configuration(self, host):
         Logger.info('Remove additional worker with host=%s from GE cluster configuration.' % host)
