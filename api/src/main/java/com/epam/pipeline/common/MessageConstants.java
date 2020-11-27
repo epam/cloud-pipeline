@@ -331,6 +331,7 @@ public final class MessageConstants {
     public static final String ERROR_INVALID_METADATA_ENTITY_CLASS_ID = "error.invalid.metadata.entity.class.id";
     public static final String ERROR_METADATA_ENTITY_CLASS_NOT_FOUND = "error.metadata.entity.class.not.found";
     public static final String ERROR_METADATA_ENTITY_NOT_FOUND = "error.metadata.entity.not.found";
+    public static final String ERROR_METADATA_ENTITY_ALREADY_EXIST = "error.metadata.entity.already.exists";
     public static final String ERROR_METADATA_UPDATE_KEY_NOT_FOUND = "error.metadata.update.key.not.found";
     public static final String ERROR_INVALID_METADATA_FILTER = "error.invalid.metadata.filter";
     public static final String ERROR_METADATA_UPLOAD_CHANGED_TYPE = "error.metadata.upload.changed.type";
