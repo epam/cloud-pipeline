@@ -141,9 +141,7 @@ public class MetadataEntityManager implements SecuredEntityManager {
         Assert.notNull(metadataEntityVO.getParentId(),
                 messageHelper.getMessage(MessageConstants.ERROR_PARENT_REQUIRED));
         MetadataEntity metadataEntity = metadataEntityVO.convertToMetadataEntity();
-        if (metadataEntity.getParent() != null) {
-            folderManager.load(metadataEntity.getParent().getId());
-        }
+        folderManager.load(metadataEntity.getParent().getId());
         Long entityId = metadataEntity.getId();
         if (entityId != null) {
             MetadataEntity existingMetadataEntity = existingMetadataItem(entityId, false);
@@ -153,9 +151,15 @@ public class MetadataEntityManager implements SecuredEntityManager {
             }
             LOGGER.debug("Metadata entity with id %d was not found. A new one will be created.", entityId);
         }
-        metadataEntity.setExternalId(Optional.ofNullable(metadataEntity.getExternalId())
-                .filter(StringUtils::isNotBlank)
-                .orElseGet(() -> UUID.randomUUID().toString()));
+        String externalId = metadataEntity.getExternalId();
+        if (StringUtils.isNotBlank(externalId)) {
+            Optional<MetadataEntity> existingMetadataEntity = metadataEntityDao.loadByExternalId(
+                    metadataEntity.getParent().getId(), metadataEntity.getClassEntity().getName(), externalId);
+            Assert.isTrue(!existingMetadataEntity.isPresent(),
+                    messageHelper.getMessage(MessageConstants.ERROR_METADATA_ENTITY_ALREADY_EXIST, externalId));
+        } else {
+            metadataEntity.setExternalId(UUID.randomUUID().toString());
+        }
         metadataEntityDao.createMetadataEntity(metadataEntity);
         return metadataEntity;
     }
