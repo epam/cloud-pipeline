@@ -365,11 +365,17 @@ public class DataStorageManager implements SecuredEntityManager {
         final DataStorageTemplate dataStorageTemplate = JsonMapper.parseData(
             dataStorageTemplateJson.replaceAll(FolderTemplateManager.TEMPLATE_REPLACE_MARK, userName),
             new TypeReference<DataStorageTemplate>() {});
-        if (!folderManager.exists(dataStorageTemplate.getDatastorage().getParentFolderId())) {
+        final DataStorageVO dataStorageDetails = dataStorageTemplate.getDatastorage();
+        if (!folderManager.exists(dataStorageDetails.getParentFolderId())) {
             dataStorageTemplate.getDatastorage().setParentFolderId(null);
         }
-        final AbstractDataStorage dataStorage =
-            create(dataStorageTemplate.getDatastorage(), true, true, true).getEntity();
+        if (dataStorageDetails.getServiceType() == null) {
+            dataStorageDetails.setServiceType(StorageServiceType.OBJECT_STORAGE);
+        }
+        if (dataStorageDetails.getPath() == null) {
+            dataStorageDetails.setPath(adjustStoragePath(dataStorageDetails.getName(), null));
+        }
+        final AbstractDataStorage dataStorage = create(dataStorageDetails, true, true, true).getEntity();
         if (!MapUtils.isEmpty(dataStorageTemplate.getMetadata())) {
             updateDataStorageMetadata(dataStorageTemplate.getMetadata(), dataStorage.getId());
         }
