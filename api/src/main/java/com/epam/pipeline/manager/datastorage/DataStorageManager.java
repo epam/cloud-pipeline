@@ -21,8 +21,6 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.EntityVO;
-import com.epam.pipeline.controller.vo.MetadataVO;
-import com.epam.pipeline.controller.vo.PermissionGrantVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
@@ -71,11 +69,9 @@ import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
-import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -162,9 +158,6 @@ public class DataStorageManager implements SecuredEntityManager {
 
     @Autowired
     private GrantPermissionManager permissionManager;
-
-    @Autowired
-    private PermissionGrantVOMapper permissionGrantVOMapper;
 
     private AbstractDataStorageFactory dataStorageFactory =
             AbstractDataStorageFactory.getDefaultDataStorageFactory();
@@ -376,15 +369,10 @@ public class DataStorageManager implements SecuredEntityManager {
             dataStorageDetails.setPath(adjustStoragePath(dataStorageDetails.getName(), null));
         }
         final AbstractDataStorage dataStorage = create(dataStorageDetails, true, true, true).getEntity();
-        if (!MapUtils.isEmpty(dataStorageTemplate.getMetadata())) {
-            updateDataStorageMetadata(dataStorageTemplate.getMetadata(), dataStorage.getId());
-        }
-        ListUtils.emptyIfNull(dataStorageTemplate.getPermissions()).forEach(permission -> {
-            PermissionGrantVO permissionGrantVO = permissionGrantVOMapper.toPermissionGrantVO(permission);
-            permissionGrantVO.setId(dataStorage.getId());
-            permissionGrantVO.setAclClass(AclClass.DATA_STORAGE);
-            permissionManager.setPermissions(permissionGrantVO);
-        });
+        metadataManager
+            .updateEntityMetadata(dataStorageTemplate.getMetadata(), dataStorage.getId(), AclClass.DATA_STORAGE);
+        permissionManager
+            .setPermissionsToEntity(dataStorageTemplate.getPermissions(), dataStorage.getId(), AclClass.DATA_STORAGE);
         return dataStorage;
     }
 
@@ -1031,12 +1019,5 @@ public class DataStorageManager implements SecuredEntityManager {
         } else {
             return dataStorageDao.loadDataStorageByNameOrPath(dataStorageName, dataStorageName);
         }
-    }
-
-    private void updateDataStorageMetadata(final Map<String, PipeConfValue> data, final Long storageId) {
-        MetadataVO metadataVO = new MetadataVO();
-        metadataVO.setData(data);
-        metadataVO.setEntity(new EntityVO(storageId, AclClass.DATA_STORAGE));
-        metadataManager.updateMetadataItemKeys(metadataVO);
     }
 }

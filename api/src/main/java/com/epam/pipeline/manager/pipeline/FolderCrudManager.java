@@ -171,7 +171,7 @@ public class FolderCrudManager implements SecuredEntityManager {
         return folder;
     }
 
-    public Optional<Folder> searchById(Long id) {
+    public Optional<Folder> searchById(final Long id) {
         return Optional.ofNullable(folderDao.loadFolder(id));
     }
 

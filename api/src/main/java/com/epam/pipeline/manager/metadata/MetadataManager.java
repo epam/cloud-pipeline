@@ -40,6 +40,7 @@ import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.google.common.io.CharStreams;
 import com.google.common.io.LineProcessor;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -229,6 +230,17 @@ public class MetadataManager {
             return updateMetadataItemKeys(metadataVO);
         } else {
             return updateMetadataItem(metadataVO);
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void updateEntityMetadata(final Map<String, PipeConfValue> data, final Long entityId,
+                                     final AclClass entityClass) {
+        if (!MapUtils.isEmpty(data)) {
+            MetadataVO metadataVO = new MetadataVO();
+            metadataVO.setData(data);
+            metadataVO.setEntity(new EntityVO(entityId, entityClass));
+            updateMetadataItemKeys(metadataVO);
         }
     }
 

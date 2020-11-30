@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,6 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
-import com.epam.pipeline.controller.vo.EntityVO;
-import com.epam.pipeline.controller.vo.MetadataVO;
-import com.epam.pipeline.controller.vo.PermissionGrantVO;
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -36,7 +33,6 @@ import com.epam.pipeline.manager.git.TemplatesScanner;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.metadata.processor.MetadataPostProcessorService;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
-import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -67,8 +63,6 @@ public class FolderTemplateManager {
     private DataStorageManager dataStorageManager;
     @Autowired
     private MetadataManager metadataManager;
-    @Autowired
-    private PermissionGrantVOMapper permissionGrantVOMapper;
     @Autowired
     private GrantPermissionManager permissionManager;
     @Autowired
@@ -108,14 +102,10 @@ public class FolderTemplateManager {
                 storage.setParentFolderId(savedFolder.getId());
                 AbstractDataStorage created = dataStorageManager.create(storage, true, true, false)
                         .getEntity();
-                if (!MapUtils.isEmpty(storage.getMetadata())) {
-                    updateMetadata(storage.getMetadata(), new EntityVO(created.getId(), AclClass.DATA_STORAGE));
-                }
+                metadataManager.updateEntityMetadata(storage.getMetadata(), created.getId(), AclClass.DATA_STORAGE);
             });
         }
-        if (!MapUtils.isEmpty(template.getMetadata())) {
-            updateMetadata(template.getMetadata(), new EntityVO(savedFolder.getId(), AclClass.FOLDER));
-        }
+        metadataManager.updateEntityMetadata(template.getMetadata(), savedFolder.getId(), AclClass.FOLDER);
         if (CollectionUtils.isNotEmpty(template.getChildren())) {
             template.getChildren().forEach(child -> {
                 Folder childFolder = new Folder();
@@ -123,14 +113,7 @@ public class FolderTemplateManager {
                 createFolderFromTemplate(childFolder, child);
             });
         }
-        if (CollectionUtils.isNotEmpty(template.getPermissions())) {
-            template.getPermissions().forEach(permission -> {
-                PermissionGrantVO permissionGrantVO = permissionGrantVOMapper.toPermissionGrantVO(permission);
-                permissionGrantVO.setId(savedFolder.getId());
-                permissionGrantVO.setAclClass(AclClass.FOLDER);
-                permissionManager.setPermissions(permissionGrantVO);
-            });
-        }
+        permissionManager.setPermissionsToEntity(template.getPermissions(), savedFolder.getId(), AclClass.FOLDER);
     }
 
     private void prepareTemplateStorages(FolderTemplate template, String prefix) {
@@ -165,13 +148,6 @@ public class FolderTemplateManager {
             Assert.notNull(storage.getPath(),
                     messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NFS_PATH_NOT_FOUND, storage.getName()));
         }
-    }
-
-    private void updateMetadata(Map<String, PipeConfValue> data, EntityVO entity) {
-        MetadataVO metadataVO = new MetadataVO();
-        metadataVO.setData(data);
-        metadataVO.setEntity(entity);
-        metadataManager.updateMetadataItemKeys(metadataVO);
     }
 
     private void prepareTemplate(FolderTemplate template, String prefix) {
