@@ -188,9 +188,6 @@ public class PipelineRunManager {
     @Autowired
     private PipelineRunCRUDService runCRUDService;
 
-    @Autowired
-    private RunLogDao runLogDao;
-
     /**
      * Launches cmd command execution, uses Tool as ACL identity
      * @param runVO
