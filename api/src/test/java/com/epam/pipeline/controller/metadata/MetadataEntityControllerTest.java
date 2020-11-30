@@ -232,7 +232,7 @@ public class MetadataEntityControllerTest extends AbstractControllerTest {
         final ArgumentCaptor<MultipartFile> multipartFileCaptor = ArgumentCaptor.forClass(MultipartFile.class);
 
         verify(mockMetadataEntityApiService).uploadMetadataFromFile(eq(ID), multipartFileCaptor.capture());
-        assertRequestFile(multipartFileCaptor.getValue(), "file.txt", "file.txt".getBytes());
+        assertRequestFile(multipartFileCaptor.getValue());
         assertResponse(mvcResult, entities, MetadataCreatorUtils.METADATA_ENTITY_LIST_TYPE);
     }
 
