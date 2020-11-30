@@ -65,7 +65,8 @@ public class AttachmentFileManagerTest {
 
     private AttachmentFileManager attachmentFileManager;
 
-    private S3bucketDataStorage testSystemDataStorage = new S3bucketDataStorage(1L, TEST_SYSTEM_DATA_STORAGE, "test");
+    private final S3bucketDataStorage testSystemDataStorage =
+            new S3bucketDataStorage(1L, TEST_SYSTEM_DATA_STORAGE, "test");
 
     @Before
     public void setUp() throws Exception {
@@ -136,8 +137,19 @@ public class AttachmentFileManagerTest {
     }
 
     @Test
-    public void testDeleteAttachment() {
+    public void testDeleteAttachmentForAdmin() {
         doReturn(true).when(authManager).isAdmin();
+
+        attachmentFileManager.deleteAttachment(anyLong());
+
+        verify(attachmentManager).load(anyLong());
+    }
+
+    @Test
+    public void testDeleteAttachmentForOwnerUser() {
+        final Attachment attachment = new Attachment();
+        attachment.setOwner(TEST_USER);
+        when(attachmentManager.load(Mockito.anyLong())).thenReturn(attachment);
 
         attachmentFileManager.deleteAttachment(anyLong());
 
