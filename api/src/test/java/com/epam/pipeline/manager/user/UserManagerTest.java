@@ -26,15 +26,34 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.StorageServiceType;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
+import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.exception.DefaultStorageCreationException;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.datastorage.StorageProviderManager;
+import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
+import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.Matchers;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,18 +80,51 @@ public class UserManagerTest extends AbstractSpringTest {
     private static final String USER_DEFAULT_DS = "user-default-ds";
     private static final String REGION_CODE = "eu-central-1";
     private static final String REGION_NAME = "aws_region";
-
+    private static final String PARENT_FOLDER_NAME = "parentFolder";
+    private static final String DEFAULT_STORAGE_NAME_PATTERN = "@@-home";
+    private static final String REPLACE_MARK = "@@";
+    private static final String STORAGE_TEMPLATE = "{ \n"
+                                           + "    \"datastorage\": {\n"
+                                           + "        \"parentFolderId\": <folder_id>,\n"
+                                           + "        \"name\": \"@@-home\",\n"
+                                           + "        \"description\": \"Home folder for user @@\"\n"
+                                           + "    },\n"
+                                           + "    \"permissions\": [],\n"
+                                           + "    \"metadata\": {}\n"
+                                           + "}";
     @Autowired
     private UserManager userManager;
-
-    @Autowired
-    private DataStorageManager dataStorageManager;
 
     @Autowired
     private CloudRegionManager cloudRegionManager;
 
     @Autowired
     private MonitoringNotificationDao notificationDao;
+
+    @Autowired
+    private FolderManager folderManager;
+
+    @Autowired
+    private GrantPermissionManager permissionManager;
+
+    @SpyBean
+    private DataStorageManager dataStorageManager;
+
+    @SpyBean
+    private StorageProviderManager storageProviderManager;
+
+    @Mock
+    private PreferenceManager preferenceManager;
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
+    @Before
+    public void setUpPreferenceManager() {
+        ReflectionTestUtils.setField(userManager, "preferenceManager", preferenceManager);
+        Mockito.when(preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_ENABLED))
+            .thenReturn(false);
+    }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -109,7 +161,7 @@ public class UserManagerTest extends AbstractSpringTest {
         attr.setIncludeUserName(true);
 
         String[] exported = new String(userManager.exportUsers(attr)).split("\n");
-        Assert.assertEquals(2, exported.length);
+        Assert.assertEquals(1, exported.length);
         Assert.assertTrue(
                 Arrays.stream(exported).anyMatch(
                     s -> ("" + newUser.getId() + CSV_SEPARATOR + newUser.getUserName()).equals(s)
@@ -118,12 +170,12 @@ public class UserManagerTest extends AbstractSpringTest {
 
         attr.setIncludeHeader(true);
         exported = new String(userManager.exportUsers(attr)).split("\n");
-        Assert.assertEquals(3, exported.length);
+        Assert.assertEquals(2, exported.length);
         Assert.assertEquals(ID.getValue() + CSV_SEPARATOR + USER_NAME.getValue(), exported[0]);
 
         attr.setIncludeRoles(true);
         exported = new String(userManager.exportUsers(attr)).split("\n");
-        Assert.assertEquals(3, exported.length);
+        Assert.assertEquals(2, exported.length);
         Assert.assertEquals(
                 ID.getValue() + CSV_SEPARATOR + USER_NAME.getValue() + CSV_SEPARATOR + ROLES.getValue(),
                 exported[0]
@@ -140,7 +192,7 @@ public class UserManagerTest extends AbstractSpringTest {
         attr.setIncludeHeader(true);
         attr.setIncludeId(true);
         final String[] exported = new String(userManager.exportUsers(attr)).split("\n");
-        Assert.assertEquals(3, exported.length);
+        Assert.assertEquals(2, exported.length);
         Assert.assertEquals(
                 ID.getValue() + CSV_SEPARATOR +
                         DEFAULT_STORAGE_ID.getValue() + CSV_SEPARATOR +
@@ -258,6 +310,71 @@ public class UserManagerTest extends AbstractSpringTest {
         Assert.assertTrue(userManager.loadGroupBlockingStatus(null).isEmpty());
     }
 
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void createUserAndDefaultStorage() {
+        final Folder folder = new Folder();
+        folder.setName(PARENT_FOLDER_NAME);
+        final Folder parentFolder = folderManager.create(folder);
+        Mockito.when(preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_TEMPLATE))
+            .thenReturn(STORAGE_TEMPLATE.replace("<folder_id>", parentFolder.getId().toString()));
+        ReflectionTestUtils.setField(dataStorageManager, "preferenceManager", preferenceManager);
+        prepareContextForDefaultUserStorage();
+        final PipelineUser newUser = createDefaultPipelineUser();
+        assertDefaultStorage(newUser, parentFolder.getId());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void createUserAndDefaultStorageWhenParentFolderDoesntExists() {
+        prepareContextForDefaultUserStorage();
+        final PipelineUser newUser = createDefaultPipelineUser();
+        assertDefaultStorage(newUser, null);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void createUserErrorAtDefaultStorageCreation() {
+        prepareContextForDefaultUserStorage();
+        Mockito.doThrow(IllegalArgumentException.class)
+            .when(dataStorageManager)
+            .create(Mockito.any(), Matchers.eq(true), Mockito.anyBoolean(), Mockito.anyBoolean());
+        try {
+            createDefaultPipelineUser();
+            Assert.fail("The expected exception during default storage initialization was not thrown!");
+        } catch (DefaultStorageCreationException e) {
+            final PipelineUser newUser = userManager.loadUserByName(TEST_USER);
+            Assert.assertNotNull(newUser);
+            Assert.assertEquals(TEST_USER.toUpperCase(), newUser.getUserName());
+            Assert.assertNull(newUser.getDefaultStorageId());
+            Assert.assertTrue(CollectionUtils.isEmpty(folderManager.loadAllProjects().getChildFolders()));
+        }
+    }
+
+    private void prepareContextForDefaultUserStorage() {
+        Mockito.when(preferenceManager.getPreference(SystemPreferences.DEFAULT_USER_DATA_STORAGE_ENABLED))
+            .thenReturn(true);
+        Mockito.doReturn(true).when(storageProviderManager).checkStorage(Mockito.any());
+        final JdbcMutableAclServiceImpl aclService = Mockito.mock(JdbcMutableAclServiceImpl.class);
+        Mockito.doNothing().when(aclService).changeOwner(Mockito.any(), Mockito.anyString());
+        ReflectionTestUtils.setField(permissionManager, "aclService", aclService);
+        createAwsRegion(REGION_NAME, REGION_CODE);
+        Mockito.doAnswer(invocation -> {
+            final Object[] args = invocation.getArguments();
+            return dataStorageManager.create((DataStorageVO) args[0], false, (boolean) args[2], (boolean) args[3]);
+        }).when(dataStorageManager)
+            .create(Mockito.any(), Matchers.eq(true), Mockito.anyBoolean(), Mockito.anyBoolean());
+    }
+
+    private void assertDefaultStorage(final PipelineUser user, final Long defaultFolderId) {
+        final AbstractDataStorage defaultStorage = dataStorageManager.load(user.getDefaultStorageId());
+        final String userName = user.getUserName();
+        final String expectedStorageName = DEFAULT_STORAGE_NAME_PATTERN.replace(REPLACE_MARK, userName.toUpperCase());
+        Assert.assertEquals(expectedStorageName, defaultStorage.getName());
+        Assert.assertEquals(defaultFolderId, defaultStorage.getParentFolderId());
+        Assert.assertEquals(userName, defaultStorage.getOwner());
+    }
+
     private void compareAllFieldOfUsers(PipelineUser firstUser, PipelineUser secondUser) {
         Assert.assertEquals(firstUser.getUserName(), secondUser.getUserName());
         Assert.assertEquals(firstUser.getEmail(), secondUser.getEmail());
@@ -280,10 +397,8 @@ public class UserManagerTest extends AbstractSpringTest {
     private PipelineUser createPipelineUserWithDataStorage() {
         DataStorageVO dataStorageVO = new DataStorageVO();
         dataStorageVO.setServiceType(StorageServiceType.OBJECT_STORAGE);
-        AWSRegionDTO regionDTO = new AWSRegionDTO();
-        regionDTO.setRegionCode(REGION_CODE);
-        regionDTO.setName(REGION_NAME);
-        dataStorageVO.setRegionId(cloudRegionManager.create(regionDTO).getId());
+        AbstractCloudRegion region = createAwsRegion(REGION_NAME, REGION_CODE);
+        dataStorageVO.setRegionId(region.getId());
         dataStorageVO.setPath(USER_DEFAULT_DS);
         dataStorageVO.setName(USER_DEFAULT_DS);
         SecuredEntityWithAction<AbstractDataStorage> ds =
@@ -293,5 +408,14 @@ public class UserManagerTest extends AbstractSpringTest {
                 DEFAULT_USER_GROUPS,
                 DEFAULT_USER_ATTRIBUTE,
                 ds.getEntity().getId());
+    }
+
+    private AbstractCloudRegion createAwsRegion(final String regionName, final String regionCode) {
+        final AWSRegionDTO regionDTO = new AWSRegionDTO();
+        regionDTO.setName(regionName);
+        regionDTO.setRegionCode(regionCode);
+        regionDTO.setProvider(CloudProvider.AWS);
+        regionDTO.setDefault(true);
+        return cloudRegionManager.create(regionDTO);
     }
 }
