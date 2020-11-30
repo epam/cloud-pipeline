@@ -37,6 +37,9 @@ import org.springframework.security.test.context.support.WithMockUser;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
@@ -60,9 +63,12 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
     private final JwtRawToken jwtRawToken = new JwtRawToken(TEST_STRING);
     private final ToolGroup emptyToolGroupWithoutPermission =
             DockerCreatorUtils.getToolGroup(ID_3, ANOTHER_SIMPLE_USER);
-    private final Tool toolRead = DockerCreatorUtils.getTool(ANOTHER_SIMPLE_USER);
-    private final Tool toolWithoutPermission = DockerCreatorUtils.getTool(ID_2, ANOTHER_SIMPLE_USER);
-    private final List<Tool> toolList = Arrays.asList(toolRead, toolWithoutPermission);
+    private final Tool toolRead1 = DockerCreatorUtils.getTool(ANOTHER_SIMPLE_USER);
+    private final Tool toolRead2 = DockerCreatorUtils.getTool(ANOTHER_SIMPLE_USER);
+    private final Tool toolWithoutPermission1 = DockerCreatorUtils.getTool(ID_2, ANOTHER_SIMPLE_USER);
+    private final Tool toolWithoutPermission2 = DockerCreatorUtils.getTool(ID_2, ANOTHER_SIMPLE_USER);
+    private final List<Tool> toolList1 = Arrays.asList(toolRead1, toolWithoutPermission1);
+    private final List<Tool> toolList2 = Arrays.asList(toolRead2, toolWithoutPermission2);
 
     @Autowired
     private DockerRegistryApiService dockerRegistryApiService;
@@ -344,21 +350,24 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
     }
 
     private void initCommonToolAcls() {
-        initAclEntity(toolRead, AclPermission.READ);
-        initAclEntity(toolWithoutPermission);
+        initAclEntity(toolRead1, AclPermission.READ);
+        initAclEntity(toolRead2, AclPermission.READ);
+        initAclEntity(toolWithoutPermission1);
+        initAclEntity(toolWithoutPermission2);
         initAclEntity(emptyToolGroupWithoutPermission);
     }
 
     private void assertPermissionInheritedForLeaves(final int permission,
                                                     final AbstractHierarchicalEntity actualToolGroupWithPermissions) {
+        final Map<Long, AbstractSecuredEntity> leavesById = actualToolGroupWithPermissions.getLeaves().stream()
+                .collect(Collectors.toMap(AbstractSecuredEntity::getId, Function.identity()));
         final List<? extends AbstractSecuredEntity> actualToolsWithReadPermissions =
                 actualToolGroupWithPermissions.getLeaves();
         assertThat(actualToolGroupWithPermissions.getMask()).isEqualTo(permission);
-        assertThat(actualToolsWithReadPermissions).isEqualTo(toolList);
-        final AbstractSecuredEntity toolWithReadPermission = actualToolsWithReadPermissions.get(0);
+        assertThat(actualToolsWithReadPermissions).isEqualTo(toolList1);
+        final AbstractSecuredEntity toolWithReadPermission = leavesById.get(toolRead1.getId());
         assertThat(toolWithReadPermission.getMask()).isEqualTo(permission);
-        // TODO: why read permission cannot be granted? (permission shall be granted)
-        final AbstractSecuredEntity toolWithoutPermission = actualToolsWithReadPermissions.get(1);
+        final AbstractSecuredEntity toolWithoutPermission = leavesById.get(toolWithoutPermission1.getId());
         assertThat(toolWithoutPermission.getMask()).isEqualTo(permission); // permission inherited from tool group
     }
 
@@ -368,7 +377,7 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
                 actualToolGroupWithoutPermissions.getLeaves();
         assertThat(resultToolGroupWithoutPermissionLeaves).hasSize(1); // no permission tool has been filtered
         final AbstractSecuredEntity actualTool = resultToolGroupWithoutPermissionLeaves.get(0);
-        assertThat(actualTool).isEqualTo(toolRead);
+        assertThat(actualTool).isEqualTo(toolRead1);
         assertThat(actualTool.getMask()).isEqualTo(permission);
     }
 
@@ -387,22 +396,26 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
             final List<AbstractHierarchicalEntity> actualGroups,
             final List<? extends AbstractHierarchicalEntity> expectedGroups,
             final int permission) {
+        final Map<Long, AbstractHierarchicalEntity> childrenById = actualGroups.stream()
+                .collect(Collectors.toMap(AbstractSecuredEntity::getId, Function.identity()));
         assertThat(actualGroups).hasSize(expectedGroups.size()).containsAll(expectedGroups);
 
-        assertPermissionGrantedToGroup(permission, actualGroups.get(1));
-        assertPermissionInheritedForLeaves(permission, actualGroups.get(0));
+        assertPermissionGrantedToGroup(permission, childrenById.get(toolRead1.getId()));
+        assertPermissionInheritedForLeaves(permission, childrenById.get(toolWithoutPermission1.getId()));
     }
 
     private void assertDockerRegistryAclTreeForAdmin(final List<AbstractHierarchicalEntity> actualGroups,
                                                      final List<? extends AbstractHierarchicalEntity> expectedGroups) {
+        final Map<Long, AbstractHierarchicalEntity> childrenById = actualGroups.stream()
+                .collect(Collectors.toMap(AbstractSecuredEntity::getId, Function.identity()));
         assertThat(actualGroups).containsAll(expectedGroups);
 
-        final List<? extends AbstractSecuredEntity> toolGroupLeaves = actualGroups.get(0).getLeaves();
+        final List<? extends AbstractSecuredEntity> toolGroupLeaves = childrenById.get(toolRead1.getId()).getLeaves();
         final List<? extends AbstractSecuredEntity> toolGroupWithoutPermissionLeaves =
-                actualGroups.get(1).getLeaves();
+                childrenById.get(toolWithoutPermission1.getId()).getLeaves();
 
-        assertThat(toolGroupWithoutPermissionLeaves).isEqualTo(toolList);
-        assertThat(toolGroupLeaves).isEqualTo(toolList);
+        assertThat(toolGroupWithoutPermissionLeaves).isEqualTo(toolList1);
+        assertThat(toolGroupLeaves).isEqualTo(toolList1);
     }
 
     private DockerRegistry getDockerRegistryWithGroups(final List<ToolGroup> toolGroups) {
@@ -413,14 +426,14 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
 
     private ToolGroup initToolGroupWithReadPermissions() {
         final ToolGroup toolGroup = DockerCreatorUtils.getToolGroup(ID_2, ANOTHER_SIMPLE_USER);
-        toolGroup.setTools(toolList);
+        toolGroup.setTools(toolList1);
         initAclEntity(toolGroup, AclPermission.READ);
         return toolGroup;
     }
 
     private ToolGroup initToolGroupWithoutPermissions() {
         final ToolGroup toolGroupWithoutPermission = DockerCreatorUtils.getToolGroup(ANOTHER_SIMPLE_USER);
-        toolGroupWithoutPermission.setTools(toolList);
+        toolGroupWithoutPermission.setTools(toolList2);
         initAclEntity(toolGroupWithoutPermission);
         return toolGroupWithoutPermission;
     }
